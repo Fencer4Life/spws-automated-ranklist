@@ -1,9 +1,141 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation.
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
+
+## Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)
+
+Two corrections, made while opening PPW1-2026-2027 for entry. §§1, 3, 5 (read-only
+invariant, BY reconciliation matrix, schema) are untouched; §2's *gating* changes and
+§7(c)'s credential injection was **wrong in a way that silently misrouted every entry**.
+
+### (a) A non-exact match no longer requires email — it registers
+
+§2's Model B table routes Paths B/C/D through "one magic-link click". Phases 4/5 never
+shipped, so the form did the only other thing it could: it rendered a *"email verification
+is coming soon — please contact the organizer"* panel and **wrote nothing at all**. Every
+newcomer, and everyone whose stored birth year was an ingestion estimate rather than a
+confirmed value, was refused outright.
+
+That inverts the ADR's own purpose. §Context justifies this subsystem by the birth years it
+would collect; the population whose BY we most need is precisely the population the form
+turned away.
+
+**A miss now continues to RODO and is written with `id_fencer` NULL.** No email, no gate.
+
+The security argument is §4's own: email *"proves inbox control, not identity — it is
+friction + accountability, never load-bearing for integrity."* Removing it therefore costs
+nothing the ADR ever claimed for it. The four real defences are all intact — (a) the
+read-only invariant, (b) the confirmed-BY-sacrosanct rule, (c) the organizer's venue check,
+(d) the results-based ranking, under which a fake entry that never fences scores nothing.
+The worst case is unchanged from §1: a junk, ephemeral, deletable `tbl_registration` row.
+
+Nothing downstream needed changing, which is the strongest evidence the design anticipated
+this:
+
+- `fn_create_registration` already takes `p_id_fencer INT DEFAULT NULL` and inserts it.
+- `vw_registration_entry_list` joins `tbl_event` and `tbl_season` — **not** `tbl_fencer` — so
+  an unmatched registrant appears on the public roster with a derived age category.
+- `python/pipeline/ftl_seed_export.py` already declares `id_fencer: int | None` and
+  interleaves unranked registrants by `ts_created`.
+
+So the declaration reaches both the roster and the organizer's seed file without
+`tbl_fencer` ever being written. The real fencer row is still created at ingestion (§3),
+where the declared BY feeds the existing reconciliation machinery unchanged.
+
+Verified end to end against PROD before the link was shared: a fencer absent from
+`tbl_fencer` completed the flow, `SELECT count(*) FROM tbl_fencer` for that surname returned
+**0**, and the row surfaced on `vw_registration_entry_list` with a server-derived `V1`.
+
+The `reg_verify_*` locale keys are retained, not deleted — Phases 4/5 will reuse them when
+magic-link delivery ships. Email then becomes an *optional* strengthening of an entry that
+already exists, rather than a precondition for making one.
+
+### (b) `register.html` receives PROD credentials only
+
+§7(c) settled that `register.html` is a CE-bundle artefact whose credentials are injected by
+`release.yml`. It did not say **which** credentials, and the workflow injected all four
+attributes — both the CERT and the PROD pair.
+
+`RegistrationElement.svelte` resolves its client as `(supabaseCertUrl || supabaseProdUrl)`.
+A populated CERT pair therefore always won, and **every registration made through the public
+link would have been written to CERT** while the page looked entirely healthy to the fencer.
+The component's own comment asserted that "build-time sed picks one pair per deploy target";
+no such per-target selection existed.
+
+`release.yml` now blanks `supabase-cert-*` for `register.html` and injects the PROD pair
+only. `index.html` keeps both — it exposes a runtime admin environment toggle; this page has
+none by design (§6), so it gets exactly one environment. Blanking rather than omitting is
+required: the build's *"no localhost in dist"* guard would otherwise fail on the committed
+LOCAL defaults.
+
+This defect is invisible to tests and to inspection of the rendered page. It was caught only
+by registering once against the deployed URL and then querying **both** databases.
+
+### (c) Smaller corrections shipped in the same change
+
+- **Gender no longer defaults to `M`.** A woman who never touched the select was silently
+  recorded male — into her sub-ranking category, the public entry list and the FTL seed. It
+  is now a declared value, required before Continue.
+- **Write failures surface.** `fn_create_registration` RAISEs once the D10 window guard
+  trips; the rejected promise previously left the fencer pressing a button that did nothing.
+- **One Back step from RODO**, so a mistyped birth year can be corrected without re-entering
+  the form.
+- **A soft already-registered warning**, read from `vw_registration_entry_list` before the
+  write. It is a warning, not a constraint — see Open items.
+- **Payment details are real.** The IBAN was empty on both surfaces (no workflow ever filled
+  `register.html`'s `iban=""`, and `CalendarView` passes no payment props at all), and three
+  separate `'SPWS'` defaults overrode the full registered account name a transfer is matched
+  against. Both now come from `frontend/src/lib/orgPayment.ts`, where an empty prop means
+  "use the association details". The transfer note follows the association's stated
+  convention — first name, surname, weapon, age category — with the event code retained,
+  since several rounds share one account.
+- **The payment deadline is quoted, not described.** It reads
+  `COALESCE(dt_registration_deadline, dt_start)` — the same expression the D10 guard
+  enforces — instead of the previous hand-written "12 hours before the event starts", which
+  corresponded to no rule in the system.
+
+### Open items
+
+1. **`UNIQUE(id_event, id_fencer)` does not constrain unmatched rows.** Postgres treats NULLs
+   as distinct, so the hole described in §5 is now *reachable* for the first time — before
+   this amendment nothing could write a NULL-fencer row. A fencer who registers twice creates
+   two rows and appears twice on the roster and in the seed file. **Recommendation:** a
+   partial unique index on
+   `(id_event, txt_surname, txt_first_name, int_birth_year) WHERE id_fencer IS NULL`, plus a
+   branch in `fn_create_registration` — a single `INSERT` cannot carry two `ON CONFLICT`
+   arbiters. Not yet decided.
+2. **Club is collected and discarded.** There is no `txt_club` column, and
+   `ftl_seed_export.py` hardcodes `"Club": ""`. The user has asked for it to reach the seed
+   file. Note this **inverts the current consent text**, which states *"Klub — tylko do plików
+   startowych · nie zapisujemy"*; storing it is a genuine `CONSENT_VERSION` bump to `v1.1`,
+   not a silent string edit. Not yet decided.
+3. **Whether registration should be accepted after the advertised deadline.** Raised as a
+   revenue question and explicitly deferred by the user on 2026-08-17. The D10 guard is
+   enforced in the database, so this is not a copy change. **Recommendation:** gate the guard
+   on `dt_start` rather than the deadline, leaving `dt_registration_deadline` as the
+   advertised date — the same decoupling [ADR-084](084-calendar-quarter-barrel-event-card.md)
+   applied to the entry list. Not yet decided.
+
+### Corpus audit
+
+- [ADR-078](078-gdpr-data-handling.md) — **relates, unchanged.** Its processing table still
+  lists the salted email hash with a lawful basis; that column simply stays NULL until
+  Phases 4/5. No data is now collected that the table does not cover. (Its "payment reference
+  + paid/unpaid status" row remains inconsistent with §4, which states payment is not tracked
+  digitally — a pre-existing discrepancy, flagged, not fixed here.)
+- [ADR-080](080-clean-roster-ftl-seeding.md) — **relates, strengthened.** Its population rule
+  is "every row of `tbl_registration`". Unmatched fencers now produce rows, so the seed
+  covers entrants it previously could not have seen.
+- [ADR-083](083-server-enforced-authorization.md) — **relates, one factual drift.** It states
+  that `fn_create_registration` and `fn_match_registration_fencer` are "the entire server
+  surface" of this flow. The form now also reads `vw_registration_entry_list` for the
+  duplicate warning. No new grant was needed — that view already grants SELECT to `anon` for
+  the public roster — but the sentence is no longer exhaustive.
+- [ADR-016](016-supabase-auth-totp-mfa.md) — **clean.** Its email-confirmation setting governs
+  admin accounts, not registration.
 
 ## Amendment (2026-08-09 — the entry list outlives the registration window)
 
@@ -53,6 +185,12 @@ identity or a ranking, because that code path does not exist in the registration
 flow.
 
 ### 2. Identity model — Model B (email as one-time verification, not an account)
+
+> **Superseded in part by the 2026-08-17 amendment (a).** The Path B/C/D *gating* below —
+> "every other path takes one magic-link click" — no longer holds: a non-exact match is
+> accepted and written with `id_fencer` NULL, with no email step. The rest of this section
+> (Model B's rationale, the no-persistent-account property, the exact-triple fast path, and
+> the dedup note) stands unchanged.
 
 The form collects **Surname, Name, Gender, BY**, normalises (case/diacritics/
 spacing), and matches via `find_best_match`. One gate rule: **skip email only on an

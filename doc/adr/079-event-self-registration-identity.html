@@ -4,23 +4,144 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="079-event-self-registration-identity.md">
-<meta name="adr-source-sha256" content="f5ff644c769eb9c9c48a3210fd1523c761bff4f2ac4f2c53df89ce5d008609dd">
+<meta name="adr-source-sha256" content="a3ec824f422dace19905c2fec53d520c738f7fd3d68ffa45f9851f8d54fa6ef3">
 <title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 079</p><h1>Event Self-Registration &amp; Identity Resolution</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">275 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (email delivery) not started, blocked on Resend/eu.org). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">413 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only.
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §7 (decouples the entry-list gate from the registration cutoff).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-core-invariant-registration-is-read-only-on-tbl-fencer">1. Core invariant — registration is READ-ONLY on `tbl_fencer`</a></li><li class="depth-3"><a href="#2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</a></li><li class="depth-4"><a href="#implementation-note-form-side-routing-is-exact-only-no-python-bridge-2026-07-05">Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)</a></li><li class="depth-3"><a href="#3-by-reconciliation-matrix-runs-at-ingestion-not-the-form">3. BY reconciliation matrix (runs at INGESTION, not the form)</a></li><li class="depth-3"><a href="#4-impersonation-hardening">4. Impersonation hardening</a></li><li class="depth-3"><a href="#5-schema-phase-1">5. Schema (Phase 1)</a></li><li class="depth-3"><a href="#6-ui">6. UI</a></li><li class="depth-3"><a href="#7-amendment-2026-07-05-registration-url-auto-fill-in-app-modal-presentation">7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
-  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-17-the-unmatched-fencer-registers-register-html-is-prod-only">Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)</a></li><li class="depth-3"><a href="#a-a-non-exact-match-no-longer-requires-email-it-registers">(a) A non-exact match no longer requires email — it registers</a></li><li class="depth-3"><a href="#b-register-html-receives-prod-credentials-only">(b) `register.html` receives PROD credentials only</a></li><li class="depth-3"><a href="#c-smaller-corrections-shipped-in-the-same-change">(c) Smaller corrections shipped in the same change</a></li><li class="depth-3"><a href="#open-items">Open items</a></li><li class="depth-3"><a href="#corpus-audit">Corpus audit</a></li><li class="depth-2"><a href="#amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-core-invariant-registration-is-read-only-on-tbl-fencer">1. Core invariant — registration is READ-ONLY on `tbl_fencer`</a></li><li class="depth-3"><a href="#2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</a></li><li class="depth-4"><a href="#implementation-note-form-side-routing-is-exact-only-no-python-bridge-2026-07-05">Implementation note — form-side routing is exact-only; no Python bridge (2026-07-05)</a></li><li class="depth-3"><a href="#3-by-reconciliation-matrix-runs-at-ingestion-not-the-form">3. BY reconciliation matrix (runs at INGESTION, not the form)</a></li><li class="depth-3"><a href="#4-impersonation-hardening">4. Impersonation hardening</a></li><li class="depth-3"><a href="#5-schema-phase-1">5. Schema (Phase 1)</a></li><li class="depth-3"><a href="#6-ui">6. UI</a></li><li class="depth-3"><a href="#7-amendment-2026-07-05-registration-url-auto-fill-in-app-modal-presentation">7. Amendment (2026-07-05) — registration URL auto-fill + in-app modal presentation</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-17-the-unmatched-fencer-registers-register-html-is-prod-only">Amendment (2026-08-17 — the unmatched fencer registers; register.html is PROD-only)</h2>
+<p>Two corrections, made while opening PPW1-2026-2027 for entry. §§1, 3, 5 (read-only
+invariant, BY reconciliation matrix, schema) are untouched; §2's <em>gating</em> changes and
+§7(c)'s credential injection was <strong>wrong in a way that silently misrouted every entry</strong>.</p>
+<h3 id="a-a-non-exact-match-no-longer-requires-email-it-registers">(a) A non-exact match no longer requires email — it registers</h3>
+<p>§2's Model B table routes Paths B/C/D through &quot;one magic-link click&quot;. Phases 4/5 never
+shipped, so the form did the only other thing it could: it rendered a <em>&quot;email verification
+is coming soon — please contact the organizer&quot;</em> panel and <strong>wrote nothing at all</strong>. Every
+newcomer, and everyone whose stored birth year was an ingestion estimate rather than a
+confirmed value, was refused outright.</p>
+<p>That inverts the ADR's own purpose. §Context justifies this subsystem by the birth years it
+would collect; the population whose BY we most need is precisely the population the form
+turned away.</p>
+<p><strong>A miss now continues to RODO and is written with <code>id_fencer</code> NULL.</strong> No email, no gate.</p>
+<p>The security argument is §4's own: email <em>&quot;proves inbox control, not identity — it is
+friction + accountability, never load-bearing for integrity.&quot;</em> Removing it therefore costs
+nothing the ADR ever claimed for it. The four real defences are all intact — (a) the
+read-only invariant, (b) the confirmed-BY-sacrosanct rule, (c) the organizer's venue check,
+(d) the results-based ranking, under which a fake entry that never fences scores nothing.
+The worst case is unchanged from §1: a junk, ephemeral, deletable <code>tbl_registration</code> row.</p>
+<p>Nothing downstream needed changing, which is the strongest evidence the design anticipated
+this:</p>
+<ul>
+<li><code>fn_create_registration</code> already takes <code>p_id_fencer INT DEFAULT NULL</code> and inserts it.</li>
+<li><code>vw_registration_entry_list</code> joins <code>tbl_event</code> and <code>tbl_season</code> — <strong>not</strong> <code>tbl_fencer</code> — so
+an unmatched registrant appears on the public roster with a derived age category.</li>
+<li><code>python/pipeline/ftl_seed_export.py</code> already declares <code>id_fencer: int | None</code> and
+interleaves unranked registrants by <code>ts_created</code>.</li>
+</ul>
+<p>So the declaration reaches both the roster and the organizer's seed file without
+<code>tbl_fencer</code> ever being written. The real fencer row is still created at ingestion (§3),
+where the declared BY feeds the existing reconciliation machinery unchanged.</p>
+<p>Verified end to end against PROD before the link was shared: a fencer absent from
+<code>tbl_fencer</code> completed the flow, <code>SELECT count(*) FROM tbl_fencer</code> for that surname returned
+<strong>0</strong>, and the row surfaced on <code>vw_registration_entry_list</code> with a server-derived <code>V1</code>.</p>
+<p>The <code>reg_verify_*</code> locale keys are retained, not deleted — Phases 4/5 will reuse them when
+magic-link delivery ships. Email then becomes an <em>optional</em> strengthening of an entry that
+already exists, rather than a precondition for making one.</p>
+<h3 id="b-register-html-receives-prod-credentials-only">(b) <code>register.html</code> receives PROD credentials only</h3>
+<p>§7(c) settled that <code>register.html</code> is a CE-bundle artefact whose credentials are injected by
+<code>release.yml</code>. It did not say <strong>which</strong> credentials, and the workflow injected all four
+attributes — both the CERT and the PROD pair.</p>
+<p><code>RegistrationElement.svelte</code> resolves its client as <code>(supabaseCertUrl || supabaseProdUrl)</code>.
+A populated CERT pair therefore always won, and <strong>every registration made through the public
+link would have been written to CERT</strong> while the page looked entirely healthy to the fencer.
+The component's own comment asserted that &quot;build-time sed picks one pair per deploy target&quot;;
+no such per-target selection existed.</p>
+<p><code>release.yml</code> now blanks <code>supabase-cert-*</code> for <code>register.html</code> and injects the PROD pair
+only. <code>index.html</code> keeps both — it exposes a runtime admin environment toggle; this page has
+none by design (§6), so it gets exactly one environment. Blanking rather than omitting is
+required: the build's <em>&quot;no localhost in dist&quot;</em> guard would otherwise fail on the committed
+LOCAL defaults.</p>
+<p>This defect is invisible to tests and to inspection of the rendered page. It was caught only
+by registering once against the deployed URL and then querying <strong>both</strong> databases.</p>
+<h3 id="c-smaller-corrections-shipped-in-the-same-change">(c) Smaller corrections shipped in the same change</h3>
+<ul>
+<li><strong>Gender no longer defaults to <code>M</code>.</strong> A woman who never touched the select was silently
+recorded male — into her sub-ranking category, the public entry list and the FTL seed. It
+is now a declared value, required before Continue.</li>
+<li><strong>Write failures surface.</strong> <code>fn_create_registration</code> RAISEs once the D10 window guard
+trips; the rejected promise previously left the fencer pressing a button that did nothing.</li>
+<li><strong>One Back step from RODO</strong>, so a mistyped birth year can be corrected without re-entering
+the form.</li>
+<li><strong>A soft already-registered warning</strong>, read from <code>vw_registration_entry_list</code> before the
+write. It is a warning, not a constraint — see Open items.</li>
+<li><strong>Payment details are real.</strong> The IBAN was empty on both surfaces (no workflow ever filled
+<code>register.html</code>'s <code>iban=&quot;&quot;</code>, and <code>CalendarView</code> passes no payment props at all), and three
+separate <code>'SPWS'</code> defaults overrode the full registered account name a transfer is matched
+against. Both now come from <code>frontend/src/lib/orgPayment.ts</code>, where an empty prop means
+&quot;use the association details&quot;. The transfer note follows the association's stated
+convention — first name, surname, weapon, age category — with the event code retained,
+since several rounds share one account.</li>
+<li><strong>The payment deadline is quoted, not described.</strong> It reads
+<code>COALESCE(dt_registration_deadline, dt_start)</code> — the same expression the D10 guard
+enforces — instead of the previous hand-written &quot;12 hours before the event starts&quot;, which
+corresponded to no rule in the system.</li>
+</ul>
+<h3 id="open-items">Open items</h3>
+<ol>
+<li><strong><code>UNIQUE(id_event, id_fencer)</code> does not constrain unmatched rows.</strong> Postgres treats NULLs
+as distinct, so the hole described in §5 is now <em>reachable</em> for the first time — before
+this amendment nothing could write a NULL-fencer row. A fencer who registers twice creates
+two rows and appears twice on the roster and in the seed file. <strong>Recommendation:</strong> a
+partial unique index on
+<code>(id_event, txt_surname, txt_first_name, int_birth_year) WHERE id_fencer IS NULL</code>, plus a
+branch in <code>fn_create_registration</code> — a single <code>INSERT</code> cannot carry two <code>ON CONFLICT</code>
+arbiters. Not yet decided.</li>
+<li><strong>Club is collected and discarded.</strong> There is no <code>txt_club</code> column, and
+<code>ftl_seed_export.py</code> hardcodes <code>&quot;Club&quot;: &quot;&quot;</code>. The user has asked for it to reach the seed
+file. Note this <strong>inverts the current consent text</strong>, which states <em>&quot;Klub — tylko do plików
+startowych · nie zapisujemy&quot;</em>; storing it is a genuine <code>CONSENT_VERSION</code> bump to <code>v1.1</code>,
+not a silent string edit. Not yet decided.</li>
+<li><strong>Whether registration should be accepted after the advertised deadline.</strong> Raised as a
+revenue question and explicitly deferred by the user on 2026-08-17. The D10 guard is
+enforced in the database, so this is not a copy change. <strong>Recommendation:</strong> gate the guard
+on <code>dt_start</code> rather than the deadline, leaving <code>dt_registration_deadline</code> as the
+advertised date — the same decoupling <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a>
+applied to the entry list. Not yet decided.</li>
+</ol>
+<h3 id="corpus-audit">Corpus audit</h3>
+<ul>
+<li><a href="078-gdpr-data-handling.html">ADR-078</a> — <strong>relates, unchanged.</strong> Its processing table still
+lists the salted email hash with a lawful basis; that column simply stays NULL until
+Phases 4/5. No data is now collected that the table does not cover. (Its &quot;payment reference
+<ul>
+<li>paid/unpaid status&quot; row remains inconsistent with §4, which states payment is not tracked
+digitally — a pre-existing discrepancy, flagged, not fixed here.)</li>
+</ul>
+</li>
+<li><a href="080-clean-roster-ftl-seeding.html">ADR-080</a> — <strong>relates, strengthened.</strong> Its population rule
+is &quot;every row of <code>tbl_registration</code>&quot;. Unmatched fencers now produce rows, so the seed
+covers entrants it previously could not have seen.</li>
+<li><a href="083-server-enforced-authorization.html">ADR-083</a> — <strong>relates, one factual drift.</strong> It states
+that <code>fn_create_registration</code> and <code>fn_match_registration_fencer</code> are &quot;the entire server
+surface&quot; of this flow. The form now also reads <code>vw_registration_entry_list</code> for the
+duplicate warning. No new grant was needed — that view already grants SELECT to <code>anon</code> for
+the public roster — but the sentence is no longer exhaustive.</li>
+<li><a href="016-supabase-auth-totp-mfa.html">ADR-016</a> — <strong>clean.</strong> Its email-confirmation setting governs
+admin accounts, not registration.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-entry-list-outlives-the-registration-window">Amendment (2026-08-09 — the entry list outlives the registration window)</h2>
 <p>§7 gated the entry-list link on the same cutoff as the registration link, so both vanished together once the deadline passed. <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> <strong>decouples them</strong>: registration closes at <code>COALESCE(dt_registration_deadline, dt_start)</code>, but the entry list stays visible until the event <strong>starts</strong> (CQ.31, CQ.32, EC.22), and is never shown on a cancelled event (CQ.33).</p>
 <p>This is the point at which people most want to see who is entered — after entries close and before the event runs.</p>
 <p><strong>No existing test pinned the old coupling</strong>, which is why the change cost new tests rather than rewrites: every test touching <code>.entry-list-link</code> set a deadline <em>equal to</em> <code>dt_start</code>, so both readings agreed. The uncomfortable half is why it was cheap — the coupling was never covered, so nothing would have caught it drifting either way.</p>
@@ -57,6 +178,13 @@ create a junk, ephemeral, deletable <code>tbl_registration</code> row — it can
 identity or a ranking, because that code path does not exist in the registration
 flow.</p>
 <h3 id="2-identity-model-model-b-email-as-one-time-verification-not-an-account">2. Identity model — Model B (email as one-time verification, not an account)</h3>
+<blockquote>
+<p><strong>Superseded in part by the 2026-08-17 amendment (a).</strong> The Path B/C/D <em>gating</em> below —
+&quot;every other path takes one magic-link click&quot; — no longer holds: a non-exact match is
+accepted and written with <code>id_fencer</code> NULL, with no email step. The rest of this section
+(Model B's rationale, the no-persistent-account property, the exact-triple fast path, and
+the dedup note) stands unchanged.</p>
+</blockquote>
 <p>The form collects <strong>Surname, Name, Gender, BY</strong>, normalises (case/diacritics/
 spacing), and matches via <code>find_best_match</code>. One gate rule: <strong>skip email only on an
 exact <code>(Surname, Name, BY)</code> triple match; every other path takes one magic-link
@@ -316,5 +444,5 @@ ADR-050/070–074 (ingestion pipeline).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
-<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>f5ff644c769eb9c9c48a3210fd1523c761bff4f2ac4f2c53df89ce5d008609dd</code></footer>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>a3ec824f422dace19905c2fec53d520c738f7fd3d68ffa45f9851f8d54fa6ef3</code></footer>
 </div></body></html>
