@@ -103,6 +103,7 @@ footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);font
   <li><a href="#s04">Open items</a></li>
   <li><a href="#s05">Known noise — do not chase</a></li>
   <li><a href="#s06">If you pick this up cold</a></li>
+  <li><a href="#s07">Handover prompt</a></li>
 </ol>
 </div>
 
@@ -246,6 +247,85 @@ concluding anything.</p>
   performing the real action against the real environment and then querying the database directly.
   On anything user-facing, budget for that step even when everything appears to work.
 </div>
+
+<h2 id="s07"><span class="num">07</span>Handover prompt</h2>
+<p>Paste this into a fresh session. It is deliberately the <i>delta</i> — <code>CLAUDE.md</code> and the project memory already load the standing rules, so this carries only what today changed and what a cold start would otherwise re-derive or re-break.</p>
+<pre><code>Picking up SPWS registration work. Read doc/plans/handover-2026-08-28.html first —
+it has the full state, the three defects we fixed, and why each one mattered.
+
+WHERE THINGS STAND
+
+PPW1-2026-2027 registration is LIVE on PROD and real fencers are using it (14 entries
+as of 28 Aug, deadline 20 Sep, event 26-27 Sep). Unmatched fencers — people not yet in
+tbl_fencer — can now register; they get a tbl_registration row with id_fencer NULL, show
+up on the public entry list, and reach the organizer&#x27;s FTL seed file. The real fencer row
+is created later at result ingestion. ADR-079&#x27;s 2026-08-17 amendment records all of it.
+
+BEFORE YOU TOUCH CERT OR PROD
+
+The cloud-db-ops skill applies. Its first rule exists because it was broken on 17 August:
+never write test data to a live environment until you have proven, in the same session,
+that you can delete it. A test registration sat on the public roster of a live event for
+hours because that step was skipped.
+
+Query with: scripts/cloud-sql.sh &lt;cert|prod&gt; &quot;SELECT ...&quot;
+Non-SELECT needs CLOUD_SQL_CONFIRM=yes and echoes the statement plus target first.
+
+Two things that will otherwise cost you an afternoon:
+- HTTP 401 from the Management API is NOT proof of an expired token. A stale
+  SUPABASE_ACCESS_TOKEN exported from the shell profile shadows .env and produces an
+  identical error. cloud-sql.sh prefers .env; apply-migrations.sh and
+  schema-fingerprint.sh do not — they read the environment only.
+- A red deploy-prod does not mean PROD is broken. Read which STEP failed. On 28 Aug the
+  migration applied cleanly and the fingerprint VERIFICATION failed, on a schema that was
+  never out of sync.
+
+OPEN ITEMS, roughly in the order I would do them
+
+1. Untrimmed names. Two of the 14 live rows carry trailing whitespace (&quot;Gary &quot;,
+   &quot;KUCIĘBA &quot;). trg_trim_fencer_names exists on tbl_fencer but there is no equivalent on
+   tbl_registration, so the raw value reaches the entry list and the seed file. Dedupe is
+   unaffected (the index normalises with btrim). Small migration; cheapest real win.
+
+2. Club to the seed file — ADR-079 open item 2. ftl_seed_export.py hardcodes
+   &quot;Club&quot;: &quot;&quot; and there is no txt_club on tbl_registration. NOTE this inverts the current
+   consent text (&quot;Klub — tylko do plików startowych · nie zapisujemy&quot;), so it is a genuine
+   CONSENT_VERSION bump to v1.1, not a string edit. Do not ship it as one.
+
+3. Post-deadline registrations — ADR-079 open item 3, deferred by the user as a revenue
+   question. The D10 guard is enforced in the DATABASE (fn_create_registration RAISEs), so
+   this is not a copy change. Recommendation on file: gate on dt_start rather than the
+   deadline, leaving dt_registration_deadline as the advertised date — the same decoupling
+   ADR-084 applied to the entry list. Needs the user&#x27;s decision first.
+
+4. Telegram false alarms. &quot;SECURITY POSTURE REGRESSION on PROD&quot; has fired twice without
+   the posture check ever running — it is gated on job-level failure rather than the
+   posture step&#x27;s own outcome.
+
+LEFT ALONE DELIBERATELY — ask before touching
+
+- The stale SUPABASE_ACCESS_TOKEN export in the shell profile. User declined the cleanup.
+- supabase/migrations/20260729000001_add_fencers_ciszewska_szumielewicz.sql is UNTRACKED.
+  Both fencers are already on CERT and PROD; only LOCAL lacks them. It is idempotent, so
+  committing it is a no-op on both clouds — but it is the user&#x27;s data change to commit,
+  and until then it blocks `supabase migration up` locally.
+- CISZEWSKA Barbara (1974) and PILARSKA Barbara (1974) are TWO DIFFERENT FENCERS. Settled
+  with the administrator. Do not re-open it. A shared birth year is a coincidence, not
+  evidence.
+
+WORKING NOTES
+
+Repo gates are mandatory and not optional politeness: pre-analysis-check before analysis
+or planning, RED-&gt;GREEN TDD, postgrestools on changed SQL, svelte-check on changed
+frontend, the documentation coherence gate, and ./scripts/refresh-graph.sh before every
+commit. Pushing main only works from the registered integration checkout
+(/Users/aleks/coding/SPWSranklist-integration) with `git push origin integration/main:main`.
+There are ~9 unrelated modified files in the worktree — preserve them, stage explicit paths
+only.
+
+The habit that actually found all three of today&#x27;s defects: perform the real action against
+the real environment, then query the database directly. Every one of them passed the test
+suite and looked correct on screen.</code></pre>
 
 </div>
 
