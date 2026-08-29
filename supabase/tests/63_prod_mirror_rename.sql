@@ -13,7 +13,7 @@
 
 BEGIN;
 
-SELECT plan(4);
+SELECT plan(5);
 
 SELECT has_function(
   'fn_mirror_events_to_prod',
@@ -84,6 +84,52 @@ SELECT is(
   (SELECT count(*)::INT FROM tbl_event WHERE txt_code LIKE '\_\_mirror\_evt\_%'),
   0,
   '63.4 — no event is left parked on a staging code'
+);
+
+-- 63.5 — a prior-event link that SWAPS between two events must not collide.
+-- idx_event_prior_unique is UNIQUE (id_season, id_prior_event), so when CERT
+-- moves a predecessor from one event to another the row-by-row loop hits the
+-- index unless the old holder releases first. Live failure 2026-08-29:
+--   Key (id_season, id_prior_event)=(4, 66) already exists
+SELECT lives_ok(
+  $swap$
+  DO $body$
+  DECLARE
+    v_season INT;
+    v_org    INT;
+    v_prior  INT;
+    v_a      INT;
+    v_b      INT;
+  BEGIN
+    SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-6300-6301';
+    SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
+
+    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start)
+    VALUES ('PEW90-6300-6301', 'Predecessor', v_season, v_org, 'COMPLETED', '6300-09-01')
+    RETURNING id_event INTO v_prior;
+
+    INSERT INTO tbl_event (
+      txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, id_prior_event
+    ) VALUES
+      ('PEW91-6300-6301', 'Holds the link', v_season, v_org, 'PLANNED', '6301-04-01', v_prior)
+    RETURNING id_event INTO v_a;
+
+    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start)
+    VALUES ('PEW92-6300-6301', 'Wants the link', v_season, v_org, 'PLANNED', '6301-04-02')
+    RETURNING id_event INTO v_b;
+
+    -- CERT moves the predecessor from A to B in one payload.
+    PERFORM fn_mirror_events_to_prod(
+      '[]'::JSONB,
+      jsonb_build_array(
+        jsonb_build_object('id_event', v_b, 'id_prior_event', v_prior),
+        jsonb_build_object('id_event', v_a, 'id_prior_event', NULL)
+      ),
+      '[]'::JSONB);
+  END;
+  $body$
+  $swap$,
+  '63.5 — a prior-event link swapping between two events does not collide'
 );
 
 SELECT * FROM finish();
