@@ -194,6 +194,10 @@ export interface CalendarEvent {
   txt_entry_fee_currency: string | null
   dt_start: string | null
   dt_end: string | null
+  // ADR-077 amendment: the FIRST start date EVF published. Set on insert, never
+  // updated, so dt_start differing from it means EVF moved the event. Drives the
+  // "moved from" pill. Optional — older cached projections predate the column.
+  dt_start_first_published?: string | null
   arr_weapons: WeaponType[]
   url_event: string | null
   enum_status: EventStatus

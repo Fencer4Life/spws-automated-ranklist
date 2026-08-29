@@ -54,6 +54,9 @@
       {isNextUpcoming ? t('calendar_next_up') : t(display.labelKey)}
     </span>
     <span class="chp">{registry}</span>
+    {#if movedFrom}
+      <span class="chp moved">{t('calendar_date_moved_from').replace('{date}', formatDeadline(movedFrom))}</span>
+    {/if}
   </div>
 
   <div class="dvv"></div>
@@ -138,6 +141,7 @@
     composeAddress,
     countryCode,
     formatDeadline,
+    movedFromDate,
     panelType,
     registrationState,
     registryOf,
@@ -174,6 +178,10 @@
   )
   const reg = $derived(registrationState(event, today))
   const weapons = $derived(weaponLetters(event.txt_code))
+  // ADR-077 amendment: EVF moved this event and it is still ahead. Composes
+  // with the status chip rather than replacing it — a moved date qualifies a
+  // PLANNED event, it does not change what the event IS.
+  const movedFrom = $derived(movedFromDate(event))
   const currency = $derived(event.txt_entry_fee_currency ?? 'PLN')
 
   const location = $derived(splitLocation(event.txt_location))
@@ -423,6 +431,16 @@
   .chp.status-cancelled {
     background: #fcebeb;
     color: #501313;
+  }
+  /* Amber, the same attention colour as status-awaiting. The two never co-occur:
+     awaiting-results means the event is past, moved means it is still ahead.
+     Deliberately not the cancelled red — a moved event is still happening. */
+  /* The status chip stays honest — the event IS still planned. The alert lives
+     here instead, so the two facts compose rather than one masking the other. */
+  .chp.moved {
+    background: #faeeda;
+    color: #412402;
+    border-color: transparent;
   }
   .dvv {
     height: 1px;

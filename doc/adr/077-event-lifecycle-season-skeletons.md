@@ -80,8 +80,8 @@ universal `* → CREATED`.
 |---|---|---|---|---|---|
 | **CREATED** | skeleton | Childless, date-less calendar placeholder; the pre-existing event ingestion matches against (ADR-025 §1). Revertible reset target. | `fn_init_season` (ADR-044/054) | **Hidden** until dated | ⚠ *missing → "Planned"* — **fix** |
 | **PLANNED** | calendar | Dated event, no results yet. The default working state. | admin `CREATED→PLANNED`; original (ADR-025) | Shown | Planned / **Awaiting results** if past+empty |
-| **SCHEDULED** | calendar | EVF-calendar-confirmed date/venue — firmer than PLANNED. | EVF sync (ADR-039) | Shown | Scheduled |
-| **CHANGED** | calendar | A SCHEDULED event whose date/venue changed on re-scrape — flags admin attention. | EVF sync (ADR-039) | Shown | Changed |
+| **SCHEDULED** | ~~calendar~~ | **RETIRED 2026-08-28** — intended to mean EVF-confirmed date/venue, firmer than PLANNED. Never implemented: zero rows, ever, in any environment; no code path set it. | *nothing* | unreachable | — |
+| **CHANGED** | ~~calendar~~ | **RETIRED 2026-08-28** — intended to flag a re-scraped date/venue change. Never implemented. Replaced by the moved-date pill, anchored to `dt_start_first_published`. | *nothing* | unreachable | — |
 | **IN_PROGRESS** | ingest | ≥1 tournament ingested; legacy multi-XML accumulation. **Transient** under URL ingestion. | `fn_ingest_tournament_results` (ADR-025) | Shown | In progress |
 | **SCORED** | ingest | Results ingested **and** engine-scored, pre-sign-off. Separates "scored" from "admin-final". | pipeline `Commit` (ADR-054/073) | Shown | ⚠ *missing → "Planned"* — **fix** |
 | **COMPLETED** | final | Admin-confirmed final; promotable. | admin `complete` (Telegram) | Shown | Completed |
@@ -270,3 +270,32 @@ points in time; unifying them removes the duplicate event-copy logic. Season-she
 stays a deliberate manual go-live act; events populate on the next reconcile. pgTAP 48.2 is
 reworked to assert the events array is ignored; 48.4 (event prior-link resolution) retired,
 its coverage migrated to `51_prod_event_reconcile.sql` 51.1c. See ADR-081.
+
+## Amendment (2026-08-28) — the planning lifecycle crosses to PROD; two states retired
+
+`enum_status` carries two lifecycles in one column, and this ADR did not separate them:
+
+* **Planning** — `CREATED → PLANNED → CANCELLED`. Records an administrator's decision, made on CERT.
+* **Results** — `PLANNED → IN_PROGRESS → SCORED → COMPLETED`. Records data, and must never reach PROD ahead of the results it claims.
+
+`fn_mirror_events_to_prod` carried neither. It holds `enum_status` in its CREATE branch and never its UPDATE, so an event promoted as a skeleton stayed `CREATED` on PROD for ever — and `visibleEvents()` hides `CREATED` rows as date-less skeletons. On 2026-08-28 that left `PPW1-2026-2027` invisible on the public calendar **while its registration was open with fourteen fencers entered**, `MSW-2026-2027` invisible, and `PEW12ef-2026-2027` still advertised as happening after EVF cancelled it.
+
+**The calendar promotion now carries the planning half, and only that half.** Once an event is `PLANNED` on PROD the sole automated status change is a cancellation:
+
+| From | To | Automated |
+|---|---|---|
+| `CREATED` | `PLANNED` | yes |
+| `CREATED` | `CANCELLED` | yes |
+| `PLANNED` | `CANCELLED` | yes |
+| `PLANNED` | `CREATED` | no — automation must never hide a live event |
+| → `IN_PROGRESS` / `SCORED` / `COMPLETED` | | no — `promote_event` owns the results axis |
+
+Every permitted source is a planning state, so a results-bearing row is never touched. Measured before the change: across all 97 events present on both environments, **PROD was ahead of CERT zero times** — results land on CERT first, so CERT always leads or equals. The regression hazard that had justified excluding the column had no instances.
+
+**`SCHEDULED` and `CHANGED` are retired.** Both were recorded above as set by the EVF sync; neither ever was. Every transition reaching them is removed from `fn_validate_event_transition` (migration `20260828000011`); the enum labels remain, because dropping one means recreating the type and cascading through `vw_eligible_event` and several migrations naming `SCHEDULED` in `NOT IN` lists.
+
+What `CHANGED` was meant to flag — EVF moving a date — becomes a **pill on the event card**, anchored to a new `dt_start_first_published` and shown only while the event is `PLANNED` and still ahead. A status was the wrong home twice over: it competed with the results lifecycle for the same column, and a *second* move produced no transition and so no signal at all.
+
+Tests: `65_prod_mirror_planning_status.sql` (both directions of the boundary), `66_event_status_deprecations.sql` (the retired states are unreachable; an unweaponed EVF event can still be cancelled), `67_event_first_published_date.sql` (the anchor holds the first date across repeated moves). Tests 1.20, 1.23 and 9.86–9.89 in `01_database_foundation.sql` pinned the retired transitions and are rewritten to the surviving spine.
+
+**Operational reference:** [Event status lifecycle](../handbook/reference/event-status-lifecycle.html) — what each status means, what the calendar shows, both automations side by side, the pill, and the troubleshooting path for an event missing from PROD.

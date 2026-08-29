@@ -114,3 +114,9 @@ pytest `test_promote.py`, `test_promote_season.py`, `test_reconcile_report.py`.
   walkthrough of how EVF calendar sync works now (architecture diagram, the three-job
   `evf-sync.yml` bracket, the reconciler's create/update/delete diff, the active-season
   guard, and the 2026-07-14 incident that hardened both).
+
+## Amendment (2026-08-28) — the reconciler carries the planning lifecycle
+
+`fn_mirror_events_to_prod` held `enum_status` in its CREATE branch and never its UPDATE, so an event promoted as a skeleton stayed `CREATED` on PROD indefinitely — and the calendar hides `CREATED` rows. That left `PPW1-2026-2027` invisible on the public calendar while its registration was open with fourteen entrants.
+
+The reconciler now carries `CREATED → PLANNED`, `CREATED → CANCELLED` and `PLANNED → CANCELLED`, and nothing else; the results lifecycle stays with `promote_event`. The same change carried the sixteen other event-level fields the UPDATE branch had been dropping. See [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) and [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).

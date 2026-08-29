@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="077-event-lifecycle-season-skeletons.md">
-<meta name="adr-source-sha256" content="b696a2497b0b9d9c9f141cc75867998a456a8d2d67b16b036f1936d2a1cb7680">
+<meta name="adr-source-sha256" content="cbbaa592001e8fb742d9eb44507d396a5e6ba2f4b068917ec8ccb76f89086a0f">
 <title>ADR-077 · Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 077</p><h1>Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">272 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">301 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted · <strong>Date:</strong> 2026-06-28</p>
 <p><strong>Relates to:</strong> <strong>narrows</strong> ADR-050's supersession of <strong>ADR-025</strong> to its <em>ingestion mechanism</em> only
 (the event-status lifecycle + Telegram admin surface live on <strong>here</strong>); <strong>ADR-044</strong> (wizard introduced
@@ -22,7 +22,7 @@ display &quot;Awaiting results&quot;), <strong>ADR-039</strong> (EVF-sync status
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-canonical-event-lifecycle-8-states-validator-backed">1 · The canonical event lifecycle (8 states, validator-backed)</a></li><li class="depth-3"><a href="#2-two-axes-not-one-evf-published-is-provenance-not-lifecycle">2 · Two axes, not one — `EVF_PUBLISHED` is provenance, not lifecycle</a></li><li class="depth-3"><a href="#3-season-skeleton-provisioning-multi-event">3 · Season-skeleton provisioning (multi-event)</a></li><li class="depth-3"><a href="#4-url-primary-ingestion-doctrine">4 · URL-primary ingestion doctrine</a></li><li class="depth-3"><a href="#5-environment-data-flow-cert-prod-calendar-promotion">5 · Environment data-flow &amp; CERT→PROD calendar promotion</a></li><li class="depth-3"><a href="#6-coherence-fixes-this-adr-mandates">6 · Coherence fixes this ADR mandates</a></li><li class="depth-3"><a href="#7-admin-ui-surface-cert-prod-season-skeleton-promotion">7 · Admin-UI surface — CERT→PROD season-skeleton promotion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-canonical-event-lifecycle-8-states-validator-backed">1 · The canonical event lifecycle (8 states, validator-backed)</a></li><li class="depth-3"><a href="#2-two-axes-not-one-evf-published-is-provenance-not-lifecycle">2 · Two axes, not one — `EVF_PUBLISHED` is provenance, not lifecycle</a></li><li class="depth-3"><a href="#3-season-skeleton-provisioning-multi-event">3 · Season-skeleton provisioning (multi-event)</a></li><li class="depth-3"><a href="#4-url-primary-ingestion-doctrine">4 · URL-primary ingestion doctrine</a></li><li class="depth-3"><a href="#5-environment-data-flow-cert-prod-calendar-promotion">5 · Environment data-flow &amp; CERT→PROD calendar promotion</a></li><li class="depth-3"><a href="#6-coherence-fixes-this-adr-mandates">6 · Coherence fixes this ADR mandates</a></li><li class="depth-3"><a href="#7-admin-ui-surface-cert-prod-season-skeleton-promotion">7 · Admin-UI surface — CERT→PROD season-skeleton promotion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-planning-lifecycle-crosses-to-prod-two-states-retired">Amendment (2026-08-28) — the planning lifecycle crosses to PROD; two states retired</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Three drifts forced this ADR:</p>
 <ol>
@@ -113,19 +113,19 @@ universal <code>* → CREATED</code>.</p>
 </tr>
 <tr>
 <td><strong>SCHEDULED</strong></td>
-<td>calendar</td>
-<td>EVF-calendar-confirmed date/venue — firmer than PLANNED.</td>
-<td>EVF sync (ADR-039)</td>
-<td>Shown</td>
-<td>Scheduled</td>
+<td><s>calendar</s></td>
+<td><strong>RETIRED 2026-08-28</strong> — intended to mean EVF-confirmed date/venue, firmer than PLANNED. Never implemented: zero rows, ever, in any environment; no code path set it.</td>
+<td><em>nothing</em></td>
+<td>unreachable</td>
+<td>—</td>
 </tr>
 <tr>
 <td><strong>CHANGED</strong></td>
-<td>calendar</td>
-<td>A SCHEDULED event whose date/venue changed on re-scrape — flags admin attention.</td>
-<td>EVF sync (ADR-039)</td>
-<td>Shown</td>
-<td>Changed</td>
+<td><s>calendar</s></td>
+<td><strong>RETIRED 2026-08-28</strong> — intended to flag a re-scraped date/venue change. Never implemented. Replaced by the moved-date pill, anchored to <code>dt_start_first_published</code>.</td>
+<td><em>nothing</em></td>
+<td>unreachable</td>
+<td>—</td>
 </tr>
 <tr>
 <td><strong>IN_PROGRESS</strong></td>
@@ -504,8 +504,58 @@ points in time; unifying them removes the duplicate event-copy logic. Season-she
 stays a deliberate manual go-live act; events populate on the next reconcile. pgTAP 48.2 is
 reworked to assert the events array is ignored; 48.4 (event prior-link resolution) retired,
 its coverage migrated to <code>51_prod_event_reconcile.sql</code> 51.1c. See ADR-081.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-28-the-planning-lifecycle-crosses-to-prod-two-states-retired">Amendment (2026-08-28) — the planning lifecycle crosses to PROD; two states retired</h2>
+<p><code>enum_status</code> carries two lifecycles in one column, and this ADR did not separate them:</p>
+<ul>
+<li><strong>Planning</strong> — <code>CREATED → PLANNED → CANCELLED</code>. Records an administrator's decision, made on CERT.</li>
+<li><strong>Results</strong> — <code>PLANNED → IN_PROGRESS → SCORED → COMPLETED</code>. Records data, and must never reach PROD ahead of the results it claims.</li>
+</ul>
+<p><code>fn_mirror_events_to_prod</code> carried neither. It holds <code>enum_status</code> in its CREATE branch and never its UPDATE, so an event promoted as a skeleton stayed <code>CREATED</code> on PROD for ever — and <code>visibleEvents()</code> hides <code>CREATED</code> rows as date-less skeletons. On 2026-08-28 that left <code>PPW1-2026-2027</code> invisible on the public calendar <strong>while its registration was open with fourteen fencers entered</strong>, <code>MSW-2026-2027</code> invisible, and <code>PEW12ef-2026-2027</code> still advertised as happening after EVF cancelled it.</p>
+<p><strong>The calendar promotion now carries the planning half, and only that half.</strong> Once an event is <code>PLANNED</code> on PROD the sole automated status change is a cancellation:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>From</th>
+<th>To</th>
+<th>Automated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CREATED</code></td>
+<td><code>PLANNED</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>CREATED</code></td>
+<td><code>CANCELLED</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>PLANNED</code></td>
+<td><code>CANCELLED</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>PLANNED</code></td>
+<td><code>CREATED</code></td>
+<td>no — automation must never hide a live event</td>
+</tr>
+<tr>
+<td>→ <code>IN_PROGRESS</code> / <code>SCORED</code> / <code>COMPLETED</code></td>
+<td></td>
+<td>no — <code>promote_event</code> owns the results axis</td>
+</tr>
+</tbody>
+</table></div>
+<p>Every permitted source is a planning state, so a results-bearing row is never touched. Measured before the change: across all 97 events present on both environments, <strong>PROD was ahead of CERT zero times</strong> — results land on CERT first, so CERT always leads or equals. The regression hazard that had justified excluding the column had no instances.</p>
+<p><strong><code>SCHEDULED</code> and <code>CHANGED</code> are retired.</strong> Both were recorded above as set by the EVF sync; neither ever was. Every transition reaching them is removed from <code>fn_validate_event_transition</code> (migration <code>20260828000011</code>); the enum labels remain, because dropping one means recreating the type and cascading through <code>vw_eligible_event</code> and several migrations naming <code>SCHEDULED</code> in <code>NOT IN</code> lists.</p>
+<p>What <code>CHANGED</code> was meant to flag — EVF moving a date — becomes a <strong>pill on the event card</strong>, anchored to a new <code>dt_start_first_published</code> and shown only while the event is <code>PLANNED</code> and still ahead. A status was the wrong home twice over: it competed with the results lifecycle for the same column, and a <em>second</em> move produced no transition and so no signal at all.</p>
+<p>Tests: <code>65_prod_mirror_planning_status.sql</code> (both directions of the boundary), <code>66_event_status_deprecations.sql</code> (the retired states are unreachable; an unweaponed EVF event can still be cancelled), <code>67_event_first_published_date.sql</code> (the anchor holds the first date across repeated moves). Tests 1.20, 1.23 and 9.86–9.89 in <code>01_database_foundation.sql</code> pinned the retired transitions and are rewritten to the surviving spine.</p>
+<p><strong>Operational reference:</strong> <a href="../handbook/reference/event-status-lifecycle.html">Event status lifecycle</a> — what each status means, what the calendar shows, both automations side by side, the pill, and the troubleshooting path for an event missing from PROD.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="076-pool-round-discard-and-listing-keep-rule.html">← ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="078-gdpr-data-handling.html">→ ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a></nav>
-<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>b696a2497b0b9d9c9f141cc75867998a456a8d2d67b16b036f1936d2a1cb7680</code></footer>
+<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>cbbaa592001e8fb742d9eb44507d396a5e6ba2f4b068917ec8ccb76f89086a0f</code></footer>
 </div></body></html>

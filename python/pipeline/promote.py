@@ -439,6 +439,10 @@ def _build_update_payload(
         "url_entry_list": evt.get("url_entry_list") or "",
         "txt_organizer_email": evt.get("txt_organizer_email") or "",
         "bool_use_spws_registration": evt.get("bool_use_spws_registration"),
+        # Planning lifecycle only. The SQL applies this for CREATED->PLANNED,
+        # CREATED->CANCELLED and PLANNED->CANCELLED and nothing else, so a
+        # results-bearing PROD row can never be regressed from CERT.
+        "enum_status": evt.get("enum_status") or "",
     }
 
 

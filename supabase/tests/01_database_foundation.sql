@@ -405,17 +405,18 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- 1.20  Valid event transition: PLANNED → SCHEDULED → IN_PROGRESS → COMPLETED
+-- 1.20  Valid event transition: PLANNED → IN_PROGRESS → COMPLETED
+-- SCHEDULED was retired in 20260828000011 (designed, never implemented, zero
+-- rows) so the forward spine no longer passes through it.
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
   $test20$DO $body$
   BEGIN
-    UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-9999';
     UPDATE tbl_event SET enum_status = 'IN_PROGRESS' WHERE txt_code = 'TEST-EVT-9999';
     UPDATE tbl_event SET enum_status = 'COMPLETED' WHERE txt_code = 'TEST-EVT-9999';
   END;
   $body$$test20$,
-  '1.20 Valid transitions PLANNED->SCHEDULED->IN_PROGRESS->COMPLETED succeed'
+  '1.20 Valid transitions PLANNED->IN_PROGRESS->COMPLETED succeed'
 );
 
 -- ---------------------------------------------------------------------------
@@ -475,16 +476,11 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 1.23  Event cancellation: SCHEDULED → CANCELLED succeeds
+-- 1.23  Event cancellation: PLANNED → CANCELLED succeeds
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
-  $test23$DO $body$
-  BEGIN
-    UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-TRANS';
-    UPDATE tbl_event SET enum_status = 'CANCELLED' WHERE txt_code = 'TEST-EVT-TRANS';
-  END;
-  $body$$test23$,
-  '1.23 Event cancellation SCHEDULED->CANCELLED succeeds'
+  $test23$UPDATE tbl_event SET enum_status = 'CANCELLED' WHERE txt_code = 'TEST-EVT-TRANS'$test23$,
+  '1.23 Event cancellation PLANNED->CANCELLED succeeds'
 );
 
 -- ---------------------------------------------------------------------------
@@ -498,61 +494,56 @@ SELECT throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 9.86  CHANGED state: SCHEDULED → CHANGED succeeds
+-- 9.86  SCHEDULED is retired: PLANNED → SCHEDULED is rejected
 -- ---------------------------------------------------------------------------
-SELECT lives_ok(
-  $test986$DO $body$
-  BEGIN
-    -- Reset to PLANNED first, then walk through valid path
-    INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
-    SELECT 'TEST-EVT-CHANGED', 'Changed Test', s.id_season, o.id_organizer, 'PLANNED'
-    FROM tbl_season s, tbl_organizer o
-    WHERE s.txt_code = 'SPWS-2024-2025' AND o.txt_code = 'SPWS';
-    UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-CHANGED';
-    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED';
-  END;
-  $body$$test986$,
-  '9.86 SCHEDULED->CHANGED succeeds'
+DO $mk$
+DECLARE
+  v_season INT;
+  v_org    INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES ('TEST-EVT-TRANS2', 'Transition Test Event 2', v_season, v_org, 'PLANNED');
+END;
+$mk$;
+
+SELECT throws_ok(
+  $test986$UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-TRANS2'$test986$,
+  NULL, NULL,
+  '9.86 SCHEDULED is unreachable (retired 20260828000011)'
 );
 
 -- ---------------------------------------------------------------------------
--- 9.87  CHANGED → SCHEDULED succeeds
+-- 9.87  PLANNED → IN_PROGRESS succeeds (the surviving forward path)
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
-  $test987$UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-CHANGED'$test987$,
-  '9.87 CHANGED->SCHEDULED succeeds'
+  $test987$UPDATE tbl_event SET enum_status = 'IN_PROGRESS' WHERE txt_code = 'TEST-EVT-TRANS2'$test987$,
+  '9.87 PLANNED->IN_PROGRESS succeeds'
 );
 
 -- ---------------------------------------------------------------------------
--- 9.88  CHANGED → IN_PROGRESS succeeds
+-- 9.88  IN_PROGRESS → COMPLETED succeeds
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
-  $test988$DO $body$
-  BEGIN
-    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED';
-    UPDATE tbl_event SET enum_status = 'IN_PROGRESS' WHERE txt_code = 'TEST-EVT-CHANGED';
-  END;
-  $body$$test988$,
-  '9.88 CHANGED->IN_PROGRESS succeeds'
+  $test988$UPDATE tbl_event SET enum_status = 'COMPLETED' WHERE txt_code = 'TEST-EVT-TRANS2'$test988$,
+  '9.88 IN_PROGRESS->COMPLETED succeeds'
 );
 
 -- ---------------------------------------------------------------------------
--- 9.89  CHANGED → CANCELLED succeeds
+-- 9.89  PLANNED → CANCELLED succeeds on a fresh event
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
   $test989$DO $body$
   BEGIN
-    -- Create a new event since previous one is now IN_PROGRESS
     INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
-    SELECT 'TEST-EVT-CHANGED2', 'Changed Test 2', s.id_season, o.id_organizer, 'PLANNED'
+    SELECT 'TEST-EVT-CHANGED2', 'Cancel Test 2', s.id_season, o.id_organizer, 'PLANNED'
     FROM tbl_season s, tbl_organizer o
     WHERE s.txt_code = 'SPWS-2024-2025' AND o.txt_code = 'SPWS';
-    UPDATE tbl_event SET enum_status = 'SCHEDULED' WHERE txt_code = 'TEST-EVT-CHANGED2';
-    UPDATE tbl_event SET enum_status = 'CHANGED' WHERE txt_code = 'TEST-EVT-CHANGED2';
     UPDATE tbl_event SET enum_status = 'CANCELLED' WHERE txt_code = 'TEST-EVT-CHANGED2';
   END;
   $body$$test989$,
-  '9.89 CHANGED->CANCELLED succeeds'
+  '9.89 PLANNED->CANCELLED succeeds'
 );
 
 -- ---------------------------------------------------------------------------

@@ -527,5 +527,6 @@
   "country_BD": "Bangladesh",
   "country_LA": "Laos",
   "country_PW": "Palau",
-  "calendar_next_up": "Next up"
+  "calendar_next_up": "Next up",
+  "calendar_date_moved_from": "DATE CHANGED from {date}"
 }

@@ -136,7 +136,7 @@ Each field follows the policy of its siblings: `txt_venue_address` and `id_prior
 
 **Three things stay excluded, because pushing CERT's value would destroy or falsify a PROD-owned fact:**
 
-- `enum_status` — `promote_event` advances it on PROD (`PLANNED → IN_PROGRESS → COMPLETED`, [promote.py:292](../../python/pipeline/promote.py)), so syncing CERT's value could regress a scored event.
+- ~~`enum_status`~~ — **this exclusion was wrong and is reversed by the 2026-08-28 amendment below.** `promote_event` does advance PROD's *results* lifecycle, but the reasoning was generalised to the *planning* lifecycle as well, which CERT owns.
 - `ts_ftl_sent` — stamped per environment by `ftl_feed_seed_send.py` (`--target cert|prod`); overwriting would falsify the record of a seed actually sent from PROD.
 - The ingestion provenance block (`txt_source_status`, `enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used`, `txt_parity_notes`, `json_ingest_sources`, `json_source_overrides`) — CERT-side scrape diagnostics describing how CERT obtained the row, not facts about the event.
 
@@ -179,3 +179,15 @@ Both items below were resolved on sign-off, 2026-08-28. They are retained becaus
 2. **`PEW9-2024-2025` on PROD is deleted.** Executed 2026-08-28 after re-verifying every dependency live: `id_event = 54`, COMPLETED, 3 May 2025, with zero tournaments, registrations, ingest-history rows, recompute-queue rows, and nothing referencing it as a prior event — the emptiness that matters, because three of those foreign keys cascade. PROD went from 114 to 113 events with the active-season count unchanged at 42, and **both CERT and PROD now hold zero unsuffixed `PEW` rows**.
 
    This does **not** unlock tightening §3 from a trigger to a `CHECK` constraint. The blocker was never the PROD row: it is the ADR-036 seed dump, which inserts 32+ unsuffixed `PEW` events already `COMPLETED` and loads *after* migrations. The trigger remains the correct mechanism.
+
+## Amendment (2026-08-28) — the `enum_status` exclusion was wrong
+
+§4c above excluded `enum_status` from CERT→PROD promotion, reasoning that `promote_event` advances PROD independently so CERT could regress a scored event. That reasoning covered one half of the column and was applied to both.
+
+`enum_status` carries two lifecycles. **Planning** (`CREATED → PLANNED → CANCELLED`) records an administrator's decision, held on CERT. **Results** (`→ IN_PROGRESS → SCORED → COMPLETED`) records data and must not reach PROD ahead of it. Only the second is PROD-owned.
+
+The measurement that settles it: across all 97 events present on both environments, **PROD was ahead of CERT zero times.** Results land on CERT first, so CERT always leads or equals. The hazard had no instances anywhere in the database.
+
+The cost was not hypothetical. Withholding the planning half left `PPW1-2026-2027` at `CREATED` on PROD — hidden by `visibleEvents()` as a "date-less planning skeleton" though it carried dates — **while its registration was open with fourteen fencers entered**. `MSW-2026-2027` was hidden the same way, and `PEW12ef-2026-2027` remained advertised as happening after EVF cancelled it.
+
+The reconciler now carries `CREATED → PLANNED`, `CREATED → CANCELLED` and `PLANNED → CANCELLED`, and nothing else; `ts_ftl_sent` and the provenance block remain excluded for the reasons given above, which do hold. See [ADR-077](077-event-lifecycle-season-skeletons.md) for the boundary and [Event status lifecycle](../handbook/reference/event-status-lifecycle.html) for the operational view.

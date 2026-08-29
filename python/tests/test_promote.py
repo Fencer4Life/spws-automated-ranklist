@@ -774,6 +774,76 @@ class TestPromoteCalendar:
             assert fragment in cert_sql, f"UPDATE payload is missing {fragment}"
         assert '"enum_status"' not in cert_sql.split('"updates"')[-1] or True
 
+    def test_calendar_update_carries_planning_status(self):
+        """prom.5e: the planning lifecycle reaches PROD.
+
+        enum_status sat in the mirror's CREATE branch and never its UPDATE, so an
+        event promoted as a skeleton stayed CREATED on PROD for ever -- which the
+        calendar hides as a "date-less planning skeleton". PPW1-2026-2027 was
+        hidden that way while its registration was open with 14 entrants.
+        """
+        from python.pipeline.promote import promote_calendar
+
+        prod_calls: list[str] = []
+
+        def cert_query(sql: str):
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(3)]
+            return [
+                {
+                    "txt_code": "PPW1-2026-2027",
+                    "txt_name": "Puchar",
+                    "enum_status": "PLANNED",
+                    "dt_start": "2026-09-26",
+                    "dt_end": "2026-09-27",
+                    "txt_location": "Opole",
+                    "txt_country": "POL",
+                    "txt_venue_address": "",
+                    "url_event": None,
+                    "url_invitation": None,
+                    "url_registration": None,
+                    "url_entry_list": None,
+                    "dt_registration_deadline": None,
+                    "num_entry_fee": None,
+                    "num_entry_fee_2w": None,
+                    "num_entry_fee_3w": None,
+                    "txt_entry_fee_currency": "PLN",
+                    "txt_organizer_email": None,
+                    "bool_use_spws_registration": True,
+                    "weapons": ["EPEE"],
+                    "id_evf_event": None,
+                    "id_evf_calendar_event": None,
+                    "txt_evf_slug": None,
+                    "organizer_code": "SPWS",
+                    "prior_code": None,
+                },
+            ]
+
+        def prod_query(sql: str):
+            prod_calls.append(sql)
+            if "bool_active = TRUE" in sql:
+                return [_active_season_row(5)]
+            if "FROM tbl_event WHERE id_season" in sql:
+                return [
+                    {
+                        "id_event": 88,
+                        "txt_code": "PPW1-2026-2027",
+                        "id_evf_calendar_event": None,
+                    }
+                ]
+            if "FROM tbl_organizer WHERE txt_code IN" in sql:
+                return [{"txt_code": "SPWS", "id": 7}]
+            if "FROM tbl_event WHERE txt_code IN" in sql:
+                return []
+            return [{"r": {"created": 0, "updated": 1, "deleted": 0, "delete_skipped": []}}]
+
+        promote_calendar(cert_query_fn=cert_query, prod_query_fn=prod_query, dry_run=False)
+
+        rpc = "".join(s for s in prod_calls if "fn_mirror_events_to_prod" in s)
+        assert '"enum_status": "PLANNED"' in rpc, (
+            "the update payload must carry the planning status"
+        )
+
     def test_calendar_mode_deletes_orphaned_prod_events(self):
         """New: reconciler DELETEs (guarded server-side) events present on PROD
         but absent from CERT — the missing operation the old insert-or-refresh

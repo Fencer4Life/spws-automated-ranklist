@@ -255,13 +255,17 @@ describe('EventManager (T9.3)', () => {
     expect(options).toContain('PLANNED') // current status as default option
     // CREATED is validator-permitted (universal rollback to skeleton) — re-hides the event.
     expect(options).toContain('CREATED')
-    expect(options).toContain('SCHEDULED')
     expect(options).toContain('IN_PROGRESS')
     expect(options).toContain('CANCELLED')
     expect(options).not.toContain('COMPLETED')
     expect(options).not.toContain('SCORED')
+    // SCHEDULED and CHANGED are retired (migration 20260828000011): documented
+    // by ADR-077 as set by the EVF sync, never implemented, zero rows ever. The
+    // validator no longer accepts a transition into either, so offering them
+    // would only produce "Invalid event status transition" on save.
+    expect(options).not.toContain('SCHEDULED')
     expect(options).not.toContain('CHANGED')
-    expect(options.length).toBe(5) // current + 4 validator-permitted
+    expect(options.length).toBe(4) // current + 3 validator-permitted
   })
 
   // 9.89 — Future CANCELLED edit form: CANCELLED → {CREATED} only (universal reset)

@@ -843,3 +843,9 @@ Both remaining items land in `resolveAnchorQuarter()`, which is why that functio
 - the CERT/PROD footer still present and still switching environments
 
 A 320px screenshot placed beside the mock is the acceptance check.
+
+## Amendment (2026-08-28) — a third chip on the card, and nothing on the barrel
+
+The event card's two-chip line gains a third chip when EVF has moved a still-future `PLANNED` event: *ZMIANA DATY z 12/12/2026*, naming the first date EVF published.
+
+The barrel is deliberately untouched. This ADR already spends hue on event type, fill on completion and ring on next-upcoming; a fourth channel would crowd the overview that is scanned first. The signal appears on the card the moment the event is opened. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
