@@ -120,3 +120,16 @@ pytest `test_promote.py`, `test_promote_season.py`, `test_reconcile_report.py`.
 `fn_mirror_events_to_prod` held `enum_status` in its CREATE branch and never its UPDATE, so an event promoted as a skeleton stayed `CREATED` on PROD indefinitely — and the calendar hides `CREATED` rows. That left `PPW1-2026-2027` invisible on the public calendar while its registration was open with fourteen entrants.
 
 The reconciler now carries `CREATED → PLANNED`, `CREATED → CANCELLED` and `PLANNED → CANCELLED`, and nothing else; the results lifecycle stays with `promote_event`. The same change carried the sixteen other event-level fields the UPDATE branch had been dropping. See [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) and [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
+
+## Amendment (2026-08-29) — a prior-event link is released before it is reassigned
+
+Carrying `id_prior_event` to PROD (20260828000009) tripped `idx_event_prior_unique`, which is `UNIQUE (id_season, id_prior_event) WHERE id_prior_event IS NOT NULL`: within a season only one event may claim a predecessor.
+
+CERT had moved `PEW3fs-2025-2026` from `PEW6efs-2026-2027` to `PEW4fs-2026-2027` — a swap. The mirror applies updates row by row, so the new claimant hit the index while the previous holder still had it:
+
+```
+duplicate key value violates unique constraint "idx_event_prior_unique"
+DETAIL: Key (id_season, id_prior_event)=(4, 66) already exists.
+```
+
+The same transient-collision class the code-rename staging already solves; it simply was not extended when `id_prior_event` began being carried. The pre-pass now releases a link **when another event in the same payload is claiming it** — narrow on purpose, because the UPDATE is `COALESCE(new, old)`, so clearing on a payload that merely says nothing would silently destroy a link PROD holds and CERT never mentioned. Pinned by 63.5.
