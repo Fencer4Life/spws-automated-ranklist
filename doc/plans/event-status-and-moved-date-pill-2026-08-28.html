@@ -1,0 +1,268 @@
+<meta charset="utf-8">
+<title>Event status, and the moved-date pill</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · calendar · plan · 28 August 2026</p>
+  <h1>Event status, and the moved-date pill</h1>
+  <p class="dek">A live event with <b>14 registered fencers</b> is invisible on the PROD calendar, because the reconciler carries an event's dates but not the status that makes them visible — and I argued, wrongly, for keeping it that way.</p>
+  <div class="meta">
+    <span class="pill danger"><span class="dot"></span>live outage · PPW1 hidden</span>
+    <span class="pill">4 migrations</span>
+    <span class="pill">1 new column</span>
+    <span class="pill">1 new handbook page</span>
+    <span class="pill warn"><span class="dot"></span>blocked on PROD approval</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What is wrong</p>
+    <h2>The row is on PROD. The calendar refuses to show it.</h2>
+    <p><code>PPW1-2026-2027</code> exists on PROD with the correct dates, the correct season, and registration <b>open</b> — deadline 20 September, 14 entries already taken. It reaches <code>vw_calendar</code> intact. It is then dropped by <code>visibleEvents()</code>, which hides <code>enum_status = 'CREATED'</code> rows as <em>“date-less planning skeletons”</em>.</p>
+    <p>That premise is false for this row: it <b>has</b> dates. It is <code>CREATED</code> only because <code>enum_status</code> is absent from <code>fn_mirror_events_to_prod</code>'s UPDATE branch — present when the row is created, never sent again. The reconciler carried the dates and withheld the one field that publishes them.</p>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>CERT</th><th>PROD</th><th>Effect on the public calendar</th></tr></thead>
+      <tbody>
+        <tr><td><code>PPW1-2026-2027</code></td><td>PLANNED</td><td>CREATED</td><td><b>hidden</b> — 14 registrations, open</td></tr>
+        <tr><td><code>MSW-2026-2027</code></td><td>PLANNED</td><td>CREATED</td><td><b>hidden</b> — World Championships</td></tr>
+        <tr><td><code>PEW12ef-2026-2027</code></td><td>CANCELLED</td><td>PLANNED</td><td><b>advertised as still happening</b></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">✗</span> My error, on the record</p>
+      <p>Earlier today I audited all 41 event columns, found <code>enum_status</code> already frozen, and <b>chose to keep it that way</b> — reasoning that <code>promote_event</code> advances PROD independently, so CERT could regress a scored event. I then wrote that justification into ADR-086 as if settled.</p>
+      <p>It does not survive measurement. Across <b>all 97 events present on both environments, PROD is ahead of CERT zero times.</b> Results land on CERT first, so CERT always leads or equals. I blocked a real fix with a hazard that has never once occurred, and this plan corrects the ADR as well as the code.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Decision 1</p>
+    <h2>The automation boundary</h2>
+    <p>The calendar is scraped on CERT and its result must be visible on PROD. Scoring and results ingestion keep today's behaviour. <b>Once an event is <code>PLANNED</code> on PROD, the only status change automation may make is a cancellation.</b></p>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>From</th><th>To</th><th>Automated</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>CREATED</td><td>PLANNED</td><td><span class="chip never">yes</span></td><td>the scrape made it real</td></tr>
+        <tr><td>CREATED</td><td>CANCELLED</td><td><span class="chip never">yes</span></td><td>cancelled before it was ever dated</td></tr>
+        <tr><td>PLANNED</td><td>CANCELLED</td><td><span class="chip never">yes</span></td><td>the only automated change once PLANNED</td></tr>
+        <tr><td>PLANNED</td><td>CREATED</td><td><span class="chip over">no</span></td><td>backwards — would hide a live event</td></tr>
+        <tr><td colspan="2">→ IN_PROGRESS / SCORED / COMPLETED</td><td><span class="chip over">no</span></td><td><code>promote_event</code>, unchanged</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>All three automated pairs already exist in <code>fn_validate_event_transition</code>, and <code>trg_event_transition</code> fires only when the status actually changes. So the validator always accepts them, and a status can never abort the promote — which matters after a day spent learning that one row must not be able to red the daily run.</p>
+
+    <div class="note accent">
+      <p class="lede">The principle underneath</p>
+      <p><b>Status follows the thing it describes.</b> <em>Planning</em> status records an admin decision held in CERT, so it propagates. <em>Results</em> status records data, and must never reach PROD ahead of the results it claims — or PROD advertises an event as finished while holding none of it. <code>promote_event</code> owns that axis precisely because it is what moves the results.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Decision 2</p>
+    <h2><code>SCHEDULED</code> and <code>CHANGED</code> are retired</h2>
+    <p>ADR-077 documents both as <em>“Set by: EVF sync (ADR-039)”</em>. Neither ever was. <b>Zero rows carry either status in either environment</b>, and no code path sets them — they exist only in the enum, the admin dropdown, and a label map. The intended gradient (<em>we have a date</em> → <em>EVF confirmed it</em> → <em>EVF moved it</em>) was designed and never built.</p>
+    <p>Deprecated <b>behaviourally</b>: removed from the validator's transitions and from the admin UI, so nothing can reach them; the labels stay in the enum type. Dropping an enum label means recreating the type and cascading through <code>vw_eligible_event</code> and several migrations that name <code>SCHEDULED</code> in <code>NOT IN</code> lists. With zero rows the outcome is identical for a fraction of the blast radius.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Decision 3</p>
+    <h2>A moved date is a pill, not a status</h2>
+    <p><code>CHANGED</code> was meant to flag exactly this. Rather than revive it, the signal becomes a visual qualifier that composes with <code>PLANNED</code> instead of replacing it.</p>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Aspect</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td>Anchor</td><td>the <b>first</b> date EVF ever published — a new <code>dt_start_first_published</code>, set on first import, never updated</td></tr>
+        <tr><td>Predicate</td><td><code>enum_status = 'PLANNED'</code> <b>and</b> <code>dt_start &gt; today</code> <b>and</b> <code>dt_start &lt;&gt; dt_start_first_published</code></td></tr>
+        <tr><td>Renders as</td><td>amber chip, <b>“Moved from 12 Dec 2026”</b>, in the card's existing two-chip line</td></tr>
+        <tr><td>Clears when</td><td>never — it stands until the event passes or leaves <code>PLANNED</code>. No acknowledgement step</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>Because it is a stored field comparison rather than an audit-history scan, a twice-moved event still reads against the date originally announced, and there is no predicate to re-tune later.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Why the two guards matter</p>
+      <p>Every date change in recorded history belongs to a <code>COMPLETED</code> event and is a <b>data repair</b>, not a reschedule — one-day corrections, DD/MM parse fixes, and a five-event batch from the 2025–2026 fragment repair. Restricting the pill to future <code>PLANNED</code> events takes false positives across <b>all recorded history to zero</b>, with no threshold and no “was it the scraper or an admin” test.</p>
+    </div>
+
+    <p>Amber rather than red keeps it distinct from a cancellation. The barrel is deliberately left alone: ADR-084 already spends hue on event type, fill on completed and ring on next-upcoming, and a fourth channel would crowd the overview you scan first.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The work</p>
+    <h2>What changes</h2>
+    <ol class="steps">
+      <li><b><code>promote.py</code></b> — carry <code>enum_status</code> in the update payload. The SQL decides whether to apply it.</li>
+      <li><b>Migration · planning-status sync</b> — the mirror's UPDATE branch applies CERT's status for the three automated transitions only. Rebuilt from the live <code>pg_get_functiondef</code> so today's rename-staging and full-field work carries forward.</li>
+      <li><b>Migration · deprecate <code>SCHEDULED</code>/<code>CHANGED</code></b> — remove them from the validator. Also amend <code>fn_guard_evf_event_weapons_known</code> (added this morning) to permit <code>→ CANCELLED</code>: it currently blocks an unsuffixed <code>PEW</code> event from leaving <code>PLANNED</code> at all, which would block an automated cancellation and fail the promote.</li>
+      <li><b>Migration · <code>dt_start_first_published</code></b> — add, backfill from <code>dt_start</code>, set on insert only. Carried CERT→PROD like any event field.</li>
+      <li><b>Scrapers</b> — populate it on first import; never overwrite on re-scrape.</li>
+      <li><b>Frontend</b> — derive <code>dateMoved</code>, render the chip, drop <code>SCHEDULED</code>/<code>CHANGED</code> from the admin transition map and the status map.</li>
+      <li><b>Documentation</b> — the new reference page below, plus corrections to ADR-077 (its <code>SCHEDULED</code>/<code>CHANGED</code> rows) and ADR-086 (my wrong exclusion, with the 0-of-97 measurement).</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">The document you asked for</p>
+    <h2><code>doc/handbook/reference/event-status-lifecycle.html</code></h2>
+    <p>A sibling of <code>registration-lifecycle.html</code>, registered in the documentation map with <code>source_globs</code> over the validator, the mirror migrations, <code>promote.py</code>, <code>calendarQuarters.ts</code> and <code>EventCard.svelte</code>, so any change to those flags it for review.</p>
+    <p>It exists because the rules are real but scattered across five places — a PL/pgSQL validator, a TypeScript filter, a Python promoter and two ADRs — and nowhere together. That scattering is why I got this wrong: I read the promoter and the validator, never the frontend filter, and concluded PROD owned the column. <b>When this recurs at 22:00 before a registration deadline, nobody opens an ADR.</b></p>
+    <p>Sections: purpose · what each status means today · what the public calendar actually shows · the transition matrix · calendar automation CERT→PROD · results automation <code>promote_event</code> · manual-only changes · <b>the moved-date pill</b> · troubleshooting <em>“my event is not on the PROD calendar”</em> worked against today's three divergences · and a closing note on <code>enum_import_status</code> and <code>txt_source_status</code>, which share value names with this enum and mean different things.</p>
+
+    <div class="note accent">
+      <p class="lede">The pill section, in full</p>
+      <p>Complete enough to answer <em>“why is this showing / why isn't it”</em> without reading code: what the pill asserts · the exact three-part predicate and that all three must hold · that it anchors to the <b>first</b> published date, not the previous one · why it is a pill and not a status, including the <code>CHANGED</code> history · that <b>nothing clears it</b> · why the past is excluded, with the evidence · and where it renders, why amber, and why not on the barrel.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Proving it</p>
+    <h2>Verification</h2>
+    <ul>
+      <li><b>TDD, RED first</b> — each automated transition applies; <code>PLANNED → CREATED</code> does not; a <code>COMPLETED</code> PROD row is untouched when CERT says <code>PLANNED</code>; an unsuffixed <code>PEW</code> event can still be cancelled; the pill shows only for future <code>PLANNED</code> events whose date moved.</li>
+      <li>pytest · pgTAP · ruff · basedpyright · postgrestools per migration · <code>npm run check</code> and Vitest.</li>
+      <li><code>./scripts/reset-dev.sh</code> — the seed must still load.</li>
+      <li>Coherence, <code>check_docs.py</code>, <code>render_adrs.py --check</code>, graph refresh.</li>
+      <li><b>End to end</b>: on PROD, <code>PPW1</code> and <code>MSW</code> read <code>PLANNED</code> and appear under <code>visibleEvents()</code>; <code>PEW12ef</code> reads <code>CANCELLED</code>.</li>
+    </ul>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Outside my control</p>
+      <p>Nothing reaches PROD until the <b>production environment gate</b> is approved — Release run <code>33194595356</code>, with you as reviewer. <code>deploy-cert</code> already succeeded. Until that is approved, PROD keeps running the older mirror and <code>PPW1</code> stays hidden.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Deliberately not in this change</p>
+    <h2>Flagged, not fixed</h2>
+    <p><b>Four past events sit in a non-terminal status on CERT.</b> <code>IMSW-2025-2026</code> (25 results) and <code>PEW9efs-2025-2026</code> (18 results) are stuck at <code>IN_PROGRESS</code> — results ingested, the admin <code>complete</code> step never run. <code>DMEW-2025-2026</code> has 6 tournaments and 0 results; <code>PEW8es-2025-2026</code> has neither. The first two need the real <code>complete</code> path so scoring and sign-off run; the last two are an ingestion question. Forcing all four to <code>COMPLETED</code> would paper over two different problems.</p>
+    <p><b>Nothing currently detects “ended, has results, never finalised.”</b> That is the same class of unwatched state as the calendar bug — two events sat unfinished for nine and three months. Worth its own piece of work.</p>
+    <p>Also standing: <code>arr_weapons</code> is untrustworthy system-wide (ADR-086), and a renamed PROD event temporarily carries child tournament codes built from its previous code, since <code>promote_event</code> owns tournaments.</p>
+  </section>
+
+  <p class="foot">doc/plans/event-status-and-moved-date-pill-2026-08-28.html · awaiting approval · no code written yet</p>
+</div>

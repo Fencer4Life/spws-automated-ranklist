@@ -70,3 +70,9 @@ it never displaces prior-season carry-over with empty results.
 The exact boundary lives in
 [`CalendarView.svelte`](../../frontend/src/components/CalendarView.svelte) and is
 tested in [`CalendarView.test.ts`](../../frontend/tests/CalendarView.test.ts).
+
+## Amendment (2026-08-28) — a second derived display state
+
+The moved-date chip follows the pattern this ADR established: the stored `enum_status` stays `PLANNED`, and the card derives an additional signal for display. Where this ADR derives *Awaiting results* from a past end date, the chip derives *ZMIANA DATY* from `dt_start` differing from `dt_start_first_published` while the event is `PLANNED` and still ahead.
+
+The status chip itself is deliberately not overwritten — the event really is still planned, and replacing the status would trade one fact for another rather than showing both. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).

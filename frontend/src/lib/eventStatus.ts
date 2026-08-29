@@ -13,6 +13,10 @@ export interface DisplayStatus {
 const BASE: Record<EventStatus, DisplayStatus> = {
   CREATED:     { cssClass: 'status-created',     labelKey: 'status_created' },
   PLANNED:     { cssClass: 'status-planned',    labelKey: 'status_planned' },
+  // Retired (migration 20260828000011) — no transition can reach either state
+  // and zero rows have ever carried one. Kept so this Record stays exhaustive
+  // over EventStatus (the enum labels remain in Postgres) and so a legacy row
+  // would still render rather than falling through to the PLANNED fallback.
   SCHEDULED:   { cssClass: 'status-scheduled',  labelKey: 'status_scheduled' },
   CHANGED:     { cssClass: 'status-changed',    labelKey: 'status_changed' },
   IN_PROGRESS: { cssClass: 'status-inprogress', labelKey: 'status_in_progress' },

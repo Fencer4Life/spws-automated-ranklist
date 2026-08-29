@@ -248,3 +248,7 @@ repair moves tournaments without replacing result identities.
 The former rejection of event merging therefore remains the default operational
 rule. It does not prohibit an event-specific, reviewed, TDD-backed historical
 repair when the supposed duplicates themselves own genuine results.
+
+## Amendment (2026-08-28) — `SCHEDULED` and `CHANGED` are not set by this sync
+
+ADR-077 recorded both statuses as "Set by: EVF sync (ADR-039)". Neither ever was: zero rows have carried either in any environment, and no code path in this sync sets them. Both are retired, and every transition reaching them is removed from the validator. What `CHANGED` was intended to flag — EVF moving a date — is now a chip on the event card. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).

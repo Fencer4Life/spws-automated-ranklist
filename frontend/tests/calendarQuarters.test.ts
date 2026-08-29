@@ -15,6 +15,7 @@ import {
   findNextUpcoming,
   isInternationalEvent,
   isWithinCancellationNoticeWindow,
+  movedFromDate,
   panelType,
   quarterKeyOf,
   registrationState,
@@ -889,5 +890,82 @@ describe('buildCalendar', () => {
 
   it('CQ.44: returns 0 for an empty drum', () => {
     expect(resolveAnchorQuarter([], null, TODAY)).toBe(0)
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// movedFromDate — the "moved from" pill (ADR-077 amendment)
+//
+// CHANGED was designed to flag an EVF reschedule and never implemented. The
+// replacement is a pill, and its whole value is that it never cries wolf: every
+// date change in recorded history sat on a COMPLETED event and was a data
+// repair, not a reschedule. The three conditions below are what keep it silent.
+// ---------------------------------------------------------------------------
+describe('movedFromDate', () => {
+  const TODAY = '2026-08-28'
+  const AHEAD = '2027-01-23'
+  const ANCHOR = '2026-12-12'
+
+  it('returns the first published date when a future PLANNED event moved', () => {
+    const e = ev({
+      txt_code: 'PEW7es-2026-2027',
+      enum_status: 'PLANNED',
+      dt_start: AHEAD,
+      dt_start_first_published: ANCHOR,
+    })
+    expect(movedFromDate(e, TODAY)).toBe(ANCHOR)
+  })
+
+  it('returns null when the date never moved', () => {
+    const e = ev({
+      txt_code: 'PEW7es-2026-2027',
+      enum_status: 'PLANNED',
+      dt_start: AHEAD,
+      dt_start_first_published: AHEAD,
+    })
+    expect(movedFromDate(e, TODAY)).toBeNull()
+  })
+
+  it('stays silent once the event is in the past', () => {
+    const e = ev({
+      txt_code: 'PEW8es-2025-2026',
+      enum_status: 'PLANNED',
+      dt_start: '2026-05-02',
+      dt_start_first_published: '2025-03-29',
+    })
+    expect(movedFromDate(e, TODAY)).toBeNull()
+  })
+
+  it('stays silent on any status other than PLANNED', () => {
+    for (const status of ['CREATED', 'IN_PROGRESS', 'SCORED', 'COMPLETED', 'CANCELLED'] as EventStatus[]) {
+      const e = ev({
+        txt_code: 'PEW9ef-2023-2024',
+        enum_status: status,
+        dt_start: AHEAD,
+        dt_start_first_published: ANCHOR,
+      })
+      expect(movedFromDate(e, TODAY)).toBeNull()
+    }
+  })
+
+  it('stays silent when the anchor is missing', () => {
+    const e = ev({
+      txt_code: 'PEW7es-2026-2027',
+      enum_status: 'PLANNED',
+      dt_start: AHEAD,
+      dt_start_first_published: null,
+    })
+    expect(movedFromDate(e, TODAY)).toBeNull()
+  })
+
+  it('anchors to the FIRST published date, not the previous one', () => {
+    const e = ev({
+      txt_code: 'PEW5efs-2026-2027',
+      enum_status: 'PLANNED',
+      dt_start: '2027-01-09',
+      dt_start_first_published: '2026-12-12',
+    })
+    expect(movedFromDate(e, TODAY)).toBe('2026-12-12')
   })
 })

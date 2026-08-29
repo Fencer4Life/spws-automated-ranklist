@@ -573,9 +573,13 @@
   // (reset-to-skeleton) is included in each. Keep in sync with the validator if it changes.
   const STATUS_TRANSITIONS: Record<string, string[]> = {
     CREATED:     ['PLANNED', 'CANCELLED'],
-    PLANNED:     ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED', 'CREATED'],
-    SCHEDULED:   ['CHANGED', 'IN_PROGRESS', 'CANCELLED', 'CREATED'],
-    CHANGED:     ['SCHEDULED', 'IN_PROGRESS', 'CANCELLED', 'CREATED'],
+    // SCHEDULED and CHANGED are retired (migration 20260828000011): documented
+    // by ADR-077 as set by the EVF sync, never implemented, zero rows ever. The
+    // validator no longer accepts a transition into either, so offering them
+    // here would only produce "Invalid event status transition" on save. What
+    // CHANGED was meant to flag — EVF moving a date — is now the "moved from"
+    // pill on the event card, anchored to dt_start_first_published.
+    PLANNED:     ['IN_PROGRESS', 'CANCELLED', 'CREATED'],
     IN_PROGRESS: ['SCORED', 'COMPLETED', 'PLANNED', 'CANCELLED', 'CREATED'],
     SCORED:      ['COMPLETED', 'IN_PROGRESS', 'CREATED'],
     COMPLETED:   ['SCORED', 'IN_PROGRESS', 'PLANNED', 'CREATED'],

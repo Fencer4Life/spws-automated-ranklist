@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="doc-id" content="HB-REF-EVT-STATUS">
+<meta name="doc-status" content="current">
+<meta name="doc-type" content="reference">
+<meta name="doc-owner" content="Events and registration">
+<meta name="last-verified" content="2026-08-28">
+<meta name="source-globs" content="supabase/migrations/**event_status*; supabase/migrations/**prod_mirror*; supabase/migrations/**first_published*; python/pipeline/promote.py; frontend/src/lib/calendarQuarters.ts; frontend/src/lib/eventStatus.ts; frontend/src/components/EventCard.svelte">
+<meta name="review-triggers" content="The event status enum, fn_validate_event_transition, the CERT→PROD mirror's status handling, promote_event's status advance, the calendar's visibility filter, or the moved-date pill">
+<title>Event status lifecycle · SPWS Handbook</title>
+<link rel="stylesheet" href="../assets/handbook.css">
+</head>
+<body><div class="page">
+<header class="handbook-header">
+<nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Reference</span></nav>
+<p class="eyebrow">Reference · Walkthrough</p>
+<h1>Event status lifecycle</h1>
+<p class="dek">What each event status means, who is allowed to change it, which automation carries it between environments, and why an event with a perfectly good date can still be invisible on the public calendar.</p>
+<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 28 August 2026</span></div>
+</header>
+<main>
+
+<section id="purpose">
+<p class="kicker">Why this page exists</p>
+<h2>Purpose</h2>
+<p>The rules governing <code>enum_status</code> are real, enforced, and spread across five places that never referenced each other: a PL/pgSQL validator, a Svelte visibility filter, a Python promoter, and two ADRs. No page stated them together.</p>
+<p>That scattering has a cost. On 28 August 2026 <code>PPW1-2026-2027</code> was missing from PROD's public calendar while its registration was open with fourteen fencers already entered. The row was present, correctly dated, and reached <code>vw_calendar</code> intact — it was dropped by a frontend filter nobody thought to read while diagnosing a database promotion. This page exists so the next person does not have to assemble the picture from source.</p>
+<p><a href="../subsystems/events-and-registration.html">Events and registration</a> owns the subsystem's invariants; <a href="../../adr/077-event-lifecycle-season-skeletons.html">ADR-077</a> owns the decision. This page owns the <b>operational view</b>: what is true now, and what to check when something is not showing.</p>
+</section>
+
+<section id="statuses">
+<p class="kicker">The vocabulary</p>
+<h2>What each status means</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Status</th><th>Meaning</th><th>Set by</th><th>On the public calendar</th></tr></thead>
+<tbody>
+<tr><td><code>CREATED</code></td><td>A childless, usually date-less skeleton created when a season is provisioned.</td><td><code>fn_init_season</code>; the CERT→PROD mirror on first promotion</td><td><b>Hidden</b></td></tr>
+<tr><td><code>PLANNED</code></td><td>A dated event with no results yet. The default working state.</td><td>admin; the calendar scrape; CERT→PROD automation</td><td>Shown — <em>Awaiting results</em> once its end date passes</td></tr>
+<tr><td><code>IN_PROGRESS</code></td><td>At least one tournament ingested.</td><td>results ingestion; <code>promote_event</code> on PROD</td><td>Shown</td></tr>
+<tr><td><code>SCORED</code></td><td>Results ingested and engine-scored, before sign-off.</td><td>the scoring pipeline</td><td>Shown</td></tr>
+<tr><td><code>COMPLETED</code></td><td>Admin-confirmed final, and promotable.</td><td>admin <code>complete</code>; <code>promote_event</code> on PROD</td><td>Shown</td></tr>
+<tr><td><code>CANCELLED</code></td><td>The event will not take place.</td><td>admin; the calendar scrape; CERT→PROD automation</td><td>Shown for seven days after its original end date, then dropped</td></tr>
+<tr><td><code>SCHEDULED</code></td><td><b>Retired.</b> Intended to mean “EVF-confirmed, firmer than PLANNED”.</td><td>nothing — never implemented</td><td>unreachable</td></tr>
+<tr><td><code>CHANGED</code></td><td><b>Retired.</b> Intended to flag a re-scraped date or venue change.</td><td>nothing — never implemented</td><td>unreachable</td></tr>
+</tbody>
+</table></div>
+<p><code>SCHEDULED</code> and <code>CHANGED</code> were documented by ADR-077 as set by the EVF sync. Neither ever was: zero rows have carried either status in any environment, and no code path set them. Migration <code>20260828000011</code> removed every transition that could reach them. The enum labels remain in Postgres, because dropping one means recreating the type and cascading through <code>vw_eligible_event</code> and several migrations that name <code>SCHEDULED</code> in <code>NOT IN</code> lists; with zero rows the outcome is identical for a fraction of the risk.</p>
+</section>
+
+<section id="two-axes">
+<p class="kicker">The distinction that matters</p>
+<h2>Two lifecycles share one column</h2>
+<p>Everything else on this page follows from this. <code>enum_status</code> carries two different kinds of fact:</p>
+<ul>
+<li><b>Planning</b> — <code>CREATED → PLANNED → CANCELLED</code>. This records a <em>decision</em>: an administrator dated the event, or EVF cancelled it. The decision is made on CERT.</li>
+<li><b>Results</b> — <code>PLANNED → IN_PROGRESS → SCORED → COMPLETED</code>. This records <em>data</em>. It must never appear on PROD ahead of the results it claims, or PROD advertises an event as finished while holding none of it.</li>
+</ul>
+<p>Treating the column as a single axis is what produced the 28 August outage: the results half was observed to be PROD-owned, and the conclusion “PROD owns status” was generalised to the planning half as well. It never was.</p>
+</section>
+
+<section id="calendar">
+<p class="kicker">Where events disappear</p>
+<h2>What the public calendar actually shows</h2>
+<p><code>visibleEvents()</code> in <code>frontend/src/lib/calendarQuarters.ts</code> filters the calendar, and it is the single most common reason an event is missing:</p>
+<ul>
+<li><b><code>CREATED</code> is hidden</b>, on the premise that such rows are date-less planning skeletons. A <code>CREATED</code> row that <em>does</em> carry dates is therefore invisible despite being complete — that is a data defect, not a display rule.</li>
+<li><b><code>CANCELLED</code> is shown</b> for seven days after the event's original end date, so the cancellation notice is actually seen, then drops out.</li>
+<li>Everything else is shown. A past <code>PLANNED</code> event renders as <em>Awaiting results</em> rather than as upcoming — the stored status stays <code>PLANNED</code> so rolling carry-over is unaffected.</li>
+</ul>
+</section>
+
+<section id="transitions">
+<p class="kicker">What the database permits</p>
+<h2>The transition matrix</h2>
+<p><code>fn_validate_event_transition</code> is enforced by <code>trg_event_transition</code>, which fires only when the status actually changes. An unlisted pair raises <code>Invalid event status transition: X → Y</code> and aborts the write.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>From</th><th>Permitted destinations</th></tr></thead>
+<tbody>
+<tr><td><code>CREATED</code></td><td><code>PLANNED</code>, <code>CANCELLED</code></td></tr>
+<tr><td><code>PLANNED</code></td><td><code>IN_PROGRESS</code>, <code>CANCELLED</code>, <code>CREATED</code></td></tr>
+<tr><td><code>IN_PROGRESS</code></td><td><code>SCORED</code>, <code>COMPLETED</code>, <code>PLANNED</code>, <code>CANCELLED</code>, <code>CREATED</code></td></tr>
+<tr><td><code>SCORED</code></td><td><code>COMPLETED</code>, <code>IN_PROGRESS</code>, <code>CREATED</code></td></tr>
+<tr><td><code>COMPLETED</code></td><td><code>SCORED</code>, <code>IN_PROGRESS</code>, <code>PLANNED</code>, <code>CREATED</code></td></tr>
+<tr><td><code>CANCELLED</code></td><td><code>CREATED</code></td></tr>
+</tbody>
+</table></div>
+<p>Note that <code>PLANNED → COMPLETED</code> is <b>not</b> permitted directly. That is why <code>promote_event</code> steps an event through <code>IN_PROGRESS</code>, and why any automation that sets status must only attempt pairs from this table.</p>
+<p>A second guard applies to EVF events specifically: <code>fn_guard_evf_event_weapons_known</code> refuses to advance an event whose code carries no weapon letters out of <code>PLANNED</code>, because tournaments and results must not attach to an event whose weapons were never established. Cancellation is exempt — cancelling an unannounced event is legitimate.</p>
+</section>
+
+<section id="calendar-automation">
+<p class="kicker">Automation · CERT → PROD</p>
+<h2>What the calendar promotion may change</h2>
+<p>The calendar is scraped on CERT, and its result must be visible on PROD. <b>Once an event is <code>PLANNED</code> on PROD, the only status change automation may make is a cancellation.</b></p>
+<div class="tablewrap"><table>
+<thead><tr><th>From</th><th>To</th><th>Automated</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>CREATED</code></td><td><code>PLANNED</code></td><td>yes</td><td>the scrape made it real, so PROD publishes it</td></tr>
+<tr><td><code>CREATED</code></td><td><code>CANCELLED</code></td><td>yes</td><td>cancelled before it was ever dated</td></tr>
+<tr><td><code>PLANNED</code></td><td><code>CANCELLED</code></td><td>yes</td><td>the only automated change once <code>PLANNED</code></td></tr>
+<tr><td><code>PLANNED</code></td><td><code>CREATED</code></td><td><b>no</b></td><td>backwards — automation must never hide a live event</td></tr>
+<tr><td colspan="2">anything into <code>IN_PROGRESS</code> / <code>SCORED</code> / <code>COMPLETED</code></td><td><b>no</b></td><td>the results axis belongs to <code>promote_event</code></td></tr>
+</tbody>
+</table></div>
+<p>Implemented in <code>fn_mirror_events_to_prod</code>'s UPDATE branch. Every permitted source is a planning state, so a row that has reached <code>IN_PROGRESS</code> or beyond is never touched and cannot be regressed by CERT. All three pairs are drawn from the validator's own table, so a status can never abort a promote.</p>
+<p>The refusal to walk an event backwards is not theoretical: <code>PPW1-2026-2027</code> carries live registrations, and automatically returning it to <code>CREATED</code> would remove it from the calendar underneath the fencers who had entered.</p>
+</section>
+
+<section id="results-automation">
+<p class="kicker">Automation · results</p>
+<h2>What <code>promote_event</code> changes</h2>
+<p>When an approved event's results are promoted, <code>promote_event</code> advances the PROD row <code>PLANNED → IN_PROGRESS → COMPLETED</code>, stepping through the intermediate state because the validator refuses the direct jump.</p>
+<p>It owns that axis precisely because it is the thing moving the results. Status and data arrive together, so PROD never claims an event is finished while holding none of it. The calendar promotion deliberately does not touch these states.</p>
+</section>
+
+<section id="manual">
+<p class="kicker">Everything else</p>
+<h2>Manual changes</h2>
+<p>Any transition not listed as automated above is made by an administrator, through the event editor in the admin UI. The dropdown offers only destinations the validator accepts from the event's current status, so an offered option always saves.</p>
+<p><code>COMPLETED</code> in particular is an <b>admin decision</b>, not an automatic consequence of holding results. Nothing currently detects an event that has ended, holds results and was never finalised — as of 28 August 2026 two such events had been sitting at <code>IN_PROGRESS</code> for nine and three months.</p>
+</section>
+
+<section id="moved-pill">
+<p class="kicker">The moved-date pill</p>
+<h2>“ZMIANA DATY z 12/12/2026”</h2>
+<p>An amber chip on the event card, beside the status and registry chips. It asserts one thing: <b>EVF moved this event, and it is still ahead of you.</b> The status chip is deliberately left alone — the event really is still <code>PLANNED</code>, and a display that overwrote the status would trade one fact for another instead of showing both.</p>
+
+<figure class="shot">
+<img src="../assets/event-status/moved-date-pill.png" alt="Calendar event card for EVF Circuit – Łomianki (POL), code PEW72-2026-2027, dated 9 January 2027, showing three chips: Zaplanowane, EVF, and an amber chip reading ZMIANA DATY z 12/12/2026.">
+<figcaption>The pill in place on the event card. <b>Zaplanowane</b> is the status and <b>EVF</b> the registry — both stay exactly as they were, because the event <em>is</em> still planned and still an EVF event. The amber <b>ZMIANA DATY z 12/12/2026</b> is the third chip: it composes with the status rather than masking it. The card's own date reads 9 January 2027, and the chip names the date EVF first published — the one a fencer who already planned around it would remember.</figcaption>
+</figure>
+
+<h3>When it shows</h3>
+<p>Three conditions, <b>all</b> of which must hold:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Condition</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>enum_status = 'PLANNED'</code></td><td>the only state where a reschedule is still actionable</td></tr>
+<tr><td><code>dt_start &gt; today</code></td><td>nobody needs telling that a finished event once moved</td></tr>
+<tr><td><code>dt_start &lt;&gt; dt_start_first_published</code></td><td>the date actually differs from the one first announced</td></tr>
+</tbody>
+</table></div>
+
+<h3>What it anchors to</h3>
+<p>The <b>first</b> date EVF ever published for the event, held in <code>dt_start_first_published</code> — set on insert by <code>trg_set_event_first_published_date</code> and never updated afterwards. An event moved twice therefore still reads against the date originally announced, not against an intermediate one nobody may have seen.</p>
+<p>Because the anchor is a stored column, “moved” is a field comparison rather than a scan of the audit log. There is no predicate to re-tune later, and the pill cannot drift as history accumulates.</p>
+
+<h3>Why it is a pill and not a status</h3>
+<p><code>CHANGED</code> was designed for exactly this and never built. A status was the wrong home for it twice over: it would have competed with the results lifecycle in the same column, and a <em>second</em> move would have produced no transition and therefore no signal at all. As a pill the signal composes with <code>PLANNED</code> instead of replacing it, and every move refreshes it.</p>
+
+<h3>What clears it</h3>
+<p><b>Nothing.</b> There is no acknowledgement step. The pill stands until the event passes or its status leaves <code>PLANNED</code>.</p>
+
+<h3>Why the past is excluded</h3>
+<p>Every date change in recorded history belongs to a <code>COMPLETED</code> event and is a data repair rather than a reschedule — one-day corrections, day/month parse fixes, and a five-event batch from the 2025–2026 source-verified fragment repair. Restricting the pill to future <code>PLANNED</code> events takes false positives across all recorded history to zero, with no threshold and no test of whether a scraper or an administrator made the change. The backfill anchored every existing event to the date it already held, so nothing historical is retroactively flagged.</p>
+
+<h3>Where it renders</h3>
+<p>In <code>EventCard.svelte</code>'s two-chip line, in amber rather than red so it is not read as a cancellation — a moved event is still happening. It is deliberately <b>not</b> shown on the calendar barrel, whose hue, fill and ring channels already encode event type, completion and next-upcoming (<a href="../../adr/084-calendar-quarter-barrel-event-card.html">ADR-084</a>); a fourth channel would crowd the overview.</p>
+</section>
+
+<section id="troubleshooting">
+<p class="kicker">When something is missing</p>
+<h2>“My event is not on the PROD calendar”</h2>
+<p>Work down this list. The three divergences found on 28 August 2026 are used as worked examples.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Check</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td>Does the row exist on PROD at all?</td><td>If not, the calendar promotion never created it — check the reconcile run log under <code>doc/staging/reconcile/</code>.</td></tr>
+<tr><td>Is its <code>enum_status</code> <code>CREATED</code>?</td><td><b>The most common cause.</b> The calendar hides <code>CREATED</code> rows. If the row is dated, the status is wrong, not the date. This is what hid <code>PPW1-2026-2027</code> and <code>MSW-2026-2027</code>.</td></tr>
+<tr><td>Does CERT disagree with PROD?</td><td>A planning-state difference should resolve itself on the next promotion. If it persists, the promote is failing — check the workflow run.</td></tr>
+<tr><td>Is it <code>CANCELLED</code> and more than seven days past?</td><td>Then it is correctly dropped by the notice window.</td></tr>
+<tr><td>Is it in the active season?</td><td>The reconciler only converges the active season; an event in another season is never promoted by it.</td></tr>
+</tbody>
+</table></div>
+<p>The inverse also occurs: <code>PEW12ef-2026-2027</code> was <code>CANCELLED</code> on CERT and still <code>PLANNED</code> on PROD, so PROD advertised an event that was not happening. Both directions come from the same cause — the planning lifecycle not reaching PROD.</p>
+</section>
+
+<section id="adjacent">
+<p class="kicker">Do not confuse these</p>
+<h2>Adjacent statuses that are not this one</h2>
+<p>Three other status columns live nearby and share value names, which is a reliable source of misreading a query result:</p>
+<ul>
+<li><code>enum_import_status</code> on <b>tournaments</b> — <code>PLANNED · PENDING · IMPORTED · SCORED · REJECTED</code>. Shares <code>PLANNED</code> and <code>SCORED</code> with the event enum and means something different: it tracks one tournament's ingestion, not the event's lifecycle.</li>
+<li><code>tbl_event.txt_source_status</code> — <code>ENGINE_COMPUTED · EVF_PUBLISHED</code>. A <em>provenance</em> axis: where the stored placings came from. Orthogonal to the lifecycle, and not carried to PROD.</li>
+<li><code>enum_match_status</code> — fencer identity matching during ingestion. Unrelated.</li>
+</ul>
+</section>
+
+</main>
+<footer class="freshness">Owner: Events and registration · Review when the event status enum, its transition validator, the CERT→PROD mirror's status handling, the calendar's visibility filter or the moved-date pill changes.</footer>
+</div></body>
+</html>

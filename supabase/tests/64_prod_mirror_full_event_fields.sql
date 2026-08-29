@@ -9,9 +9,8 @@
 -- registration switch). PPW1-2026-2027 held its venue address on CERT and NULL
 -- on PROD in every daily reconcile log.
 --
--- 64.5 is the counterpart that matters just as much: enum_status must NOT be
--- pushed, because promote_event advances it on PROD and syncing CERT's value
--- could regress a scored event back to PLANNED.
+-- 64.5 pins that the PLANNING half of the lifecycle does reach PROD. The
+-- results half still does not -- see 65_prod_mirror_planning_status.sql.
 -- =============================================================================
 
 BEGIN;
@@ -100,11 +99,16 @@ SELECT results_eq(
   '64.4 — fee tiers, entry list, organizer email and registration switch propagate'
 );
 
--- 64.5 — enum_status is PROD-owned and must NOT be pushed back
+-- 64.5 — the planning lifecycle DOES reach PROD (ADR-086 amendment).
+-- This assertion previously expected 'CREATED', encoding the decision that
+-- enum_status is wholly PROD-owned. That was wrong and it is what hid
+-- PPW1-2026-2027 from the calendar while its registration was open. CERT owns
+-- PLANNING, PROD owns RESULTS; 65_prod_mirror_planning_status.sql pins the whole
+-- boundary, including the two transitions that must still be refused.
 SELECT is(
   (SELECT enum_status::TEXT FROM tbl_event WHERE txt_code = 'PPW1-6400-6401'),
-  'CREATED',
-  '64.5 — enum_status stays PROD-owned; CERT cannot regress it to PLANNED'
+  'PLANNED',
+  '64.5 — CREATED → PLANNED reaches PROD, so a dated event becomes visible'
 );
 
 SELECT * FROM finish();

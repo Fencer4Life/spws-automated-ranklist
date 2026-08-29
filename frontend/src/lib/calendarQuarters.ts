@@ -490,6 +490,33 @@ export function isWithinCancellationNoticeWindow(
 }
 
 /**
+ * Whether EVF moved this event, and it still matters — the "moved from" pill
+ * (ADR-077 amendment).
+ *
+ * Three conditions, all required:
+ *   * `PLANNED` — the only state where a reschedule is still actionable.
+ *     Every date change in recorded history on any other status was a data
+ *     repair (one-day corrections, DD/MM parse fixes, the 2025-2026 fragment
+ *     repair), never a reschedule.
+ *   * still ahead — nobody needs telling that a finished event once moved.
+ *   * `dt_start` differs from the first date EVF published.
+ *
+ * Anchored to the FIRST published date, not the previous one, so an event moved
+ * twice still reads against the date originally announced. Nothing clears it:
+ * it stands until the event passes or leaves `PLANNED`.
+ */
+export function movedFromDate(
+  event: CalendarEvent,
+  today: string = todayIso(),
+): string | null {
+  if (event.enum_status !== 'PLANNED') return null
+  const anchor = event.dt_start_first_published
+  if (!anchor || !event.dt_start) return null
+  if (event.dt_start <= today) return null
+  return event.dt_start === anchor ? null : anchor
+}
+
+/**
  * `CREATED` events are date-less planning skeletons (ADR-077) and are hidden
  * until dated; cancelled events drop out once their notice window closes.
  */
