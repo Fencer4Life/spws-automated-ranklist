@@ -648,7 +648,7 @@ export function countryCode(raw: string | null | undefined): string | null {
 // ---------------------------------------------------------------------------
 
 /**
- * Plain panel width, and it MUST match `.ln.mid .p { flex: 0 0 68px }` in
+ * Plain panel width, and it MUST match `.ln.mid .p { flex: 0 0 74px }` in
  * CalendarBarrel.svelte. CSS cannot import this, so the two are coupled by
  * convention — the same arrangement as `ROW_H` and `.ln`'s height.
  *
@@ -660,12 +660,12 @@ export function countryCode(raw: string | null | undefined): string | null {
  * Monthly seams are what allowed the tiles to grow: a row holds at most four
  * events where a quarter held up to nine.
  */
-export const PANEL_W = 68
+export const PANEL_W = 74
 export const PANEL_GAP = 3
 /** The selected panel spells its month out in full, so it is never PANEL_W. */
-export const PANEL_W_SELECTED = 74
+export const PANEL_W_SELECTED = 80
 /** …and needs more again when it also carries a city. */
-export const PANEL_W_SELECTED_CITY = 78
+export const PANEL_W_SELECTED_CITY = 84
 /** Overlap never tightens past this, or panels stop being separable. */
 export const PANEL_STEP_FLOOR = 13
 
@@ -778,8 +778,21 @@ function panelOrigin(layout: RowLayout, i: number): number {
  * read as the row drifting, because the amount of blank space changes with the
  * row's width and moves as you rotate. A fixed left edge cannot drift.
  */
-function groupOffset(_layout: RowLayout, _available: number): number {
-  return 0
+/**
+ * The left gutter a centred row sits behind.
+ *
+ * Rows are centred with `margin: 0 auto` on `.rwi`, and auto margins absorb
+ * only POSITIVE free space — so a row that fits is centred while one that
+ * overflows stays left-aligned and scrollable. This mirrors that exactly:
+ * anything else and the caret points at the gutter instead of its tile.
+ *
+ * It returned 0 while the drum was left-aligned. Monthly seams changed that —
+ * a row now holds one to four tiles rather than five to nine, so left-aligned
+ * rows sat in a wide empty gutter and the rows were centred instead. The caret
+ * has to follow.
+ */
+function groupOffset(layout: RowLayout, available: number): number {
+  return Math.max(0, Math.round((available - layout.contentWidth) / 2))
 }
 
 /**
