@@ -37,12 +37,20 @@ import {
   PANEL_W,
   PANEL_GAP,
   PANEL_STEP_FLOOR,
+  PANEL_W_SELECTED_CITY,
   resultUrls,
   tournamentsPluralKey,
   weaponLetters,
 } from '../src/lib/calendarMonths'
 
 const TODAY = '2026-08-09'
+
+/**
+ * Half the caret's width. Mirrors CARET_HALF in calendarMonths.ts and the
+ * border-left/right on `.crt` in CalendarBarrel.svelte — the caret is centred
+ * from this, so if the three drift the point lands beside the tile.
+ */
+const CARET_HALF = 8
 
 let nextId = 1
 
@@ -669,12 +677,17 @@ describe('layoutRow', () => {
   // CQ.59 — the plan's acceptance criterion, exactly: five panels flat at
   // 320px, six fanning. Verified here rather than in a component test, because
   // jsdom has no layout engine and every clientWidth there is 0.
-  it('CQ.59: five panels sit flat at 320px, six fan', () => {
-    const five = layoutRow({ count: 5, selectedIndex: 0, available: 320, selectedHasCity: false })
-    expect(five.overlapping).toBe(false)
+  // Retuned 2026-08-29: tiles grew from 48px to 68px, which monthly seams made
+  // affordable, so fewer fit flat. Four is not an arbitrary number here — the
+  // busiest month in the whole PROD pool holds exactly four events, so a
+  // monthly row fits flat at 320px and fanning becomes the rare case rather
+  // than the common one it was at quarterly granularity.
+  it('CQ.59: four panels sit flat at 320px, five fan', () => {
+    const four = layoutRow({ count: 4, selectedIndex: 0, available: 320, selectedHasCity: false })
+    expect(four.overlapping).toBe(false)
 
-    const six = layoutRow({ count: 6, selectedIndex: 0, available: 320, selectedHasCity: false })
-    expect(six.overlapping).toBe(true)
+    const five = layoutRow({ count: 5, selectedIndex: 0, available: 320, selectedHasCity: false })
+    expect(five.overlapping).toBe(true)
   })
 
   // CQ.60 — panels never shrink. Overlap trades visibility for size, because a
@@ -694,7 +707,8 @@ describe('layoutRow', () => {
     const out = layoutRow({ count: 10, selectedIndex: 4, available: 304, selectedHasCity: true })
     expect(out.step).toBe(25)
     expect(out.panels[0]!.marginLeft).toBe(0)
-    for (const p of out.panels.slice(1)) expect(p.marginLeft).toBe(-23)
+    // -(PANEL_W - step); the wider tile pulls each neighbour further back.
+    for (const p of out.panels.slice(1)) expect(p.marginLeft).toBe(-43)
   })
 
   // CQ.62 — z-index peaks on the selection so panels to its left expose their
@@ -772,14 +786,17 @@ describe('layoutRow', () => {
   // scrollable (the mock's `.rw{overflow-x:auto}`) or those trailing panels
   // become unreachable: there is no rotation path to a panel, only a tap.
   it('CQ.70: reports a content width that outgrows the viewport past the floor', () => {
-    const fits = layoutRow({ count: 21, selectedIndex: 0, available: 320, selectedHasCity: false })
+    // contentWidth is (count-1) * step + the LAST panel's width — which is a
+    // plain PANEL_W here, since index 0 is the selected one. Retuned with the
+    // 68px tile: the crossing moved from 21/22 panels to 20/21.
+    const fits = layoutRow({ count: 20, selectedIndex: 0, available: 320, selectedHasCity: false })
     expect(fits.step).toBe(PANEL_STEP_FLOOR)
-    expect(fits.contentWidth).toBe(308)
+    expect(fits.contentWidth).toBe(315)
     expect(fits.contentWidth).toBeLessThanOrEqual(320)
 
-    const spills = layoutRow({ count: 22, selectedIndex: 0, available: 320, selectedHasCity: false })
+    const spills = layoutRow({ count: 21, selectedIndex: 0, available: 320, selectedHasCity: false })
     expect(spills.step).toBe(PANEL_STEP_FLOOR)
-    expect(spills.contentWidth).toBe(321)
+    expect(spills.contentWidth).toBe(328)
     expect(spills.contentWidth).toBeGreaterThan(320)
   })
 })
@@ -815,7 +832,7 @@ describe('caretOffset and rowScroll', () => {
   // the 74px selected panel, less half the caret.
   it('CQ.73: tracks the selected panel whether the row is left-aligned or scrolled', () => {
     const fits = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: false })
-    expect(caretOffset(fits, 1, 320)).toBe(48 + PANEL_GAP + 74 / 2 - 6)
+    expect(caretOffset(fits, 1, 320)).toBe(PANEL_W + PANEL_GAP + 74 / 2 - CARET_HALF)
 
     const spills = layoutRow({ count: 30, selectedIndex: 15, available: 320, selectedHasCity: false })
     const caret = caretOffset(spills, 15, 320)!
@@ -1177,5 +1194,73 @@ describe('event time state', () => {
 
   it('CM.31 — an event with no start date is future, never wrongly greyed', () => {
     expect(eventTimeState(ev({ txt_code: 'X', dt_start: null }), '2026-08-29')).toBe('future')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The caret that points from the card up to the tile it is showing. It is the
+// only thing tying the two halves together, so it has to land on the SELECTED
+// panel's centre — and that means the layout's panel widths must match what the
+// stylesheet actually renders. They drifted apart once already.
+// ---------------------------------------------------------------------------
+
+describe('caret alignment', () => {
+  const row = (count: number, selectedIndex: number, available = 320) =>
+    layoutRow({ count, selectedIndex, available, selectedHasCity: true })
+
+  /**
+   * The left edge of panel `i`, laid out the way the row renders it: a flex row
+   * with PANEL_GAP between panels, each carrying its own negative marginLeft
+   * when the row overlaps. `PanelPlacement` deliberately exposes only width and
+   * marginLeft — position is the renderer's job — so the test reconstructs it
+   * rather than reaching for a field that does not exist.
+   */
+  const originOf = (layout: ReturnType<typeof layoutRow>, i: number) => {
+    let x = 0
+    for (let k = 0; k < i; k++) {
+      x += layout.panels[k]!.marginLeft + layout.panels[k]!.width + PANEL_GAP
+    }
+    return x + layout.panels[i]!.marginLeft
+  }
+
+  const centresOn = (selectedIndex: number, count = 3, available = 320) => {
+    const layout = row(count, selectedIndex, available)
+    const caret = caretOffset(layout, selectedIndex, available)!
+    const panel = layout.panels[selectedIndex]!
+    // caretOffset returns the LEFT edge of a 16px caret, so add half back.
+    return Math.abs(caret + CARET_HALF - (originOf(layout, selectedIndex) + panel.width / 2))
+  }
+
+  it('CM.35 — the caret centres on the selected panel', () => {
+    expect(centresOn(1)).toBeLessThanOrEqual(1)
+  })
+
+  it('CM.36 — it tracks the selection across the row', () => {
+    expect(centresOn(0)).toBeLessThanOrEqual(1)
+    expect(centresOn(2)).toBeLessThanOrEqual(1)
+  })
+
+  it('CM.37 — the layout uses the same widths the stylesheet renders', () => {
+    // CSS cannot be read from here, so these literals are the coupling: they
+    // mirror `.ln.mid .p { flex: 0 0 68px }` and `.p.sel { flex: 0 0 78px }` in
+    // CalendarBarrel.svelte. Asserting the literal rather than the constant is
+    // deliberate — comparing PANEL_W to itself would pass while the stylesheet
+    // said something else entirely, which is exactly how the caret came to
+    // point ~20px left of its tile.
+    expect(PANEL_W).toBe(68)
+    expect(PANEL_W_SELECTED_CITY).toBe(78)
+    const layout = row(3, 1)
+    expect(layout.panels[0]!.width).toBe(68)
+    expect(layout.panels[1]!.width).toBe(78)
+  })
+
+  it('CM.38 — no caret without a selection', () => {
+    expect(caretOffset(row(3, 1), null, 320)).toBeNull()
+  })
+
+  it('CM.39 — no caret before the viewport has been measured', () => {
+    // available === 0 happens on the opening frame; the caret must not be
+    // placed at a position computed from nothing.
+    expect(caretOffset(row(3, 1), 1, 0)).toBeNull()
   })
 })

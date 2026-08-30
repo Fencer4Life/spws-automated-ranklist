@@ -423,9 +423,23 @@
     justify-content: space-between;
     gap: 6px;
   }
+  /* The date leads the card.
+     ADR-084 §8 orders this card by what a fencer acts on, and identity — date,
+     code, name, place — comes first. The date was nonetheless the SMALLEST text
+     on it at 11px muted, quieter than the fee keys. It is the first thing
+     anyone checks ("can I go?"), so it now reads as a headline: larger than the
+     event name, and in the primary colour rather than the secondary one. */
   .cdt {
-    font-size: 11px;
-    color: var(--text-secondary, #565550);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--text-primary, #1c1b19);
+  }
+  /* The header stops being a baseline-aligned pair once the date is much larger
+     than the code chip; centring keeps the chip beside it rather than hanging. */
+  .chd {
+    align-items: center;
   }
   .ccd {
     font-size: 11px;
