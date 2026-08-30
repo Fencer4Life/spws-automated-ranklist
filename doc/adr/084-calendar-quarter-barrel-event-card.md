@@ -949,13 +949,25 @@ Retuning that constant moved the overlap threshold: at 320px **four panels now s
 
 The caret also takes the selected event's organizer hue now, matching the card's coloured top edge, so the two read as one edge tapering to a point. It was drawn in `--surface-1` — the card's own background — which against the page is a pale triangle sitting directly above a 3px coloured edge, and the element tying the two halves of the calendar together went unnoticed.
 
+### J · Weekdays on the date, and a way back to the opening row
+
+**Weekdays sit inline, before their own day number** — `sob 26 – niedz 27 września 2026`. A stacked line aligned under each number was considered and rejected: it only expresses the two-day case. MSW Tbilisi runs **9–13 October, five days behind two numbers**, and six events in the pool cross a month boundary, so there is nothing stable to align to. Column alignment would also depend on glyph widths, and `sob`/`niedz` are nothing like `Sat`/`Sun`. Inline degrades correctly everywhere and names the endpoints honestly: Tbilisi reads `pt 9 – wt 13`, a Friday-to-Tuesday championship rather than an implied weekend. Seven short weekday forms were added per language (`cal_dow_short_1..7`, Monday-first).
+
+The header was re-sized to hold this on one row inside a 320px card: the date to 16px, the code pill to 8.5px, measured against the longest code in the upcoming pool (`PEW11efs-2026-2027`, 18 characters). The code is reference detail that also appears on the tile, so the pill is what gave way.
+
+**A jump control resolves the drum-depth question** left open above. It appears **only when the focused row is not the opening row**, so it costs nothing in the common case and its appearance is itself the signal that you have drifted. It rides the receded row in the direction the drum must roll — `dn` when the anchor is ahead, `up` when behind — so its position is the direction cue and no arrow is needed.
+
+It targets **`anchorIndex`, not the month containing today**, and that distinction is the whole point: today's month is frequently empty — August 2026 holds no events at all — and the drum never rests on an empty row, so a literal "jump to today" would land somewhere it immediately rolls off. It is labelled with its destination for the same reason: a button reading "today" that lands you in September would be a small lie.
+
+The jump is **instant**. Crossing forty rows is over a thousand degrees, nearly three full turns, the same failure the opening frame avoids. And it stops the tap reaching the row beneath it, which is itself a target that rotates one step — without that, the jump and a single step would fight over the same tap, precisely when someone is already lost.
+
 ### What this amendment does *not* settle
 
 **Open item 1 is still open.** It asks what the card should *open* on and proposes a seven-day result window before falling back to next-upcoming. The thirty-day window introduced above governs the **palette**, not the anchor; `resolveAnchorRow()` still resolves to next-upcoming. The two windows are unrelated and should not be conflated.
 
 **Open item 2 is still open** — past-season anchoring is unchanged.
 
-Two further items are open and recorded in the plan rather than here, being product questions rather than architecture: whether a 66-row drum needs a jump-to-today control, and whether the committed seed dump (`seed_prod_latest.sql`, still the 8 August snapshot) should be refreshed.
+Two further items are open and recorded in the plan rather than here, being product questions rather than architecture: whether the committed seed dump (`seed_prod_latest.sql`, still the 8 August snapshot) should be refreshed. The jump-to-today question is resolved in §J.
 
 ### Verification
 

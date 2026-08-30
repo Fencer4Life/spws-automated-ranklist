@@ -64,25 +64,25 @@ describe('EventCard — identity', () => {
   // EC.2 — a single-day event shows one date, spelled out.
   it('EC.2: renders a single date in full', () => {
     const c = card({ txt_code: 'A', dt_start: '2026-09-19' })
-    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('19 września 2026')
+    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('sob 19 września 2026')
   })
 
   // EC.3 — most competitions run a weekend, and "10–11 stycznia" answers a
   // question "10 stycznia" leaves open: whether to book two nights.
   it('EC.3: renders a same-month range', () => {
     const c = card({ txt_code: 'A', dt_start: '2027-01-10', dt_end: '2027-01-11' })
-    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('10–11 stycznia 2027')
+    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('niedz 10 – pon 11 stycznia 2027')
   })
 
   it('EC.4: renders a range that crosses a month', () => {
     const c = card({ txt_code: 'A', dt_start: '2027-01-30', dt_end: '2027-02-02' })
-    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('30 stycznia – 2 lutego 2027')
+    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('sob 30 stycznia – wt 2 lutego 2027')
   })
 
   // EC.5 — dt_end equal to dt_start is a single day, not a range.
   it('EC.5: collapses an equal start and end to one date', () => {
     const c = card({ txt_code: 'A', dt_start: '2026-09-19', dt_end: '2026-09-19' })
-    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('19 września 2026')
+    expect(c.querySelector('.cdt')!.textContent!.trim()).toBe('sob 19 września 2026')
   })
 
   // EC.6 — the type chip colours by bucket, mpw sharing ppw's palette.
@@ -419,5 +419,44 @@ describe('EventCard — the date leads', () => {
     const text = c.querySelector('.cdt')!.textContent!
     expect(text).toContain('26')
     expect(text).not.toMatch(/[–-]\s*\d/)
+  })
+})
+
+describe('EventCard — weekdays on the date', () => {
+  const dateOf = (partial: Parameters<typeof card>[0]) =>
+    card(partial).querySelector('.cdt')!.textContent!
+
+  it('EC.47: a weekend event names both days beside their own numbers', () => {
+    // 26-27 September 2026 is a Saturday and a Sunday.
+    const text = dateOf({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26', dt_end: '2026-09-27' })
+    expect(text).toBe(`${t('cal_dow_short_6')} 26 – ${t('cal_dow_short_7')} 27 ${t('cal_month_9')} 2026`)
+  })
+
+  it('EC.48: a single-day event names one weekday', () => {
+    // 14 May 2026 is a Thursday.
+    const text = dateOf({ txt_code: 'DMEW-2025-2026', dt_start: '2026-05-14', dt_end: '2026-05-14' })
+    expect(text).toBe(`${t('cal_dow_short_4')} 14 ${t('cal_month_5')} 2026`)
+  })
+
+  // The case a stacked, column-aligned layout could not express: five days
+  // behind two numbers. Inline names the endpoints and stays correct.
+  it('EC.49: a five-day championship names its endpoints, not a weekend', () => {
+    // MSW Tbilisi, 9-13 October 2026: Friday to Tuesday.
+    const text = dateOf({ txt_code: 'MSW-2026-2027', dt_start: '2026-10-09', dt_end: '2026-10-13' })
+    expect(text).toBe(`${t('cal_dow_short_5')} 9 – ${t('cal_dow_short_2')} 13 ${t('cal_month_10')} 2026`)
+  })
+
+  it('EC.50: a range crossing a month keeps each weekday with its own month', () => {
+    // 31 October - 1 November 2026, Saturday to Sunday.
+    const text = dateOf({ txt_code: 'PEW2es-2026-2027', dt_start: '2026-10-31', dt_end: '2026-11-01' })
+    expect(text).toBe(
+      `${t('cal_dow_short_6')} 31 ${t('cal_month_10')} – ${t('cal_dow_short_7')} 1 ${t('cal_month_11')} 2026`,
+    )
+  })
+
+  it('EC.51: Sunday maps to 7, not 0', () => {
+    // getUTCDay() is 0-based on Sunday; the locale keys are Monday-first.
+    expect(dateOf({ txt_code: 'X-2026-2027', dt_start: '2026-09-27', dt_end: '2026-09-27' }))
+      .toContain(t('cal_dow_short_7'))
   })
 })

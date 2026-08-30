@@ -227,20 +227,38 @@
   )
   const showFees = $derived(event.num_entry_fee != null || fee2w != null || fee3w != null)
 
+  /**
+   * The weekday for an ISO date, Monday-first to match `cal_dow_short_1..7`.
+   * `getUTCDay()` is 0=Sunday, so Sunday maps to 7.
+   */
+  function dow(iso: string): string {
+    const d = new Date(`${iso}T00:00:00Z`).getUTCDay()
+    return t(`cal_dow_short_${d === 0 ? 7 : d}`)
+  }
+
   const dateLabel = $derived.by(() => {
     const start = event.dt_start
     if (!start) return ''
     const [sy, sm, sd] = start.split('-').map(Number)
     const startMonth = t(`cal_month_${sm}`)
     const end = event.dt_end
-    if (!end || end === start) return `${sd} ${startMonth} ${sy}`
 
-    // Most competitions run a weekend, and "10–11 stycznia" answers a question
-    // "10 stycznia" leaves open — whether to book two nights.
+    // The weekday sits immediately before its own day number rather than on a
+    // second line aligned under it. Alignment only works for the two-day case:
+    // MSW Tbilisi runs 9–13 October, five days behind two numbers, and six
+    // events in the pool cross a month boundary. Inline degrades correctly for
+    // all of them, and does not depend on glyph widths that differ between
+    // "sob"/"niedz" and "Sat"/"Sun".
+    if (!end || end === start) return `${dow(start)} ${sd} ${startMonth} ${sy}`
+
     const [ey, em, ed] = end.split('-').map(Number)
-    if (ey === sy && em === sm) return `${sd}–${ed} ${startMonth} ${sy}`
-    if (ey === sy) return `${sd} ${startMonth} – ${ed} ${t(`cal_month_${em}`)} ${sy}`
-    return `${sd} ${startMonth} ${sy} – ${ed} ${t(`cal_month_${em}`)} ${ey}`
+    if (ey === sy && em === sm) {
+      return `${dow(start)} ${sd} – ${dow(end)} ${ed} ${startMonth} ${sy}`
+    }
+    if (ey === sy) {
+      return `${dow(start)} ${sd} ${startMonth} – ${dow(end)} ${ed} ${t(`cal_month_${em}`)} ${sy}`
+    }
+    return `${dow(start)} ${sd} ${startMonth} ${sy} – ${dow(end)} ${ed} ${t(`cal_month_${em}`)} ${ey}`
   })
 
   type Pill = {
@@ -430,7 +448,12 @@
      anyone checks ("can I go?"), so it now reads as a headline: larger than the
      event name, and in the primary colour rather than the secondary one. */
   .cdt {
-    font-size: 17px;
+    /* 16, not 17: the weekday at each end added ~60px, and 16px is what keeps
+       the common label — "sob 26 – niedz 27 września 2026", 249px — beside the
+       code pill on one row inside a 360px card. A range crossing a month is
+       longer than any workable size and is allowed to wrap; that is six events
+       in the pool, nearly all historical. */
+    font-size: 16px;
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.01em;
@@ -441,12 +464,26 @@
   .chd {
     align-items: center;
   }
+  /* Smaller than the 11px it was: the date line grew a weekday at each end
+     ("sob 26 – niedz 27 września 2026"), and at 320px the pill was the thing
+     that pushed the header onto two rows. The code is reference detail — the
+     date is what the header is for — so the pill gives up the space. */
   .ccd {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 1px 7px;
+    /* 8.5px, weight 700 to hold legibility that small. Sized against the
+       LONGEST code in the upcoming pool — PEW11efs-2026-2027, 18 characters,
+       106px — inside the 107px left over once the date has its row. The code is
+       reference detail and appears on the tile as well; the date is what the
+       header exists for, so the pill is what gives way. */
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 1px 6px;
     border-radius: 8px;
     white-space: nowrap;
+    flex: 0 0 auto;
+    letter-spacing: -0.01em;
+  }
+  .cdt {
+    min-width: 0;
   }
   .ccd.ppw,
   .ccd.mpw {

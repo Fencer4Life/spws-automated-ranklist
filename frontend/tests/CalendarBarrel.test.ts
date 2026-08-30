@@ -429,3 +429,70 @@ describe('CalendarBarrel — selecting across a rotation', () => {
     expect(onselect.mock.calls.at(-1)![0].txt_code).toBe('PEW1efs-2026-2027')
   })
 })
+
+describe('CalendarBarrel — jump back to the opening row', () => {
+  /** Nine consecutive months, so the drum can be rolled well away from home. */
+  const nine = () =>
+    buildMonths(
+      Array.from({ length: 9 }, (_, i) =>
+        ev({ txt_code: `E${i}-2026-2027`, dt_start: `2026-${String(i + 1).padStart(2, '0')}-10` }),
+      ),
+    )
+
+  it('CB.25: no control while the drum is already where it opens', () => {
+    const rows = nine()
+    const { container } = barrel({ rows, anchorIndex: 4 })
+    expect(container.querySelector('.jmp')).toBeNull()
+  })
+
+  // The control rides the receded row in the DIRECTION the drum must roll, so
+  // its position is the direction cue. Index order is chronological and the
+  // cylinder puts later months higher, so `dn` (active + 1) renders above.
+  it('CB.26: sits on the row toward the anchor, and names it', async () => {
+    const rows = nine()
+    const { container } = barrel({ rows, anchorIndex: 6 })
+    // rotate backwards, away from the anchor
+    await fireEvent.click(container.querySelector('.ln.up')!)
+
+    const jump = container.querySelector('.jmp') as HTMLElement
+    expect(jump).not.toBeNull()
+    expect(jump.textContent!.trim()).toBe(seam(rows[6]!))
+    expect(jump.closest('.ln')!.classList.contains('dn')).toBe(true)
+  })
+
+  it('CB.27: flips to the other side once the anchor is behind you', async () => {
+    const rows = nine()
+    const { container } = barrel({ rows, anchorIndex: 1 })
+    await fireEvent.click(container.querySelector('.ln.dn')!)
+    await fireEvent.click(container.querySelector('.ln.dn')!)
+
+    const jump = container.querySelector('.jmp')!
+    expect(jump.closest('.ln')!.classList.contains('up')).toBe(true)
+  })
+
+  it('CB.28: tapping it returns to the opening row and selects there', async () => {
+    const rows = nine()
+    const onselect = vi.fn()
+    const { container } = render(CalendarBarrel, { props: { rows, anchorIndex: 6, onselect } })
+    await fireEvent.click(container.querySelector('.ln.up')!)
+    await fireEvent.click(container.querySelector('.ln.up')!)
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[4]!))
+
+    await fireEvent.click(container.querySelector('.jmp')!)
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[6]!))
+    expect(onselect.mock.calls.at(-1)![0].txt_code).toBe(rows[6]!.events[0]!.txt_code)
+    // and it stops advertising itself once you are home
+    expect(container.querySelector('.jmp')).toBeNull()
+  })
+
+  // The row underneath is itself a tap target that rotates ONE step. Without
+  // stopPropagation the jump and a single step fight over the same tap —
+  // exactly when someone is already lost in the drum.
+  it('CB.29: the tap does not also rotate the row it sits on', async () => {
+    const rows = nine()
+    const { container } = barrel({ rows, anchorIndex: 6 })
+    await fireEvent.click(container.querySelector('.ln.up')!)
+    await fireEvent.click(container.querySelector('.jmp')!)
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[6]!))
+  })
+})
