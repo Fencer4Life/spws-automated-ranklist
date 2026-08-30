@@ -2,7 +2,7 @@
   <div
     class="drum"
     class:anim={animate}
-    style:transform={`translateZ(${-DRUM_R}px)`}
+    style:transform={`translateZ(${-DRUM_R}px) rotateX(${-active * ROW_ANGLE}deg)`}
   >
     {#each rows as row, qi (row.key)}
       {@const state = rowState(qi)}
@@ -13,11 +13,8 @@
       {@const rotatable = state === 'up' || state === 'dn'}
       <div
         class="ln {state}"
-        style:transform={`rotateX(${(qi - active) * ROW_ANGLE}deg) translateZ(${DRUM_R}px)${
-          qi === active ? '' : ` scale(${RECEDED_SCALE})`
-        }`}
+        style:transform={`rotateX(${qi * ROW_ANGLE}deg) translateZ(${DRUM_R}px)`}
         style:opacity={rowOpacity(qi)}
-        style:--row-scale={qi === active ? 1 : RECEDED_SCALE}
         style:pointer-events={Math.abs(qi - active) * ROW_ANGLE > HORIZON ? 'none' : null}
         role="button"
         tabindex={rotatable ? 0 : undefined}
@@ -30,6 +27,22 @@
              The code shows on the focused row and permanently on a season
              boundary, whose rule is also drawn heavier — this is where the
              deleted season dropdown's information went. -->
+        {#if showJumpOn === state}
+          <!-- Jump back to where the drum opens. It rides the receded row in
+               the DIRECTION the drum has to roll, so its position is the
+               direction cue and no arrow is needed. stopPropagation because the
+               row underneath is itself a tap target that rotates one step —
+               without it, the jump and a single step would fight over the same
+               tap. -->
+          <button
+            class="jmp"
+            type="button"
+            onclick={(e) => {
+              e.stopPropagation()
+              jumpToAnchor()
+            }}
+          >{seamLabel(rows[anchorIndex]!)}</button>
+        {/if}
         <div class="sm" class:bd={row.isSeasonBoundary}>
           <b>{seamLabel(row)}</b>
           <i></i>
@@ -85,39 +98,6 @@
       </div>
     {/each}
   </div>
-
-  <!-- Jump back to where the drum opens.
-       It sits at the viewport EDGE the drum has to travel towards, so its
-       position is still the direction cue and no arrow is needed — `dn` is a
-       later month, which renders above, so the control goes to the top.
-
-       It lives here, as a sibling of the drum, rather than inside the receded
-       row it points at. Parented to a row it was unusable: a receded row is
-       scaled to RECEDED_SCALE, so the button had to scale by the inverse to
-       stay legible, and a ~32px pill grown to ~52px inside a ~7px seam covered
-       that row's tiles outright. Out here it needs no scale compensation, it
-       cannot collide with any tile, and the rows it does cross at the extreme
-       edge are near edge-on and faded to almost nothing.
-
-       No stopPropagation needed any more either — it is no longer inside a row
-       that is itself a tap target, so the jump and a single step can no longer
-       fight over one tap.
-
-       Labelled "najbliższe zawody" rather than the destination month. Naming
-       the month was a hedge against calling it "today", which would be a lie —
-       today's month is frequently empty and the drum never rests on an empty
-       row. Naming the DESTINATION BY WHAT IT IS avoids both problems: it is
-       accurate, and it says what the button does instead of making the reader
-       decode a date. -->
-  {#if showJumpOn}
-    <button
-      class="jmp"
-      class:top={showJumpOn === 'dn'}
-      class:bot={showJumpOn === 'up'}
-      type="button"
-      onclick={jumpToAnchor}
-    >{t('calendar_jump_to_next')}</button>
-  {/if}
 </div>
 
 <div class="crw">
@@ -160,7 +140,7 @@
   } from '../lib/calendarMonths'
 
   /** Must match `.ln` height in the stylesheet. */
-  const ROW_H = 84
+  const ROW_H = 82
 
   /* ===== True-cylinder geometry ============================================
      Each row sits on the surface of a cylinder — `rotateX(i·θ) translateZ(R)`
@@ -171,28 +151,12 @@
      R is fixed by θ and the row height: the chord between two adjacent rows
      must equal ROW_H, so R = (ROW_H/2) / tan(θ/2).
 
-     Each row carries its angle RELATIVE to the focused one and the drum itself
-     does not rotate. The obvious alternative — fixed row angles with a rotating
-     drum — is what this replaced, and it fails silently: the drum's angle is
-     `-active × θ`, which reaches -1638° by row 63, and a rotation that large is
-     dropped outright. The computed matrix came back as a bare translateZ while
-     the rows kept their own (large) rotations, so nothing cancelled and the
-     focused row slid further down the screen the further you rolled.
-
-     Relative angles never exceed the horizon, so nothing can accumulate. The
-     rows are re-transformed on each step, which is fine — a CSS transition
-     cannot cross REPLACED nodes, but re-transforming a node that persists
-     animates normally, and Svelte keys the each-block on `row.key`.
+     A row's own angle NEVER changes — only the drum's does. That matters: a
+     CSS transition cannot animate across replaced nodes, so a drum whose rows
+     were re-transformed on every rotate would snap rather than turn. Svelte
+     keys the each-block on `row.key`, so the nodes persist.
 
      θ = 26° puts seven rows inside the 80° horizon (5 at 34°, 9 at 18°).
-
-     ROW_H is the CHORD between adjacent rows, so it sets the drum's whole
-     vertical footprint — every row gets the same angular slot whether or not it
-     needs one. Raising it to fit a taller focused row therefore made the drum
-     taller and stole the space from the card below, which is the opposite of
-     the intent. It is sized for what a RECEDED row needs; the focused row's
-     content simply overflows its slot, which is free because nothing occludes
-     the row facing the viewer.
 
      Time runs UPWARD: the future sits above the focused row and the past below
      it. A point at angle θ on the cylinder is at y = -R·sin θ, so a positive
@@ -204,14 +168,6 @@
      what is coming toward you, and the events that matter are ahead, so the
      drum surfaces them by turning up rather than down. */
   const ROW_ANGLE = 26
-  /**
-   * How much a receded row is squeezed — the whole row, not just its tiles.
-   * Shrinking the tiles alone left the seam, its hairline and the row's slot at
-   * full size, so the drum kept its footprint and the focused row's growth came
-   * out of the card's space instead. Scaling the row itself squeezes seam and
-   * tiles together and is what actually frees vertical room.
-   */
-  const RECEDED_SCALE = 0.62
   const HORIZON = 80
   const DRUM_R = Math.round(ROW_H / 2 / Math.tan((ROW_ANGLE / 2) * (Math.PI / 180)))
 
@@ -536,7 +492,7 @@
 
 <style>
   .vp {
-    height: 232px;
+    height: 246px;
     overflow: hidden;
     perspective: 760px;
     margin-top: 6px;
@@ -550,13 +506,11 @@
     inset: 0;
     transform-style: preserve-3d;
   }
-  .drum.anim .ln {
-    transition:
-      transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-      opacity 0.3s linear;
+  .drum.anim {
+    transition: transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
   }
   @media (prefers-reduced-motion: reduce) {
-    .drum.anim .ln {
+    .drum.anim {
       transition: none;
     }
   }
@@ -565,15 +519,8 @@
     left: 0;
     right: 0;
     top: 50%;
-    /* Mirrors ROW_H, and half of it. These drifted once already — ROW_H moved
-       and this did not — and the symptom was silent, because the cylinder
-       positions rows from the constant while the box is sized from here. */
-    margin-top: -42px;
-    /* Rows are CENTRED (see `.rwi`), so a receded row must scale about its
-       centre to stay centred. Scaling from the left instead made the squeezed
-       rows hug the left edge while the focused row spanned the full width. */
-    transform-origin: center center;
-    height: 84px;
+    margin-top: -41px;
+    height: 82px;
     backface-visibility: hidden;
     /* Anchored left, not centre: the receded rows are scaled to 0.88, and a
        centre origin would inset them from the left edge by ~6% of the row —
@@ -591,78 +538,14 @@
   .ln.far {
     pointer-events: none;
   }
-  /* The focused row's content is taller than its slot, so it must paint above
-     its neighbours — and it must be CENTRED in that slot rather than hanging
-     off the bottom of it. The seam sits at the top and the tile follows, so
-     content runs 14 + 84 = 98px inside an 84px slot; left alone, the whole
-     14px of overflow fell downward and clipped the seam of the row below while
-     leaving the same gap unused above. Half of it is taken back here. */
-  .ln.mid {
-    z-index: 5;
-  }
-  /* Nudging the focused row's CONTENT, never its box.
-     `.ln.mid { margin-top }` was used for this and is a trap: every row rotates
-     about its own centre while the drum rotates about the viewport centre, so
-     moving one row's box moves its transform-origin off the cylinder's axis.
-     The offset then gets rotated by the drum's angle, and the error GROWS with
-     rotation — the focused row slid further down the screen the further you
-     rolled, until its tiles buried the seam below. Shifting the content leaves
-     the box, and therefore the origin, exactly where the cylinder expects. */
-  .ln.mid .sm {
-    margin-top: -5px;
-  }
-  /* Equalises the air above and below the focused tiles, measured to the
-     HAIRLINES, which is what the eye reads as the seam.
-     They start unequal for a structural reason: this row's own seam is 14px
-     tall with its rule centred, so ~7px of seam sits between that rule and the
-     tiles; the row below is scaled to 62%, so its seam is 7px and its rule sits
-     ~3px from the top. That left 10px above and 5px below.
-     The correction is HALF the difference, not the whole of it: moving the
-     tiles up by x closes the gap above by x and opens the one below by the same
-     x, so 2.5px puts both at 7.5. */
-  .ln.mid .rw {
-    margin-top: -2.5px;
-  }
   .ln.mid {
     cursor: default;
   }
-  /* The seam spans the whole row, and on the FOCUSED row that is the whole
-     viewport — where the 3D projection makes the row about 2px wider than the
-     box that clips it. Flush against that edge the first glyph fell outside:
-     "Listopada" rendered as "istopada". A small inset keeps the label clear of
-     the clip. It lives here rather than on `.ln` so the tiles and the measured
-     `available` width — which the caret positions from — are untouched.
-     Receded rows never showed this: scaling them to 62% insets them by ~74px
-     of their own accord, which is also why their seams look shorter. */
-  /* Seams run COAST TO COAST — every one reaches both viewport edges, inset
-     only far enough to give the label air.
-
-     The width has to fight the drum for it. A receded row is the whole row
-     scaled to RECEDED_SCALE, so a seam declared at 100% renders at 62% of the
-     viewport; only the focused row, unscaled, would actually span it. Dividing
-     by the row's own scale cancels that exactly — 161% declared renders as
-     100% seen — and the negative left margin re-centres the surplus, because an
-     `auto` margin collapses to zero once the box is wider than its parent and
-     would push the whole seam off to the right.
-
-     The padding is compensated the same way, or the label inset would shrink to
-     62% on the receded rows and the labels would sit closer to the edge exactly
-     where there is least room for them. `border-box` keeps that inset INSIDE the
-     coast-to-coast width instead of adding to it; there is no global reset here.
-
-     Residual error is the perspective, not the scale: a row tilted 26deg sits
-     ~18px further from the eye, so it renders ~2.4% narrower. That is a
-     cylinder behaving like a cylinder, and it is under a pixel at this size. */
   .sm {
     display: flex;
     align-items: center;
     gap: 5px;
     height: 14px;
-    box-sizing: border-box;
-    width: calc(100% / var(--row-scale, 1));
-    padding: 0 calc(12px / var(--row-scale, 1));
-    margin-top: 0;
-    margin-left: calc((1 - 1 / var(--row-scale, 1)) * 50%);
   }
   .sm b {
     font-size: 11px;
@@ -698,9 +581,8 @@
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
-    /* Symmetric. It was 3/4, which tilted the tiles toward the seam below. */
     padding-top: 3px;
-    padding-bottom: 3px;
+    padding-bottom: 4px;
   }
   .rw::-webkit-scrollbar {
     display: none;
@@ -714,18 +596,12 @@
      POSITIVE free space, so a row that fits is centred and one that overflows
      left-aligns and stays scrollable. Centring would push the leading panels
      into negative scroll space, where nothing can reach them. */
-  /* Centred, and `margin: 0 auto` rather than `justify-content: center`: auto
-     margins absorb only POSITIVE free space, so a row that fits is centred
-     while one that overflows still left-aligns and stays scrollable. Centring
-     with justify-content would push the leading tiles into negative scroll
-     space, where nothing can reach them.
-     This replaces the flat drum's left alignment: with monthly seams a row
-     holds one to four tiles rather than five to nine, so left-aligned rows sat
-     in a wide empty gutter. */
+  /* Left-aligned. Every row starts on the same edge, so nothing drifts as the
+     drum rotates between rows of different widths. */
   .rwi {
     display: flex;
     gap: 3px;
-    margin: 0 auto;
+    margin: 0;
     position: relative;
   }
   .p {
@@ -740,12 +616,9 @@
     border: 1px solid var(--border, rgba(0, 0, 0, 0.13));
     background: var(--surface-2, #fff);
     cursor: pointer;
+    height: 56px;
     position: relative;
     overflow: hidden;
-    /* The focused tile is 50% taller than it was (56px). It exceeds the row
-       slot on purpose — see ROW_H — and `.ln.mid` is given a raised z-index so
-       the overflow paints over the receded rows rather than under them. */
-    height: 84px;
   }
   .p > * {
     flex: 0 0 auto;
@@ -844,16 +717,9 @@
   .p.ov.sel {
     box-shadow: none;
   }
-  /* Receded rows lose 30% of their HEIGHT — 84 -> 59 — and that is what pays
-     for the focused row growing. Width stays at 38: the room being freed is
-     vertical, so narrowing them buys nothing, and at 27px the code label
-     truncates ("MSW" to "M…"), which is the one thing a receded row is for. */
   .up .p,
   .dn .p {
     flex: 0 0 38px;
-    /* Natural height: the row is already scaled by RECEDED_SCALE, so shrinking
-       the tile here as well would shrink it twice. */
-    height: 56px;
   }
   /* The selected tile alone widens to fit the full month. Polish genitive
      "października" measures 72px at 11px/700 — far longer than the next longest
@@ -861,25 +727,18 @@
      tile to fit it would put four of them over a 320px viewport; widening only
      the selected one keeps the worst case at 3x68 + 78 + gaps = 291px. */
   .p {
-    flex: 0 0 74px;
+    flex: 0 0 68px;
   }
   .p.sel {
-    flex: 0 0 84px;
+    flex: 0 0 78px;
   }
-  /* The day number is what the tile is for, and the taller row finally leaves
-     space for it to look like it. */
   .dd {
-    font-size: 21px;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.1;
   }
-  /* 12px, not 11: the month is width-bound by the Polish genitive
-     "października" — 72px at this size — and the selected tile grew to 84px,
-     which finally leaves room for it. It is the one label that cannot simply
-     be scaled with the rest. */
   .dm {
-    font-size: 12px;
+    font-size: 11px;
     /* The month is what the seam is now organised around, so it should not be
        the faintest thing on the tile. */
     font-weight: 700;
@@ -914,11 +773,11 @@
     font-variant-numeric: tabular-nums;
     font-style: normal;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 10px;
     margin-left: 1px;
   }
   .cdc {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     line-height: 1.1;
     max-width: 100%;
@@ -931,7 +790,7 @@
      quarterly, so there is finally room for it. Receded rows still drop to
      day + code. */
   .cty {
-    font-size: 11px;
+    font-size: 9px;
     line-height: 1.05;
     max-width: 100%;
     overflow: hidden;
@@ -971,38 +830,21 @@
   /* Distinct enough not to be mistaken for the row it sits on, and a real hit
      area rather than a text link — this appears exactly when someone is already
      lost in the drum. */
-  /* Deliberately larger than the receded row it sits on: it is the one control
-     in the drum that is not a month, it appears only when the reader is lost,
-     and at 11px on a row scaled to 62% it read as debris rather than a button.
-
-     It also UNDOES the row's scale. The button is not row content — it is a
-     control that happens to ride there — so shrinking it with the month it sits
-     next to is wrong, and any size set here would otherwise be multiplied by
-     0.62 before it reached the screen. The row publishes its own scale as
-     --row-scale so the two cannot drift apart. */
-  /* Pinned to the viewport edge the drum must travel towards. Deliberately
-     NOT scale-compensated: it is no longer inside a transformed row. */
   .jmp {
     position: absolute;
-    right: 8px;
+    right: 0;
+    top: -2px;
     z-index: 10;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     line-height: 1;
-    padding: 7px 13px;
-    border-radius: 15px;
+    padding: 5px 10px;
+    border-radius: 12px;
     border: 1px solid var(--accent, #185fa5);
     background: var(--surface-2, #fff);
     color: var(--accent, #185fa5);
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.16);
     cursor: pointer;
     white-space: nowrap;
-  }
-  .jmp.top {
-    top: 3px;
-  }
-  .jmp.bot {
-    bottom: 3px;
   }
   .mt {
     font-size: 11px;
