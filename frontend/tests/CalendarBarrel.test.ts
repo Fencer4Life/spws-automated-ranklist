@@ -448,7 +448,7 @@ describe('CalendarBarrel — jump back to the opening row', () => {
   // The control rides the receded row in the DIRECTION the drum must roll, so
   // its position is the direction cue. Index order is chronological and the
   // cylinder puts later months higher, so `dn` (active + 1) renders above.
-  it('CB.26: sits on the row toward the anchor, and names it', async () => {
+  it('CB.26: sits on the row toward the anchor, and says what it does', async () => {
     const rows = nine()
     const { container } = barrel({ rows, anchorIndex: 6 })
     // rotate backwards, away from the anchor
@@ -456,7 +456,17 @@ describe('CalendarBarrel — jump back to the opening row', () => {
 
     const jump = container.querySelector('.jmp') as HTMLElement
     expect(jump).not.toBeNull()
-    expect(jump.textContent!.trim()).toBe(seam(rows[6]!))
+    // Labelled by what the destination IS, not which month it happens to be.
+    // Naming the month makes the reader decode a date to know where they land,
+    // and it changes under them as the pool moves.
+    // The leading arrow is a decorative ICON: it must NOT reach the accessible
+    // name, so it is aria-hidden and contributes no text. Asserting the button's
+    // whole textContent equals the label is therefore the real guard — folding
+    // the arrow back into the translated string would break it.
+    const arrow = jump.querySelector('.arw')!
+    expect(arrow.tagName.toLowerCase()).toBe('svg')
+    expect(arrow.getAttribute('aria-hidden')).toBe('true')
+    expect(jump.textContent!.trim()).toBe(t('calendar_jump_to_next'))
     expect(jump.closest('.ln')!.classList.contains('dn')).toBe(true)
   })
 

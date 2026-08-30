@@ -29,11 +29,22 @@
              deleted season dropdown's information went. -->
         {#if showJumpOn === state}
           <!-- Jump back to where the drum opens. It rides the receded row in
-               the DIRECTION the drum has to roll, so its position is the
-               direction cue and no arrow is needed. stopPropagation because the
-               row underneath is itself a tap target that rotates one step —
-               without it, the jump and a single step would fight over the same
-               tap. -->
+               the DIRECTION the drum has to roll, so its position already
+               carries that cue; the leading arrow makes the button read as a
+               destination — "→ to the nearest competition" — rather than as a
+               label for the row it happens to sit on.
+
+               The arrow is an aria-hidden SVG, not a character in the
+               translated string. A screen reader announces the button by its
+               label alone, which is the useful half. Drawn rather than typed
+               because "→" renders at whatever weight and baseline the system
+               font decides — it sat visibly low against an 11px cap height and
+               did not match the label's stroke. The path inherits
+               `currentColor`, so it tracks the accent through both themes.
+
+               stopPropagation because the row underneath is itself a tap target
+               that rotates one step — without it, the jump and a single step
+               would fight over the same tap. -->
           <button
             class="jmp"
             type="button"
@@ -41,7 +52,16 @@
               e.stopPropagation()
               jumpToAnchor()
             }}
-          >{seamLabel(rows[anchorIndex]!)}</button>
+          ><svg class="arw" viewBox="0 0 16 16" aria-hidden="true" focusable="false"
+            ><path
+              d="M2.5 8h10M8.75 4.25 12.5 8l-3.75 3.75"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >{t('calendar_jump_to_next')}</button>
         {/if}
         <div class="sm" class:bd={row.isSeasonBoundary}>
           <b>{seamLabel(row)}</b>
@@ -835,6 +855,9 @@
     right: 0;
     top: -2px;
     z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     font-size: 11px;
     font-weight: 600;
     line-height: 1;
@@ -845,6 +868,13 @@
     color: var(--accent, #185fa5);
     cursor: pointer;
     white-space: nowrap;
+  }
+  /* Sized to the label's cap height rather than its font size, so the icon
+     reads as the same weight as the text beside it. */
+  .arw {
+    width: 11px;
+    height: 11px;
+    flex: 0 0 11px;
   }
   .mt {
     font-size: 11px;
