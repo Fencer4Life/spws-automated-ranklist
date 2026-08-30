@@ -37,6 +37,7 @@ import {
   PANEL_W,
   PANEL_GAP,
   PANEL_STEP_FLOOR,
+  PANEL_W_SELECTED,
   PANEL_W_SELECTED_CITY,
   resultUrls,
   tournamentsPluralKey,
@@ -697,7 +698,7 @@ describe('layoutRow', () => {
     const out = layoutRow({ count: 10, selectedIndex: 4, available: 304, selectedHasCity: true })
     expect(out.overlapping).toBe(true)
     for (const [i, p] of out.panels.entries()) {
-      expect(p.width, `panel ${i}`).toBe(i === 4 ? 78 : PANEL_W)
+      expect(p.width, `panel ${i}`).toBe(i === 4 ? PANEL_W_SELECTED_CITY : PANEL_W)
     }
   })
 
@@ -705,10 +706,10 @@ describe('layoutRow', () => {
   // row at 320px fans at step 25, i.e. margin-left -23.
   it('CQ.61: reproduces the mock geometry for a ten-panel row', () => {
     const out = layoutRow({ count: 10, selectedIndex: 4, available: 304, selectedHasCity: true })
-    expect(out.step).toBe(25)
+    expect(out.step).toBe(24)
     expect(out.panels[0]!.marginLeft).toBe(0)
     // -(PANEL_W - step); the wider tile pulls each neighbour further back.
-    for (const p of out.panels.slice(1)) expect(p.marginLeft).toBe(-43)
+    for (const p of out.panels.slice(1)) expect(p.marginLeft).toBe(-50)
   })
 
   // CQ.62 — z-index peaks on the selection so panels to its left expose their
@@ -724,10 +725,10 @@ describe('layoutRow', () => {
   // be a plain 48px; a city needs more again.
   it('CQ.63: widens the selected panel, more so when it carries a city', () => {
     const plain = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: false })
-    expect(plain.panels[1]!.width).toBe(74)
+    expect(plain.panels[1]!.width).toBe(80)
 
     const withCity = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: true })
-    expect(withCity.panels[1]!.width).toBe(78)
+    expect(withCity.panels[1]!.width).toBe(84)
   })
 
   // CQ.64 — overlap has a floor: past it, panels stop being separable.
@@ -778,7 +779,9 @@ describe('layoutRow', () => {
   it('CQ.69: clamps the selected index into range', () => {
     const out = layoutRow({ count: 6, selectedIndex: 99, available: 200, selectedHasCity: false })
     expect(out.panels[5]!.zIndex).toBe(200)
-    expect(out.panels[5]!.width).toBe(74)
+    // clamped onto the last panel, so it is the selected one and takes the
+    // selected width, not PANEL_W
+    expect(out.panels[5]!.width).toBe(PANEL_W_SELECTED)
   })
 
   // CQ.70 — past the step floor the row genuinely outgrows the viewport. The
@@ -789,14 +792,14 @@ describe('layoutRow', () => {
     // contentWidth is (count-1) * step + the LAST panel's width — which is a
     // plain PANEL_W here, since index 0 is the selected one. Retuned with the
     // 68px tile: the crossing moved from 21/22 panels to 20/21.
-    const fits = layoutRow({ count: 20, selectedIndex: 0, available: 320, selectedHasCity: false })
+    const fits = layoutRow({ count: 19, selectedIndex: 0, available: 320, selectedHasCity: false })
     expect(fits.step).toBe(PANEL_STEP_FLOOR)
-    expect(fits.contentWidth).toBe(315)
+    expect(fits.contentWidth).toBe(308)
     expect(fits.contentWidth).toBeLessThanOrEqual(320)
 
-    const spills = layoutRow({ count: 21, selectedIndex: 0, available: 320, selectedHasCity: false })
+    const spills = layoutRow({ count: 20, selectedIndex: 0, available: 320, selectedHasCity: false })
     expect(spills.step).toBe(PANEL_STEP_FLOOR)
-    expect(spills.contentWidth).toBe(328)
+    expect(spills.contentWidth).toBe(321)
     expect(spills.contentWidth).toBeGreaterThan(320)
   })
 })
@@ -832,7 +835,11 @@ describe('caretOffset and rowScroll', () => {
   // the 74px selected panel, less half the caret.
   it('CQ.73: tracks the selected panel whether the row is left-aligned or scrolled', () => {
     const fits = layoutRow({ count: 3, selectedIndex: 1, available: 320, selectedHasCity: false })
-    expect(caretOffset(fits, 1, 320)).toBe(PANEL_W + PANEL_GAP + 74 / 2 - CARET_HALF)
+    // Rows are centred, so the caret carries the gutter as well as the origin.
+    const gut = Math.max(0, Math.round((320 - fits.contentWidth) / 2))
+    expect(caretOffset(fits, 1, 320)).toBe(
+      gut + PANEL_W + PANEL_GAP + PANEL_W_SELECTED / 2 - CARET_HALF,
+    )
 
     const spills = layoutRow({ count: 30, selectedIndex: 15, available: 320, selectedHasCity: false })
     const caret = caretOffset(spills, 15, 320)!
@@ -1223,13 +1230,42 @@ describe('caret alignment', () => {
     return x + layout.panels[i]!.marginLeft
   }
 
+  /**
+   * Rows are CENTRED — `.rwi { margin: 0 auto }` — so a row that fits sits
+   * inside a gutter of half the free space, and the caret has to account for
+   * it. Auto margins absorb only POSITIVE free space, so an overflowing row is
+   * still left-aligned and the gutter is zero.
+   */
+  const gutter = (layout: ReturnType<typeof layoutRow>, available: number) =>
+    Math.max(0, Math.round((available - layout.contentWidth) / 2))
+
   const centresOn = (selectedIndex: number, count = 3, available = 320) => {
     const layout = row(count, selectedIndex, available)
     const caret = caretOffset(layout, selectedIndex, available)!
     const panel = layout.panels[selectedIndex]!
     // caretOffset returns the LEFT edge of a 16px caret, so add half back.
-    return Math.abs(caret + CARET_HALF - (originOf(layout, selectedIndex) + panel.width / 2))
+    const panelCentre =
+      gutter(layout, available) + originOf(layout, selectedIndex) + panel.width / 2
+    return Math.abs(caret + CARET_HALF - panelCentre)
   }
+
+  it('CM.40 — a centred row shifts the caret by the gutter, not just the origin', () => {
+    const available = 320
+    const layout = row(3, 1, available)
+    // the row fits, so there IS a gutter and the caret cannot ignore it
+    expect(gutter(layout, available)).toBeGreaterThan(0)
+    expect(centresOn(1)).toBeLessThanOrEqual(1)
+  })
+
+  it('CM.41 — a row wider than the viewport has no gutter and stays left-aligned', () => {
+    const available = 320
+    // `overlapping` alone is not enough: a row can overlap and still be
+    // narrower than the viewport, in which case it IS centred. The gutter only
+    // vanishes once the content genuinely outgrows the space.
+    const layout = row(25, 0, available)
+    expect(layout.contentWidth).toBeGreaterThan(available)
+    expect(gutter(layout, available)).toBe(0)
+  })
 
   it('CM.35 — the caret centres on the selected panel', () => {
     expect(centresOn(1)).toBeLessThanOrEqual(1)
@@ -1242,16 +1278,16 @@ describe('caret alignment', () => {
 
   it('CM.37 — the layout uses the same widths the stylesheet renders', () => {
     // CSS cannot be read from here, so these literals are the coupling: they
-    // mirror `.ln.mid .p { flex: 0 0 68px }` and `.p.sel { flex: 0 0 78px }` in
+    // mirror `.ln.mid .p { flex: 0 0 74px }` and `.p.sel { flex: 0 0 84px }` in
     // CalendarBarrel.svelte. Asserting the literal rather than the constant is
     // deliberate — comparing PANEL_W to itself would pass while the stylesheet
     // said something else entirely, which is exactly how the caret came to
     // point ~20px left of its tile.
-    expect(PANEL_W).toBe(68)
-    expect(PANEL_W_SELECTED_CITY).toBe(78)
+    expect(PANEL_W).toBe(74)
+    expect(PANEL_W_SELECTED_CITY).toBe(84)
     const layout = row(3, 1)
-    expect(layout.panels[0]!.width).toBe(68)
-    expect(layout.panels[1]!.width).toBe(78)
+    expect(layout.panels[0]!.width).toBe(74)
+    expect(layout.panels[1]!.width).toBe(84)
   })
 
   it('CM.38 — no caret without a selection', () => {
