@@ -647,10 +647,22 @@ export function countryCode(raw: string | null | undefined): string | null {
 // Barrel geometry — ADR-084 §5
 // ---------------------------------------------------------------------------
 
-/** Plain panel width. */
-export const PANEL_W = 48
+/**
+ * Plain panel width, and it MUST match `.ln.mid .p { flex: 0 0 68px }` in
+ * CalendarBarrel.svelte. CSS cannot import this, so the two are coupled by
+ * convention — the same arrangement as `ROW_H` and `.ln`'s height.
+ *
+ * It was 48 while the stylesheet rendered 68, which is a quiet failure: every
+ * panel still LOOKED right because flex does the real layout, but the caret is
+ * positioned from these numbers and so pointed ~20px left of the tile it was
+ * meant to indicate, drifting further with each panel across the row.
+ *
+ * Monthly seams are what allowed the tiles to grow: a row holds at most four
+ * events where a quarter held up to nine.
+ */
+export const PANEL_W = 68
 export const PANEL_GAP = 3
-/** The selected panel spells its month out in full, so it is never 48px. */
+/** The selected panel spells its month out in full, so it is never PANEL_W. */
 export const PANEL_W_SELECTED = 74
 /** …and needs more again when it also carries a city. */
 export const PANEL_W_SELECTED_CITY = 78
@@ -746,7 +758,9 @@ export function layoutRow(options: {
 }
 
 /** Half the caret's 12px width, so it points at a panel's centre. */
-const CARET_HALF = 6
+/** Half the caret's width. MUST match `.crt`'s border-left/right in
+    CalendarBarrel.svelte, or the point lands beside the tile it indicates. */
+const CARET_HALF = 8
 
 /** Distance from the row's content start to panel `i`'s left edge. */
 function panelOrigin(layout: RowLayout, i: number): number {

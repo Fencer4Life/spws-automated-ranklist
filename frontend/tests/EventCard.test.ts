@@ -396,3 +396,28 @@ describe('EventCard — redesign', () => {
     expect(c.querySelector('.chp.status-cancelled')).not.toBeNull()
   })
 })
+
+describe('EventCard — the date leads', () => {
+  // EC.45 — the date was the smallest text on the card at 11px muted, quieter
+  // than the fee keys, despite ADR-084 §8 ordering the card by what a fencer
+  // acts on and putting identity first. It is the first thing anyone checks.
+  it('EC.45: renders the date range prominently in the header', () => {
+    const c = card({
+      txt_code: 'PPW1-2026-2027',
+      dt_start: '2026-09-26',
+      dt_end: '2026-09-27',
+    })
+    const dt = c.querySelector('.cdt')!
+    expect(dt.textContent).toContain('26')
+    expect(dt.textContent).toContain('27')
+    // the chip still sits alongside it, not instead of it
+    expect(c.querySelector('.ccd')!.textContent).toBe('PPW1-2026-2027')
+  })
+
+  it('EC.46: a single-day event shows one date, not a range', () => {
+    const c = card({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26', dt_end: '2026-09-26' })
+    const text = c.querySelector('.cdt')!.textContent!
+    expect(text).toContain('26')
+    expect(text).not.toMatch(/[–-]\s*\d/)
+  })
+})

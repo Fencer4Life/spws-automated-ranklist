@@ -86,7 +86,7 @@
 
 <div class="crw">
   {#if caretLeft !== null}
-    <div class="crt" style:left={`${caretLeft}px`}></div>
+    <div class="crt {caretType}" style:left={`${caretLeft}px`}></div>
   {/if}
 </div>
 
@@ -421,6 +421,22 @@
   })
 
   /** Caret position — the centre, since the row scrolls its selection there. */
+  /**
+   * The caret takes the SELECTED event's organizer hue, matching the coloured
+   * top edge of the card below it, so the two read as one edge tapering to a
+   * point at the tile the card is showing.
+   *
+   * It used to be drawn in `--surface-1` — the card's background. Against the
+   * page that is a pale triangle sitting directly above a 3px coloured edge,
+   * which reads as a smudge rather than a pointer, and the thing that ties the
+   * two halves of the calendar together went unnoticed.
+   */
+  const caretType = $derived.by((): string => {
+    const events = rows[active]?.events ?? []
+    const event = selected != null ? events[selected] : undefined
+    return event ? panelType(event.txt_code) : ''
+  })
+
   const caretLeft = $derived.by((): number | null => {
     const layout = midLayout
     if (!layout) return null
@@ -772,7 +788,7 @@
     align-self: center;
   }
   .crw {
-    height: 7px;
+    height: 8px;
     position: relative;
   }
   .crt {
@@ -780,9 +796,23 @@
     top: 0;
     width: 0;
     height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-bottom: 7px solid var(--surface-1, #f1efe9);
-    transition: left 0.3s;
+    /* Wider and taller than the original 6/7: it has to carry across the gap
+       between the drum and the card and be seen doing it. */
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid var(--caret, #6f7d8f);
+    transition:
+      left 0.3s,
+      border-bottom-color 0.3s;
+  }
+  .crt.ppw,
+  .crt.mpw {
+    --caret: #2e7d52;
+  }
+  .crt.pew {
+    --caret: #1f6fb0;
+  }
+  .crt.int {
+    --caret: #b1791d;
   }
 </style>

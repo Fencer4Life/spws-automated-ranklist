@@ -1,6 +1,6 @@
 # ADR-084: Calendar Quarter Barrel + Single Event Card
 
-**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; and a tap on a receded row's panel now carries that panel to the card rather than the row's default. Open items 1 and 2 remain open — neither is settled by this amendment.
+**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment.
 **Date:** 2026-08-09
 **Supersedes:** [ADR-015](015-m8-ui-design-decisions.md) §2 (Calendar Layout — Vertical Timeline) and its `m8_calendar_view.html` mockup registry entry. ADR-015 §§1, 3–9 are untouched.
 **Amends:** [ADR-018](018-rolling-score.md) (withdraws the calendar rolling-progress strip; the scoring rule is unaffected), [ADR-017](017-season-configurable-evf-toggle.md) (records the calendar's own toggle field and the data constraint), [ADR-079](079-event-self-registration-identity.md) §7 (decouples the entry-list gate from the registration cutoff), [ADR-030](030-event-registration-url-deadline.md) (relocates the registration DOM contract), [ADR-005](005-svelte-state-i18n.md) (retires the no-pluralisation trade-off), [ADR-028](028-evf-calendar-results-import.md) (carves out one-time curated enrichment), [ADR-037](037-derived-display-status-awaiting-results.md) (repoints consumers), [ADR-040](040-multi-slot-event-urls.md) (permits render-time day labels)
@@ -936,6 +936,18 @@ The window closes at `dt_end`, **not** at `dt_registration_deadline`. That is de
 That discards the one thing the tap had already said. Aiming at the third event in a row and landing on the first is a small, repeated annoyance that costs a second tap every time. A panel tap now carries **that panel** through the rotation.
 
 Tapping the row body still uses the default, because no event was named there. The distinction is between "show me this month" and "show me this event".
+
+### I · The date leads the card, and the caret points at the right tile
+
+Two corrections from live testing.
+
+**The date is the card's headline.** §8 orders the card by what a fencer acts on and puts identity — date, code, name, place — first, but the date rendered at 11px in the secondary colour: the *smallest* text on the card, quieter than the fee keys. It is the first thing anyone checks, so it is now 17px/700 in the primary colour, larger than the event name.
+
+**`PANEL_W` and the stylesheet had drifted apart, and the caret paid for it.** The constant stayed at 48 while `.ln.mid .p` was widened to 68px — a change monthly seams made affordable, since a row holds at most four events where a quarter held up to nine. Nothing looked wrong, because flex does the real layout; but the caret that points from the card up to its tile is positioned from these numbers, so it sat about 20px left of its target and drifted further across the row. `PANEL_W` is now 68 and `CARET_HALF` 8, each carrying a comment naming the CSS rule it mirrors, and a test asserts the **literal** rather than the constant — comparing `PANEL_W` to itself would pass while the stylesheet said something else, which is precisely how this got through.
+
+Retuning that constant moved the overlap threshold: at 320px **four panels now sit flat and five fan**, where five sat flat before. That is a better fit than it sounds — the busiest month in the entire PROD pool holds exactly four events, so a monthly row fits flat and fanning becomes the exception rather than the rule it was at quarterly granularity.
+
+The caret also takes the selected event's organizer hue now, matching the card's coloured top edge, so the two read as one edge tapering to a point. It was drawn in `--surface-1` — the card's own background — which against the page is a pale triangle sitting directly above a 3px coloured edge, and the element tying the two halves of the calendar together went unnoticed.
 
 ### What this amendment does *not* settle
 
