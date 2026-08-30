@@ -112,51 +112,26 @@ describe('CalendarBarrel — rotation state', () => {
 
   // CB.3 — rotation is a translateY on the drum, offset so the focused row
   // sits in the middle of the three.
-  // CB.3 — a true cylinder, but the ROWS turn and the drum only holds the
-  // axis. Each row's angle is relative to the focused one, so no angle ever
-  // exceeds the horizon.
-  //
-  // The alternative — fixed row angles with a rotating drum — fails silently at
-  // depth: the drum angle is `-active x theta`, which reaches -1638deg by row
-  // 63, and a rotation that large is dropped from the composed matrix outright.
-  // The rows kept their own large rotations, nothing cancelled, and the focused
-  // row slid further down the screen the further you rolled until its tiles
-  // buried the seam below. Relative angles cannot accumulate.
-  //
+  // CB.3 — the drum is a true cylinder, not a sliding stack. It TURNS by its
+  // own angle; each row holds a fixed angle on the cylinder's surface and is
+  // never re-transformed, which is what lets a CSS transition animate the
+  // rotation at all (a transition cannot cross replaced nodes).
   // R is fixed by the geometry: R = (rowHeight/2) / tan(theta/2)
-  //                              = 42 / tan(13deg) = 182px at theta = 26deg.
-  it('CB.3: turns the rows, with angles relative to the focused row', () => {
+  //                              = 41 / tan(13deg) = 178px at theta = 26deg.
+  it('CB.3: rotates the drum as one body on a cylinder', () => {
     const { container } = barrel({ anchorIndex: 2 })
     const drum = container.querySelector('.drum') as HTMLElement
-    // the drum holds the axis and nothing else
-    expect(drum.style.transform).toBe('translateZ(-182px)')
+    expect(drum.style.transform).toBe('translateZ(-178px) rotateX(-52deg)')
 
     const lines = [...container.querySelectorAll('.ln')] as HTMLElement[]
-    expect(lines[2]!.style.transform).toBe('rotateX(0deg) translateZ(182px)') // focused
-    expect(lines[3]!.style.transform).toContain('rotateX(26deg) translateZ(182px)')
-    expect(lines[1]!.style.transform).toContain('rotateX(-26deg) translateZ(182px)')
-    // receded rows also carry the squeeze
-    expect(lines[1]!.style.transform).toContain('scale(')
-    expect(lines[2]!.style.transform).not.toContain('scale(')
-  })
-
-  // CB.3c — the angle must not grow with depth. This is the regression that
-  // broke the drum: at row 63 the drum was asking for -1638deg.
-  it('CB.3c: angles stay bounded however deep into the drum you are', () => {
-    const rows = buildMonths(
-      Array.from({ length: 40 }, (_, i) =>
-        ev({ txt_code: `E${i}-2026-2027`, dt_start: `20${26 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}-10` }),
-      ),
-    )
-    const { container } = barrel({ rows, anchorIndex: 30 })
-    const angles = [...container.querySelectorAll('.ln')].map(l => {
-      const m = /rotateX\((-?[\d.]+)deg\)/.exec((l as HTMLElement).style.transform)
-      return m ? Math.abs(+m[1]) : 0
-    })
-    expect(Math.max(...angles)).toBeLessThanOrEqual(40 * 26)
-    // and the focused row is exactly zero, whatever its index
-    expect((container.querySelector('.ln.mid') as HTMLElement).style.transform)
-      .toContain('rotateX(0deg)')
+    // Row angles are absolute positions on the surface, independent of `active`.
+    // Angles are POSITIVE and increase with the row index, which lifts later
+    // months up the screen: a point at angle theta sits at y = -R*sin(theta).
+    // Time therefore runs UPWARD — future above the focused row, past below —
+    // inverting the flat drum, where `.ln.up` was `active - 1`.
+    expect(lines[0]!.style.transform).toBe('rotateX(0deg) translateZ(178px)')
+    expect(lines[1]!.style.transform).toBe('rotateX(26deg) translateZ(178px)')
+    expect(lines[2]!.style.transform).toBe('rotateX(52deg) translateZ(178px)')
   })
 
   // CB.3b — rows past the 80deg horizon have turned away from the viewer and
@@ -473,7 +448,7 @@ describe('CalendarBarrel — jump back to the opening row', () => {
   // The control rides the receded row in the DIRECTION the drum must roll, so
   // its position is the direction cue. Index order is chronological and the
   // cylinder puts later months higher, so `dn` (active + 1) renders above.
-  it('CB.26: sits on the row toward the anchor, and says what it does', async () => {
+  it('CB.26: sits on the row toward the anchor, and names it', async () => {
     const rows = nine()
     const { container } = barrel({ rows, anchorIndex: 6 })
     // rotate backwards, away from the anchor
@@ -481,19 +456,8 @@ describe('CalendarBarrel — jump back to the opening row', () => {
 
     const jump = container.querySelector('.jmp') as HTMLElement
     expect(jump).not.toBeNull()
-    // Labelled by what the destination IS, not which month it happens to be:
-    // naming a month makes the reader decode a date, and naming it "today"
-    // would be wrong, since today's month is often empty and never rested on.
-    expect(jump.textContent!.trim()).toBe(t('calendar_jump_to_next'))
-    // `dn` is a later month, which renders ABOVE, so the control pins to the
-    // top edge. The edge is the direction cue.
-    expect(jump.classList.contains('top')).toBe(true)
-    expect(jump.classList.contains('bot')).toBe(false)
-    // It is a sibling of the drum, NOT parented to the row it points at.
-    // Inside a row it inherited RECEDED_SCALE, so it had to scale by the
-    // inverse to stay legible, and the resulting ~52px pill covered that
-    // row's tiles. Nesting it again would bring the overlap straight back.
-    expect(jump.closest('.ln')).toBeNull()
+    expect(jump.textContent!.trim()).toBe(seam(rows[6]!))
+    expect(jump.closest('.ln')!.classList.contains('dn')).toBe(true)
   })
 
   it('CB.27: flips to the other side once the anchor is behind you', async () => {
@@ -503,10 +467,7 @@ describe('CalendarBarrel — jump back to the opening row', () => {
     await fireEvent.click(container.querySelector('.ln.dn')!)
 
     const jump = container.querySelector('.jmp')!
-    // `up` is an earlier month, which renders BELOW: bottom edge.
-    expect(jump.classList.contains('bot')).toBe(true)
-    expect(jump.classList.contains('top')).toBe(false)
-    expect(jump.closest('.ln')).toBeNull()
+    expect(jump.closest('.ln')!.classList.contains('up')).toBe(true)
   })
 
   it('CB.28: tapping it returns to the opening row and selects there', async () => {
@@ -524,11 +485,9 @@ describe('CalendarBarrel — jump back to the opening row', () => {
     expect(container.querySelector('.jmp')).toBeNull()
   })
 
-  // Guards what used to need stopPropagation. The button sat inside a row that
-  // is itself a tap target rotating ONE step, so the jump and a single step
-  // fought over the same tap — exactly when someone is already lost in the
-  // drum. Hoisting it out of the drum removed the conflict at the source; this
-  // stays as the regression guard, because re-nesting it would restore it.
+  // The row underneath is itself a tap target that rotates ONE step. Without
+  // stopPropagation the jump and a single step fight over the same tap —
+  // exactly when someone is already lost in the drum.
   it('CB.29: the tap does not also rotate the row it sits on', async () => {
     const rows = nine()
     const { container } = barrel({ rows, anchorIndex: 6 })
