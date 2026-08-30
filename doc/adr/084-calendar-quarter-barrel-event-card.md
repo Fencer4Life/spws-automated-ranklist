@@ -1,6 +1,6 @@
 # ADR-084: Calendar Quarter Barrel + Single Event Card
 
-**Status:** Draft (proposed 2026-08-09; awaiting sign-off)
+**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; and a tap on a receded row's panel now carries that panel to the card rather than the row's default. Open items 1 and 2 remain open — neither is settled by this amendment.
 **Date:** 2026-08-09
 **Supersedes:** [ADR-015](015-m8-ui-design-decisions.md) §2 (Calendar Layout — Vertical Timeline) and its `m8_calendar_view.html` mockup registry entry. ADR-015 §§1, 3–9 are untouched.
 **Amends:** [ADR-018](018-rolling-score.md) (withdraws the calendar rolling-progress strip; the scoring rule is unaffected), [ADR-017](017-season-configurable-evf-toggle.md) (records the calendar's own toggle field and the data constraint), [ADR-079](079-event-self-registration-identity.md) §7 (decouples the entry-list gate from the registration cutoff), [ADR-030](030-event-registration-url-deadline.md) (relocates the registration DOM contract), [ADR-005](005-svelte-state-i18n.md) (retires the no-pluralisation trade-off), [ADR-028](028-evf-calendar-results-import.md) (carves out one-time curated enrichment), [ADR-037](037-derived-display-status-awaiting-results.md) (repoints consumers), [ADR-040](040-multi-slot-event-urls.md) (permits render-time day labels)
@@ -849,3 +849,110 @@ A 320px screenshot placed beside the mock is the acceptance check.
 The event card's two-chip line gains a third chip when EVF has moved a still-future `PLANNED` event: *ZMIANA DATY z 12/12/2026*, naming the first date EVF published.
 
 The barrel is deliberately untouched. This ADR already spends hue on event type, fill on completion and ring on next-upcoming; a fourth channel would crowd the overview that is scanned first. The signal appears on the card the moment the event is opened. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
+
+## Amendment (2026-08-29) — monthly seams, an inverted palette, and a cylinder
+
+Everything below was measured against the live PROD pool (114 events, 91 dated, 2022-01-08 → 2027-06-18), seeded into LOCAL and verified on both sides, not inferred from the code. Source: `doc/plans/kalendarz-mocki-2026-08-29.html` (live mocks + the locked decision table).
+
+### A · The drum buckets by month, not quarter
+
+**§2 and §4 are superseded in their bucketing.** Quarters overflow: on PROD **10 of 19 quarter rows hold five or more events, the worst nine**. Nine 48px tiles need 456px and cannot fit a 320px viewport, which is the sole reason §5's overlap-and-fan machinery exists. Monthly gives **48 active rows, worst row four, none over four**. PZSz senior events are being added, which makes quarters worse and months merely fuller.
+
+`layoutRow()` and §5 are **kept**, not retired: PZSz events could push a month to six or eight tiles (303–399px), still over 320px. Overlap stops being the common case rather than stopping being needed.
+
+The seam engraves the **full month name**, localised. Polish needs two forms and the locale files carry both: the seam names a month standing alone and takes the **nominative** (`month_N`, "Wrzesień"), while a tile prints a day beside it and takes the **genitive** (`cal_month_N`, "26 września"). Using one form for both is visibly wrong in Polish and invisible in English — ADR-063's concern, applied to a new surface.
+
+### B · Time drives the palette; the past recedes
+
+**§1 is superseded in its channel assignment.** §1 gave hue to event type and fill to completion, and `CalendarBarrel.svelte` implemented fill as `enum_status === 'COMPLETED'`. On PROD that is **67 of 114 events**, so the entire colour budget went to the finished majority while the events a fencer can still enter rendered as plain white.
+
+The channels are reassigned:
+
+| Channel | Was | Is |
+| --- | --- | --- |
+| Body fill | completion (`COMPLETED`) | **time** — grey once past, tinted while ahead, saturated when imminent |
+| Hue | event type | **time**, on the body; type moves to the edge |
+| Top edge | — | **organizer**, 3px, non-chromatic elsewhere |
+| Ring | next upcoming | unchanged |
+| Outline | selected | unchanged |
+
+Time state is decided by **date, not status**, and that distinction is the point: an event can sit un-ingested for weeks and still read `PLANNED`, so a status-driven palette showed a competition held in January as though it were ahead. A finished event keeps its colour for **thirty days** — results arrive late and a competition stays worth looking at for about a month — then goes neutral. An event within **seven days** of starting is emphasised. An event with no `dt_start` is treated as ahead, never greyed, because it cannot be placed.
+
+A past tile loses its type hue deliberately. Type stays legible in the label, and past events are the ones nobody scans.
+
+### C · The drum is a true cylinder
+
+**§2's `translateY` rotation is superseded.** Rows are placed on the surface of a cylinder — `rotateX(i·θ) translateZ(R)`, with `R = (rowHeight/2) / tan(θ/2)` — and the drum rotates as one body. Foreshortening at the rim, the compression of spacing toward the horizon, occlusion and the horizon itself fall out of the perspective projection instead of being drawn. At θ = 26° the drum carries **seven rows** (R = 178px; a receded row measures 69px against the focused row's 82px). Time runs **upward**: the future sits above the focused row, the past below, inverting the flat drum's `.ln.up = active − 1`.
+
+Two failures are recorded because both cost time and neither is obvious:
+
+1. **A drum whose DOM is rebuilt on rotation cannot animate at all.** A CSS transition needs the same nodes on both sides of the change, so re-rendering rows on rotate makes them snap while the drum slides. Row angles are absolute positions on the cylinder and are written once; only the drum's transform changes.
+2. **Rotation is `−active × θ`, which reaches `−1456deg` by row 56.** With the transition live from the first paint the drum spins through four complete turns before settling. Animation is enabled only after the opening frame — by timeout, not `requestAnimationFrame`, which never fires in a background tab and would strand the transition permanently off.
+
+Momentum overshoot and motion blur were both built and both rejected: the geometry was never the problem, the motion effects layered on it were.
+
+### D · Quiet months render, but the drum never rests on one
+
+Monthly granularity materialises **18 empty rows of 66** on the current pool, against a handful at quarterly. They are rendered, so a gap in a season stays visible and the time axis stays linear, but `settleRow()` carries the rotation on in the direction of travel until it reaches a month that holds something, and reverses at the end of the drum rather than falling off. `resolveAnchorRow()` uses it too, which is a deliberate change from §4: the quarter barrel parked on an empty row so "now" stayed centred, and at monthly granularity that shows the user nothing.
+
+### E · Country flags are the complete circular set
+
+**§15 is superseded.** §15 chose CSS geometry drawn from four primitives, with emblem-bearing flags **deliberately absent** rather than approximated and four stripe-only pairs (Italy/Mexico, Ireland/Côte d'Ivoire, Romania/Chad, Monaco/Indonesia) acknowledged as indistinguishable.
+
+That approach produced **wrong flags, silently**. Three of about sixty-six were found by eye in one sitting, each on a country the calendar actually shows:
+
+- **`CH` rendered as a Danish cross.** The Swiss cross is free-standing and inset, arms stopping short of the edges; and the flag is **square**, so a 19×13 box also gave it unequal 3.1px/4.6px arms. Live on PEW10e in Lausanne.
+- **`GE` rendered as England** — a plain red cross on white. Georgia's four Bolnisi crosses are the only thing separating them. Live on MSW in Tbilisi.
+- **`GR` rendered as nine bare stripes** with its canton missing, which in a circle is indistinguishable from any other striped flag.
+
+All **265 ISO-3166 alpha-2 countries** are now drawn correctly, from `circle-flags` (MIT), generated into an inline module at 168KB raw / **38KB gzipped**. Coverage matters because championships move: the calendar already reaches Toronto and Tbilisi, and scoping the set to countries currently in the database would fail the first time an event goes somewhere new.
+
+Still **inline**, and §15's constraint is upheld even though its stated reason was wrong. The old component cited ADR-007 for a CSP that blocks fetched assets; **ADR-007 is "Shadow DOM (Implemented M8)" and says nothing about CSP, and no CSP exists in the repository.** The real constraint is that `vite.config.ce.ts` sets no `base`, so an emitted asset URL resolves against the host page inside a custom element on a third-party site and 404s — the defect already latent in `SPWS-logo.png`.
+
+Circular removes the aspect-ratio problem entirely, so there is no box to force a square flag into.
+
+### F · The card gains a surface, and keeps every block
+
+**§8's content and ordering are untouched** — all ten blocks remain, in order, with their type sizes unchanged. Only the surface changes: a layered elevation shadow, a solid 3px top edge in the selected tile's organizer colour so the card reads as extruded from it, and a brief tilt when the content swaps.
+
+Two treatments were built and rejected. A **top-lit surface gradient** shifted contrast from top to bottom behind a lot of small text — fee keys, chips, pills — and cost legibility for depth the shadow already supplied. An **inner bevel** added nothing once the shadow existed. There are **no gradients on the card**: the top edge began as a wash falling from the top and is a solid bar precisely because that was the rejected gradient under another name.
+
+The status chip follows the inverted palette — **`COMPLETED` renders grey, not green**, because a green chip would contradict a greyed tile. The registry chip carries the organizer hue **outlined** while the status chip is **filled**: hue alone could not separate them, since an SPWS event that is `PLANNED` renders two adjacent chips in the same green and reads as one blob. A cancelled event strikes its title and dims its content **element by element**, not by an opacity on the card — opacity on a parent applies to every descendant, so a blanket dim would mute the highlighted cancelled chip, which is the one thing that must not be missed.
+
+The location line is no longer gated on a parsed city. `txt_location` sometimes holds a venue string the scraper wrote into it, which `splitLocation()` classifies as venue-only; gating the row on `city` therefore dropped the **flag and the country** with it, leaving a Budapest event with no indication of where it was.
+
+### G · A live-registration dot on the tile
+
+A dot marks an event whose registration is open — from the moment a registration URL exists until `dt_end`. **Relates to [ADR-030](030-event-registration-url-deadline.md).**
+
+The URL is the signal because it is not incidental: `EventManager`'s "Rejestracja SPWS" checkbox **derives** `url_registration` (and `url_entry_list`) when ticked and **clears both to `''`** when unticked, so a non-empty URL means an administrator opened registration. A new `dt_registration_open` column was built for this and **reverted**: it duplicated a fact the schema already carried.
+
+The window closes at `dt_end`, **not** at `dt_registration_deadline`. That is deliberate and it means the dot **outlives the card's registration pill**, which ADR-030's `registrationState()` retires at the deadline. For PPW1-2026-2027 that is a week. The dot marks a live registration/participation window; the pill marks whether the link is still usable.
+
+### H · A tap names an event, and rotation keeps it
+
+**§6 is refined.** §6 said tapping a receded row rotates it to centre and tapping a panel on the focused row selects that event. It left the third case implicit, and the implementation resolved it badly: tapping a *panel on a receded row* rotated the row and then selected the row's **default** — the ringed next-upcoming, else the first event.
+
+That discards the one thing the tap had already said. Aiming at the third event in a row and landing on the first is a small, repeated annoyance that costs a second tap every time. A panel tap now carries **that panel** through the rotation.
+
+Tapping the row body still uses the default, because no event was named there. The distinction is between "show me this month" and "show me this event".
+
+### What this amendment does *not* settle
+
+**Open item 1 is still open.** It asks what the card should *open* on and proposes a seven-day result window before falling back to next-upcoming. The thirty-day window introduced above governs the **palette**, not the anchor; `resolveAnchorRow()` still resolves to next-upcoming. The two windows are unrelated and should not be conflated.
+
+**Open item 2 is still open** — past-season anchoring is unchanged.
+
+Two further items are open and recorded in the plan rather than here, being product questions rather than architecture: whether a 66-row drum needs a jump-to-today control, and whether the committed seed dump (`seed_prod_latest.sql`, still the 8 August snapshot) should be refreshed.
+
+### Verification
+
+| Gate | Result |
+| --- | --- |
+| vitest | 655 passing, 45 files |
+| pgTAP | 849 passing, 68 files |
+| svelte-check | 0 errors |
+| Bundle | 313KB gzipped, of which flags are 38KB |
+| Live | verified against the seeded PROD pool at LOCAL, not only in tests |
+
+`lib/calendarQuarters.ts` is renamed `lib/calendarMonths.ts`; `Quarter` becomes `MonthRow`; `buildQuarters`/`quarterKeyOf`/`resolveAnchorQuarter` become `buildMonths`/`monthKeyOf`/`resolveAnchorRow`. New exports: `settleRow()`, `eventTimeState()`, `isRegistrationOpen()`. `CountryFlag.svelte` loses ~350 lines of hand-drawn geometry and its test suite is replaced rather than ported — 18 of its 22 tests asserted primitives that no longer exist.

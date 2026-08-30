@@ -9,6 +9,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import type { CalendarEvent, EventStatus } from '../src/lib/types'
 import EventCard from '../src/components/EventCard.svelte'
+import { t } from '../src/lib/locale.svelte'
 
 const TODAY = '2026-08-09'
 
@@ -345,5 +346,53 @@ describe('EventCard — links and weapons', () => {
   it('EC.30: renders no invitation link when url_invitation is null', () => {
     const c = card({ txt_code: 'PPW1-2026-2027', url_invitation: null })
     expect(c.querySelector('.invitation-link')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Redesign, locked 2026-08-29. The card's CONTENT and ordering are unchanged —
+// all ten blocks stay — so what these pin is the surface and the two chips.
+// ---------------------------------------------------------------------------
+
+describe('EventCard — redesign', () => {
+  it('EC.40: names the country in full, localised, beside the place', () => {
+    // txt_country is free text in mixed languages ("GRUZJA", "Węgry"), so the
+    // label comes from the ISO code via the country_XX keys, not from the raw
+    // column. That is what makes it consistent.
+    const c = card({ txt_code: 'PPW1-2026-2027', txt_location: 'Opole', txt_country: 'Polska' })
+    expect(c.querySelector('.ctry')!.textContent).toBe(t('country_PL'))
+  })
+
+  it('EC.41: falls back to the raw country when the code is unrecognised', () => {
+    const c = card({ txt_code: 'PPW1-2026-2027', txt_location: 'X', txt_country: 'Ruritania' })
+    expect(c.querySelector('.ctry')!.textContent).toBe('Ruritania')
+  })
+
+  it('EC.42: the registry chip carries the organizer, on its own class', () => {
+    // Status is filled and registry outlined so the two never blur together —
+    // an SPWS event that is "planned" would otherwise render two adjacent
+    // chips in the same green.
+    const spws = card({ txt_code: 'PPW1-2026-2027' })
+    expect(spws.querySelector('.chp.reg-SPWS')).not.toBeNull()
+
+    const evf = card({ txt_code: 'PEW1efs-2026-2027' })
+    expect(evf.querySelector('.chp.reg-EVF')).not.toBeNull()
+  })
+
+  it('EC.43: the top edge is typed, so the card reads as extruded from its tile', () => {
+    expect(card({ txt_code: 'PPW1-2026-2027' }).querySelector('.card')!.classList.contains('ppw')).toBe(true)
+    expect(card({ txt_code: 'PEW1efs-2026-2027' }).querySelector('.card')!.classList.contains('pew')).toBe(true)
+  })
+
+  it('EC.44: a cancelled event keeps the cancelled class for the struck title', () => {
+    const c = card({
+      txt_code: 'PEW0efs-2026-2027',
+      enum_status: 'CANCELLED' as EventStatus,
+    })
+    expect(c.querySelector('.card')!.classList.contains('cancelled')).toBe(true)
+    // The chip is the loud signal and must NOT be dimmed with the content;
+    // that is a CSS rule, so what is asserted here is that it is present and
+    // carries its own class rather than sharing the content's.
+    expect(c.querySelector('.chp.status-cancelled')).not.toBeNull()
   })
 })

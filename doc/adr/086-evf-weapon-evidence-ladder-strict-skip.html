@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="b5ab1f1c659268d43995d1d38d883c13521ec20af150dda59f7986cc623ce67c">
+<meta name="adr-source-sha256" content="63ba7c8fd0de474abc049f2908a2f6f9cc102ba6dafa2153793a9fedb85d5b19">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -40,7 +40,7 @@
 </ul>
 <p>Two further facts constrain the fix:</p>
 <ul>
-<li><strong><code>arr_weapons</code> cannot express &quot;unknown&quot;.</strong> Its <code>DEFAULT</code> is <code>'{EPEE,FOIL,SABRE}'</code>, so omitting the column silently asserts all three. Measured on CERT: <strong>zero</strong> rows are <code>NULL</code>, and 86 of 96 sit on that default — including <strong>60 COMPLETED events</strong>, among them epee-only and sabre-only ones. This is why <code>weaponLetters()</code> in <a href="../../frontend/src/lib/calendarQuarters.ts"><code>frontend/src/lib/calendarQuarters.ts</code></a> reads weapons from the code suffix and returns <code>[]</code> for an unsuffixed code, &quot;rather than a guess&quot;.</li>
+<li><strong><code>arr_weapons</code> cannot express &quot;unknown&quot;.</strong> Its <code>DEFAULT</code> is <code>'{EPEE,FOIL,SABRE}'</code>, so omitting the column silently asserts all three. Measured on CERT: <strong>zero</strong> rows are <code>NULL</code>, and 86 of 96 sit on that default — including <strong>60 COMPLETED events</strong>, among them epee-only and sabre-only ones. This is why <code>weaponLetters()</code> in <a href="../../frontend/src/lib/calendarMonths.ts"><code>frontend/src/lib/calendarMonths.ts</code></a> reads weapons from the code suffix and returns <code>[]</code> for an unsuffixed code, &quot;rather than a guess&quot;.</li>
 <li><strong>The seed inserts 32+ unsuffixed <code>PEW</code> events already in <code>COMPLETED</code></strong> (<code>PEW11-2024-2025</code> Guildford, <code>PEW13-2023-2024</code>, <code>PEW68-2026-2027</code>, …). Migrations run <em>before</em> the ADR-036 seed dump, so any <code>CHECK</code> constraint on this shape would reject the seed on every <code>reset-dev.sh</code> and every CI run.</li>
 </ul>
 <p>Finally, fixing the weapons failure exposed the next domino. Admitting Tampere between Guildford (<code>PEW6</code>, 9 Jan) and Levi Open (<code>PEW7</code>, 30 Jan) shifts ten events down one, while Stockholm — cancelled by EVF in the <strong>same</strong> scrape — was pinned at <code>PEW11</code> by ADR-043's &quot;a later cancellation keeps its positive code&quot;. The two rules cannot both hold:</p>
@@ -160,5 +160,5 @@ Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>b5ab1f1c659268d43995d1d38d883c13521ec20af150dda59f7986cc623ce67c</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>63ba7c8fd0de474abc049f2908a2f6f9cc102ba6dafa2153793a9fedb85d5b19</code></footer>
 </div></body></html>

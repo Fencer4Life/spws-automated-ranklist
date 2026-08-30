@@ -185,7 +185,7 @@ export async function fetchCalendarEvents(seasonId: number): Promise<CalendarEve
  *
  * The drum rolls back to the start of history with no season clamp, so the
  * single-season `fetchCalendarEvents` cannot feed it. Ordering is by date here,
- * but `buildQuarters` re-sorts defensively (CQ.2) — do not rely on it.
+ * but `buildMonths` re-sorts defensively (CQ.2) — do not rely on it.
  */
 export async function fetchAllCalendarEvents(): Promise<CalendarEvent[]> {
   const { data, error } = await getClient()

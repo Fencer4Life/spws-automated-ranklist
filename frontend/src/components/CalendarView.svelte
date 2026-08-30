@@ -1,7 +1,7 @@
 <div class="calendar-view">
   {#if hasEvents}
     <CalendarBarrel
-      quarters={model.quarters}
+      rows={model.rows}
       anchorIndex={model.anchorIndex}
       nextUpcoming={model.nextUpcoming}
       onselect={(event) => { selected = event }}
@@ -62,7 +62,7 @@
   // Calendar orchestrator — ADR-084.
   //
   // It holds state and wires three children; it derives nothing itself. Every
-  // rule that used to live here inline — visibility, scope, quarter bucketing,
+  // rule that used to live here inline — visibility, scope, row bucketing,
   // next-upcoming, the anchor — now lives in `buildCalendar()`, where it can be
   // asserted without mounting anything.
   //
@@ -72,7 +72,7 @@
   // flat rolling-progress strip.
   import type { CalendarEvent, Environment } from '../lib/types'
   import { t } from '../lib/locale.svelte'
-  import { buildCalendar, type CalendarScope } from '../lib/calendarQuarters'
+  import { buildCalendar, type CalendarScope } from '../lib/calendarMonths'
   import CalendarBarrel from './CalendarBarrel.svelte'
   import EventCard from './EventCard.svelte'
   import RegistrationModal from './RegistrationModal.svelte'
@@ -103,7 +103,7 @@
     buildCalendar({ events, scope: scopeFilter, showEvfToggle }),
   )
 
-  const hasEvents = $derived(model.quarters.some((q) => q.events.length > 0))
+  const hasEvents = $derived(model.rows.some((q) => q.events.length > 0))
 
   /** The barrel reports its own opening selection, so this starts null. */
   let selected = $state<CalendarEvent | null>(null)
@@ -116,9 +116,9 @@
     // Captured first: TypeScript will not narrow a mutable `$state` binding
     // inside the closure below, so `selected.id_event` there is an error.
     const current = selected
-    const visible = model.quarters.flatMap((q) => q.events)
+    const visible = model.rows.flatMap((q) => q.events)
     if (current && visible.some((e) => e.id_event === current.id_event)) return current
-    return model.nextUpcoming ?? model.quarters[model.anchorIndex]?.events[0] ?? visible[0] ?? null
+    return model.nextUpcoming ?? model.rows[model.anchorIndex]?.events[0] ?? visible[0] ?? null
   })
 
   // ADR-079 amend — SPWS-hosted registration and entry-list links open this

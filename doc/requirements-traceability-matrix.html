@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="276bd301b86bb29276208facec552e882b50db37681294769e7eba850bc90e0c">
+<meta name="doc-source-sha256" content="597fd94ac943889406028a7f7fcab69472f0418c0847cde4e6b3f004071f69c7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -651,7 +651,7 @@
 <td>FR-90</td>
 <td>Event registration URL: nullable <code>url_registration</code> on <code>tbl_event</code>, displayed in Calendar before deadline/start, editable in Admin UI</td>
 <td>UC21, ADR-030, ADR-084</td>
-<td>8.18–8.20, 9.43a–9.43c; <strong>CQ.27–CQ.35</strong> (visibility rules, pure), <strong>EC.20–EC.24</strong> (card rendering) — <em>retargeted 2026-08-09: the requirement is unchanged, but ADR-084 replaced the calendar timeline, so vitest 8.21–8.25 no longer exist</em></td>
+<td>8.18–8.20, 9.43a–9.43c; <strong>CQ.27–CQ.35</strong> (visibility rules, pure), <strong>EC.20–EC.24</strong> (card rendering), <strong>CM.18–CM.22</strong> (<code>isRegistrationOpen</code>, the tile's live-registration dot) — <em>retargeted 2026-08-09: the requirement is unchanged, but ADR-084 replaced the calendar timeline, so vitest 8.21–8.25 no longer exist. Extended 2026-08-29 (ADR-084 amendment §G): <code>url_registration</code> gains a second consumer — a tile dot marking a live registration window from a non-empty URL through to <code>dt_end</code>, which deliberately outlives the card's registration pill. Suite renamed <code>calendarQuarters.test.ts</code> → <code>calendarMonths.test.ts</code>; the CQ.</em> IDs are unchanged*</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1167,5 +1167,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>276bd301b86bb29276208facec552e882b50db37681294769e7eba850bc90e0c</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>597fd94ac943889406028a7f7fcab69472f0418c0847cde4e6b3f004071f69c7</code></footer>
 </div></body></html>
