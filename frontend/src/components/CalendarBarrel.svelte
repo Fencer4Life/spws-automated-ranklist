@@ -27,6 +27,22 @@
              The code shows on the focused row and permanently on a season
              boundary, whose rule is also drawn heavier — this is where the
              deleted season dropdown's information went. -->
+        {#if showJumpOn === state}
+          <!-- Jump back to where the drum opens. It rides the receded row in
+               the DIRECTION the drum has to roll, so its position is the
+               direction cue and no arrow is needed. stopPropagation because the
+               row underneath is itself a tap target that rotates one step —
+               without it, the jump and a single step would fight over the same
+               tap. -->
+          <button
+            class="jmp"
+            type="button"
+            onclick={(e) => {
+              e.stopPropagation()
+              jumpToAnchor()
+            }}
+          >{seamLabel(rows[anchorIndex]!)}</button>
+        {/if}
         <div class="sm" class:bd={row.isSeasonBoundary}>
           <b>{seamLabel(row)}</b>
           <i></i>
@@ -281,6 +297,36 @@
    * Tapping the row BODY still uses the default (`rotateTo`), because no event
    * was named there.
    */
+  /**
+   * Which receded row carries the jump control, or '' when the drum is already
+   * where it opens.
+   *
+   * Index order is chronological, and the cylinder puts LATER months higher up
+   * the screen — so `dn` (active + 1) renders above and `up` (active - 1)
+   * below. An anchor ahead of the focused row therefore lives on `dn`.
+   *
+   * The destination is `anchorIndex`, NOT the month containing today: today's
+   * month is frequently empty — August 2026 holds no events at all — and the
+   * drum never rests on an empty row, so a literal "jump to today" would land
+   * somewhere it immediately rolls off.
+   */
+  const showJumpOn = $derived(
+    anchorIndex === active || !rows[anchorIndex] ? '' : anchorIndex > active ? 'dn' : 'up',
+  )
+
+  /**
+   * Instant, not animated. Rotation is `-active × θ`, so crossing forty rows is
+   * over a thousand degrees — nearly three full turns of spinning before it
+   * settles, the same failure the opening frame has to avoid.
+   */
+  function jumpToAnchor(): void {
+    if (!rows[anchorIndex]) return
+    animate = false
+    active = settleRow(rows, anchorIndex, anchorIndex > active ? 1 : -1)
+    selectDefault(active)
+    setTimeout(() => { animate = true }, 0)
+  }
+
   function pick(qi: number, j: number): void {
     if (qi !== active) {
       // settleRow can land elsewhere if the target row is empty; a panel tap
@@ -780,6 +826,25 @@
   .p.t2 .cdc {
     font-size: 9px;
     letter-spacing: -0.4px;
+  }
+  /* Distinct enough not to be mistaken for the row it sits on, and a real hit
+     area rather than a text link — this appears exactly when someone is already
+     lost in the drum. */
+  .jmp {
+    position: absolute;
+    right: 0;
+    top: -2px;
+    z-index: 10;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 5px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--accent, #185fa5);
+    background: var(--surface-2, #fff);
+    color: var(--accent, #185fa5);
+    cursor: pointer;
+    white-space: nowrap;
   }
   .mt {
     font-size: 11px;

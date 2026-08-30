@@ -528,5 +528,12 @@
   "country_LA": "Laos",
   "country_PW": "Palau",
   "calendar_next_up": "Next up",
-  "calendar_date_moved_from": "DATE CHANGED from {date}"
+  "calendar_date_moved_from": "DATE CHANGED from {date}",
+  "cal_dow_short_1": "Mon",
+  "cal_dow_short_2": "Tue",
+  "cal_dow_short_3": "Wed",
+  "cal_dow_short_4": "Thu",
+  "cal_dow_short_5": "Fri",
+  "cal_dow_short_6": "Sat",
+  "cal_dow_short_7": "Sun"
 }
