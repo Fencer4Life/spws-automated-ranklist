@@ -1,11 +1,11 @@
-// Calendar quarter barrel — pure derivation layer (ADR-084, Phase 1).
+// Calendar row barrel — pure derivation layer (ADR-084, Phase 1).
 //
 // Everything the old month-grouped view derived inline in CalendarView.svelte
 // lives here so it can be unit-tested without mounting a component. No Svelte,
 // no runes, no DOM. The barrel and the card are presentation only.
 //
 // Plan: doc/plans/kalendarz-barrel-2026-08-08.html §06.
-// Tests: frontend/tests/calendarQuarters.test.ts (CQ.1–CQ.69).
+// Tests: frontend/tests/calendarMonths.test.ts (CQ.1–CQ.69).
 
 import type { CalendarEvent } from './types'
 
@@ -22,18 +22,19 @@ export type PanelType = 'ppw' | 'mpw' | 'pew' | 'int'
 
 export type CalendarScope = 'all' | 'ppw'
 
-export interface Quarter {
-  /** Sortable identity, e.g. `2026-Q4`. */
+export interface MonthRow {
+  /** Sortable identity, e.g. `2026-09`. */
   key: string
   year: number
-  quarter: number
-  /** Engraved on the seam above the row, e.g. `4Q26`. */
+  /** 1-12. The seam localises from this; `label` is the English fallback. */
+  month: number
+  /** Engraved on the seam above the row, e.g. `September 2026`. */
   label: string
   events: CalendarEvent[]
   /**
    * Every season code present, in chronological order of its first event.
-   * A quarter can legitimately hold two seasons — CERT has `PEW8f-2025-2026`
-   * sitting among 2024-25 events. An empty quarter inherits the running season
+   * A row can legitimately hold two seasons — CERT has `PEW8f-2025-2026`
+   * sitting among 2024-25 events. An empty row inherits the running season
    * so the seam does not blank out mid-drum.
    */
   seasonCodes: string[]
@@ -55,7 +56,7 @@ export interface RegistrationState {
 }
 
 export interface CalendarModel {
-  quarters: Quarter[]
+  rows: MonthRow[]
   nextUpcoming: CalendarEvent | null
   anchorIndex: number
 }
@@ -205,14 +206,24 @@ export function todayIso(): string {
 // Quarters
 // ---------------------------------------------------------------------------
 
-export function quarterKeyOf(isoDate: string): string {
-  const year = Number(isoDate.slice(0, 4))
-  const month = Number(isoDate.slice(5, 7))
-  return `${year}-Q${Math.floor((month - 1) / 3) + 1}`
+/** Sortable identity for a calendar month, e.g. `2026-09`. */
+export function monthKeyOf(isoDate: string): string {
+  return isoDate.slice(0, 7)
 }
 
-export function quarterLabel(year: number, quarter: number): string {
-  return `${quarter}Q${String(year).slice(2)}`
+/**
+ * English month names. The seam renders a LOCALISED label from `year`/`month`
+ * on the row — Polish needs the nominative here ("Wrzesień") and the genitive
+ * on the tile beside a day ("26 września"), which only the component can pick.
+ * This stays as a stable, language-independent fallback.
+ */
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+] as const
+
+export function monthLabel(year: number, month: number): string {
+  return `${MONTH_NAMES[month - 1]} ${year}`
 }
 
 /** `SPWS-2025-2026` → `25/26`; anything unparseable → `''`. */
@@ -221,12 +232,12 @@ export function seasonShortCode(code: string | null | undefined): string {
   return match ? `${match[1]!.slice(2)}/${match[2]!.slice(2)}` : ''
 }
 
-function stepQuarter(year: number, quarter: number): [number, number] {
-  return quarter === 4 ? [year + 1, 1] : [year, quarter + 1]
+function stepMonth(year: number, month: number): [number, number] {
+  return month === 12 ? [year + 1, 1] : [year, month + 1]
 }
 
 /**
- * Bucket events into a continuous run of quarters.
+ * Bucket events into a continuous run of rows.
  *
  * Sorts by `dt_start` itself and never inherits caller order:
  * `fetchPriorSeasonEvents` (api.ts:206) orders by `txt_code`, which puts
@@ -237,7 +248,7 @@ function stepQuarter(year: number, quarter: number): [number, number] {
  * quiet stretch of history. Events with no `dt_start` cannot be placed and are
  * dropped.
  */
-export function buildQuarters(events: CalendarEvent[]): Quarter[] {
+export function buildMonths(events: CalendarEvent[]): MonthRow[] {
   const dated = events
     .filter((e): e is CalendarEvent & { dt_start: string } => !!e.dt_start)
     .slice()
@@ -247,7 +258,7 @@ export function buildQuarters(events: CalendarEvent[]): Quarter[] {
 
   const byKey = new Map<string, CalendarEvent[]>()
   for (const event of dated) {
-    const key = quarterKeyOf(event.dt_start)
+    const key = monthKeyOf(event.dt_start)
     const bucket = byKey.get(key)
     if (bucket) bucket.push(event)
     else byKey.set(key, [event])
@@ -256,14 +267,14 @@ export function buildQuarters(events: CalendarEvent[]): Quarter[] {
   const first = dated[0]!.dt_start
   const last = dated[dated.length - 1]!.dt_start
   let year = Number(first.slice(0, 4))
-  let quarter = Math.floor((Number(first.slice(5, 7)) - 1) / 3) + 1
-  const lastKey = quarterKeyOf(last)
+  let month = Number(first.slice(5, 7))
+  const lastKey = monthKeyOf(last)
 
-  const quarters: Quarter[] = []
+  const rows: MonthRow[] = []
   let runningSeason: string | null = null
 
   for (;;) {
-    const key = `${year}-Q${quarter}`
+    const key = `${year}-${String(month).padStart(2, '0')}`
     const rowEvents = byKey.get(key) ?? []
 
     let seasonCodes: string[]
@@ -280,15 +291,15 @@ export function buildQuarters(events: CalendarEvent[]): Quarter[] {
       isSeasonBoundary = runningSeason !== null && opensWith !== undefined && opensWith !== runningSeason
       runningSeason = seasonCodes[seasonCodes.length - 1] ?? runningSeason
     } else {
-      // Inherit so the seam keeps showing a season across a quiet quarter.
+      // Inherit so the seam keeps showing a season across a quiet month.
       seasonCodes = runningSeason ? [runningSeason] : []
     }
 
-    quarters.push({
+    rows.push({
       key,
       year,
-      quarter,
-      label: quarterLabel(year, quarter),
+      month,
+      label: monthLabel(year, month),
       events: rowEvents,
       seasonCodes,
       isSeasonBoundary,
@@ -296,10 +307,10 @@ export function buildQuarters(events: CalendarEvent[]): Quarter[] {
     })
 
     if (key === lastKey) break
-    ;[year, quarter] = stepQuarter(year, quarter)
+    ;[year, month] = stepMonth(year, month)
   }
 
-  return quarters
+  return rows
 }
 
 // ---------------------------------------------------------------------------
@@ -820,11 +831,11 @@ export function caretOffset(
 // ---------------------------------------------------------------------------
 
 /**
- * Which quarter the drum opens on.
+ * Which row the drum opens on.
  *
- * Order of preference: the quarter holding the next upcoming event, else the
- * quarter containing today (which may be an empty row — an off-season still
- * wants "now" centred), else the last quarter so an archived season still has
+ * Order of preference: the row holding the next upcoming event, else the
+ * row containing today (which may be an empty row — an off-season still
+ * wants "now" centred), else the last row so an archived season still has
  * a focal point instead of rendering flat.
  *
  * ADR-084 open items 1 and 2 both land here. The time-sensitive opening policy
@@ -832,24 +843,144 @@ export function caretOffset(
  * — is **not** applied yet; this is the mock's next-upcoming default, which was
  * demonstrated but never chosen.
  */
-export function resolveAnchorQuarter(
-  quarters: Quarter[],
+export function resolveAnchorRow(
+  rows: MonthRow[],
   nextUpcoming: CalendarEvent | null,
   today: string = todayIso(),
 ): number {
-  if (quarters.length === 0) return 0
+  if (rows.length === 0) return 0
 
   if (nextUpcoming?.dt_start) {
-    const key = quarterKeyOf(nextUpcoming.dt_start)
-    const index = quarters.findIndex((q) => q.key === key)
+    const key = monthKeyOf(nextUpcoming.dt_start)
+    const index = rows.findIndex((r) => r.key === key)
     if (index >= 0) return index
   }
 
-  const todayIndex = quarters.findIndex((q) => q.key === quarterKeyOf(today))
-  if (todayIndex >= 0) return todayIndex
+  const todayIndex = rows.findIndex((r) => r.key === monthKeyOf(today))
+  // An off-season month is empty, and the drum must not rest on it: roll
+  // forward to the next month that actually has something in it.
+  if (todayIndex >= 0) return settleRow(rows, todayIndex, 1)
 
-  return quarters.length - 1
+  return settleRow(rows, rows.length - 1, -1)
 }
+
+/**
+ * The row the drum comes to rest on, given a target and a direction of travel.
+ *
+ * The drum renders quiet months but never STOPS on one — it continues in the
+ * direction the user was rotating until it reaches a month with events. At the
+ * end of the drum it reverses rather than falling off, so a trailing run of
+ * empty months cannot strand the rotation.
+ *
+ * `direction` is +1 rolling forward in time, -1 rolling back.
+ */
+export function settleRow(rows: MonthRow[], target: number, direction: 1 | -1): number {
+  if (rows.length === 0) return target
+
+  let i = Math.max(0, Math.min(rows.length - 1, target))
+  const step = direction >= 0 ? 1 : -1
+
+  // Guarded by the row count: a list with no populated row at all terminates
+  // rather than spinning.
+  for (let guard = 0; rows[i]?.isEmpty && guard <= rows.length; guard++) {
+    const next = i + step
+    if (next < 0 || next >= rows.length) {
+      // Reverse off the end and take the nearest populated row behind us.
+      let back = i
+      while (back >= 0 && back < rows.length && rows[back]!.isEmpty) back -= step
+      return back >= 0 && back < rows.length ? back : i
+    }
+    i = next
+  }
+  return i
+}
+
+export type EventTimeState = 'past' | 'grace' | 'soon' | 'future'
+
+/**
+ * Two different windows, deliberately not the same number.
+ *
+ * `RECENT_DAYS` — how long a finished event keeps its colour before receding to
+ * grey. Thirty days, because a competition stays worth looking at for about a
+ * month after it runs: results arrive late, people compare placings, and the
+ * ranking recomputes. ADR-084 open item 1 floated seven days; thirty is the
+ * decision.
+ *
+ * `IMMINENT_DAYS` — how long before an event starts it is emphasised. Seven,
+ * because that is a decision horizon: entries close, travel gets booked.
+ */
+const RECENT_DAYS = 30
+const IMMINENT_DAYS = 7
+
+/**
+ * Where an event sits in time, which is what the tile's colour encodes.
+ *
+ * The palette is inverted from the original barrel: the past recedes to grey
+ * and what is still ahead carries the colour. On the PROD pool 67 of 114 events
+ * are finished, so the old fill — keyed off `enum_status === 'COMPLETED'` —
+ * spent the entire colour budget on the majority nobody can act on.
+ *
+ * Decided by DATE, not by status, and that distinction is the point: an event
+ * can sit un-ingested for weeks and still read PLANNED, so a status-driven
+ * palette shows a competition that happened in January as though it were
+ * upcoming. `grace` keeps a just-finished event coloured for a week, which is
+ * ADR-084 open item 1 — proposed there, demonstrated, and never decided until
+ * now — and it exists because that is exactly when people come looking for
+ * results, and because a month is roughly how long an event stays worth
+ * looking at once it has run.
+ *
+ * An event with no start date is `future`: it cannot be placed, so greying it
+ * would assert something we do not know.
+ */
+export function eventTimeState(
+  event: CalendarEvent,
+  today: string = todayIso(),
+): EventTimeState {
+  const start = event.dt_start
+  if (!start) return 'future'
+  const end = event.dt_end ?? start
+
+  if (end < today) {
+    return daysBetween(end, today) <= RECENT_DAYS ? 'grace' : 'past'
+  }
+  return daysBetween(today, start) <= IMMINENT_DAYS ? 'soon' : 'future'
+}
+
+/** Whole days from `a` to `b`, both ISO dates. */
+function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(b) - Date.parse(a)) / DAY_MS)
+}
+
+/**
+ * Whether registration is open — ADR-030 / ADR-079.
+ *
+ * Open when the event carries a registration URL and has not finished.
+ *
+ * The URL is the signal because it is not hand-maintained trivia: EventManager's
+ * "Rejestracja SPWS" checkbox DERIVES `url_registration` (and `url_entry_list`)
+ * when ticked and CLEARS both to '' when unticked — see
+ * `onToggleSpwsRegistration()`. So a non-empty URL means an administrator has
+ * actually opened registration, and an empty one means they have not. An
+ * externally hosted event behaves the same way: a URL exists precisely when
+ * there is somewhere to enter.
+ *
+ * The window closes at `dt_end`, NOT at `dt_registration_deadline`. That is
+ * deliberate: this marks a live registration/participation window rather than
+ * the availability of the link, so it outlives the card's registration pill,
+ * which `registrationState()` retires at the deadline.
+ *
+ * A cancelled event is never open, whatever URL it carries.
+ */
+export function isRegistrationOpen(
+  event: CalendarEvent,
+  today: string = todayIso(),
+): boolean {
+  if (event.enum_status === 'CANCELLED') return false
+  if (!event.url_registration?.trim()) return false
+  const closes = event.dt_end ?? event.dt_start
+  return !!closes && today <= closes
+}
+
 
 /** The single call the orchestrator makes: filter, bucket, ring, anchor. */
 export function buildCalendar(options: {
@@ -860,7 +991,7 @@ export function buildCalendar(options: {
 }): CalendarModel {
   const today = options.today ?? todayIso()
   const scoped = filterByScope(visibleEvents(options.events, today), options.scope, options.showEvfToggle)
-  const quarters = buildQuarters(scoped)
+  const rows = buildMonths(scoped)
   const nextUpcoming = findNextUpcoming(scoped, today)
-  return { quarters, nextUpcoming, anchorIndex: resolveAnchorQuarter(quarters, nextUpcoming, today) }
+  return { rows, nextUpcoming, anchorIndex: resolveAnchorRow(rows, nextUpcoming, today) }
 }

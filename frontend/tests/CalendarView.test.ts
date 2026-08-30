@@ -19,7 +19,7 @@
 //
 // DELETED as retired mechanisms (ADR-084 replaces them; nothing to re-home):
 //   reverse-chronological order, month grouping and month headers — the drum
-//     is quantised into quarters and runs ascending (CQ.1–CQ.4).
+//     is quantised into rows and runs ascending (CQ.1–CQ.4).
 //   past/future/all time filter — "the drum IS the time control" (ADR-084).
 //   season dropdown — the barrel owns season state, the seam carries the code.
 //   .timeline-event / .timeline-links block layout — markup no longer exists.
@@ -86,7 +86,7 @@ const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
 /**
  * Dates are computed from the run date, not hardcoded.
  *
- * The barrel fills every quarter between the first and last event (CQ.4), so a
+ * The barrel fills every row between the first and last event (CQ.4), so a
  * 2099 fixture would build ~300 rows and assert nothing extra. Relative dates
  * keep the model small AND stop the suite from silently changing meaning as
  * real time passes a hardcoded boundary.
@@ -98,18 +98,22 @@ function monthsOut(months: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** Three dates inside one future quarter, so the anchor row has three panels. */
-function futureQuarter(): [string, string, string] {
+/**
+ * Three dates inside one future MONTH, so the anchor row has three panels.
+ *
+ * This used to spread them across the three months of a quarter, which landed
+ * them in a single quarter row. Under monthly seams that would put each event
+ * in a row of its own and leave the focused row with one panel.
+ */
+function futureMonth(): [string, string, string] {
   const d = new Date()
-  d.setDate(15)
+  d.setDate(1)
   d.setMonth(d.getMonth() + 4)
-  const firstMonth = Math.floor(d.getMonth() / 3) * 3
-  const year = d.getFullYear()
-  const at = (i: number) => `${year}-${String(firstMonth + i + 1).padStart(2, '0')}-10`
-  return [at(0), at(1), at(2)]
+  const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  return [`${stamp}-07`, `${stamp}-14`, `${stamp}-21`]
 }
 
-const [F1, F2, F3] = futureQuarter()
+const [F1, F2, F3] = futureMonth()
 
 const EVENTS: CalendarEvent[] = [
   makeEvent({ id_event: 1, txt_code: 'PPW1-2025-2026', txt_name: 'Puchar Konin', dt_start: monthsOut(-8) }),

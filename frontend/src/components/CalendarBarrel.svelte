@@ -1,6 +1,10 @@
 <div class="vp" bind:this={viewportEl}>
-  <div class="drum" style:transform={`translateY(${-(active - 1) * ROW_H}px)`}>
-    {#each quarters as quarter, qi (quarter.key)}
+  <div
+    class="drum"
+    class:anim={animate}
+    style:transform={`translateZ(${-DRUM_R}px) rotateX(${-active * ROW_ANGLE}deg)`}
+  >
+    {#each rows as row, qi (row.key)}
       {@const state = rowState(qi)}
       {@const layout = qi === active ? midLayout : null}
       <!-- Only a receded row is a control: tapping it rotates it to centre.
@@ -9,41 +13,46 @@
       {@const rotatable = state === 'up' || state === 'dn'}
       <div
         class="ln {state}"
+        style:transform={`rotateX(${qi * ROW_ANGLE}deg) translateZ(${DRUM_R}px)`}
+        style:opacity={rowOpacity(qi)}
+        style:pointer-events={Math.abs(qi - active) * ROW_ANGLE > HORIZON ? 'none' : null}
         role="button"
         tabindex={rotatable ? 0 : undefined}
         aria-disabled={rotatable ? undefined : 'true'}
-        aria-label={quarter.label}
+        aria-label={row.label}
         onclick={() => rotateTo(qi)}
         onkeydown={(e) => onRowKey(e, qi)}
       >
-        <!-- The engraved seam: quarter label, a hairline, and the season code.
+        <!-- The engraved seam: row label, a hairline, and the season code.
              The code shows on the focused row and permanently on a season
              boundary, whose rule is also drawn heavier — this is where the
              deleted season dropdown's information went. -->
-        <div class="sm" class:bd={quarter.isSeasonBoundary}>
-          <b>{quarter.label}</b>
+        <div class="sm" class:bd={row.isSeasonBoundary}>
+          <b>{seamLabel(row)}</b>
           <i></i>
-          <em>{seamSeason(qi, quarter)}</em>
+          <em>{seamSeason(qi, row)}</em>
         </div>
 
         <div class="rw">
-          {#if quarter.isEmpty}
+          {#if row.isEmpty}
             <span class="mt">{t('calendar_empty_quarter')}</span>
           {:else}
             <div class="rwi" style:gap={layout?.overlapping ? '0px' : null}>
-              {#each quarter.events as event, j (event.id_event)}
+              {#each row.events as event, j (event.id_event)}
                 {@const place = layout?.panels[j]}
                 {@const isSelected = qi === active && selected === j}
                 <button
                   type="button"
                   class="p {panelType(event.txt_code)}"
-                  class:f={event.enum_status === 'COMPLETED'}
+                  class:past={eventTimeState(event) === 'past'}
+                  class:soon={eventTimeState(event) === 'soon'}
                   class:nx={isNext(event)}
                   class:sel={isSelected}
                   class:ov={layout?.overlapping ?? false}
                   class:t1={place?.textTier === 1}
                   class:t2={place?.textTier === 2}
                   class:canc={event.enum_status === 'CANCELLED'}
+                  class:regopen={isRegistrationOpen(event)}
                   style:flex={place ? `0 0 ${place.width}px` : null}
                   style:margin-left={place && place.marginLeft ? `${place.marginLeft}px` : null}
                   style:z-index={place?.zIndex ?? null}
@@ -58,7 +67,10 @@
                     <i class="ms">{monthShort(event.dt_start)}</i>
                     <i class="mf">{monthFull(event.dt_start)}</i>
                   </span>
-                  <span class="cdc">{panelLabel(event.txt_code)}</span>
+                  <span class="cdc"
+                    >{labelParts(event.txt_code).alpha}{#if labelParts(event.txt_code).num}<i
+                        class="cdn">{labelParts(event.txt_code).num}</i>{/if}</span
+                  >
                   {#if cityOf(event)}
                     <span class="cty">{cityOf(event)}</span>
                   {/if}
@@ -79,7 +91,7 @@
 </div>
 
 <script lang="ts">
-  // The rotating three-row quarter barrel — ADR-084 §§1-7.
+  // The rotating three-row row barrel — ADR-084 §§1-7.
   //
   // It is the calendar's primary control: it replaces the month-grouped list,
   // the flat rolling-progress strip AND the season dropdown, and it drives the
@@ -103,21 +115,80 @@
     panelLabel,
     panelType,
     seasonShortCode,
+    settleRow,
+    eventTimeState,
+    isRegistrationOpen,
     splitLocation,
-    type Quarter,
+    type MonthRow,
     type RowLayout,
-  } from '../lib/calendarQuarters'
+  } from '../lib/calendarMonths'
 
   /** Must match `.ln` height in the stylesheet. */
   const ROW_H = 82
 
+  /* ===== True-cylinder geometry ============================================
+     Each row sits on the surface of a cylinder — `rotateX(i·θ) translateZ(R)`
+     — and the drum rotates as one body. Foreshortening at the rim, the
+     compression of spacing toward the horizon and rows turning away from the
+     viewer all fall out of the perspective projection rather than being drawn.
+
+     R is fixed by θ and the row height: the chord between two adjacent rows
+     must equal ROW_H, so R = (ROW_H/2) / tan(θ/2).
+
+     A row's own angle NEVER changes — only the drum's does. That matters: a
+     CSS transition cannot animate across replaced nodes, so a drum whose rows
+     were re-transformed on every rotate would snap rather than turn. Svelte
+     keys the each-block on `row.key`, so the nodes persist.
+
+     θ = 26° puts seven rows inside the 80° horizon (5 at 34°, 9 at 18°).
+
+     Time runs UPWARD: the future sits above the focused row and the past below
+     it. A point at angle θ on the cylinder is at y = -R·sin θ, so a positive
+     angle lifts a row up the screen, and rows are laid out in chronological
+     index order — which puts later months higher.
+
+     This inverts the flat drum, where `.ln.up` was `active - 1` and the past
+     sat above. It is deliberate: you rotate a physical drum forward to bring
+     what is coming toward you, and the events that matter are ahead, so the
+     drum surfaces them by turning up rather than down. */
+  const ROW_ANGLE = 26
+  const HORIZON = 80
+  const DRUM_R = Math.round(ROW_H / 2 / Math.tan((ROW_ANGLE / 2) * (Math.PI / 180)))
+
+  /**
+   * The drum must ARRIVE at its opening angle, not travel to it.
+   *
+   * Rotation is `-active × θ`, so opening on row 56 of 66 is
+   * `rotateX(-1456deg)` — four complete turns. With the transition live from
+   * the first paint the drum spins through every one of them before settling,
+   * which looks broken. Animation is therefore enabled only after the opening
+   * frame; from then on a step between adjacent rows is 26deg and animates
+   * normally.
+   *
+   * A timeout rather than requestAnimationFrame: rAF never fires in a
+   * background tab, which would strand the transition permanently off.
+   */
+  let animate = $state(false)
+  $effect(() => {
+    const id = setTimeout(() => { animate = true }, 0)
+    return () => clearTimeout(id)
+  })
+
+  /** Rows fade toward the rim and vanish past the horizon. */
+  function rowOpacity(qi: number): number {
+    const delta = Math.abs(qi - active) * ROW_ANGLE
+    if (delta > HORIZON) return 0
+    if (delta === 0) return 1
+    return Math.max(0, Math.cos((delta * Math.PI) / 180) * 0.9)
+  }
+
   let {
-    quarters,
+    rows,
     anchorIndex = 0,
     nextUpcoming = null,
     onselect,
   }: {
-    quarters: Quarter[]
+    rows: MonthRow[]
     anchorIndex?: number
     nextUpcoming?: CalendarEvent | null
     onselect?: (event: CalendarEvent) => void
@@ -134,10 +205,10 @@
   // Re-anchor when the data or the resolved anchor changes, but never in
   // response to the user's own selection.
   $effect(() => {
-    const key = `${quarters.length}:${quarters[0]?.key ?? ''}:${anchorIndex}`
+    const key = `${rows.length}:${rows[0]?.key ?? ''}:${anchorIndex}`
     if (key === initKey) return
     initKey = key
-    active = Math.max(0, Math.min(quarters.length - 1, anchorIndex))
+    active = Math.max(0, Math.min(rows.length - 1, anchorIndex))
     selectDefault(active)
   })
 
@@ -154,7 +225,7 @@
   })
 
   function selectDefault(qi: number): void {
-    const events = quarters[qi]?.events ?? []
+    const events = rows[qi]?.events ?? []
     if (events.length === 0) {
       selected = null
       return
@@ -172,10 +243,22 @@
   }
 
   /** Tapping a receded row rotates it to centre; the whole row is the target. */
+  /**
+   * Rotate to a row, skipping quiet months.
+   *
+   * Monthly seams materialise a row for every calendar month, so the drum now
+   * meets long runs of empty ones — 18 of 66 on the current PROD pool, against
+   * a handful at quarterly. It renders them, but never comes to REST on one:
+   * `settleRow` carries on in the direction of travel until it reaches a month
+   * that actually holds something, and reverses at the end of the drum rather
+   * than falling off.
+   */
   function rotateTo(qi: number): void {
     if (qi === active) return
-    active = qi
-    selectDefault(qi)
+    const settled = settleRow(rows, qi, qi > active ? 1 : -1)
+    if (settled === active) return
+    active = settled
+    selectDefault(settled)
   }
 
   function onRowKey(event: KeyboardEvent, qi: number): void {
@@ -185,13 +268,33 @@
     }
   }
 
+  /**
+   * Tap a panel: bring its row to centre if it is not there already, and select
+   * THAT panel.
+   *
+   * It used to rotate and then fall back to the row's default — the ringed
+   * next-upcoming, else the first event — which discarded the one thing the tap
+   * had already said. Tapping the third event in a receded row and landing on
+   * the first is a small, repeated annoyance: you have to tap twice to reach
+   * what you aimed at.
+   *
+   * Tapping the row BODY still uses the default (`rotateTo`), because no event
+   * was named there.
+   */
   function pick(qi: number, j: number): void {
     if (qi !== active) {
-      rotateTo(qi)
-      return
+      // settleRow can land elsewhere if the target row is empty; a panel tap
+      // means it is not, but if that ever changes the row default is the only
+      // sane fallback — index j would point into a different month's events.
+      const settled = settleRow(rows, qi, qi > active ? 1 : -1)
+      active = settled
+      if (settled !== qi) {
+        selectDefault(settled)
+        return
+      }
     }
     selected = j
-    const event = quarters[qi]?.events[j]
+    const event = rows[qi]?.events[j]
     if (event) onselect?.(event)
   }
 
@@ -223,20 +326,44 @@
   }
 
   /**
+   * The seam names the month on its own, so Polish needs the NOMINATIVE
+   * ("Wrzesień") from `month_N`. The tile prints a day beside the month and so
+   * needs the GENITIVE ("26 września") from `cal_month_N` — which is what
+   * monthShort/monthFull above return. English collapses the distinction, so
+   * the two only diverge in Polish, and using one form for both is visibly
+   * wrong there.
+   */
+  function seamLabel(row: MonthRow): string {
+    return `${t(`month_${row.month}`)} ${row.year}`
+  }
+
+  /**
+   * The series number, split out so it can be set in a monospace face.
+   * At 11px in the UI sans "EVF5" reads as "EVFS", and every EVF code ends in
+   * weapon letters (e, f, s), so a trailing S is a plausible parse rather than
+   * merely an odd glyph. Tabular figures remove the ambiguity.
+   */
+  function labelParts(code: string): { alpha: string; num: string } {
+    const label = panelLabel(code)
+    const m = /^(\D+)(\d*)$/.exec(label)
+    return { alpha: m?.[1] ?? label, num: m?.[2] ?? '' }
+  }
+
+  /**
    * The season code is engraved on the focused row and permanently on a
-   * boundary seam. A quarter holding two seasons is marked, because CERT really
+   * boundary seam. A row holding two seasons is marked, because CERT really
    * does contain them.
    */
-  function seamSeason(qi: number, quarter: Quarter): string {
-    if (qi !== active && !quarter.isSeasonBoundary) return ''
-    const codes = quarter.seasonCodes
+  function seamSeason(qi: number, row: MonthRow): string {
+    if (qi !== active && !row.isSeasonBoundary) return ''
+    const codes = row.seasonCodes
     if (codes.length === 0) return ''
     const short = seasonShortCode(codes[codes.length - 1])
     return codes.length > 1 ? `${short} *` : short
   }
 
   const midLayout = $derived.by((): RowLayout | null => {
-    const row = quarters[active]
+    const row = rows[active]
     if (!row || row.events.length === 0) return null
     // Before measurement — and in jsdom, which has no layout engine and reports
     // every clientWidth as 0 — fall back to a flat row with no inline geometry.
@@ -307,22 +434,36 @@
     overflow: hidden;
     perspective: 760px;
     margin-top: 6px;
+    position: relative;
   }
+  /* The drum turns as one body; rows hold their own fixed angle on its surface.
+     No overshoot and no motion blur — both were tried and both made the
+     rotation feel wrong. A plain decelerate reads as a quiet mechanical step. */
   .drum {
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+  }
+  .drum.anim {
+    transition: transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .drum.anim {
+      transition: none;
+    }
   }
   .ln {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    margin-top: -41px;
     height: 82px;
-    flex: 0 0 82px;
+    backface-visibility: hidden;
     /* Anchored left, not centre: the receded rows are scaled to 0.88, and a
        centre origin would inset them from the left edge by ~6% of the row —
        so the rows would no longer share a left edge. */
-    transform-origin: 0 50%;
-    transition:
-      transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
-      opacity 0.45s;
+    transition: opacity 0.3s linear;
     cursor: pointer;
     border: none;
     background: none;
@@ -330,17 +471,9 @@
     text-align: left;
     width: 100%;
   }
-  /* Facing angle is per row; the drum itself only translates. */
-  .ln.up {
-    transform: rotateX(46deg) scale(0.88);
-    opacity: 0.42;
-  }
-  .ln.dn {
-    transform: rotateX(-46deg) scale(0.88);
-    opacity: 0.42;
-  }
+  /* Facing angle and opacity are now inline, computed from the row's place on
+     the cylinder. `.up`/`.dn`/`.far` survive only as behavioural hooks. */
   .ln.far {
-    opacity: 0;
     pointer-events: none;
   }
   .ln.mid {
@@ -422,36 +555,78 @@
     background: var(--surface-2, #fff);
     cursor: pointer;
     height: 56px;
+    position: relative;
+    overflow: hidden;
   }
   .p > * {
     flex: 0 0 auto;
   }
-  /* Fill carries completion — its own channel, not a shade of the type hue. */
-  .p.f {
-    border: none;
+  /* ===== The inverted palette — treatment B, "edge-coded" ==================
+     Time drives the BODY: an upcoming event is tinted, an imminent one is
+     saturated, a past one goes neutral grey. Organizer drives a 3px TOP EDGE
+     and nothing else.
+
+     This is the reverse of the original barrel, which filled on
+     `enum_status === 'COMPLETED'`. On the PROD pool that is 67 of 114 events,
+     so the entire colour budget went to the finished majority while the events
+     you can still enter rendered as plain white. Hue now means "how soon", and
+     organizer keeps a channel of its own rather than sharing one with time —
+     which is what ADR-084 set out to do before tying fill to status.
+
+     A past tile loses its hue on purpose. The type stays legible in the label
+     (`PPW1`, `EVF3`), and past events are the ones nobody scans. */
+  .p {
+    background: var(--surface-2, #fff);
+    color: var(--text-primary, #1c1b19);
+  }
+  .p::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--org, #6f7d8f);
   }
   .p.ppw,
   .p.mpw {
-    color: #173404;
-  }
-  .p.ppw.f,
-  .p.mpw.f {
-    background: #eaf3de;
+    --org: #2e7d52;
+    background: #eef7f1;
   }
   .p.pew {
-    color: #042c53;
-  }
-  .p.pew.f {
-    background: #e6f1fb;
+    --org: #1f6fb0;
+    background: #ecf4fc;
   }
   .p.int {
-    color: #412402;
+    --org: #b1791d;
+    background: #fdf3e2;
   }
-  .p.int.f {
-    background: #faeeda;
+  /* Imminent — inside seven days. The saturated step, so the row a fencer has
+     to act on this week is the loudest thing on the drum. */
+  .p.soon.ppw,
+  .p.soon.mpw {
+    background: #cfe8d9;
+  }
+  .p.soon.pew {
+    background: #d4e6f7;
+  }
+  .p.soon.int {
+    background: #fbe9c4;
+  }
+  /* Past — more than thirty days finished. Neutral, and the organizer edge
+     desaturates with it so the row recedes as one object. */
+  .p.past {
+    background: var(--surface-1, #f1efe9);
+    color: var(--text-muted, #8a887f);
+  }
+  .p.past::before {
+    background: #c3c8cf;
   }
   .p.canc {
     opacity: 0.45;
+  }
+  .p.canc .dd {
+    text-decoration: line-through;
   }
   /* Ring carries next-upcoming. */
   .p.nx {
@@ -460,6 +635,18 @@
   .p.sel {
     outline: 2px solid var(--text-primary, #1c1b19);
     outline-offset: 1px;
+  }
+  /* Registration is live — ADR-030. Top-right, clear of the organizer edge. */
+  .p.regopen::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent, #185fa5);
+    box-shadow: 0 0 0 1.5px var(--surface-2, #fff);
   }
   .p.ov {
     position: relative;
@@ -472,6 +659,17 @@
   .dn .p {
     flex: 0 0 38px;
   }
+  /* The selected tile alone widens to fit the full month. Polish genitive
+     "października" measures 72px at 11px/700 — far longer than the next longest
+     ("listopada", 52px) and than English ("September", 62px). Widening every
+     tile to fit it would put four of them over a 320px viewport; widening only
+     the selected one keeps the worst case at 3x68 + 78 + gaps = 291px. */
+  .p {
+    flex: 0 0 68px;
+  }
+  .p.sel {
+    flex: 0 0 78px;
+  }
   .dd {
     font-size: 15px;
     font-weight: 600;
@@ -479,6 +677,9 @@
   }
   .dm {
     font-size: 11px;
+    /* The month is what the seam is now organised around, so it should not be
+       the faintest thing on the tile. */
+    font-weight: 700;
     line-height: 1;
     max-width: 100%;
     overflow: hidden;
@@ -502,6 +703,17 @@
   .p.sel .mf {
     display: inline;
   }
+  /* The series number is monospace with tabular figures. At 11px in the UI sans
+     "EVF5" reads as "EVFS", and every EVF code ends in weapon letters (e, f, s)
+     so a trailing S is a plausible parse rather than merely an odd glyph. */
+  .cdn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 10px;
+    margin-left: 1px;
+  }
   .cdc {
     font-size: 11px;
     font-weight: 600;
@@ -511,8 +723,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* City shows on every FOCUSED tile, not only the selected one. A monthly row
+     holds at most four events on the current pool, against up to nine at
+     quarterly, so there is finally room for it. Receded rows still drop to
+     day + code. */
   .cty {
-    display: none;
     font-size: 9px;
     line-height: 1.05;
     max-width: 100%;
@@ -521,8 +736,9 @@
     white-space: nowrap;
     margin-top: 1px;
   }
-  .p.sel .cty {
-    display: block;
+  .up .cty,
+  .dn .cty {
+    display: none;
   }
   /* Text tightens as the overlap step narrows. */
   .p.t1 .dd {

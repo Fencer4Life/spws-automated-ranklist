@@ -1,19 +1,27 @@
-// CalendarBarrel.svelte — the rotating three-row quarter drum.
+// CalendarBarrel.svelte — the rotating three-row row drum.
 // ADR-084 §§1-7. Test IDs CB.1–CB.20.
 //
 // NOTE ON SCOPE: the overlap geometry is NOT asserted here. jsdom has no layout
 // engine, so every clientWidth is 0 and the barrel deliberately falls back to a
 // flat row with no inline geometry. The maths lives in `layoutRow` and is
-// asserted directly in calendarQuarters.test.ts (CQ.59–CQ.69). What this file
+// asserted directly in calendarMonths.test.ts (CQ.59–CQ.69). What this file
 // covers is structure, rotation state, detail tiers, tap targets and seams.
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import type { CalendarEvent, EventStatus } from '../src/lib/types'
-import { buildQuarters } from '../src/lib/calendarQuarters'
+import { buildMonths } from '../src/lib/calendarMonths'
+import { t } from '../src/lib/locale.svelte'
 import CalendarBarrel from '../src/components/CalendarBarrel.svelte'
 
 let nextId = 1
+
+/** An ISO date `days` from now, for events that must read as clearly ahead. */
+function futureIso(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
 function ev(partial: Partial<CalendarEvent> & { txt_code: string }): CalendarEvent {
   return {
@@ -47,23 +55,41 @@ function ev(partial: Partial<CalendarEvent> & { txt_code: string }): CalendarEve
 }
 
 /**
- * Four consecutive populated quarters spanning a season boundary — enough rows
+ * Four CONSECUTIVE populated months spanning a season boundary — enough rows
  * that two of them are `far`, which is what proves the DOM is not re-rendered
  * on rotate.
+ *
+ * The dates are deliberately one month apart. Under the old quarter bucketing
+ * they could be spread across a season and still land in adjacent rows; with
+ * monthly seams every skipped month materialises as an empty row in between,
+ * which would put an empty row where these tests expect a populated one.
  */
-function fourQuarters() {
-  return buildQuarters([
-    ev({ txt_code: 'PPW4-2025-2026', dt_start: '2026-02-21', txt_season_code: 'SPWS-2025-2026' }),
-    ev({ txt_code: 'GP8-2025-2026', dt_start: '2026-05-10', txt_season_code: 'SPWS-2025-2026' }),
+function fourRows() {
+  return buildMonths([
+    ev({ txt_code: 'PPW4-2025-2026', dt_start: '2026-07-21', txt_season_code: 'SPWS-2025-2026' }),
+    ev({ txt_code: 'GP8-2025-2026', dt_start: '2026-08-10', txt_season_code: 'SPWS-2025-2026' }),
     ev({ txt_code: 'PEW1efs-2026-2027', dt_start: '2026-09-12', txt_season_code: 'SPWS-2026-2027' }),
     ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26', txt_season_code: 'SPWS-2026-2027' }),
-    ev({ txt_code: 'PPW2-2026-2027', dt_start: '2026-11-20', txt_season_code: 'SPWS-2026-2027' }),
+    ev({ txt_code: 'PPW2-2026-2027', dt_start: '2026-10-20', txt_season_code: 'SPWS-2026-2027' }),
   ])
 }
 
+/**
+ * What the seam should read.
+ *
+ * `row.label` is the English fallback the model carries. The seam renders a
+ * LOCALISED label instead, and the locale defaults to Polish — where a month
+ * standing on its own takes the nominative ("Wrzesień"), not the genitive the
+ * tile uses beside a day ("26 września"). Asserting against `row.label` would
+ * pass only by accident of the two coinciding in English.
+ */
+function seam(row: { year: number; month: number }): string {
+  return `${t(`month_${row.month}`)} ${row.year}`
+}
+
 function barrel(props: Record<string, unknown> = {}) {
-  const quarters = (props.quarters as ReturnType<typeof buildQuarters>) ?? fourQuarters()
-  return render(CalendarBarrel, { props: { quarters, ...props } })
+  const rows = (props.rows as ReturnType<typeof buildMonths>) ?? fourRows()
+  return render(CalendarBarrel, { props: { rows, ...props } })
 }
 
 describe('CalendarBarrel — rotation state', () => {
@@ -86,10 +112,43 @@ describe('CalendarBarrel — rotation state', () => {
 
   // CB.3 — rotation is a translateY on the drum, offset so the focused row
   // sits in the middle of the three.
-  it('CB.3: rotates by translating the drum', () => {
+  // CB.3 — the drum is a true cylinder, not a sliding stack. It TURNS by its
+  // own angle; each row holds a fixed angle on the cylinder's surface and is
+  // never re-transformed, which is what lets a CSS transition animate the
+  // rotation at all (a transition cannot cross replaced nodes).
+  // R is fixed by the geometry: R = (rowHeight/2) / tan(theta/2)
+  //                              = 41 / tan(13deg) = 178px at theta = 26deg.
+  it('CB.3: rotates the drum as one body on a cylinder', () => {
     const { container } = barrel({ anchorIndex: 2 })
     const drum = container.querySelector('.drum') as HTMLElement
-    expect(drum.style.transform).toBe('translateY(-82px)')
+    expect(drum.style.transform).toBe('translateZ(-178px) rotateX(-52deg)')
+
+    const lines = [...container.querySelectorAll('.ln')] as HTMLElement[]
+    // Row angles are absolute positions on the surface, independent of `active`.
+    // Angles are POSITIVE and increase with the row index, which lifts later
+    // months up the screen: a point at angle theta sits at y = -R*sin(theta).
+    // Time therefore runs UPWARD — future above the focused row, past below —
+    // inverting the flat drum, where `.ln.up` was `active - 1`.
+    expect(lines[0]!.style.transform).toBe('rotateX(0deg) translateZ(178px)')
+    expect(lines[1]!.style.transform).toBe('rotateX(26deg) translateZ(178px)')
+    expect(lines[2]!.style.transform).toBe('rotateX(52deg) translateZ(178px)')
+  })
+
+  // CB.3b — rows past the 80deg horizon have turned away from the viewer and
+  // are dropped, which is what stops a 66-row drum rendering a solid wall.
+  it('CB.3b: fades rows toward the rim and drops them past the horizon', () => {
+    const rows = buildMonths(
+      Array.from({ length: 9 }, (_, i) =>
+        ev({ txt_code: `E${i}`, dt_start: `2026-${String(i + 1).padStart(2, '0')}-10` }),
+      ),
+    )
+    const { container } = barrel({ rows, anchorIndex: 0 })
+    const lines = [...container.querySelectorAll('.ln')] as HTMLElement[]
+    expect(Number(lines[0]!.style.opacity)).toBe(1)
+    expect(Number(lines[1]!.style.opacity)).toBeLessThan(1)
+    expect(Number(lines[3]!.style.opacity)).toBeGreaterThan(0) // 78deg, still inside
+    expect(Number(lines[4]!.style.opacity)).toBe(0) // 104deg, over the horizon
+    expect(lines[4]!.style.pointerEvents).toBe('none')
   })
 
   // CB.4 — the whole row is the tap target, not a separate control.
@@ -112,10 +171,10 @@ describe('CalendarBarrel — rotation state', () => {
   })
 
   // CB.6 — the anchor decides the opening row.
-  it('CB.6: opens on the anchor quarter', () => {
-    const quarters = fourQuarters()
-    const { container } = barrel({ quarters, anchorIndex: 3 })
-    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(quarters[3]!.label)
+  it('CB.6: opens on the anchor row', () => {
+    const rows = fourRows()
+    const { container } = barrel({ rows, anchorIndex: 3 })
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[3]!))
   })
 })
 
@@ -140,27 +199,31 @@ describe('CalendarBarrel — detail tiers', () => {
   })
 
   // CB.9 — the selected panel is the only one carrying a city.
-  it('CB.9: puts the city only on the selected panel', () => {
-    const quarters = buildQuarters([
+  // CB.9 — the city rides on every FOCUSED tile now, not just the selected one:
+  // a monthly row holds at most four events where a quarter held up to nine, so
+  // there is room. Receded rows drop it, which is a CSS rule and therefore NOT
+  // asserted here — jsdom has no layout or cascade. What this pins is that the
+  // node is present and correct on each panel, so selecting is a class change
+  // rather than a re-render.
+  it('CB.9: carries the city on each focused-row panel', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26', txt_location: 'Pabianice' }),
       ev({ txt_code: 'PPW2-2026-2027', dt_start: '2026-09-27', txt_location: 'Toruń' }),
     ])
-    const { container } = barrel({ quarters })
+    const { container } = barrel({ rows })
     const panels = [...container.querySelectorAll('.ln.mid .p')]
     expect(panels[0]!.classList.contains('sel')).toBe(true)
     expect(panels[0]!.querySelector('.cty')!.textContent).toBe('Pabianice')
-    // The unselected panel still has the node — CSS hides it, so selecting is
-    // a class change rather than a re-render.
     expect(panels[1]!.querySelector('.cty')!.textContent).toBe('Toruń')
   })
 
   // CB.10 — EVF codes shorten on panels; the full code lives on the card.
   it('CB.10: shortens EVF codes and strips the weapon suffix', () => {
-    const quarters = buildQuarters([
+    const rows = buildMonths([
       ev({ txt_code: 'PEW63e-2026-2027', dt_start: '2026-09-12' }),
       ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26' }),
     ])
-    const { container } = barrel({ quarters })
+    const { container } = barrel({ rows })
     expect([...container.querySelectorAll('.ln.mid .cdc')].map((c) => c.textContent)).toEqual([
       'EVF63',
       'PPW1',
@@ -171,32 +234,43 @@ describe('CalendarBarrel — detail tiers', () => {
 describe('CalendarBarrel — channels', () => {
   // CB.11 — hue for type, fill for completion, ring for next upcoming. The old
   // strip collapsed the first two into one channel; these must stay separate.
-  it('CB.11: keeps type, completion and next-upcoming on separate channels', () => {
-    const completed = ev({
+  // CB.11 — the palette is INVERTED and the channels reassigned. Time drives
+  // the body (grey once past, tinted while ahead, saturated when imminent);
+  // organizer drives the top edge only; the ring still carries next-upcoming.
+  // The old `.f` fill keyed off enum_status === 'COMPLETED' and is gone: 67 of
+  // 114 PROD events are finished, so it spent the colour on what nobody can act
+  // on. Status no longer touches the palette at all.
+  it('CB.11: time drives the body, organizer the edge, ring the next-upcoming', () => {
+    const longPast = ev({
       txt_code: 'PEW1e-2026-2027',
-      dt_start: '2026-09-12',
-      enum_status: 'COMPLETED',
+      dt_start: '2026-01-10',
+      dt_end: '2026-01-11',
+      enum_status: 'PLANNED', // still un-ingested, and still unmistakably past
     })
-    const upcoming = ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26' })
-    const quarters = buildQuarters([completed, upcoming])
-    const { container } = barrel({ quarters, nextUpcoming: upcoming })
-    const panels = [...container.querySelectorAll('.ln.mid .p')]
+    const ahead = ev({ txt_code: 'PPW1-2026-2027', dt_start: futureIso(60) })
+    const rows = buildMonths([longPast, ahead])
+    const past = barrel({ rows, anchorIndex: 0 })
+    const later = barrel({ rows, anchorIndex: rows.length - 1, nextUpcoming: ahead })
 
-    expect(panels[0]!.classList.contains('pew')).toBe(true) // hue
-    expect(panels[0]!.classList.contains('f')).toBe(true) // fill
-    expect(panels[1]!.classList.contains('ppw')).toBe(true)
-    expect(panels[1]!.classList.contains('f')).toBe(false)
-    expect(panels[1]!.classList.contains('nx')).toBe(true) // ring
+    const pastPanel = past.container.querySelector('.ln.mid .p')!
+    expect(pastPanel.classList.contains('pew')).toBe(true) // organizer, on the edge
+    expect(pastPanel.classList.contains('past')).toBe(true) // time, on the body
+    expect(pastPanel.classList.contains('f')).toBe(false) // the old channel is gone
+
+    const aheadPanel = later.container.querySelector('.ln.mid .p')!
+    expect(aheadPanel.classList.contains('ppw')).toBe(true)
+    expect(aheadPanel.classList.contains('past')).toBe(false)
+    expect(aheadPanel.classList.contains('nx')).toBe(true) // ring
   })
 
   // CB.12 — mpw keeps its own class even though it currently paints like ppw,
   // so the past-season anchor can style it later without new machinery.
   it('CB.12: classes mpw distinctly from ppw', () => {
-    const quarters = buildQuarters([
+    const rows = buildMonths([
       ev({ txt_code: 'MPW-2026-2027', dt_start: '2026-09-12' }),
       ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26' }),
     ])
-    const { container } = barrel({ quarters })
+    const { container } = barrel({ rows })
     const panels = [...container.querySelectorAll('.ln.mid .p')]
     expect(panels[0]!.classList.contains('mpw')).toBe(true)
     expect(panels[1]!.classList.contains('ppw')).toBe(true)
@@ -205,29 +279,29 @@ describe('CalendarBarrel — channels', () => {
   // CB.13 — a cancelled event stays visible while its notice window is open,
   // but reads as withdrawn.
   it('CB.13: dims a cancelled event', () => {
-    const quarters = buildQuarters([
+    const rows = buildMonths([
       ev({ txt_code: 'PEW9s-2026-2027', dt_start: '2026-09-12', enum_status: 'CANCELLED' }),
     ])
-    const { container } = barrel({ quarters })
+    const { container } = barrel({ rows })
     expect(container.querySelector('.ln.mid .p')!.classList.contains('canc')).toBe(true)
   })
 })
 
 describe('CalendarBarrel — seams', () => {
-  // CB.14 — the quarter label is engraved on every seam.
-  it('CB.14: engraves the quarter label on every row', () => {
-    const quarters = fourQuarters()
-    const { container } = barrel({ quarters })
+  // CB.14 — the row label is engraved on every seam.
+  it('CB.14: engraves the row label on every row', () => {
+    const rows = fourRows()
+    const { container } = barrel({ rows })
     const labels = [...container.querySelectorAll('.sm b')].map((b) => b.textContent)
-    expect(labels).toEqual(quarters.map((q) => q.label))
+    expect(labels).toEqual(rows.map(seam))
   })
 
   // CB.15 — a season boundary takes the heavier rule, and it is marked on
   // every row rather than only the focused one.
   it('CB.15: marks the season boundary seam', () => {
-    const quarters = fourQuarters()
-    const { container } = barrel({ quarters })
-    const boundaryIndex = quarters.findIndex((q) => q.isSeasonBoundary)
+    const rows = fourRows()
+    const { container } = barrel({ rows })
+    const boundaryIndex = rows.findIndex((q) => q.isSeasonBoundary)
     expect(boundaryIndex).toBeGreaterThan(0)
     const seams = [...container.querySelectorAll('.sm')]
     expect(seams[boundaryIndex]!.classList.contains('bd')).toBe(true)
@@ -238,25 +312,25 @@ describe('CalendarBarrel — seams', () => {
   // boundary; elsewhere the seam stays quiet. This is where the deleted season
   // dropdown's information went.
   it('CB.16: prints the season code on the focused row and on boundaries', () => {
-    const quarters = fourQuarters()
-    const { container } = barrel({ quarters, anchorIndex: 0 })
+    const rows = fourRows()
+    const { container } = barrel({ rows, anchorIndex: 0 })
     const codes = [...container.querySelectorAll('.sm em')].map((e) => e.textContent!.trim())
-    const boundaryIndex = quarters.findIndex((q) => q.isSeasonBoundary)
+    const boundaryIndex = rows.findIndex((q) => q.isSeasonBoundary)
 
     expect(codes[0]).toBe('25/26') // focused
     expect(codes[boundaryIndex]).toBe('26/27') // boundary, though not focused
-    const quietIndex = quarters.findIndex((q, i) => i !== 0 && !q.isSeasonBoundary)
+    const quietIndex = rows.findIndex((q, i) => i !== 0 && !q.isSeasonBoundary)
     expect(codes[quietIndex]).toBe('')
   })
 
-  // CB.17 — an empty quarter still renders as a row, so the drum does not jump
+  // CB.17 — an empty row still renders as a row, so the drum does not jump
   // over a quiet stretch of history.
-  it('CB.17: renders an empty quarter with a placeholder', () => {
-    const quarters = buildQuarters([
+  it('CB.17: renders an empty row with a placeholder', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'A-2026-2027', dt_start: '2026-02-10' }),
       ev({ txt_code: 'B-2026-2027', dt_start: '2026-11-20' }),
     ])
-    const { container } = barrel({ quarters, anchorIndex: 1 })
+    const { container } = barrel({ rows, anchorIndex: 1 })
     expect(container.querySelector('.ln.mid .mt')!.textContent).toBe('brak zawodów')
     expect(container.querySelector('.ln.mid .p')).toBeNull()
   })
@@ -267,11 +341,11 @@ describe('CalendarBarrel — selection', () => {
   // it upward; the card is driven entirely by this.
   it('CB.18: selects a panel and reports the event', async () => {
     const onselect = vi.fn()
-    const quarters = buildQuarters([
+    const rows = buildMonths([
       ev({ txt_code: 'PEW1e-2026-2027', dt_start: '2026-09-12' }),
       ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26' }),
     ])
-    const { container } = barrel({ quarters, onselect })
+    const { container } = barrel({ rows, onselect })
     onselect.mockClear()
 
     const panels = [...container.querySelectorAll('.ln.mid .p')]
@@ -288,8 +362,8 @@ describe('CalendarBarrel — selection', () => {
     const first = ev({ txt_code: 'PEW1e-2026-2027', dt_start: '2026-09-12' })
     const ringed = ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26' })
     const onselect = vi.fn()
-    const quarters = buildQuarters([first, ringed])
-    const { container } = barrel({ quarters, nextUpcoming: ringed, onselect })
+    const rows = buildMonths([first, ringed])
+    const { container } = barrel({ rows, nextUpcoming: ringed, onselect })
 
     const panels = [...container.querySelectorAll('.ln.mid .p')]
     expect(panels[1]!.classList.contains('sel')).toBe(true)
@@ -300,13 +374,58 @@ describe('CalendarBarrel — selection', () => {
   // event from a row the user is no longer looking at.
   it('CB.20: reselects after rotating to another row', async () => {
     const onselect = vi.fn()
-    const quarters = fourQuarters()
-    const { container } = barrel({ quarters, anchorIndex: 0, onselect })
+    const rows = fourRows()
+    const { container } = barrel({ rows, anchorIndex: 0, onselect })
     onselect.mockClear()
 
     await fireEvent.click(container.querySelector('.ln.dn')!)
     expect(onselect).toHaveBeenCalledOnce()
     const selectedInMid = container.querySelectorAll('.ln.mid .p.sel')
     expect(selectedInMid).toHaveLength(1)
+  })
+})
+
+describe('CalendarBarrel — selecting across a rotation', () => {
+  // CB.23 — tapping a panel on a RECEDED row rotates that row to centre and
+  // selects THE PANEL THAT WAS TAPPED. It used to rotate and then fall back to
+  // the row's default (the ringed next-upcoming, else the first event), which
+  // threw away the one thing the tap had already said: which event is wanted.
+  it('CB.23: carries the tapped event to the card, not the row default', async () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'PEW1efs-2026-2027', dt_start: '2026-10-03' }),
+      ev({ txt_code: 'PEW2es-2026-2027', dt_start: '2026-10-17' }),
+      ev({ txt_code: 'PPW2-2026-2027', dt_start: '2026-10-24' }),
+    ])
+    const onselect = vi.fn()
+    const { container } = render(CalendarBarrel, {
+      props: { rows, anchorIndex: 0, onselect },
+    })
+
+    // The row below holds three events; tap the THIRD one.
+    const target = [...container.querySelectorAll('.ln.dn .p')][2]!
+    await fireEvent.click(target)
+
+    expect(onselect).toHaveBeenCalled()
+    expect(onselect.mock.calls.at(-1)![0].txt_code).toBe('PPW2-2026-2027')
+    // and that panel is the selected one on the row now at centre
+    const mid = [...container.querySelectorAll('.ln.mid .p')]
+    expect(mid[2]!.classList.contains('sel')).toBe(true)
+  })
+
+  // CB.24 — tapping the ROW itself (its seam, not a panel) still uses the
+  // default, because no event was named.
+  it('CB.24: tapping the row body still selects the row default', async () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'PEW1efs-2026-2027', dt_start: '2026-10-03' }),
+      ev({ txt_code: 'PPW2-2026-2027', dt_start: '2026-10-24' }),
+    ])
+    const onselect = vi.fn()
+    const { container } = render(CalendarBarrel, {
+      props: { rows, anchorIndex: 0, onselect },
+    })
+    await fireEvent.click(container.querySelector('.ln.dn .sm')!)
+    expect(onselect.mock.calls.at(-1)![0].txt_code).toBe('PEW1efs-2026-2027')
   })
 })

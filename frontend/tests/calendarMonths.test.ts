@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest'
 import type { CalendarEvent, EventStatus } from '../src/lib/types'
 import {
   buildCalendar,
-  buildQuarters,
+  buildMonths,
   countryCode,
   filterByScope,
   findNextUpcoming,
@@ -17,9 +17,13 @@ import {
   isWithinCancellationNoticeWindow,
   movedFromDate,
   panelType,
-  quarterKeyOf,
+  monthKeyOf,
+  monthLabel,
   registrationState,
-  resolveAnchorQuarter,
+  resolveAnchorRow,
+  settleRow,
+  isRegistrationOpen,
+  eventTimeState,
   seasonShortCode,
   visibleEvents,
   allowsFeeTier,
@@ -36,7 +40,7 @@ import {
   resultUrls,
   tournamentsPluralKey,
   weaponLetters,
-} from '../src/lib/calendarQuarters'
+} from '../src/lib/calendarMonths'
 
 const TODAY = '2026-08-09'
 
@@ -74,17 +78,17 @@ function ev(partial: Partial<CalendarEvent> & { txt_code: string }): CalendarEve
 }
 
 // ---------------------------------------------------------------------------
-// Quarter bucketing
+// MonthRow bucketing
 // ---------------------------------------------------------------------------
 
-describe('quarter bucketing', () => {
+describe('row bucketing', () => {
   // CQ.1 — dt_start decides the bucket, month boundaries included.
-  it('CQ.1: buckets by dt_start into calendar quarters', () => {
-    expect(quarterKeyOf('2026-01-01')).toBe('2026-Q1')
-    expect(quarterKeyOf('2026-03-31')).toBe('2026-Q1')
-    expect(quarterKeyOf('2026-04-01')).toBe('2026-Q2')
-    expect(quarterKeyOf('2026-09-19')).toBe('2026-Q3')
-    expect(quarterKeyOf('2026-12-31')).toBe('2026-Q4')
+  it('CQ.1: buckets by dt_start into calendar rows', () => {
+    expect(monthKeyOf('2026-01-01')).toBe('2026-01')
+    expect(monthKeyOf('2026-03-31')).toBe('2026-03')
+    expect(monthKeyOf('2026-04-01')).toBe('2026-04')
+    expect(monthKeyOf('2026-09-19')).toBe('2026-09')
+    expect(monthKeyOf('2026-12-31')).toBe('2026-12')
   })
 
   // CQ.2 — the multi-season fetch (fetchPriorSeasonEvents) orders by txt_code,
@@ -97,8 +101,8 @@ describe('quarter bucketing', () => {
       ev({ txt_code: 'PEW2e-2026-2027', dt_start: '2026-10-31' }),
       ev({ txt_code: 'GP1-2026-2027', dt_start: '2026-09-12' }),
     ]
-    const quarters = buildQuarters(shuffled)
-    const codes = quarters.flatMap((q) => q.events.map((e) => e.txt_code))
+    const rows = buildMonths(shuffled)
+    const codes = rows.flatMap((q) => q.events.map((e) => e.txt_code))
     expect(codes).toEqual([
       'GP1-2026-2027',
       'PPW1-2026-2027',
@@ -108,42 +112,41 @@ describe('quarter bucketing', () => {
   })
 
   // CQ.3 — the seam label the barrel engraves above each row.
-  it('CQ.3: labels quarters as NQyy', () => {
-    const quarters = buildQuarters([ev({ txt_code: 'PPW1', dt_start: '2026-11-20' })])
-    expect(quarters[0]!.label).toBe('4Q26')
+  it('CQ.3: labels rows with the full month name and year', () => {
+    const rows = buildMonths([ev({ txt_code: 'PPW1', dt_start: '2026-11-20' })])
+    expect(rows[0]!.label).toBe('November 2026')
+    expect(rows[0]!.month).toBe(11)
   })
 
-  // CQ.4 — continuous history: the drum must not jump over a quiet quarter,
-  // so gaps between the first and last populated quarter are materialised.
-  it('CQ.4: fills empty quarters between populated ones', () => {
-    const quarters = buildQuarters([
+  // CQ.4 — continuous history: the drum must not jump over a quiet row,
+  // so gaps between the first and last populated row are materialised.
+  it('CQ.4: fills empty rows between populated ones', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'A', dt_start: '2026-02-10' }),
       ev({ txt_code: 'B', dt_start: '2026-11-20' }),
     ])
-    expect(quarters.map((q) => q.key)).toEqual([
-      '2026-Q1',
-      '2026-Q2',
-      '2026-Q3',
-      '2026-Q4',
+    expect(rows.map((q) => q.key)).toEqual([
+      '2026-02', '2026-03', '2026-04', '2026-05', '2026-06',
+      '2026-07', '2026-08', '2026-09', '2026-10', '2026-11',
     ])
-    expect(quarters[1]!.isEmpty).toBe(true)
-    expect(quarters[2]!.isEmpty).toBe(true)
-    expect(quarters[0]!.isEmpty).toBe(false)
+    // Only the two months that hold an event are populated; the eight between
+    // them are materialised so the time axis stays linear.
+    expect(rows.filter((q) => !q.isEmpty).map((q) => q.key)).toEqual(['2026-02', '2026-11'])
   })
 
   // CQ.5 — an event with no dt_start cannot be placed on the drum.
   it('CQ.5: excludes events with a null dt_start', () => {
-    const quarters = buildQuarters([
+    const rows = buildMonths([
       ev({ txt_code: 'DATED', dt_start: '2026-09-19' }),
       ev({ txt_code: 'UNDATED', dt_start: null }),
     ])
-    const codes = quarters.flatMap((q) => q.events.map((e) => e.txt_code))
+    const codes = rows.flatMap((q) => q.events.map((e) => e.txt_code))
     expect(codes).toEqual(['DATED'])
   })
 
   // CQ.6 — an empty input yields no rows rather than throwing.
   it('CQ.6: returns an empty list for no events', () => {
-    expect(buildQuarters([])).toEqual([])
+    expect(buildMonths([])).toEqual([])
   })
 })
 
@@ -153,26 +156,26 @@ describe('quarter bucketing', () => {
 
 describe('season boundaries', () => {
   // CQ.7 — crossing a boundary is what drives season state now that the
-  // dropdown is gone, so the boundary must be detectable per quarter.
-  it('CQ.7: marks the quarter that starts a new season', () => {
-    const quarters = buildQuarters([
+  // dropdown is gone, so the boundary must be detectable per row.
+  it('CQ.7: marks the row that starts a new season', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'A', dt_start: '2026-05-10', txt_season_code: 'SPWS-2025-2026' }),
       ev({ txt_code: 'B', dt_start: '2026-09-19', txt_season_code: 'SPWS-2026-2027' }),
     ])
-    const q2 = quarters.find((q) => q.key === '2026-Q2')!
-    const q3 = quarters.find((q) => q.key === '2026-Q3')!
-    expect(q2.isSeasonBoundary).toBe(false) // first row is not a boundary
-    expect(q3.isSeasonBoundary).toBe(true)
+    const may = rows.find((q) => q.key === '2026-05')!
+    const sep = rows.find((q) => q.key === '2026-09')!
+    expect(may.isSeasonBoundary).toBe(false) // first row is not a boundary
+    expect(sep.isSeasonBoundary).toBe(true)
   })
 
-  // CQ.8 — CERT holds quarters spanning two seasons (PEW8f-2025-2026 sits
+  // CQ.8 — CERT holds rows spanning two seasons (PEW8f-2025-2026 sits
   // among 2024-25 events). Both codes must survive on the row.
-  it('CQ.8: reports every season code present in a mixed quarter', () => {
-    const quarters = buildQuarters([
+  it('CQ.8: reports every season code present in a mixed row', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'A', dt_start: '2026-09-12', txt_season_code: 'SPWS-2025-2026' }),
       ev({ txt_code: 'B', dt_start: '2026-09-26', txt_season_code: 'SPWS-2026-2027' }),
     ])
-    expect(quarters[0]!.seasonCodes).toEqual(['SPWS-2025-2026', 'SPWS-2026-2027'])
+    expect(rows[0]!.seasonCodes).toEqual(['SPWS-2025-2026', 'SPWS-2026-2027'])
   })
 
   // CQ.9 — the seam prints the short form.
@@ -182,14 +185,14 @@ describe('season boundaries', () => {
     expect(seasonShortCode('nonsense')).toBe('')
   })
 
-  // CQ.10 — an empty quarter inherits the running season so the seam does not
+  // CQ.10 — an empty row inherits the running season so the seam does not
   // blank out mid-drum.
-  it('CQ.10: carries the running season across an empty quarter', () => {
-    const quarters = buildQuarters([
+  it('CQ.10: carries the running season across an empty row', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'A', dt_start: '2026-02-10', txt_season_code: 'SPWS-2025-2026' }),
       ev({ txt_code: 'B', dt_start: '2026-11-20', txt_season_code: 'SPWS-2025-2026' }),
     ])
-    const q2 = quarters.find((q) => q.key === '2026-Q2')!
+    const q2 = rows.find((q) => q.key === '2026-05')!
     expect(q2.isEmpty).toBe(true)
     expect(q2.seasonCodes).toEqual(['SPWS-2025-2026'])
     expect(q2.isSeasonBoundary).toBe(false)
@@ -686,8 +689,8 @@ describe('layoutRow', () => {
   })
 
   // CQ.61 — the exact geometry measured against the live mock: a ten-panel
-  // quarter at 320px fans at step 25, i.e. margin-left -23.
-  it('CQ.61: reproduces the mock geometry for a ten-panel quarter', () => {
+  // row at 320px fans at step 25, i.e. margin-left -23.
+  it('CQ.61: reproduces the mock geometry for a ten-panel row', () => {
     const out = layoutRow({ count: 10, selectedIndex: 4, available: 304, selectedHasCity: true })
     expect(out.step).toBe(25)
     expect(out.panels[0]!.marginLeft).toBe(0)
@@ -852,44 +855,49 @@ describe('buildCalendar', () => {
       ev({ txt_code: 'PPW1-2026-2027', dt_start: '2026-09-26' }),
     ]
     const out = buildCalendar({ events, today: TODAY, scope: 'ppw', showEvfToggle: true })
-    const codes = out.quarters.flatMap((q) => q.events.map((e) => e.txt_code))
+    const codes = out.rows.flatMap((q) => q.events.map((e) => e.txt_code))
     expect(codes).toEqual(['PPW1-2026-2027'])
     expect(out.nextUpcoming?.txt_code).toBe('PPW1-2026-2027')
   })
 
   // CQ.41 — an archived season has no future event; the drum must still anchor
   // somewhere rather than returning -1 and rendering flat.
-  it('CQ.41: anchors on the last quarter when nothing is upcoming', () => {
-    const quarters = buildQuarters([
+  it('CQ.41: anchors on the last row when nothing is upcoming', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'OLD1', dt_start: '2023-10-01' }),
       ev({ txt_code: 'OLD2', dt_start: '2024-02-01' }),
     ])
-    const idx = resolveAnchorQuarter(quarters, null, TODAY)
-    expect(idx).toBe(quarters.length - 1)
+    const idx = resolveAnchorRow(rows, null, TODAY)
+    expect(idx).toBe(rows.length - 1)
   })
 
-  // CQ.42 — with a next-upcoming event, the drum opens on its quarter.
-  it('CQ.42: anchors on the quarter holding the next upcoming event', () => {
+  // CQ.42 — with a next-upcoming event, the drum opens on its row.
+  it('CQ.42: anchors on the row holding the next upcoming event', () => {
     const soon = ev({ txt_code: 'SOON', dt_start: '2026-11-20' })
-    const quarters = buildQuarters([ev({ txt_code: 'PAST', dt_start: '2026-02-01' }), soon])
-    const idx = resolveAnchorQuarter(quarters, soon, TODAY)
-    expect(quarters[idx]!.key).toBe('2026-Q4')
+    const rows = buildMonths([ev({ txt_code: 'PAST', dt_start: '2026-02-01' }), soon])
+    const idx = resolveAnchorRow(rows, soon, TODAY)
+    expect(rows[idx]!.key).toBe('2026-11')
   })
 
-  // CQ.43 — off-season: today sits in a quarter the calendar has no events
-  // for. Anchor on that quarter anyway so "now" stays centred.
-  it('CQ.43: anchors on the quarter containing today when it exists but is empty', () => {
-    const quarters = buildQuarters([
+  // CQ.43 — off-season: today sits in a month the calendar has no events for.
+  // The quarter barrel anchored on that empty row so "now" stayed centred; the
+  // month barrel rolls off it instead, because monthly granularity produces far
+  // more empty rows and resting on one shows the user nothing.
+  it('CQ.43: rolls off an empty today row to the next populated month', () => {
+    const rows = buildMonths([
       ev({ txt_code: 'SPRING', dt_start: '2026-04-01' }),
       ev({ txt_code: 'WINTER', dt_start: '2026-12-01' }),
     ])
-    const idx = resolveAnchorQuarter(quarters, null, TODAY)
-    // TODAY is 2026-08-09 → Q3, which exists as an empty row.
-    expect(quarters[idx]!.key).toBe('2026-Q3')
+    const idx = resolveAnchorRow(rows, null, TODAY)
+    // TODAY is 2026-08-09, and that month row exists but is EMPTY. The drum
+    // must not rest on it, so settleRow rolls forward to the next populated
+    // month. This is a deliberate change from the quarter behaviour, which
+    // parked on the empty row so "now" stayed centred.
+    expect(rows[idx]!.key).toBe('2026-12')
   })
 
   it('CQ.44: returns 0 for an empty drum', () => {
-    expect(resolveAnchorQuarter([], null, TODAY)).toBe(0)
+    expect(resolveAnchorRow([], null, TODAY)).toBe(0)
   })
 })
 
@@ -967,5 +975,207 @@ describe('movedFromDate', () => {
       dt_start_first_published: '2026-12-12',
     })
     expect(movedFromDate(e, TODAY)).toBe('2026-12-12')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Monthly seams — the calendar buckets by MONTH, not quarter.
+// Plan: doc/plans/kalendarz-mocki-2026-08-29.html §07 "Locked decisions".
+// Measured on PROD: 10 of 19 quarter rows held 5+ events (worst 9, needing
+// 456px against a 320px viewport); monthly gives 48 active rows, worst 4.
+// Test IDs CM.1–CM.20.
+// ---------------------------------------------------------------------------
+
+describe('monthly seams', () => {
+  it('CM.1 — monthKeyOf returns a sortable YYYY-MM key', () => {
+    expect(monthKeyOf('2026-09-26')).toBe('2026-09')
+    expect(monthKeyOf('2026-01-02')).toBe('2026-01')
+    expect(monthKeyOf('2026-12-31')).toBe('2026-12')
+  })
+
+  it('CM.2 — monthLabel is the full month name and year', () => {
+    expect(monthLabel(2026, 9)).toBe('September 2026')
+    expect(monthLabel(2026, 1)).toBe('January 2026')
+  })
+
+  it('CM.3 — buildMonths buckets by month, one row per calendar month', () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'A', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'B', dt_start: '2026-09-26' }),
+      ev({ txt_code: 'C', dt_start: '2026-10-03' }),
+    ])
+    expect(rows.map((r) => r.key)).toEqual(['2026-09', '2026-10'])
+    expect(rows[0]!.events).toHaveLength(2)
+    expect(rows[1]!.events).toHaveLength(1)
+  })
+
+  it('CM.4 — quiet months are materialised so the drum does not jump time', () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'A', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'B', dt_start: '2026-12-05' }),
+    ])
+    expect(rows.map((r) => r.key)).toEqual(['2026-09', '2026-10', '2026-11', '2026-12'])
+    expect(rows.map((r) => r.isEmpty)).toEqual([false, true, true, false])
+  })
+
+  it('CM.5 — a month run crosses a year boundary', () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'A', dt_start: '2026-11-07' }),
+      ev({ txt_code: 'B', dt_start: '2027-02-06' }),
+    ])
+    expect(rows.map((r) => r.key)).toEqual(['2026-11', '2026-12', '2027-01', '2027-02'])
+  })
+
+  it('CM.6 — the row carries its month number and year', () => {
+    const rows = buildMonths([ev({ txt_code: 'A', dt_start: '2026-09-05' })])
+    expect(rows[0]!.month).toBe(9)
+    expect(rows[0]!.year).toBe(2026)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Empty-row skipping. Monthly granularity materialises 18 empty rows on the
+// PROD pool against a handful at quarterly, so the drum must never rest on one.
+// ---------------------------------------------------------------------------
+
+describe('empty-row skipping', () => {
+  const sparse = () =>
+    buildMonths([
+      ev({ txt_code: 'A', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'B', dt_start: '2026-12-05' }),
+    ])
+
+  it('CM.10 — settleRow rolls forward off an empty row', () => {
+    const rows = sparse()
+    expect(rows[1]!.isEmpty).toBe(true)
+    expect(settleRow(rows, 1, 1)).toBe(3)
+  })
+
+  it('CM.11 — settleRow rolls backward off an empty row', () => {
+    const rows = sparse()
+    expect(settleRow(rows, 2, -1)).toBe(0)
+  })
+
+  it('CM.12 — settleRow leaves a populated row alone', () => {
+    const rows = sparse()
+    expect(settleRow(rows, 0, 1)).toBe(0)
+    expect(settleRow(rows, 3, -1)).toBe(3)
+  })
+
+  it('CM.13 — settleRow reverses at the end of the drum rather than falling off', () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'A', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'B', dt_start: '2026-11-05' }),
+    ])
+    // rolling forward from the last row, which is populated, stays put
+    expect(settleRow(rows, rows.length - 1, 1)).toBe(rows.length - 1)
+  })
+
+  it('CM.14 — settleRow on an all-empty list returns the index unchanged', () => {
+    expect(settleRow([], 0, 1)).toBe(0)
+  })
+
+  it('CM.15 — the anchor never lands on an empty row', () => {
+    const rows = sparse()
+    // today sits in a quiet month; the anchor must move to a populated one
+    const i = resolveAnchorRow(rows, null, '2026-10-15')
+    expect(rows[i]!.isEmpty).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Registration-open marker. Locked decision: a dot on the tile while today is
+// between the registration opening and dt_end.
+// ---------------------------------------------------------------------------
+
+describe('registration-open window', () => {
+  const withUrl = (extra: Record<string, unknown> = {}) =>
+    ev({
+      txt_code: 'PPW1',
+      dt_start: '2026-09-26',
+      dt_end: '2026-09-27',
+      url_registration: 'https://example.test/register.html?event=PPW1',
+      ...extra,
+    })
+
+  it('CM.18 — open while a registration URL exists and the event has not ended', () => {
+    const e = withUrl()
+    expect(isRegistrationOpen(e, '2026-08-29')).toBe(true)
+    expect(isRegistrationOpen(e, '2026-09-27')).toBe(true) // the last day counts
+  })
+
+  it('CM.19 — closed once the event has finished', () => {
+    expect(isRegistrationOpen(withUrl(), '2026-09-28')).toBe(false)
+  })
+
+  // The URL is the signal because EventManager's "Rejestracja SPWS" checkbox
+  // derives it when ticked and clears it to '' when unticked, so its presence
+  // means an administrator actually opened registration.
+  it('CM.20 — no URL means closed, and whitespace is not a URL', () => {
+    expect(isRegistrationOpen(ev({ txt_code: 'X', dt_start: '2026-09-26', dt_end: '2026-09-27' }), '2026-08-29')).toBe(false)
+    expect(isRegistrationOpen(withUrl({ url_registration: '   ' }), '2026-08-29')).toBe(false)
+  })
+
+  it('CM.21 — a cancelled event is never open, whatever URL it carries', () => {
+    expect(isRegistrationOpen(withUrl({ enum_status: 'CANCELLED' as EventStatus }), '2026-08-29')).toBe(false)
+  })
+
+  // The window deliberately outlives the card's registration pill, which
+  // registrationState() retires at dt_registration_deadline.
+  it('CM.22 — still open after the registration deadline, up to dt_end', () => {
+    const e = withUrl({ dt_registration_deadline: '2026-09-20' })
+    expect(isRegistrationOpen(e, '2026-09-25')).toBe(true)
+    expect(registrationState(e, '2026-09-25').showRegistrationLink).toBe(false)
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// Time state drives the inverted palette: past recedes to grey, upcoming
+// carries the colour. Locked 2026-08-29. THIRTY days for a finished event —
+// results arrive late — and seven for an imminent one.
+//
+// Not to be confused with ADR-084 open item 1, which asks what the card OPENS
+// on and remains open; this decides only what the palette calls past.
+// ---------------------------------------------------------------------------
+
+describe('event time state', () => {
+  const e = (start: string, end?: string, status: EventStatus = 'PLANNED') =>
+    ev({ txt_code: 'X', dt_start: start, dt_end: end ?? start, enum_status: status })
+
+  it('CM.25 — an event still ahead is future', () => {
+    expect(eventTimeState(e('2026-10-01'), '2026-08-29')).toBe('future')
+  })
+
+  it('CM.26 — within seven days of starting it is imminent, inclusive', () => {
+    expect(eventTimeState(e('2026-09-04'), '2026-08-29')).toBe('soon')   // 6 days
+    expect(eventTimeState(e('2026-09-05'), '2026-08-29')).toBe('soon')   // 7 days, the boundary
+    expect(eventTimeState(e('2026-09-06'), '2026-08-29')).toBe('future') // 8 days
+  })
+
+  it('CM.27 — an event running today is imminent, not past', () => {
+    expect(eventTimeState(e('2026-08-28', '2026-08-30'), '2026-08-29')).toBe('soon')
+  })
+
+  it('CM.28 — finished within thirty days keeps its colour', () => {
+    expect(eventTimeState(e('2026-08-24', '2026-08-25'), '2026-08-29')).toBe('grace')
+    // the boundary itself is still recent
+    expect(eventTimeState(e('2026-07-29', '2026-07-30'), '2026-08-29')).toBe('grace')
+  })
+
+  it('CM.29 — finished more than thirty days ago goes grey', () => {
+    expect(eventTimeState(e('2026-07-28', '2026-07-29'), '2026-08-29')).toBe('past')
+    expect(eventTimeState(e('2026-01-01', '2026-01-02'), '2026-08-29')).toBe('past')
+  })
+
+  it('CM.30 — state is decided by DATE, not by enum_status', () => {
+    // An event can sit un-ingested for weeks and still read PLANNED; the old
+    // fill keyed off COMPLETED and so kept showing it as if it were ahead.
+    expect(eventTimeState(e('2026-01-10', '2026-01-11', 'PLANNED'), '2026-08-29')).toBe('past')
+    expect(eventTimeState(e('2026-12-10', '2026-12-11', 'COMPLETED'), '2026-08-29')).toBe('future')
+  })
+
+  it('CM.31 — an event with no start date is future, never wrongly greyed', () => {
+    expect(eventTimeState(ev({ txt_code: 'X', dt_start: null }), '2026-08-29')).toBe('future')
   })
 })

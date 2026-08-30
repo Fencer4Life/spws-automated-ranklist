@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendar barrel — mocks</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ --surface-1:#f1efe9;--surface-2:#fff;--border:rgba(0,0,0,.13);
+ --text-primary:#1c1b19;--text-secondary:#565550;--text-muted:#8a887f;--accent:#185fa5;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38;
+  --surface-1:#1e2732;--surface-2:#26303d;--border:rgba(255,255,255,.16);
+  --text-primary:#e8eef7;--text-secondary:#b9c6d8;--text-muted:#8fa0b6;--accent:#7aa5da}
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(90deg,var(--green) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line)}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:26px 0 8px;font-weight:600}
+p{max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;border:1px solid var(--line);border-radius:3px}
+a{color:var(--navy)}
+b.k{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+.q{border-left:3px solid var(--violet);padding:3px 0 3px 15px;margin:16px 0 20px;max-width:82ch}
+.q b{color:var(--violet);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){.hd,.body,footer,.toc{margin-left:10px;margin-right:10px}.body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+
+/* ---------- mock lab ---------- */
+.lab{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px;margin:18px 0 24px}
+.lab-hd{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.lab-t{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);font-weight:700}
+.lab-n{font-size:13.5px;color:var(--muted);max-width:64ch}
+.ctl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.ctl button{font-family:var(--mono);font-size:11px;padding:5px 11px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:4px;cursor:pointer}
+.ctl button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ctl button.lang{font-size:13px;padding:4px 10px}
+.ctl button.lang[aria-pressed=true]{background:#4a90d9;border-color:#4a90d9;color:#fff}
+.stage{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.phone{width:320px;flex:0 0 320px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface-1)}
+.wide{flex:1 1 420px;min-width:320px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface-1)}
+.slab{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+
+/* ===== BARREL ===== */
+.bar{height:246px;overflow:hidden;perspective:760px;position:relative;margin-top:6px}
+.drum{display:flex;flex-direction:column;transition:transform .45s cubic-bezier(.22,.61,.36,1)}
+.ln{height:82px;flex:0 0 82px;transform-origin:0 50%;display:block;
+ transition:transform .45s cubic-bezier(.22,.61,.36,1),opacity .45s,filter .45s;
+ cursor:pointer;border:none;background:none;padding:0;text-align:left;width:100%}
+/* flat fallback, used only when cylinder mode is off */
+.bar:not(.cyl) .ln.up{transform:rotateX(46deg) scale(.88);opacity:.42}
+.bar:not(.cyl) .ln.dn{transform:rotateX(-46deg) scale(.88);opacity:.42}
+.bar:not(.cyl) .ln.far{opacity:0;pointer-events:none}
+.sm{display:flex;align-items:center;gap:5px;height:14px}
+.sm b{font-size:11px;font-weight:400;color:var(--text-muted);letter-spacing:.6px}
+.ln.mid .sm b{color:var(--text-secondary);font-weight:600}
+.sm i{flex:1;height:1px;background:var(--border);font-style:normal}
+.sm em{font-size:11px;color:var(--text-muted);font-style:normal}
+.rw{display:flex;overflow-x:auto;scrollbar-width:none;padding-top:3px;padding-bottom:4px}
+.rw::-webkit-scrollbar{display:none}
+/* `margin: 0 auto`, NOT `justify-content: center` — auto margins absorb only
+   POSITIVE free space, so a row that fits is centred while a row that overflows
+   still left-aligns and stays scrollable. Centring with justify-content would
+   push the leading tiles into negative scroll space, where nothing can reach
+   them. This is the safe way to centre a row that may overflow. */
+.rwi{display:flex;gap:3px;position:relative;margin:0 auto}
+.mt{font-size:11px;color:var(--text-muted);font-style:italic;padding-top:18px}
+
+/* --- true cylinder geometry ---------------------------------------------
+   The old drum faked depth: fixed 82px slots, three hard-coded angles, and a
+   flat opacity. No gradient can fix geometry that is not curved.
+   Here each row sits on the surface of a real cylinder — rotateX(i*STEP)
+   then translateZ(R) — and the drum rotates as one body. Foreshortening,
+   spacing compression, occlusion and the horizon all fall out of the
+   perspective projection instead of being painted on. */
+/* The rim clips. A cylinder of radius R puts far rows well outside the 246px
+   box, and letting them bleed over the page was part of why this read wrong. */
+.bar.cyl{overflow:hidden}
+.bar.cyl .drum{position:absolute;inset:0;transform-style:preserve-3d;
+ transition:transform .52s cubic-bezier(.34,1.32,.5,1)}
+.bar.cyl .ln{position:absolute;left:0;right:0;top:50%;margin-top:-41px;
+ backface-visibility:hidden;transform-style:preserve-3d;
+ transition:opacity .3s linear}
+.bar.cyl .ln.mid{cursor:default}
+/* momentum: a physical drum overshoots slightly and settles back */
+.bar.cyl.nomo .drum{transition:transform .42s cubic-bezier(.22,.61,.36,1)}
+/* a spinning drum blurs; it resolves the instant it stops */
+.bar.cyl.blur.spin .ln{filter:blur(1.1px)}
+.bar.cyl .ln{transition:opacity .3s linear,filter .22s linear}
+@media (prefers-reduced-motion:reduce){
+ .bar.cyl .drum{transition:none}.bar.cyl.blur.spin .ln{filter:none}}
+
+/* ===== TILES ===== */
+.p{flex:0 0 48px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ padding:2px 1px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);
+ cursor:pointer;height:56px;position:relative;overflow:hidden}
+.up .p,.dn .p{flex:0 0 38px;cursor:default;pointer-events:none}
+.ln.up,.ln.dn{cursor:pointer}
+.ln.mid{cursor:default}
+.dd{font-size:15px;font-weight:600;line-height:1.1}
+.dm{font-size:11px;line-height:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;font-weight:700}
+.dm i{font-style:normal}
+.mf{display:none}
+.p.sel .ms{display:none}
+.p.sel .mf{display:inline}
+.cty{font-size:9px;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;margin-top:1px;opacity:.85}
+/* Monthly rows hold at most four events, so the focused row can afford wider
+   tiles and a city on each one. Receded rows still drop to day + code.
+   Only the SELECTED tile shows the full month, and Polish genitive
+   "października" measures 72px at 11px/700 — far longer than the next longest
+   ("listopada", 52px) and than English ("September", 62px). So the selected
+   tile alone widens to fit it; widening every tile to 78px would put four of
+   them over a 320px viewport. Worst case now: 3x68 + 78 + gaps = 291px. */
+.ln.mid .p{flex:0 0 68px}
+.ln.mid .p.sel{flex:0 0 78px}
+.up .cty,.dn .cty{display:none}
+.pc{font-size:11px;font-weight:600;line-height:1.1;max-width:100%;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap}
+/* Series number: monospace + tabular figures so 5 cannot be read as S. */
+.pc .pn{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700;
+ font-size:10px;font-style:normal;letter-spacing:0;margin-left:1px}
+/* Receded rows drop to day + code — only the month goes, matching
+   CalendarBarrel.svelte's `.up .dm, .dn .dm { display:none }`. The code stays,
+   which is what makes a receded row identifiable at all. */
+.up .dm,.dn .dm{display:none}
+/* Registration-open marker. Top-right, so it never collides with treatment C's
+   organizer LED at top-left. Sized to read at 38px on a receded row too. */
+.p .rdot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;
+ background:var(--accent,#185fa5);box-shadow:0 0 0 1.5px var(--surface-2,#fff)}
+.p.past .rdot{display:none}
+.p.sel{outline:2px solid var(--text-primary);outline-offset:1px}
+.p.nx{border:2px solid var(--accent)}
+.p.canc{opacity:.5}
+.p.canc .dd{text-decoration:line-through}
+
+/* --- A: solid time-fill --- */
+.tA .p{background:var(--grey-bg);color:var(--grey);border-color:transparent}
+.tA .p.fut.ppw{background:#cfe8d9;color:#173404}
+.tA .p.fut.pew{background:#d4e6f7;color:#042c53}
+.tA .p.fut.int{background:#fbe4c4;color:#412402}
+.tA .p.soon.ppw{background:#57b487;color:#06240f}
+.tA .p.soon.pew{background:#5aa3dd;color:#03203a}
+.tA .p.soon.int{background:#e8b45f;color:#3a1f02}
+/* --- B: edge-coded --- */
+.tB .p{background:var(--surface-2);color:var(--text-muted);border-color:var(--border)}
+.tB .p::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grey)}
+.tB .p.ppw::before{background:#2e7d52}.tB .p.pew::before{background:#1f6fb0}.tB .p.int::before{background:#b1791d}
+.tB .p.past{opacity:.55;filter:grayscale(1)}
+.tB .p.fut{color:var(--text-primary)}
+.tB .p.fut.ppw{background:#eef7f1}.tB .p.fut.pew{background:#ecf4fc}.tB .p.fut.int{background:#fdf3e2}
+.tB .p.soon{box-shadow:inset 0 0 0 2px currentColor}
+/* --- C: status LED --- */
+.tC .p{background:var(--surface-2);color:var(--text-secondary)}
+.tC .p .led{position:absolute;top:3px;left:3px;width:6px;height:6px;border-radius:50%;background:var(--grey)}
+.tC .p.ppw .led{background:#2e7d52}.tC .p.pew .led{background:#1f6fb0}.tC .p.int .led{background:#b1791d}
+.tC .p.past{background:var(--grey-bg);color:var(--grey)}
+.tC .p.past .led{background:#a8b2be}
+.tC .p.soon .led{box-shadow:0 0 0 3px rgba(24,95,165,.25)}
+/* --- D: countdown --- */
+.tD .p{background:var(--grey-bg);color:var(--grey);border-color:transparent}
+.tD .p.fut{background:var(--surface-2);border-color:var(--border);color:var(--text-primary)}
+.tD .p.fut.ppw{border-color:#2e7d52}.tD .p.fut.pew{border-color:#1f6fb0}.tD .p.fut.int{border-color:#b1791d}
+.tD .p.soon.ppw{background:#57b487;color:#06240f;border-color:#2e7d52}
+.tD .p.soon.pew{background:#5aa3dd;color:#03203a;border-color:#1f6fb0}
+.tD .p.soon.int{background:#e8b45f;color:#3a1f02;border-color:#b1791d}
+.tD .cd{font-size:9.5px;font-family:var(--mono);line-height:1.1;font-weight:600}
+
+.evcard{background:var(--surface-1);border-radius:12px;padding:12px;margin-top:0;position:relative}
+/* card shading, toggleable */
+.evcard.c-elev{box-shadow:0 1px 2px rgba(16,24,40,.10),0 6px 16px -4px rgba(16,24,40,.16),0 18px 38px -12px rgba(16,24,40,.14)}
+@media (prefers-color-scheme:dark){.evcard.c-elev{box-shadow:0 1px 2px rgba(0,0,0,.5),0 6px 16px -4px rgba(0,0,0,.55),0 18px 38px -12px rgba(0,0,0,.5)}}
+.evcard.c-bevel{box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(0,0,0,.06)}
+.evcard.c-elev.c-bevel{box-shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(0,0,0,.06),0 1px 2px rgba(16,24,40,.10),0 6px 16px -4px rgba(16,24,40,.16),0 18px 38px -12px rgba(16,24,40,.14)}
+@media (prefers-color-scheme:dark){.evcard.c-bevel,.evcard.c-elev.c-bevel{box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 6px 16px -4px rgba(0,0,0,.55),0 18px 38px -12px rgba(0,0,0,.5)}}
+/* 9 · extruded from tile — a SOLID 3px edge in the selected tile's colour.
+   It was a gradient wash falling from the top of the card, which is the same
+   thing as the rejected top-lit gradient wearing a different name. A solid bar
+   makes the tile-to-card link without putting a gradient behind the text. */
+.evcard.c-extrude::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
+ border-radius:12px 12px 0 0;pointer-events:none;background:var(--xcol,transparent)}
+.evcard.c-tilt{animation:tilt .42s cubic-bezier(.22,.61,.36,1)}
+@keyframes tilt{from{transform:perspective(760px) rotateX(9deg) translateY(-5px);opacity:.55}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.evcard.c-tilt{animation:none}}
+/* Card internals copied VERBATIM from EventCard.svelte — placement, spacing and
+   every font size. The shading toggles change the card's surface only. */
+.evcard{background:var(--surface-1);border-radius:12px;padding:12px}
+.evcard .chd{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.evcard .cdt{font-size:11px;color:var(--text-secondary)}
+.evcard .ccd{font-size:11px;font-weight:600;padding:1px 7px;border-radius:8px;white-space:nowrap}
+.evcard .ccd.ppw,.evcard .ccd.mpw{background:#eaf3de;color:#173404}
+.evcard .ccd.pew{background:#e6f1fb;color:#042c53}
+.evcard .ccd.int{background:#faeeda;color:#412402}
+.evcard .cnm{font-size:15px;font-weight:600;margin-top:6px;line-height:1.25}
+.evcard .clo{display:flex;align-items:center;gap:6px;margin-top:3px}
+.evcard .cct{font-size:15px;font-weight:600;line-height:1.25}
+.evcard .addr{display:flex;align-items:flex-start;gap:8px;margin-top:3px}
+.evcard .addrt{flex:1;min-width:0;font-size:11px;color:var(--text-secondary);line-height:1.35}
+.evcard .cpy{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;
+ width:22px;height:22px;padding:0;border-radius:6px;border:1px solid var(--border);
+ background:var(--surface-2);color:var(--text-muted);cursor:pointer}
+.evcard .cpy.ok{color:var(--green);border-color:var(--green)}
+.evcard .chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.evcard .chp{font-size:11px;padding:2px 7px;border-radius:8px;background:var(--surface-2);
+ color:var(--text-secondary);border:1px solid var(--border)}
+.evcard .chp.status{border-color:transparent}
+.evcard .chp.next{background:#e6f1fb;color:#185fa5}
+/* Status and registry chips are colour-coded on the same axis as the tiles:
+   upcoming states carry colour, finished states go grey. Note completed is GREY
+   here, not the component's green — under the inverted model the past recedes. */
+.evcard .chp.status-planned{background:#eaf3de;color:#173404}
+.evcard .chp.status-progress{background:#fbe9c4;color:#5c3d06}
+.evcard .chp.status-completed{background:var(--grey-bg);color:var(--grey)}
+.evcard .chp.status-awaiting{background:#faeeda;color:#412402}
+.evcard .chp.status-cancelled{background:#fcebeb;color:#501313}
+.evcard .chp.moved{background:#faeeda;color:#412402;border-color:transparent}
+/* Registry chip carries the organizer hue, but OUTLINED while the status chip is
+   FILLED. Hue alone could not separate them — an SPWS event that is "Planned"
+   would render two adjacent chips in the same green and read as one blob. The
+   two treatments keep "what state is it in" and "who runs it" distinct even
+   when they land on the same colour. */
+.evcard .chp.reg-SPWS{background:transparent;color:#2c6a47;border-color:#8fbfa2}
+.evcard .chp.reg-EVF{background:transparent;color:#1f6fb0;border-color:#9cc4e4}
+.evcard .chp.reg-FIE{background:transparent;color:#8a5c12;border-color:#dcb877}
+@media (prefers-color-scheme:dark){
+ .evcard .chp.reg-SPWS{color:#8fd3ab;border-color:#3c6b50}
+ .evcard .chp.reg-EVF{color:#8fbde4;border-color:#33587a}
+ .evcard .chp.reg-FIE{color:#e2bd7b;border-color:#6d5525}}
+.evcard .dvv{height:1px;background:var(--border);margin:10px 0}
+.evcard .facts{margin-top:2px}
+.evcard .fct{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.evcard .fct.fee{padding:0;line-height:1.5}
+.evcard .fct.fee .fk{font-size:9px}
+.evcard .fct.fee .fv{font-size:10px;font-weight:600}
+.evcard .fct.deadline{padding:5px 0 2px}
+.evcard .fk{font-size:11px;color:var(--text-muted)}
+.evcard .fv{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap}
+.evcard .fct.reg-urgent .fk,.evcard .fct.reg-urgent .fv{color:#a32d2d}
+.evcard .note{font-size:11px;line-height:1.4;margin:8px 0 0}
+.evcard .note.awaiting{color:#854f0b}
+.evcard .note.cancelled-note{color:#a32d2d}
+.evcard .pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.evcard .pl{font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px;
+ border:1px solid var(--accent);color:var(--accent);background:var(--surface-2);
+ text-decoration:none;display:inline-block}
+.evcard .wps{display:flex;gap:3px;flex-wrap:wrap;margin-top:10px}
+.evcard .wp{font-size:9px;line-height:1.5;padding:0 6px;border-radius:7px;
+ background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border)}
+/* Cancelled: the name is struck through and the chip is HIGHLIGHTED — solid red
+   rather than the component's pale tint.
+   The component dims the whole card with `.card.cancelled { opacity: .72 }`,
+   which cannot work here: opacity on a parent applies to every descendant, so a
+   highlighted chip inside a dimmed card is dimmed too. The dimming is therefore
+   applied to the content elements individually and the chip is left at full
+   strength — same intent, but the one thing that must stand out actually does. */
+.evcard.cancelled .cnm{text-decoration:line-through;text-decoration-thickness:1.5px}
+.evcard.cancelled .cnm,
+.evcard.cancelled .cct,
+.evcard.cancelled .ctry,
+.evcard.cancelled .addrt,
+.evcard.cancelled .cdt,
+.evcard.cancelled .facts,
+.evcard.cancelled .wps,
+.evcard.cancelled .clo svg{opacity:.62}
+.evcard .chp.status-cancelled{background:#a32d2d;color:#fff;font-weight:700;
+ letter-spacing:.04em;border-color:transparent}
+@media (prefers-color-scheme:dark){
+ .evcard .chp.status-cancelled{background:#c0453a;color:#fff}}
+/* ISO code overlaid on the circle flag (an addition, not a change to placement). */
+.evcard .clo svg{display:block;flex:0 0 auto}
+/* Full country name, localised, sitting after the copy button. */
+.evcard .ctry{font-size:11px;color:var(--text-secondary);white-space:nowrap;flex:0 0 auto}
+.caret{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;
+ border-bottom:6px solid var(--surface-1);margin-left:20px;transition:margin-left .3s}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · calendar · mocks · 29 August 2026</div>
+  <h1>The barrel spends its colour on the past. Monthly seams, an inverted palette, and a lit drum.</h1>
+  <p class="dek">Every mock below renders the real PROD event pool, seeded into LOCAL this
+  session. The numbers are measured against that pool, not estimated.</p>
+  <div class="chips">
+    <span class="chip good">LOCAL = PROD · 114 events</span>
+    <span class="chip">91 dated · 2022-01-08 → 2027-06-18</span>
+    <span class="chip bad">10 of 19 quarters overflow</span>
+    <span class="chip good">0 of 48 months overflow</span>
+  </div>
+</div>
+
+<div class="toc">
+  <ol>
+    <li><a href="#s1">What the data says</a></li>
+    <li><a href="#s2">The colour model</a></li>
+    <li><a href="#s3">The whole UI, interacting</a></li>
+    <li><a href="#s4">Drum shading</a></li>
+    <li><a href="#s5">Card shading</a></li>
+    <li><a href="#s6">Circle flags, and Switzerland</a></li>
+    <li><a href="#s7">Locked decisions</a></li>
+    <li><a href="#s8">Decisions I need from you</a></li>
+  </ol>
+</div>
+
+<div class="body">
+
+<h2 id="s1"><span class="num">01</span>What the data says</h2>
+
+<p>Four findings, each measured against the live pool rather than inferred from the code.</p>
+
+<h3>Quarters overflow; months do not</h3>
+<div class="tw"><table>
+<tr><th>Granularity</th><th>Rows</th><th>Worst row</th><th>Rows with 5+</th><th>Fits 320px?</th></tr>
+<tr><td class="d">Quarter (today)</td><td>19</td><td><b class="k">9 events</b></td><td>10 of 19</td><td><span class="st s-bad">no — 456px</span></td></tr>
+<tr><td class="d">Month (proposed)</td><td>48 active</td><td>4 events</td><td><b class="k">0</b></td><td><span class="st s-ok">yes — 201px</span></td></tr>
+</table></div>
+
+<div class="call"><span class="lb">Why this matters beyond tidiness</span>
+The overlap-and-fan machinery in <code>layoutRow()</code> — <code>PANEL_STEP_FLOOR</code>, the
+<code>z-index: 200 − |i−sel| × 2</code> stack, the two text tiers — exists <em>only</em> because
+quarters overflow. At monthly granularity nothing in today's pool overlaps at all.
+It stays in the code, because PZSz senior events could push a month to 6–8 tiles
+(303–399px), which still exceeds 320px. But it stops being the common case.</div>
+
+<h3>The colour budget is spent on the past</h3>
+<p><code>CalendarBarrel.svelte:40</code> sets the tinted-fill class on
+<code>enum_status === 'COMPLETED'</code>. On PROD that is <b class="k">67 of 114 events</b>.
+So roughly three-fifths of the drum is coloured-in and finished, while the events you can
+still enter render as plain white tiles. The flip you asked for is not cosmetic — it moves
+the colour onto the 39% that is actionable.</p>
+
+<h3>Nothing in the calendar is lit</h3>
+<p>The drum's cylinder illusion rests entirely on <code>rotateX(±46deg) scale(0.88)</code> plus a
+flat <code>opacity: 0.42</code>, inside <code>overflow: hidden</code>. There is no shading of any
+kind, and the rim is a hard clip. The card is flatter still: <code>background</code>,
+<code>border-radius: 12px</code>, <code>padding: 12px</code> — and not one
+<code>box-shadow</code> or gradient in all 533 lines.</p>
+
+<h3>Switzerland is drawn wrong, structurally</h3>
+<p><code>CH: cross('#DA291C', W)</code> renders into a 19×13 box with arms at
+<code>height:24%</code> and <code>width:24%</code> — that is 3.1px vertically against 4.6px
+horizontally, so the cross has unequal arms. Switzerland's flag is also <b class="k">square</b>,
+the only square European national flag besides the Vatican's. A 3:2 box draws a different flag.
+It is live right now on PEW10e-2026-2027 in Lausanne.</p>
+
+<div class="call good"><span class="lb">One claim in the code does not hold up</span>
+<code>CountryFlag.svelte:121</code> cites ADR-007 for a CSP that blocks fetched assets.
+ADR-007 is <em>"Shadow DOM (Implemented M8)"</em> and says nothing about CSP, images or assets,
+and no CSP exists anywhere in the repo. The <em>second</em> constraint in that comment is real —
+a document-relative <code>&lt;img src&gt;</code> inside a custom element resolves against the host
+page and 404s, because <code>vite.config.ce.ts</code> sets no <code>base</code>. That argues
+against <code>&lt;img&gt;</code>, not against images. Inlined SVG sidesteps it, which the
+component's own <code>union</code> and <code>art</code> branches already prove.</div>
+
+<h2 id="s2"><span class="num">02</span>The colour model</h2>
+
+<p>ADR-084 set out to give each variable its own visual channel, then tied fill to status —
+so completion and type ended up fighting over the same surface. The fix is not to add a
+dimension but to <b class="k">move organizer off hue and give hue to time</b>.</p>
+
+<p>I checked every candidate against the real pool before choosing:</p>
+
+<div class="tw"><table>
+<tr><th>Candidate</th><th>Coverage</th><th>Verdict</th></tr>
+<tr><td class="d">Time proximity</td><td>91/91 dated</td><td><span class="st s-ok">primary</span> the only dimension with full coverage and decision value</td></tr>
+<tr><td class="d">Organizer / type</td><td>100%</td><td>answers "who runs it" — nobody chooses on it. Demote to a shape cue</td></tr>
+<tr><td class="d">Country</td><td>19/20 upcoming</td><td>keep, but as a <b class="k">flag</b>, not a hue</td></tr>
+<tr><td class="d">Registration open</td><td><b class="k">2 of 20</b> upcoming</td><td><span class="st s-bad">too sparse</span> badge dot only</td></tr>
+<tr><td class="d">Weapons</td><td>103/111 identical</td><td><span class="st s-bad">dead channel</span></td></tr>
+<tr><td class="d">Status enum</td><td>67 COMPLETED</td><td>redundant with time; CREATED-vs-PLANNED is admin noise</td></tr>
+</table></div>
+
+<p>The resulting assignment, one meaning per channel:</p>
+<ul>
+<li><b class="k">Hue + saturation → time.</b> Grey (past) → tint (upcoming) → saturated (≤7 days).</li>
+<li><b class="k">Organizer → non-chromatic.</b> Already in the label (<code>PPW1</code>, <code>EVF3</code>); reinforced by an edge or dot.</li>
+<li><b class="k">Country → circle flag,</b> now on the tile, not only the card.</li>
+<li><b class="k">Registration → badge dot.</b> <b class="k">Cancelled → grey + strike.</b> <b class="k">Next → ring.</b> <b class="k">Selected → outline + caret.</b></li>
+</ul>
+
+<div class="call warn"><span class="lb">The cost, stated plainly</span>
+A past event loses its type hue. That is the deliberate trade: type stays legible in the tile
+label, and past events are the ones you scan least. If that turns out to be wrong, treatment B
+below keeps a type-coloured edge on past tiles at some cost to the recede effect.</div>
+
+<h2 id="s3"><span class="num">03</span>The whole UI, interacting</h2>
+
+<p>Barrel and card together, as they actually work: tap the row above or below to rotate, tap a
+tile on the focused row to select it, and the card beneath updates with the caret tracking your
+selection. Both are live against the real PROD pool, at phone width and desktop. "Today" is pinned
+to 29 August 2026.</p>
+
+<div class="call"><span class="lb">Every link and button is here</span>
+The card renders the copy-address button, the organizer announcement (invitation), the results
+links — labelled by <em>day</em>, never by weapon, per ADR-040 — the registration link and the
+entry-list link, each under the same conditions as
+<code>registrationState()</code>: registration while the cutoff is open, entry list until the
+event starts and never once cancelled, results only when the event is COMPLETED and URLs exist.
+<b class="k">42 of 91 PROD events carry an invitation link</b>, which an earlier version of this
+mock omitted entirely.</div>
+
+<div class="call warn"><span class="lb">Rows are centred — reversing a deliberate choice</span>
+The rows are now centred rather than left-aligned. <code>CalendarBarrel.svelte</code> chose
+left-alignment on purpose: <em>"Every row starts on the same edge, so nothing drifts as the drum
+rotates between rows of different widths."</em> Centring reintroduces that drift — a month with
+one event and a month with four now have different left edges, so tiles shift sideways as you
+rotate. Monthly granularity makes this more visible than quarters did, because row counts vary
+more (1 to 4 rather than 5 to 9).<br><br>
+It is implemented the safe way: <code>margin: 0 auto</code>, not
+<code>justify-content: center</code>. Auto margins absorb only positive free space, so a row that
+fits is centred while a row that overflows still left-aligns and stays scrollable — verified on a
+nine-tile quarterly row, whose leading tiles remain reachable rather than being pushed into
+negative scroll space. Worth looking at while rotating to decide whether the drift is acceptable.</div>
+
+<div class="call"><span class="lb">Flags are off the tiles</span>
+A flag at 11&nbsp;px inside a 48&nbsp;px tile added clutter without adding a decision, and it
+competed with the day number for the one thing a tile is for. The country stays where it reads
+properly — on the card's location line, at 15&nbsp;px, next to the place name. The circle-flag
+work in §06 is unaffected; it is about the card.</div>
+
+<div class="lab">
+  <div class="lab-hd">
+    <div class="lab-t">Tile treatment</div>
+    <div class="lab-n">A and D put colour in the fill; B and C keep a neutral body and
+    encode organizer on an edge or dot. Watch what happens to the past rows in each.</div>
+  </div>
+  <div class="ctl" id="ctl-tile">
+    <button data-t="tA" aria-pressed="false">A · solid fill</button>
+    <button data-t="tB" aria-pressed="true">B · edge-coded ✓</button>
+    <button data-t="tC" aria-pressed="false">C · status LED</button>
+    <button data-t="tD" aria-pressed="false">D · countdown</button>
+  </div>
+  <div class="ctl" id="ctl-lang">
+    <button class="lang" data-l="en" aria-pressed="false">🇬🇧 EN</button>
+    <button class="lang" data-l="pl" aria-pressed="true">🇵🇱 PL</button>
+  </div>
+  <div class="ctl" id="ctl-gran">
+    <button data-g="month" aria-pressed="true">Monthly seams</button>
+    <button data-g="quarter" aria-pressed="false">Quarterly (today)</button>
+  </div>
+  <div class="stage">
+    <div class="phone">
+      <div class="slab">320 px — phone</div>
+      <div class="bar cyl" id="bar-a"><div class="drum"></div></div>
+      <div class="caret" id="caret-p"></div>
+      <div class="evcard" id="card-p"></div>
+    </div>
+    <div class="wide">
+      <div class="slab">Desktop width</div>
+      <div class="bar cyl" id="bar-b"><div class="drum"></div></div>
+      <div class="caret" id="caret-w"></div>
+      <div class="evcard" id="card-w"></div>
+    </div>
+  </div>
+</div>
+
+<div class="call"><span class="lb">What to look for</span>
+Switch to <b>Quarterly</b> and the January 2023 row jumps to nine tiles and starts scrolling
+sideways at 320px. Switch back to <b>Monthly</b> and every row in the entire pool fits.
+That is the whole argument for change #1, visible rather than tabulated.</div>
+
+<h2 id="s4"><span class="num">04</span>Rotation — the drum is a true cylinder</h2>
+
+<p>Two approaches were built. The first, gradient shading, was rejected outright: it painted a
+picture of depth onto a stack that was never curved, and read as exactly that.</p>
+
+<div class="call good"><span class="lb">Chosen — true cylinder geometry, seven rows, no motion effects</span>
+Each row sits on the surface of a real cylinder — <code>rotateX(i·θ) translateZ(R)</code> with
+<code>R = (rowHeight/2) / tan(θ/2)</code> — and the drum rotates as one body. Foreshortening at the
+rim, the compression of spacing toward the horizon, occlusion, and rows turning away from the
+viewer all fall out of the perspective projection rather than being drawn. At θ = 26° the disc
+carries seven rows, and a receded row measures 50&nbsp;px against the focused row's 77&nbsp;px —
+real perspective compression, not a scale trick.<br><br>
+<b class="k">Momentum overshoot and motion blur are both off.</b> They were the two motion effects
+layered on top, and they are what made the first pass feel wrong — the drum lurching past its stop
+and smearing while it moved. Without them the rotation is a clean, quiet 0.42&nbsp;s step. The
+geometry was never the problem; the theatrics were.</div>
+
+<p>Two implementation notes that cost time and are worth carrying into the build. A drum whose DOM
+is rebuilt on rotation <b class="k">cannot animate at all</b>, because a CSS transition needs the
+same nodes on both sides of the change — <code>CalendarBarrel.svelte</code> already warns about
+this in its header. And the rotation is <code>-active × θ</code>, which reaches
+<code>-1456deg</code> by row 56, so a freshly built drum must arrive at its angle rather than
+travel to it; suppress it synchronously with a forced reflow, not
+<code>requestAnimationFrame</code>, which never fires in a hidden tab and would strand the
+transition permanently off.</p>
+
+<div class="lab">
+  <div class="lab-hd">
+    <div class="lab-t">Rotation comparison</div>
+    <div class="lab-n">Tap the row above or below to rotate. Left is the chosen cylinder; right is
+    the old flat drum, kept so the two can still be compared.</div>
+  </div>
+  <div class="ctl" id="ctl-cyl">
+    <button data-k="on" aria-pressed="true">True cylinder ✓</button>
+    <button data-k="momentum" aria-pressed="false">Momentum overshoot</button>
+    <button data-k="blur" aria-pressed="false">Motion blur</button>
+  </div>
+  <div class="ctl" id="ctl-step">
+    <button data-p="34" aria-pressed="false">Tight — 5 rows</button>
+    <button data-p="26" aria-pressed="true">Medium — 7 rows ✓</button>
+    <button data-p="18" aria-pressed="false">Wide — 9 rows</button>
+  </div>
+  <div class="stage">
+    <div class="wide">
+      <div class="slab">True cylinder — 7 rows, no blur, no overshoot</div>
+      <div class="bar" id="bar-c"><div class="drum"></div></div>
+    </div>
+    <div class="wide">
+      <div class="slab">The old flat drum, for comparison</div>
+      <div class="bar" id="bar-d"><div class="drum"></div></div>
+    </div>
+  </div>
+</div>
+
+<p>The row-count control matters more than it looks. Today only three rows are ever visible,
+because <code>.far</code> is <code>opacity: 0</code> — and three rows read as a stack of cards.
+Seven, with the outer ones properly foreshortened, is what makes the eye see a barrel. Because
+those extra rows are compressed hard at the rim they cost very little height: measured in the
+mock, a row at 26&nbsp;deg is 50&nbsp;px tall against the focused row's 77&nbsp;px.</p>
+
+<div class="call warn"><span class="lb">Implementation gotcha, found while building this</span>
+The drum's rotation is <code>-active × θ</code>, so at row 56 it is
+<code>rotateX(-1456deg)</code> — four full turns. Stepping between adjacent rows animates only
+26&nbsp;deg, so that is harmless in use, but the <em>first</em> paint would spin through every
+one of those turns. Either suppress the transition on initial render or keep the angle
+modulo 360. Worth knowing before it is discovered as a bug.</div>
+
+<h2 id="s5"><span class="num">05</span>Card shading</h2>
+
+<p>The card is currently a flat rectangle. These add depth <b class="k">without removing or
+reordering a single piece of its content</b>, and the caret keeps it welded to the selected tile.</p>
+
+<div class="call stop"><span class="lb">Rejected — the top-lit surface gradient</span>
+A vertical light-to-dark wash across the card face, so it would read as a panel lit from above and
+agree with the drum's light source. Rejected. The card carries a lot of small text — fee keys,
+chips, pills — and a gradient behind them shifts the contrast ratio from top to bottom, which
+costs legibility for an effect the elevation shadow already delivers more cleanly. Removed, not
+just switched off.</div>
+
+<div class="call stop"><span class="lb">Nothing on the card is being dropped</span>
+An earlier version of this mock showed a cut-down card, which would have been a terrible thing to
+mistake for a specification. It has been rebuilt to render <b>every</b> item
+<code>EventCard.svelte</code> renders today, in the same order. The shading proposals change the
+card's <em>surface</em> only — no content, no ordering, no behaviour.</div>
+
+<div class="tw"><table>
+<tr><th>#</th><th>Block</th><th>Contents</th><th>In the mock</th></tr>
+<tr><td class="d">1</td><td><code>.chd</code></td><td>Date (or range) + type-coloured code chip</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">2</td><td><code>.cnm</code></td><td>Event name</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">3</td><td><code>.clo</code></td><td>Country flag + city, with copy button when there is no address line</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">4</td><td><code>.addr</code></td><td>Venue address + copy-to-clipboard</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">5</td><td><code>.chips</code></td><td>Status (or <b>Next up</b>), registry SPWS/EVF/FIE, moved-from</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">6</td><td><code>.dvv</code></td><td>Rule separating identity from the decision block</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">7</td><td><code>.facts</code></td><td>Entry fee, two-weapon fee, three-weapon fee, registration deadline with urgency</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">8</td><td><code>.note</code></td><td>Awaiting-results or cancelled message</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">9</td><td><code>.pills</code></td><td>Result links, registration, entry list</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">10</td><td><code>.wps</code></td><td>Weapon pills</td><td><span class="st s-ok">yes</span></td></tr>
+</table></div>
+
+<p>Verified by rendering all 91 events and asserting each block appears: header, name and weapons
+on 91; location and flag on 66; venue address on 23; fees on 28; notes on 34; pills on 54. The
+moved-from chip shows on 0 because <b class="k">no PROD event currently has a moved date</b> — the
+block is present and was confirmed by injecting one. The deadline appears on exactly one upcoming
+event, and is correctly suppressed on past events, matching <code>reg.showDeadline</code>.</p>
+
+<div class="lab">
+  <div class="lab-hd">
+    <div class="lab-t">Lifting the card</div>
+    <div class="lab-n">Click a tile in §03 to change which event is shown here.</div>
+  </div>
+  <div class="ctl" id="ctl-pick">
+    <button data-e="PPW1-2026-2027" aria-pressed="true">PPW1 — active season</button>
+    <button data-e="PEW1efs-2025-2026" aria-pressed="false">Past + 3 result links</button>
+    <button data-e="PEW0efs-2026-2027" aria-pressed="false">Cancelled</button>
+    <button data-e="MSW-2026-2027" aria-pressed="false">International</button>
+  </div>
+  <div class="ctl" id="ctl-card">
+    <button data-c="c-elev" aria-pressed="true">6 · elevation shadow ✓</button>
+    <button data-c="c-bevel" aria-pressed="false">8 · inner bevel</button>
+    <button data-c="c-extrude" aria-pressed="true">9 · tile-coloured top edge ✓</button>
+    <button data-c="c-tilt" aria-pressed="true">10 · tilt on change ✓</button>
+  </div>
+  <div class="stage">
+    <div class="phone">
+      <div class="slab">320 px</div>
+      <div class="caret" id="caret-a"></div>
+      <div class="evcard c-elev c-grad c-bevel c-extrude" id="card-a"></div>
+    </div>
+    <div class="wide">
+      <div class="slab">Today — flat</div>
+      <div class="evcard" id="card-b"></div>
+    </div>
+  </div>
+</div>
+
+<p>Technique 9 ties the two halves together: a solid 3&nbsp;px top edge in the selected tile's own
+colour, so the card reads as extruded from the tile the caret points at. It costs one CSS custom
+property set on selection. It was originally a gradient falling from the top of the card — which
+was the rejected top-lit gradient under another name, and is now a solid bar.</p>
+
+<h2 id="s6"><span class="num">06</span>Circle flags, and Switzerland</h2>
+
+<p>Circular chips remove the aspect-ratio problem entirely — there is no 3:2 box to force a
+square flag into, so Switzerland is simply correct. Below, the current CSS-geometry rendering
+against circular chips, for every country in the live pool.</p>
+
+<div class="lab">
+  <div class="lab-hd">
+    <div class="lab-t">Every country in the PROD pool</div>
+    <div class="lab-n">The full set is ~260 countries at 564 KB, small enough to inline
+    whole — so a championship in a country nobody has visited yet still renders.</div>
+  </div>
+  <div id="flag-grid" class="stage" style="gap:14px"></div>
+</div>
+
+<div class="call"><span class="lb">Interaction model — settled</span>
+The drum rotates <b>only</b> on a tap above or below the focused row, one row per tap, skipping
+empty months. Events are selectable <b>only</b> from the focused row; a tap on a receded row's
+tile rotates instead of selecting. There is no sliding, wheel, swipe or drag.
+<br><br>Two of these three rules already hold in <code>CalendarBarrel.svelte</code>: rotation is
+click and keyboard only, and <code>pick()</code> guards with
+<code>if (qi !== active) { rotateTo(qi); return }</code>. The only genuine change is
+<b>skipping empty rows</b>, which barely mattered across four quarters and matters a great deal
+across eighteen empty months.</div>
+
+<h2 id="s7"><span class="num">07</span>Locked decisions</h2>
+
+<p>These are settled. The controls above still work so the alternatives stay inspectable, but
+every one of them opens on the choice below.</p>
+
+<div class="tw"><table>
+<tr><th>Area</th><th>Locked</th><th>Not chosen</th></tr>
+<tr><td class="d">Barrel geometry</td><td><b class="k">True cylinder</b>, θ = 26° (<b class="k">7 rows</b>)</td><td>flat three-row drum; gradient shading</td></tr>
+<tr><td class="d">Barrel motion</td><td><b class="k">No overshoot, no blur</b> — plain 0.42 s step</td><td>momentum overshoot; motion blur</td></tr>
+<tr><td class="d">Seams</td><td><b class="k">Monthly</b>, full month name, empty months auto-rolled</td><td>quarterly</td></tr>
+<tr><td class="d">Tile</td><td><b class="k">B — edge-coded</b>: neutral body, organizer on a 3 px top edge, time in the fill</td><td>A solid fill; C status LED; D countdown</td></tr>
+<tr><td class="d">Tile content</td><td>Day, <b>bold</b> month (full on selected), code with monospace number, city</td><td>flags on tiles</td></tr>
+<tr><td class="d">Registration dot</td><td><b class="k">New.</b> A dot on the tile while registration is live — today between the registration opening and <code>dt_end</code></td><td>—</td></tr>
+<tr><td class="d">Card surface</td><td><b class="k">6</b> elevation shadow · <b class="k">9</b> tile-coloured top edge · <b class="k">10</b> tilt on change</td><td>7 top-lit gradient; 8 inner bevel</td></tr>
+<tr><td class="d">Card content</td><td>All ten blocks unchanged, verbatim placement and type</td><td>—</td></tr>
+<tr><td class="d">Colour</td><td>Hue = time (past grey, upcoming coloured); organizer non-chromatic on tiles, coloured on the card's registry chip</td><td>hue = organizer</td></tr>
+<tr><td class="d">Flags</td><td><b class="k">circle-flags</b>, full set, inlined; card only</td><td>hand-drawn geometry</td></tr>
+<tr><td class="d">Interaction</td><td>Tap above/below to rotate one row, skipping empties; selection only on the focused row</td><td>slide, wheel, swipe, drag</td></tr>
+<tr><td class="d">Language</td><td>PL default, EN toggle; Polish month genitive on tiles, nominative in the seam</td><td>—</td></tr>
+</table></div>
+
+<div class="call warn"><span class="lb">Still open — these block implementation</span>
+<b>What counts as "past".</b> The greying has to key off something, and it is not settled.
+Recommendation on file: <code>dt_end &lt; today</code> with a <b>seven-day grace window</b>, which
+is also what ADR-084's own unresolved open item 1 proposes. The mock uses exactly that.<br><br>
+<b>A 48-row drum.</b> Monthly granularity spans 66 rows including empties, against 19 today.
+Auto-roll handles the gaps, but rolling from January 2023 to September 2026 is still a long spin —
+does it need a jump-to-today control?<br><br>
+<b>The registration dot needs a column that does not exist.</b> The rule is "today between the
+registration <em>start</em> and the event end", but <code>tbl_event</code> stores only
+<code>dt_registration_deadline</code>, <code>dt_start</code> and <code>dt_end</code> — there is no
+registration-start date anywhere in the schema. The mock approximates the opening bound with "a
+registration URL exists", which is not the same thing: the URL is typically set the moment the
+event is created, so the dot lights up far earlier than intended. Doing this properly means adding
+<code>dt_registration_open</code> (migration + ADR-030 amendment, since that ADR owns the
+registration window). Worth noting the closing bound is <code>dt_end</code> as you specified, which
+runs <em>past</em> the deadline — so the dot marks a live registration/participation window rather
+than the link's availability, and it will stay lit after the registration link itself has
+disappeared. Confirm that is intended.<br><br>
+<b>The stale committed seed.</b> <code>supabase/seed_prod_latest.sql</code> still points at the
+8 August dump. LOCAL was seeded from live PROD this session without touching it. Refreshing it is
+a data change and your call.</div>
+
+<h2 id="s8"><span class="num">08</span>Decisions I need from you</h2>
+
+<div class="q"><b>Question 1 — tile treatment</b>
+Which of A / B / C / D, or a hybrid? My recommendation is B with D's countdown text used for
+the imminent state. Everything else in the plan is independent of this choice.</div>
+
+<div class="q"><b>Question 2 — what counts as "past"</b>
+The greying has to key off something. <b>Date</b> (<code>dt_end &lt; today</code>) is honest
+and predictable but greys an event the morning after it ends, while people are still hunting
+for results. <b>Status</b> (<code>COMPLETED</code>) is what the code does today, but an event
+can sit un-ingested for weeks still looking upcoming. My recommendation is <b>date with a
+seven-day grace window</b>, which is also what ADR-084's own open item 1 proposes and never
+resolved. The mocks above use exactly that.</div>
+
+<div class="q"><b>Question 3 — the drum is now 48 rows deep</b>
+Monthly granularity means the drum spans 65 rows including empties, against 19 today. You have
+asked for auto-roll past empty months, which the mocks implement. But rolling from January 2023
+to September 2026 is still a long spin. Do you want a <b>jump-to-today control</b>, or is the
+drum opening on the right row enough?</div>
+
+<div class="q"><b>Question 4 — the stale committed seed</b>
+<code>supabase/seed_prod_latest.sql</code> points at the 8 August dump, three weeks old and
+predating the EVF renumbering. I seeded LOCAL from live PROD this session without touching it.
+Do you want the committed dump refreshed too? It is a data change, so it is your call, and it
+is not needed for any of the work above.</div>
+
+<footer>
+Built 29 August 2026 against the live PROD pool, seeded into LOCAL in the same session and
+verified equal on both sides (114 events, 91 dated, 2022-01-08 → 2027-06-18, 48 active months).
+Density, status spread and country coverage were measured, not estimated. No PROD data was
+modified — every cloud query was a SELECT.
+</footer>
+
+</div>
+</div>
+<script>
+const EVENTS=[{"code":"PEW2e-2023-2024","name":"PEW2","start":"2022-01-08","end":"2022-01-08","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW16e-2023-2024","name":"PEW16-2023-2024","start":"2022-02-25","end":"2022-02-25","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"IMEW-2023-2024","name":"IMEW","start":"2023-01-01","end":"2023-01-01","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":16,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW1e-2023-2024","name":"PEW1","start":"2023-01-07","end":"2023-01-08","loc":"Guilford","country":"Great Britain","iso":"GB","status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/A49E0E562CE6460B82AACFD5C909F0BE#today"],"movedFrom":null,"urlInv":null},{"code":"GP1-2023-2024","name":"GP1","start":"2023-01-14","end":"2023-01-15","loc":"Pabianice","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":20,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/B3DA380CD665461DA7201E30A5652557#today"],"movedFrom":null,"urlInv":null},{"code":"PEW17fs-2023-2024","name":"PEW17-2023-2024","start":"2023-01-21","end":"2023-01-21","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW3s-2023-2024","name":"PEW3","start":"2023-02-12","end":"2023-02-12","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW18e-2023-2024","name":"PEW18-2023-2024","start":"2023-02-25","end":"2023-02-25","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP2-2023-2024","name":"GP2","start":"2023-03-04","end":"2023-05-03","loc":"Toruń","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":25,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/4A559DB9F1984325A771A6255602D540#today"],"movedFrom":null,"urlInv":null},{"code":"PEW4f-2023-2024","name":"PEW4","start":"2023-03-18","end":"2023-03-18","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":3,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW12f-2023-2024","name":"PEW12","start":"2023-03-23","end":"2023-03-23","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW20s-2023-2024","name":"PEW20-2023-2024","start":"2023-04-01","end":"2023-04-01","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":3,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW19e-2023-2024","name":"PEW19-2023-2024","start":"2023-04-14","end":"2023-04-15","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":8,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP3-2023-2024","name":"GP3","start":"2023-06-18","end":"2023-06-18","loc":"Niepołomice","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":22,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/A233DC1D44A44F6CBC3CF3E9D9BDFBFA#today"],"movedFrom":null,"urlInv":null},{"code":"VFC-2023-2024","name":"VFC","start":"2023-07-07","end":"2023-07-07","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":0,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW5efs-2023-2024","name":"EVF Circuit – Budapest (HUN)","start":"2023-09-16","end":"2023-09-16","loc":"Budapest","country":"Hungary","iso":"HU","status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":12,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP4-2023-2024","name":"GP4","start":"2023-09-23","end":"2023-09-24","loc":"Opole","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":22,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/4E8236D593B64434A9EE99D9B5F7E65F#today"],"movedFrom":null,"urlInv":null},{"code":"PEW22e-2023-2024","name":"PEW22-2023-2024","start":"2023-09-24","end":"2023-09-24","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW7s-2023-2024","name":"PEW7","start":"2023-10-09","end":"2023-10-09","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP5-2023-2024","name":"GP5","start":"2023-10-28","end":"2023-10-28","loc":"Gdańsk","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":20,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/B039D94D12F243B1961DEA9CAB298A40#today"],"movedFrom":null,"urlInv":null},{"code":"PEW6efs-2023-2024","name":"PEW6","start":"2023-11-11","end":"2023-11-11","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":9,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP6-2023-2024","name":"GP6","start":"2023-11-18","end":"2023-11-18","loc":"Kraków","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":20,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/D70668CEB8754915920393A22468C3AB#today"],"movedFrom":null,"urlInv":null},{"code":"PEW23f-2023-2024","name":"PEW23-2023-2024","start":"2023-12-09","end":"2023-12-09","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW8efs-2023-2024","name":"EVF Circuit – Terni (ITA)","start":"2023-12-16","end":"2023-12-16","loc":"Terni","country":"Italy","iso":"IT","status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":7,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW25e-2023-2024","name":"PEW25-2023-2024","start":"2024-01-06","end":"2024-01-06","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW10s-2023-2024","name":"PEW10","start":"2024-01-20","end":"2024-03-23","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP7-2023-2024","name":"GP7","start":"2024-01-27","end":"2024-01-28","loc":"Spała","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":22,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/85A647ED7CA8457AAB73EFA286767B15#today"],"movedFrom":null,"urlInv":null},{"code":"PEW9ef-2023-2024","name":"EVF Circuit – Stockholm (SWE)","start":"2024-02-24","end":"2024-02-24","loc":"Stockholm","country":"Sweden","iso":"SE","status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/1B776AA923B64D3FA61AB02233AF54BD#today"],"movedFrom":null,"urlInv":null},{"code":"MPW-2023-2024","name":"MPW","start":"2024-03-02","end":"2024-03-02","loc":"Warszawa","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":25,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/4983355CFFE14CF995AD7A204480E294#today"],"movedFrom":null,"urlInv":null},{"code":"PEW13e-2023-2024","name":"PEW13-2023-2024","start":"2024-04-06","end":"2024-04-06","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW14s-2023-2024","name":"PEW14-2023-2024","start":"2024-04-06","end":"2024-04-06","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW15e-2023-2024","name":"PEW15-2023-2024","start":"2024-04-27","end":"2024-04-27","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2023-2024","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":3,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"GP8-2023-2024","name":"GP8","start":"2024-06-22","end":"2024-06-22","loc":"Niepołomice","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2023-2024","fee":"100","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":18,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/3D4AE99A80D04D30A3C8B870E292FAD3#today"],"movedFrom":null,"urlInv":null},{"code":"PEW1efs-2024-2025","name":"PEW1","start":"2024-09-21","end":"2024-09-22","loc":"Budapest","country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":14,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PPW1-2024-2025","name":"I Puchar Polski Weteranów","start":"2024-09-28","end":"2024-09-29","loc":"Konin","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":23,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/BF6E1ADD88844A8CAC2F8CD353D082F9#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/i-puchar-pokski-weteranow-sezon-2024-2025-serdecznie-zapraszamy-na-pierwszy-puchar-polski-weteranow/"},{"code":"PPW2-2024-2025","name":"II Puchar Polski Weteranów","start":"2024-10-26","end":"2024-10-27","loc":"Bytom","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":24,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/B3EE1CD1C903412B8F37C86653CD3282#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/ii-puchar-polski-weteranow-bytom-2024/"},{"code":"PEW2efs-2024-2025","name":"PEW2","start":"2024-11-16","end":"2024-11-17","loc":"Madrid","country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":11,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PPW3-2024-2025","name":"III Puchar Polski Weteranów","start":"2024-11-30","end":"2024-12-01","loc":"Kraków","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":26,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/B6B2105B52E44895B2C30C437C80ABF8#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/iii-puchar-polski-weteranow-krakow-2024/"},{"code":"PEW3fs-2024-2025","name":"PEW3","start":"2024-12-07","end":"2024-12-08","loc":"Munich","country":"Germany","iso":"DE","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":5,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/9CC8D1BC59084DC0852659F9B68D97DB#today"],"movedFrom":null,"urlInv":null},{"code":"PEW4ef-2024-2025","name":"EVF Circuit – Guildford (GBR)","start":"2025-01-04","end":"2025-01-05","loc":"Guildford","country":"Great Britain","iso":"GB","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL"],"tournaments":5,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW5s-2024-2025","name":"PEW5","start":"2025-01-18","end":"2025-01-18","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":1,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW6efs-2024-2025","name":"EVF Circuit – Terni (ITA)","start":"2025-02-01","end":"2025-02-02","loc":"Terni","country":"Italy","iso":"IT","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":7,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PPW4-2024-2025","name":"IV Puchar Polski Weteranów - Memoriał Gen. Jerzego Zabielskiego","start":"2025-02-22","end":"2025-02-23","loc":"Warszawa","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":27,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/E77EA15E4ACA4A23B1539C95B34E60EB#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/iv-puchar-polski-weteranow-memorial-gen-jerzego-zabielskiego/"},{"code":"PEW13e-2024-2025","name":"PEW13-2024-2025","start":"2025-03-15","end":"2025-03-15","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":3,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW7es-2024-2025","name":"European Veterans Circuit – Jabłonna (POL)","start":"2025-03-29","end":"2025-03-29","loc":"Jabłonna","country":"Poland","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","SABRE"],"tournaments":15,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW8f-2024-2025","name":"PEW8","start":"2025-03-30","end":"2025-04-12","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":7,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PPW5-2024-2025","name":"V Puchar Polski Weteranów","start":"2025-04-26","end":"2025-04-27","loc":"Szczecin","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":23,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/705DF0675003488FBF0F493E76892123#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/wp-content/uploads/2025/03/KOMUNIKAT-2-V-PP-SZCZECIN-2025_1.pdf"},{"code":"PEW15f-2024-2025","name":"PEW15-2024-2025","start":"2025-05-15","end":"2025-05-15","loc":null,"country":null,"iso":null,"status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"IMEW-2024-2025","name":"European Veterans Championships 2025","start":"2025-05-28","end":"2025-06-01","loc":"Plovdiv","country":"Bulgaria","iso":"BG","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":17,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/04/invitation-ECH.pdf"},{"code":"MPW-2024-2025","name":"XXXIV Indywidualne Mistrzostwa Polski Weteranów","start":"2025-06-07","end":"2025-06-08","loc":"Pabianice","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":25,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/B2C615704AB84D0F85BBFF395C07BA41#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/xxxiv-indywidualne-mistrzostwa-polski-weteranow-lodz-2025/"},{"code":"PEW10efs-2024-2025","name":"EVF Criterium Mondial Vétérans 2025","start":"2025-07-05","end":"2025-07-05","loc":"Paris","country":"France","iso":"FR","status":"COMPLETED","season":"SPWS-2024-2025","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":7,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://engarde-service.com/tournament/fencingaddict/crit25"],"movedFrom":null,"urlInv":null},{"code":"PEW1efs-2025-2026","name":"EVF Circuit Budapest","start":"2025-09-20","end":"2025-09-21","loc":"Budapest","country":"Hungary","iso":"HU","status":"COMPLETED","season":"SPWS-2025-2026","fee":"45","cur":"EUR","fee2w":null,"fee3w":null,"deadline":null,"venue":"Istvánmezei út 3-5., Budapest, Hungary","weapons":["EPEE","FOIL","SABRE"],"tournaments":14,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://engarde-service.com/tournament/hunfencing/2025_09_20_pbt","https://engarde-service.com/tournament/hunfencing/2025_09_21_tor","https://engarde-service.com/tournament/hunfencing/2025_09_21_kard"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/08/International-Veteran-Budapest-Cup-event-2025-september-ENG.pdf"},{"code":"PPW1-2025-2026","name":"I Puchar Polski Weteranów","start":"2025-09-27","end":"2025-09-28","loc":"Opole","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":"250","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":23,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/BF6E1ADD88844A8CAC2F8CD353D082F9#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/zaproszenie-na-i-puchar-polski-weteranow-szermierki-opole-2025/"},{"code":"PPW2-2025-2026","name":"II Puchar Polski Weteranów","start":"2025-10-25","end":"2025-10-26","loc":"Poznań","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":"250","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":24,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/BC4FAB2F4A5E466DAA8FC46EB73E50F6#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/wp-content/uploads/2025/10/Komunikat-zawodow-Poznan-2.pdf"},{"code":"PEW2efs-2025-2026","name":"EVF Circuit Madrid","start":"2025-11-01","end":"2025-11-02","loc":"Madrid","country":"Spain","iso":"ES","status":"COMPLETED","season":"SPWS-2025-2026","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"C/ de Valdebernardo, 2, Madrid, Spain","weapons":["EPEE","FOIL","SABRE"],"tournaments":13,"urlReg":"https://aevesgrima.es/inscripciones-madrid-2025/","urlList":null,"useSpws":false,"urls":["https://engarde-service.com/tournament/aeve_esgrima/evf_madrid_2025"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/10/EVF-Circuit-Madrid-2025.pdf"},{"code":"IMSW-2025-2026","name":"IMSW","start":"2025-11-12","end":"2025-11-16","loc":"Manama","country":"Bahrain","iso":"BH","status":"IN_PROGRESS","season":"SPWS-2025-2026","fee":"130","cur":"EUR","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":10,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/D7E898476AE94A41BBB553FCF26A9AEF#today"],"movedFrom":null,"urlInv":null},{"code":"PEW3fs-2025-2026","name":"EVF Circuit Memoriam Max Geuter – Munich (GER)","start":"2025-12-06","end":"2025-12-07","loc":"Munich","country":"Germany","iso":"DE","status":"COMPLETED","season":"SPWS-2025-2026","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Riesstrasse 40, Munich, Germany","weapons":["FOIL","SABRE"],"tournaments":8,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-munich/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/10/Ausschreibung-englisch-5.8.25.pdf"},{"code":"PPW3-2025-2026","name":"III Puchar Polski Weteranów / Warsaw Epee Open","start":"2025-12-13","end":"2025-12-14","loc":"Warszawa-Łomianki","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":"250","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":23,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/D099355BC4334343949BD91172023B49"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/zaproszenie-na-iii-puchar-polski-weteranow-szermierki-warsaw-epee-open-2025/"},{"code":"PEW62efs-2025-2026","name":"EVF Circuit – Guildford (GBR)","start":"2026-01-10","end":"2026-01-11","loc":"Guildford","country":"Great Britain","iso":"GB","status":"COMPLETED","season":"SPWS-2025-2026","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Parkway, Guildford, United Kingdom","weapons":["EPEE","FOIL","SABRE"],"tournaments":16,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/10/EVf-Guildford-2026-invitation-letter.pdf"},{"code":"PEW31fs-2025-2026","name":"EVF Circuit - Faches-Thumesnil (FRA)","start":"2026-02-07","end":"2026-02-08","loc":"Faches","country":"France","iso":"FR","status":"COMPLETED","season":"SPWS-2025-2026","fee":"45.0","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"7, rue de la Linière, Fâches-Thumesnil, France","weapons":["FOIL","SABRE"],"tournaments":5,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-faches/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/11/Circuit-europeen-veteran-Faches-7-et-8-fevrier-2026-EN.pdf"},{"code":"PPW4-2025-2026","name":"IV Puchar Polski Weteranów","start":"2026-02-21","end":"2026-02-22","loc":"Gdańsk","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":"250","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":24,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://fencingtimelive.com/tournaments/eventSchedule/D586C1250E8C41D3BB9B9E5772CB998F"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/zaproszenie-na-iv-puchar-polski-weteranow-szermierki-gdansk-2026/"},{"code":"PEW4efs-2025-2026","name":"EVF Circuit Napoli","start":"2026-03-07","end":"2026-03-07","loc":"Napoli","country":"Italy","iso":"IT","status":"COMPLETED","season":"SPWS-2025-2026","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":10,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.4fence.it/FIS/Risultati/2026-03-08-07_Napoli_-_4_Prova_Circuito_Nazionale_Master_2025-2/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/01/EVF-Circuit-Napoli-7-and-8-mar26-ENG.pdf"},{"code":"PEW5ef-2025-2026","name":"EVF Circuit – Stockholm (SWE)","start":"2026-03-14","end":"2026-03-14","loc":"Stockholm","country":"Sweden","iso":"SE","status":"COMPLETED","season":"SPWS-2025-2026","fee":"50.0","cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":"Mosskroken 11, Bromma, Sweden","weapons":["EPEE","FOIL"],"tournaments":5,"urlReg":"https://fencing.ophardt.online/sv/widget/event/32815","urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2023/05/Invitation-EVF-Stockholm-2026.pdf"},{"code":"PEW6efs-2025-2026","name":"EVF Circuit Jabłonna","start":"2026-03-28","end":"2026-03-29","loc":"Jabłonna","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":null,"cur":null,"fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":23,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/98F13C10A47B49FFA2D39E4D47F1EDA8#today"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/02/62c4d775-86d2-454c-9b61-c999e8d24791.pdf"},{"code":"PPW5-2025-2026","name":"V Puchar Polski Weteranów","start":"2026-04-11","end":"2026-04-11","loc":"Gdańsk","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":"250","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":23,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/2F7708500E2F4F199D4FC25A7B74D0D0#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/wp-content/uploads/2026/03/Komunikat-organizacyjny-V-Pucharu-Polski-Weteranow-Szermierki_Gdansk_11_kwietnia_2026.pdf"},{"code":"PEW61s-2025-2026","name":"EVF Circuit – Liège (BEL)","start":"2026-04-11","end":"2026-04-11","loc":"Liège","country":"Belgium","iso":"BE","status":"COMPLETED","season":"SPWS-2025-2026","fee":null,"cur":"EUR","fee2w":null,"fee3w":null,"deadline":null,"venue":"Rue Ernest Malvoz 31, Liège, Belgium","weapons":["SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-liege/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/03/httpsforms.glePZmcphR6ViHZRUR56.pdf"},{"code":"PEW7ef-2025-2026","name":"EVF Circuit Salzburg","start":"2026-04-18","end":"2026-04-19","loc":"Salzburg","country":"Austria","iso":"AT","status":"COMPLETED","season":"SPWS-2025-2026","fee":"50.0","cur":"PLN","fee2w":null,"fee3w":null,"deadline":"2026-04-11","venue":"Schießstattstraße 26, Salzburg,, Austria","weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":"https://forms.gle/dpmjFjo8JRr7KvsJA","urlList":null,"useSpws":false,"urls":["https://dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/03/EVC-Salzburg-Ausschreibung-2026_Aktuell-1.pdf"},{"code":"PEW8es-2025-2026","name":"EVF Circuit – Chania (GRE)","start":"2026-05-02","end":"2026-05-03","loc":"Chania","country":"Greece","iso":"GR","status":"PLANNED","season":"SPWS-2025-2026","fee":"45","cur":"PLN","fee2w":null,"fee3w":null,"deadline":"2026-04-25","venue":"Marinou Antipa 10, Chania, Crete, Greece","weapons":["EPEE","SABRE"],"tournaments":0,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-athens-gre/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/03/Chania-Invitation-letter-2026.pdf"},{"code":"DMEW-2025-2026","name":"European Team Championships 2026 – Cognac","start":"2026-05-14","end":"2026-05-14","loc":"Complexe Sportif Omnisports des Vauzelles","country":"France","iso":"FR","status":"PLANNED","season":"SPWS-2025-2026","fee":"450.0","cur":"PLN","fee2w":null,"fee3w":null,"deadline":"2026-04-14","venue":"19 rue des Vauzelles, Chateaubernard, France","weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/european-team-championships-2026-cognac-fr/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2025/09/Affiche-Europe-2026-Cognac-V3.pdf"},{"code":"PEW9efs-2025-2026","name":"EVF Circuit Dublin","start":"2026-05-30","end":"2026-05-31","loc":"Dublin","country":"Ireland","iso":"IE","status":"IN_PROGRESS","season":"SPWS-2025-2026","fee":"40","cur":"PLN","fee2w":null,"fee3w":null,"deadline":"2026-05-15","venue":"UCD Sport Center Belfield Dublin, Dublin, Ireland","weapons":["EPEE","FOIL","SABRE"],"tournaments":10,"urlReg":"https://forms.cloud.microsoft/pages/responsepage.aspx?id=eRfaQEG0lUeDESRi15GFbwVSwCeGdX9PgnwKqAvTSyBURE1YTEJLNEJFQjc0SFdFS0Y1WUVZR004Sy4u&route=shorturl","urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-dublin-irl/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/02/VIO-2026-Invitation-Letter.pdf"},{"code":"MPW-2025-2026","name":"Mistrzostwa Polski Weteranów","start":"2026-06-20","end":"2026-06-21","loc":"Warszawa","country":"Polska","iso":"PL","status":"COMPLETED","season":"SPWS-2025-2026","fee":"250","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":28,"urlReg":"https://competit.pl/lista/8375/","urlList":null,"useSpws":false,"urls":["https://www.fencingtimelive.com/tournaments/eventSchedule/CE6AC3F161E34438BF2C5FB192A4C6BE#today"],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/zaproszenie-na-mistrzostwa-polski-weteranow-szermierki-2026-w-warszawie/"},{"code":"PEW0efs-2026-2027","name":"EVF Circuit – Samorin (SVK) – Cancelled","start":"2026-09-12","end":"2026-09-13","loc":"Samorin","country":"Słowacja","iso":"SK","status":"CANCELLED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-samorin-svk/"},{"code":"PEW1f-2026-2027","name":"FOIL CELEBRATION IN BUDA CASTLE – Budapest (HUN)","start":"2026-09-19","end":"2026-09-20","loc":"Savoy Terrace - Buda Castle","country":"Hungary","iso":"HU","status":"PLANNED","season":"SPWS-2026-2027","fee":"40.0","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Szent György tér 2, Budapest, Hungary","weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PPW1-2026-2027","name":"I Puchar Polski Weteranów w Szermierce","start":"2026-09-26","end":"2026-09-27","loc":"Opole","country":"Polska","iso":"PL","status":"PLANNED","season":"SPWS-2026-2027","fee":"250","cur":"PLN","fee2w":"350","fee3w":"400","deadline":"2026-09-20","venue":"ITAKA ARENA, ul. Olejnika1, Opole","weapons":["EPEE","FOIL","SABRE"],"tournaments":0,"urlReg":"https://fencer4life.github.io/spws-automated-ranklist/register.html?event=PPW1-2026-2027","urlList":"https://fencer4life.github.io/spws-automated-ranklist/register.html?event=PPW1-2026-2027&view=list","useSpws":false,"urls":[],"movedFrom":null,"urlInv":"https://weteraniszermierki.pl/zaproszenie-na-i-puchar-polski-weteranow-szermierki-opole-2026/"},{"code":"MSW-2026-2027","name":"Mistrzostwa Świata Weteranów","start":"2026-10-09","end":"2026-10-13","loc":"TBILISI","country":"GRUZJA","iso":"GE","status":"PLANNED","season":"SPWS-2026-2027","fee":"90","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":0,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":"https://static.fie.org/uploads/40/202646-FIE_InvitationLetter_WorldChamp_Tbilisi2026.pdf"},{"code":"PEW2es-2026-2027","name":"EVF Circuit – Madrid (ESP)","start":"2026-10-31","end":"2026-11-01","loc":"POLIDEPORTIVO MUNICIPAL DE MORATALAZ","country":"Spain","iso":"ES","status":"PLANNED","season":"SPWS-2026-2027","fee":"50.0","cur":"PLN","fee2w":"90","fee3w":null,"deadline":null,"venue":"C/ de Valdebernardo, 2, Madrid, Spain","weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":"https://aevesgrima.es/evento/madrid-evf-circuit-2026","urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-madrid/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/wp-content/uploads/2026/08/Madrid_invitation-letter2026.pdf"},{"code":"PEW3ef-2026-2027","name":"EVF Circuit – Budapest (HUN)","start":"2026-11-14","end":"2026-11-15","loc":"Budapeszt","country":"Węgry","iso":"HU","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-budapest/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-budapest/"},{"code":"PEW4fs-2026-2027","name":"EVF Circuit Memoriam Max Geuter – Munich (GER)","start":"2026-11-28","end":"2026-11-29","loc":"Sporthalle der Städtischen Berufsschule für Informationstechnik","country":"Germany","iso":"DE","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Riesstrasse 40, Munich, Germany","weapons":["FOIL"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-munich/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-munich/"},{"code":"PEW5efs-2026-2027","name":"EVF Circuit – Łomianki (POL)","start":"2026-12-12","end":"2026-12-13","loc":"Łomianki","country":"Polska","iso":"PL","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-drzonkow/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-drzonkow/"},{"code":"PEW6efs-2026-2027","name":"EVF Circuit – Guildford (GBR)","start":"2027-01-09","end":"2027-01-09","loc":"Guildford Spectrum","country":"United Kingdom","iso":"GB","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Parkway, Guildford, United Kingdom","weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/"},{"code":"PEW7es-2026-2027","name":"EVF Circuit – Tampere (FIN)","start":"2027-01-23","end":"2027-01-23","loc":null,"country":null,"iso":null,"status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":0,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW8efs-2026-2027","name":"Levi Open (FIN)","start":"2027-01-30","end":"2027-01-30","loc":null,"country":"Finlandia","iso":"FI","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null},{"code":"PEW9fs-2026-2027","name":"EVF Circuit – Fâches-Thumesnil (FRA)","start":"2027-02-06","end":"2027-02-06","loc":"Salle Jean Zay","country":"France","iso":"FR","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"7, rue de la Linière, Fâches-Thumesnil, France","weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-faches/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-faches/"},{"code":"PEW10e-2026-2027","name":"EVF Circuit – Lausanne (SUI)","start":"2027-02-06","end":"2027-02-06","loc":"Vaudoise aréna - Lausanne","country":"Switzerland","iso":"CH","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Chemin du Viaduc 14, Prilly, Switzerland","weapons":["EPEE","FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-lausanne-sui/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-lausanne-sui/"},{"code":"PEW11efs-2026-2027","name":"EVF Circuit – Naples (ITA)","start":"2027-03-06","end":"2027-03-06","loc":"Palavesuvio","country":"Italy","iso":"IT","status":"PLANNED","season":"SPWS-2026-2027","fee":"50.0","cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Palavesuvio ingresso carrabile, Napoli, NA, Italy","weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-napoli/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-napoli/"},{"code":"PEW12ef-2026-2027","name":"EVF Circuit – Stockholm (SWE) – Cancelled","start":"2027-03-13","end":"2027-03-13","loc":"Stora mossen IP idrottshall","country":"Sweden","iso":"SE","status":"CANCELLED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Mosskroken 11, Bromma, Sweden","weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/"},{"code":"PEW13s-2026-2027","name":"EVF Circuit – Liège (BEL)","start":"2027-04-10","end":"2027-04-10","loc":"Liège","country":"Belgium","iso":"BE","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Rue Ernest Malvoz 31, Liège, Belgium","weapons":["FOIL","SABRE"],"tournaments":2,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-liege/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-liege/"},{"code":"PEW14ef-2026-2027","name":"EVF Circuit – Salzburg (AUT)","start":"2027-04-24","end":"2027-04-24","loc":"Sporthalle HAK 2 - Salzburg","country":"Austria","iso":"AT","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"Schießstattstraße 26, Salzburg,, Austria","weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-salzburg-aut/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-salzburg-aut/"},{"code":"PEW15es-2026-2027","name":"EVF Circuit – Athens (GRE)","start":"2027-05-22","end":"2027-05-22","loc":"Ateny","country":"Grecja","iso":"GR","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":4,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-athens-gre/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-athens-gre/"},{"code":"PEW16efs-2026-2027","name":"EVF Circuit – Dublin (IRL)","start":"2027-05-29","end":"2027-05-29","loc":"UCD Sport Center Dublin","country":"Ireland","iso":"IE","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":"UCD Sport Center Belfield Dublin, Dublin, Ireland","weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":["https://www.veteransfencing.eu/event/evf-circuit-dublin-irl/"],"movedFrom":null,"urlInv":"https://www.veteransfencing.eu/event/evf-circuit-dublin-irl/"},{"code":"PEW17efs-2026-2027","name":"International Veterans Cup – Toronto (CAN)","start":"2027-06-18","end":"2027-06-18","loc":"Toronto","country":"Kanada","iso":"CA","status":"PLANNED","season":"SPWS-2026-2027","fee":null,"cur":"PLN","fee2w":null,"fee3w":null,"deadline":null,"venue":null,"weapons":["EPEE","FOIL","SABRE"],"tournaments":6,"urlReg":null,"urlList":null,"useSpws":false,"urls":[],"movedFrom":null,"urlInv":null}];/* Strings copied verbatim from frontend/src/lib/locales/{en,pl}.json. */
+const I18N={en:{"calendar_empty_quarter":"no events","calendar_next_up":"Next up","copied":"Copied","copy_address":"Copy address","entry_fee":"Entry fee","event_awaiting_message":"Competition held — results not yet entered","event_cancelled_message":"Cancelled by the organiser","event_entry_fee_2w_label":"Fee (2 weapons)","event_entry_fee_3w_label":"Fee (3 weapons)","event_registration":"Registration","event_registration_deadline_label":"Registration deadline","event_results":"Results","event_results_day":"Day","organizer_announcement":"Organizer announcement","reg_entry_list_link":"Entry list","calendar_date_moved_from":"DATE CHANGED from {date}","status_planned":"Planned","status_completed":"Completed","status_cancelled":"Cancelled","status_in_progress":"In Progress","status_awaiting_results":"Awaiting results","status_scored":"Scored","epee":"Epee","foil":"Foil","sabre":"Sabre","month_1":"January","month_2":"February","month_3":"March","month_4":"April","month_5":"May","month_6":"June","month_7":"July","month_8":"August","month_9":"September","month_10":"October","month_11":"November","month_12":"December","cal_month_1":"January","cal_month_2":"February","cal_month_3":"March","cal_month_4":"April","cal_month_5":"May","cal_month_6":"June","cal_month_7":"July","cal_month_8":"August","cal_month_9":"September","cal_month_10":"October","cal_month_11":"November","cal_month_12":"December","cal_month_short_1":"Jan","cal_month_short_2":"Feb","cal_month_short_3":"Mar","cal_month_short_4":"Apr","cal_month_short_5":"May","cal_month_short_6":"Jun","cal_month_short_7":"Jul","cal_month_short_8":"Aug","cal_month_short_9":"Sep","cal_month_short_10":"Oct","cal_month_short_11":"Nov","cal_month_short_12":"Dec","country_PL":"Poland","country_GB":"United Kingdom","country_DE":"Germany","country_GR":"Greece","country_BG":"Bulgaria","country_FR":"France","country_HU":"Hungary","country_ES":"Spain","country_BH":"Bahrain","country_SE":"Sweden","country_IT":"Italy","country_BE":"Belgium","country_AT":"Austria","country_IE":"Ireland","country_CH":"Switzerland","country_GE":"Georgia","country_DK":"Denmark","country_NO":"Norway","country_FI":"Finland","country_IS":"Iceland","country_FO":"Faroe Islands","country_AX":"Åland Islands","country_NL":"Netherlands","country_RU":"Russia","country_MC":"Monaco","country_LI":"Liechtenstein","country_UA":"Ukraine","country_EE":"Estonia","country_LT":"Lithuania","country_LU":"Luxembourg","country_LV":"Latvia","country_HR":"Croatia","country_RS":"Serbia","country_SK":"Slovakia","country_SI":"Slovenia","country_SM":"San Marino","country_AM":"Armenia","country_BY":"Belarus","country_GI":"Gibraltar","country_CZ":"Czechia","country_PT":"Portugal","country_RO":"Romania","country_CA":"Canada","country_QA":"Qatar","country_JP":"Japan","country_TH":"Thailand","country_ID":"Indonesia","country_PE":"Peru","country_CO":"Colombia","country_EC":"Ecuador","country_BO":"Bolivia","country_CR":"Costa Rica","country_HT":"Haiti","country_YE":"Yemen","country_LY":"Libya","country_GM":"Gambia","country_BW":"Botswana","country_MU":"Mauritius","country_RW":"Rwanda","country_GA":"Gabon","country_SL":"Sierra Leone","country_NG":"Nigeria","country_GN":"Guinea","country_ML":"Mali","country_TD":"Chad","country_BD":"Bangladesh","country_LA":"Laos","country_PW":"Palau"},pl:{"calendar_empty_quarter":"brak zawodów","calendar_next_up":"Najbliższe","copied":"Skopiowano","copy_address":"Kopiuj adres","entry_fee":"Opłata startowa","event_awaiting_message":"Zawody się odbyły — wyniki jeszcze nie wprowadzone","event_cancelled_message":"Zawody odwołane przez organizatora","event_entry_fee_2w_label":"Opłata (2 bronie)","event_entry_fee_3w_label":"Opłata (3 bronie)","event_registration":"Rejestracja","event_registration_deadline_label":"Termin rejestracji","event_results":"Wyniki","event_results_day":"Dzień","organizer_announcement":"Komunikat organizatora","reg_entry_list_link":"Lista zgłoszonych","calendar_date_moved_from":"ZMIANA DATY z {date}","status_planned":"Zaplanowane","status_completed":"Zakończone","status_cancelled":"Odwołane","status_in_progress":"W trakcie","status_awaiting_results":"Oczekiwanie na wyniki","status_scored":"Ocenione","epee":"Szpada","foil":"Floret","sabre":"Szabla","month_1":"Styczeń","month_2":"Luty","month_3":"Marzec","month_4":"Kwiecień","month_5":"Maj","month_6":"Czerwiec","month_7":"Lipiec","month_8":"Sierpień","month_9":"Wrzesień","month_10":"Październik","month_11":"Listopad","month_12":"Grudzień","cal_month_1":"stycznia","cal_month_2":"lutego","cal_month_3":"marca","cal_month_4":"kwietnia","cal_month_5":"maja","cal_month_6":"czerwca","cal_month_7":"lipca","cal_month_8":"sierpnia","cal_month_9":"września","cal_month_10":"października","cal_month_11":"listopada","cal_month_12":"grudnia","cal_month_short_1":"sty","cal_month_short_2":"lut","cal_month_short_3":"mar","cal_month_short_4":"kwi","cal_month_short_5":"maj","cal_month_short_6":"cze","cal_month_short_7":"lip","cal_month_short_8":"sie","cal_month_short_9":"wrz","cal_month_short_10":"paź","cal_month_short_11":"lis","cal_month_short_12":"gru","country_PL":"Polska","country_GB":"Wielka Brytania","country_DE":"Niemcy","country_GR":"Grecja","country_BG":"Bułgaria","country_FR":"Francja","country_HU":"Węgry","country_ES":"Hiszpania","country_BH":"Bahrajn","country_SE":"Szwecja","country_IT":"Włochy","country_BE":"Belgia","country_AT":"Austria","country_IE":"Irlandia","country_CH":"Szwajcaria","country_GE":"Gruzja","country_DK":"Dania","country_NO":"Norwegia","country_FI":"Finlandia","country_IS":"Islandia","country_FO":"Wyspy Owcze","country_AX":"Wyspy Alandzkie","country_NL":"Holandia","country_RU":"Rosja","country_MC":"Monako","country_LI":"Liechtenstein","country_UA":"Ukraina","country_EE":"Estonia","country_LT":"Litwa","country_LU":"Luksemburg","country_LV":"Łotwa","country_HR":"Chorwacja","country_RS":"Serbia","country_SK":"Słowacja","country_SI":"Słowenia","country_SM":"San Marino","country_AM":"Armenia","country_BY":"Białoruś","country_GI":"Gibraltar","country_CZ":"Czechy","country_PT":"Portugalia","country_RO":"Rumunia","country_CA":"Kanada","country_QA":"Katar","country_JP":"Japonia","country_TH":"Tajlandia","country_ID":"Indonezja","country_PE":"Peru","country_CO":"Kolumbia","country_EC":"Ekwador","country_BO":"Boliwia","country_CR":"Kostaryka","country_HT":"Haiti","country_YE":"Jemen","country_LY":"Libia","country_GM":"Gambia","country_BW":"Botswana","country_MU":"Mauritius","country_RW":"Rwanda","country_GA":"Gabon","country_SL":"Sierra Leone","country_NG":"Nigeria","country_GN":"Gwinea","country_ML":"Mali","country_TD":"Czad","country_BD":"Bangladesz","country_LA":"Laos","country_PW":"Palau"}};
+let LOCALE='pl';   // locale.svelte.ts defaults to Polish, so the mock does too
+function t(k,vars){let s=(I18N[LOCALE]||{})[k]??k;
+ if(vars)for(const[a,b]of Object.entries(vars))s=s.replace('{'+a+'}',b);
+ return s;}
+/* The seam shows a month on its own -> NOMINATIVE ("Wrzesień"). A tile shows a
+   day beside it -> GENITIVE ("26 września"). Polish needs both forms and the
+   locale files carry both; English collapses them. */
+function monthNom(m){return t('month_'+m);}
+function monthGen(m){return t('cal_month_'+m);}
+function monthAbbr(m){return t('cal_month_short_'+m);}
+
+const TODAY='2026-08-29';
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+/* ---- circular flags: bands clipped to a disc. No aspect ratio, so CH is simply correct. ---- */
+const W='#fff';
+const FLAGS={
+ PL:{h:[W,'#DC143C']}, DE:{h:['#000','#D00','#FFCE00']}, HU:{h:['#CD2A3E',W,'#436F4D']},
+ NL:{h:['#AE1C28',W,'#21468B']}, AT:{h:['#ED2939',W,'#ED2939']}, BG:{h:[W,'#00966E','#D62612']},
+ RU:{h:[W,'#0039A6','#D52B1E']}, EE:{h:['#0072CE','#000',W]}, LT:{h:['#FDB913','#006A44','#C1272D']},
+ FR:{v:['#0055A4',W,'#EF4135']}, IT:{v:['#009246',W,'#CE2B37']}, BE:{v:['#000','#FAE042','#ED2939']},
+ IE:{v:['#169B62',W,'#FF883E']}, RO:{v:['#002B7F','#FCD116','#CE1126']},
+ ES:{hw:[['#AA151B','#F1BF00','#AA151B'],[1,2,1]]},
+ SE:{nordic:['#006AA7','#FECC00']}, DK:{nordic:['#C60C30',W]}, FI:{nordic:[W,'#003580']},
+ NO:{nordic:['#BA0C2F',W,'#00205B']}, IS:{nordic:['#02529C',W,'#DC1E35']},
+ CH:{swiss:1}, GE:{georgia:1}, EN:{cross:[W,'#CE1124']},
+ GR:{greece:1},
+ SK:{h:[W,'#0B4EA2','#EE1C25']}, SI:{h:[W,'#0000FF','#FF0000']}, CZ:{h:[W,'#D7141A']},
+ PT:{v:['#046A38','#046A38','#DA291C','#DA291C','#DA291C']},
+ CA:{vw:[['#D80621',W,'#D80621'],[1,2,1]]}, GB:{union:1}, US:{h:['#B22234',W,'#B22234',W,'#B22234',W,'#B22234']},
+ LU:{h:['#ED2939',W,'#00A1DE']}, UA:{h:['#0057B7','#FFD700']}, TR:{cross:['#E30A17','#E30A17']},
+};
+function flagSVG(iso,size){
+ const s=size||22, f=FLAGS[iso];
+ if(!f) return '<span style="display:inline-block;width:'+s+'px;height:'+s+'px;border-radius:50%;background:var(--grey-bg);border:1px solid var(--border)"></span>';
+ const id='c'+iso+s+Math.random().toString(36).slice(2,7);
+ let inner='';
+ const bands=(cols,weights,vert)=>{
+   const tot=weights.reduce((a,b)=>a+b,0); let run=0; let out='';
+   cols.forEach((c,i)=>{const st=run/tot*100,sz=weights[i]/tot*100;run+=weights[i];
+     out+=vert?`<rect x="${st}" y="0" width="${sz}" height="100" fill="${c}"/>`
+              :`<rect x="0" y="${st}" width="100" height="${sz}" fill="${c}"/>`;});
+   return out;};
+ if(f.h) inner=bands(f.h,f.h.map(()=>1),false);
+ else if(f.v) inner=bands(f.v,f.v.map(()=>1),true);
+ else if(f.hw) inner=bands(f.hw[0],f.hw[1],false);
+ else if(f.vw) inner=bands(f.vw[0],f.vw[1],true);
+ else if(f.nordic){const[b,c,i2]=f.nordic;
+   inner=`<rect width="100" height="100" fill="${b}"/><rect x="0" y="40" width="100" height="20" fill="${c}"/><rect x="30" y="0" width="20" height="100" fill="${c}"/>`;
+   if(i2) inner+=`<rect x="0" y="45.5" width="100" height="9" fill="${i2}"/><rect x="34.5" y="0" width="9" height="100" fill="${i2}"/>`;}
+ else if(f.greece){
+   /* Greece is nine stripes PLUS a canton — a blue square, upper hoist, with a
+      white cross. My earlier spec drew the stripes only, which in a circle is
+      indistinguishable from any other striped flag.
+      The crop is deliberately off-centre: a circle centred on a 27x18 Greek
+      flag lands entirely in the stripes and shows nothing identifying. This
+      renders a ~13x13 window onto the TOP-LEFT, so the canton fills the disc
+      and the stripes run out of it — which is what makes it read as Greek. */
+   const U=100/13;                 // 13 flag-units across the 100-unit disc
+   const B='#0D5EAF', st=2*U;      // each of the nine stripes is 2 units tall
+   let out=`<rect width="100" height="100" fill="${B}"/>`;
+   for(let i=1;i<9;i+=2) out+=`<rect x="0" y="${(i*2*U).toFixed(2)}" width="100" height="${st.toFixed(2)}" fill="#fff"/>`;
+   out+=`<rect x="0" y="0" width="${(10*U).toFixed(2)}" height="${(10*U).toFixed(2)}" fill="${B}"/>`;
+   out+=`<rect x="0" y="${(4*U).toFixed(2)}" width="${(10*U).toFixed(2)}" height="${st.toFixed(2)}" fill="#fff"/>`;
+   out+=`<rect x="${(4*U).toFixed(2)}" y="0" width="${st.toFixed(2)}" height="${(10*U).toFixed(2)}" fill="#fff"/>`;
+   inner=out;}
+ else if(f.swiss){
+   /* Switzerland is NOT Denmark. A Nordic cross runs to all four edges; the
+      Swiss cross is free-standing and inset — official proportion is bars 6
+      units wide by 20 long on a 32-unit square, i.e. 19% thick and 62.5% long,
+      centred. Drawing it with full-width bars produces a Danish cross, which is
+      what the previous primitive did. */
+   const th=19, ln=62.5, o=(100-ln)/2, c=(100-th)/2;
+   inner=`<rect width="100" height="100" fill="#DA291C"/>`
+    +`<rect x="${o}" y="${c}" width="${ln}" height="${th}" fill="#fff"/>`
+    +`<rect x="${c}" y="${o}" width="${th}" height="${ln}" fill="#fff"/>`;}
+ else if(f.georgia){
+   /* Georgia is NOT England. Both are a red St George's cross on white; Georgia
+      adds four small Bolnisi crosses, one per quadrant, and they are the only
+      thing telling the two apart. Reduced to a plain plus at chip size — enough
+      to disambiguate, which is the mark's entire job.
+      This is exactly why the real circle-flags set should be used rather than
+      hand-drawn geometry: drawing flags by hand produces wrong flags. */
+   const q=[[22,22],[78,22],[22,78],[78,78]];
+   inner=`<rect width="100" height="100" fill="#fff"/>`
+    +`<rect x="0" y="40" width="100" height="20" fill="#FF0000"/>`
+    +`<rect x="40" y="0" width="20" height="100" fill="#FF0000"/>`
+    +q.map(([x,y])=>`<rect x="${x-8}" y="${y-2}" width="16" height="4" fill="#FF0000"/>`
+                   +`<rect x="${x-2}" y="${y-8}" width="4" height="16" fill="#FF0000"/>`).join('');}
+ else if(f.cross){const[b,c]=f.cross;
+   /* equal arms, centred — the geometry the 19x13 box could not express */
+   inner=`<rect width="100" height="100" fill="${b}"/><rect x="0" y="40" width="100" height="20" fill="${c}"/><rect x="40" y="0" width="20" height="100" fill="${c}"/>`;}
+ else if(f.union){
+   inner=`<rect width="100" height="100" fill="#012169"/>
+   <path d="M0,0 L100,100 M100,0 L0,100" stroke="#fff" stroke-width="20"/>
+   <path d="M0,0 L100,100 M100,0 L0,100" stroke="#C8102E" stroke-width="10"/>
+   <path d="M50,0 V100 M0,50 H100" stroke="#fff" stroke-width="32"/>
+   <path d="M50,0 V100 M0,50 H100" stroke="#C8102E" stroke-width="18"/>`;}
+ return `<svg width="${s}" height="${s}" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${id}"><circle cx="50" cy="50" r="50"/></clipPath></defs><g clip-path="url(#${id})">${inner}</g><circle cx="50" cy="50" r="49" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="2"/></svg>`;
+}
+
+/* ---- classification ---- */
+function typeOf(code){
+ if(/^(PEW|MEW|MSW|PSW|IMEW|IMSW)/.test(code)) return /^(MSW|PSW|IMSW|IMEW)/.test(code)?'int':'pew';
+ if(/^MPW/.test(code)) return 'mpw';
+ return 'ppw';
+}
+function labelOf(code){
+ const p=labelParts(code); return p.alpha+p.num;
+}
+function labelParts(code){
+ const m=/^([A-Z]+)(\d*)/.exec(code)||[];
+ const ty=typeOf(code);   // 'ty', not 't': t() is the translator
+ /* Only the EVF circuit shortens to EVF<n>. A world/European championship
+    (MSW, PSW, IMEW, IMSW) keeps its own prefix — calling MSW Tbilisi "EVF" is
+    simply the wrong body; its registry chip on the card reads FIE. */
+ return {alpha: ty==='pew' ? 'EVF' : (m[1]||''), num: m[2]||''};
+}
+/* The series number is set in a monospace face with tabular figures. In the UI
+   sans at 11px "EVF5" reads as "EVFS" — the digit five and a capital S are too
+   close, and every EVF code ends in weapon letters (e, f, s) so a trailing S is
+   a plausible reading. Monospace digits are unambiguous, and the slight face
+   change also marks where the name stops and the number starts. */
+function labelHTML(code){
+ const p=labelParts(code);
+ return p.alpha + (p.num?`<i class="pn">${p.num}</i>`:'');
+}
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+function timeState(e){
+ const end=e.end||e.start;
+ if(end<TODAY){ return daysBetween(end,TODAY)<=7?'grace':'past'; }
+ return daysBetween(TODAY,e.start)<=7?'soon':'fut';
+}
+
+/* ---- bucketing ---- */
+function buildRows(gran){
+ const dated=EVENTS.filter(e=>e.start).slice().sort((a,b)=>a.start.localeCompare(b.start));
+ const keyOf=e=>gran==='month'?e.start.slice(0,7)
+   :e.start.slice(0,4)+'-Q'+(Math.floor((+e.start.slice(5,7)-1)/3)+1);
+ const byKey=new Map();
+ dated.forEach(e=>{const k=keyOf(e);(byKey.get(k)||byKey.set(k,[]).get(k)).push(e);});
+ const rows=[];
+ const first=dated[0].start, last=dated[dated.length-1].start;
+ if(gran==='month'){
+  let y=+first.slice(0,4),m=+first.slice(5,7);
+  const ly=+last.slice(0,4),lm=+last.slice(5,7);
+  while(y<ly||(y===ly&&m<=lm)){
+   const k=y+'-'+String(m).padStart(2,'0');
+   rows.push({key:k,label:monthNom(m)+' '+y,events:byKey.get(k)||[],mm:m,yy:y});
+   m++; if(m>12){m=1;y++;}
+  }
+ }else{
+  let y=+first.slice(0,4),q=Math.floor((+first.slice(5,7)-1)/3)+1;
+  const ly=+last.slice(0,4),lq=Math.floor((+last.slice(5,7)-1)/3)+1;
+  while(y<ly||(y===ly&&q<=lq)){
+   const k=y+'-Q'+q;
+   rows.push({key:k,label:q+'Q'+String(y).slice(2),events:byKey.get(k)||[]});
+   q++; if(q>4){q=1;y++;}
+  }
+ }
+ rows.forEach(r=>r.isEmpty=r.events.length===0);
+ return rows;
+}
+/* A cancelled event stays selectable and can be the opening event — the card
+   states the cancellation rather than the calendar hiding the event. */
+const nextUpcoming=EVENTS.filter(e=>e.start&&e.start>=TODAY).sort((a,b)=>a.start.localeCompare(b.start))[0]||null;
+
+/* ---- state ---- */
+const S={tile:'tB',gran:'month',
+  cyl:{on:1,step:26,momentum:0,blur:0},
+  card:{'c-elev':1,'c-bevel':0,'c-extrude':1,'c-tilt':1},
+  rows:[],active:0,selected:null};
+
+function anchorRow(rows){
+ if(nextUpcoming){const k=S.gran==='month'?nextUpcoming.start.slice(0,7)
+   :nextUpcoming.start.slice(0,4)+'-Q'+(Math.floor((+nextUpcoming.start.slice(5,7)-1)/3)+1);
+  const i=rows.findIndex(r=>r.key===k); if(i>=0) return i;}
+ return rows.length-1;
+}
+/* auto-roll: never rest on an empty row — continue in the direction of travel */
+function settle(i,dir){
+ const rows=S.rows;
+ if(!rows.length) return 0;
+ let j=Math.max(0,Math.min(rows.length-1,i));
+ const step=dir>=0?1:-1;
+ let guard=0;
+ while(rows[j]&&rows[j].isEmpty&&guard++<rows.length){
+  const n=j+step;
+  if(n<0||n>=rows.length){ // bounce at the end of the drum
+   let k=j; while(k>=0&&k<rows.length&&rows[k].isEmpty) k-=step;
+   return (k>=0&&k<rows.length)?k:j;
+  }
+  j=n;
+ }
+ return j;
+}
+
+/* ---- rendering ---- */
+/* Tile content mirrors CalendarBarrel.svelte: day, month, code label, city.
+   The month is BOLD — it is the thing the seam is now organised around, so it
+   should not be the faintest text on the tile. City returns to the tile: at
+   monthly granularity a row holds at most four events, so there is finally
+   room for it on every focused tile rather than only the selected one. */
+function tileHTML(e){
+ const ty=typeOf(e.code), ts=timeState(e);   // 'ty', not 't': t() is the translator
+ const cls=['p',ty];
+ if(ts==='past'||ts==='grace') cls.push('past'); else cls.push('fut');
+ if(ts==='soon') cls.push('soon');
+ if(e.status==='CANCELLED') cls.push('canc');
+ const day=+e.start.slice(8,10);
+ const led=S.tile==='tC'?'<span class="led"></span>':'';
+ /* Registration-open dot. The rule asked for is "today between the registration
+    START and the event END". tbl_event has no registration-start column — only
+    dt_registration_deadline, dt_start and dt_end — so the opening bound is
+    approximated by "a registration URL exists". The closing bound is dt_end as
+    specified, which deliberately runs PAST the deadline: the dot marks a live
+    registration/participation window, not the link's availability. A cancelled
+    event never shows it. */
+ const regDot = !!e.urlReg && e.status!=='CANCELLED' && TODAY <= (e.end||e.start) ? '<span class="rdot"></span>' : '';
+ const city=(splitCity(e.loc)||e.country||'');
+ let mid;
+ if(S.tile==='tD'&&(ts==='soon'||ts==='fut')){
+  mid=`<span class="cd">${LOCALE==='pl'?'za '+daysBetween(TODAY,e.start)+' d':'in '+daysBetween(TODAY,e.start)+' d'}</span>`;
+ } else {
+  const mn=+e.start.slice(5,7);
+  mid=`<span class="dm"><i class="ms">${monthAbbr(mn)}</i><i class="mf">${monthGen(mn)}</i></span>`;
+ }
+ return `<button class="${cls.join(' ')}" data-code="${e.code}">${led}${regDot}<span class="dd">${day}</span>${mid}<span class="pc">${labelHTML(e.code)}</span>${city?`<span class="cty">${city}</span>`:''}</button>`;
+}
+/* Mirrors splitLocation() in calendarQuarters.ts. The EVF scraper writes venue
+   strings into txt_location ("Savoy Terrace - Buda Castle"), so: take the tail
+   of a "Venue - City" split only when it is a single capitalised word, treat a
+   known venue word as "no city", and otherwise use the value as-is. It never
+   invents a city that is not literally in the string. Falls back to the country
+   so a tile still says where it is. */
+const VENUE_WORDS=/sporthalle|salle |complexe|polideportivo|palavesuvio|spectrum|idrottshall|topsporthal|sport ?cent|sports city|castle|pavilh|palais|paladozza|country hall|variety village|olympic palace|arena|ar[eé]na|berufsschule/i;
+function splitLoc(loc){
+ const v=(loc||'').trim();
+ if(!v) return {city:'',venue:''};
+ const parts=v.split(/\s+-\s+/);
+ if(parts.length===2){
+  const tail=parts[1].trim();
+  if(/^[A-ZŁŚŻŹĆÓĄĘŃ][^\s]*$/.test(tail)) return {city:tail,venue:parts[0].trim()};
+ }
+ if(VENUE_WORDS.test(v)) return {city:'',venue:v};
+ return {city:v,venue:''};
+}
+function splitCity(loc){ return splitLoc(loc).city; }
+function addressLineAhead(e){ return !!((e.venue||'').trim() || splitLoc(e.loc).venue); }
+
+
+/* The drum's DOM is built ONCE per structural change and never rebuilt on
+   rotation. This is the whole trick: a CSS transition cannot animate across
+   replaced nodes, so re-rendering innerHTML on every rotate makes the rows
+   snap to their new angle while only the drum slides — which reads as broken.
+   CalendarBarrel.svelte says the same thing in its header comment.
+   On a real cylinder row i is permanently at i*STEP, so rotating is nothing
+   but the drum's own transform. Row transforms are written once and left alone. */
+const BUILT=new WeakMap();
+function barGeom(){const STEP=S.cyl.step,ROW_H=82;
+ return {STEP,R:Math.round((ROW_H/2)/Math.tan((STEP/2)*Math.PI/180))};}
+
+function buildBar(el){
+ const drum=el.querySelector('.drum'), cyl=S.cyl.on, {STEP,R}=barGeom();
+ drum.innerHTML=S.rows.map((r,i)=>{
+  const tiles=r.isEmpty?`<span class="mt">${t('calendar_empty_quarter')}</span>`
+    :`<div class="rwi">${r.events.map(e=>tileHTML(e)).join('')}</div>`;
+  const st=cyl?` style="transform:rotateX(${i*STEP}deg) translateZ(${R}px)"`:'';
+  return `<div class="ln" role="button" data-i="${i}"${st}><div class="sm"><b>${r.label}</b><i></i><em>${r.events.length||''}</em></div><div class="rw">${tiles}</div></div>`;
+ }).join('');
+ BUILT.set(el,{gran:S.gran,tile:S.tile,step:S.cyl.step,cyl:S.cyl.on,n:S.rows.length,loc:LOCALE});
+}
+
+/* Rotation and selection touch classes and the drum transform only. */
+function updateBar(el,instant){
+ const drum=el.querySelector('.drum'), cyl=S.cyl.on, {STEP,R}=barGeom();
+ /* A freshly built drum must ARRIVE at its angle, not travel to it: the first
+    paint sits at -active*STEP, which at row 56 is -1456deg — four whole turns of
+    spinning before it settles. Suppressed synchronously (a forced reflow, not
+    requestAnimationFrame, which never fires in a hidden tab and would strand
+    the transition permanently off). */
+ if(instant) drum.style.transition='none';
+ drum.style.transform = cyl
+   ? `translateZ(${-R}px) rotateX(${-S.active*STEP}deg)`
+   : `translateY(${-(S.active-1)*82}px)`;
+ const lines=drum.children;
+ for(let i=0;i<lines.length;i++){
+  const ln=lines[i], d=i-S.active, ad=Math.abs(d);
+  ln.className='ln '+(d===0?'mid':d===-1?'up':d===1?'dn':'far');
+  if(cyl){
+   /* 80deg horizon: at theta 34/26/18 this yields exactly 5/7/9 visible rows,
+      which is what the row-count control promises. */
+   const vis=ad*STEP<=80;
+   ln.style.opacity = vis ? (d===0?1:Math.max(0,Math.cos(d*STEP*Math.PI/180)*0.9)).toFixed(3) : 0;
+   ln.style.pointerEvents = vis?'auto':'none';
+  } else { ln.style.opacity=''; ln.style.pointerEvents=''; }
+ }
+ if(instant){ void drum.offsetHeight; drum.style.transition=''; }
+ // selection lives on the focused row only
+ drum.querySelectorAll('.p.sel').forEach(p=>p.classList.remove('sel'));
+ const mid=drum.querySelector('.ln.mid');
+ if(mid&&S.selected){const t=mid.querySelector(`.p[data-code="${CSS.escape(S.selected)}"]`); if(t)t.classList.add('sel');}
+ drum.querySelectorAll('.p.nx').forEach(p=>p.classList.remove('nx'));
+ if(nextUpcoming){drum.querySelectorAll(`.p[data-code="${CSS.escape(nextUpcoming.code)}"]`).forEach(p=>p.classList.add('nx'));}
+}
+
+function renderBar(el){
+ if(!el) return;
+ const b=BUILT.get(el);
+ const rebuilt=!b||b.gran!==S.gran||b.tile!==S.tile||b.step!==S.cyl.step||b.cyl!==S.cyl.on||b.n!==S.rows.length||b.loc!==LOCALE;
+ if(rebuilt) buildBar(el);
+ updateBar(el,rebuilt);   // a rebuild arrives instantly; a rotation animates
+}
+
+function renderCard(el,withShade){
+ if(!el) return;
+ const e=EVENTS.find(x=>x.code===S.selected)||nextUpcoming||EVENTS[EVENTS.length-1];
+ if(!e){el.innerHTML='';return;}
+ const ty=typeOf(e.code), ts=timeState(e);   // 'ty', not 't': t() is the translator
+ const hue=ty==='pew'?'#1f6fb0':ty==='int'?'#b1791d':'#2e7d52';
+ const col=(ts==='past'||ts==='grace')?'#98a3b0':hue;
+ el.style.setProperty('--xcol',col);
+ const canc=e.status==='CANCELLED';
+ const isNext=nextUpcoming&&e.code===nextUpcoming.code;
+ if(withShade){
+  el.className='evcard '+Object.keys(S.card).filter(k=>S.card[k]&&k!=='c-tilt').join(' ');
+  if(S.card['c-tilt']){el.classList.remove('c-tilt');void el.offsetWidth;el.classList.add('c-tilt');}
+ } else el.className='evcard';
+ el.classList.toggle('cancelled',canc);
+
+ const dmy=d=>d?d.split('-').reverse().join('/'):'';
+ const dateLabel = e.end&&e.end!==e.start ? dmy(e.start)+' – '+dmy(e.end) : dmy(e.start);
+ const registry = (ty==='pew')?'EVF':(ty==='int')?'FIE':'SPWS';
+ const cur = e.cur||'';
+ const copyBtn = `<button class="cpy" type="button" title="${t('copy_address')}" aria-label="${t('copy_address')}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`;
+
+ /* 1 · header — date + typed code chip */
+ let h=`<div class="chd"><span class="cdt">${dateLabel}</span><span class="ccd ${ty}">${e.code}</span></div>`;
+ /* 2 · name */
+ h+=`<div class="cnm">${e.name||e.code}</div>`;
+ /* 3 · location — flag + city (+ copy when there is no address line) */
+ /* Circle flag + the ISO-3166 alpha-2 code + the place. The code earns its
+    place because the flag alone is ambiguous at 15px for the several European
+    tricolours, and because txt_country is free text in two languages
+    ("Węgry"/"Hungary", "GRUZJA") — the code is the one unambiguous token. */
+ if(e.loc||e.country){
+  /* No fallback to the raw country here: the country now has its own label on
+     this line, and falling back would print it twice in two languages
+     ("United Kingdom  Wielka Brytania"). An event whose txt_location holds only
+     a venue string simply has no city, and the venue is on the address line. */
+  const place=splitCity(e.loc);
+  /* Flag with the ISO code beneath it. The code is needed because a 22px chip
+     cannot separate the European tricolours, and txt_country is free text in two
+     languages ("Węgry"/"Hungary", "GRUZJA") — the code is the unambiguous token.
+     Set below rather than over the flag: an overlay needs a scrim to stay legible
+     on every field, and the scrim spoils the flag it is sitting on. */
+  const chip = e.iso ? flagSVG(e.iso,20) : '';
+  /* Mirrors EventCard's countryLabel: the ISO code resolves to a properly cased,
+     localised country name from the country_XX keys. That matters here because
+     txt_country is raw free text in two languages — "GRUZJA", "Węgry",
+     "Hungary" — and the code is what makes it consistent. */
+  const countryLabel = e.iso ? t('country_'+e.iso) : (e.country||'');
+  const ctry = countryLabel?`<span class="ctry">${countryLabel}</span>`:'';
+  h+=`<div class="clo">${chip}`
+   + (place?`<span class="cct">${place}</span>`:'')
+   + (addressLineAhead(e)?ctry:copyBtn+ctry) + `</div>`;
+ }
+ /* 4 · venue address + copy. Mirrors EventCard: the venue column wins, and a
+    venue the scraper wrote into txt_location is the fallback, so that string is
+    never lost — it just lands on the address line instead of the city line. */
+ const addressLine = (e.venue||'').trim() || splitLoc(e.loc).venue;
+ if(addressLine){ h+=`<div class="addr"><span class="addrt">${addressLine}</span>${copyBtn}</div>`; }
+ /* 5 · chips — status (or next-up), registry, moved-from */
+ /* Declared before statusLabel, which reads it. */
+ const awaiting = e.status==='COMPLETED' && !e.urls.length;
+ const statusLabel = canc?t('status_cancelled')
+   : isNext?t('calendar_next_up')
+   : awaiting?t('status_awaiting_results')
+   : e.status==='COMPLETED'?t('status_completed')
+   : e.status==='IN_PROGRESS'?t('status_in_progress')
+   : e.status==='SCORED'?t('status_scored'):t('status_planned');
+ /* The component's own chip vocabulary. */
+ const statusCls = canc?'status-cancelled':isNext?'next'
+   :awaiting?'status-awaiting'
+   :(e.status==='COMPLETED'||e.status==='SCORED')?'status-completed'
+   :e.status==='IN_PROGRESS'?'status-progress':'status-planned';
+ h+=`<div class="chips"><span class="chp status ${statusCls}">${statusLabel}</span><span class="chp reg-${registry}">${registry}</span>`;
+ if(e.movedFrom) h+=`<span class="chp moved">${t('calendar_date_moved_from',{date:dmy(e.movedFrom)})}</span>`;
+ h+=`</div>`;
+ /* 6 · rule */
+ h+=`<div class="dvv"></div>`;
+ /* 7 · facts — entry fee, both weapon tiers, deadline with urgency */
+ /* registrationState() from calendarQuarters.ts, mirrored. */
+ const regCutoff = e.deadline || e.start || null;
+ const hasStarted = !e.start || e.start<=TODAY;
+ const showDeadline = e.deadline!=null && TODAY<=e.deadline;
+ const urgent = !!regCutoff && daysBetween(TODAY,regCutoff)<7;
+ if(e.fee!=null||e.fee2w!=null||e.fee3w!=null||showDeadline){
+  h+=`<div class="facts">`;
+  if(e.fee!=null)  h+=`<div class="fct fee"><span class="fk">${t('entry_fee')}</span><span class="fv">${e.fee} ${cur}</span></div>`;
+  if(e.fee2w!=null)h+=`<div class="fct fee"><span class="fk">${t('event_entry_fee_2w_label')}</span><span class="fv">${e.fee2w} ${cur}</span></div>`;
+  if(e.fee3w!=null)h+=`<div class="fct fee"><span class="fk">${t('event_entry_fee_3w_label')}</span><span class="fv">${e.fee3w} ${cur}</span></div>`;
+  if(showDeadline) h+=`<div class="fct deadline${urgent?' reg-urgent':''}"><span class="fk">${t('event_registration_deadline_label')}</span><span class="fv">${dmy(e.deadline)}</span></div>`;
+  h+=`</div>`;
+ }
+ /* 8 · note — awaiting results, or cancelled */
+ if(canc) h+=`<p class="note cancelled-note">${t('event_cancelled_message')}</p>`;
+ else if(e.status==='COMPLETED'&&!e.urls.length) h+=`<p class="note awaiting">${t('event_awaiting_message')}</p>`;
+ /* 9 · pills — mirrors registrationState() and EventCard's pill rules:
+      results only when COMPLETED and URLs exist, labelled by DAY not weapon
+      (ADR-040); registration while the cutoff is open; entry list until the
+      event starts and never when cancelled; invitation unconditionally. */
+ const pills=[];
+ if(e.status==='COMPLETED'&&e.urls.length){
+  e.urls.forEach((u,i)=>pills.push({k:'res',l:e.urls.length===1?t('event_results'):(t('event_results_day')+' '+(i+1)),href:u}));
+ }
+ if(e.urlReg&&regCutoff&&TODAY<=regCutoff) pills.push({k:'reg',l:t('event_registration'),href:e.urlReg});
+ if(e.urlList&&!hasStarted&&!canc) pills.push({k:'lst',l:t('reg_entry_list_link'),href:e.urlList});
+ if(e.urlInv) pills.push({k:'inv',l:t('organizer_announcement'),href:e.urlInv});
+ if(pills.length) h+=`<div class="pills">${pills.map(x=>`<a class="pl ${x.k}" href="${x.href}" target="_blank" rel="noopener">${x.l} &rarr;</a>`).join('')}</div>`;
+ /* 10 · weapons */
+ if(e.weapons.length){
+  const WK={EPEE:'epee',FOIL:'foil',SABRE:'sabre'};
+  h+=`<div class="wps">${e.weapons.map(w=>`<span class="wp">${t(WK[w]||w)}</span>`).join('')}</div>`;
+ }
+ el.innerHTML=h;
+}
+
+/* The caret points from the selected tile down to the card, which is what
+   welds the two halves into one object — caretOffset() does this in the
+   component. Here it simply tracks the selected tile's centre. */
+function alignCarets(){
+ [['bar-a','caret-p'],['bar-b','caret-w']].forEach(([b,c])=>{
+  const bar=document.getElementById(b), car=document.getElementById(c);
+  if(!bar||!car) return;
+  const sel=bar.querySelector('.ln.mid .p.sel')||bar.querySelector('.ln.mid .p');
+  if(!sel){car.style.opacity=0;return;}
+  car.style.opacity=1;
+  const br=bar.getBoundingClientRect(), sr=sel.getBoundingClientRect();
+  car.style.marginLeft=Math.max(4,Math.round(sr.left-br.left+sr.width/2-6))+'px';
+ });
+}
+
+/* ---- paint everything ---- */
+const BARS=['bar-a','bar-b','bar-c','bar-d'];
+function applyShade(){
+ ['bar-a','bar-b','bar-c'].forEach(id=>{
+  const el=document.getElementById(id); if(!el) return;
+  el.classList.toggle('cyl',!!S.cyl.on);
+  el.classList.toggle('nomo',!S.cyl.momentum);
+  el.classList.toggle('blur',!!S.cyl.blur);
+ });
+ const d=document.getElementById('bar-d'); if(d) d.className='bar';   // always the flat original
+}
+function paint(){
+ S.rows=buildRows(S.gran);
+ if(S.active>=S.rows.length) S.active=anchorRow(S.rows);
+ document.querySelectorAll('.stage .bar').forEach(b=>{
+  b.classList.toggle('tA',S.tile==='tA');b.classList.toggle('tB',S.tile==='tB');
+  b.classList.toggle('tC',S.tile==='tC');b.classList.toggle('tD',S.tile==='tD');
+ });
+ BARS.forEach(id=>renderBar(document.getElementById(id)));
+ renderCard(document.getElementById('card-a'),true);
+ renderCard(document.getElementById('card-b'),false);
+ renderCard(document.getElementById('card-p'),true);   // joined UI, phone
+ renderCard(document.getElementById('card-w'),true);   // joined UI, desktop
+ alignCarets();
+ applyShade();
+}
+/* Mirrors CalendarBarrel.svelte's selectDefault(): rotating a row to the centre
+   also selects within it — the ringed next-upcoming if it is on that row, else
+   the first event — so the card always describes the focused row. */
+function selectDefault(i){
+ const evs=S.rows[i]?.events||[];
+ if(!evs.length){S.selected=null;return;}
+ const ringed=nextUpcoming?evs.find(e=>e.code===nextUpcoming.code):null;
+ S.selected=(ringed||evs[0]).code;
+}
+function spinTo(i,dir){
+ const target=settle(i,dir);
+ if(target===S.active) return;
+ S.active=target;
+ selectDefault(target);
+ document.querySelectorAll('.stage .bar').forEach(b=>b.classList.add('spin'));
+ paint();
+ setTimeout(()=>document.querySelectorAll('.stage .bar').forEach(b=>b.classList.remove('spin')),520);
+}
+/* Interaction model, exactly as specified:
+   - the barrel rotates ONLY on a tap above or below the focused row;
+   - a tap moves ONE row in that direction, skipping empty months;
+   - events are selectable ONLY from the focused (middle) row;
+   - there is no sliding, wheel, swipe or drag anywhere.
+   This mirrors CalendarBarrel.svelte's pick(): a tap on a receded row's tile
+   rotates rather than selects, so the tile is never a trap. */
+document.addEventListener('click',ev=>{
+ const cpy=ev.target.closest('.cpy');
+ if(cpy){ ev.preventDefault();
+  const card=cpy.closest('.evcard');
+  const txt=(card.querySelector('.addrt')||card.querySelector('.cct')||{}).textContent||'';
+  navigator.clipboard?.writeText(txt).catch(()=>{});
+  cpy.classList.add('ok'); setTimeout(()=>cpy.classList.remove('ok'),1200);
+  return; }
+ const bar=ev.target.closest('.bar'); if(!bar) return;
+ const line=ev.target.closest('.ln'); if(!line) return;
+ const i=+line.dataset.i;
+ if(i===S.active){
+  const tile=ev.target.closest('.p');
+  if(tile){S.selected=tile.dataset.code;paint();}   // middle row only
+  return;                                            // taps on the focused row never rotate
+ }
+ spinTo(S.active+(i>S.active?1:-1), i>S.active?1:-1); // one row, direction of the tap
+});
+function wire(id,attr,fn,multi){
+ const box=document.getElementById(id); if(!box) return;
+ box.addEventListener('click',ev=>{
+  const b=ev.target.closest('button'); if(!b) return;
+  if(multi){ b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true'); }
+  else { box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+         b.setAttribute('aria-pressed','true'); }
+  fn(b.dataset[attr],b.getAttribute('aria-pressed')==='true');
+ });
+}
+wire('ctl-tile','t',v=>{S.tile=v;paint();});
+wire('ctl-gran','g',v=>{S.gran=v;S.rows=buildRows(v);S.active=anchorRow(S.rows);paint();});
+wire('ctl-lang','l',v=>{
+  LOCALE=v;
+  const keep=S.rows[S.active]?.key;          // hold position across the relabel
+  S.rows=buildRows(S.gran);                  // seam labels live in the row data
+  const i=S.rows.findIndex(r=>r.key===keep);
+  if(i>=0) S.active=i;
+  paint();
+});
+wire('ctl-cyl','k',(k,on)=>{
+  if(k==='on'){S.cyl.on=on?1:0;}
+  else if(k==='momentum'){S.cyl.momentum=on?1:0;}
+  else if(k==='blur'){S.cyl.blur=on?1:0;}
+  applyShade();paint();},true);
+wire('ctl-step','p',v=>{S.cyl.step=+v;paint();});
+wire('ctl-pick','e',v=>{S.selected=v;paint();});
+wire('ctl-card','c',(k,on)=>{S.card[k]=on?1:0;renderCard(document.getElementById('card-a'),true);},true);
+
+/* ---- flag comparison grid ---- */
+(function(){
+ const grid=document.getElementById('flag-grid'); if(!grid) return;
+ const seen=[...new Set(EVENTS.filter(e=>e.iso).map(e=>e.iso))].sort();
+ const names={};EVENTS.forEach(e=>{if(e.iso&&!names[e.iso])names[e.iso]=e.country;});
+ const cell=iso=>`<div style="text-align:center;width:64px">
+   <div style="margin-bottom:5px">${flagSVG(iso,30)}</div>
+   <div style="font-family:var(--mono);font-size:9.5px;color:var(--muted)">${iso}</div>
+   <div style="font-size:9.5px;color:var(--muted);line-height:1.25">${(names[iso]||'').slice(0,11)}</div></div>`;
+ grid.innerHTML=`<div class="wide" style="flex:1 1 100%">
+   <div class="slab">Circle flags — every country in the live pool (${seen.length})</div>
+   <div style="display:flex;flex-wrap:wrap;gap:14px">${seen.map(cell).join('')}</div>
+   <div class="slab" style="margin-top:18px">Two flags hand-drawing gets wrong</div>
+ <div style="font-size:12.5px;color:var(--muted);max-width:70ch;margin-bottom:10px">
+ Switzerland was drawn with unequal arms in a 3:2 box. Georgia was drawn as a plain red cross on
+ white — which is England. Greece was drawn as nine bare stripes, with its canton missing entirely,
+ which in a circle is indistinguishable from any other striped flag. All three are corrected below
+ by hand, but that is three wrong flags found by eye in one sitting, out of about sixty-six drawn.
+ It is the argument for shipping the real set: hand-drawn geometry produces wrong flags, quietly.
+ <br><br>Greece also needs an <b>off-centre crop</b>: a circle centred on a 27&times;18 Greek flag
+ lands entirely in the stripes and shows nothing identifying, so the disc is a window onto the
+ top-left where the canton is.</div>
+   <div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">
+     <div style="text-align:center">
+       <div style="display:inline-block;position:relative;width:38px;height:26px;border:1px solid rgba(0,0,0,.28);border-radius:2px;overflow:hidden;background:#DA291C">
+         <span style="position:absolute;left:0;right:0;top:38%;height:24%;background:#fff"></span>
+         <span style="position:absolute;top:0;bottom:0;left:38%;width:24%;background:#fff"></span>
+       </div>
+       <div style="font-size:10px;color:var(--coral);margin-top:6px">today — unequal arms, 3:2</div>
+     </div>
+     <div style="text-align:center">
+       <div>${flagSVG('CH',30)}</div>
+       <div style="font-size:10px;color:var(--green);margin-top:6px">circular — inset, equal arms</div>
+     </div>
+     <div style="text-align:center">
+       <div>${flagSVG('DK',30)}</div>
+       <div style="font-size:10px;color:var(--muted);margin-top:6px">Denmark, for contrast</div>
+     </div>
+     <div style="text-align:center">
+       <div>${flagSVG('GE',30)}</div>
+       <div style="font-size:10px;color:var(--muted);margin-top:6px">Georgia — four Bolnisi crosses</div>
+     </div>
+     <div style="text-align:center">
+       <div>${flagSVG('GR',30)}</div>
+       <div style="font-size:10px;color:var(--muted);margin-top:6px">Greece — cropped to the canton</div>
+     </div>
+   </div></div>`;
+})();
+
+S.rows=buildRows(S.gran);
+/* Open on PPW1 of the active season: it is the richest card in the pool (venue,
+   all three fee tiers, live deadline, registration + entry list + announcement)
+   and the one event a Polish veteran is actually deciding about right now. */
+const OPEN_ON='PPW1-2026-2027';
+const opener=EVENTS.find(e=>e.code===OPEN_ON);
+if(opener){
+ const k=S.gran==='month'?opener.start.slice(0,7)
+   :opener.start.slice(0,4)+'-Q'+(Math.floor((+opener.start.slice(5,7)-1)/3)+1);
+ const i=S.rows.findIndex(r=>r.key===k);
+ S.active=i>=0?i:anchorRow(S.rows);
+ S.selected=opener.code;
+}else{
+ S.active=anchorRow(S.rows);
+ S.selected=nextUpcoming?nextUpcoming.code:null;
+}
+paint();
+</script>
+</body>
+</html>

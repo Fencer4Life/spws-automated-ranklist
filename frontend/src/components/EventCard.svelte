@@ -1,4 +1,10 @@
-<div class="card" class:cancelled={display.cssClass === 'status-cancelled'}>
+<!-- Keyed on the event so the tilt animation restarts when the barrel selects a
+     different one; a CSS animation does not replay on a class that never left. -->
+{#key event.id_event}
+  <div
+    class="card {type}"
+    class:cancelled={display.cssClass === 'status-cancelled'}
+  >
   <div class="chd">
     <span class="cdt">{dateLabel}</span>
     <span class="ccd {type}">{event.txt_code}</span>
@@ -6,10 +12,16 @@
 
   <div class="cnm">{event.txt_name}</div>
 
-  {#if city}
+  <!-- Shown when there is a city OR a country. txt_location sometimes holds a
+       venue string the scraper wrote into it ("Savoy Terrace - Buda Castle"),
+       which splitLocation classifies as venue-only and routes to the address
+       line below. Gating the whole row on `city` therefore dropped the FLAG and
+       the country with it, leaving a Budapest event with no indication of where
+       it is. -->
+  {#if city || countryLabel}
     <div class="clo">
       <CountryFlag code={iso} label={countryLabel} />
-      <span class="cct">{city}</span>
+      {#if city}<span class="cct">{city}</span>{/if}
       {#if !addressLine && clipboard}
         <button
           class="cpy"
@@ -25,6 +37,7 @@
           {/if}
         </button>
       {/if}
+      {#if countryLabel}<span class="ctry">{countryLabel}</span>{/if}
     </div>
   {/if}
 
@@ -53,7 +66,7 @@
     <span class="chp status {isNextUpcoming ? 'next' : display.cssClass}">
       {isNextUpcoming ? t('calendar_next_up') : t(display.labelKey)}
     </span>
-    <span class="chp">{registry}</span>
+    <span class="chp reg-{registry}">{registry}</span>
     {#if movedFrom}
       <span class="chp moved">{t('calendar_date_moved_from').replace('{date}', formatDeadline(movedFrom))}</span>
     {/if}
@@ -119,7 +132,8 @@
       {/each}
     </div>
   {/if}
-</div>
+  </div>
+{/key}
 
 <script lang="ts">
   // The single full-detail event card the barrel drives — ADR-084 §8.
@@ -150,7 +164,7 @@
     todayIso,
     weaponLetters,
     type WeaponLetter,
-  } from '../lib/calendarQuarters'
+  } from '../lib/calendarMonths'
 
   const WEAPON_KEY: Record<WeaponLetter, string> = { E: 'epee', F: 'foil', S: 'sabre' }
 
@@ -317,13 +331,91 @@
 </script>
 
 <style>
+  /* ===== Card surface =====================================================
+     Three treatments, chosen from a set of five: a layered elevation shadow, a
+     solid top edge in the selected tile's own colour, and a brief tilt when the
+     card content swaps.
+
+     Two were rejected and are deliberately absent. A top-lit surface gradient
+     shifted contrast from top to bottom behind a lot of small text — fee keys,
+     chips, pills — and cost legibility for depth the shadow already gives. An
+     inner bevel added nothing once the shadow was there. There are NO gradients
+     on this card: the top edge started as a wash falling from the top and is a
+     solid bar precisely because that was the rejected gradient under another
+     name. */
   .card {
     background: var(--surface-1, #f1efe9);
     border-radius: 12px;
     padding: 12px;
+    position: relative;
+    box-shadow:
+      0 1px 2px rgba(16, 24, 40, 0.1),
+      0 6px 16px -4px rgba(16, 24, 40, 0.16),
+      0 18px 38px -12px rgba(16, 24, 40, 0.14);
+    animation: card-tilt 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
   }
-  .card.cancelled {
-    opacity: 0.72;
+  /* The top edge picks up the organizer hue of the tile the caret points at, so
+     the card reads as extruded from it rather than floating underneath. */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+    background: var(--edge, #6f7d8f);
+  }
+  .card.ppw,
+  .card.mpw {
+    --edge: #2e7d52;
+  }
+  .card.pew {
+    --edge: #1f6fb0;
+  }
+  .card.int {
+    --edge: #b1791d;
+  }
+  @keyframes card-tilt {
+    from {
+      transform: perspective(760px) rotateX(9deg) translateY(-5px);
+      opacity: 0.55;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card {
+      animation: none;
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    .card {
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.5),
+        0 6px 16px -4px rgba(0, 0, 0, 0.55),
+        0 18px 38px -12px rgba(0, 0, 0, 0.5);
+    }
+  }
+  /* A blanket `opacity` on the card would dim the highlighted cancelled chip
+     with everything else — opacity on a parent applies to every descendant, so
+     the one element that must stand out would be the one muted. The dimming is
+     applied to the content instead, and the chip is left at full strength. */
+  .card.cancelled .cnm {
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+  }
+  .card.cancelled .cnm,
+  .card.cancelled .cct,
+  .card.cancelled .ctry,
+  .card.cancelled .addrt,
+  .card.cancelled .cdt,
+  .card.cancelled .facts,
+  .card.cancelled .wps,
+  .card.cancelled .pills {
+    opacity: 0.62;
   }
   .chd {
     display: flex;
@@ -420,17 +512,59 @@
     background: #e6f1fb;
     color: #185fa5;
   }
-  .chp.status-completed {
+  /* Completed goes GREY, not green. Under the inverted palette the past
+     recedes, and a green "Zakończone" chip would contradict a greyed tile. */
+  .chp.status-completed,
+  .chp.status-scored {
+    background: var(--grey-bg, #e6eaef);
+    color: var(--grey, #6f7d8f);
+  }
+  .chp.status-planned,
+  .chp.status-created,
+  .chp.status-scheduled {
     background: #eaf3de;
     color: #173404;
+  }
+  .chp.status-inprogress {
+    background: #fbe9c4;
+    color: #5c3d06;
   }
   .chp.status-awaiting {
     background: #faeeda;
     color: #412402;
   }
+  /* Cancelled is HIGHLIGHTED, not tinted: it is the one thing on the card that
+     must not be missed, and the pale wash lost against everything else. */
   .chp.status-cancelled {
-    background: #fcebeb;
-    color: #501313;
+    background: #a32d2d;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  /* Registry carries the organizer hue OUTLINED, while status is filled. Hue
+     alone could not separate them: an SPWS event that is "Zaplanowane" would
+     render two adjacent chips in the same green and read as one blob. */
+  .chp.reg-SPWS {
+    background: transparent;
+    color: #2c6a47;
+    border-color: #8fbfa2;
+  }
+  .chp.reg-EVF {
+    background: transparent;
+    color: #1f6fb0;
+    border-color: #9cc4e4;
+  }
+  .chp.reg-FIE {
+    background: transparent;
+    color: #8a5c12;
+    border-color: #dcb877;
+  }
+  /* Full localised country name, after the copy button. */
+  .ctry {
+    font-size: 11px;
+    color: var(--text-secondary, #565550);
+    white-space: nowrap;
+    flex: 0 0 auto;
   }
   /* Amber, the same attention colour as status-awaiting. The two never co-occur:
      awaiting-results means the event is past, moved means it is still ahead.

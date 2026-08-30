@@ -29,7 +29,7 @@ Evidence gathered against the live site on 2026-08-28:
 
 Two further facts constrain the fix:
 
-- **`arr_weapons` cannot express "unknown".** Its `DEFAULT` is `'{EPEE,FOIL,SABRE}'`, so omitting the column silently asserts all three. Measured on CERT: **zero** rows are `NULL`, and 86 of 96 sit on that default — including **60 COMPLETED events**, among them epee-only and sabre-only ones. This is why `weaponLetters()` in [`frontend/src/lib/calendarQuarters.ts`](../../frontend/src/lib/calendarQuarters.ts) reads weapons from the code suffix and returns `[]` for an unsuffixed code, "rather than a guess".
+- **`arr_weapons` cannot express "unknown".** Its `DEFAULT` is `'{EPEE,FOIL,SABRE}'`, so omitting the column silently asserts all three. Measured on CERT: **zero** rows are `NULL`, and 86 of 96 sit on that default — including **60 COMPLETED events**, among them epee-only and sabre-only ones. This is why `weaponLetters()` in [`frontend/src/lib/calendarMonths.ts`](../../frontend/src/lib/calendarMonths.ts) reads weapons from the code suffix and returns `[]` for an unsuffixed code, "rather than a guess".
 - **The seed inserts 32+ unsuffixed `PEW` events already in `COMPLETED`** (`PEW11-2024-2025` Guildford, `PEW13-2023-2024`, `PEW68-2026-2027`, …). Migrations run *before* the ADR-036 seed dump, so any `CHECK` constraint on this shape would reject the seed on every `reset-dev.sh` and every CI run.
 
 Finally, fixing the weapons failure exposed the next domino. Admitting Tampere between Guildford (`PEW6`, 9 Jan) and Levi Open (`PEW7`, 30 Jan) shifts ten events down one, while Stockholm — cancelled by EVF in the **same** scrape — was pinned at `PEW11` by ADR-043's "a later cancellation keeps its positive code". The two rules cannot both hold:

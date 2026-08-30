@@ -8,7 +8,7 @@
 <meta name="doc-type" content="reference">
 <meta name="doc-owner" content="Events and registration">
 <meta name="last-verified" content="2026-08-28">
-<meta name="source-globs" content="supabase/migrations/**event_status*; supabase/migrations/**prod_mirror*; supabase/migrations/**first_published*; python/pipeline/promote.py; frontend/src/lib/calendarQuarters.ts; frontend/src/lib/eventStatus.ts; frontend/src/components/EventCard.svelte">
+<meta name="source-globs" content="supabase/migrations/**event_status*; supabase/migrations/**prod_mirror*; supabase/migrations/**first_published*; python/pipeline/promote.py; frontend/src/lib/calendarMonths.ts; frontend/src/lib/eventStatus.ts; frontend/src/components/EventCard.svelte">
 <meta name="review-triggers" content="The event status enum, fn_validate_event_transition, the CERT→PROD mirror's status handling, promote_event's status advance, the calendar's visibility filter, or the moved-date pill">
 <title>Event status lifecycle · SPWS Handbook</title>
 <link rel="stylesheet" href="../assets/handbook.css">
@@ -64,7 +64,7 @@
 <section id="calendar">
 <p class="kicker">Where events disappear</p>
 <h2>What the public calendar actually shows</h2>
-<p><code>visibleEvents()</code> in <code>frontend/src/lib/calendarQuarters.ts</code> filters the calendar, and it is the single most common reason an event is missing:</p>
+<p><code>visibleEvents()</code> in <code>frontend/src/lib/calendarMonths.ts</code> filters the calendar, and it is the single most common reason an event is missing:</p>
 <ul>
 <li><b><code>CREATED</code> is hidden</b>, on the premise that such rows are date-less planning skeletons. A <code>CREATED</code> row that <em>does</em> carry dates is therefore invisible despite being complete — that is a data defect, not a display rule.</li>
 <li><b><code>CANCELLED</code> is shown</b> for seven days after the event's original end date, so the cancellation notice is actually seen, then drops out.</li>
@@ -158,7 +158,7 @@
 <p>Every date change in recorded history belongs to a <code>COMPLETED</code> event and is a data repair rather than a reschedule — one-day corrections, day/month parse fixes, and a five-event batch from the 2025–2026 source-verified fragment repair. Restricting the pill to future <code>PLANNED</code> events takes false positives across all recorded history to zero, with no threshold and no test of whether a scraper or an administrator made the change. The backfill anchored every existing event to the date it already held, so nothing historical is retroactively flagged.</p>
 
 <h3>Where it renders</h3>
-<p>In <code>EventCard.svelte</code>'s two-chip line, in amber rather than red so it is not read as a cancellation — a moved event is still happening. It is deliberately <b>not</b> shown on the calendar barrel, whose hue, fill and ring channels already encode event type, completion and next-upcoming (<a href="../../adr/084-calendar-quarter-barrel-event-card.html">ADR-084</a>); a fourth channel would crowd the overview.</p>
+<p>In <code>EventCard.svelte</code>'s two-chip line, in amber rather than red so it is not read as a cancellation — a moved event is still happening. It is deliberately <b>not</b> shown on the calendar barrel, whose hue, fill and ring channels already encode time-to-event, organizer and next-upcoming (<a href="../../adr/084-calendar-quarter-barrel-event-card.html">ADR-084</a>); a fourth channel would crowd the overview.</p>
 </section>
 
 <section id="troubleshooting">
