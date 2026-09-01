@@ -109,6 +109,22 @@
 <p>The refusal to walk an event backwards is not theoretical: <code>PPW1-2026-2027</code> carries live registrations, and automatically returning it to <code>CREATED</code> would remove it from the calendar underneath the fencers who had entered.</p>
 </section>
 
+<section id="field-ownership">
+<p class="kicker">Who owns which field</p>
+<h2>Three tiers, and why the registration switch is not synced</h2>
+<p>The promotion does not treat every column the same way, and the difference matters most for the fields an administrator sets by hand.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Tier</th><th>Fields</th><th>Policy</th></tr></thead>
+<tbody>
+<tr><td>Scraped from EVF</td><td><code>txt_code</code>, <code>txt_name</code>, <code>dt_start</code>, <code>dt_end</code>, <code>txt_location</code>, <code>txt_country</code>, <code>arr_weapons</code>, <code>txt_evf_slug</code>, <code>id_prior_event</code></td><td><b>Overwrite.</b> EVF moves dates and renames events; freezing these would leave PROD stale and stop the moved-date pill firing.</td></tr>
+<tr><td>Admin enrichment</td><td><code>txt_venue_address</code>, the <code>url_*</code> fields, the fee tiers, <code>txt_organizer_email</code>, <code>url_entry_list</code>, <code>dt_registration_deadline</code></td><td><b>Fill-blank.</b> CERT seeds an empty PROD field; once PROD holds a value, propagation stops and an edit made there stands.</td></tr>
+<tr><td>Per-environment</td><td><code>bool_use_spws_registration</code>, <code>ts_ftl_sent</code>, the ingestion provenance block, the results half of <code>enum_status</code></td><td><b>Not synced</b> after the event is created. PROD owns them outright.</td></tr>
+</tbody>
+</table></div>
+<p><b><code>bool_use_spws_registration</code> is the one to understand.</b> Registration may be deliberately off on CERT and on in PROD — a field whose purpose is to hold different values in two environments cannot be synced. It was briefly treated as CERT-owned configuration, and because the column is <code>NOT NULL DEFAULT false</code> CERT always states a value, making that an unconditional overwrite: the next promote would have switched off a live public form holding eighteen entries. It is now PROD-owned in both directions — CERT can neither enable nor disable it.</p>
+<p>A divergence in the bottom tier is therefore <b>expected</b>, not a defect. If you see one in the daily reconcile log, that is the design working.</p>
+</section>
+
 <section id="results-automation">
 <p class="kicker">Automation · results</p>
 <h2>What <code>promote_event</code> changes</h2>
