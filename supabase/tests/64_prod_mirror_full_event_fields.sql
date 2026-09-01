@@ -89,14 +89,18 @@ SELECT results_eq(
 );
 
 -- 64.4 — the columns that never reached PROD at all now do
+-- bool_use_spws_registration was in this assertion until 20260829000001. It is
+-- a PER-ENVIRONMENT operational switch, not shared config: registration may be
+-- deliberately off on CERT and on in PROD, and syncing it would have switched
+-- off a live form holding 18 entries. Ownership is pinned by
+-- 68_prod_mirror_field_ownership.sql (68.5, 68.6).
 SELECT results_eq(
   $$SELECT num_entry_fee_2w::TEXT, num_entry_fee_3w::TEXT,
-           url_entry_list::TEXT, txt_organizer_email::TEXT,
-           bool_use_spws_registration
+           url_entry_list::TEXT, txt_organizer_email::TEXT
       FROM tbl_event WHERE txt_code = 'PPW1-6400-6401'$$,
   $$VALUES ('90'::TEXT, '120'::TEXT, 'https://spws/entries/ppw1'::TEXT,
-            'organizer@spws.test'::TEXT, true)$$,
-  '64.4 — fee tiers, entry list, organizer email and registration switch propagate'
+            'organizer@spws.test'::TEXT)$$,
+  '64.4 — fee tiers, entry list and organizer email propagate'
 );
 
 -- 64.5 — the planning lifecycle DOES reach PROD (ADR-086 amendment).

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="63ba7c8fd0de474abc049f2908a2f6f9cc102ba6dafa2153793a9fedb85d5b19">
+<meta name="adr-source-sha256" content="940a73c93c4d5388aaa71a5d8cde40040809ec4487e5e548f7f705f2f41a6998">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">193 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">215 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28)
 <strong>Date:</strong> 2026-08-28
 <strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
@@ -21,7 +21,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-weapons-are-established-by-an-evidence-ladder-never-by-a-guess">1 · Weapons are established by an evidence ladder, never by a guess</a></li><li class="depth-3"><a href="#2-an-entry-with-unknown-weapons-is-skipped-not-fatal">2 · An entry with unknown weapons is skipped, not fatal</a></li><li class="depth-3"><a href="#3-unknown-weapons-bar-an-evf-event-from-leaving-planned">3 · Unknown weapons bar an EVF event from leaving PLANNED</a></li><li class="depth-3"><a href="#4-a-pinned-cancellation-yields-to-the-reflow-rule-when-nothing-is-anchored-to-its-code">4 · A pinned cancellation yields to the reflow rule when nothing is anchored to its code</a></li><li class="depth-3"><a href="#4b-cert-prod-carries-a-rename-as-a-rename">4b · CERT→PROD carries a rename as a rename</a></li><li class="depth-3"><a href="#4c-prod-receives-every-event-level-field-not-only-the-ones-it-was-created-with">4c · PROD receives every event-level field, not only the ones it was created with</a></li><li class="depth-3"><a href="#5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#defects-found-and-deliberately-not-fixed">Defects found and deliberately not fixed</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-enum-status-exclusion-was-wrong">Amendment (2026-08-28) — the `enum_status` exclusion was wrong</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-weapons-are-established-by-an-evidence-ladder-never-by-a-guess">1 · Weapons are established by an evidence ladder, never by a guess</a></li><li class="depth-3"><a href="#2-an-entry-with-unknown-weapons-is-skipped-not-fatal">2 · An entry with unknown weapons is skipped, not fatal</a></li><li class="depth-3"><a href="#3-unknown-weapons-bar-an-evf-event-from-leaving-planned">3 · Unknown weapons bar an EVF event from leaving PLANNED</a></li><li class="depth-3"><a href="#4-a-pinned-cancellation-yields-to-the-reflow-rule-when-nothing-is-anchored-to-its-code">4 · A pinned cancellation yields to the reflow rule when nothing is anchored to its code</a></li><li class="depth-3"><a href="#4b-cert-prod-carries-a-rename-as-a-rename">4b · CERT→PROD carries a rename as a rename</a></li><li class="depth-3"><a href="#4c-prod-receives-every-event-level-field-not-only-the-ones-it-was-created-with">4c · PROD receives every event-level field, not only the ones it was created with</a></li><li class="depth-3"><a href="#5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#defects-found-and-deliberately-not-fixed">Defects found and deliberately not fixed</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-enum-status-exclusion-was-wrong">Amendment (2026-08-28) — the `enum_status` exclusion was wrong</a></li><li class="depth-2"><a href="#amendment-2026-08-29-field-ownership-stated-as-three-tiers">Amendment (2026-08-29) — field ownership, stated as three tiers</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>On 2026-08-19 the <code>EVF Calendar + Results Sync</code> workflow began failing, and failed every scheduled run for nine days (last green 2026-08-18).</p>
 <p>EVF published <code>EVF Circuit – Tampere (FIN)</code> (calendar id <code>5379</code>, 23 Jan 2027) as a stub post carrying <strong>no weapon category tags</strong>. The list-page parser derives weapons solely from the <code>cat_epee</code> / <code>cat_foil</code> / <code>cat_sabre</code> taxonomy classes on the Tribe Events article, so the entry reached validation with an empty weapon set and hit ADR-043's hard error at <a href="../../python/scrapers/evf_calendar.py"><code>evf_calendar.py:1179</code></a>.</p>
@@ -157,8 +157,43 @@ Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
 <p>The measurement that settles it: across all 97 events present on both environments, <strong>PROD was ahead of CERT zero times.</strong> Results land on CERT first, so CERT always leads or equals. The hazard had no instances anywhere in the database.</p>
 <p>The cost was not hypothetical. Withholding the planning half left <code>PPW1-2026-2027</code> at <code>CREATED</code> on PROD — hidden by <code>visibleEvents()</code> as a &quot;date-less planning skeleton&quot; though it carried dates — <strong>while its registration was open with fourteen fencers entered</strong>. <code>MSW-2026-2027</code> was hidden the same way, and <code>PEW12ef-2026-2027</code> remained advertised as happening after EVF cancelled it.</p>
 <p>The reconciler now carries <code>CREATED → PLANNED</code>, <code>CREATED → CANCELLED</code> and <code>PLANNED → CANCELLED</code>, and nothing else; <code>ts_ftl_sent</code> and the provenance block remain excluded for the reasons given above, which do hold. See <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> for the boundary and <a href="../handbook/reference/event-status-lifecycle.html">Event status lifecycle</a> for the operational view.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-29-field-ownership-stated-as-three-tiers">Amendment (2026-08-29) — field ownership, stated as three tiers</h2>
+<p>§4c classified <code>bool_use_spws_registration</code> as &quot;configuration CERT owns, so it overwrites whenever CERT states a value&quot;. That was an assumption about where registration is configured, and it was wrong twice over: the column is <code>NOT NULL DEFAULT false</code>, so CERT <em>always</em> states a value and the <code>COALESCE</code> never falls through — the overwrite was unconditional.</p>
+<p>With <code>PPW1-2026-2027</code> at <code>CERT=false / PROD=true</code>, the next promote would have switched off a live public registration form holding <strong>18 entries</strong>, unattended on the 06:00 schedule.</p>
+<p>It is a <strong>per-environment operational switch</strong>: registration is deliberately off on CERT and on in PROD. A field whose purpose is to hold different values in two environments cannot be synced at all. Removed from the UPDATE branch; the CREATE branch still seeds a new event, and PROD owns it thereafter.</p>
+<p>The same pass corrected <code>txt_venue_address</code>, which §4c had made an overwrite. It is admin-entered enrichment, so it is fill-blank like its siblings.</p>
+<p><strong>Every field the mirror carries now sits in one of three tiers:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Fields</th>
+<th>Policy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scraped from EVF</td>
+<td><code>txt_code</code>, <code>txt_name</code>, <code>dt_start</code>, <code>dt_end</code>, <code>txt_location</code>, <code>txt_country</code>, <code>arr_weapons</code>, <code>txt_evf_slug</code>, <code>id_evf_event</code>, <code>id_prior_event</code></td>
+<td><strong>overwrite</strong></td>
+</tr>
+<tr>
+<td>Admin enrichment</td>
+<td><code>txt_venue_address</code>, <code>url_*</code>, <code>num_entry_fee*</code>, <code>txt_organizer_email</code>, <code>url_entry_list</code>, <code>dt_registration_deadline</code></td>
+<td><strong>fill-blank</strong> — CERT seeds an empty PROD field; a PROD value stops further propagation</td>
+</tr>
+<tr>
+<td>Per-environment</td>
+<td><code>bool_use_spws_registration</code>, <code>ts_ftl_sent</code>, the provenance block, the results half of <code>enum_status</code></td>
+<td><strong>not synced</strong> after create</td>
+</tr>
+</tbody>
+</table></div>
+<p>The top tier must keep overwriting: EVF moves dates and renames events, and freezing those would leave PROD stale and stop the moved-date pill firing, since it compares <code>dt_start</code> against <code>dt_start_first_published</code>.</p>
+<p>Pinned by <code>68_prod_mirror_field_ownership.sql</code>. See <a href="../handbook/reference/event-status-lifecycle.html">Event status lifecycle</a>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>63ba7c8fd0de474abc049f2908a2f6f9cc102ba6dafa2153793a9fedb85d5b19</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>940a73c93c4d5388aaa71a5d8cde40040809ec4487e5e548f7f705f2f41a6998</code></footer>
 </div></body></html>
