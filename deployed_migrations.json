@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-08-30T03:54:15Z",
-    "last_sha": "df8cc3831fb7cc3a8c3a1193fab3f9d0a4575ca6",
+    "last_updated": "2026-09-01T20:16:47Z",
+    "last_sha": "8ef4d337e1a539d2672d47b4a06f7381c61f46b8",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -155,9 +155,10 @@
       "20260828000010_prod_mirror_planning_status.sql",
       "20260828000011_retire_scheduled_changed.sql",
       "20260828000012_event_first_published_date.sql",
-      "20260828000013_prod_mirror_prior_link_swap.sql"
+      "20260828000013_prod_mirror_prior_link_swap.sql",
+      "20260829000001_prod_mirror_field_ownership.sql"
     ],
-    "schema_fingerprint": "3c12bcee2000bf0c4eb50551504580d2"
+    "schema_fingerprint": "d24991db4507f0d0365b804208235952"
   },
   "prod": {
     "last_updated": "2026-08-30T03:55:07Z",
