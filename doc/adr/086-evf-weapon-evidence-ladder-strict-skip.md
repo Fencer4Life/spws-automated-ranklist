@@ -191,3 +191,25 @@ The measurement that settles it: across all 97 events present on both environmen
 The cost was not hypothetical. Withholding the planning half left `PPW1-2026-2027` at `CREATED` on PROD — hidden by `visibleEvents()` as a "date-less planning skeleton" though it carried dates — **while its registration was open with fourteen fencers entered**. `MSW-2026-2027` was hidden the same way, and `PEW12ef-2026-2027` remained advertised as happening after EVF cancelled it.
 
 The reconciler now carries `CREATED → PLANNED`, `CREATED → CANCELLED` and `PLANNED → CANCELLED`, and nothing else; `ts_ftl_sent` and the provenance block remain excluded for the reasons given above, which do hold. See [ADR-077](077-event-lifecycle-season-skeletons.md) for the boundary and [Event status lifecycle](../handbook/reference/event-status-lifecycle.html) for the operational view.
+
+## Amendment (2026-08-29) — field ownership, stated as three tiers
+
+§4c classified `bool_use_spws_registration` as "configuration CERT owns, so it overwrites whenever CERT states a value". That was an assumption about where registration is configured, and it was wrong twice over: the column is `NOT NULL DEFAULT false`, so CERT *always* states a value and the `COALESCE` never falls through — the overwrite was unconditional.
+
+With `PPW1-2026-2027` at `CERT=false / PROD=true`, the next promote would have switched off a live public registration form holding **18 entries**, unattended on the 06:00 schedule.
+
+It is a **per-environment operational switch**: registration is deliberately off on CERT and on in PROD. A field whose purpose is to hold different values in two environments cannot be synced at all. Removed from the UPDATE branch; the CREATE branch still seeds a new event, and PROD owns it thereafter.
+
+The same pass corrected `txt_venue_address`, which §4c had made an overwrite. It is admin-entered enrichment, so it is fill-blank like its siblings.
+
+**Every field the mirror carries now sits in one of three tiers:**
+
+| Tier | Fields | Policy |
+|---|---|---|
+| Scraped from EVF | `txt_code`, `txt_name`, `dt_start`, `dt_end`, `txt_location`, `txt_country`, `arr_weapons`, `txt_evf_slug`, `id_evf_event`, `id_prior_event` | **overwrite** |
+| Admin enrichment | `txt_venue_address`, `url_*`, `num_entry_fee*`, `txt_organizer_email`, `url_entry_list`, `dt_registration_deadline` | **fill-blank** — CERT seeds an empty PROD field; a PROD value stops further propagation |
+| Per-environment | `bool_use_spws_registration`, `ts_ftl_sent`, the provenance block, the results half of `enum_status` | **not synced** after create |
+
+The top tier must keep overwriting: EVF moves dates and renames events, and freezing those would leave PROD stale and stop the moved-date pill firing, since it compares `dt_start` against `dt_start_first_published`.
+
+Pinned by `68_prod_mirror_field_ownership.sql`. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
