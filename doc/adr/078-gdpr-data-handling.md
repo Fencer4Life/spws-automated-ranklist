@@ -12,6 +12,19 @@
 > go-live SPWS should obtain a one-time review by Polish counsel or a Data
 > Protection Officer, execute the Supabase Data Processing Agreement, and publish
 > the privacy notice (*informacja RODO*) and Record of Processing Activities.
+## Amendment (2026-09-02 — the English notice names the regulation GDPR)
+
+The consent step headed itself *Privacy notice and consent (RODO)* in both
+locales. RODO is the Polish name for the regulation and GDPR is the English one,
+and this is the one screen a fencer is asked to read before agreeing to
+anything, so the English version now says GDPR. The Polish version is unchanged.
+
+The translation keys keep their `reg_rodo_*` names — they are identifiers, not
+copy — and `rodo@spws.pl` is the association's real mailbox and stays exactly as
+it is in both locales. Vitest GDPR.1–GDPR.3 hold the line, the last of them
+sweeping every `reg_rodo_*` string in the English locale rather than the title
+alone, so the next string added to this step cannot quietly reintroduce it.
+
 ## Amendment (2026-08-17 — the inventory listed processing that does not happen)
 
 §1's personal-data inventory is the closest thing this project has to a Record of

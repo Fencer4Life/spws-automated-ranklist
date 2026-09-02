@@ -386,7 +386,7 @@
   "reg_new_fencer_notice": "We haven't found you in our fencer database yet. Your entry is accepted on the details you provided, and the organizer will confirm it at check-in.",
   "reg_duplicate_warning": "Someone with this name is already on the entry list. If that is you, please don't register again — contact the organizer if you are unsure.",
   "reg_submit_error": "We couldn't save your entry. Check your connection and try again. If the problem persists, please contact the organizer.",
-  "reg_rodo_title": "Privacy notice and consent (RODO)",
+  "reg_rodo_title": "Privacy notice and consent (GDPR)",
   "reg_rodo_controller": "Controller: SPWS · contact: rodo@spws.pl",
   "reg_rodo_basis_title": "What we process and on what basis",
   "reg_rodo_basis_identity": "Name, gender, year of birth — ranking and category check",
