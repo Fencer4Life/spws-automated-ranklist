@@ -506,3 +506,117 @@ describe('CalendarBarrel — jump back to the opening row', () => {
     expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[6]!))
   })
 })
+
+// ---------------------------------------------------------------------------
+// CB.30 — the geometry path, which jsdom normally never reaches.
+//
+// `midLayout` returns early while `available <= 0`, and jsdom reports every
+// clientWidth as 0, so every test above this point skips the row-geometry
+// branch entirely. Stubbing clientWidth is what makes the branch reachable —
+// and it is the branch that took the calendar down on PROD on 2026-09-02.
+// ---------------------------------------------------------------------------
+describe('CalendarBarrel — a selection that outlives its row', () => {
+  function withLayout<T>(run: () => T): T {
+    const own = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 900 })
+    try {
+      return run()
+    } finally {
+      if (own) Object.defineProperty(HTMLElement.prototype, 'clientWidth', own)
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth
+    }
+  }
+
+  /** One month, `count` events in it — the focused row of a one-row drum. */
+  function monthOf(count: number) {
+    return buildMonths(
+      Array.from({ length: count }, (_, i) =>
+        ev({ txt_code: `PEW${i + 1}-2026-2027`, dt_start: '2026-09-12', txt_location: `Miasto ${i + 1}` }),
+      ),
+    )
+  }
+
+  // CB.30 — the PROD freeze of 2026-09-02. Saving an event refilled the calendar
+  // from a narrower query, so a month that had held several events now held one
+  // while the barrel still had the fourth of them selected. `midLayout` indexed
+  // the row with that stale index, asserted the result non-null, and read
+  // `txt_location` off `undefined`. The throw came from a `$derived`, which
+  // tears down the component tree: the page kept running but stopped responding
+  // to anything at all, the hamburger included, until it was reloaded.
+  it('CB.30: survives the event set shrinking under the current selection', async () => {
+    await withLayout(async () => {
+      const { container, rerender } = render(CalendarBarrel, {
+        props: { rows: monthOf(4), anchorIndex: 0 },
+      })
+      // Select the last tile, then let the row lose it.
+      const tiles = container.querySelectorAll('.ln.mid button.p')
+      await fireEvent.click(tiles[tiles.length - 1]!)
+      await rerender({ rows: monthOf(1), anchorIndex: 0 })
+      expect(container.querySelector('.ln.mid')).not.toBeNull()
+    })
+  })
+
+  // The selection must also come back to something real, not merely avoid the
+  // throw: a drum left pointing past the end of its row has no caret and no
+  // scroll target.
+  it('CB.31: re-points the selection at an event the row still holds', async () => {
+    await withLayout(async () => {
+      const onselect = vi.fn()
+      const { container, rerender } = render(CalendarBarrel, {
+        props: { rows: monthOf(4), anchorIndex: 0, onselect },
+      })
+      const tiles = container.querySelectorAll('.ln.mid button.p')
+      await fireEvent.click(tiles[tiles.length - 1]!)
+      await rerender({ rows: monthOf(2), anchorIndex: 0, onselect })
+      expect(container.querySelectorAll('.ln.mid button.p.sel')).toHaveLength(1)
+    })
+  })
+})
+
+describe('CalendarBarrel — the geometry path under changing data', () => {
+  // CB.32 — the systemic guard, and the reason CB.30 was possible at all.
+  //
+  // Every other test in this file runs with clientWidth 0, where `midLayout`
+  // returns before it touches an event. That is most of the barrel's indexing
+  // arithmetic, and 700 tests never executed a line of it. This sweep runs the
+  // branch WITH layout across the data changes a live calendar actually meets —
+  // the set shrinking, growing, emptying, and the row count changing under a
+  // selection — because the failure mode is not a wrong pixel but a throw out
+  // of a `$derived`, which takes the entire application down with it.
+  const cases: Array<{ name: string; from: number; to: number }> = [
+    { name: 'shrinks under the selection', from: 5, to: 1 },
+    { name: 'shrinks by one', from: 3, to: 2 },
+    { name: 'grows', from: 1, to: 4 },
+    { name: 'is replaced wholesale', from: 4, to: 4 },
+    { name: 'empties', from: 3, to: 0 },
+  ]
+
+  for (const c of cases) {
+    it(`CB.32 (${c.name}): renders without throwing, and keeps a live selection`, async () => {
+      const own = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+      Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 900 })
+      try {
+        const month = (n: number) =>
+          buildMonths(
+            Array.from({ length: n }, (_, i) =>
+              ev({ txt_code: `PEW${i + 1}-2026-2027`, dt_start: '2026-09-12', txt_location: `Miasto ${i + 1}` }),
+            ),
+          )
+        const { container, rerender } = render(CalendarBarrel, {
+          props: { rows: month(c.from), anchorIndex: 0 },
+        })
+        const tiles = container.querySelectorAll('.ln.mid button.p')
+        if (tiles.length) await fireEvent.click(tiles[tiles.length - 1]!)
+        await rerender({ rows: month(c.to), anchorIndex: 0 })
+
+        // At most one tile is selected, and never a tile the row no longer has.
+        const chosen = container.querySelectorAll('.ln.mid button.p.sel')
+        expect(chosen.length).toBeLessThanOrEqual(1)
+        expect(chosen.length).toBe(c.to === 0 ? 0 : 1)
+      } finally {
+        if (own) Object.defineProperty(HTMLElement.prototype, 'clientWidth', own)
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth
+      }
+    })
+  }
+})

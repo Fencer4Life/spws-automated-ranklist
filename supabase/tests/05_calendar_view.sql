@@ -6,7 +6,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(15);
+SELECT plan(16);
 
 -- Fixtures below enable SPWS registration, and since migration 20260902000001 a
 -- registration cannot be enabled unless a payment account resolves from the
@@ -405,6 +405,40 @@ BEGIN
 END;
 $ftldel_db03$;
 SELECT pass('FTLDEL-DB-03: fn_update_event trims, persists and clears organizer email');
+
+-- 8.25 — txt_entry_fee_currency reaches the public registration page.
+-- Regression for the 2026-09-02 defect: the column has existed on tbl_event since
+-- March 2026 and every writer honours it (EVF import 12.9, fn_update_event, the
+-- PROD mirror), but the registration form quoted a hardcoded 'PLN', so a fencer
+-- entering a euro-priced event was shown — and copied into their transfer — the
+-- wrong currency. The fix reads the value from the event, which reaches the page
+-- only through vw_calendar. That projection is now pinned: the same class of
+-- omission as 8.21, where the column was written but the view dropped it.
+DO $t825$
+DECLARE
+  v_eid INT;
+BEGIN
+  SELECT id_event INTO v_eid FROM tbl_event WHERE txt_code = 'CAL-TEST-1';
+
+  UPDATE tbl_event SET num_entry_fee = 120, txt_entry_fee_currency = 'EUR'
+   WHERE id_event = v_eid;
+  IF NOT (SELECT txt_entry_fee_currency = 'EUR'
+            FROM vw_calendar WHERE txt_code = 'CAL-TEST-1') THEN
+    RAISE EXCEPTION 'vw_calendar does not expose txt_entry_fee_currency';
+  END IF;
+
+  -- NULL is the common case (25 of 111 events on LOCAL, mostly EVF-imported) and
+  -- must arrive as NULL rather than being coalesced away in the view: deciding
+  -- the fallback is the caller's job, and the calendar card and the registration
+  -- form each apply their own.
+  UPDATE tbl_event SET txt_entry_fee_currency = NULL WHERE id_event = v_eid;
+  IF NOT (SELECT txt_entry_fee_currency IS NULL
+            FROM vw_calendar WHERE txt_code = 'CAL-TEST-1') THEN
+    RAISE EXCEPTION 'vw_calendar does not pass an unstated currency through as NULL';
+  END IF;
+END;
+$t825$;
+SELECT pass('8.25: vw_calendar exposes txt_entry_fee_currency (set and unstated)');
 
 SELECT * FROM finish();
 ROLLBACK;

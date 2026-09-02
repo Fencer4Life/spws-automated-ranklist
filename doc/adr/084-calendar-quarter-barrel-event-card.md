@@ -850,6 +850,48 @@ The event card's two-chip line gains a third chip when EVF has moved a still-fut
 
 The barrel is deliberately untouched. This ADR already spends hue on event type, fill on completion and ring on next-upcoming; a fourth channel would crowd the overview that is scanned first. The signal appears on the card the moment the event is opened. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
 
+## Amendment (2026-09-02) — the dataset the drum is entitled to, and what a failure inside it may cost
+
+Two halves of one defect, found on PROD.
+
+§4 said the drum spans every season and rolls back to the start of history with
+no season clamp. `api.ts` carries that as a written warning above
+`fetchAllCalendarEvents`: the season-scoped `fetchCalendarEvents` cannot feed
+it. Six sites in `App.svelte` did exactly that anyway — the create, update,
+status and delete handlers, and both admin-list loaders — so **saving any event
+silently cut the calendar down to the selected season**, 66 month rows to 10 on
+PROD data. The decision is now expressed as one function, `reloadCalendar()`,
+which is the only thing permitted to assign `calendarEvents`; the season-scoped
+query keeps its legitimate callers, the prior-season and carry-over pickers,
+and the admin list still scopes its own tournament fetch by season.
+
+The narrowing was survivable on its own. What made it fatal is that
+`CalendarBarrel` holds the selection as an **index into the focused row's
+events**, and the events can be replaced under it. A month that had held four
+events came back holding one while the fourth was still selected; `midLayout`
+indexed the row with that stale index under a non-null assertion, and
+`cityOf(undefined)` threw `Cannot read properties of undefined (reading
+'txt_location')`. The selection is now read through `liveSelected`, clamped to
+the row it is actually being read against, by every consumer that indexes it —
+the layout, the scroll target, the caret and the tile's own selected state.
+
+**The severity is the part worth recording.** The throw came out of a
+`$derived`, which tears down the component tree, and the barrel shares that tree
+with the entire application. The page was not frozen: on the live PROD session a
+100 ms heartbeat showed no gap and a capture-phase listener recorded the user's
+clicks arriving normally. There was simply nothing left listening to them, so
+the header, the navigation and the hamburger died alongside the calendar and
+only a reload brought them back. A calendar defect is now contained by a
+`<svelte:boundary>` around the calendar view, which renders the failure and its
+message in place and leaves the rest of the application working.
+
+One testing consequence, because it is why 700 tests missed this. `midLayout`
+returns early while `available <= 0`, and jsdom reports every `clientWidth` as
+0 — so the barrel's whole geometry branch, and all of its indexing arithmetic,
+was unreachable in the suite. CB.30–CB.32 stub `clientWidth` to enter that
+branch deliberately and drive five data transitions through it. Anything added
+to that branch should be tested the same way.
+
 ## Amendment (2026-08-29) — monthly seams, an inverted palette, and a cylinder
 
 Everything below was measured against the live PROD pool (114 events, 91 dated, 2022-01-08 → 2027-06-18), seeded into LOCAL and verified on both sides, not inferred from the code. Source: `doc/plans/kalendarz-mocki-2026-08-29.html` (live mocks + the locked decision table).

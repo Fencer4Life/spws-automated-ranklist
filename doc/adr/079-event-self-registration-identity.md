@@ -51,6 +51,31 @@ resolution, the toggle guard and the CERT→PROD fill-blank policy alike. Withou
 would satisfy the guard. See ADR-086's 2026-09-02 amendment for the ownership tier and the
 consequence — a field cannot be locked empty on PROD.
 
+## Amendment (2026-09-02 — the amount is quoted in the event's currency)
+
+§6 said the payment step shows the fee. It did not say in what, and the page answered with a
+literal `PLN` in four places: the fee derived on step one, the amount row of the payment panel,
+that row's copy button, and *copy everything*. `tbl_event.txt_entry_fee_currency` has existed
+since March 2026 (FR-48, migration `20260327000004`), the event editor offers PLN/EUR/USD beside
+the amount, `fn_create_event` and `fn_update_event` persist it, the EVF import writes it and the
+PROD mirror carries it. Every writer honoured the column; the calendar card read it. Only the
+registration page — written later and in isolation — never received it, because
+`RegistrationEventInfo` did not carry the field at all, which left the literal as the only
+option available to the template.
+
+The fee is now `$derived` from the event once and used by all four sites. An event that states
+no currency reads as `PLN`, which preserves exactly what the 25 events carrying NULL already
+showed; blank and whitespace-only are treated as unstated, consistent with the payment fields
+amended above, though a closed `<select>` means the editor cannot currently produce one.
+
+The **display and the clipboard must agree** is the operative rule, and it is the reason this was
+worth more than a cosmetic fix: a fencer pastes what the copy button gave them rather than what
+they read, so a euro-priced event was putting a złoty figure into a real bank transfer. Vitest
+covers the first screen, the payment panel, both copy paths and the unstated fallback; pgTAP 8.25
+pins the one link that had never been asserted — that `vw_calendar`, the sole route by which the
+public page learns anything about an event, exposes the column and passes an unstated value
+through as NULL rather than coalescing it.
+
 ## Amendment (2026-08-28 — correcting a declaration; one row per entrant)
 
 Three defects found while PPW1-2026-2027 was live and taking real entries, and one new
