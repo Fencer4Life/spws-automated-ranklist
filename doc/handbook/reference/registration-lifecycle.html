@@ -7,7 +7,7 @@
 <meta name="doc-status" content="current">
 <meta name="doc-type" content="reference">
 <meta name="doc-owner" content="Events and registration">
-<meta name="last-verified" content="2026-08-28">
+<meta name="last-verified" content="2026-09-02">
 <meta name="source-globs" content="frontend/src/components/Registration*; frontend/src/components/EntryList.svelte; frontend/src/ce/*Element.svelte; frontend/src/lib/editToken.ts; supabase/migrations/**registration*; python/pipeline/ftl_seed_export*.py">
 <meta name="review-triggers" content="Registration form steps, the public write or edit RPCs, the entry-list projection, the FTL seed population, or identity resolution of a registration at ingestion">
 <title>Registration lifecycle · SPWS Handbook</title>
@@ -19,7 +19,7 @@
 <p class="eyebrow">Reference · Walkthrough</p>
 <h1>Registration lifecycle</h1>
 <p class="dek">One registration, followed from the administrator enabling it to the row being purged after results are ingested — with the failure at each stage, because that is where the behaviour is least obvious.</p>
-<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 28 August 2026</span></div>
+<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 2 September 2026</span></div>
 </header>
 <main>
 
@@ -46,6 +46,10 @@
 </div>
 
 <p>Fees are quoted by weapon count: the base fee, then a two-weapon and a three-weapon tier. The fencer is never asked to compute anything — selecting weapons picks the tier.</p>
+<div class="invariant">
+<p><b>Registration cannot be switched on without an account to pay into.</b> The panel also carries the payee and IBAN, which are optional: left empty the event inherits its organizer's default account, and the editor states which of the two is in force rather than leaving the administrator to infer it from an empty field. Where neither level supplies one the toggle is refused — by the database, not merely by the form — because registration exists to support collecting a fee and enabling it with nowhere to pay is a configuration mistake that surfaces later, for the fencer.</p>
+<p>The IBAN is checked against ISO 13616 before it is stored, so a mistyped account is caught at the field. The check is deliberately not Poland-specific: an organizer abroad is plausible.</p>
+</div>
 </section>
 
 <section id="entry-points">
@@ -133,6 +137,7 @@
 <figcaption>Step 3. The transfer title is generated — event code, name, weapons and category — so a bank statement line can be attributed to a competition without the fencer inventing a format. Every field copies with one tap.</figcaption>
 </figure>
 
+<p>The account shown is resolved when the event is read: the event's own override where it has one, otherwise its organizer's default. It used to be a single number compiled into the frontend bundle, identical for every event — which is why an organizer other than the association could not run registration at all.</p>
 <p>The system displays transfer instructions and does <b>not</b> track whether the transfer arrives. There is no paid flag, and neither the roster nor the organizer's file is gated on payment; the organizer verifies it in person at check-in. A declared registration, not a payment, is what "entered" means here.</p>
 </section>
 
@@ -198,6 +203,8 @@
 <tr><td>Identity lookup fails mid-flow</td><td>Treated as "no match" so the entry is never blocked; if the fencer already holds a linked row for the event, the write absorbs it rather than adding a twin.</td></tr>
 <tr><td>Correction collides with another entry</td><td>Refused with an error. Merging would destroy one of two real declarations.</td></tr>
 <tr><td>Fencer returns on another device</td><td>No handle, so no direct edit. Re-entering the declared identity lands on the existing row and issues a new handle.</td></tr>
+<tr><td>Registration switched on with no account</td><td>Refused by the database, so the state cannot be created by any caller. The administrator is told at the toggle, and the editor names the account that would be used.</td></tr>
+<tr><td>An IBAN is mistyped in the editor</td><td>Refused before saving, at the field. The database constraint refuses it too, so a client that skips the check cannot store it.</td></tr>
 <tr><td>Somebody enters another person's name</td><td>Possible, and accepted as a bounded risk: nothing here proves identity. A fake entry has no effect on the ranking, which is results-based, and the organizer checks people in at the venue.</td></tr>
 </tbody>
 </table></div>

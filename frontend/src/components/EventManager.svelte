@@ -116,6 +116,29 @@
                 <label>{t('event_organizer_email_label')}
                   <input data-field="form-organizer-email" type="email" bind:value={draftOrganizerEmail} />
                 </label>
+                <!-- Payment override. Leaving these empty is the normal case and
+                     must not read as an error: the event then shows its
+                     organizer's default account. -->
+                <label>{t('event_payee_label')}
+                  <input data-field="form-payee" type="text" bind:value={draftPayee}
+                    placeholder={t('event_payee_placeholder')} />
+                </label>
+                <label>{t('event_iban_label')}
+                  <input data-field="form-iban" type="text" bind:value={draftIban}
+                    placeholder={t('event_iban_placeholder')} />
+                </label>
+                {#if ibanError}
+                  <div data-field="form-iban-error" class="field-error">{t('event_iban_invalid')}</div>
+                {/if}
+                <div class="read-only-field"><span>{t('event_payment_source_label')}</span>
+                  <span data-field="form-payment-source" class="read-only-value">
+                    {event.txt_payment_source === 'EVENT'
+                      ? t('event_payment_source_event')
+                      : event.txt_payment_source === 'ORGANIZER'
+                        ? t('event_payment_source_organizer')
+                        : t('event_payment_source_none')}
+                  </span>
+                </div>
                 <div class="read-only-field"><span>{t('event_ftl_sent_at_label')}</span>
                   <span data-field="form-ftl-sent-at" class="read-only-value">
                     {draftFtlSentAt || t('event_ftl_not_sent')}
@@ -411,6 +434,7 @@
 <script lang="ts">
   import type { CalendarEvent, Season, Organizer, WeaponType, Tournament, TournamentType, GenderType, AgeCategory } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+  import { isBlank, isValidIban } from '../lib/iban'
   import { getEventDisplayStatus } from '../lib/eventStatus'
   import { requestDispatch, setEventSourceOverride } from '../lib/api'
 
@@ -662,6 +686,11 @@
   // SPWS-registration toggle is on (see onToggleSpwsRegistration).
   let draftUrlEntryList = $state('')
   let draftOrganizerEmail = $state('')
+  // Per-event payment override (migration 20260902000001). Blank is the normal
+  // case: the event then shows its organizer's default account.
+  let draftPayee = $state('')
+  let draftIban = $state('')
+  let ibanError = $state(false)
   let draftFtlSentAt = $state('')
 
   // ADR-079 amend — ticking the toggle derives self-contained absolute
@@ -882,6 +911,9 @@
     draftRegistration = ''
     draftUrlEntryList = ''
     draftOrganizerEmail = ''
+    draftPayee = ''
+    draftIban = ''
+    ibanError = false
     draftFtlSentAt = ''
     draftRegistrationDeadline = ''
     draftEntryFee = null
@@ -914,6 +946,10 @@
     draftRegistration = event.url_registration ?? ''
     draftUrlEntryList = event.url_entry_list ?? ''
     draftOrganizerEmail = event.txt_organizer_email ?? ''
+    // The event's own override, never the resolved value — see types.ts.
+    draftPayee = event.txt_event_payee ?? ''
+    draftIban = event.txt_event_iban ?? ''
+    ibanError = false
     draftFtlSentAt = event.ts_ftl_sent ?? ''
     draftRegistrationDeadline = event.dt_registration_deadline ?? ''
     draftEntryFee = event.num_entry_fee
@@ -957,6 +993,13 @@
   }
 
   function handleSave() {
+    // Vetted here so the administrator is told why, at the field. The database
+    // CHECK is what actually binds; this exists so the failure is understood at
+    // the point it happens rather than arriving as a constraint violation.
+    // Blank is valid and means "inherit the organizer account".
+    ibanError = !isBlank(draftIban) && !isValidIban(draftIban)
+    if (ibanError) return
+
     const compact = compactUrls([draftUrlEvent, draftUrlEvent2, draftUrlEvent3, draftUrlEvent4, draftUrlEvent5])
     const params = {
       name: draftName,
@@ -982,6 +1025,10 @@
       urlEntryList: draftUrlEntryList || undefined,
       // FR-131: always send the trimmed value; '' explicitly clears in SQL.
       organizerEmail: draftOrganizerEmail.trim(),
+      // Always sent, like organizerEmail: '' explicitly clears the override and
+      // falls the event back to its organizer's account.
+      payee: draftPayee.trim(),
+      iban: draftIban.trim(),
       organizerId: draftOrganizerId || undefined,
       weapons: [...draftWeapons],
       urlEvent2: compact[1],

@@ -10,13 +10,13 @@
 --
 -- Three ownership tiers, one assertion each way:
 --   scraped from EVF  -> overwrite   (68.2: a moved date must reach PROD)
---   admin enrichment  -> fill-blank  (68.3, 68.4)
+--   admin enrichment  -> fill-blank  (68.3, 68.4; payment account 68.7, 68.8)
 --   per-environment   -> not synced  (68.5, 68.6)
 -- =============================================================================
 
 BEGIN;
 
-SELECT plan(6);
+SELECT plan(8);
 
 SELECT has_function(
   'fn_mirror_events_to_prod',
@@ -39,10 +39,12 @@ BEGIN
   -- A live PROD event: registration ON, venue already filled in on PROD.
   INSERT INTO tbl_event (
     txt_code, txt_name, id_season, id_organizer, enum_status,
-    dt_start, dt_end, txt_venue_address, bool_use_spws_registration
+    dt_start, dt_end, txt_venue_address, bool_use_spws_registration,
+    txt_payee, txt_iban
   ) VALUES (
     'PPW1-6800-6801', 'Live event', v_season, v_org, 'PLANNED',
-    '6801-03-01', '6801-03-02', 'PROD hall, Opole', TRUE
+    '6801-03-01', '6801-03-02', 'PROD hall, Opole', TRUE,
+    'PROD PAYEE', 'PL 06 1090 1665 0000 0001 5004 1549'
   );
 
   -- A PROD event whose venue is still empty.
@@ -69,11 +71,15 @@ BEGIN
         'id_event', v_a,
         'dt_start', '6801-04-15',
         'txt_venue_address', 'CERT hall, Warszawa',
+        'txt_payee', 'CERT PAYEE',
+        'txt_iban', 'PL 27 1140 2004 0000 3002 0135 5387',
         'bool_use_spws_registration', false),
       -- CERT seeds a venue into an event that has none on PROD
       jsonb_build_object(
         'id_event', v_b,
-        'txt_venue_address', 'CERT hall, Kraków')
+        'txt_venue_address', 'CERT hall, Kraków',
+        'txt_payee', 'CERT SEEDED PAYEE',
+        'txt_iban', 'PL 27 1140 2004 0000 3002 0135 5387')
     ),
     '[]'::JSONB);
 END;
@@ -125,6 +131,22 @@ SELECT is(
   (SELECT bool_use_spws_registration FROM tbl_event WHERE txt_code = 'PPW2-6800-6801'),
   FALSE,
   '68.6 — the switch is PROD-owned in both directions, not merely protected'
+);
+
+-- 68.7 — the payment account is admin enrichment like its siblings: a wrong
+-- IBAN corrected on PROD must not be reverted by the next scheduled sync.
+SELECT is(
+  (SELECT txt_iban FROM tbl_event WHERE txt_code = 'PPW1-6800-6801'),
+  'PL 06 1090 1665 0000 0001 5004 1549',
+  '68.7 — txt_iban is fill-blank: a PROD account is not overwritten by CERT'
+);
+
+-- 68.8 — …and an event that has none on PROD is still seeded, which is how a
+-- new event acquires its account without anyone retyping it.
+SELECT is(
+  (SELECT txt_payee FROM tbl_event WHERE txt_code = 'PPW2-6800-6801'),
+  'CERT SEEDED PAYEE',
+  '68.8 — the account is seeded when PROD has none'
 );
 
 SELECT * FROM finish();

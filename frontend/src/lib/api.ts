@@ -477,7 +477,7 @@ export async function fetchEntryList(eventId: number): Promise<RegistrationEntry
 export async function fetchEventForRegistration(code: string): Promise<RegistrationEventInfo | null> {
   const { data, error } = await getClient()
     .from('vw_calendar')
-    .select('id_event, txt_code, txt_name, txt_season_code, dt_start, dt_end, dt_registration_deadline, arr_weapons, num_entry_fee, num_entry_fee_2w, num_entry_fee_3w, bool_use_spws_registration, url_registration')
+    .select('id_event, txt_code, txt_name, txt_season_code, dt_start, dt_end, dt_registration_deadline, arr_weapons, num_entry_fee, num_entry_fee_2w, num_entry_fee_3w, bool_use_spws_registration, url_registration, txt_payee, txt_iban, txt_payment_source')
     .eq('txt_code', code)
     .single()
   if (error) return null
@@ -555,6 +555,10 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     p_url_entry_list: params.urlEntryList || null,
     // FR-131 — NULL means unchanged; '' is the RPC's explicit clear sentinel.
     p_txt_organizer_email: params.organizerEmail,
+    // Per-event payment override. '' clears it and falls the event back to its
+    // organizer's account; undefined leaves whatever is stored untouched.
+    p_payee: params.payee ?? null,
+    p_iban: params.iban ?? null,
   })
   if (error) throw error
 }

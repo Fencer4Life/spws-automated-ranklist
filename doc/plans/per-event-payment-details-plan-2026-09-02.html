@@ -1,0 +1,298 @@
+<meta charset="utf-8">
+<title>Per-event payment details — implementation plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · registration · implementation plan · 2 September 2026</p>
+  <h1>Per-event payment details</h1>
+  <p class="dek">Payee and IBAN become overridable per event, falling back to the organizer's default account. The IBAN is vetted on save. Registration cannot be switched on with no account to pay into, and the admin always sees <b>which</b> account an event will show.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Plan — nothing built</span>
+    <span class="pill">2 migrations · 2 ADR amendments</span>
+    <span class="pill">no new public RPC</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">1 · Today</p>
+    <h2>How it works now</h2>
+    <p>There is one account number in the whole system and it is compiled into the frontend bundle:</p>
+
+    <div class="trace">
+frontend/src/lib/orgPayment.ts
+  SPWS_PAYEE = 'STOWARZYSZENIE POLSKICH WETERANÓW SZERMIERKI'
+  SPWS_IBAN  = 'PL 06 1090 1665 0000 0001 5004 1549'
+
+RegistrationForm.svelte
+  effectivePayee = payee || SPWS_PAYEE      <span class="hit">← prop, else the constant</span>
+  effectiveIban  = iban  || SPWS_IBAN</div>
+
+    <p>The <code>payee</code> / <code>iban</code> props exist but nothing meaningful sets them: <code>register.html</code> passes empty strings, and the in-app calendar modal passes nothing at all. So <b>every event shows the same account</b>, and the file's own comment already says this belongs in the database rather than the bundle.</p>
+    <p>Nothing validates it either — it is correct because a human typed it once. On 2 September we found it had been storing the domestic NRB under an IBAN label; it scored 73 on the ISO 13616 mod-97 check instead of 1.</p>
+  </section>
+
+  <section>
+    <p class="kicker">2 · The change</p>
+    <h2>What we add, and how it resolves</h2>
+
+    <div class="op">
+      <span class="op-tag c">DB</span><span class="set">two columns, twice</span>
+      <ul>
+        <li><code>tbl_organizer</code> gains <code>txt_payee</code> and <code>txt_iban</code> — the organizer's default account. This is the SPWS / EVF / FIE "multi-event organizer" account you described.</li>
+        <li><code>tbl_event</code> gains the same two columns, both nullable — the per-event override.</li>
+        <li>A <b>one-off seed</b> in the same migration writes today's two constants onto the <b>SPWS organizer row</b>, so current behaviour is preserved exactly and no live event changes what it shows. <code>orgPayment.ts</code> is then deleted, along with the now-pointless <code>payee</code>/<code>iban</code> attributes on <code>register.html</code>.</li><li><b>Why it is needed at all:</b> the moment the constants are gone the fallback has to come from somewhere. Without the seed, every event — including the live one with 18 entries — would resolve to no account, and under the blocking rule below registration could not be enabled.</li><li><b>Written as a seed, not an assignment:</b> guarded <code>WHERE txt_iban IS NULL</code>, so it fills an empty column and never overwrites a value an administrator has since changed. That matters because CI and <code>reset-dev.sh</code> replay the whole migration chain against a fresh database; on CERT and PROD it applies once and is thereafter inert.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">Resolution</span><span class="set">event → organizer → nothing</span>
+      <ul>
+        <li>Resolved <b>server-side</b>, in the view the registration page already reads, so the browser is handed one answer rather than a chain to walk. Both fields resolve <b>together</b>, from the same level — a per-event payee with an organizer IBAN would be a way to send money to the wrong account with the right name on it.</li>
+        <li>The view also exposes <b>which level answered</b>, so the admin UI and the handbook can state it rather than infer it.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">Vetting</span><span class="set">the mod-97 rule, reused</span>
+      <ul>
+        <li>The rule is extracted from <code>tests/orgPayment.test.ts</code> into shared code and applied in <b>three</b> places: a database <code>CHECK</code> on both new IBAN columns so no path can store an invalid value, validation inside <code>fn_update_event</code> so the API refuses it, and inline feedback in the event editor so the admin sees it before saving.</li>
+        <li>The database constraint is the one that binds. The other two exist so the failure is understood at the point it happens rather than surfacing as a constraint violation.</li>
+        <li>Poland-specific and generic forms both accepted: an organizer abroad is plausible, so the constraint is ISO 13616, not <code>PL</code>-only. The value is stored normalised into the bank's printed grouping.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">3 · CERT → PROD</p>
+    <h2>Synchronisation behaviour</h2>
+    <p>The rule you described is already the house model. ADR-086's 2026-08-29 amendment sorts every mirrored field into three tiers, and the payment fields land in the middle one beside the fee tiers and the organizer e-mail they belong with:</p>
+
+    <div class="trace">
+Scraped from EVF   dt_start, txt_name, txt_location …          <span class="hit">overwrite</span>
+Admin enrichment   url_*, num_entry_fee*, txt_organizer_email,
+                   url_entry_list, dt_registration_deadline,
+                   <span class="hit">txt_payee, txt_iban</span>                          <span class="hit">fill-blank</span>
+Per-environment    bool_use_spws_registration, ts_ftl_sent     <span class="hit">not synced</span></div>
+
+    <p>Fill-blank is expressed in the mirror exactly as its siblings are, and the ordering inside <code>COALESCE</code> is the whole policy:</p>
+
+    <div class="trace">txt_iban = COALESCE(<span class="hit">txt_iban</span>, NULLIF(btrim(v_evt -&gt;&gt; 'txt_iban'), ''))
+                    <span class="hit">↑ PROD wins when it holds a real value</span>
+
+blank means blank, everywhere:   NULL  ==  ''  ==  '   '</div>
+
+    <ul class="sequence">
+      <li><b>PROD holds a real value</b> → CERT is ignored. A correction made on PROD stands, and a scheduled sync cannot undo it.</li>
+      <li><b>PROD is blank</b> (NULL, empty or whitespace — all the same thing) <b>and CERT holds a value</b> → CERT seeds it. This is the "populate on first sync" case.</li>
+      <li><b>Both empty</b> → nothing happens.</li>
+      <li><b>CREATE branch</b> — a brand-new PROD event carries whatever CERT holds; there is nothing to preserve.</li>
+    </ul>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> Emptiness is never a sentinel — normalised at the write boundary</p>
+      <p>Raw <code>COALESCE</code> would treat <code>''</code> as a value and only NULL as blank, so a field cleared in the editor would silently mean "locked, never sync again" while looking identical to one that was never filled. That is invisible state of exactly the kind that has bitten this system before, and a value of <code>'&nbsp;'</code> would slip through as real data.</p>
+      <p><b>So NULL, the empty string and whitespace-only all collapse to NULL on write.</b> Enforced by a trim trigger on both tables — the idiom already used by <code>trg_trim_fencer_names</code> and <code>trg_trim_registration_names</code> — so every caller is covered, not just the editor: <code>btrim</code> the value, and store NULL when nothing is left. The database therefore only ever holds NULL or a real account, and the same definition of "absent" is used by the sync, the resolution and the toggle guard.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The consequence, stated rather than discovered</p>
+      <p>Because blank is always blank, <b>a field cannot be locked empty on PROD</b>. Clearing a wrong IBAN there makes it NULL, and the next sync will seed it again from CERT if CERT holds one. To remove an account permanently it is cleared on <b>both</b> sides — or, more usually, corrected on PROD rather than emptied, since a PROD value wins outright.</p>
+      <p>This reverses what an earlier draft of this plan said. The trade is deliberate: no hidden lock, at the cost of one honest limitation.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">4 · The toggle</p>
+    <h2>Behaviour when there is no payment data</h2>
+    <p>Registration exists to support collecting a registration fee. The system itself never handles the money — it displays transfer instructions and deliberately does not track whether a transfer arrives, which the organizer verifies in person at the venue (ADR-079 §4). What it does is publish the account a fencer is asked to pay into.</p><p>So switching registration on with no account to pay into is <b>almost certainly not what the organizer intended</b>: the fee cannot be quoted against anything, and the entrant reaches the end of the flow with nowhere to send it. It is a configuration mistake rather than a legitimate state, and a warning is easy to click past — the consequence surfaces later, for the fencer. So this <b>blocks</b> rather than warns.</p>
+
+    <ul class="sequence">
+      <li><b>Neither level resolves a non-blank payee and IBAN</b> — whitespace does not count as data — → the toggle cannot be switched on. The checkbox is disabled, with the reason stated next to it and a link to the organizer, not a bare "invalid".</li>
+      <li><b>Enforced server-side too</b> — <code>fn_update_event</code> refuses to set the flag true when neither level resolves a payee and an IBAN. The client check is a courtesy; the database is what binds. This mirrors how the registration deadline is enforced.</li>
+      <li><b>Already on, and the data disappears</b> — an admin clearing the organizer account under a live event is refused for the same reason, rather than silently breaking the payment step. A live registration is not switched off by a side effect.</li>
+    </ul>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> One migration-time check</p>
+      <p>PROD currently has registration on for <code>PPW1-2026-2027</code> with 18 entries. The data migration must seed the SPWS organizer <b>before</b> the constraint is armed, and assert that every event with the flag already on resolves an account. If any does not, the migration fails loudly rather than leaving a live event in a state the new rule forbids.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">5 · Provenance</p>
+    <h2>Telling the admin which account is in use</h2>
+    <p>The resolved level travels with the resolved values, so the editor states it plainly instead of the admin inferring it from whether a field looks empty:</p>
+
+    <div class="trace">Konto:  <span class="hit">konto tego wydarzenia</span>        ← per-event override in force
+Konto:  <span class="hit">domyślne konto organizatora (SPWS)</span>  ← inherited
+Konto:  <span class="hit">brak — rejestracji nie można włączyć</span>  ← blocked</div>
+
+    <p>Shown in the <b>Rejestracja SPWS</b> panel beside the two fields, and carried as a badge on the event list so the state is visible without opening each event — the same reasoning as the FTL "not yet sent" stamp. Leaving the override fields empty is the normal case and must not read as an error.</p>
+  </section>
+
+  <section>
+    <p class="kicker">6 · Work</p>
+    <h2>Files, in order</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Where</th></tr></thead>
+      <tbody>
+      <tr><td><b>1. Shared vetting</b> — extract mod-97 into production code with its own tests; re-point the existing IBAN assertions at it.</td><td><code>frontend/src/lib/iban.ts</code>, <code>tests/iban.test.ts</code>, <code>tests/orgPayment.test.ts</code></td></tr>
+      <tr><td><b>2. Schema + seed</b> — four columns, two <code>CHECK</code>s, a trim trigger on each table collapsing blank-looking values to NULL, the one-off SPWS organizer seed, and an assertion that every already-enabled event still resolves an account.</td><td>new migration under <code>supabase/migrations/</code></td></tr>
+      <tr><td><b>3. Resolution + guard</b> — resolve payee/IBAN and their level in the view the page reads; extend <code>fn_update_event</code> with the two fields, IBAN validation and the toggle guard. Signature change means DROP + CREATE, so exactly one overload must remain afterwards.</td><td>same or second migration</td></tr>
+      <tr><td><b>4. Mirror</b> — add both columns to the fill-blank branch and to the CREATE branch.</td><td>mirror migration + <code>68_prod_mirror_field_ownership.sql</code></td></tr>
+      <tr><td><b>5. Admin UI</b> — two fields, inline IBAN validation, the provenance line, the disabled toggle with its reason, the list badge.</td><td><code>EventManager.svelte</code>, both locale files</td></tr>
+      <tr><td><b>6. Public form</b> — read the resolved values; delete <code>orgPayment.ts</code> and the dead <code>payee</code>/<code>iban</code> attributes.</td><td><code>RegistrationForm.svelte</code>, <code>ce/RegistrationElement.svelte</code>, <code>register.html</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>TDD throughout, RED observed before each implementation step: pgTAP for the constraint, the resolution, the toggle guard and both mirror directions; Vitest for the vetting, the editor and the payment panel.</p>
+  </section>
+
+  <section>
+    <p class="kicker">7 · Documentation</p>
+    <h2>Every document this touches</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Document</th><th>What changes</th></tr></thead>
+      <tbody>
+      <tr><td><code>doc/adr/086-…</code> <b>(amend)</b></td><td>The tier table gains <code>txt_payee</code> and <code>txt_iban</code> under admin enrichment, and the meaning of "blank" becomes a stated decision: NULL, empty and whitespace-only are one and the same, normalised on write, so no field can be silently locked against the sync. Worth checking whether the existing fill-blank siblings should adopt the same normalisation — today <code>num_entry_fee*</code> and the URLs would still honour an empty string as a value.</td></tr>
+      <tr><td><code>doc/adr/079-…</code> <b>(amend)</b></td><td>§6 currently describes one association account. Record the resolution chain, the IBAN constraint, and that the toggle is refused without a resolvable account — that last one is a change to what the decision guarantees.</td></tr>
+      <tr><td><code>doc/handbook/reference/registration-lifecycle.html</code></td><td>Stage 1 (enabling) gains the blocked toggle and the provenance line; Stage 6 (payment) gains where the account comes from; the failure table gains the no-account row. <b>Screenshots 06 and, if an override is shown, 03 need recapturing.</b></td></tr>
+      <tr><td><code>doc/handbook/subsystems/events-and-registration.html</code></td><td>Implementation map gains the columns and the resolution; invariants gain "registration cannot be enabled without a resolvable account" and the fill-blank ownership of the payment fields.</td></tr>
+      <tr><td><code>doc/requirements-traceability-matrix.md</code></td><td>FR-121 (the <code>tbl_event</code> columns) and FR-130 (the payment panel) amended, with the new pgTAP and Vitest IDs.</td></tr>
+      <tr><td>Specification Appendix D + C</td><td>pgTAP total; the ADR registry rows for 079 and 086 restated, since both are amended.</td></tr>
+      <tr><td><code>doc/handbook/operations/operator-runbooks.html</code></td><td>Only if enabling registration is described there as a procedure — it now has a precondition. To be checked when the work starts.</td></tr>
+      </tbody>
+    </table></div>
+    <p>No new handbook page and no documentation-map entry: this extends existing pages rather than adding a surface.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Verification</p>
+    <h2>How this is proven</h2>
+    <ul>
+      <li>Full pgTAP after <code>./scripts/reset-dev.sh</code>, so the migration chain is exercised from empty; <code>postgrestools</code> on every changed SQL file; exactly one <code>fn_update_event</code> overload afterwards.</li>
+      <li><code>npm test</code> and <code>npm run check</code>; the whole flow driven on LOCAL — an event inheriting the organizer account, an event overriding it, and an event that cannot be switched on.</li>
+      <li><b>Read-only checks against CERT and PROD before and after deploy</b>: that 18 live entries still resolve an account, and that the flag and the payment fields hold their PROD values across a sync.</li>
+      <li>Coherence, spec-sync, <code>check_docs</code>, both renderers, and <code>refresh-graph.sh</code> before commit.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Planned 2 September 2026 against ADR-086's 2026-08-29 amendment, <code>20260829000001_prod_mirror_field_ownership.sql</code>, the live PROD schema and <code>lib/orgPayment.ts</code>. Supersedes the "skip the payment form" option, withdrawn by the user — there must always be an account, which is why the toggle blocks instead.</p>
+</div>

@@ -260,3 +260,23 @@ BEGIN
    WHERE r.id_result = v_result_id;
 END;
 $smoke_match_candidate$;
+
+-- =============================================================================
+-- Payment details for the association account (Migration 20260902000001)
+-- =============================================================================
+-- Same shape as the Phase 2 block above, and for the same reason: the migration
+-- moves the account that used to live in lib/orgPayment.ts onto the SPWS
+-- organizer row, but on LOCAL and in CI it runs against an empty schema -- there
+-- is no tbl_organizer row yet to update. CERT and PROD apply the migration
+-- directly against populated tables and never reach this file.
+--
+-- Without it LOCAL diverges from PROD in a way that matters: no account
+-- resolves, so trg_registration_needs_account refuses to enable registration on
+-- any SPWS event and the flow cannot be exercised at all.
+--
+-- Idempotent: fills an empty column, never overwrites an administrator's value.
+UPDATE tbl_organizer
+   SET txt_payee = 'STOWARZYSZENIE POLSKICH WETERANOW SZERMIERKI',
+       txt_iban  = 'PL 06 1090 1665 0000 0001 5004 1549'
+ WHERE txt_code = 'SPWS'
+   AND (txt_payee IS NULL OR txt_iban IS NULL);

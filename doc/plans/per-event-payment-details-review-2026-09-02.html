@@ -1,0 +1,195 @@
+<meta charset="utf-8">
+<title>Per-event payment details — design review</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">SPWS · registration · design review · 2 September 2026</p>
+  <h1>Per-event payment details</h1>
+  <p class="dek">Yes to the shape — and your sync rule is <b>not a new rule</b>, it is tier two of the ownership model you shipped yesterday. Four things bother me, one of them a good deal.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Review — nothing built</span>
+    <span class="pill">1 decision needed</span>
+    <span class="pill warn"><span class="dot"></span>1 material objection</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The part I like</p>
+    <h2>The promotion rule already exists</h2>
+    <p>I read <code>f2634d6</code> and ADR-086's 2026-08-29 amendment. Every mirrored field now sits in one of three tiers:</p>
+
+    <div class="trace">
+Scraped from EVF   dt_start, txt_name, txt_location …        <span class="hit">overwrite</span>
+Admin enrichment   url_*, num_entry_fee*, txt_organizer_email,
+                   url_entry_list, dt_registration_deadline  <span class="hit">fill-blank</span>
+Per-environment    bool_use_spws_registration, ts_ftl_sent   <span class="hit">not synced</span></div>
+
+    <p>What you described for the payment fields — <em>"if PROD data is there the sync does not update them, but if PROD is missing and CERT exists, populate"</em> — <b>is the fill-blank tier, word for word</b>. So this is not a new sync policy to design and defend; it is a classification: the two new columns join <code>num_entry_fee*</code> and <code>txt_organizer_email</code>, which are already their natural siblings. That is the strongest thing about the proposal, and it means the promotion work is small.</p>
+    <p>The fallback chain is sound too. Event → organizer → nothing is the right order, and overriding only payee and IBAN is coherent because the other two rows on that panel are <em>derived</em>, not stored: the title is generated from the event and the fencer, the amount from the weapon count and the event's fee tiers.</p>
+  </section>
+
+  <section>
+    <p class="kicker">What bothers me</p>
+    <h2>One material objection, then three loose ends</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1</span> Nothing will validate an admin-typed IBAN — and this is the account fencers pay into</p>
+      <p>Today the account number is a vetted constant. We proved it yesterday: strip the spaces, run ISO 13616 mod-97, get exactly 1. The old value scored 73, which is how we knew it was the domestic NRB rather than an IBAN.</p>
+      <p>The system never touches the money, but it publishes the number. The moment that number becomes a per-event text field, a typo is a wrong or non-existent account, printed under a label saying IBAN and copied by every entrant with one tap. It is the fencer's own transfer that goes astray — a return, a fee, or a payment the association never sees — and we would find out from complaints rather than from a check.</p>
+      <p><b>I would not ship the override without validation.</b> The rule is already written and tested in <code>tests/orgPayment.test.ts</code>; it needs to move to where the data enters: a database <code>CHECK</code> so no path can store an invalid IBAN, plus inline feedback in the event editor so an admin sees it before saving rather than after a fencer complains. That is the difference between a hardcoded-correct value and a typo-prone one, and it is cheap.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">2</span> "No payment data → skip the form" cannot happen while the constant exists</p>
+      <p><code>lib/orgPayment.ts</code> supplies <code>SPWS_PAYEE</code> and <code>SPWS_IBAN</code> unconditionally, so with it in place the chain never reaches empty and the skip branch is unreachable code. Remove it, and every event that has not been configured yet loses its payment details — including <code>PPW1-2026-2027</code>, which is live with <b>18 entries</b>.</p>
+      <p>Resolution I would propose: migrate those two constants onto the <b>SPWS organizer row</b>, then delete the module. Current behaviour is preserved exactly (that organizer runs the domestic events), the chain becomes real rather than decorative, and the file's own comment finally comes true — it already says this belongs in the database rather than the bundle.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">3</span> Organizer-level data has no route to PROD</p>
+      <p><code>tbl_organizer</code> holds <code>id_organizer, txt_code, txt_name, ts_created</code> — no payment columns, which is expected. But the three-tier model governs <b>events</b>. Promotion only <em>resolves</em> organizers by code (<code>_prod_code_to_id</code>) and never syncs their attributes, so payment data added to an organizer on CERT would not reach PROD at all.</p>
+      <p>That is fine if we accept it deliberately — organizer payment details are entered once per environment, like the registration switch. It is a defect if we assume it syncs. It needs deciding rather than discovering.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">4</span> Two smaller ones</p>
+      <p><b>Warning versus blocking.</b> A toggle switched on with no payment data means fencers can enter but cannot pay, and a soft warning is easy to click past — the cost lands on fencers, not on the admin who dismissed it. I would still allow the save (an admin may reasonably enable first and fill in details later) but carry the state on the event <em>list</em> as a persistent badge, not only as a transient notice in the editor.</p>
+      <p><b>What "skip the payment form" costs.</b> The registration is written at RODO-accept, <em>before</em> that step, so nothing is lost from the entry itself. But the payment step is also where the transfer title is generated — the string your treasurer reconciles a bank line against. If a fencer pays anyway using details from the invitation, they now have no reference. I would keep the confirmation and the title, and omit only the payee and IBAN rows, with a line saying the organizer will supply the account.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">One thing to settle</p>
+    <h2>Can an admin clear a payment field on PROD?</h2>
+    <p>Fill-blank means an empty PROD field invites the CERT value. So if an admin <b>deliberately clears</b> a wrong IBAN on PROD, the next scheduled sync refills it from CERT — the value comes back on its own, which is exactly the failure shape as last week's switch-off: unattended, on the 06:00 schedule, correcting nothing.</p>
+    <p>Two coherent answers. Either <b>empty string counts as a value</b> that stops propagation, so clearing is a real act and only NULL invites a refill — which needs the editor to write <code>''</code> rather than NULL. Or <b>clearing is not supported</b> on PROD and a correction must be made on both sides, which is simpler but must be stated so nobody expects otherwise.</p>
+    <p>I lean to the first: it keeps PROD authoritative once touched, which is the whole point of the tier. <b>Which do you want?</b></p>
+  </section>
+
+  <section>
+    <p class="kicker">Summary</p>
+    <h2>Am I OK with it?</h2>
+    <p>Yes. The shape is right, the fallback order is right, and the sync rule is one you have already designed, tested and shipped — this is a classification, not an invention. I would put it in the same tier as the fee fields without hesitation.</p>
+    <p>The condition I would attach is <b>IBAN validation, in the database, in the same change</b>. Everything else on this page is a loose end worth ten minutes of agreement; that one is the difference between a convenience feature and publishing an account number nobody has checked.</p>
+  </section>
+
+  <p class="foot">Reviewed 2 September 2026 against ADR-086's 2026-08-29 amendment, <code>f2634d6</code>, the live PROD schema and <code>lib/orgPayment.ts</code>. PROD registration is back on with 18 entries — last week's promotion outage is resolved and is not re-raised here.</p>
+</div>
