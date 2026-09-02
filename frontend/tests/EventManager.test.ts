@@ -1443,3 +1443,109 @@ describe('EventManager Phase 3c', () => {
     })
   })
 })
+
+// Per-event payment account (migration 20260902000001). The account shown on the
+// registration payment step is resolved event → organizer; these two fields are
+// the override. Registration exists to support collecting a fee, so enabling it
+// with no account anywhere is a configuration mistake rather than a legitimate
+// state — the database refuses it and the editor must not offer it.
+describe('EventManager — payment account', () => {
+  // propsWithTournaments is scoped to the describe above, so build the same
+  // shape here from the shared module-level fixtures.
+  const payProps = {
+    events: MOCK_EVENTS,
+    seasons: MOCK_SEASONS,
+    organizers: MOCK_ORGANIZERS,
+    tournaments: MOCK_TOURNAMENTS,
+    selectedSeasonId: 1,
+    isAdmin: true,
+    oncreate: vi.fn(),
+    onupdate: vi.fn(),
+  }
+
+  it('PAY-UI-01: payee and IBAN render and save with the event', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...payProps, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const payee = container.querySelector('[data-field="form-payee"]') as HTMLInputElement
+    const iban = container.querySelector('[data-field="form-iban"]') as HTMLInputElement
+    expect(payee).not.toBeNull()
+    expect(iban).not.toBeNull()
+
+    await fireEvent.input(payee, { target: { value: 'KLUB ORGANIZATORA' } })
+    await fireEvent.input(iban, { target: { value: 'PL 27 1140 2004 0000 3002 0135 5387' } })
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+
+    expect(onupdate).toHaveBeenCalledWith(10, expect.objectContaining({
+      payee: 'KLUB ORGANIZATORA',
+      iban: 'PL 27 1140 2004 0000 3002 0135 5387',
+    }))
+  })
+
+  it('PAY-UI-02: an IBAN failing the checksum is refused before it reaches the RPC', async () => {
+    // Caught here so the administrator sees why, rather than as a constraint
+    // violation surfacing from the database — which is still what binds.
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...payProps, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const iban = container.querySelector('[data-field="form-iban"]') as HTMLInputElement
+    await fireEvent.input(iban, { target: { value: 'PL 06 1090 1665 0000 0001 5004 1548' } })
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+
+    expect(container.querySelector('[data-field="form-iban-error"]')).not.toBeNull()
+    expect(onupdate).not.toHaveBeenCalled()
+  })
+
+  it('PAY-UI-03: a blank IBAN saves — inheriting the organizer account is normal', async () => {
+    const onupdate = vi.fn()
+    const { container } = render(EventManager, { props: { ...payProps, onupdate } })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+
+    const iban = container.querySelector('[data-field="form-iban"]') as HTMLInputElement
+    await fireEvent.input(iban, { target: { value: '   ' } })
+    await fireEvent.click(container.querySelector('[data-field="form-save-btn"]')!)
+
+    expect(container.querySelector('[data-field="form-iban-error"]')).toBeNull()
+    expect(onupdate).toHaveBeenCalled()
+  })
+
+  it('PAY-UI-05: an inherited account leaves the override fields empty', async () => {
+    // vw_calendar returns the RESOLVED account in txt_payee/txt_iban and the
+    // event's OWN value in txt_event_payee/txt_event_iban. Binding the editor to
+    // the resolved pair would show the organizer's account in the override
+    // fields, and saving would silently turn an inherited account into a
+    // per-event one — pinning the event to a number that should have followed
+    // its organizer.
+    const inherited = {
+      ...payProps,
+      events: payProps.events.map((e, i) =>
+        i === 0
+          ? {
+              ...e,
+              txt_payee: 'ORGANIZER DEFAULT',
+              txt_iban: 'PL 06 1090 1665 0000 0001 5004 1549',
+              txt_event_payee: null,
+              txt_event_iban: null,
+              txt_payment_source: 'ORGANIZER' as const,
+            }
+          : e,
+      ),
+    }
+    const { container } = render(EventManager, { props: inherited })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    expect((container.querySelector('[data-field="form-payee"]') as HTMLInputElement).value).toBe('')
+    expect((container.querySelector('[data-field="form-iban"]') as HTMLInputElement).value).toBe('')
+  })
+
+  it('PAY-UI-04: states which account the event will show', async () => {
+    // Leaving the override empty is the normal case and must read as inherited,
+    // not as an error.
+    const { container } = render(EventManager, { props: payProps })
+    await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+    const source = container.querySelector('[data-field="form-payment-source"]') as HTMLElement
+    expect(source).not.toBeNull()
+    expect(source.textContent?.trim()).not.toBe('')
+  })
+})

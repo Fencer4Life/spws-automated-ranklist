@@ -45,6 +45,9 @@ const BASE_EVENT: RegistrationEventInfo = {
   num_entry_fee_3w: 260,
   bool_use_spws_registration: true,
   url_registration: null,
+  txt_payee: 'STOWARZYSZENIE POLSKICH WETERANÓW SZERMIERKI',
+  txt_iban: 'PL 06 1090 1665 0000 0001 5004 1549',
+  txt_payment_source: 'ORGANIZER',
 }
 
 beforeEach(() => {
@@ -522,6 +525,51 @@ describe('RegistrationForm — modal-embed close affordance', () => {
 // therefore goes through a different RPC, authorised by a token the browser
 // generates and keeps, because id_registration is published by the entry list
 // and cannot authorise anything.
+// The account shown on the payment step is resolved server-side — the event's
+// own override, else the organizer's default — and arrives with the event. It
+// used to be a module constant compiled into the bundle, identical for every
+// event, which is why an organizer other than SPWS could not run registration.
+describe('RegistrationForm — the payment account comes from the event', () => {
+  async function toPayment(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+  }
+
+  it('shows the account the event resolves, not a hardcoded one', async () => {
+    mockFetchEvent.mockResolvedValue({
+      ...BASE_EVENT,
+      txt_payee: 'KLUB ORGANIZATORA',
+      txt_iban: 'PL 27 1140 2004 0000 3002 0135 5387',
+      txt_payment_source: 'EVENT',
+    })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText('KLUB ORGANIZATORA')
+    await findByText('PL 27 1140 2004 0000 3002 0135 5387')
+  })
+
+  it('copies the same account it displays', async () => {
+    // The panel and the clipboard must never disagree: a fencer pastes what the
+    // copy button gave them, not what they read.
+    mockFetchEvent.mockResolvedValue({
+      ...BASE_EVENT,
+      txt_payee: 'KLUB ORGANIZATORA',
+      txt_iban: 'PL 27 1140 2004 0000 3002 0135 5387',
+      txt_payment_source: 'EVENT',
+    })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    const rows = Array.from(container.querySelectorAll('.reg-pv')).map((e) => e.textContent?.trim())
+    expect(rows).toContain('PL 27 1140 2004 0000 3002 0135 5387')
+  })
+})
+
 describe('RegistrationForm — correcting a submitted declaration', () => {
   async function toPayment(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
     mockFetchEvent.mockResolvedValue(BASE_EVENT)

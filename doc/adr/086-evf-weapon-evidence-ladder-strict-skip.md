@@ -207,8 +207,34 @@ The same pass corrected `txt_venue_address`, which §4c had made an overwrite. I
 | Tier | Fields | Policy |
 |---|---|---|
 | Scraped from EVF | `txt_code`, `txt_name`, `dt_start`, `dt_end`, `txt_location`, `txt_country`, `arr_weapons`, `txt_evf_slug`, `id_evf_event`, `id_prior_event` | **overwrite** |
-| Admin enrichment | `txt_venue_address`, `url_*`, `num_entry_fee*`, `txt_organizer_email`, `url_entry_list`, `dt_registration_deadline` | **fill-blank** — CERT seeds an empty PROD field; a PROD value stops further propagation |
+| Admin enrichment | `txt_venue_address`, `url_*`, `num_entry_fee*`, `txt_organizer_email`, `url_entry_list`, `dt_registration_deadline`, `txt_payee`, `txt_iban` | **fill-blank** — CERT seeds an empty PROD field; a PROD value stops further propagation |
 | Per-environment | `bool_use_spws_registration`, `ts_ftl_sent`, the provenance block, the results half of `enum_status` | **not synced** after create |
+
+### Amendment (2026-09-02) — the payment account joins the middle tier, and "blank" is defined
+
+The per-event payment account (`txt_payee`, `txt_iban`, migration `20260902000001`) is **admin
+enrichment**, so it is fill-blank like the fee tiers and the organizer contact it sits beside. It is
+entered by an administrator, it may legitimately be corrected on PROD, and a scheduled sync must
+never revert that correction. It is deliberately **not** per-environment like
+`bool_use_spws_registration`: the switch is off on CERT and on in PROD by design, whereas the account
+is the same account in both, so seeding it forward saves retyping and cannot cause the 2026-09-01
+class of incident, where a synced field silently changed a live PROD state.
+
+**What "blank" means, now decided rather than inherited.** Raw `COALESCE(prod, NULLIF(cert, ''))`
+treats the empty string as a value and only NULL as absent. That made a cleared field mean "locked,
+never sync again" while looking identical in the editor to one that was never filled — invisible
+state of the kind this system has been bitten by before — and let a value of `' '` through as real
+data. For the payment columns, NULL, empty and whitespace-only are **one and the same**, normalised
+to NULL on write by `trg_normalise_organizer_payment` / `trg_normalise_event_payment`, so a single
+definition of absent serves the sync, the resolution and the registration toggle alike.
+
+The accepted consequence: **a field cannot be locked empty on PROD.** Clearing a wrong IBAN there
+makes it NULL and the next sync reseeds it from CERT if CERT holds one; removing an account
+permanently means clearing it on both sides, or — more usually — correcting it on PROD, where the
+value then stands. No hidden lock, at the cost of one honest limitation.
+
+*Open, not decided here:* the older fill-blank siblings (`num_entry_fee*`, the `url_*` fields) still
+honour an empty string as a value. If blank should mean blank, it should mean it for them too.
 
 The top tier must keep overwriting: EVF moves dates and renames events, and freezing those would leave PROD stale and stop the moved-date pill firing, since it compares `dt_start` against `dt_start_first_published`.
 

@@ -225,6 +225,19 @@ export interface CalendarEvent {
   // FR-131 / ADR-080 §5 — organizer delivery configuration and last accepted send.
   txt_organizer_email?: string | null
   ts_ftl_sent?: string | null
+  // Payment account, resolved by vw_calendar: the event's own override where it
+  // has one, else the organizer's default. txt_payment_source names which level
+  // answered, so the admin UI states it rather than inferring it from whether a
+  // field looks empty (migration 20260902000001).
+  txt_payee?: string | null
+  txt_iban?: string | null
+  txt_payment_source?: 'EVENT' | 'ORGANIZER' | 'NONE'
+  // The event's OWN override, distinct from the resolved pair above. The editor
+  // must bind to these: binding to the resolved values would show the
+  // organizer's account in the override fields and silently pin it to the event
+  // on the next save.
+  txt_event_payee?: string | null
+  txt_event_iban?: string | null
 }
 
 // N13.4 — a discovered FTL round + the keep-rule's verdict, shown in the event accordion.
@@ -379,6 +392,10 @@ export interface UpdateEventParams {
   urlEntryList?: string | null
   // FR-131: empty string explicitly clears; undefined leaves unchanged.
   organizerEmail?: string
+  // Per-event payment override (migration 20260902000001). Empty string clears
+  // it, so the event falls back to its organizer's default account.
+  payee?: string
+  iban?: string
 }
 
 export type MatchStatus = 'PENDING' | 'AUTO_MATCHED' | 'UNMATCHED' | 'APPROVED' | 'NEW_FENCER' | 'DISMISSED'
@@ -436,6 +453,13 @@ export interface RegistrationEventInfo {
   num_entry_fee_3w: number | null
   bool_use_spws_registration: boolean
   url_registration: string | null
+  // Resolved server-side by vw_calendar: the event's own override where it has
+  // one, otherwise the organizer's default. txt_payment_source says which level
+  // answered ('EVENT' | 'ORGANIZER' | 'NONE') so the admin UI can state it
+  // rather than infer it from whether a field looks empty.
+  txt_payee: string | null
+  txt_iban: string | null
+  txt_payment_source: 'EVENT' | 'ORGANIZER' | 'NONE'
 }
 
 // A row of the public roster view (vw_registration_entry_list) — deliberately

@@ -191,7 +191,7 @@
   } from '../lib/api'
   import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
-  import { SPWS_PAYEE, SPWS_IBAN, WEAPON_PL } from '../lib/orgPayment'
+  import { WEAPON_PL } from '../lib/orgPayment'
   import type { RegistrationEventInfo, GenderType, WeaponType } from '../lib/types'
 
   const CONSENT_VERSION = 'v1.0'
@@ -285,8 +285,13 @@
     if (vcat) parts.push(vcat)
     return parts.filter((p) => p !== '').join(' ')
   })
-  const effectivePayee = $derived(payee || SPWS_PAYEE)
-  const effectiveIban = $derived(iban || SPWS_IBAN)
+  // Resolved by vw_calendar — the event's override, else the organizer default.
+  // The payee/iban props remain for a host that wants to force a value, but no
+  // current caller sets them: register.html passed empty strings and the
+  // calendar modal passed nothing, which is why every event showed the same
+  // account until 2026-09-02.
+  const effectivePayee = $derived(payee || event?.txt_payee || '')
+  const effectiveIban = $derived(iban || event?.txt_iban || '')
 
   // The date the payment note quotes. Deliberately the SAME expression the
   // D10 window guard in fn_create_registration enforces —

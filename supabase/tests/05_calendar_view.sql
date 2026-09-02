@@ -8,6 +8,17 @@
 BEGIN;
 SELECT plan(15);
 
+-- Fixtures below enable SPWS registration, and since migration 20260902000001 a
+-- registration cannot be enabled unless a payment account resolves from the
+-- event or its organizer (trg_registration_needs_account). These tests are
+-- about the calendar projection rather than about payment, so every organizer
+-- is given a valid account here: without it the assertions would report the
+-- flag failing to round-trip when the database is in fact refusing to set it.
+-- The whole file runs inside a transaction that rolls back.
+UPDATE tbl_organizer
+   SET txt_payee = COALESCE(txt_payee, 'CALENDAR TEST PAYEE'),
+       txt_iban  = COALESCE(txt_iban, 'PL 06 1090 1665 0000 0001 5004 1549');
+
 -- ===== SETUP: Create test data for calendar view =====
 DO $setup$
 DECLARE

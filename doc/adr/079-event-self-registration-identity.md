@@ -1,10 +1,55 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
 **Current behavior:** [Registration lifecycle](../handbook/reference/registration-lifecycle.html) — the handbook walkthrough of this decision as built, following one registration from the administrator enabling it to the row being purged after ingestion, with the failure at each stage and the screens as they appear. Read that for *what the system does*; read this ADR for *why it does it*.
+
+## Amendment (2026-09-02 — whose account the fencer pays into)
+
+§6 described a single association account. It was a module constant compiled into the frontend
+bundle, and the `payee` / `iban` attributes that were supposed to vary it were set by nobody:
+`register.html` passed empty strings and the calendar modal passed nothing. Every event therefore
+showed the same account, which is why an organizer other than SPWS could not run registration at all.
+Nothing validated it either — on 2026-09-02 it turned out to be storing the domestic NRB under an
+IBAN label, scoring 73 on the ISO 13616 check instead of 1.
+
+### (a) The account is data, resolved event → organizer
+
+`tbl_organizer` gains `txt_payee` / `txt_iban` (the default) and `tbl_event` the same two (the
+override). `vw_calendar` resolves them and reports which level answered as `txt_payment_source`
+(`EVENT` / `ORGANIZER` / `NONE`), so the admin UI states the account in force rather than inferring it
+from whether a field looks empty. Both fields resolve **together** from one level: a per-event payee
+with an organizer IBAN would put the right name on the wrong account.
+
+### (b) The IBAN is vetted, not trusted
+
+The system never handles the money — it publishes transfer instructions and does not track whether a
+transfer arrives (§4). What it publishes is the account a fencer is asked to pay into, and once that
+became admin-typed a typo would send the fencer's own transfer astray. `fn_is_valid_iban` implements
+ISO 13616 and is enforced by a `CHECK` on both tables, so no caller can store an invalid value; the
+editor repeats the check inline so the failure is understood at the field rather than arriving as a
+constraint violation. Deliberately generic rather than `PL`-only — an organizer abroad is plausible.
+
+### (c) Registration cannot be enabled without an account
+
+This changes what the decision guarantees. Registration exists to support collecting a fee; enabling
+it with nowhere to pay is a configuration mistake rather than a legitimate state — the fee cannot be
+quoted against anything and the entrant reaches the end of the flow with nowhere to send it.
+`trg_registration_needs_account` refuses `bool_use_spws_registration = TRUE` unless a payee **and** an
+IBAN resolve. A trigger rather than a check inside `fn_update_event`, so no caller routes around it:
+not the admin RPC, not a promotion, not a hand-written statement.
+
+An earlier draft had the flow *skip* the payment step when no account resolved. Withdrawn by the
+user: there must always be an account, which is why this blocks instead.
+
+### (d) Blank is blank
+
+NULL, empty and whitespace-only collapse to NULL on write, so one definition of absent serves the
+resolution, the toggle guard and the CERT→PROD fill-blank policy alike. Without it a payee of `'   '`
+would satisfy the guard. See ADR-086's 2026-09-02 amendment for the ownership tier and the
+consequence — a field cannot be locked empty on PROD.
 
 ## Amendment (2026-08-28 — correcting a declaration; one row per entrant)
 
