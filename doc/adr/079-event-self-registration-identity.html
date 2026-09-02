@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="079-event-self-registration-identity.md">
-<meta name="adr-source-sha256" content="ff4719b62d6016304f0828d9ff52cac9084c8ebabf7fea1d623e895a4eede601">
+<meta name="adr-source-sha256" content="ac7973f69a72355ee7c90db6124c2eb60a163993430af3bf83ec37e605332047">
 <title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 079</p><h1>Event Self-Registration &amp; Identity Resolution</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>. <strong>Amended 2026-09-02:</strong> the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. <strong>Amended 2026-08-28:</strong> declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, <code>fn_update_registration</code>, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">575 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>. <strong>Amended 2026-09-02:</strong> the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. <strong>Amended 2026-08-28:</strong> declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, <code>fn_update_registration</code>, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>079-event-self-registration-identity.md</code></dd></div><div><dt>Length</dt><dd class="">586 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Proposed (Phase 1 DB schema + Phase 2 public registration UI <strong>implemented</strong> 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but <strong>no longer blocking registration</strong> — see the 2026-08-17 amendment). <strong>Amended 2026-07-05 (§7):</strong> registration URL auto-fill + in-app modal presentation. <strong>Amended 2026-08-17:</strong> unmatched fencers register with <code>id_fencer</code> NULL; <code>register.html</code> is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration <code>20260817000001</code>. <strong>Amended 2026-09-02:</strong> the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. <strong>Amended 2026-08-28:</strong> declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, <code>fn_update_registration</code>, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
@@ -283,6 +283,18 @@ give that organizer a default. <em>Recommendation:</em> an organizer editor carr
 the same ISO 13616 validation as the event editor — the constraint and <code>fn_is_valid_iban</code> already
 cover the write path, so this is UI only. Deferred deliberately on 2026-09-02; the per-event
 override unblocks the domestic events that exist today.</p>
+</li>
+<li>
+<p><strong>A transitional account fallback lives in the bundle again, and must be removed.</strong>
+<code>deploy-pages</code> needs only <code>build</code>, so the frontend publishes before <code>deploy-prod</code> — which waits on
+a required reviewer — has run. For the length of that gap the new bundle queries a PROD database
+with no payment columns. Naming them returns <code>42703</code> and the page renders <em>&quot;event not found&quot;</em> for
+every fencer, so <code>fetchEventForRegistration</code> selects <code>*</code> and <code>LEGACY_SPWS_PAYEE</code> /
+<code>LEGACY_SPWS_IBAN</code> in <code>lib/orgPayment.ts</code> stand in when the event resolves nothing. They match what
+the bundle showed before the account moved, so un-migrated PROD behaves exactly as it did.
+<em>Recommendation:</em> delete both constants and the <code>||</code> fallbacks once PROD carries migration
+<code>20260902000001</code>. They are unreachable from that moment, and leaving them lets a genuinely
+account-less event look configured.</p>
 </li>
 </ol>
 </section>
@@ -589,5 +601,5 @@ ADR-050/070–074 (ingestion pipeline).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
-<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>ff4719b62d6016304f0828d9ff52cac9084c8ebabf7fea1d623e895a4eede601</code></footer>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>ac7973f69a72355ee7c90db6124c2eb60a163993430af3bf83ec37e605332047</code></footer>
 </div></body></html>

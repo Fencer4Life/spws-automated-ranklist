@@ -299,6 +299,17 @@ by registering once against the deployed URL and then querying **both** database
    cover the write path, so this is UI only. Deferred deliberately on 2026-09-02; the per-event
    override unblocks the domestic events that exist today.
 
+8. **A transitional account fallback lives in the bundle again, and must be removed.**
+   `deploy-pages` needs only `build`, so the frontend publishes before `deploy-prod` — which waits on
+   a required reviewer — has run. For the length of that gap the new bundle queries a PROD database
+   with no payment columns. Naming them returns `42703` and the page renders *"event not found"* for
+   every fencer, so `fetchEventForRegistration` selects `*` and `LEGACY_SPWS_PAYEE` /
+   `LEGACY_SPWS_IBAN` in `lib/orgPayment.ts` stand in when the event resolves nothing. They match what
+   the bundle showed before the account moved, so un-migrated PROD behaves exactly as it did.
+   *Recommendation:* delete both constants and the `||` fallbacks once PROD carries migration
+   `20260902000001`. They are unreachable from that moment, and leaving them lets a genuinely
+   account-less event look configured.
+
 ## Amendment (2026-08-09 — the entry list outlives the registration window)
 
 §7 gated the entry-list link on the same cutoff as the registration link, so both vanished together once the deadline passed. [ADR-084](084-calendar-quarter-barrel-event-card.md) **decouples them**: registration closes at `COALESCE(dt_registration_deadline, dt_start)`, but the entry list stays visible until the event **starts** (CQ.31, CQ.32, EC.22), and is never shown on a cancelled event (CQ.33).

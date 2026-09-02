@@ -554,6 +554,24 @@ describe('RegistrationForm — the payment account comes from the event', () => 
     await findByText('PL 27 1140 2004 0000 3002 0135 5387')
   })
 
+  it('falls back to the association account when the event supplies none', async () => {
+    // Transitional. The Pages bundle deploys before deploy-prod is approved, so
+    // for the length of a CERT test the new frontend runs against a PROD
+    // database that has no payment columns at all — vw_calendar simply does not
+    // return them. Without a fallback the live payment panel would show a blank
+    // payee and IBAN to fencers who are trying to pay.
+    mockFetchEvent.mockResolvedValue({
+      ...BASE_EVENT,
+      txt_payee: undefined,
+      txt_iban: undefined,
+      txt_payment_source: undefined,
+    } as never)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText('STOWARZYSZENIE POLSKICH WETERANÓW SZERMIERKI')
+    await findByText('PL 06 1090 1665 0000 0001 5004 1549')
+  })
+
   it('copies the same account it displays', async () => {
     // The panel and the clipboard must never disagree: a fencer pastes what the
     // copy button gave them, not what they read.

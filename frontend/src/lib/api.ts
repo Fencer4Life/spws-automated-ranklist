@@ -477,7 +477,11 @@ export async function fetchEntryList(eventId: number): Promise<RegistrationEntry
 export async function fetchEventForRegistration(code: string): Promise<RegistrationEventInfo | null> {
   const { data, error } = await getClient()
     .from('vw_calendar')
-    .select('id_event, txt_code, txt_name, txt_season_code, dt_start, dt_end, dt_registration_deadline, arr_weapons, num_entry_fee, num_entry_fee_2w, num_entry_fee_3w, bool_use_spws_registration, url_registration, txt_payee, txt_iban, txt_payment_source')
+    // '*' rather than an explicit column list, deliberately: the Pages bundle is
+    // published before deploy-prod is approved, so this query runs against a PROD
+    // database that may not yet have the payment columns. Naming them there
+    // returns 42703 and the page renders "event not found" for every fencer.
+    .select('*')
     .eq('txt_code', code)
     .single()
   if (error) return null

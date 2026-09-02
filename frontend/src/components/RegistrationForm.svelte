@@ -191,7 +191,7 @@
   } from '../lib/api'
   import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
-  import { WEAPON_PL } from '../lib/orgPayment'
+  import { LEGACY_SPWS_IBAN, LEGACY_SPWS_PAYEE, WEAPON_PL } from '../lib/orgPayment'
   import type { RegistrationEventInfo, GenderType, WeaponType } from '../lib/types'
 
   const CONSENT_VERSION = 'v1.0'
@@ -290,8 +290,8 @@
   // current caller sets them: register.html passed empty strings and the
   // calendar modal passed nothing, which is why every event showed the same
   // account until 2026-09-02.
-  const effectivePayee = $derived(payee || event?.txt_payee || '')
-  const effectiveIban = $derived(iban || event?.txt_iban || '')
+  const effectivePayee = $derived(payee || event?.txt_payee || LEGACY_SPWS_PAYEE)
+  const effectiveIban = $derived(iban || event?.txt_iban || LEGACY_SPWS_IBAN)
 
   // The date the payment note quotes. Deliberately the SAME expression the
   // D10 window guard in fn_create_registration enforces —
