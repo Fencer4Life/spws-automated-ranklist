@@ -1,6 +1,6 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
@@ -287,6 +287,17 @@ by registering once against the deployed URL and then querying **both** database
    policy, so regenerating `uuid_edit_token` makes any held handle inert), so only the record is
    missing. *Recommendation:* write each edit to `tbl_audit_log`, which already carries
    `jsonb_old_values`/`jsonb_new_values` and is written by several migrations.
+
+7. **No admin screen sets an organizer's default account.** The 2026-09-02 amendment gives
+   `tbl_organizer` `txt_payee` / `txt_iban` and resolves them for every event of that organizer, but
+   only the event-level override is editable in the UI. SPWS has values because the migration seeds
+   them; **EVF and FIE have none**. The practical consequence: an event organized by anyone other than
+   SPWS cannot have registration enabled at all unless an administrator fills in a per-event override,
+   because `trg_registration_needs_account` requires an account to resolve and there is no screen to
+   give that organizer a default. *Recommendation:* an organizer editor carrying the two fields and
+   the same ISO 13616 validation as the event editor — the constraint and `fn_is_valid_iban` already
+   cover the write path, so this is UI only. Deferred deliberately on 2026-09-02; the per-event
+   override unblocks the domestic events that exist today.
 
 ## Amendment (2026-08-09 — the entry list outlives the registration window)
 
