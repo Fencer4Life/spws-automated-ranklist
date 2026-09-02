@@ -294,5 +294,13 @@ Konto:  <span class="hit">brak — rejestracji nie można włączyć</span>  ←
     </ul>
   </section>
 
+  <section>
+    <p class="kicker">Deferred</p>
+    <h2>Not built: the organizer-level editor</h2>
+    <p>The organizer default is <b>stored and resolved</b>, and the association's account was seeded by the migration — but there is <b>no admin screen to set it for any other organizer</b>. EVF and FIE therefore have none.</p>
+    <p>The consequence is concrete: an event run by an organizer other than SPWS cannot have registration switched on until an administrator fills in that event's own payee and IBAN, because the database requires an account to resolve. That is acceptable today — every event actually taking entries is SPWS-run — and it is why this was deferred rather than dropped.</p>
+    <p>What it needs is UI only: two fields on an organizer editor with the same inline ISO 13616 check as the event editor. The column, the constraint and <code>fn_is_valid_iban</code> already cover the write path. Recorded as ADR-079 open item 7 and in the handbook's known gaps.</p>
+  </section>
+
   <p class="foot">Planned 2 September 2026 against ADR-086's 2026-08-29 amendment, <code>20260829000001_prod_mirror_field_ownership.sql</code>, the live PROD schema and <code>lib/orgPayment.ts</code>. Supersedes the "skip the payment form" option, withdrawn by the user — there must always be an account, which is why the toggle blocks instead.</p>
 </div>
