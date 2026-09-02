@@ -41,6 +41,7 @@ const BASE_EVENT: RegistrationEventInfo = {
   dt_registration_deadline: '2099-05-25',
   arr_weapons: ['EPEE', 'FOIL', 'SABRE'],
   num_entry_fee: 120,
+  txt_entry_fee_currency: 'PLN',
   num_entry_fee_2w: 200,
   num_entry_fee_3w: 260,
   bool_use_spws_registration: true,
@@ -529,6 +530,79 @@ describe('RegistrationForm — modal-embed close affordance', () => {
 // own override, else the organizer's default — and arrives with the event. It
 // used to be a module constant compiled into the bundle, identical for every
 // event, which is why an organizer other than SPWS could not run registration.
+// The entry fee is not always in złoty: tbl_event carries txt_entry_fee_currency
+// and EUR events exist. The amount was hardcoded "PLN" in four places — the fee
+// box on the first screen, the payment panel, its copy button and "copy all" —
+// so a fencer entering a euro-priced event was quoted, and would have paid, the
+// wrong currency.
+describe('RegistrationForm — entry fee currency', () => {
+  async function toPayment(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+  }
+
+  it('quotes the fee in the event currency on the first screen', async () => {
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_entry_fee_currency: 'EUR' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    expect(container.querySelector('.reg-feeval')?.textContent).toContain('EUR')
+    expect(container.querySelector('.reg-feeval')?.textContent).not.toContain('PLN')
+  })
+
+  it('carries that currency through to the payment panel', async () => {
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_entry_fee_currency: 'EUR' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText('120 EUR')
+  })
+
+  it('copies the amount in the event currency, not the one on screen', async () => {
+    // Same contract as the account rows: the panel and the clipboard must never
+    // disagree. A euro-priced event that copied "120 PLN" would put the wrong
+    // amount in the fencer's transfer, which is worse than merely misreading it.
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_entry_fee_currency: 'EUR' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    const rows = Array.from(container.querySelectorAll('.reg-prow'))
+    const amountRow = rows[rows.length - 1]
+    await fireEvent.click(amountRow.querySelector('button.reg-cp') as HTMLButtonElement)
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('120 EUR')
+  })
+
+  it('carries the currency into "copy everything" as well', async () => {
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_entry_fee_currency: 'EUR' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await fireEvent.click(container.querySelector('.reg-phead button.reg-cp') as HTMLButtonElement)
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('120 EUR'))
+  })
+
+  it('treats a blank currency as unstated', async () => {
+    // Whitespace is not a currency. The column is free text with a 'PLN' default,
+    // so a cleared-but-not-nulled value is reachable from the editor.
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_entry_fee_currency: '   ' })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText('120 PLN')
+  })
+
+  it('falls back to PLN when the event states no currency', async () => {
+    // Most events carry null; the association's home currency is the sane
+    // default and preserves what those events already showed.
+    mockFetchEvent.mockResolvedValue({ ...BASE_EVENT, txt_entry_fee_currency: null })
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await toPayment(container, findByText)
+    await findByText('120 PLN')
+  })
+})
+
 describe('RegistrationForm — the payment account comes from the event', () => {
   async function toPayment(container: HTMLElement, findByText: (m: string | RegExp) => Promise<HTMLElement>) {
     mockMatch.mockResolvedValue(null)

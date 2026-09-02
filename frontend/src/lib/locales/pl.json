@@ -63,6 +63,7 @@
   "admin_logout": "Wyloguj",
   "admin_session": "Sesja",
   "calendar_title": "Kalendarz",
+  "calendar_render_failed": "Kalendarza nie udało się wyświetlić. Odśwież stronę — reszta serwisu działa.",
   "filter_all": "Wszystkie",
   "filter_past": "Minione",
   "filter_future": "Przyszłe",

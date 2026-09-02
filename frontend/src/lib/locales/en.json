@@ -63,6 +63,7 @@
   "admin_logout": "Logout",
   "admin_session": "Session",
   "calendar_title": "Calendar",
+  "calendar_render_failed": "The calendar could not be displayed. Reload the page — the rest of the site still works.",
   "filter_all": "All",
   "filter_past": "Past",
   "filter_future": "Future",

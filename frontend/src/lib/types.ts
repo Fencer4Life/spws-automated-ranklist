@@ -451,6 +451,9 @@ export interface RegistrationEventInfo {
   num_entry_fee: number | null
   num_entry_fee_2w: number | null
   num_entry_fee_3w: number | null
+  // Not every event is priced in złoty — EUR events exist. Null means the
+  // association's home currency; see RegistrationForm's `currency`.
+  txt_entry_fee_currency: string | null
   bool_use_spws_registration: boolean
   url_registration: string | null
   // Resolved server-side by vw_calendar: the event's own override where it has

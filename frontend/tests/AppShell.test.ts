@@ -233,3 +233,38 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
     expect(subtitleAfter?.textContent).toContain('1985, 1984, .. 1976')
   })
 })
+
+// ---------------------------------------------------------------------------
+// The calendar's dataset spans EVERY season (ADR-084 §4). `fetchCalendarEvents`
+// is season-scoped and cannot feed the drum — api.ts says so above
+// `fetchAllCalendarEvents` — yet six sites in App refilled `calendarEvents`
+// from it, every admin write path among them. Saving an event therefore
+// replaced 66 month rows with 10 while the barrel still held a selection from
+// the wider set, which is what crashed the calendar on PROD on 2026-09-02
+// (CalendarBarrel CB.30).
+//
+// Structural, like 9.17 above: the assignment happens inside handlers that need
+// an authenticated admin session and a mounted EventManager to reach, and the
+// contract worth pinning is simply that this pairing never returns.
+// ---------------------------------------------------------------------------
+describe('App — the calendar dataset', () => {
+  async function appSource(): Promise<string> {
+    const fs = await import('fs')
+    const path = await import('path')
+    return fs.readFileSync(path.resolve(__dirname, '../src/App.svelte'), 'utf-8')
+  }
+
+  it('AS.1: never fills the calendar from the season-scoped query', async () => {
+    const src = await appSource()
+    const offenders = src.match(/calendarEvents\s*=\s*await\s+fetchCalendarEvents\b/g) ?? []
+    expect(offenders).toEqual([])
+  })
+
+  it('AS.2: refills it through one function, so every path agrees', async () => {
+    const src = await appSource()
+    // The season-scoped query keeps its legitimate callers (the carry-over and
+    // prior-season pickers), so this asserts the pairing, not the import.
+    expect(src).toContain('async function reloadCalendar()')
+    expect(src.match(/calendarEvents\s*=\s*await\s+fetchAllCalendarEvents\(\)/g) ?? []).toHaveLength(1)
+  })
+})

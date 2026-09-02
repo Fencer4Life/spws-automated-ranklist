@@ -45,7 +45,7 @@
 <p>Three separate fields gate what a visitor sees, and they are easy to confuse. <code>bool_use_spws_registration</code> decides whether we run the registration at all. <code>url_registration</code> decides whether a registration link appears on the calendar card. <code>url_entry_list</code> decides whether an entry-list link appears beside it. An event can have the flag on and no links, or links and the flag off — and the second combination sends visitors to the deployed public page instead of the in-app dialog.</p>
 </div>
 
-<p>Fees are quoted by weapon count: the base fee, then a two-weapon and a three-weapon tier. The fencer is never asked to compute anything — selecting weapons picks the tier.</p>
+<p>Fees are quoted by weapon count: the base fee, then a two-weapon and a three-weapon tier. The fencer is never asked to compute anything — selecting weapons picks the tier. Each event also carries the currency the fee is stated in, chosen in the editor beside the amount; an event that states none is read as the association's home currency, <code>PLN</code>. Most events are priced in złoty, but not all — the currency is the event's, never the page's.</p>
 <div class="invariant">
 <p><b>Registration cannot be switched on without an account to pay into.</b> The panel also carries the payee and IBAN, which are optional: left empty the event inherits its organizer's default account, and the editor states which of the two is in force rather than leaving the administrator to infer it from an empty field. Where neither level supplies one the toggle is refused — by the database, not merely by the form — because registration exists to support collecting a fee and enabling it with nowhere to pay is a configuration mistake that surfaces later, for the fencer.</p>
 <p>The IBAN is checked against ISO 13616 before it is stored, so a mistyped account is caught at the field. The check is deliberately not Poland-specific: an organizer abroad is plausible.</p>
@@ -138,6 +138,7 @@
 </figure>
 
 <p>The account shown is resolved when the event is read: the event's own override where it has one, otherwise its organizer's default. It used to be a single number compiled into the frontend bundle, identical for every event — which is why an organizer other than the association could not run registration at all.</p>
+<p>The amount is quoted in the event's own currency, and the copy buttons hand over exactly what is on screen. That agreement matters more here than anywhere else on the page: a fencer pastes what the button gave them rather than what they read, so a panel and a clipboard that disagree put the wrong figure into a real transfer. Until 2026-09-02 the registration page quoted a fixed <code>PLN</code> in all four places — the fee on step one, the amount row, its copy button and <i>copy everything</i> — although the column had existed since March and every writer honoured it. The calendar card had always read the event's value; only this page had not been wired to it.</p>
 <p>The system displays transfer instructions and does <b>not</b> track whether the transfer arrives. There is no paid flag, and neither the roster nor the organizer's file is gated on payment; the organizer verifies it in person at check-in. A declared registration, not a payment, is what "entered" means here.</p>
 </section>
 

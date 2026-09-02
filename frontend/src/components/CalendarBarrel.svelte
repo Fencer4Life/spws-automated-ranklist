@@ -76,7 +76,7 @@
             <div class="rwi" style:gap={layout?.overlapping ? '0px' : null}>
               {#each row.events as event, j (event.id_event)}
                 {@const place = layout?.panels[j]}
-                {@const isSelected = qi === active && selected === j}
+                {@const isSelected = qi === active && liveSelected === j}
                 <button
                   type="button"
                   class="p {panelType(event.txt_code)}"
@@ -235,6 +235,27 @@
   let active = $state(0)
   /** Index within the focused row's events, or null when the row is empty. */
   let selected = $state<number | null>(null)
+
+  /**
+   * The selection, clamped to the row it is actually being read against.
+   *
+   * `selected` is an index into the focused row's events, and the events can be
+   * replaced under it — an admin save refills the calendar, and a month that
+   * held four events can come back holding one while the fourth is still
+   * selected. Everything below reads the row THROUGH this, so a stale index
+   * lands on the last event rather than off the end.
+   *
+   * It matters because these readers are `$derived`, evaluated during render
+   * and before any effect can re-anchor: on 2026-09-02 an out-of-range index
+   * threw out of `midLayout`, which tears down the component tree. The page
+   * kept running and stopped responding to everything — the hamburger too —
+   * until it was reloaded.
+   */
+  const liveSelected = $derived.by((): number | null => {
+    const count = rows[active]?.events.length ?? 0
+    if (count === 0) return null
+    return Math.min(selected ?? 0, count - 1)
+  })
 
   let initKey = ''
 
@@ -434,18 +455,20 @@
     // Before measurement — and in jsdom, which has no layout engine and reports
     // every clientWidth as 0 — fall back to a flat row with no inline geometry.
     if (available <= 0) return null
+    const index = liveSelected ?? 0
+    const event = row.events[index]
     return layoutRow({
       count: row.events.length,
-      selectedIndex: selected ?? 0,
+      selectedIndex: index,
       available,
-      selectedHasCity: !!cityOf(row.events[selected ?? 0]!),
+      selectedHasCity: !!event && !!cityOf(event),
     })
   })
 
   /** How far the focused row is scrolled — 0 unless its content overflows. */
   const scroll = $derived.by(() => {
     const layout = midLayout
-    return layout ? rowScroll(layout, selected, available) : 0
+    return layout ? rowScroll(layout, liveSelected, available) : 0
   })
 
   // Scroll the focused row so its selection sits under the caret.
@@ -499,14 +522,14 @@
    */
   const caretType = $derived.by((): string => {
     const events = rows[active]?.events ?? []
-    const event = selected != null ? events[selected] : undefined
+    const event = liveSelected != null ? events[liveSelected] : undefined
     return event ? panelType(event.txt_code) : ''
   })
 
   const caretLeft = $derived.by((): number | null => {
     const layout = midLayout
     if (!layout) return null
-    return caretOffset(layout, selected, available)
+    return caretOffset(layout, liveSelected, available)
   })
 </script>
 

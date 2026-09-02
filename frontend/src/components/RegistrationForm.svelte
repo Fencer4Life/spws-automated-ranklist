@@ -100,7 +100,7 @@
         <span class="reg-lbl">{t('reg_entry_fee')}</span><br />
         <span class="reg-muted">{t('reg_weapons_count', { n: weapons.length })}</span>
       </div>
-      <div class="reg-feeval">{fee != null ? `${fee} PLN` : '—'}</div>
+      <div class="reg-feeval">{fee != null ? `${fee} ${currency}` : '—'}</div>
     </div>
 
     <p class="reg-muted reg-by-note">{t('reg_by_visibility_note')}</p>
@@ -165,7 +165,7 @@
       <div class="reg-prow"><span class="reg-pk">{t('reg_payee_label')}</span><span class="reg-pv">{effectivePayee}</span><button class="reg-cp" onclick={() => copy('payee', effectivePayee)}>{copiedField === 'payee' ? t('reg_copied') : '⧉'}</button></div>
       <div class="reg-prow"><span class="reg-pk">{t('reg_iban_label')}</span><span class="reg-pv">{effectiveIban}</span><button class="reg-cp" onclick={() => copy('iban', effectiveIban)}>{copiedField === 'iban' ? t('reg_copied') : '⧉'}</button></div>
       <div class="reg-prow"><span class="reg-pk">{t('reg_title_label')}</span><span class="reg-pv">{title}</span><button class="reg-cp" onclick={() => copy('title', title)}>{copiedField === 'title' ? t('reg_copied') : '⧉'}</button></div>
-      <div class="reg-prow"><span class="reg-pk">{t('reg_amount_label')}</span><span class="reg-pv">{fee != null ? `${fee} PLN` : '—'}</span><button class="reg-cp" onclick={() => copy('amount', `${fee} PLN`)}>{copiedField === 'amount' ? t('reg_copied') : '⧉'}</button></div>
+      <div class="reg-prow"><span class="reg-pk">{t('reg_amount_label')}</span><span class="reg-pv">{fee != null ? `${fee} ${currency}` : '—'}</span><button class="reg-cp" onclick={() => copy('amount', `${fee} ${currency}`)}>{copiedField === 'amount' ? t('reg_copied') : '⧉'}</button></div>
     </div>
     <p class="reg-muted">
       {paymentDeadline ? t('reg_payment_deadline_note', { date: paymentDeadline }) : t('reg_payment_deadline_note_generic')}
@@ -290,6 +290,11 @@
   // current caller sets them: register.html passed empty strings and the
   // calendar modal passed nothing, which is why every event showed the same
   // account until 2026-09-02.
+  // The fee is quoted, copied and put in the transfer note in the event's own
+  // currency. Null falls back to the association's home currency, which is what
+  // the many events carrying no value already showed.
+  const currency = $derived(event?.txt_entry_fee_currency?.trim() || 'PLN')
+
   const effectivePayee = $derived(payee || event?.txt_payee || '')
   const effectiveIban = $derived(iban || event?.txt_iban || '')
 
@@ -520,7 +525,7 @@
   }
 
   function copyAll() {
-    copy('all', `${effectivePayee}\n${effectiveIban}\n${title}\n${fee != null ? `${fee} PLN` : ''}`)
+    copy('all', `${effectivePayee}\n${effectiveIban}\n${title}\n${fee != null ? `${fee} ${currency}` : ''}`)
   }
 </script>
 

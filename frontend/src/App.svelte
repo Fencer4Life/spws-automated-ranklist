@@ -78,7 +78,21 @@
       </div>
     {/if}
   {:else if currentView === 'calendar'}
-    <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {dualEnv} bind:activeEnv />
+    <!-- The calendar is the one view built from geometry rather than a list,
+         and a throw inside a `$derived` there is not a broken card: it tears
+         down the whole component tree, so the header, the nav and the hamburger
+         stop responding too and only a reload brings them back. That is what
+         2026-09-02 looked like from the outside. The boundary keeps a calendar
+         failure inside the calendar. -->
+    <svelte:boundary>
+      <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {dualEnv} bind:activeEnv />
+      {#snippet failed(err: unknown)}
+        <div class="calendar-failed" role="alert">
+          <p>{t('calendar_render_failed')}</p>
+          <p class="calendar-failed-detail">{err instanceof Error ? err.message : String(err)}</p>
+        </div>
+      {/snippet}
+    </svelte:boundary>
   {:else if currentView === 'admin_seasons'}
     <SeasonManager
       {seasons}
@@ -654,8 +668,11 @@
         organizers = await fetchOrganizers()
       }
       if (selectedSeasonId) {
-        calendarEvents = await fetchCalendarEvents(selectedSeasonId)
-        const eventIds = calendarEvents.map(e => e.id_event)
+        await reloadCalendar()
+        // The admin list filters by season itself, but the tournament fetch is
+        // keyed on ids — keep that scoped to the season on screen rather than
+        // pulling every season's tournaments along with the calendar.
+        const eventIds = calendarEvents.filter(e => e.id_season === selectedSeasonId).map(e => e.id_event)
         allTournaments = await fetchAllTournaments(eventIds)
         await loadPriorSeasonEvents()
       }
@@ -715,8 +732,8 @@
 
   async function reloadAdminEvents() {
     if (selectedSeasonId) {
-      calendarEvents = await fetchCalendarEvents(selectedSeasonId)
-      const eventIds = calendarEvents.map(e => e.id_event)
+      await reloadCalendar()
+      const eventIds = calendarEvents.filter(e => e.id_season === selectedSeasonId).map(e => e.id_event)
       allTournaments = await fetchAllTournaments(eventIds)
       await loadPriorSeasonEvents()
     }
@@ -1219,7 +1236,7 @@
   async function handleCreateEvent(params: Record<string, unknown>) {
     try {
       await createEvent(params as unknown as CreateEventParams)
-      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      await reloadCalendar()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
@@ -1228,7 +1245,7 @@
   async function handleUpdateEvent(id: number, params: Record<string, unknown>) {
     try {
       await updateEvent(id, params as unknown as UpdateEventParams)
-      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      await reloadCalendar()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
@@ -1237,7 +1254,7 @@
   async function handleUpdateEventStatus(id: number, status: string) {
     try {
       await updateEventStatus(id, status)
-      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      await reloadCalendar()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
@@ -1246,7 +1263,7 @@
   async function handleDeleteEvent(id: number) {
     try {
       await deleteEventCascade(id)
-      if (selectedSeasonId) calendarEvents = await fetchCalendarEvents(selectedSeasonId)
+      await reloadCalendar()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
@@ -1271,10 +1288,28 @@
 
   // ADR-084 — the barrel spans every season, so the calendar view is no longer
   // clamped to `selectedSeasonId`. Admin views still load per-season.
-  async function loadCalendar() {
+  /**
+   * The calendar's dataset, and the only thing allowed to set it.
+   *
+   * It spans EVERY season: the drum rolls back to the start of history with no
+   * season clamp (ADR-084 §4), so the season-scoped `fetchCalendarEvents`
+   * cannot feed it. Six sites used to refill `calendarEvents` from that query
+   * instead — every admin write path among them — which silently cut the
+   * calendar down to the selected season after a save. On 2026-09-02 that took
+   * the PROD calendar down: 66 month rows became 10 while the barrel still held
+   * a selection from the wider set, and the out-of-range index threw out of a
+   * `$derived`, killing the whole component tree (CalendarBarrel CB.30).
+   *
+   * The admin list keeps its own season-scoped load; only this one is shared.
+   */
+  async function reloadCalendar() {
     if (demo) return
+    calendarEvents = await fetchAllCalendarEvents()
+  }
+
+  async function loadCalendar() {
     try {
-      calendarEvents = await fetchAllCalendarEvents()
+      await reloadCalendar()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
@@ -1387,6 +1422,23 @@
     background: #4a90d9;
     color: #fff;
   }
+  .calendar-failed {
+    max-width: 46rem;
+    margin: 48px auto;
+    padding: 22px 26px;
+    border: 1px solid var(--line, #c9d1dc);
+    border-left: 5px solid var(--danger, #9e2418);
+    border-radius: 10px;
+    background: var(--surface, #fff);
+  }
+  .calendar-failed p { margin: 0 0 8px; }
+  .calendar-failed p:last-child { margin-bottom: 0; }
+  .calendar-failed-detail {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    opacity: 0.75;
+  }
+
   .error-banner {
     position: fixed;
     top: 16px;
