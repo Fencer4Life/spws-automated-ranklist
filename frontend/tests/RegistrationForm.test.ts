@@ -554,22 +554,23 @@ describe('RegistrationForm — the payment account comes from the event', () => 
     await findByText('PL 27 1140 2004 0000 3002 0135 5387')
   })
 
-  it('falls back to the association account when the event supplies none', async () => {
-    // Transitional. The Pages bundle deploys before deploy-prod is approved, so
-    // for the length of a CERT test the new frontend runs against a PROD
-    // database that has no payment columns at all — vw_calendar simply does not
-    // return them. Without a fallback the live payment panel would show a blank
-    // payee and IBAN to fencers who are trying to pay.
+  it('invents no account when the event supplies none', async () => {
+    // The transitional fallback is gone (ADR-079 open item 8, resolved once PROD
+    // carried migration 20260902000001). Showing the association's account for an
+    // event that resolves none would mask a misconfiguration behind a plausible
+    // number — and defeat the point of the toggle guard, which exists to stop
+    // that state being created at all.
     mockFetchEvent.mockResolvedValue({
       ...BASE_EVENT,
-      txt_payee: undefined,
-      txt_iban: undefined,
-      txt_payment_source: undefined,
+      txt_payee: null,
+      txt_iban: null,
+      txt_payment_source: 'NONE',
     } as never)
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await toPayment(container, findByText)
-    await findByText('STOWARZYSZENIE POLSKICH WETERANÓW SZERMIERKI')
-    await findByText('PL 06 1090 1665 0000 0001 5004 1549')
+    const values = Array.from(container.querySelectorAll('.reg-pv')).map((e) => e.textContent?.trim())
+    expect(values).not.toContain('PL 06 1090 1665 0000 0001 5004 1549')
+    expect(values).not.toContain('STOWARZYSZENIE POLSKICH WETERANÓW SZERMIERKI')
   })
 
   it('copies the same account it displays', async () => {
