@@ -2,7 +2,7 @@
 // registration flow's step state machine (identity -> verify/rodo -> payment).
 // Mocks the api module per the EventManager.test.ts pattern.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, fireEvent, waitFor } from '@testing-library/svelte'
 
 vi.mock('../src/lib/api', () => ({
@@ -21,6 +21,8 @@ import {
 } from '../src/lib/api'
 vi.mock('../src/lib/editToken', () => ({ newEditToken: vi.fn() }))
 import { newEditToken } from '../src/lib/editToken'
+import { setLocale, t } from '../src/lib/locale.svelte'
+import en from '../src/lib/locales/en.json'
 import RegistrationForm from '../src/components/RegistrationForm.svelte'
 import type { RegistrationEventInfo } from '../src/lib/types'
 
@@ -748,5 +750,35 @@ describe('RegistrationForm — correcting a submitted declaration', () => {
         expect.objectContaining({ editToken: 'tok-generated-0123456789abcdef', surname: 'POPRAWIONE' }),
       ),
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// RODO is the Polish name for the regulation; GDPR is the English one. The
+// consent step is the one screen a fencer is asked to read carefully, so the
+// English version has to name the law the way an English reader knows it.
+// ---------------------------------------------------------------------------
+describe('RegistrationForm — the consent notice names the right law', () => {
+  afterEach(() => setLocale('pl'))
+
+  it('GDPR.1: the English notice says GDPR, never RODO', () => {
+    setLocale('en')
+    expect(t('reg_rodo_title')).toContain('GDPR')
+    expect(t('reg_rodo_title')).not.toContain('RODO')
+  })
+
+  it('GDPR.2: the Polish notice still says RODO', () => {
+    setLocale('pl')
+    expect(t('reg_rodo_title')).toContain('RODO')
+  })
+
+  it('GDPR.3: no English string in the consent step says RODO', () => {
+    setLocale('en')
+    const consentKeys = Object.keys(en).filter((k) => k.startsWith('reg_rodo_'))
+    expect(consentKeys.length).toBeGreaterThan(10)
+    const offenders = consentKeys.filter((k) => /\bRODO\b/.test(t(k)))
+    // `rodo@spws.pl` is the association's real mailbox and stays as it is —
+    // the word boundary above is what keeps the address out of this.
+    expect(offenders).toEqual([])
   })
 })
