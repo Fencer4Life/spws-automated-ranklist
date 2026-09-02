@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="079-event-self-registration-identity.md">
-<meta name="adr-source-sha256" content="ac7973f69a72355ee7c90db6124c2eb60a163993430af3bf83ec37e605332047">
+<meta name="adr-source-sha256" content="53d04e319618c8ede5300815e6fd1a18bb51c5d8a86b0df8be5d568ddecfc662">
 <title>ADR-079 · Event Self-Registration &amp; Identity Resolution</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -285,7 +285,7 @@ cover the write path, so this is UI only. Deferred deliberately on 2026-09-02; t
 override unblocks the domestic events that exist today.</p>
 </li>
 <li>
-<p><strong>A transitional account fallback lives in the bundle again, and must be removed.</strong>
+<p><s><strong>A transitional account fallback lives in the bundle again, and must be removed.</strong></s> <strong>Resolved 2026-09-02</strong>, once PROD carried migration <code>20260902000001</code>: <code>LEGACY_SPWS_PAYEE</code> / <code>LEGACY_SPWS_IBAN</code> and the <code>||</code> fallbacks are gone, so an event resolving no account now shows none rather than the association's — a misconfiguration is visible instead of masked behind a plausible number. <code>fetchEventForRegistration</code> keeps <code>select('*')</code> deliberately: <code>deploy-pages</code> will always publish ahead of <code>deploy-prod</code>, so naming columns explicitly would break the live page on the <em>next</em> schema addition too. The original problem was:
 <code>deploy-pages</code> needs only <code>build</code>, so the frontend publishes before <code>deploy-prod</code> — which waits on
 a required reviewer — has run. For the length of that gap the new bundle queries a PROD database
 with no payment columns. Naming them returns <code>42703</code> and the page renders <em>&quot;event not found&quot;</em> for
@@ -601,5 +601,5 @@ ADR-050/070–074 (ingestion pipeline).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="078-gdpr-data-handling.html">← ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="080-clean-roster-ftl-seeding.html">→ ADR-080: Clean-Roster FTL Seeding</a></nav>
-<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>ac7973f69a72355ee7c90db6124c2eb60a163993430af3bf83ec37e605332047</code></footer>
+<footer class="foot">Generated from <code>079-event-self-registration-identity.md</code> · source SHA-256 <code>53d04e319618c8ede5300815e6fd1a18bb51c5d8a86b0df8be5d568ddecfc662</code></footer>
 </div></body></html>

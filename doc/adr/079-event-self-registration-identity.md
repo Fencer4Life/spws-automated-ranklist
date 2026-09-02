@@ -299,7 +299,7 @@ by registering once against the deployed URL and then querying **both** database
    cover the write path, so this is UI only. Deferred deliberately on 2026-09-02; the per-event
    override unblocks the domestic events that exist today.
 
-8. **A transitional account fallback lives in the bundle again, and must be removed.**
+8. ~~**A transitional account fallback lives in the bundle again, and must be removed.**~~ **Resolved 2026-09-02**, once PROD carried migration `20260902000001`: `LEGACY_SPWS_PAYEE` / `LEGACY_SPWS_IBAN` and the `||` fallbacks are gone, so an event resolving no account now shows none rather than the association's — a misconfiguration is visible instead of masked behind a plausible number. `fetchEventForRegistration` keeps `select('*')` deliberately: `deploy-pages` will always publish ahead of `deploy-prod`, so naming columns explicitly would break the live page on the *next* schema addition too. The original problem was:
    `deploy-pages` needs only `build`, so the frontend publishes before `deploy-prod` — which waits on
    a required reviewer — has run. For the length of that gap the new bundle queries a PROD database
    with no payment columns. Naming them returns `42703` and the page renders *"event not found"* for
