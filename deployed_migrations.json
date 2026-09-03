@@ -164,8 +164,8 @@
     "schema_fingerprint": "b9c654fc90808fc65c957e129f320ce9"
   },
   "prod": {
-    "last_updated": "2026-09-02T07:00:16Z",
-    "last_sha": "e758934611df11e84e3d5b4d41cb5b4ea705d1ab",
+    "last_updated": "2026-09-03T14:21:20Z",
+    "last_sha": "b38743a9ea840401a952f745174a33641aaa7707",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -322,8 +322,9 @@
       "20260828000013_prod_mirror_prior_link_swap.sql",
       "20260829000001_prod_mirror_field_ownership.sql",
       "20260902000001_event_payment_details.sql",
-      "20260902000002_event_payment_details_write_paths.sql"
+      "20260902000002_event_payment_details_write_paths.sql",
+      "20260903000001_pzsz_organizer_and_event_id.sql"
     ],
-    "schema_fingerprint": "fb29bdd66ea08b366cc706e75724953a"
+    "schema_fingerprint": "b9c654fc90808fc65c957e129f320ce9"
   }
 }
