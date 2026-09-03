@@ -1264,3 +1264,77 @@ describe('caret alignment', () => {
     expect(caretOffset(row(3, 1), 1, 0)).toBeNull()
   })
 })
+
+// ---------------------------------------------------------------------------
+// PZSz — Polish national senior events (CQ.76–CQ.81)
+// ---------------------------------------------------------------------------
+//
+// Polish veterans also enter senior national competitions run by Polski Związek
+// Szermierczy. Those events reach the calendar as PPS (Puchar Polski Seniorów)
+// and MPS (Mistrzostwa Polski Seniorów) codes and need their own hue, because
+// they are neither an SPWS veteran event nor an international one.
+
+describe('PZSz events', () => {
+  // CQ.76 — the hue hangs off the code prefix, not off id_organizer, because
+  // panelType() only ever sees the code.
+  it('CQ.76: classifies PPS and MPS as pzs', () => {
+    expect(panelType('PPS1s-2026-2027')).toBe('pzs')
+    expect(panelType('PPS2ef-2026-2027')).toBe('pzs')
+    expect(panelType('MPSefs-2026-2027')).toBe('pzs')
+  })
+
+  // CQ.77 — PPS starts with PP, exactly as PPW does, so ordering inside
+  // panelType() is load-bearing: matched after the ppw fallback it would never
+  // be reached, and PPW1 must not be swallowed by a loose /^PP/ either.
+  it('CQ.77: keeps PPW and MPW out of the pzs bucket', () => {
+    expect(panelType('PPW1-2026-2027')).toBe('ppw')
+    expect(panelType('MPW-2026-2027')).toBe('mpw')
+    expect(panelType('MPW-V0-2026-2027')).toBe('mpw')
+  })
+
+  // CQ.78 — the card's second status chip names the owning body.
+  it('CQ.78: reports PZSz as the registry', () => {
+    expect(registryOf('pzs')).toBe('PZSz')
+    expect(registryOf('ppw')).toBe('SPWS')
+    expect(registryOf('pew')).toBe('EVF')
+    expect(registryOf('int')).toBe('FIE')
+  })
+
+  // CQ.79 — these are domestic events. Leaving isInternationalEvent() alone is
+  // what puts them in the default `ppw` scope, so a veteran sees them without
+  // hunting for a toggle.
+  it('CQ.79: treats PZSz events as domestic', () => {
+    const event = {
+      txt_code: 'PPS1s-2026-2027',
+      bool_has_international: false,
+    } as unknown as CalendarEvent
+    expect(isInternationalEvent(event)).toBe(false)
+    // Present in the default domestic scope, and still present with the EVF
+    // toggle on — the toggle adds international events, it never removes these.
+    expect(filterByScope([event], 'ppw', true)).toHaveLength(1)
+    expect(filterByScope([event], 'all', true)).toHaveLength(1)
+  })
+
+  // CQ.80 — the code suffix is authoritative for weapons, and PZSz events
+  // carry no tournament rows at all, so this is the only source there is.
+  it('CQ.80: reads weapons from a PZSz code', () => {
+    expect(weaponLetters('PPS1s-2026-2027')).toEqual(['S'])
+    expect(weaponLetters('PPS1f-2026-2027')).toEqual(['F'])
+    expect(weaponLetters('PPS1e-2026-2027')).toEqual(['E'])
+    expect(weaponLetters('MPSefs-2026-2027')).toEqual(['E', 'F', 'S'])
+  })
+
+  // CQ.81 — a gender-split round inserts an UPPERCASE W or M before the weapon
+  // run. Uppercase on purpose: the trailing lowercase run IS the weapon list, so
+  // the project's usual M/F gender letters would give PPS4Fe, one case-fold from
+  // PPS4fe in which F means foil. W carries no weapon meaning, and staying
+  // uppercase keeps /[efs]+$/ resolving the weapon correctly.
+  it('CQ.81: a gender letter does not eat the weapon run', () => {
+    expect(weaponLetters('PPS4We-2025-2026')).toEqual(['E'])
+    expect(weaponLetters('PPS4Me-2025-2026')).toEqual(['E'])
+    expect(panelLabel('PPS4We-2025-2026')).toBe('PPS4W')
+    expect(panelLabel('PPS4Me-2025-2026')).toBe('PPS4M')
+    expect(panelLabel('PPS1s-2026-2027')).toBe('PPS1')
+    expect(panelType('PPS4We-2025-2026')).toBe('pzs')
+  })
+})

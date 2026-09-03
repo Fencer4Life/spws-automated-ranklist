@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
+<meta name="adr-source-sha256" content="0ae5935263289ab7ace7f023d6df558b3525c0b33d407a2fd357d0cb5515ea86">
+<title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 087</p><h1>PZSz as a fourth event source — Polish national senior events on the calendar</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-03; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">404 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-03; awaiting sign-off)
+<strong>Date:</strong> 2026-09-03
+<strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §F and §11 (<code>registryOf()</code> widens from three registries to four; a fourth hue enters the organizer channel; <code>PanelType</code> gains a fifth member)
+<strong>Relates to:</strong> <a href="046-pew-weapon-suffix.html">ADR-046</a> (the event-code shape this extends with a gender letter), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (childless CREATE, field ownership, code-keyed reconcile), <a href="028-evf-calendar-results-import.html">ADR-028</a> (the calendar-source precedent this deliberately does not generalise), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the partially-published-season lesson applied before it bit), <a href="083-server-enforced-authorization.html">ADR-083</a> (grants are table-level, so the new column needs none)
+<strong>Source:</strong> <code>doc/plans/pzsz-kalendarz-seniorski-2026-09-03.html</code>, <code>supabase/migrations/20260903000001_pzsz_organizer_and_event_id.sql</code>, <code>python/scrapers/pzsz_calendar.py</code>, <code>python/scrapers/pzsz_sync.py</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#the-source-measured">The source, measured</a></li><li class="depth-3"><a href="#the-finding-that-shapes-the-whole-scraper">The finding that shapes the whole scraper</a></li><li class="depth-3"><a href="#source-data-quality">Source data quality</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-pzsz-is-a-fourth-organizer-inserted-by-migration">1 · PZSz is a fourth organizer, inserted by migration</a></li><li class="depth-3"><a href="#2-tbl-event-id-pzsz-event-is-the-durable-identity">2 · `tbl_event.id_pzsz_event` is the durable identity</a></li><li class="depth-3"><a href="#3-our-season-window-decides-membership-theirs-is-pagination">3 · Our season window decides membership; theirs is pagination</a></li><li class="depth-3"><a href="#4-any-response-of-exactly-the-cap-is-presumed-truncated-and-raises">4 · Any response of exactly the cap is presumed truncated and raises</a></li><li class="depth-3"><a href="#5-event-codes-follow-adr-046-with-an-uppercase-gender-letter">5 · Event codes follow ADR-046, with an uppercase gender letter</a></li><li class="depth-3"><a href="#6-events-are-created-childless-no-tournament-rows">6 · Events are created childless — no tournament rows</a></li><li class="depth-3"><a href="#7-what-pzsz-publishes-per-event-and-what-it-does-not">7 · What PZSz publishes per event, and what it does not</a></li><li class="depth-3"><a href="#8-a-fifth-panel-type-and-a-fourth-registry-amending-adr-084">8 · A fifth panel type and a fourth registry — amending ADR-084</a></li><li class="depth-3"><a href="#9-a-separate-workflow-the-same-cron-and-queue-max-across-prod-write">9 · A separate workflow, the same cron, and `queue: max` across `prod-write`</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Polish veterans also enter senior national competitions, fencing the same pools as
+people half their age. The calendar carried SPWS (PPW/MPW), EVF (PEW) and FIE
+(MEW/MSW/PSW) events and nothing at all from Polski Związek Szermierczy, the national
+federation — so a veteran planning to test themselves at a senior national competition
+had to look somewhere else entirely.</p>
+<p>The goal is to encourage veterans into harder fields. That splits into two deliverables
+and this ADR records the first only: <strong>PZSz as a fourth organizer, its senior calendar
+scraped, its events shown in their own hue.</strong> Ingesting and scoring veteran results from
+those events is deliberately deferred — see §7.</p>
+<h3 id="the-source-measured">The source, measured</h3>
+<p><code>pzszerm.pl/zawody/kalendarium-zawodow/</code> is WordPress, server-rendered, no JavaScript.
+Rows are <code>td.tab-row</code> cells: name (linked to <code>…/zawody/?id=NNNN</code>), age category, weapons,
+season, start date, end date, location, attachments. Detail pages additionally carry a
+full weapon × gender tournament breakdown, so nothing like <code>evf_calendar.py</code>'s
+invitation-PDF weapon archaeology is needed.</p>
+<p>Six PPS events were verified live on 3 September 2026 — two rounds, three weapons. A PPS
+round is three separate competitions in three cities, unlike PPW where a round is one
+weekend in one hall.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>PZSz id</th>
+<th>Round</th>
+<th>Weapon</th>
+<th>City</th>
+<th>Dates</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4588</td>
+<td>I</td>
+<td>sabre</td>
+<td>Poznań</td>
+<td>03.10.2026</td>
+<td><code>PPS1s-2026-2027</code></td>
+</tr>
+<tr>
+<td>4581</td>
+<td>I</td>
+<td>foil</td>
+<td>Gdańsk</td>
+<td>24–25.10.2026</td>
+<td><code>PPS1f-2026-2027</code></td>
+</tr>
+<tr>
+<td>4596</td>
+<td>I</td>
+<td>épée</td>
+<td>Szczecin</td>
+<td>24–25.10.2026</td>
+<td><code>PPS1e-2026-2027</code></td>
+</tr>
+<tr>
+<td>4591</td>
+<td>II</td>
+<td>sabre</td>
+<td>Konin</td>
+<td>21.11.2026</td>
+<td><code>PPS2s-2026-2027</code></td>
+</tr>
+<tr>
+<td>4599</td>
+<td>II</td>
+<td>épée</td>
+<td>Warszawa</td>
+<td>21–22.11.2026</td>
+<td><code>PPS2e-2026-2027</code></td>
+</tr>
+<tr>
+<td>4585</td>
+<td>II</td>
+<td>foil</td>
+<td>Wrocław</td>
+<td>05–06.12.2026</td>
+<td><code>PPS2f-2026-2027</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>MPS is unannounced rather than missed: the name-only MPS query returns 10 rows spanning
+2021–2026, the newest being last season's. Rounds III and IV are likewise unpublished. A
+partially-published season is therefore normal, and later rounds are picked up on
+subsequent runs — this is the ADR-086 lesson applied before it bites, where an unannounced
+EVF stub fail-closed a whole season scrape for nine days from 19 August 2026.</p>
+<h3 id="the-finding-that-shapes-the-whole-scraper">The finding that shapes the whole scraper</h3>
+<p><strong>The listing caps at 70 rows, with no pagination, no error and no outward sign — and
+different filters return entirely different 70-row windows.</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th>Rows</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no filter</td>
+<td>70</td>
+<td>capped; descending, earliest 14.11.2026 — Sept/Oct 2026 invisible</td>
+</tr>
+<tr>
+<td><code>Kategorie_wiekowe = Seniorzy (S)</code></td>
+<td>70</td>
+<td>capped</td>
+</tr>
+<tr>
+<td><code>Nazwa = Puchar Polski senior</code></td>
+<td>70</td>
+<td>capped</td>
+</tr>
+<tr>
+<td><code>SezonAutocomplete = 2026/2027</code></td>
+<td>70</td>
+<td>capped</td>
+</tr>
+<tr>
+<td><code>Nazwa</code> + <code>SezonAutocomplete</code></td>
+<td>6</td>
+<td>complete</td>
+</tr>
+</tbody>
+</table></div>
+<p>Reading the obvious default view would have silently lost all three round I events. The
+cap truncates from the bottom of a descending render, and its earliest row is 14.11.2026.</p>
+<h3 id="source-data-quality">Source data quality</h3>
+<p>Live rows carry an end date of <strong>11.05.0251</strong> (id 4307), the typo <strong>mężćzyzn</strong> (id 4412),
+and inconsistent <code>Seniorów</code>/<code>seniorów</code> casing inside one series. Every one of these fails
+silently if handled wrongly — no exception, no error, just wrong data on a calendar a
+fencer plans around.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-pzsz-is-a-fourth-organizer-inserted-by-migration">1 · PZSz is a fourth organizer, inserted by migration</h3>
+<p><code>tbl_organizer</code> rows exist only in the PROD seed dumps (<code>supabase/seed_prod_*.sql:14-16</code>);
+no migration has ever inserted one. Two constraints decide the vehicle:</p>
+<ul>
+<li>Migrations run <strong>before</strong> the seed dump on CI and on <code>db reset</code>, so the insert must be
+idempotent and must survive the seed re-inserting the other three codes.</li>
+<li><code>python/pipeline/promote.py</code> resolves <code>id_organizer</code> to PROD <strong>by code</strong> and produces a
+NULL for an unresolved code, which a NOT NULL column then rejects (ADR-081).</li>
+</ul>
+<pre><code class="language-sql">INSERT INTO tbl_organizer (txt_code, txt_name)
+VALUES ('PZSz', 'Polski Związek Szermierczy')
+ON CONFLICT (txt_code) DO NOTHING;
+</code></pre>
+<p><code>idx_organizer_code</code> (<code>20250301000001_enums_tables_indexes.sql:169</code>) backs the
+<code>ON CONFLICT</code>. <strong>The ordering is a constraint, not tidiness:</strong> PZSz must exist on CERT and
+PROD before the first calendar promote runs, or that promote fails outright.</p>
+<p>The name stays Polish. <em>Związek</em> has no clean English equivalent, and the sibling row
+<em>Stowarzyszenie Polskich Weteranów Szermierki</em> is already stored untranslated.</p>
+<h3 id="2-tbl-event-id-pzsz-event-is-the-durable-identity">2 · <code>tbl_event.id_pzsz_event</code> is the durable identity</h3>
+<p>An INTEGER column with a <strong>per-season</strong> partial unique index
+(<code>idx_tbl_event_pzsz_season</code>), mirroring <code>idx_tbl_event_evf_calendar_season</code>. It earns its
+place three times:</p>
+<ul>
+<li><strong>Stable identity.</strong> PZSz names drift and carry live typos. An id survives a rename; a
+name-based match would create a duplicate event.</li>
+<li><strong>The re-check key.</strong> The fill-when-available pass needs to know which detail page
+belongs to which of our rows.</li>
+<li><strong>Change detection.</strong> A row whose id we hold but which vanishes from the listing is a
+cancellation or a re-key, and is surfaced rather than silently dropped.</li>
+</ul>
+<p>Matching is <strong>by source id first, by code only as a fallback</strong>. That order is load-bearing:
+a round moving from I to II changes the code, and a code-first match would read that as
+<em>delete one event, create another</em>, taking any registrations with it. The code fallback
+exists for the other direction — adopting a row an admin entered by hand rather than
+duplicating it.</p>
+<h3 id="3-our-season-window-decides-membership-theirs-is-pagination">3 · Our season window decides membership; theirs is pagination</h3>
+<p>PZSz does not define seasons the way we do, so <strong>their season label decides nothing</strong>. An
+event belongs to <code>SPWS-2026-2027</code> if and only if its dates fall inside our own
+<code>tbl_season.dt_start … dt_end</code>.</p>
+<p><code>SezonAutocomplete</code> is demoted to what it actually is: a pagination key for getting under
+the 70-row cap — worthless as semantics, load-bearing as access. The scraper reads our
+active season, derives the PZSz keys the window touches (<code>{2025/2026, 2026/2027, 2027/2028}</code> for 2026-07-13 … 2027-07-15), fetches each series × key, unions on the PZSz
+id, and date-filters against our window. Verified live:</p>
+<pre><code>'Puchar Polski senior'      2025/2026 → 13    'Mistrzostwa Polski senior' 2025/2026 →  1
+'Puchar Polski senior'      2026/2027 →  6    'Mistrzostwa Polski senior' 2026/2027 →  0
+'Puchar Polski senior'      2027/2028 →  0    'Mistrzostwa Polski senior' 2027/2028 →  0
+
+union 20 rows  →  date-filtered to SPWS-2026-2027  →  6 events
+</code></pre>
+<p>Three measured properties make this safe. A season key PZSz does not have returns <strong>zero</strong>
+rows, not the unfiltered 70 (confirmed against 2027/2028) — which is what lets the
+candidate set run a year ahead of publication. <code>Nazwa</code> matches case-insensitively as a
+substring, so the ASCII-safe <code>Puchar Polski senior</code> catches both casings while excluding
+<code>juniorów</code>, and removes the percent-encoding trap where a raw <code>ó</code> returns zero. And
+<code>Nazwa</code> alone is not sufficient — it returns the capped 70, so the season key is required
+as pagination even though it is ignored as meaning.</p>
+<p>The <code>pzsz_season</code> cell is still captured, purely as provenance.</p>
+<h3 id="4-any-response-of-exactly-the-cap-is-presumed-truncated-and-raises">4 · Any response of exactly the cap is presumed truncated and raises</h3>
+<p><code>assert_not_truncated()</code> is the one assertion that stops this scraper failing quietly. It
+raises at <code>len(rows) &gt;= 70</code> rather than <code>== 70</code>, so a source that later raises its own cap
+does not sail past it. The cost is a false alarm on the day a query legitimately returns
+70 rows; the alternative cost is missing events on a calendar veterans plan around.</p>
+<p>The cap is not currently biting — the narrowed query returns 6 rows this season and 13
+last. A third narrowing axis is held in reserve: <code>Bronie[0]</code>, giving <code>Nazwa</code> × season ×
+weapon at roughly five rows apiece.</p>
+<p><strong>A last-seen-id cursor does not replace this.</strong> The listing exposes no offset parameter;
+the detail page of a future event carries only name, start date, city and organizing club
+(verified on id 4588), so the fields we need exist only on the listing row; and ids are
+creation order, not date order (id 4637 is July 2027, id 4661 is December 2026), so
+<code>last + 1</code> would find only newly created rows and never revisit an edited one — a moved
+date, a changed venue, a cancellation. For a calendar that is precisely the wrong failure
+mode.</p>
+<h3 id="5-event-codes-follow-adr-046-with-an-uppercase-gender-letter">5 · Event codes follow ADR-046, with an uppercase gender letter</h3>
+<p>Round number, then lowercase weapon letters, then the season suffix. MPS carries no round
+(<code>MPSefs-2026-2027</code>), because a championship is not a round of anything.</p>
+<p>A PPS round is occasionally split by gender, and the two halves are <strong>separate
+competitions, not one event over two days</strong> — verified on both seasons that show it. Round
+IV épée 2025/2026 ran men in Gliwice 16–17.05 and women in Warszawa 17.05; the 2024/2025
+equivalent ran men in Gliwice under PIAST GLIWICE and women in Warszawa under AZS AWF
+WARSZAWA — different cities, different organizing clubs, six days apart. Both collide on
+<code>PPS4e</code>.</p>
+<p>The rule is an uppercase gender letter before the weapon letters: <strong><code>PPS4We</code> for women and
+<code>PPS4Me</code> for men.</strong></p>
+<p><strong>W, not the F this codebase would otherwise imply.</strong> Event-code weapon letters are English
+(<code>_WEAPON_LETTERS = {&quot;EPEE&quot;: &quot;e&quot;, &quot;FOIL&quot;: &quot;f&quot;, &quot;SABRE&quot;: &quot;s&quot;}</code>) while the project's gender
+letters are M/F (<code>enum_gender_type AS ENUM ('M','F')</code>, and tournament codes read
+<code>MPW-V0-F-EPEE</code>). Following that convention here would give <code>PPS4Fe</code> — one case-fold from
+<code>PPS4fe</code>, in a scheme whose trailing lowercase run <em>is</em> the weapon list. <strong>F is foil.</strong> So
+the existing gender convention cannot be inherited, and W is the letter carrying no weapon
+meaning. The Polish <code>K</code> would dodge the clash too, but sets a Polish gender letter against
+English weapon letters inside one code.</p>
+<p>Uppercase also keeps the gender letter clear of the lowercase weapon run, so
+<code>weaponLetters()</code>'s trailing <code>/[efs]+$/</code> still resolves <code>E</code>, and <code>panelLabel()</code> degrades to
+a readable <code>PPS4W</code> / <code>PPS4M</code> on the 48px tile. No announced 2026/2027 event exercises this,
+so it ships with a fail-loud collision guard: two events resolving to one code raise
+(<code>PzszCodeCollisionError</code>) rather than overwrite, mirroring <code>evf_calendar.py</code>'s
+<code>CalendarIntegrityError</code>.</p>
+<h3 id="6-events-are-created-childless-no-tournament-rows">6 · Events are created childless — no tournament rows</h3>
+<p><code>tbl_tournament.enum_age_category</code> is NOT NULL over V0..V4, and a senior bracket has no
+honest value for it. That question belongs to the scoring deliverable, so this creates no
+tournament rows at all.</p>
+<p>This is a supported state, not a workaround. ADR-081 records that the reconciler's CREATE
+is childless, and ADR-084 deliberately reads weapons from the code (<code>weaponLetters()</code>)
+rather than from <code>arr_weapons</code>, precisely because that column cannot express &quot;unknown&quot; —
+86 of 96 CERT rows sit on its all-three default. Tiles and cards therefore render weapons
+correctly with zero tournaments present, verified on LOCAL.</p>
+<h3 id="7-what-pzsz-publishes-per-event-and-what-it-does-not">7 · What PZSz publishes per event, and what it does not</h3>
+<p>Measured 3 September 2026 across seven live komunikat PDFs and all thirteen PPS detail
+pages of the 2025/2026 season.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Column</th>
+<th>Source</th>
+<th>Availability</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Invitation letter</td>
+<td><code>url_invitation</code></td>
+<td>detail page, <em>Komunikaty organizatora</em></td>
+<td>13/13</td>
+<td>build</td>
+</tr>
+<tr>
+<td>Venue city</td>
+<td><code>txt_location</code></td>
+<td>listing, <em>Miejsce</em></td>
+<td>6/6</td>
+<td>build</td>
+</tr>
+<tr>
+<td>Venue street address</td>
+<td><code>txt_venue_address</code></td>
+<td>komunikat PDF</td>
+<td>7/7</td>
+<td>build</td>
+</tr>
+<tr>
+<td>Registration deadline</td>
+<td>—</td>
+<td>—</td>
+<td>0/7</td>
+<td>not published</td>
+</tr>
+<tr>
+<td>Registration link</td>
+<td>—</td>
+<td>—</td>
+<td>0/7</td>
+<td>not published</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>The invitation is a fill-when-available loop.</strong> Every PPS event of 2025/2026 carries a
+komunikat; none of the six 2026/2027 events does yet — their detail pages read <em>Brak
+komunikatów</em>. The letter is published closer to the event, so the field cannot be filled at
+first scrape. Each daily run re-visits the detail page of every PZSz event in the active
+season and fills the field the first time the section stops being empty. <strong>Fill-blank-only:</strong>
+an admin-entered URL is never overwritten, matching the reconciler's existing field-ownership
+split (ADR-081).</p>
+<p><strong>The EVF PDF heuristic does not transfer.</strong> <code>parse_event_detail_html()</code> finds an EVF
+invitation by testing <code>href.lower().endswith(&quot;.pdf&quot;)</code>. The PZSz URL is
+<code>/test/fileDownload.php?fileId=…</code> — an opaque download endpoint with no extension at all,
+so that rule finds nothing. PZSz anchors on the labelled <em>Komunikaty organizatora</em> section
+instead, which is a statement about what the section <em>is</em> rather than a guess about how a
+file happens to be named.</p>
+<p><strong><code>url_registration</code> and <code>dt_registration_deadline</code> stay NULL, asserted rather than merely
+unset.</strong> All seven komunikaty resolve entry to <em>&quot;zgodnie z regulaminem PZS&quot;</em>, the
+federation's standing regulations; the only concrete cutoff any of them states is
+confirmation to the Technical Committee 45 minutes before the start, which is a check-in
+rule at the venue. Zero of seven reference a registration host. Entry runs through the
+licence system behind <code>pzszerm.pl/logowanie/</code> — club-mediated and login-walled. A non-empty
+<code>url_registration</code> plus <code>dt_end</code> is what lights the tile's live-registration dot (ADR-084
+§G), so a plausible-looking value would tell a veteran they can enter when they cannot. An
+empty field states the truth.</p>
+<p>The deadline harvest ships <strong>off</strong>, behind the same <code>HARVEST_DEADLINE</code> flag EVF uses, for
+the same recorded reason: EVF measured a live yield of 0 in 13, PZSz measures 0 in 7.</p>
+<h3 id="8-a-fifth-panel-type-and-a-fourth-registry-amending-adr-084">8 · A fifth panel type and a fourth registry — amending ADR-084</h3>
+<p><code>panelType()</code> switches on <code>txt_code</code>, not on <code>id_organizer</code>, so the hue hangs off the new
+prefix rather than the foreign key. <code>/^(PPS|MPS)/</code> is matched <strong>before</strong> the <code>ppw</code>
+fallback and <strong>after</strong> the <code>MPW</code> branch: PPS shares its first two letters with PPW and MPS
+with MPW, so the branch must be specific enough not to swallow them and early enough to be
+reached at all.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PanelType</code></td>
+<td>gains <code>'pzs'</code></td>
+</tr>
+<tr>
+<td><code>panelType()</code></td>
+<td>`/^(PPS</td>
+</tr>
+<tr>
+<td><code>registryOf()</code></td>
+<td>return union widens to <code>'SPWS' | 'EVF' | 'FIE' | 'PZSz'</code></td>
+</tr>
+<tr>
+<td><code>EventCard.svelte</code></td>
+<td><code>.card.pzs</code> (<code>--edge</code>), <code>.ccd.pzs</code> registry chip</td>
+</tr>
+<tr>
+<td><code>CalendarBarrel.svelte</code></td>
+<td><code>.p.pzs</code>, <code>.p.soon.pzs</code>, <code>.crt.pzs</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Existing edges are <code>#2e7d52</code> green (SPWS), <code>#1f6fb0</code> blue (EVF), <code>#b1791d</code> amber (FIE).
+PZSz's own brand red is <code>#c72626</code>; the desaturated <code>#c05555</code> keeps the family coherent
+while staying recognisably theirs.</p>
+<p>These events are domestic, so <code>isInternationalEvent()</code> is <strong>untouched</strong> and they appear in
+the default <code>ppw</code> scope — which is the point. A veteran should see them without hunting for
+a toggle.</p>
+<h3 id="9-a-separate-workflow-the-same-cron-and-queue-max-across-prod-write">9 · A separate workflow, the same cron, and <code>queue: max</code> across <code>prod-write</code></h3>
+<p><code>.github/workflows/pzsz-sync.yml</code> runs at <code>'0 6 * * *'</code>, the same minute as
+<code>evf-sync.yml</code>. <strong>Not a job inside <code>evf-sync.yml</code>:</strong> a job there shares one run identity —
+a single red/green, one re-run button, one set of EVF-specific <code>workflow_dispatch</code> inputs.
+Job-level independence would be real; run-level independence would not, and the run is what
+an operator looks at.</p>
+<p>The scrape job carries <strong>no</strong> concurrency group — it touches nothing on PROD, so it runs
+genuinely in parallel with the EVF scrape. Only the promote joins <code>prod-write</code>, with
+<code>if: ${{ !cancelled() }}</code>, which is not cosmetic: <code>evf-sync.yml</code> documents that without it
+an upstream failure silently <em>skips</em> the promote, costing 13 unpromoted events on
+14 July 2026.</p>
+<p><strong><code>queue: max</code> goes on every member of <code>prod-write</code>, not only the new job.</strong> GitHub's
+documented default is that only one job may be pending per group, and a newly queued job
+<em>cancels</em> the already-pending one; <code>cancel-in-progress: false</code> does not cover this.
+Protecting only the new job would leave it cancellable by the others, and cancelled is not
+failed, so nothing would alert. The plan named four jobs; the group actually has eight
+members, and all eight now carry the setting:</p>
+<p><code>evf-parity-sweep.yml::parity-sweep</code>, <code>evf-sync.yml::promote-calendar-pre</code>,
+<code>evf-sync.yml::promote-calendar</code>, <code>ftl-seed.yml::deadline-sweep</code>,
+<code>promote-season.yml</code> (workflow-level), <code>promote.yml</code> (workflow-level),
+<code>pzsz-sync.yml::promote-calendar</code>, <code>recompute-drain-prod.yml::drain</code>.</p>
+<p>If <code>queue: max</code> proves unavailable on this runner it fails as a workflow validation error
+on the first run — loudly, immediately, cheap to detect. The fallback is a 15-minute
+stagger (<code>45 5 * * *</code>), which costs nothing real.</p>
+<p><strong>Same-minute scheduling is safe because the two promotes are mutually redundant by
+construction.</strong> <code>promote --mode calendar</code> is a whole-active-season create/update/delete
+reconciler keyed on <code>txt_code</code> (ADR-081): it converges everything in CERT, not just the
+rows the calling workflow scraped. If the PZSz promote fails, EVF's converges the PZSz rows
+minutes later, and vice versa. CERT is the source of truth for the calendar and is never
+left wrong by a promote failure.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Generalise <code>evf_calendar.py</code> to a second source.</strong> Rejected: its 1536 lines are
+EVF-specific pathology — invitation-PDF weapon extraction, slug dedup, future-COMPLETED
+healing — none of which applies to a clean server-rendered HTML table. Generalising it
+now would drag all of that in for no benefit.</li>
+<li><strong>Persist the highest PZSz id and start the next run at <code>id + 1</code>.</strong> Rejected on three
+independent grounds, set out in §4: no offset parameter exists, detail pages lack the
+fields, and ids are creation order rather than date order.</li>
+<li><strong>Trust <code>SezonAutocomplete</code> as the season.</strong> Rejected: PZSz seasons are not ours, and
+boundary events would be filed wrongly in both directions. Demoted to pagination (§3).</li>
+<li><strong>Reuse <code>python/tools/_backends.py</code> for Management API access.</strong> Rejected: it is framed
+for one-shot operator tools and has no retry. A workflow running unattended on a cron
+needs the retry-on-429/503 that <code>evf_sync.py</code> already carried, so those helpers moved to
+<code>python/scrapers/_supabase.py</code> instead.</li>
+<li><strong>Follow the project's M/F gender letters.</strong> Rejected: <code>PPS4Fe</code> is one case-fold from
+<code>PPS4fe</code> in a scheme where the trailing lowercase run is the weapon list, and F is foil
+(§5).</li>
+<li><strong>Point <code>url_registration</code> at the PZSz licence-system login.</strong> Rejected: it would light
+the tile's live-registration dot and tell a veteran they can enter when entry is
+club-mediated (§7).</li>
+<li><strong>Delete a CERT row when its PZSz id vanishes from the listing.</strong> Rejected: a
+disappearance is a cancellation or a re-key, and a delete would take any registrations
+with it. Reported instead, for a human.</li>
+<li><strong>Add a job to <code>evf-sync.yml</code> rather than a new workflow.</strong> Rejected on run identity
+(§9).</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New files</strong></p>
+<ul>
+<li><code>supabase/migrations/20260903000001_pzsz_organizer_and_event_id.sql</code></li>
+<li><code>supabase/tests/70_pzsz_organizer_and_event_id.sql</code> — plan-test-ID 70, 11 assertions</li>
+<li><code>python/scrapers/pzsz_calendar.py</code> — pure parsing and planning</li>
+<li><code>python/scrapers/pzsz_sync.py</code> — the CLI, with <code>--dry-run</code></li>
+<li><code>python/scrapers/_supabase.py</code> — shared Management API + Telegram access</li>
+<li><code>python/tests/test_pzsz_calendar.py</code> — pzsz.1–pzsz.24</li>
+<li><code>python/tests/test_pzsz_sync.py</code> — pzsz.25–pzsz.34</li>
+<li><code>python/tests/fixtures/pzsz_*</code> — four listing responses, two detail pages, one komunikat PDF</li>
+<li><code>.github/workflows/pzsz-sync.yml</code></li>
+</ul>
+<p><strong>Changed files</strong></p>
+<ul>
+<li><code>python/scrapers/evf_sync.py</code> — <code>_management_query</code>, <code>_telegram</code> and <code>_get_active_season</code>
+moved to <code>_supabase.py</code>; behaviour-preserving, with the EVF tests unedited</li>
+<li><code>frontend/src/lib/calendarMonths.ts</code>, <code>EventCard.svelte</code>, <code>CalendarBarrel.svelte</code> — §8</li>
+<li>six workflow files — <code>queue: max</code> (§9)</li>
+</ul>
+<p><strong>One seam worth recording.</strong> Moving <code>_get_active_season</code> out of <code>evf_sync.py</code> moved its
+bare-name lookup of <code>_management_query</code> with it, silently redirecting the call away from
+the name the EVF tests patch — nine tests failed by issuing a <em>real</em> HTTP request.
+<code>_supabase._get_active_season</code> therefore takes an optional <code>query</code> callable, and <code>evf_sync</code>
+keeps a three-line wrapper pinning it to its own module global. Any future extraction of a
+patched helper faces the same hazard.</p>
+<p><strong>Fixtures are committed and the tests never touch the network.</strong> The six 2026/2027 events
+carry no komunikat today and that will change, probably before this ships — which is the
+whole point of the fill-when-available pass, but it also means the <code>no_komunikat</code> fixture
+must stay a saved copy rather than be re-fetched.</p>
+<p><strong>No change to the shared spine.</strong> CERT, <code>promote.py</code> and PROD take none: the reconciler is
+organizer-agnostic and keys on <code>txt_code</code>. <code>id_pzsz_event</code> is not carried to PROD, which is
+correct — the enrichment pass runs against CERT.</p>
+<p><strong>Defects found and deliberately not fixed here.</strong> <code>PSW</code> was added to
+<code>enum_tournament_type</code> and to the scoring function in March 2025 but never to the lifecycle
+trigger (<code>20250301000003_lifecycle_triggers.sql:48-53</code>), so PSW tournaments carry a NULL
+<code>num_multiplier</code> today. Real, unrelated, untouched — recorded so the scoring deliverable
+starts from it rather than rediscovering it.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong>Scoring PPS/MPS results.</strong> Out of scope by decision, not by omission. The rule as
+discussed is that results score with the raw senior placing — 12th of 120 is 12th of 120
+— with the ranklist capping how many count (best 1 or best 2, unsettled).
+<code>tbl_scoring_config.json_ranking_rules</code> is already shaped as <code>{&quot;best&quot;: N, &quot;types&quot;: [...]}</code>
+and needs no new machinery for the cap. A sixth <code>enum_tournament_type</code> is <strong>not</strong> a
+one-line change: three hardcoded <code>CASE enum_type</code> blocks resolve the multiplier and none
+has an <code>ELSE</code>. <code>enum_age_category</code> would need a <code>SENIOR</code> member, and
+<code>parse_tournament_name()</code> (<code>python/tools/scrape_ftl_event_urls.py:289</code>) maps a bracket
+named <em>Senior</em> to <code>V0</code>, which on a genuinely senior event silently mis-tags every
+bracket. <strong>Recommendation:</strong> sequence the season's planned scoring-formula change first,
+so PPS results are not scored under a formula about to be replaced.</li>
+<li><strong>Whether PZSz hosts its own results.</strong> Each tournament has a page at
+<code>/zawody/kalendarium-zawodow/turniej/?id=NNNNN</code> carrying tabs for <em>Lista startowa</em>,
+<em>Grupy</em>, <em>Ranking Grupowy</em>, <em>Tabela</em> and <em>Klasyfikacja końcowa</em>, with pool-sheet markup
+already present. The one sampled (id 10520) was empty, so this is a lead rather than a
+finding. <strong>Recommendation:</strong> measure coverage across completed events before designing
+the results path — if PZSz populates it, the scoring deliverable may not need
+FencingTimeLive for PPS and MPS at all.</li>
+<li><strong>Backfill.</strong> Current season only; no historical PZSz events are imported.
+<strong>Recommendation:</strong> leave it that way unless the scoring deliverable needs a baseline.</li>
+<li><strong><code>queue: max</code> availability.</strong> Verified against GitHub documentation, not against this
+runner. <strong>Recommendation:</strong> watch the first scheduled run; the fallback is the 15-minute
+stagger in §9.</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>0ae5935263289ab7ace7f023d6df558b3525c0b33d407a2fd357d0cb5515ea86</code></footer>
+</div></body></html>

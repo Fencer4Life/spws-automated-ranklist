@@ -15,6 +15,12 @@ permissions:
 concurrency:
   group: prod-write
   cancel-in-progress: false
+  # queue: max on EVERY member of prod-write. cancel-in-progress: false is not
+  # enough on its own -- GitHub queues only ONE pending run per group and
+  # CANCELS the pending one when a new one arrives. A member without this can
+  # silently kill a sibling's pending promote, and cancelled is not failed, so
+  # nothing alerts. Rationale in full: pzsz-sync.yml.
+  queue: max
 
 jobs:
   promote:

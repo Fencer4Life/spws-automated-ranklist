@@ -42,6 +42,11 @@ jobs:
     concurrency:
       group: prod-write
       cancel-in-progress: false
+      # queue: max on EVERY member of prod-write. The setting is per-job and
+      # GitHub queues only ONE pending job per group, cancelling the pending one
+      # when a new job arrives -- so a member without it can silently cancel a
+      # sibling's pending promote. Rationale in full: pzsz-sync.yml.
+      queue: max
     steps:
       - uses: actions/checkout@v5
 

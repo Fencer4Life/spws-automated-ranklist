@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PZSz calendar source — handover to implementation</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--coral) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.killer{background:var(--card);border:2px solid var(--coral);border-radius:6px;
+ padding:18px 22px;margin:18px 0 22px;max-width:86ch}
+.killer .lb{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--coral);font-weight:700;display:block;margin-bottom:7px}
+.killer h4{margin:0 0 8px;font-size:21px;color:var(--ink)}
+.killer p{margin-bottom:0;font-size:15.5px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:14px;font-weight:600;text-align:right;white-space:nowrap}
+tr.hi td{background:var(--coral-bg)}
+tr.hi td.d{color:var(--coral)}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+.q{border-left:3px solid var(--violet);padding:3px 0 3px 15px;margin:16px 0 20px;max-width:82ch}
+.q b{color:var(--violet);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+ text-transform:uppercase;display:block;margin-bottom:5px}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li.now::before{background:var(--coral);color:#fff}
+.steps li.now{font-weight:600}
+.fig{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;
+ margin:18px 0 10px;overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:660px;height:auto}
+.figcap{font-size:13px;color:var(--muted);margin:0 0 22px;max-width:84ch}
+.lg{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;font-family:var(--mono);font-size:10.5px;
+ letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lg span{display:flex;align-items:center;gap:6px}
+.lg i{width:11px;height:11px;border-radius:2px;display:inline-block}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+</style></head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · PZSz calendar source · handover to implementation · 3 September 2026</div>
+  <h1>Nothing is built yet. The plan is approved, the source is measured, and the eight steps are ordered.</h1>
+  <p class="dek">This file exists so a fresh session can start cutting code without re-deriving a
+  day of source archaeology. Read it, then the plan, then start at step&nbsp;2.</p>
+  <div class="chips">
+    <span class="chip warn">zero code written</span>
+    <span class="chip">plan approved</span>
+    <span class="chip bad">worktree has 46 unrelated changes</span>
+    <span class="chip">scoring out of scope</span>
+  </div>
+</div>
+
+<div class="toc">
+<ol>
+  <li><a href="#s01">The prompt to open with</a></li>
+  <li><a href="#s02">State of play</a></li>
+  <li><a href="#s03">The worktree — read before you commit</a></li>
+  <li><a href="#s04">The eight steps</a></li>
+  <li><a href="#s05">Traps that cost real time to rediscover</a></li>
+  <li><a href="#s06">Environment facts</a></li>
+  <li><a href="#s07">Reproducing the fixtures</a></li>
+  <li><a href="#s08">Explicitly out of scope</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<h2 id="s01"><span class="num">01</span>The prompt to open with</h2>
+
+<p>Paste this into a new session in the repository root.</p>
+
+<pre><code>Implement the PZSz senior calendar source.
+
+Read first, in order:
+  1. doc/plans/pzsz-kalendarz-handover-2026-09-03.html   — start here
+  2. doc/plans/pzsz-kalendarz-seniorski-2026-09-03.html  — the approved plan
+
+Nothing is built yet; both files are documentation only. Begin at step 2 of
+the plan's implementation order — the schema migration.
+
+Honour the repo's mandatory gates: graphify before analysis, RED to GREEN TDD,
+postgrestools on changed SQL, ruff + basedpyright on Python, npm run check on
+Svelte/TS, scripts/refresh-graph.sh before any commit.
+
+The worktree carries 12 modified and 34 untracked files unrelated to this work.
+Preserve them and stage explicit paths only.
+
+Scoring PPS/MPS results is OUT of scope for this deliverable.</code></pre>
+
+<h2 id="s02"><span class="num">02</span>State of play</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Artefact</th><th>State</th></tr></thead>
+<tbody>
+<tr><td class="d">doc/plans/pzsz-kalendarz-seniorski-2026-09-03.html</td><td><span class="st s-ok">written</span> the approved plan, 11 sections</td></tr>
+<tr><td class="d">doc/plans/pzsz-kalendarz-handover-2026-09-03.html</td><td><span class="st s-ok">written</span> this file</td></tr>
+<tr><td class="d">migration — organizer + id_pzsz_event</td><td><span class="st s-bad">not started</span></td></tr>
+<tr><td class="d">python/scrapers/pzsz_calendar.py</td><td><span class="st s-bad">not started</span></td></tr>
+<tr><td class="d">python/scrapers/pzsz_sync.py</td><td><span class="st s-bad">not started</span></td></tr>
+<tr><td class="d">python/scrapers/_supabase.py</td><td><span class="st s-bad">not started</span></td></tr>
+<tr><td class="d">.github/workflows/pzsz-sync.yml</td><td><span class="st s-bad">not started</span></td></tr>
+<tr><td class="d">frontend — 'pzs' panel type + hue</td><td><span class="st s-bad">not started</span></td></tr>
+<tr><td class="d">ADR / RTM / handbook</td><td><span class="st s-bad">not started</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b class="k">No database on any environment has been touched.</b> No CERT or PROD row was
+created, altered or deleted during the analysis; every finding came from public pages and
+repository sources.</p>
+
+<h2 id="s03"><span class="num">03</span>The worktree — read before you commit</h2>
+
+<div class="call stop">
+<span class="lb">Do not stage broadly</span>
+On <code>main</code> at <code>db2c2d0</code>, the worktree carries <b>12 modified</b> and
+<b>34 untracked</b> files that have nothing to do with this work — evidence SQL, report JSON,
+several unrelated plan documents, <code>frontend/node_modules</code> churn. A <code>git add -A</code>
+would sweep all of it into your commit. <b>Stage explicit paths only.</b>
+</div>
+
+<h2 id="s04"><span class="num">04</span>The eight steps</h2>
+
+<ol class="steps">
+<li><b>The plan and this handover.</b> <span class="st s-ok">done</span></li>
+
+<li><b>Schema migration.</b> The <code>PZSz</code> organizer row plus
+<code>tbl_event.id_pzsz_event INTEGER</code>.
+<br>Idempotent <code>INSERT … ON CONFLICT (txt_code) DO NOTHING</code>; the unique index is
+<code>idx_organizer_code</code>. Run <code>/plpgsql-check</code> after writing it.
+<br><b>This must reach CERT <i>and</i> PROD before any calendar promote runs</b> —
+<code>promote.py</code> resolves <code>id_organizer</code> to PROD by code and raises if
+unresolved.</li>
+
+<li><b><code>pzsz_calendar.py</code> + fixtures + tests, RED → GREEN.</b> Pure parsing and
+planning, no database I/O. Function list is in plan §5. The <b>70-row assertion</b> is the single
+most important behaviour to test.</li>
+
+<li><b><code>_supabase.py</code> extraction.</b> Move <code>_management_query</code>,
+<code>_telegram</code> and <code>_get_active_season</code> out of <code>evf_sync.py</code>
+(lines 51, 72, 84) and re-point <code>evf_sync</code> at them. Behaviour-preserving — the EVF tests
+must stay green with no edits.</li>
+
+<li><b><code>pzsz_sync.py</code> + <code>--dry-run</code>.</b> Fetch → filter → plan → diff against
+CERT → insert/update. Verify on LOCAL before any cloud write.</li>
+
+<li><b>Detail-page enrichment pass.</b> The fill-when-available loop for
+<code>url_invitation</code> and <code>txt_venue_address</code>, fill-blank-only. Deadline harvest
+ships <b>off</b>.</li>
+
+<li><b><code>pzsz-sync.yml</code></b> at <code>cron '0 6 * * *'</code>, plus <code>queue: max</code>
+added to <b>every</b> job in the <code>prod-write</code> concurrency group — the new one, both
+promotes in <code>evf-sync.yml</code>, and the one in <code>promote.yml</code>.</li>
+
+<li><b>Frontend, then documentation.</b> <code>'pzs'</code> panel type and light-red hue; then the
+ADR, the ADR-084 amendment, specification Appendix C, RTM, handbook pages; then
+<code>scripts/refresh-graph.sh</code>; then commit.</li>
+</ol>
+
+<h2 id="s05"><span class="num">05</span>Traps that cost real time to rediscover</h2>
+
+<p class="sub">Each of these was measured against the live source on 3 September 2026. Every one of
+them fails <b>silently</b> if you get it wrong — no exception, no error, just wrong data.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Trap</th><th>What actually happens</th></tr></thead>
+<tbody>
+<tr class="hi"><td><b>The 70-row cap</b></td><td>Every broad query returns exactly 70 rows, truncated, no pagination. The default view renders <b>descending</b> and its earliest row is 14.11.2026 — so reading it loses all three round&nbsp;I events. <b>Treat any 70-row response as truncated and raise.</b></td></tr>
+<tr class="hi"><td><b>Season is pagination, not truth</b></td><td><code>SezonAutocomplete</code> only exists to get under the cap. Membership is decided by our own <code>tbl_season</code> window. Query the season keys the window touches — <code>{2025/2026, 2026/2027, 2027/2028}</code> — union, then date-filter.</td></tr>
+<tr><td>Unknown season key</td><td>Returns <b>0 rows</b>, not the unfiltered 70. Verified on <code>2027/2028</code>. This is what makes running a year ahead safe.</td></tr>
+<tr><td>Percent-encoding</td><td><code>Seniorzy (S)</code> needs <code>%28S%29</code> or the filter no-ops to 70. A raw <code>ó</code> returns 0. Use the ASCII-safe <code>Puchar Polski senior</code> / <code>Mistrzostwa Polski senior</code> — matching is case-insensitive substring, and <code>juniorów</code> does not match.</td></tr>
+<tr><td>Corrupt dates</td><td>Id 4307 carries an end date of <code>11.05.0251</code>. Reject out-of-range years loudly; never write one to <code>dt_end</code>.</td></tr>
+<tr><td>Invitation URLs have no extension</td><td>EVF finds invitations with <code>href.endswith(".pdf")</code>. PZSz serves <code>/test/fileDownload.php?fileId=…</code>. Anchor on the labelled <i>Komunikaty organizatora</i> section instead.</td></tr>
+<tr><td><b>F is foil</b></td><td>Gender-split rounds use <code>W</code>/<code>M</code>, not the project's usual <code>M</code>/<code>F</code>: <code>PPS4Fe</code> sits one case-fold from <code>PPS4fe</code> in a scheme whose trailing lowercase run is the weapon list.</td></tr>
+<tr><td>Pending promotes get cancelled</td><td>GitHub cancels an already-pending job when a new one queues in the same concurrency group. Without <code>queue: max</code> on <b>every</b> member, the PZSz promote dies silently — cancelled is not failed, so nothing alerts.</td></tr>
+<tr><td>Deadline regexes yield nothing</td><td><code>HARVEST_DEADLINE = False</code> in <code>evf_calendar.py:294</code> records 0/13 on EVF. PZSz measures 0/7. Ship it off.</td></tr>
+<tr><td>No registration link exists</td><td>0/7 komunikaty carry one; entry is club-mediated through the login-walled System Sorga. Leave <code>url_registration</code> NULL — a non-empty value lights the tile's registration dot and would tell a fencer they can enter when they cannot.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="s06"><span class="num">06</span>Environment facts</h2>
+
+<ul>
+<li><code>.venv</code> at the repository root has <b><code>pypdf</code></b> installed — needed for
+the komunikat parsing. The system Python does not, and there is no <code>pdftotext</code> on this
+machine.</li>
+<li><code>python/tools/_backends.py</code> exists but is framed for one-shot tools and has
+<b>no retry</b>. It is not the right base for a scheduled workflow — hence the
+<code>_supabase.py</code> extraction in step 4.</li>
+<li>All four target columns already exist on <code>tbl_event</code> —
+<code>url_invitation</code>, <code>url_registration</code>,
+<code>dt_registration_deadline</code>, <code>txt_venue_address</code> — from
+<code>20260326000001_event_schema_extension.sql</code>. Only <code>id_pzsz_event</code> is new.</li>
+<li>The plan's <code>queue: max</code> claim rests on current GitHub documentation. If the runner
+rejects it, that is a <b>workflow validation error on the first run</b> — loud and immediate. The
+fallback is a 15-minute stagger.</li>
+</ul>
+
+<h2 id="s07"><span class="num">07</span>Reproducing the fixtures</h2>
+
+<p>The analysis fixtures live in a session scratchpad that will not survive. These commands
+regenerate everything the tests need. Save them under
+<code>python/tests/fixtures/</code>.</p>
+
+<pre><code># The 6-row complete result — the happy path
+curl -sG "https://pzszerm.pl/zawody/kalendarium-zawodow/" \
+  --data-urlencode "Nazwa=Puchar Polski senior" \
+  --data-urlencode "SezonAutocomplete=2026/2027" \
+  -o pzsz_calendar_pps_2026_2027.html
+
+# A 70-row capped response — must make the parser raise
+curl -s "https://pzszerm.pl/zawody/kalendarium-zawodow/" \
+  -o pzsz_calendar_capped_70.html
+
+# Detail page WITHOUT a komunikat (our six events today)
+curl -s "https://pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4588" \
+  -o pzsz_event_no_komunikat.html
+
+# Detail page WITH a komunikat, and the PDF behind it
+curl -s "https://pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4550" \
+  -o pzsz_event_with_komunikat.html
+curl -s "https://pzszerm.pl/test/fileDownload.php?fileId=878d72bbb42d1f043d30edd71f0347c27c2b5136" \
+  -o pzsz_komunikat_mps.pdf     # contains "ul. Siennicka 40B"</code></pre>
+
+<div class="call warn">
+<span class="lb">These are live URLs, and the source moves</span>
+The six 2026/2027 events currently have no komunikat. That will change, probably before this ships —
+which is the whole point of the fill-when-available pass, but it also means the
+<code>no_komunikat</code> fixture must be captured from the saved file rather than re-fetched later.
+Commit the fixtures; do not have the tests hit the network.
+</div>
+
+<h2 id="s08"><span class="num">08</span>Explicitly out of scope</h2>
+
+<ul>
+<li><b>Scoring.</b> No <code>enum_tournament_type</code> value, no multiplier column, no
+<code>json_ranking_rules</code> edit, no results ingestion. The decided rule and the measured blast
+radius are recorded in plan §11 for the next deliverable.</li>
+<li><b>Backfill.</b> Current season only.</li>
+<li><b>The PZSz <code>Weteran (W)</code> category.</b> Those are SPWS's own MPW/PPW events.</li>
+<li><b>The PSW multiplier bug.</b> Plan §11 records that <code>PSW</code> was never added to the
+lifecycle trigger and carries a NULL <code>num_multiplier</code> today. Real, unrelated, untouched.</li>
+</ul>
+
+</div>
+
+<footer>
+Written 3 September 2026 at the close of the planning session, against repository state
+<code>main @ db2c2d0</code>. Companion: the approved plan at
+<a href="pzsz-kalendarz-seniorski-2026-09-03.html">pzsz-kalendarz-seniorski-2026-09-03.html</a>.
+Every source claim here was measured against live public pages on that date and is restated with its
+evidence in the plan; no database was read from or written to, and no credential appears in either
+document.
+</footer>
+
+</div>
+</body>
+</html>
