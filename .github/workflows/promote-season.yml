@@ -30,6 +30,11 @@ permissions:
 concurrency:
   group: prod-write
   cancel-in-progress: false
+  # queue: max on EVERY member of prod-write. GitHub queues only ONE pending run
+  # per group, cancelling the pending one when a new one arrives -- so a member
+  # without it can silently cancel a sibling's pending promote. Cancelled is not
+  # failed, so nothing alerts. Rationale in full: pzsz-sync.yml.
+  queue: max
 
 jobs:
   promote-season:

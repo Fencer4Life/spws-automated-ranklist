@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting the PZSz migration onto CERT and PROD — a decision</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--coral) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;
+ overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--coral);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.killer{background:var(--card);border:2px solid var(--coral);border-radius:6px;
+ padding:18px 22px;margin:18px 0 22px;max-width:86ch}
+.killer .lb{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+ color:var(--coral);font-weight:700;display:block;margin-bottom:7px}
+.killer h4{margin:0 0 8px;font-size:21px;color:var(--ink)}
+.killer p{margin-bottom:0;font-size:15.5px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--navy);font-weight:600}
+td.n{font-family:var(--mono);font-size:14px;font-weight:600;text-align:right;white-space:nowrap}
+tr.hi td{background:var(--coral-bg)}
+tr.hi td.d{color:var(--coral)}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.s-grey{background:var(--grey-bg);color:var(--grey)}
+.q{border-left:3px solid var(--violet);padding:3px 0 3px 15px;margin:16px 0 20px;max-width:82ch}
+.q b{color:var(--violet);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+ text-transform:uppercase;display:block;margin-bottom:5px}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li.now::before{background:var(--coral);color:#fff}
+.steps li.now{font-weight:600}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 22px;
+ margin:0 0 16px;max-width:86ch}
+.opt.rec{border:2px solid var(--green);background:var(--card)}
+.opt h4{margin:0 0 4px;font-size:19px;font-family:var(--serif);font-weight:600}
+.opt .tag{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ font-weight:700;display:block;margin-bottom:8px;color:var(--muted)}
+.opt.rec .tag{color:var(--green)}
+.opt p{margin:0 0 10px;font-size:15px}
+.opt ul{margin-bottom:0;font-size:14.5px}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+</style></head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · PZSz calendar source · CERT + PROD migration · 3 September 2026</div>
+  <h1>The migration cannot be hand-applied, and the sanctioned route ships more than a migration.</h1>
+  <p class="dek">You asked me to apply <code>20260903000001</code> to CERT and PROD. I stopped
+  before touching either, because the only correct mechanism carries the whole feature to
+  production with it &mdash; and one line in it is unverified against your runner.</p>
+  <div class="chips">
+    <span class="chip good">nothing written to CERT or PROD</span>
+    <span class="chip good">only pending migration is ours</span>
+    <span class="chip warn"><code>queue: max</code> unverified</span>
+    <span class="chip warn">branch not pushed</span>
+    <span class="chip bad">decision needed</span>
+  </div>
+</div>
+
+<div class="toc"><ol>
+  <li><a href="#why">Why I did not just run it</a></li>
+  <li><a href="#state">What CERT and PROD hold right now</a></li>
+  <li><a href="#ships">What a release actually ships</a></li>
+  <li><a href="#risk">The one line that worries me</a></li>
+  <li><a href="#git">A git detail you should know</a></li>
+  <li><a href="#question">The question, and my recommendation</a></li>
+</ol></div>
+
+<div class="body">
+
+<h2 id="why"><span class="num">01</span>Why I did not just run it</h2>
+
+<p>The repository has a script that runs SQL against CERT and PROD, and it would have
+executed this migration without complaint. Its own governing procedure forbids exactly
+that:</p>
+
+<div class="q">
+  <b>cloud-db-ops, &ldquo;Scope &mdash; data, not schema&rdquo;</b>
+  Schema changes belong in <code>supabase/migrations/</code> and must flow through CI so CERT
+  and PROD converge and the fingerprint gate stays meaningful. Applying DDL by hand
+  desynchronises the environments and silently invalidates the release pipeline&rsquo;s central
+  check. <em>If you find yourself reaching for</em> <code>ALTER TABLE</code> <em>here, stop and
+  write a migration.</em>
+</div>
+
+<p>That is not bureaucratic. <code>release.yml</code> computes a schema fingerprint from a clean
+LOCAL stack and then refuses to deploy unless CERT and PROD hash to the same value. A
+hand-applied <code>ALTER TABLE</code> would make the environments <em>correct</em> and the gate
+<em>blind</em> &mdash; and the gate is the only thing standing between a schema drift and a
+silent production divergence. It is also the check that caught the 25 June 2026 PROD-deploy
+failure.</p>
+
+<p>So the migration reaches CERT and PROD one way: <code>scripts/apply-migrations.sh</code>,
+called only from <code>release.yml</code>, which triggers on a successful CI run
+<b class="k">on <code>main</code></b> and checks out <code>main</code>.</p>
+
+<h2 id="state"><span class="num">02</span>What CERT and PROD hold right now</h2>
+
+<p class="sub">Read-only, through <code>scripts/cloud-sql.sh</code>. Nothing was written.</p>
+
+<div class="tw"><table>
+<thead><tr><th>Check</th><th>CERT</th><th>PROD</th></tr></thead>
+<tbody>
+<tr><td>Organizers present</td><td><code>EVF</code>, <code>FIE</code>, <code>SPWS</code></td><td><code>EVF</code>, <code>FIE</code>, <code>SPWS</code></td></tr>
+<tr><td><code>PZSz</code> organizer</td><td><span class="st s-bad">absent</span></td><td><span class="st s-bad">absent</span></td></tr>
+<tr><td><code>tbl_event.id_pzsz_event</code></td><td><span class="st s-bad">absent</span></td><td><span class="st s-bad">absent</span></td></tr>
+<tr class="hi"><td>Pending migrations</td><td><code>20260903000001</code> &mdash; and only that</td><td><code>20260903000001</code> &mdash; and only that</td></tr>
+</tbody>
+</table></div>
+
+<div class="call good"><span class="lb">This is the good news</span>
+Both environments are otherwise completely caught up. Ours is the <em>only</em> pending
+migration on either. A release would apply exactly one DDL file, and the fingerprint check
+either side of it would be meaningful rather than papering over a backlog.</div>
+
+<h2 id="ships"><span class="num">03</span>What a release actually ships</h2>
+
+<p>Here is the gap between what you asked for and what the mechanism does. Merging the branch
+to <code>main</code> to get the migration deployed also, in the same run, does all of this:</p>
+
+<div class="tw"><table>
+<thead><tr><th>Job</th><th>Effect</th><th>Is this what you asked for?</th></tr></thead>
+<tbody>
+<tr><td class="d">deploy-cert</td><td>Applies <code>20260903000001</code> to CERT, verifies fingerprint</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">deploy-prod</td><td>Applies <code>20260903000001</code> to PROD, verifies fingerprint</td><td><span class="st s-ok">yes</span></td></tr>
+<tr><td class="d">deploy-pages</td><td>Publishes the frontend build &mdash; including the new light-red PZSz hue</td><td><span class="st s-wip">not asked</span></td></tr>
+<tr><td class="d">deploy-cert / deploy-prod</td><td>Deploys Edge Functions to both environments</td><td><span class="st s-wip">not asked</span></td></tr>
+<tr class="hi"><td class="d">(side effect of merge)</td><td><code>pzsz-sync.yml</code> becomes live on <code>main</code> and starts scraping CERT daily at 06:00&nbsp;UTC, then promoting to PROD</td><td><span class="st s-bad">not asked</span></td></tr>
+</tbody>
+</table></div>
+
+<p>That last row is the one that matters. Scheduled workflows only run from the default
+branch, so the daily PZSz scrape does not exist until the merge &mdash; and the morning after
+it, six PZSz events appear on the public PROD calendar without anyone pressing anything.
+That may be exactly what you want. It is not what &ldquo;apply the migration&rdquo; says.</p>
+
+<h2 id="risk"><span class="num">04</span>The one line that worries me</h2>
+
+<div class="killer">
+  <span class="lb">Unverified against your runner</span>
+  <h4><code>queue: max</code> is now on eight jobs, six of which already work today.</h4>
+  <p>The approved plan called for it, measured against GitHub&rsquo;s documentation on
+  3&nbsp;September. I could not verify it &mdash; there is no <code>actionlint</code> on this
+  machine and CI does not lint workflow files. If GitHub does not accept the key, every
+  workflow carrying it becomes an <em>invalid workflow file</em>, and that now includes
+  <code>evf-sync.yml</code>, <code>promote.yml</code>, <code>promote-season.yml</code>,
+  <code>evf-parity-sweep.yml</code>, <code>ftl-seed.yml</code> and
+  <code>recompute-drain-prod.yml</code> &mdash; the working EVF production pipeline.</p>
+</div>
+
+<p>The plan accepted this risk when it applied to one new job, where the worst case is that
+the new thing does not start. Extending it to the whole <code>prod-write</code> group was
+correct &mdash; the setting is per-job and a member without it can cancel a sibling&rsquo;s
+pending promote &mdash; but it also widened the blast radius from <em>the new feature fails</em>
+to <em>the existing EVF pipeline fails</em>.</p>
+
+<div class="call good"><span class="lb">There is a free way to settle it</span>
+Push the branch and manually dispatch <code>pzsz-sync.yml</code> <em>from the branch</em>. Nothing
+scheduled runs from a non-default branch, so the six existing workflows are untouched. If
+<code>queue: max</code> is invalid, the dispatch fails instantly with a syntax error and we
+learn it at zero cost. Expect the run to then go red at the CERT query anyway &mdash;
+<code>id_pzsz_event</code> does not exist there yet &mdash; which is harmless and, in fact,
+confirms the ordering the ADR insists on: schema first.</div>
+
+<h2 id="git"><span class="num">05</span>A git detail you should know</h2>
+
+<p>Local <code>main</code> and <code>origin/main</code> have diverged, and it is not because of
+me:</p>
+
+<pre><code>origin/main   db2c2d0 → ba5cf43 → 6fcb337   (two CI reconcile-log commits, [skip ci])
+local main    db2c2d0 → dbbecce            (the PZSz plan + handover — never pushed)
+my branch     dbbecce → 65f91fb            (the implementation)</code></pre>
+
+<p>The commit carrying the approved plan and handover, <code>dbbecce</code>, has never left
+this machine. My branch sits on top of it, so pushing the feature also publishes those two
+documents &mdash; which is presumably fine, but you should know it rather than discover it. A
+rebase onto <code>origin/main</code> is needed either way, and it is clean: the two remote
+commits touch only <code>doc/staging/reconcile/</code>.</p>
+
+<h2 id="question"><span class="num">06</span>The question, and my recommendation</h2>
+
+<div class="q">
+  <b>Decision needed</b>
+  Getting <code>20260903000001</code> onto CERT and PROD means running a release from
+  <code>main</code>. Do you want that release to carry the whole PZSz feature, or only the
+  schema?
+</div>
+
+<div class="opt rec">
+  <span class="tag">Option A &mdash; recommended</span>
+  <h4>Ship the whole feature, in a verified order</h4>
+  <p>Rebase onto <code>origin/main</code>, push the branch, dispatch <code>pzsz-sync.yml</code>
+  from it to settle <code>queue: max</code> for free, then merge to <code>main</code> and let
+  CI&nbsp;&rarr;&nbsp;Release apply the migration to CERT and then PROD.</p>
+  <ul>
+    <li><b>Why:</b> the feature is finished and fully gated &mdash; 890 pgTAP assertions, 1164
+    pytest, 721 vitest, every coherence script green, and six correct events verified on a real
+    LOCAL run against the live source. Holding the schema back from the code that uses it buys
+    nothing and leaves CERT in a state no code targets.</li>
+    <li><b>The <code>queue: max</code> risk is retired before the merge,</b> not discovered by
+    a red EVF run at 06:00 the next morning.</li>
+    <li><b>Cost:</b> the morning after the merge, six PZSz events appear on the public PROD
+    calendar. If you would rather look at them on CERT first, say so &mdash; I can merge with
+    the cron commented out and dispatch the scrape by hand.</li>
+  </ul>
+</div>
+
+<div class="opt">
+  <span class="tag">Option B</span>
+  <h4>Schema only, in its own release</h4>
+  <p>Put <code>20260903000001</code> alone on a branch, merge that, let Release apply it to
+  CERT and PROD, and land the scraper, workflow, frontend and documentation afterwards.</p>
+  <ul>
+    <li><b>Why you might:</b> it is literally what you asked for, and PROD&rsquo;s calendar does
+    not change at all &mdash; an unused column and one unused organizer row are invisible to
+    every fencer.</li>
+    <li><b>Cost:</b> two releases instead of one, and the <code>queue: max</code> question stays
+    open until the second. It also splits a commit whose message, ADR and tests describe one
+    coherent change.</li>
+  </ul>
+</div>
+
+<div class="opt">
+  <span class="tag">Option C</span>
+  <h4>Hand-apply the DDL through <code>cloud-sql.sh</code></h4>
+  <p>Technically available, and I will do it if you tell me to after reading this &mdash; it is
+  your database and your call.</p>
+  <ul>
+    <li><b>What it costs:</b> <code>deployed_migrations.json</code> would not record it, so the
+    next release would try to apply it again (harmless &mdash; the migration is idempotent) while
+    the fingerprint gate compares hashes it can no longer explain. The environments would be
+    right and the mechanism that proves they are right would be wrong.</li>
+    <li><b>I do not recommend it</b> when the sanctioned path is available, the queue is empty,
+    and ours is the only pending file.</li>
+  </ul>
+</div>
+
+</div>
+
+<footer>
+Written 3 September 2026, after implementing the PZSz calendar source and before touching any
+cloud environment. CERT and PROD were read through <code>scripts/cloud-sql.sh</code> and not
+written to; no credential appears in this file. Companion documents:
+<a href="pzsz-kalendarz-seniorski-2026-09-03.html">the approved plan</a>,
+<a href="pzsz-kalendarz-handover-2026-09-03.html">the handover</a>, and
+<a href="../adr/087-pzsz-senior-calendar-source.html">ADR-087</a>.
+</footer>
+
+</div></body></html>

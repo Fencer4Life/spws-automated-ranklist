@@ -17,8 +17,13 @@ import type { CalendarEvent } from './types'
  * retired strip classified it separately and then painted it identically to
  * `ppw`; discarding the bucket now would turn the past-season anchor decision
  * (ADR-084 open item 2) into a prerequisite instead of a styling choice.
+ *
+ * `pzs` is the fifth: Polish national senior events (PPS / MPS), run by Polski
+ * Związek Szermierczy rather than by SPWS. Veterans enter them alongside people
+ * half their age, so they belong on the calendar — but they are neither an SPWS
+ * veteran event nor an international one, and share a hue with neither.
  */
-export type PanelType = 'ppw' | 'mpw' | 'pew' | 'int'
+export type PanelType = 'ppw' | 'mpw' | 'pew' | 'int' | 'pzs'
 
 export type CalendarScope = 'all' | 'ppw'
 
@@ -321,6 +326,11 @@ export function panelType(code: string): PanelType {
   if (/^PEW/.test(code)) return 'pew'
   if (/^(IMEW|IMSW|MEW|MSW|PSW)/.test(code)) return 'int'
   if (/^MPW/.test(code)) return 'mpw'
+  // Before the ppw fallback, and matched on the full three-letter prefix. PPS
+  // shares its first two letters with PPW and MPS with MPW, so this must be
+  // both specific enough not to swallow them and early enough to be reached at
+  // all — `return 'ppw'` below catches everything that gets this far.
+  if (/^(PPS|MPS)/.test(code)) return 'pzs'
   return 'ppw'
 }
 
@@ -345,9 +355,10 @@ export function panelLabel(code: string): string {
 }
 
 /** Which body owns the event, for the card's second status chip. */
-export function registryOf(type: PanelType): 'SPWS' | 'EVF' | 'FIE' {
+export function registryOf(type: PanelType): 'SPWS' | 'EVF' | 'FIE' | 'PZSz' {
   if (type === 'pew') return 'EVF'
   if (type === 'int') return 'FIE'
+  if (type === 'pzs') return 'PZSz'
   return 'SPWS'
 }
 

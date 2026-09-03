@@ -706,6 +706,12 @@
     --org: #b1791d;
     background: #fdf3e2;
   }
+  /* PZSz's own brand red is #c72626, desaturated here so it sits in the same
+     tonal family as the three above rather than shouting over them. */
+  .p.pzs {
+    --org: #c05555;
+    background: #fdf0f0;
+  }
   /* Imminent — inside seven days. The saturated step, so the row a fencer has
      to act on this week is the loudest thing on the drum. */
   .p.soon.ppw,
@@ -717,6 +723,9 @@
   }
   .p.soon.int {
     background: #fbe9c4;
+  }
+  .p.soon.pzs {
+    background: #f7d5d5;
   }
   /* Past — more than thirty days finished. Neutral, and the organizer edge
      desaturates with it so the row recedes as one object. */
@@ -932,5 +941,8 @@
   }
   .crt.int {
     --caret: #b1791d;
+  }
+  .crt.pzs {
+    --caret: #c05555;
   }
 </style>

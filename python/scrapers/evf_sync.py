@@ -16,12 +16,14 @@ import argparse
 import json
 import os
 import sys
-import time
 import traceback
 import uuid
 
-import httpx
-
+from python.scrapers._supabase import _get_active_season as _shared_get_active_season
+from python.scrapers._supabase import (
+    _management_query,
+    _telegram,
+)
 from python.scrapers.evf_calendar import (
     STALE_WINDOW_DAYS,
     LogicalIntegrityError,
@@ -48,48 +50,13 @@ from python.scrapers.ftl_auth import (
 )
 
 
-def _management_query(ref: str, token: str, sql: str) -> list[dict]:
-    """Execute SQL via Supabase Management API with retry."""
-    for attempt in range(3):
-        try:
-            resp = httpx.post(
-                f"https://api.supabase.com/v1/projects/{ref}/database/query",
-                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                json={"query": sql},
-                timeout=60,
-            )
-            if resp.status_code in (429, 503):
-                time.sleep(3 * (attempt + 1))
-                continue
-            if resp.status_code >= 400:
-                raise RuntimeError(f"Management API error ({resp.status_code}): {resp.text[:200]}")
-            return resp.json()
-        except httpx.ReadTimeout:
-            time.sleep(3 * (attempt + 1))
-    raise RuntimeError("Management API: max retries exceeded")
-
-
-def _telegram(bot_token: str, chat_id: str, msg: str) -> None:
-    """Send Telegram notification."""
-    if not bot_token or not chat_id:
-        print(f"[Telegram] {msg}")
-        return
-    httpx.post(
-        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-        data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
-        timeout=10,
-    )
-
-
 def _get_active_season(ref: str, token: str) -> dict | None:
-    """Get active season from CERT."""
-    rows = _management_query(
-        ref,
-        token,
-        "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
-        "FROM tbl_season WHERE bool_active = TRUE",
-    )
-    return rows[0] if rows else None
+    """Get active season from CERT.
+
+    Deliberately a thin wrapper rather than a re-export: it pins the query to
+    THIS module's `_management_query`, which is the name the tests patch.
+    """
+    return _shared_get_active_season(ref, token, query=_management_query)
 
 
 def _record_calendar_scrape(

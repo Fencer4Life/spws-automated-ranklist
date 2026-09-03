@@ -79,7 +79,8 @@ if [ -f "$RTM" ]; then
   # 2026-07-23: +FR-132 (dispatcher authenticates its caller, requires aal2)
   # 2026-09-02: +FR-134 (calendar dataset spans every season; a calendar failure is contained)
   #             +FR-133 (deny-by-default grants; anon surface is an allowlist) — ADR-083
-  EXPECTED=133
+  # 134 since 2026-09-03: FR-135 (PZSz as a fourth calendar organizer, ADR-087).
+  EXPECTED=134
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else
