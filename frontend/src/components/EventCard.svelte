@@ -394,6 +394,12 @@
   .card.int {
     --edge: #b1791d;
   }
+  /* PZSz's own brand red is #c72626. A desaturated relative of it stays
+     recognisably theirs while sitting in the same tonal family as the SPWS
+     green, EVF blue and FIE amber above. */
+  .card.pzs {
+    --edge: #c05555;
+  }
   @keyframes card-tilt {
     from {
       transform: perspective(760px) rotateX(9deg) translateY(-5px);
@@ -497,6 +503,10 @@
   .ccd.int {
     background: #faeeda;
     color: #412402;
+  }
+  .ccd.pzs {
+    background: #fbeaea;
+    color: #4b0f0f;
   }
   .cnm {
     font-size: 15px;
