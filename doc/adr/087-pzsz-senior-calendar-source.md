@@ -5,6 +5,7 @@
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §F and §11 (`registryOf()` widens from three registries to four; a fourth hue enters the organizer channel; `PanelType` gains a fifth member)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the event-code shape this extends with a gender letter), [ADR-081](081-cert-prod-event-reconciler.md) (childless CREATE, field ownership, code-keyed reconcile), [ADR-028](028-evf-calendar-results-import.md) (the calendar-source precedent this deliberately does not generalise), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the partially-published-season lesson applied before it bit), [ADR-083](083-server-enforced-authorization.md) (grants are table-level, so the new column needs none)
 **Source:** `doc/plans/pzsz-kalendarz-seniorski-2026-09-03.html`, `supabase/migrations/20260903000001_pzsz_organizer_and_event_id.sql`, `python/scrapers/pzsz_calendar.py`, `python/scrapers/pzsz_sync.py`
+**Amended by:** [ADR-088](088-calendar-location-contract.md) (PZSz adopts the shared location contract and gains venue-title extraction from the komunikat's `Miejsce Zawodów` line, which §7 here read past and discarded; the city path is unchanged in output).
 
 ## Context
 

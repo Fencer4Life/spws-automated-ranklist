@@ -4,6 +4,7 @@
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (carves out one-time curated enrichment of calendar-facing fields).
+**Amended by:** [ADR-088](088-calendar-location-contract.md) (closes the `txt_location` venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only).
 
 ## Amendment (2026-08-09 — curated enrichment is permitted, once)
 

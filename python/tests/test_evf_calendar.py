@@ -2536,3 +2536,66 @@ class TestFilterStale:
         assert sorted(scrape_calls) == [87, 99], (
             f"expected both events scraped without filter; got {scrape_calls}"
         )
+
+
+# ---------------------------------------------------------------------------
+# The location contract (evf.65–evf.68)
+# ---------------------------------------------------------------------------
+#
+# The scraper used to write the VENUE TITLE into `location`, which is the column
+# documented to hold a city. The frontend then guessed venue-from-city on the way
+# out and, failing that, printed the hall name into a 48px tile. The city is now
+# resolved once, at scrape time, from the best evidence available.
+
+
+class TestLocationContract:
+    """evf.65–evf.68: a real city in `location`, never a venue."""
+
+    def test_the_fixture_yields_cities_not_venues(self):
+        """evf.65: no parsed event carries a hall name as its location."""
+        from python.scrapers._location import looks_like_venue
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        for fixture in ("evf_calendar.html", "evf_calendar_past.html"):
+            events = parse_evf_calendar_html((FIXTURES / fixture).read_text(encoding="utf-8"))
+            assert events
+            for event in events:
+                assert not looks_like_venue(event["location"]), (fixture, event["location"])
+
+    def test_the_name_beats_a_disagreeing_address(self):
+        """evf.66: the address says Prilly and Bromma; EVF's own naming says
+        Lausanne and Stockholm, which is what a fencer is looking for."""
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        events = parse_evf_calendar_html(
+            (FIXTURES / "evf_calendar.html").read_text(encoding="utf-8")
+        )
+        by_name = {e["name"]: e for e in events}
+
+        chania = by_name["EVF Circuit – Chania, Crete (GRE)"]
+        assert chania["location"] == "Chania"  # not "Crete"
+
+        cognac = by_name["European Team Championships 2026 – Cognac"]
+        assert cognac["location"] == "Cognac"  # not the Complexe Sportif
+
+    def test_the_address_rescues_a_name_with_no_separator(self):
+        """evf.67: 'Critérium de Paris 2026' has no dash, so the city can only
+        come from the address."""
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        events = parse_evf_calendar_html(
+            (FIXTURES / "evf_calendar.html").read_text(encoding="utf-8")
+        )
+        by_name = {e["name"]: e for e in events}
+        assert by_name["Critérium de Paris 2026"]["location"] == "Paris"
+
+    def test_an_unrecoverable_city_is_blank_not_a_guess(self):
+        """evf.68: 'Levi Open (FIN)' carries no venue, no address and no
+        separator. Blank is the honest answer."""
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        events = parse_evf_calendar_html(
+            (FIXTURES / "evf_calendar.html").read_text(encoding="utf-8")
+        )
+        by_name = {e["name"]: e for e in events}
+        assert by_name["Levi Open (FIN)"]["location"] == ""

@@ -420,3 +420,65 @@ class TestDetailPageEnrichment:
         # states is confirmation to the Technical Committee 45 minutes before
         # the start, which is a check-in rule at the venue.
         assert venue_address_from_pdf_bytes(KOMUNIKAT_PDF.read_bytes()) is not None
+
+
+class TestLocationContract:
+    """pzsz.35-pzsz.38: the shared contract, applied to the PZSz source.
+
+    PZSz publishes the same three things EVF does, in its own places: the city in
+    the listing's Miejsce column, and BOTH a venue title and a street address in
+    the organizer's komunikat --
+
+        2. Miejsce Zawodow : OSiR SIENNICKA - Praga Poludnie   <- venue title
+                             ul. Siennicka 40B                  <- street
+
+    The venue title was previously discarded outright.
+    """
+
+    def test_the_listing_city_is_never_a_venue(self):
+        """pzsz.35: Miejsce is clean today; the contract keeps it that way if the
+        source ever starts writing hall names into it, as EVF's does."""
+        from python.scrapers._location import looks_like_venue
+        from python.scrapers.pzsz_calendar import parse_calendar_html
+
+        rows = parse_calendar_html(PPS_2026_2027.read_text(encoding="utf-8"))
+        assert rows
+        for row in rows:
+            assert not looks_like_venue(row["location"]), row["location"]
+        assert {r["location"] for r in rows} == {
+            "Poznań",
+            "Gdańsk",
+            "Szczecin",
+            "Konin",
+            "Warszawa",
+            "Wrocław",
+        }
+
+    def test_the_venue_title_is_read_from_the_komunikat(self):
+        """pzsz.36: previously discarded entirely."""
+        from python.scrapers.pzsz_calendar import venue_title_from_pdf_bytes
+
+        assert venue_title_from_pdf_bytes(KOMUNIKAT_PDF.read_bytes()) == (
+            "OSiR SIENNICKA – Praga Południe"
+        )
+
+    def test_a_street_present_drops_the_venue_title(self):
+        """pzsz.37: the shared venue rule, same as EVF."""
+        from python.scrapers.pzsz_calendar import location_from_komunikat
+
+        city, address = location_from_komunikat(KOMUNIKAT_PDF.read_bytes(), city="Warszawa")
+        assert city == "Warszawa"
+        assert address == "ul. Siennicka 40B"
+
+    def test_no_street_promotes_the_venue_title(self):
+        """pzsz.38: a komunikat naming a hall but no street yields the hall as
+        the address rather than nothing -- the other half of the same rule."""
+        from python.scrapers._location import resolve_location
+
+        city, address = resolve_location(
+            city_candidates=["Warszawa"],
+            venue_title="OSiR SIENNICKA – Praga Południe",
+            address="",
+        )
+        assert city == "Warszawa"
+        assert address == "OSiR SIENNICKA – Praga Południe"

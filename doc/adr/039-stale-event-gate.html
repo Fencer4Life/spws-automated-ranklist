@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="039-stale-event-gate.md">
-<meta name="adr-source-sha256" content="b3a90e497a1b46355ed0d80201bf1487b9693d30d96380bd022ddc2b88b68c62">
+<meta name="adr-source-sha256" content="047fd2e089e22e9e221b8402e1e6710e65099aa31cca407f740f76e0d9424229">
 <title>ADR-039 · EVF Scraper Dedup Algorithm + Stale-Event Gate</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 039</p><h1>EVF Scraper Dedup Algorithm + Stale-Event Gate</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">254 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)</dd></div><div><dt>Date</dt><dd class="">2026-04-25 <strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse) <strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (the MEDIUM location dedup rung now compares cities to cities on both sides rather than a scraped venue to a stored city; country is present on every affected row, so the STRONG rung decides them during the single transitional run).</dd></div><div><dt>Source</dt><dd class=""><code>039-stale-event-gate.md</code></dd></div><div><dt>Length</dt><dd class="">255 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)
 <strong>Date:</strong> 2026-04-25
-<strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)</p>
+<strong>Relates to:</strong> ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)
+<strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (the MEDIUM location dedup rung now compares cities to cities on both sides rather than a scraped venue to a stored city; country is present on every affected row, so the STRONG rung decides them during the single transitional run).</p>
 </div>
 </header>
 <div class="layout">
@@ -301,5 +302,5 @@ repair when the supposed duplicates themselves own genuine results.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="038-evf-intake-polish-only.html">← ADR-038: EVF-Organized Tournaments Ingest POL-Only Rows</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="040-multi-slot-event-urls.html">→ ADR-040: Multi-Slot Event Result URLs with Compact-on-Save</a></nav>
-<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>b3a90e497a1b46355ed0d80201bf1487b9693d30d96380bd022ddc2b88b68c62</code></footer>
+<footer class="foot">Generated from <code>039-stale-event-gate.md</code> · source SHA-256 <code>047fd2e089e22e9e221b8402e1e6710e65099aa31cca407f740f76e0d9424229</code></footer>
 </div></body></html>
