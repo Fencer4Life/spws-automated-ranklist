@@ -2,7 +2,7 @@
 
 **Status:** Draft (proposed 2026-09-04; awaiting sign-off)
 **Date:** 2026-09-04
-**Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §8 (the card's field order and its registry chip), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the resolved weapon set now reaches `arr_weapons`, not only the event code)
+**Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §8 and its registry-from-code assumption (the card's field order and its registry chip), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the resolved weapon set now reaches `arr_weapons`, not only the event code)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the weapon-letter suffix this keeps as authoritative), [ADR-088](088-calendar-location-contract.md) (the sibling "resolve it at the source" decision for the city)
 **Source:** `supabase/migrations/20260904000001_event_weapons_from_code.sql`, `frontend/src/components/EventCard.svelte`
 
@@ -115,10 +115,34 @@ dominated the row. The logo is also the only shrinkable element in row one —
 pills and code are text and would truncate instead, so the SPWS wordmark yields
 from 80px to 59px at the 375px viewport rather than letting the code clip.
 
-**All four registries carry a mark**: SPWS, EVF, FIE (`MEW`/`MSW`/`PSW`/`IMEW`/
-`IMSW`) and PZSz. `alt` carries the abbreviation, which is now its only
+**All four registries carry a mark**: SPWS, EVF, FIE and PZSz. `alt` carries the abbreviation, which is now its only
 appearance — the registry chip is retired, so `alt` is both the screen-reader
 label and the visible fallback when an asset fails.
+
+### 5 · The organizer is read from the row, not inferred from the code
+
+The logo was chosen by `registryOf(panelType(txt_code))`, a prefix heuristic:
+`PEW`→EVF, `IMEW|IMSW|MEW|MSW|PSW`→FIE, `MPW`→SPWS, `PPS|MPS`→PZSz, else SPWS. It
+disagrees with `tbl_event` in **two of the ten code families in use**:
+
+| prefix | organizer on the row | heuristic |
+| --- | --- | --- |
+| `DMEW` | EVF | SPWS — fell through to the default |
+| `IMEW` | EVF | FIE — swept up with the world championships |
+
+`DMEW` is EVF's European **team** championship and `IMEW` its individual European
+championship; only `IMSW` and `MSW` are FIE's. Nothing flagged the drift, because
+a heuristic has no way to disagree with the data it approximates — it was found
+by eye, on the Cognac card showing an SPWS logo.
+
+`vw_calendar` already joined `tbl_organizer` for the display name, so
+`txt_organizer_code` costs one column. The card reads it and keeps the heuristic
+only as a fallback: for rows carrying no organizer, and for an organizer with no
+mark of its own, where a best guess beats an empty registry slot.
+
+`panelType` is deliberately **not** changed. It drives the tile hue, which is a
+presentation channel, not a claim about who organises what — and the barrel tile
+has only a code to work from.
 
 ## Alternatives considered
 
@@ -134,6 +158,9 @@ label and the visible fallback when an asset fails.
    Rejected for now in favour of the roster re-read (§3), which closes the same
    gap in three lines instead of replacing a 200-line function.
 5. **Logos at chip size, or at 56px.** Both tried and shown; see §4.
+6. **Add `DMEW` and `IMEW` branches to `panelType`.** Rejected: it fixes the two
+   families found today and leaves the next one to be spotted by eye. The row
+   already knows the answer.
 
 ## Consequences
 

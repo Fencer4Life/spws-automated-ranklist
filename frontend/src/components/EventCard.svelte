@@ -206,7 +206,21 @@
   let copied = $state(false)
 
   const type = $derived(panelType(event.txt_code))
-  const registry = $derived(registryOf(type))
+  /** Which body runs this event, for the logo.
+   *
+   *  The row is the fact; `registryOf(panelType(code))` is a prefix heuristic
+   *  and it disagrees with the database on two of the ten code families in use
+   *  — DMEW (EVF, guessed SPWS) and IMEW (EVF, guessed FIE). It stays as the
+   *  fallback for rows that carry no organizer, and for an organizer with no
+   *  mark of its own, because a best guess beats an empty registry slot.
+   *
+   *  `type` is untouched and still drives the tile hue, which is a
+   *  presentation channel rather than a claim about who organises what. */
+  const registry = $derived(
+    (['SPWS', 'EVF', 'FIE', 'PZSz'] as const).find(
+      (r) => r === event.txt_organizer_code,
+    ) ?? registryOf(type),
+  )
   const display = $derived(
     getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start, today),
   )
