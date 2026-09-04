@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="089-event-weapons-and-card-header.md">
+<meta name="adr-source-sha256" content="98f59b70de13636d33d60780268a142164b6c23bef765712a8ccc065021ae1b1">
+<title>ADR-089 · The event&#x27;s weapons live on the event, and the card header carries identity</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 089</p><h1>The event's weapons live on the event, and the card header carries identity</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-04; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>089-event-weapons-and-card-header.md</code></dd></div><div><dt>Length</dt><dd class="">187 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-04; awaiting sign-off)
+<strong>Date:</strong> 2026-09-04
+<strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §8 (the card's field order and its registry chip), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the resolved weapon set now reaches <code>arr_weapons</code>, not only the event code)
+<strong>Relates to:</strong> <a href="046-pew-weapon-suffix.html">ADR-046</a> (the weapon-letter suffix this keeps as authoritative), <a href="088-calendar-location-contract.html">ADR-088</a> (the sibling &quot;resolve it at the source&quot; decision for the city)
+<strong>Source:</strong> <code>supabase/migrations/20260904000001_event_weapons_from_code.sql</code>, <code>frontend/src/components/EventCard.svelte</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#a-fill-blank-guard-that-could-never-fire">A fill-blank guard that could never fire</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-drop-the-default-the-guard-is-fine">1 · Drop the default; the guard is fine</a></li><li class="depth-3"><a href="#2-the-card-reads-the-field-not-the-code">2 · The card reads the field, not the code</a></li><li class="depth-3"><a href="#3-close-the-create-then-refresh-gap">3 · Close the create-then-refresh gap</a></li><li class="depth-3"><a href="#4-the-header-carries-identity-the-date-gets-its-own-row">4 · The header carries identity; the date gets its own row</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The weapon pills were missing from the upcoming <code>PPW1-2026-2027</code> card. Not
+obscured — never rendered.</p>
+<p><code>weaponLetters()</code> derived the set from the trailing <code>/[efs]+$/</code> of the event
+code. <code>PPW1</code> ends in a digit, so it returned an empty list and the block was
+omitted. That affected <strong>28 of 97</strong> non-skeleton events: every <code>PPW</code>, <code>MPW</code>,
+<code>GP</code>, <code>IMEW</code>, <code>IMSW</code>, <code>MSW</code>, <code>DMEW</code> and <code>VFC</code> code. The suffix exists to
+differentiate EVF events (ADR-046); it was never meant to be the UI's source of
+truth for what is fenced.</p>
+<p>The obvious repair — read <code>tbl_event.arr_weapons</code>, the column that exists for
+exactly this — was blocked, because that column was wrong for most EVF events.</p>
+<h3 id="a-fill-blank-guard-that-could-never-fire">A fill-blank guard that could never fire</h3>
+<p>Migration 20260327000006 declared the column with a default:</p>
+<pre><code class="language-sql">ALTER TABLE tbl_event ADD COLUMN arr_weapons enum_weapon_type[]
+  DEFAULT '{EPEE,FOIL,SABRE}';
+</code></pre>
+<p>Migration 20260420000002 then filled it behind a guard:</p>
+<pre><code class="language-sql">arr_weapons = CASE WHEN arr_weapons IS NULL
+                     THEN COALESCE(v_weapons, arr_weapons)
+                   ELSE arr_weapons END
+</code></pre>
+<p><strong>A column carrying a non-null default is never NULL.</strong> The branch never ran.
+The scraper resolves an event's weapons through the ADR-086 evidence ladder and
+writes them into the event code, and <code>evf_sync</code> has always passed them in the
+refresh payload — but they never reached the column.</p>
+<p>Measured on CERT: 53 of 69 events whose code carries a weapon suffix sat on the
+untouched default, and <strong>35 contradicted their own code</strong>:</p>
+<pre><code>PEW10e   code=[EPEE]       arr={EPEE,FOIL,SABRE}   tournaments=EPEE
+PEW12ef  code=[EPEE,FOIL]  arr={EPEE,FOIL,SABRE}   tournaments=EPEE,FOIL
+PEW13s   code=[SABRE]      arr={FOIL,SABRE}        tournaments=SABRE
+</code></pre>
+<p>Nothing surfaced it because the wrong value is <em>plausible</em>: three weapons is what
+a domestic PPW genuinely runs, so the default looked like data. The suffix-less
+families really are three-weapon events — all 25 of them with tournaments to
+check against read exactly <code>EPEE,FOIL,SABRE</code>.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-drop-the-default-the-guard-is-fine">1 · Drop the default; the guard is fine</h3>
+<p>The repair is the default, not the guard. Removing it makes <code>NULL</code> mean &quot;nobody
+has established these&quot;, which is what the guard was always written against and
+what the column needs in order to distinguish &quot;genuinely all three&quot; from
+&quot;untouched&quot;. The guard starts working the moment NULL is reachable.</p>
+<p>Suffixed events are backfilled from the code, which ADR-046 and ADR-086 make the
+authoritative weapon record and which is corroborated: in every one of the 35
+disagreements the suffix matched the event's own tournaments and <code>arr_weapons</code>
+did not.</p>
+<h3 id="2-the-card-reads-the-field-not-the-code">2 · The card reads the field, not the code</h3>
+<p><code>arr_weapons</code> is the single source for the card's pills. <code>weaponLetters(code)</code>
+remains for the <strong>barrel tile</strong>, which only ever has a code to work from.</p>
+<h3 id="3-close-the-create-then-refresh-gap">3 · Close the create-then-refresh gap</h3>
+<p><code>evf_sync</code> read its roster <em>before</em> <code>fn_ingest_evf_calendar</code> created rows, so a
+newly created event was absent from the matched pairs the refresh iterates and
+waited a full day for its weapons. Harmless while the default made new events
+look complete; a visibly empty weapon row once the default is gone. The roster is
+now re-read after the ingest, mirroring the existing re-fetch after the
+future-COMPLETED heal.</p>
+<h3 id="4-the-header-carries-identity-the-date-gets-its-own-row">4 · The header carries identity; the date gets its own row</h3>
+<p>Row one becomes <code>[organizer logo] [weapon pills] · · · [short code]</code>, and the
+date moves to a full-width row of its own.</p>
+<p><strong>The code stays complete — weapon suffix and season both.</strong> Two passes trimmed
+it for row width and both discarded real information: <code>panelLabel()</code> (built for
+the 48px tile, where it also strips <code>[efs]</code> and renames PEW to EVF), then the
+bare prefix. The suffix is the authoritative weapon record (ADR-046, ADR-086),
+and the season is what distinguishes <code>PPW1</code> across years on a calendar that
+shows every season at once.</p>
+<p><strong>Width is the logo's to absorb.</strong> The card is designed against a 360px width
+(~336px of content); the full code is 106px and the date 249px, which is why the
+date needed its own row. The logo is the only element in row one that can give
+ground without losing meaning — pills and code are text and would truncate
+mid-word — so it is the one thing set to shrink. Measured at the 375px viewport:
+the SPWS wordmark yields from 80px to 59px and the row fits with no overflow.</p>
+<p><strong>Logos are 18px for wordmarks and 27px for roundels.</strong> SPWS and FIE spend their
+pixels on width and stay legible just above the 14px weapon pills; EVF and PZSz
+are dense circular marks — a ring of text around a fencer, three crossed weapons
+over a flag arc — and needed 1.5x that height to read at all. Height is what a
+roundel needs and width buys it nothing, which is why the rule sets both
+dimensions rather than a scale factor. An earlier pass put every logo at the registry chip's
+own ~14px and failed for exactly the roundels; a pass at 56px was legible but
+dominated the row. The logo is also the only shrinkable element in row one —
+pills and code are text and would truncate instead, so the SPWS wordmark yields
+from 80px to 59px at the 375px viewport rather than letting the code clip.</p>
+<p><strong>All four registries carry a mark</strong>: SPWS, EVF, FIE (<code>MEW</code>/<code>MSW</code>/<code>PSW</code>/<code>IMEW</code>/
+<code>IMSW</code>) and PZSz. <code>alt</code> carries the abbreviation, which is now its only
+appearance — the registry chip is retired, so <code>alt</code> is both the screen-reader
+label and the visible fallback when an asset fails.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Read <code>arr_weapons</code> without fixing it.</strong> Rejected: it would have printed foil
+and sabre pills on 35 single-weapon events.</li>
+<li><strong>Keep deriving from the code and give PPW codes a weapon suffix.</strong> Rejected:
+event codes are identity, carried by registrations and results; renaming every
+domestic event to fix a display concern is disproportionate.</li>
+<li><strong>Keep the default and special-case it.</strong> Rejected: &quot;the value equals the
+default&quot; cannot distinguish a real all-three event from an untouched one,
+which is the whole defect.</li>
+<li><strong>Rewrite <code>fn_ingest_evf_calendar</code> to set <code>arr_weapons</code> at creation.</strong>
+Rejected for now in favour of the roster re-read (§3), which closes the same
+gap in three lines instead of replacing a 200-line function.</li>
+<li><strong>Logos at chip size, or at 56px.</strong> Both tried and shown; see §4.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>The SPWS asset was a white-background image in an RGBA container</strong> — every pixel fully opaque, half of them pure white — so it painted a white block on the cream card. Its white is now knocked out with a soft ramp across the anti-aliased edge, which also lets the sabre slash through the wordmark show the card behind it, as the mark intends.</p>
+<p><strong>New:</strong> <code>supabase/migrations/20260904000001_event_weapons_from_code.sql</code>,
+<code>supabase/tests/71_event_weapons_from_code.sql</code> (71.1–71.9),
+<code>frontend/public/{EVF,PZSz}-logo.png</code>, <code>frontend/public/FIE-logo.svg</code>.</p>
+<p><strong>Changed:</strong> <code>EventCard.svelte</code> (header, logo, pills, date row),
+<code>evf_sync.py</code> (roster re-read), EC.52–EC.58 added and EC.1, EC.26, EC.27, EC.42,
+EC.45 updated to the new contract.</p>
+<p><strong>Nine of the card's twelve blocks are untouched</strong> — name, location, address,
+divider, fees, deadline, notes, registration links and the status chip all keep
+their behaviour. The edits are row one, the new date row, the registry chip and
+the weapons block.</p>
+<p><strong>A regression this decision introduced and then closed.</strong> Dropping the default
+briefly meant a newly created EVF event showed <em>no</em> pills for up to a day, where
+before it showed three wrong ones. §3 closes it. Recorded because &quot;self-healing&quot;
+was the first assessment and it was too generous: an empty row is a visible
+regression, not a cosmetic lag.</p>
+<p><strong>The backfill is repeated in <code>seed_post_backfill.sql</code>.</strong> On a fresh bootstrap —
+CI, and <code>reset-dev.sh</code> — migrations run BEFORE the seed dump (ADR-036), so the
+migration's backfill executes against an empty <code>tbl_event</code> and is a no-op; the
+dump then loads 48 events whose <code>arr_weapons</code> contradicts their own code, because
+it is a snapshot of PROD taken before the migration corrects it. CERT and PROD run
+the migration directly against populated tables and never reach that file. Test
+71.5 caught this in CI while passing locally, which is exactly the asymmetry the
+fresh-bootstrap rule exists to surface. Verified by running <code>reset-dev.sh</code> and
+re-running the suite: 899 assertions pass on a genuinely fresh database.</p>
+<p><strong>Test-shaped guard against the bug class.</strong> 71.3 asserts the column has no
+default. The trap is not <code>arr_weapons</code> specifically but <em>any</em> fill-blank guard
+written against <code>NULL</code> on a defaulted column, and it is invisible in review
+because both halves read correctly on their own.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong><code>fn_ingest_evf_calendar</code> still does not set <code>arr_weapons</code> at creation.</strong>
+The roster re-read makes this invisible. <strong>Recommendation:</strong> fold it in when
+that function is next edited for another reason, rather than replacing it now.</li>
+<li><strong>EVF and PZSz ship cropped raster.</strong> Both were extracted from wider lockups —
+EVF from the site banner, PZSz from a 224×100 horizontal logo.
+<strong>Recommendation:</strong> ask both federations for vector versions; FIE's SVG shows
+what that buys.</li>
+<li><strong>SPWS brand red sits beside the SPWS organizer edge, which is green.</strong>
+Left as-is. <strong>Recommendation:</strong> a judgement call for the association, not one
+to make in code.</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="088-calendar-location-contract.html">← ADR-088: One location contract for every calendar scraper — city, venue and address</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>089-event-weapons-and-card-header.md</code> · source SHA-256 <code>98f59b70de13636d33d60780268a142164b6c23bef765712a8ccc065021ae1b1</code></footer>
+</div></body></html>

@@ -5,10 +5,23 @@
     class="card {type}"
     class:cancelled={display.cssClass === 'status-cancelled'}
   >
+  <!-- Row one: who runs it, what is fenced, and which event. The date moved to
+       its own row below, which is what buys the space for all three. The code is
+       complete — suffix and season — and the logo shrinks to make room. -->
   <div class="chd">
-    <span class="cdt">{dateLabel}</span>
-    <span class="ccd {type}">{event.txt_code}</span>
+    <img class="orglogo reg-{registry}" src={LOGO_SRC[registry]} alt={registry} />
+    {#if weapons.length > 0}
+      <div class="wps">
+        {#each weapons as weapon}
+          <span class="wp {weapon}">{t(WEAPON_KEY[weapon])}</span>
+        {/each}
+      </div>
+    {/if}
+    <span class="chdsp"></span>
+    <span class="ccd {type}" title={event.txt_code}>{shortCode}</span>
   </div>
+
+  <div class="cdt">{dateLabel}</div>
 
   <div class="cnm">{event.txt_name}</div>
 
@@ -66,7 +79,6 @@
     <span class="chp status {isNextUpcoming ? 'next' : display.cssClass}">
       {isNextUpcoming ? t('calendar_next_up') : t(display.labelKey)}
     </span>
-    <span class="chp reg-{registry}">{registry}</span>
     {#if movedFrom}
       <span class="chp moved">{t('calendar_date_moved_from').replace('{date}', formatDeadline(movedFrom))}</span>
     {/if}
@@ -125,13 +137,6 @@
     </div>
   {/if}
 
-  {#if weapons.length > 0}
-    <div class="wps">
-      {#each weapons as weapon}
-        <span class="wp">{t(WEAPON_KEY[weapon])}</span>
-      {/each}
-    </div>
-  {/if}
   </div>
 {/key}
 
@@ -162,11 +167,26 @@
     resultUrls,
     splitLocation,
     todayIso,
-    weaponLetters,
     type WeaponLetter,
   } from '../lib/calendarMonths'
+  import type { WeaponType } from '../lib/types'
 
   const WEAPON_KEY: Record<WeaponLetter, string> = { E: 'epee', F: 'foil', S: 'sabre' }
+  const WEAPON_TYPE: Record<WeaponLetter, WeaponType> = {
+    E: 'EPEE',
+    F: 'FOIL',
+    S: 'SABRE',
+  }
+
+  /** The organizer's own mark, replacing the registry abbreviation chip.
+   *  `alt` carries the abbreviation, which is now its only appearance — it is
+   *  what a screen reader announces and what shows if an asset fails to load. */
+  const LOGO_SRC: Record<'SPWS' | 'EVF' | 'FIE' | 'PZSz', string> = {
+    SPWS: 'SPWS-logo.png',
+    EVF: 'EVF-logo.png',
+    FIE: 'FIE-logo.svg',
+    PZSz: 'PZSz-logo.png',
+  }
 
   let {
     event,
@@ -191,7 +211,26 @@
     getEventDisplayStatus(event.enum_status, event.dt_end, event.dt_start, today),
   )
   const reg = $derived(registrationState(event, today))
-  const weapons = $derived(weaponLetters(event.txt_code))
+  // The event table decides, not the code. The trailing [efs] exists to
+  // differentiate EVF events; 28 of 97 events carry no suffix at all — every
+  // PPW, MPW, GP, IMEW, IMSW, MSW, DMEW and VFC — and their pills never
+  // rendered. arr_weapons is now maintained for every family (migration
+  // 20260904000001), so it is the single source.
+  const weapons = $derived(
+    (['E', 'F', 'S'] as WeaponLetter[]).filter((w) =>
+      (event.arr_weapons ?? []).includes(WEAPON_TYPE[w]),
+    ),
+  )
+  // The FULL code — weapon suffix and season both. Two earlier passes trimmed
+  // it for width (panelLabel(), then the prefix) and both threw away real
+  // information: the suffix is the authoritative weapon record (ADR-046,
+  // ADR-086) and the season is what distinguishes PPW1 across years on a
+  // calendar that shows every season at once.
+  //
+  // Width is handled by letting the LOGO shrink instead. It is the only element
+  // in row one that can give ground without losing meaning — pills and code are
+  // text and would truncate mid-word.
+  const shortCode = $derived(event.txt_code)
   // ADR-077 amendment: EVF moved this event and it is still ahead. Composes
   // with the status chip rather than replacing it — a moved date qualifies a
   // PLANNED event, it does not change what the event IS.
@@ -443,9 +482,52 @@
   }
   .chd {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 6px;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  /* Pushes the code to the right edge without justify-content, so the logo and
+     pills stay packed together on the left. */
+  .chdsp {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  /* 28px: twice the abbreviation chip it replaces. 14px was tried first and
+     failed -- SPWS and FIE are wordmarks and survived, but the EVF and PZSz
+     roundels are square and detailed (ring text, three crossed weapons) and
+     collapsed into a coloured dot. A roundel needs height, which is exactly what
+     a chip-height slot denies it. */
+  .orglogo {
+    /* Sized against the weapon pills beside it, which stand 14px tall (9px at
+       line-height 1.5). 18px reads as the organizer's mark without becoming the
+       loudest thing in a row whose job is the event's identity. */
+    height: 18px;
+    width: auto;
+    max-width: 80px;
+    display: block;
+    /* Shrinkable, and it is the ONLY thing in this row that shrinks. Measured at
+       the 375px viewport: the SPWS wordmark (124px) beside three weapon pills
+       and the short code needs 326px in a 315px row — 11px over, and a flex row
+       clips rather than wraps, so the code was being cut off. The logo yields
+       because object-fit keeps it legible while it does; the pills and the code
+       are text and would only truncate. */
+    flex: 0 1 auto;
+    min-width: 0;
+    object-fit: contain;
+    object-position: left center;
+  }
+  /* 1.5x the shared height, for the two ROUNDELS. EVF and PZSz are dense circular
+     marks — a ring of text around a fencer, and three crossed weapons over a flag
+     arc — where 18px reads as a speck. SPWS and FIE are wordmarks: they spend
+     their pixels on width and stay legible at the shared height, so enlarging
+     them would only make them shout.
+
+     Height is what a roundel needs and width buys it nothing, which is why this
+     sets both and not a scale factor. */
+  .orglogo.reg-PZSz,
+  .orglogo.reg-EVF {
+    height: 27px;
+    max-width: 27px;
   }
   /* The date leads the card.
      ADR-084 §8 orders this card by what a fencer acts on, and identity — date,
@@ -710,17 +792,40 @@
     text-decoration: none;
     display: inline-block;
   }
+  /* In the header now, not the card's foot, so no top margin and no wrapping —
+     the row is sized to hold logo + pills + short code on one line. */
   .wps {
     display: flex;
-    gap: 3px;
-    flex-wrap: wrap;
-    margin-top: 10px;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+  /* Size, face and padding are UNCHANGED from the muted version; only the
+     colours and the weight move. Each weapon gets its own filled hue so the set
+     reads at a glance instead of as three grey words -- and the hues are chosen
+     clear of the organizer channel (SPWS green, EVF blue, FIE amber, PZSz red),
+     which already owns the card's top edge. */
+  /* One filled hue per weapon. Text is the darkest stop of its own ramp on a
+     light tint, which keeps contrast without the pills shouting over the event
+     name directly beneath them. */
+  .wp.E {
+    background: #cfe8dd;
+    color: #0b3d2e;
+  }
+  .wp.F {
+    background: #ddd9f5;
+    color: #2b2564;
+  }
+  .wp.S {
+    background: #f7ddd2;
+    color: #5c2410;
   }
   .wp {
     font-size: 9px;
     line-height: 1.5;
     padding: 0 6px;
     border-radius: 7px;
+    font-weight: 600;
+    white-space: nowrap;
     background: var(--surface-0, #f7f6f3);
     color: var(--text-muted, #8a887f);
     border: 1px solid var(--border, rgba(0, 0, 0, 0.13));

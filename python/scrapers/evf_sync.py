@@ -559,6 +559,16 @@ def _sync_calendar_snapshot(
                 f"URL fields: inv={inv} reg={reg} deadline={dln}",
             )
 
+        # Re-read the roster now that fn_ingest_evf_calendar has created rows.
+        # `existing` was read before the ingest, so without this a brand-new
+        # event is absent from matched_pairs and the refresh below skips it —
+        # it would wait a whole day for the next run to gain its weapons,
+        # invitation URL and address. Mirrors the re-fetch after the
+        # future-COMPLETED heal above, and matters more since arr_weapons lost
+        # its misleading all-three default: the gap is now a visibly empty
+        # weapon row rather than three wrong pills.
+        existing = _management_query(ref, token, roster_sql)
+
         # Refresh URL/enrichment fields on already-imported events (ADR-028
         # amendment). Only fills NULL/empty columns; admin edits preserved.
         # Skip refresh on COMPLETED/stale rows — those are admin territory.
