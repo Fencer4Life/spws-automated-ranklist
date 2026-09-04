@@ -389,9 +389,18 @@
     return nextUpcoming != null && nextUpcoming.id_event === event.id_event
   }
 
+  /**
+   * The tile's location line is a city or nothing — never a guessed venue.
+   * txt_location sometimes holds a venue-only string the scraper wrote into
+   * it ("Sporthalle der Städtischen Berufsschule"), which splitLocation()
+   * correctly classifies as venue rather than city. Printing that guess in an
+   * 11px tile line used to be the only place it showed at all; now that every
+   * event can carry a real txt_venue_address (the PZSz komunikat enrichment,
+   * and EVF's existing address field), the venue has a proper home on the
+   * card's address line and the tile no longer needs to fall back to it.
+   */
   function cityOf(event: CalendarEvent): string {
-    const { city, venue } = splitLocation(event.txt_location)
-    return city || venue
+    return splitLocation(event.txt_location).city
   }
 
   function dayOf(iso: string | null): string {

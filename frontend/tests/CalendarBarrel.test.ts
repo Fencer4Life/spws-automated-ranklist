@@ -217,6 +217,39 @@ describe('CalendarBarrel — detail tiers', () => {
     expect(panels[1]!.querySelector('.cty')!.textContent).toBe('Toruń')
   })
 
+  // CB.33 — the tile's location line is a city or nothing, never a guessed
+  // venue. txt_location sometimes holds a venue-only string the scraper wrote
+  // into it ("Sporthalle der Städtischen Berufsschule"); splitLocation()
+  // classifies that as venue, not city, and the tile used to fall back to
+  // printing the raw venue there — cramped, and a poor substitute for a place
+  // name in an 11px line. Now that every event can carry a real
+  // txt_venue_address (ADR-087's PZSz enrichment; EVF's existing `address`),
+  // the full venue string has a proper home on the card's address line and the
+  // tile no longer needs to guess. No city means no line.
+  it('CB.33: a venue-only location leaves the tile city line empty', () => {
+    const rows = buildMonths([
+      ev({
+        txt_code: 'PEW1-2026-2027',
+        dt_start: '2026-09-26',
+        txt_location: 'Sporthalle der Städtischen Berufsschule',
+      }),
+    ])
+    const { container } = barrel({ rows })
+    const panel = container.querySelector('.ln.mid .p')!
+    expect(panel.querySelector('.cty')).toBeNull()
+  })
+
+  // CB.34 — the 'Venue - City' pattern still yields the clean city; only the
+  // pure-venue case (no city component at all) goes blank.
+  it('CB.34: still extracts the city out of a "Venue - City" location', () => {
+    const rows = buildMonths([
+      ev({ txt_code: 'PEW1-2026-2027', dt_start: '2026-09-26', txt_location: 'Savoy Terrace - Buda' }),
+    ])
+    const { container } = barrel({ rows })
+    const panel = container.querySelector('.ln.mid .p')!
+    expect(panel.querySelector('.cty')!.textContent).toBe('Buda')
+  })
+
   // CB.10 — EVF codes shorten on panels; the full code lives on the card.
   it('CB.10: shortens EVF codes and strips the weapon suffix', () => {
     const rows = buildMonths([
