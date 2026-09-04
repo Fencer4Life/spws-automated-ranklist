@@ -165,8 +165,8 @@
     "schema_fingerprint": "8e3e47ee2b497d3d6fc03d2136e32dec"
   },
   "prod": {
-    "last_updated": "2026-09-03T14:21:20Z",
-    "last_sha": "b38743a9ea840401a952f745174a33641aaa7707",
+    "last_updated": "2026-09-04T18:42:33Z",
+    "last_sha": "4ae3d7dcbea454db8bcd7376db7538f6e98fe25d",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -324,8 +324,9 @@
       "20260829000001_prod_mirror_field_ownership.sql",
       "20260902000001_event_payment_details.sql",
       "20260902000002_event_payment_details_write_paths.sql",
-      "20260903000001_pzsz_organizer_and_event_id.sql"
+      "20260903000001_pzsz_organizer_and_event_id.sql",
+      "20260904000001_event_weapons_from_code.sql"
     ],
-    "schema_fingerprint": "b9c654fc90808fc65c957e129f320ce9"
+    "schema_fingerprint": "8e3e47ee2b497d3d6fc03d2136e32dec"
   }
 }
