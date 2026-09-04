@@ -1,6 +1,6 @@
 # ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar
 
-**Status:** Draft (proposed 2026-09-03; awaiting sign-off)
+**Status:** Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.
 **Date:** 2026-09-03
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §F and §11 (`registryOf()` widens from three registries to four; a fourth hue enters the organizer channel; `PanelType` gains a fifth member)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the event-code shape this extends with a gender letter), [ADR-081](081-cert-prod-event-reconciler.md) (childless CREATE, field ownership, code-keyed reconcile), [ADR-028](028-evf-calendar-results-import.md) (the calendar-source precedent this deliberately does not generalise), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the partially-published-season lesson applied before it bit), [ADR-083](083-server-enforced-authorization.md) (grants are table-level, so the new column needs none)
@@ -400,6 +400,11 @@ starts from it rather than rediscovering it.
    FencingTimeLive for PPS and MPS at all.
 3. **Backfill.** Current season only; no historical PZSz events are imported.
    **Recommendation:** leave it that way unless the scoring deliverable needs a baseline.
-4. **`queue: max` availability.** Verified against GitHub documentation, not against this
-   runner. **Recommendation:** watch the first scheduled run; the fallback is the 15-minute
-   stagger in §9.
+4. ~~**`queue: max` availability.**~~ **Resolved 2026-09-04.** The key is documented
+   (`single` the default, `max` allowing up to 100 pending) and it is accepted by this
+   runner: every `prod-write` job carrying it has since run clean — both promotes in
+   `evf-sync.yml`, the new `pzsz-sync.yml` promote, and two full releases. One constraint
+   the plan did not mention surfaced in the documentation and was checked before shipping:
+   `queue: max` combined with `cancel-in-progress: true` is a workflow validation error.
+   All eight members are on `cancel-in-progress: false`, so none is affected. The
+   15-minute stagger fallback is not needed.

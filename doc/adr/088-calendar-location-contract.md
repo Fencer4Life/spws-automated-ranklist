@@ -1,6 +1,6 @@
 # ADR-088: One location contract for every calendar scraper — city, venue and address
 
-**Status:** Draft (proposed 2026-09-04; awaiting sign-off)
+**Status:** Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.
 **Date:** 2026-09-04
 **Amends:** [ADR-028](028-evf-calendar-results-import.md) (closes the recorded `txt_location` defect at the ingest, where that ADR left it), [ADR-039](039-stale-event-gate.md) §dedup (the location rung now compares cities to cities), [ADR-087](087-pzsz-senior-calendar-source.md) §7 (PZSz gains venue-title extraction from the komunikat)
 **Relates to:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (the tile and card that consume this), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the evidence-ladder idiom this reuses)
