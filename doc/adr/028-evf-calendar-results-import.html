@@ -4,18 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="028-evf-calendar-results-import.md">
-<meta name="adr-source-sha256" content="3e3c65a193578ae0f0106dded615115bb46a6376d69a87008711dee08de47da6">
+<meta name="adr-source-sha256" content="fffb9536469b53995e3ed2e7a775bd6c867d12590c1c5b051ada4f9f7563a113">
 <title>ADR-028 · EVF Calendar + Results Import</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 028</p><h1>EVF Calendar + Results Import</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields).</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">250 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields). <strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (closes the <code>txt_location</code> venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only).</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">251 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)
 <strong>Date:</strong> 2026-04-06
 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
-<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields).</p>
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields).
+<strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (closes the <code>txt_location</code> venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only).</p>
 </div>
 </header>
 <div class="layout">
@@ -245,5 +246,5 @@ and <a href="../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql">
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="027-full-season-seed-export.html">← ADR-027: Full-Season Seed Export</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="029-tournament-url-auto-population.html">→ ADR-029: Tournament URL Auto-Population + Admin CRUD</a></nav>
-<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>3e3c65a193578ae0f0106dded615115bb46a6376d69a87008711dee08de47da6</code></footer>
+<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>fffb9536469b53995e3ed2e7a775bd6c867d12590c1c5b051ada4f9f7563a113</code></footer>
 </div></body></html>

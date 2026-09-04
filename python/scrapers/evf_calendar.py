@@ -53,6 +53,12 @@ from io import BytesIO
 import httpx
 from bs4 import BeautifulSoup
 
+from python.scrapers._location import (
+    city_from_address,
+    city_from_name,
+    resolve_location,
+)
+
 try:
     from rapidfuzz import fuzz
 except ImportError:
@@ -473,14 +479,26 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
                 elif "$" in cost_text:
                     fee_currency = "USD"
 
+        # The city is resolved here, once, rather than guessed at render time.
+        # EVF's own event naming is the best evidence: it is the editorial choice
+        # of the city a fencer recognises, and it beats the postal address in
+        # every case where the two disagree (Lausanne over Prilly, Stockholm over
+        # Bromma, Naples over "NA", Chania over "Crete"). The address is the
+        # fallback for the names that carry no separator at all.
+        city, resolved_address = resolve_location(
+            city_candidates=[city_from_name(name), city_from_address(address, country)],
+            venue_title=venue,
+            address=address,
+        )
+
         evt = _blank_event()
         evt.update(
             {
                 "name": name,
                 "dt_start": dt_start[:10],
                 "dt_end": dt_end[:10] if dt_end else dt_start[:10],
-                "location": venue,
-                "address": address,
+                "location": city,
+                "address": resolved_address,
                 "country": country,
                 "weapons": weapons,
                 "is_team": is_team,
@@ -596,7 +614,14 @@ def fetch_calendar_from_api(client, season_start: str, season_end: str) -> list[
                     "name": api_evt.get("name") or "",
                     "dt_start": opens,
                     "dt_end": dt_end,
-                    "location": api_evt.get("location") or "",
+                    # Same contract as the HTML path. The API has no separate
+                    # venue field, so its `location` is the only venue-or-city
+                    # candidate and the name still outranks it.
+                    "location": resolve_location(
+                        city_candidates=[city_from_name(api_evt.get("name") or "")],
+                        venue_title=api_evt.get("location") or "",
+                        address="",
+                    )[0],
                     "country": api_evt.get("country_abbr") or api_evt.get("country") or "",
                     "weapons": sorted(weapons_set),
                     "is_team": is_team,

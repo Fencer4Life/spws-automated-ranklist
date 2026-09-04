@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="088-calendar-location-contract.md">
+<meta name="adr-source-sha256" content="d540bdd115c7b6cb826651c6e1d6188a1f6662c85bf9794c6391c9c2c13309c9">
+<title>ADR-088 · One location contract for every calendar scraper — city, venue and address</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 088</p><h1>One location contract for every calendar scraper — city, venue and address</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-04; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>088-calendar-location-contract.md</code></dd></div><div><dt>Length</dt><dd class="">192 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-04; awaiting sign-off)
+<strong>Date:</strong> 2026-09-04
+<strong>Amends:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> (closes the recorded <code>txt_location</code> defect at the ingest, where that ADR left it), <a href="039-stale-event-gate.html">ADR-039</a> §dedup (the location rung now compares cities to cities), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> §7 (PZSz gains venue-title extraction from the komunikat)
+<strong>Relates to:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (the tile and card that consume this), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the evidence-ladder idiom this reuses)
+<strong>Source:</strong> <code>python/scrapers/_location.py</code>, <code>python/tests/test_location.py</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#what-the-sources-actually-publish">What the sources actually publish</a></li><li class="depth-3"><a href="#the-event-name-is-evf-s-best-evidence-and-often-its-only-evidence">The event name is EVF&#x27;s best evidence, and often its only evidence</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-city-is-resolved-once-at-scrape-time">1 · The city is resolved once, at scrape time</a></li><li class="depth-3"><a href="#2-a-shared-contract-source-specific-rungs">2 · A shared contract, source-specific rungs</a></li><li class="depth-3"><a href="#3-only-en-and-em-dashes-separate-a-name">3 · Only en and em dashes separate a name</a></li><li class="depth-3"><a href="#4-the-final-address-part-is-dropped-only-when-it-is-the-country">4 · The final address part is dropped only when it IS the country</a></li><li class="depth-3"><a href="#5-the-venue-title-s-fate">5 · The venue title&#x27;s fate</a></li><li class="depth-3"><a href="#6-never-guess">6 · Never guess</a></li><li class="depth-3"><a href="#7-no-migration">7 · No migration</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>tbl_event.txt_location</code> is specified to hold a <strong>city</strong>. The EVF scraper has been
+writing the source's <strong>venue title</strong> into it — <code>Palavesuvio</code>, <code>Salle Jean Zay</code>,
+<code>Sporthalle der Städtischen Berufsschule für Informationstechnik</code> — since the
+calendar import was built.</p>
+<p>ADR-028 recorded this openly and declined to fix it:</p>
+<blockquote>
+<p><code>txt_location</code> in CERT holds a venue where a city belongs, and the card demotes
+such a value to the address line rather than printing it as a city. That is a
+<strong>rendering</strong> accommodation of a data defect, not a fix — the defect stays
+recorded against the ingest.</p>
+</blockquote>
+<p>The accommodation was <code>calendarMonths.ts:splitLocation()</code>, a render-time guess at
+venue-vs-city. It was removed from the barrel tile on 2026-09-04 because a guess
+that fails prints a hall name into a 48px tile. That removal is correct and it
+makes the underlying defect visible: ten active-season EVF events render with no
+city at all. <strong>This ADR fixes the defect where ADR-028 left it — at the ingest.</strong></p>
+<h3 id="what-the-sources-actually-publish">What the sources actually publish</h3>
+<p>Both calendar sources publish the same three things, in different places and
+shapes:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>EVF</th>
+<th>PZSz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>City</td>
+<td>event name, <code>– &lt;City&gt; (&lt;CC&gt;)</code></td>
+<td>listing <code>Miejsce</code> column</td>
+</tr>
+<tr>
+<td>Venue title</td>
+<td><code>.tribe-…-event-venue-title</code></td>
+<td>komunikat <code>Miejsce Zawodów :</code> line</td>
+</tr>
+<tr>
+<td>Street address</td>
+<td><code>.tribe-…-event-venue-address</code></td>
+<td>komunikat <code>ul./al.</code> line</td>
+</tr>
+</tbody>
+</table></div>
+<p>Measured 2026-09-04 against the live EVF calendar (18 events) and both committed
+fixtures (21 events), plus all 67 EVF and 6 PZSz rows on CERT.</p>
+<h3 id="the-event-name-is-evf-s-best-evidence-and-often-its-only-evidence">The event name is EVF's best evidence, and often its only evidence</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>event name → city</th>
+<th>postal address → city</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>– Lausanne (SUI)</code> → <strong>Lausanne</strong></td>
+<td>…, <strong>Prilly</strong>, Switzerland ✗</td>
+</tr>
+<tr>
+<td><code>– Stockholm (SWE)</code> → <strong>Stockholm</strong></td>
+<td>…, <strong>Bromma</strong>, Sweden ✗</td>
+</tr>
+<tr>
+<td><code>– Naples (ITA)</code> → <strong>Naples</strong></td>
+<td>…, Napoli, <strong>NA</strong>, Italy ✗</td>
+</tr>
+<tr>
+<td><code>– Chania, Crete (GRE)</code> → <strong>Chania</strong></td>
+<td>…, Chania, <strong>Crete</strong>, Greece ✗</td>
+</tr>
+<tr>
+<td><code>– Athens (GRE)</code> → <strong>Athens</strong></td>
+<td><em>no address at all</em></td>
+</tr>
+<tr>
+<td><code>– Tampere (FIN)</code> → <strong>Tampere</strong></td>
+<td><em>no address at all</em></td>
+</tr>
+<tr>
+<td><code>Critérium de Paris 2026</code> → <em>no separator</em></td>
+<td>…, <strong>Paris</strong>, France ✓</td>
+</tr>
+<tr>
+<td><code>European Championships 2025</code> → <em>no separator</em></td>
+<td>…, <strong>Plovdiv</strong>, Bulgaria ✓</td>
+</tr>
+</tbody>
+</table></div>
+<p>The name wins every disagreement because it is EVF's own editorial choice of the
+city a fencer recognises: Lausanne rather than the neighbouring municipality of
+Prilly, Stockholm rather than the suburb of Bromma, the exonym Naples rather than
+Napoli. The address is not redundant — it is the only thing that rescues the two
+names carrying no separator.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-the-city-is-resolved-once-at-scrape-time">1 · The city is resolved once, at scrape time</h3>
+<p>A guess made at render time is made again on every page load, cannot be corrected
+by an admin, and has no access to the event name or the country. Resolution moves
+into the scraper, and <code>txt_location</code> holds a real city.</p>
+<p><code>calendarMonths.ts:splitLocation()</code> <strong>stays</strong> as the render-time safety net for
+admin-entered values and legacy rows. It becomes near-no-op for scraped data.</p>
+<h3 id="2-a-shared-contract-source-specific-rungs">2 · A shared contract, source-specific rungs</h3>
+<p><code>python/scrapers/_location.py</code> owns what is common: city normalisation, what
+disqualifies a string from being a city (<code>looks_like_venue</code>), and the venue rule.
+Each scraper supplies its <strong>own ordered rungs</strong>, because they read different
+pages.</p>
+<p>Running one source's rungs against the other produces nonsense, and this is not
+hypothetical: PZSz addresses are street-only (<code>ul. Siennicka 40B</code>, no city, no
+country), so EVF's address rung would return the street as the city. PZSz names
+use an ASCII hyphen and end in a season (<code>… - Poznań 2026/2027</code>), which EVF's
+name rung deliberately refuses to split on.</p>
+<p><strong>EVF rungs:</strong> event name → postal address → venue title (only when it is not
+venue-shaped) → blank.
+<strong>PZSz rungs:</strong> listing <code>Miejsce</code> → blank. <code>Miejsce</code> is authoritative and clean —
+6 of 6 verified — so no fallback has ever been needed.</p>
+<h3 id="3-only-en-and-em-dashes-separate-a-name">3 · Only en and em dashes separate a name</h3>
+<p><code>–</code> and <code>—</code>, never the ASCII <code>-</code>. This is load-bearing rather than fussy:
+<code>Fâches-Thumesnil</code> is one city containing a hyphen, and <code>IMEW-2026-2027</code> is a bare
+event code. Splitting on <code>-</code> yields <code>Thumesnil</code> and <code>2027</code>.</p>
+<h3 id="4-the-final-address-part-is-dropped-only-when-it-is-the-country">4 · The final address part is dropped only when it IS the country</h3>
+<p>&quot;Always drop the last part&quot; destroys <code>Ul. Stanisława Staszica 2, 05-092 Łomianki</code>,
+which carries no country and whose city is therefore last. The scraped country is
+compared, diacritic-folded, before anything is discarded. A two-letter all-caps
+administrative code (<code>NA</code> for Napoli) is skipped; a leading postcode is stripped.</p>
+<h3 id="5-the-venue-title-s-fate">5 · The venue title's fate</h3>
+<ul>
+<li><strong>Address present → the venue title is dropped.</strong> It is already invisible in the
+UI whenever an address exists (<code>EventCard.svelte</code> renders <code>txt_venue_address</code>
+and only falls back to the venue when that is blank), and the addresses usually
+already name the venue: <code>Palavesuvio ingresso carrabile, Napoli, NA, Italy</code>.</li>
+<li><strong>Address blank → the venue title becomes the address</strong>, so the only piece of
+location detail available is not discarded.</li>
+<li><strong>Guard: unless the venue title IS the city.</strong> Every EVF row that currently has
+no address holds a <em>city</em> in its venue field (<code>Samorin</code>, <code>Jabłonna</code>, <code>Napoli</code>,
+<code>Plovdiv</code> — 15 rows). Without the guard the city would be copied into the
+address and the card would print the same word twice.</li>
+</ul>
+<h3 id="6-never-guess">6 · Never guess</h3>
+<p>A string that cannot be resolved leaves <code>txt_location</code> empty. <code>Levi Open (FIN)</code>
+carries no separator, no venue and no address; blank is the honest answer and the
+tile simply omits the line (ADR-084).</p>
+<h3 id="7-no-migration">7 · No migration</h3>
+<p><code>txt_location</code> is source-owned — <code>fn_sync_evf_event_fields</code> does
+<code>txt_location = COALESCE(NULLIF(v_upd-&gt;&gt;'location',''), txt_location)</code> — so a
+corrected scrape <strong>overwrites</strong> the bad value. All ten venue-polluted rows are in
+the active season and self-heal on the next <code>evf-sync</code> run.
+<code>txt_venue_address</code> is fill-blank-only, which is exactly right for §5: blank rows
+gain the venue title, populated rows are never touched. <code>txt_location</code> is already
+in <code>promote.py</code>'s create and update payloads, so the correction reaches PROD
+unaided.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep guessing at render time, and improve <code>splitLocation()</code>.</strong> Rejected: the
+renderer cannot see the event name or the country, which is where the good
+evidence is, and it re-guesses on every page load with no way for an admin to
+correct the result.</li>
+<li><strong>Take the city from the postal address only.</strong> Rejected: wrong in four
+measured cases (Prilly, Bromma, NA, Crete) and unavailable in five more, where
+the event has no address at all.</li>
+<li><strong>Take the city from the event name only.</strong> Rejected: <code>Critérium de Paris 2026</code>
+and <code>European Championships 2025</code> carry no separator and would go blank
+despite having a perfectly good address.</li>
+<li><strong>One shared ladder for both scrapers.</strong> Rejected: PZSz's street-only addresses
+and ASCII-hyphenated names make EVF's rungs actively wrong there (§2). The
+contract is shared; the rungs cannot be.</li>
+<li><strong>A new <code>txt_venue_name</code> column.</strong> Rejected as disproportionate: a migration, a
+promote-path field and card UI work to surface a string that is usually already
+inside the address.</li>
+<li><strong>Backfill the historical seasons by migration.</strong> Rejected as unnecessary: the
+defect is confined to the active season, which re-scrapes (§7).</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New:</strong> <code>python/scrapers/_location.py</code>, <code>python/tests/test_location.py</code>
+(loc.1–loc.20).</p>
+<p><strong>Changed:</strong> <code>evf_calendar.py</code> (both the HTML and API paths),
+<code>pzsz_calendar.py</code> (komunikat venue-title extraction, defensive city
+normalisation), <code>pzsz_sync.py</code> (enrichment uses the shared rule),
+plus evf.65–evf.68 and pzsz.35–pzsz.38.</p>
+<p><strong>PZSz behaviour changes</strong>, contrary to the first reading that it was already
+compliant. It never extracted a venue title at all, so the komunikat's
+<code>Miejsce Zawodów</code> hall name was read and discarded. It is now subject to §5 like
+EVF's. The city path is unchanged in output — <code>Miejsce</code> was already clean — but
+now passes through the shared normaliser.</p>
+<p><strong>ADR-039's dedup rung is affected.</strong> The MEDIUM location rung compares
+<code>fuzz.token_set_ratio</code> of scraped location against <code>txt_location</code> when country is
+missing. Both sides now converge on cities rather than one holding a venue, which
+makes the rung <em>more</em> accurate, not less. During the single run where CERT still
+holds venues and the scrape supplies cities the rung is weaker — but country is
+present on every affected row, so the STRONG rung decides them and the MEDIUM rung
+is never reached.</p>
+<p><strong>Verified against live data, not only fixtures.</strong> The live EVF calendar (18
+events) resolves with zero venue strings remaining and every city correct,
+including the five previously blank. The PZSz dry run is a no-op: 0 creates,
+0 updates.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong><code>Levi Open (FIN)</code></strong> resolves blank — it has no separator, no venue and no
+address. <strong>Recommendation:</strong> leave it. Inventing &quot;Levi&quot; from the title would
+set a precedent for parsing arbitrary words out of event names.</li>
+<li><strong><code>splitLocation()</code> retirement.</strong> It is now a safety net for legacy and
+admin-entered rows only. <strong>Recommendation:</strong> keep it until the historical
+seasons are known clean, then reconsider — it costs nothing where it never
+fires.</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="087-pzsz-senior-calendar-source.html">← ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>088-calendar-location-contract.md</code> · source SHA-256 <code>d540bdd115c7b6cb826651c6e1d6188a1f6662c85bf9794c6391c9c2c13309c9</code></footer>
+</div></body></html>

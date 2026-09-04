@@ -3,6 +3,7 @@
 **Status:** Accepted (revised 2026-08-08 rev 6 — reviewed repair for scored fragments)
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)
+**Amended by:** [ADR-088](088-calendar-location-contract.md) (the MEDIUM location dedup rung now compares cities to cities on both sides rather than a scraped venue to a stored city; country is present on every affected row, so the STRONG rung decides them during the single transitional run).
 
 ## Context
 

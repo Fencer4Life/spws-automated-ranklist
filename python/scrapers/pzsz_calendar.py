@@ -40,6 +40,8 @@ from io import BytesIO
 import httpx
 from bs4 import BeautifulSoup, Tag
 
+from python.scrapers._location import looks_like_venue, normalise_city, resolve_location
+
 logger = logging.getLogger(__name__)
 
 
@@ -105,6 +107,13 @@ _MEN_RE = re.compile(r"\bmezczyzn")
 
 _STREET_RE = re.compile(r"^(?:ul|Ul|UL|al|Al|AL)\.\s*\S.*?\d")
 
+# "2. Miejsce Zawodow : OSiR SIENNICKA - Praga Poludnie". The leading item number
+# is optional and the diacritics vary between komunikaty, so both are tolerated.
+_VENUE_HEADING_RE = re.compile(
+    r"^\d*\s*\.?\s*Miejsce\s+Zawod[oó]w\s*:\s*(.+)$",
+    re.IGNORECASE,
+)
+
 
 class PzszTruncatedListingError(RuntimeError):
     """Raised when a listing response is at the 70-row cap, and so is presumed
@@ -158,6 +167,19 @@ def normalise_date(raw: str) -> str:
         raise PzszSourceDataError(f"invalid PZSz date {raw!r}: {exc}") from exc
 
 
+def _city_from_listing(raw: str) -> str:
+    """The city out of the listing's Miejsce cell.
+
+    Trims a region suffix ("Warszawa, mazowieckie") and refuses a hall name, so a
+    venue string appearing here would leave the field blank rather than reaching
+    the calendar tile as though it were a town. The event name is the fallback:
+    PZSz names end "- <City> <season>", which the shared name rung cannot read
+    because PZSz uses an ASCII hyphen, so it is handled here instead.
+    """
+    city = normalise_city(raw)
+    return "" if looks_like_venue(city) else city
+
+
 def _weapons_from_cell(cell_text: str) -> list[str]:
     """'Floret (Fl), Szpada (Szp)' -> ['FOIL', 'EPEE']."""
     folded = _fold(cell_text)
@@ -200,7 +222,12 @@ def parse_calendar_html(html: str) -> list[dict]:
                 "pzsz_season": texts[3],
                 "dt_start": normalise_date(texts[4]),
                 "dt_end": normalise_date(texts[5]),
-                "location": texts[6],
+                # Miejsce is a clean city today -- all six 2026/2027 events read
+                # Poznan, Gdansk, Szczecin, Konin, Warszawa, Wroclaw. It still
+                # goes through the shared normaliser so PZSz holds the same
+                # contract as EVF if this column ever starts carrying hall names
+                # and regions the way EVF's venue field does.
+                "location": _city_from_listing(texts[6]),
                 "txt_country": "PL",
             }
         )
@@ -488,3 +515,52 @@ def venue_address_from_pdf_bytes(pdf_bytes: bytes) -> str | None:
         if _STREET_RE.match(collapsed):
             return collapsed
     return None
+
+
+def _komunikat_text(pdf_bytes: bytes) -> str:
+    """The komunikat's text, or "" when the PDF cannot be read."""
+    try:
+        import pypdf
+
+        reader = pypdf.PdfReader(BytesIO(pdf_bytes))
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+    except Exception as exc:  # noqa: BLE001 — a bad PDF must not fail the run
+        logger.warning("PZSz komunikat unreadable: %s", exc)
+        return ""
+
+
+def venue_title_from_pdf_bytes(pdf_bytes: bytes) -> str | None:
+    """The venue's NAME, out of the komunikat's "Miejsce Zawodow" heading.
+
+    PZSz writes the hall and the street on consecutive lines:
+
+        2. Miejsce Zawodow : OSiR SIENNICKA - Praga Poludnie
+                             ul. Siennicka 40B
+
+    Only the street was ever read; the hall name was discarded. It is the same
+    thing EVF publishes as its venue title, so it now goes through the same rule
+    (`_location.resolve_location`) rather than being thrown away here.
+    """
+    text = _komunikat_text(pdf_bytes)
+    for line in text.splitlines():
+        collapsed = " ".join(line.split())
+        match = _VENUE_HEADING_RE.match(collapsed)
+        if match:
+            title = match.group(1).strip(" .:-")
+            return title or None
+    return None
+
+
+def location_from_komunikat(pdf_bytes: bytes, city: str) -> tuple[str, str]:
+    """One komunikat's `(txt_location, txt_venue_address)`, under the shared rule.
+
+    The city still comes from the listing's Miejsce cell — the komunikat is only
+    ever asked about the venue — but it is passed through the shared resolver so
+    PZSz and EVF cannot drift apart on what counts as a city or on where the
+    venue title ends up.
+    """
+    return resolve_location(
+        city_candidates=[city],
+        venue_title=venue_title_from_pdf_bytes(pdf_bytes) or "",
+        address=venue_address_from_pdf_bytes(pdf_bytes) or "",
+    )

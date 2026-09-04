@@ -51,9 +51,9 @@ from python.scrapers._supabase import _management_query, _telegram
 from python.scrapers.pzsz_calendar import (
     PZSZ_EVENT,
     collect_season_candidates,
+    location_from_komunikat,
     parse_event_detail_html,
     plan_event_codes,
-    venue_address_from_pdf_bytes,
 )
 
 ORGANIZER_CODE = "PZSz"
@@ -243,7 +243,14 @@ def enrich_events(
                     event["url_invitation"] = invitation
                     letter = http.get(invitation)
                     letter.raise_for_status()
-                    address = venue_address_from_pdf_bytes(letter.content)
+                    # The komunikat carries BOTH a hall name and a street, on
+                    # consecutive lines under "Miejsce Zawodow". The shared rule
+                    # decides which reaches txt_venue_address: the street when
+                    # there is one, otherwise the hall name, so a letter naming
+                    # only the venue is no longer read for nothing.
+                    _city, address = location_from_komunikat(
+                        letter.content, city=str(event.get("location") or "")
+                    )
                     if address:
                         event["txt_venue_address"] = address
             except Exception as exc:  # noqa: BLE001 — enrichment is best-effort
