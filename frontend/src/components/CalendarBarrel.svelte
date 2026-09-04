@@ -711,9 +711,15 @@
     --org: #1f6fb0;
     background: #ecf4fc;
   }
+  /* Light YELLOW, not the tan it was. #fdf3e2 carried barely any saturation and
+     leaned orange, so beside PZSz's warm #fdf0f0 the two read as one "pale warm"
+     and an international championship stopped announcing itself — which is the
+     whole job of the hue, since these are the events a veteran travels for. A
+     real yellow separates cleanly from the pink either side of it while staying
+     in the same pale family as the green and blue. */
   .p.int {
     --org: #b1791d;
-    background: #fdf3e2;
+    background: #fdf8cc;
   }
   /* PZSz's own brand red is #c72626, desaturated here so it sits in the same
      tonal family as the three above rather than shouting over them. */
@@ -731,7 +737,7 @@
     background: #d4e6f7;
   }
   .p.soon.int {
-    background: #fbe9c4;
+    background: #f7ea9b;
   }
   .p.soon.pzs {
     background: #f7d5d5;

@@ -597,3 +597,77 @@ describe('EventCard — organizer logo and the header', () => {
     expect(container.querySelector('.cdt')).not.toBeNull()
   })
 })
+
+// ---------------------------------------------------------------------------
+// The organizer is a fact on the row, not a guess from the code (EC.60–EC.64)
+// ---------------------------------------------------------------------------
+//
+// The logo was chosen by `registryOf(panelType(txt_code))`, a prefix heuristic:
+// PEW→EVF, IMEW|IMSW|MEW|MSW|PSW→FIE, MPW→SPWS, PPS|MPS→PZSz, else SPWS. It
+// disagrees with tbl_event in two of the ten code families actually in use,
+// because nothing ever reconciled the two:
+//
+//   DMEW  organizer EVF  guessed SPWS  (fell through to the default)
+//   IMEW  organizer EVF  guessed FIE   (swept up with the world championships)
+//
+// DMEW is EVF's European TEAM championship and IMEW its individual European
+// championship; only IMSW and MSW belong to FIE. vw_calendar now carries
+// txt_organizer_code, so the card reads the organizer instead of inferring it.
+
+describe('EventCard — organizer comes from the row', () => {
+  it('EC.60: DMEW shows EVF, which the code heuristic got wrong', () => {
+    const { container } = render(EventCard, {
+      props: {
+        event: ev({ txt_code: 'DMEW-2025-2026', txt_organizer_code: 'EVF' }),
+        today: TODAY,
+      },
+    })
+    const logo = container.querySelector('.orglogo') as HTMLImageElement
+    expect(logo.getAttribute('alt')).toBe('EVF')
+    expect(logo.getAttribute('src')).toContain('EVF')
+  })
+
+  it('EC.61: IMEW shows EVF, not FIE', () => {
+    const { container } = render(EventCard, {
+      props: {
+        event: ev({ txt_code: 'IMEW-2024-2025', txt_organizer_code: 'EVF' }),
+        today: TODAY,
+      },
+    })
+    expect(container.querySelector('.orglogo')!.getAttribute('alt')).toBe('EVF')
+  })
+
+  it('EC.62: the row wins over the code whenever the two disagree', () => {
+    // Deliberately contradictory: a PEW code the heuristic reads as EVF, on a
+    // row the database says is PZSz. The row is the fact.
+    const { container } = render(EventCard, {
+      props: {
+        event: ev({ txt_code: 'PEW9efs-2026-2027', txt_organizer_code: 'PZSz' }),
+        today: TODAY,
+      },
+    })
+    expect(container.querySelector('.orglogo')!.getAttribute('alt')).toBe('PZSz')
+  })
+
+  it('EC.63: falls back to the code when the row carries no organizer', () => {
+    // Older rows and any caller not reading vw_calendar still have to render.
+    const { container } = render(EventCard, {
+      props: { event: ev({ txt_code: 'PEW9efs-2026-2027' }), today: TODAY },
+    })
+    expect(container.querySelector('.orglogo')!.getAttribute('alt')).toBe('EVF')
+  })
+
+  it('EC.64: an unrecognised organizer falls back rather than rendering nothing', () => {
+    // A fifth organizer would have no mark. Better the code's best guess than
+    // an empty slot where the registry should be.
+    const { container } = render(EventCard, {
+      props: {
+        event: ev({ txt_code: 'PPW1-2026-2027', txt_organizer_code: 'WKF' }),
+        today: TODAY,
+      },
+    })
+    const logo = container.querySelector('.orglogo') as HTMLImageElement
+    expect(logo).not.toBeNull()
+    expect(logo.getAttribute('alt')).toBe('SPWS')
+  })
+})

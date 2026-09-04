@@ -186,6 +186,15 @@ export interface CalendarEvent {
   txt_season_code: string
   id_organizer: number | null
   txt_organizer_name: string | null
+  /** The organizer's stable code — 'SPWS' | 'EVF' | 'FIE' | 'PZSz'.
+   *  Prefer this over inferring the registry from txt_code: the prefix
+   *  heuristic disagrees with the database on DMEW and IMEW, both of which
+   *  are EVF's.
+   *
+   *  Optional, following txt_event_iban: every vw_calendar row carries it, but
+   *  a CalendarEvent is also built by hand in demo mocks and fixtures. The card
+   *  falls back to the code heuristic when it is absent. */
+  txt_organizer_code?: string | null
   txt_location: string | null
   txt_country: string | null
   txt_venue_address: string | null
