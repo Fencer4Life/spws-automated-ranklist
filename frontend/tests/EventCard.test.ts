@@ -55,9 +55,11 @@ function card(partial: Partial<CalendarEvent> & { txt_code: string }, props = {}
 
 describe('EventCard — identity', () => {
   // EC.1 — the full code, not the prefix the old list showed.
-  it('EC.1: renders the full event code and name', () => {
+  it('EC.1: renders the short event code and the name', () => {
+    // The header carries the code in FULL — weapon suffix and season both.
     const c = card({ txt_code: 'PEW1f-2026-2027', txt_name: 'Budapest Open' })
     expect(c.querySelector('.ccd')!.textContent).toBe('PEW1f-2026-2027')
+    expect(c.querySelector('.ccd')!.getAttribute('title')).toBe('PEW1f-2026-2027')
     expect(c.querySelector('.cnm')!.textContent).toBe('Budapest Open')
   })
 
@@ -313,17 +315,26 @@ describe('EventCard — links and weapons', () => {
   })
 
   // EC.26 — weapons close the card as small pills, read from the code suffix.
-  it('EC.26: renders weapon pills from the code suffix', () => {
-    const c = card({ txt_code: 'PEW3ef-2026-2027' })
+  it('EC.26: renders weapon pills from arr_weapons, not the code suffix', () => {
+    // Was "from the code suffix". The suffix differentiates EVF events; it is
+    // not the weapon source, and 28 of 97 events carry none — every PPW, MPW,
+    // GP, IMEW, IMSW, MSW, DMEW and VFC — so their pills never rendered.
+    const c = card({ txt_code: 'PEW3ef-2026-2027', arr_weapons: ['EPEE', 'FOIL'] })
     expect([...c.querySelectorAll('.wp')].map((p) => p.textContent)).toEqual(['Szpada', 'Floret'])
-    expect(card({ txt_code: 'PPW1-2026-2027' }).querySelectorAll('.wp')).toHaveLength(0)
+    // A suffix-less code with weapons on the row now DOES render pills.
+    expect(
+      card({ txt_code: 'PPW1-2026-2027', arr_weapons: ['EPEE'] }).querySelectorAll('.wp'),
+    ).toHaveLength(1)
+    // Nothing established stays blank — never a guess.
+    expect(card({ txt_code: 'PPW1-2026-2027', arr_weapons: [] }).querySelectorAll('.wp')).toHaveLength(0)
   })
 
   // EC.27 — the two status chips: lifecycle state and owning registry.
-  it('EC.27: renders the status and registry chips', () => {
+  it('EC.27: renders the status chip; the registry is now a logo', () => {
     const c = card({ txt_code: 'PEW1e-2026-2027', enum_status: 'COMPLETED', dt_end: '2026-01-11' })
     const chips = [...c.querySelectorAll('.chp')].map((x) => x.textContent!.trim())
-    expect(chips).toEqual(['Zakończone', 'EVF'])
+    expect(chips).toEqual(['Zakończone'])
+    expect(c.querySelector('.orglogo')!.getAttribute('alt')).toBe('EVF')
   })
 
   it('EC.28: marks the next upcoming event on its chip', () => {
@@ -372,11 +383,16 @@ describe('EventCard — redesign', () => {
     // Status is filled and registry outlined so the two never blur together —
     // an SPWS event that is "planned" would otherwise render two adjacent
     // chips in the same green.
+    // The registry chip became the organizer's own mark, so the separation the
+    // original test protected is now carried by form (image vs chip) rather
+    // than by fill-vs-outline. The status chip is the only chip left.
     const spws = card({ txt_code: 'PPW1-2026-2027' })
-    expect(spws.querySelector('.chp.reg-SPWS')).not.toBeNull()
+    expect(spws.querySelector('.chp.reg-SPWS')).toBeNull()
+    expect(spws.querySelector('.orglogo')!.getAttribute('alt')).toBe('SPWS')
 
     const evf = card({ txt_code: 'PEW1efs-2026-2027' })
-    expect(evf.querySelector('.chp.reg-EVF')).not.toBeNull()
+    expect(evf.querySelector('.orglogo')!.getAttribute('alt')).toBe('EVF')
+    expect(evf.querySelectorAll('.chp')).toHaveLength(1)
   })
 
   it('EC.43: the top edge is typed, so the card reads as extruded from its tile', () => {
@@ -410,8 +426,29 @@ describe('EventCard — the date leads', () => {
     const dt = c.querySelector('.cdt')!
     expect(dt.textContent).toContain('26')
     expect(dt.textContent).toContain('27')
-    // the chip still sits alongside it, not instead of it
+    // The date now owns a full-width row of its own instead of sharing the
+    // header with the code — that is what buys room for the logo and pills.
+    expect(c.querySelector('.chd .cdt')).toBeNull()
     expect(c.querySelector('.ccd')!.textContent).toBe('PPW1-2026-2027')
+  })
+
+  it('EC.59: the header shows the code in full — suffix AND season', () => {
+    // Regression guard. Two passes trimmed this for row width: panelLabel()
+    // (built for the 48px tile, strips [efs] and renames PEW to EVF) and then
+    // the bare prefix. Both discarded real information — the suffix is the
+    // authoritative weapon record, and the season is what tells PPW1 apart
+    // across years on a calendar showing every season at once. Width is the
+    // logo's problem to absorb, not the code's.
+    for (const full of [
+      'PPS1s-2026-2027',
+      'MPSefs-2026-2027',
+      'PEW11efs-2026-2027',
+      'PEW10e-2026-2027',
+      'MSW-2026-2027',
+    ]) {
+      const c = card({ txt_code: full })
+      expect(c.querySelector('.ccd')!.textContent, full).toBe(full)
+    }
   })
 
   it('EC.46: a single-day event shows one date, not a range', () => {
@@ -458,5 +495,105 @@ describe('EventCard — weekdays on the date', () => {
     // getUTCDay() is 0-based on Sunday; the locale keys are Monday-first.
     expect(dateOf({ txt_code: 'X-2026-2027', dt_start: '2026-09-27', dt_end: '2026-09-27' }))
       .toContain(t('cal_dow_short_7'))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Weapons from the event table, and the new top row (EC.52–EC.58)
+// ---------------------------------------------------------------------------
+//
+// The card used to derive weapons from the trailing [efs] of the event code.
+// That suffix exists to differentiate EVF events, not to be the UI's weapon
+// source, and 28 of 97 events carry no suffix at all — every PPW, MPW, GP,
+// IMEW, IMSW, MSW, DMEW and VFC — so their pills never rendered. The weapons
+// now come from tbl_event.arr_weapons.
+
+describe('EventCard — weapons from arr_weapons', () => {
+  // EC.52 — the bug this fixes, stated directly: a suffix-less code with real
+  // weapons on the row must render pills.
+  it('EC.52: renders pills for a suffix-less code', () => {
+    const { container } = render(EventCard, {
+      props: {
+        event: ev({ txt_code: 'PPW1-2026-2027', arr_weapons: ['EPEE', 'FOIL', 'SABRE'] }),
+        today: TODAY,
+      },
+    })
+    const pills = [...container.querySelectorAll('.wp')].map((n) => n.textContent?.trim())
+    expect(pills).toEqual([t('epee'), t('foil'), t('sabre')])
+  })
+
+  // EC.53 — and it is the FIELD that decides, not the code. An epee-only event
+  // whose code says nothing must still show one pill.
+  it('EC.53: the field decides, not the code suffix', () => {
+    const { container } = render(EventCard, {
+      props: { event: ev({ txt_code: 'MPW-2026-2027', arr_weapons: ['EPEE'] }), today: TODAY },
+    })
+    const pills = [...container.querySelectorAll('.wp')].map((n) => n.textContent?.trim())
+    expect(pills).toEqual([t('epee')])
+  })
+
+  // EC.54 — no weapons established yet is blank, never a guess. arr_weapons is
+  // nullable now that its misleading all-three default is gone.
+  it('EC.54: no weapons renders no pills', () => {
+    const { container } = render(EventCard, {
+      props: { event: ev({ txt_code: 'PPW1-2026-2027', arr_weapons: [] }), today: TODAY },
+    })
+    expect(container.querySelectorAll('.wp')).toHaveLength(0)
+  })
+
+  // EC.55 — the pills moved into the header, out of the card's foot.
+  it('EC.55: pills render inside the top row', () => {
+    const { container } = render(EventCard, {
+      props: { event: ev({ txt_code: 'PPS1s-2026-2027', arr_weapons: ['SABRE'] }), today: TODAY },
+    })
+    expect(container.querySelector('.chd .wp')).not.toBeNull()
+  })
+})
+
+describe('EventCard — organizer logo and the header', () => {
+  // EC.56 — the registry abbreviation chip is replaced by the organizer's mark.
+  // The abbreviation survives as alt text, which is now its only appearance.
+  it('EC.56: shows the organizer logo, not the abbreviation chip', () => {
+    const { container } = render(EventCard, {
+      props: { event: ev({ txt_code: 'PPW1-2026-2027' }), today: TODAY },
+    })
+    expect(container.querySelector('.chp.reg-SPWS')).toBeNull()
+    const logo = container.querySelector('.orglogo') as HTMLImageElement | null
+    expect(logo).not.toBeNull()
+    expect(logo!.getAttribute('alt')).toBe('SPWS')
+  })
+
+  // EC.57 — all four registries resolve to their own asset. FIE covers the
+  // MEW/MSW/PSW/IMEW/IMSW family and was the one missing from the first pass.
+  it('EC.57: every registry has a logo', () => {
+    for (const [code, registry] of [
+      ['PPW1-2026-2027', 'SPWS'],
+      ['PEW10e-2026-2027', 'EVF'],
+      ['MSW-2026-2027', 'FIE'],
+      ['PPS1s-2026-2027', 'PZSz'],
+    ] as const) {
+      const { container } = render(EventCard, {
+        props: { event: ev({ txt_code: code }), today: TODAY },
+      })
+      const logo = container.querySelector('.orglogo') as HTMLImageElement | null
+      expect(logo, code).not.toBeNull()
+      expect(logo!.getAttribute('alt')).toBe(registry)
+      expect(logo!.getAttribute('src')).toContain(registry)
+    }
+  })
+
+  // EC.58 — the date owns its own row now, so the header holds logo, pills and
+  // the SHORT code. The full code is 106px against a 336px content width and
+  // would overflow the row beside a 123px wordmark and three pills.
+  it('EC.58: the header carries the full code, the date has its own row', () => {
+    const { container } = render(EventCard, {
+      props: {
+        event: ev({ txt_code: 'PPW1-2026-2027', arr_weapons: ['EPEE', 'FOIL', 'SABRE'] }),
+        today: TODAY,
+      },
+    })
+    expect(container.querySelector('.chd .ccd')!.textContent!.trim()).toBe('PPW1-2026-2027')
+    expect(container.querySelector('.chd .cdt')).toBeNull()
+    expect(container.querySelector('.cdt')).not.toBeNull()
   })
 })
