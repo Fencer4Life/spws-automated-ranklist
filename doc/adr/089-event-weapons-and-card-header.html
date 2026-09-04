@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="089-event-weapons-and-card-header.md">
-<meta name="adr-source-sha256" content="98f59b70de13636d33d60780268a142164b6c23bef765712a8ccc065021ae1b1">
+<meta name="adr-source-sha256" content="4de7e07ca36fb7c32b1090dccfb562312907532804d857cadc8e3220d40f2c8b">
 <title>ADR-089 · The event&#x27;s weapons live on the event, and the card header carries identity</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 089</p><h1>The event's weapons live on the event, and the card header carries identity</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-04; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>089-event-weapons-and-card-header.md</code></dd></div><div><dt>Length</dt><dd class="">187 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-04; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>089-event-weapons-and-card-header.md</code></dd></div><div><dt>Length</dt><dd class="">214 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-04; awaiting sign-off)
 <strong>Date:</strong> 2026-09-04
-<strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §8 (the card's field order and its registry chip), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the resolved weapon set now reaches <code>arr_weapons</code>, not only the event code)
+<strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §8 and its registry-from-code assumption (the card's field order and its registry chip), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the resolved weapon set now reaches <code>arr_weapons</code>, not only the event code)
 <strong>Relates to:</strong> <a href="046-pew-weapon-suffix.html">ADR-046</a> (the weapon-letter suffix this keeps as authoritative), <a href="088-calendar-location-contract.html">ADR-088</a> (the sibling &quot;resolve it at the source&quot; decision for the city)
 <strong>Source:</strong> <code>supabase/migrations/20260904000001_event_weapons_from_code.sql</code>, <code>frontend/src/components/EventCard.svelte</code></p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#a-fill-blank-guard-that-could-never-fire">A fill-blank guard that could never fire</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-drop-the-default-the-guard-is-fine">1 · Drop the default; the guard is fine</a></li><li class="depth-3"><a href="#2-the-card-reads-the-field-not-the-code">2 · The card reads the field, not the code</a></li><li class="depth-3"><a href="#3-close-the-create-then-refresh-gap">3 · Close the create-then-refresh gap</a></li><li class="depth-3"><a href="#4-the-header-carries-identity-the-date-gets-its-own-row">4 · The header carries identity; the date gets its own row</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#a-fill-blank-guard-that-could-never-fire">A fill-blank guard that could never fire</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-drop-the-default-the-guard-is-fine">1 · Drop the default; the guard is fine</a></li><li class="depth-3"><a href="#2-the-card-reads-the-field-not-the-code">2 · The card reads the field, not the code</a></li><li class="depth-3"><a href="#3-close-the-create-then-refresh-gap">3 · Close the create-then-refresh gap</a></li><li class="depth-3"><a href="#4-the-header-carries-identity-the-date-gets-its-own-row">4 · The header carries identity; the date gets its own row</a></li><li class="depth-3"><a href="#5-the-organizer-is-read-from-the-row-not-inferred-from-the-code">5 · The organizer is read from the row, not inferred from the code</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The weapon pills were missing from the upcoming <code>PPW1-2026-2027</code> card. Not
 obscured — never rendered.</p>
@@ -102,10 +102,45 @@ own ~14px and failed for exactly the roundels; a pass at 56px was legible but
 dominated the row. The logo is also the only shrinkable element in row one —
 pills and code are text and would truncate instead, so the SPWS wordmark yields
 from 80px to 59px at the 375px viewport rather than letting the code clip.</p>
-<p><strong>All four registries carry a mark</strong>: SPWS, EVF, FIE (<code>MEW</code>/<code>MSW</code>/<code>PSW</code>/<code>IMEW</code>/
-<code>IMSW</code>) and PZSz. <code>alt</code> carries the abbreviation, which is now its only
+<p><strong>All four registries carry a mark</strong>: SPWS, EVF, FIE and PZSz. <code>alt</code> carries the abbreviation, which is now its only
 appearance — the registry chip is retired, so <code>alt</code> is both the screen-reader
 label and the visible fallback when an asset fails.</p>
+<h3 id="5-the-organizer-is-read-from-the-row-not-inferred-from-the-code">5 · The organizer is read from the row, not inferred from the code</h3>
+<p>The logo was chosen by <code>registryOf(panelType(txt_code))</code>, a prefix heuristic:
+<code>PEW</code>→EVF, <code>IMEW|IMSW|MEW|MSW|PSW</code>→FIE, <code>MPW</code>→SPWS, <code>PPS|MPS</code>→PZSz, else SPWS. It
+disagrees with <code>tbl_event</code> in <strong>two of the ten code families in use</strong>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>prefix</th>
+<th>organizer on the row</th>
+<th>heuristic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DMEW</code></td>
+<td>EVF</td>
+<td>SPWS — fell through to the default</td>
+</tr>
+<tr>
+<td><code>IMEW</code></td>
+<td>EVF</td>
+<td>FIE — swept up with the world championships</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>DMEW</code> is EVF's European <strong>team</strong> championship and <code>IMEW</code> its individual European
+championship; only <code>IMSW</code> and <code>MSW</code> are FIE's. Nothing flagged the drift, because
+a heuristic has no way to disagree with the data it approximates — it was found
+by eye, on the Cognac card showing an SPWS logo.</p>
+<p><code>vw_calendar</code> already joined <code>tbl_organizer</code> for the display name, so
+<code>txt_organizer_code</code> costs one column. The card reads it and keeps the heuristic
+only as a fallback: for rows carrying no organizer, and for an organizer with no
+mark of its own, where a best guess beats an empty registry slot.</p>
+<p><code>panelType</code> is deliberately <strong>not</strong> changed. It drives the tile hue, which is a
+presentation channel, not a claim about who organises what — and the barrel tile
+has only a code to work from.</p>
 </section>
 <section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
 <ol>
@@ -121,6 +156,9 @@ which is the whole defect.</li>
 Rejected for now in favour of the roster re-read (§3), which closes the same
 gap in three lines instead of replacing a 200-line function.</li>
 <li><strong>Logos at chip size, or at 56px.</strong> Both tried and shown; see §4.</li>
+<li><strong>Add <code>DMEW</code> and <code>IMEW</code> branches to <code>panelType</code>.</strong> Rejected: it fixes the two
+families found today and leaves the next one to be spotted by eye. The row
+already knows the answer.</li>
 </ol>
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
@@ -170,5 +208,5 @@ to make in code.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="088-calendar-location-contract.html">← ADR-088: One location contract for every calendar scraper — city, venue and address</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>089-event-weapons-and-card-header.md</code> · source SHA-256 <code>98f59b70de13636d33d60780268a142164b6c23bef765712a8ccc065021ae1b1</code></footer>
+<footer class="foot">Generated from <code>089-event-weapons-and-card-header.md</code> · source SHA-256 <code>4de7e07ca36fb7c32b1090dccfb562312907532804d857cadc8e3220d40f2c8b</code></footer>
 </div></body></html>
