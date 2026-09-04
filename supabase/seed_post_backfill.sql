@@ -280,3 +280,45 @@ UPDATE tbl_organizer
        txt_iban  = 'PL 06 1090 1665 0000 0001 5004 1549'
  WHERE txt_code = 'SPWS'
    AND (txt_payee IS NULL OR txt_iban IS NULL);
+
+
+-- ---------------------------------------------------------------------------
+-- Weapons from the event code (migration 20260904000001), repeated after the
+-- seed.
+--
+-- Same reason as the Phase 2 sweep above: on a fresh bootstrap the migration
+-- runs against an EMPTY tbl_event, so its backfill is a no-op, and the seed
+-- dump then loads 48 events whose arr_weapons contradicts their own code —
+-- PEW2e, an epee-only competition, arriving with {EPEE,FOIL,SABRE}. The dump is
+-- a snapshot of PROD taken before the migration corrects it. CERT and PROD run
+-- the migration directly against populated tables and never reach this file.
+--
+-- Without it, LOCAL and CI diverge from CERT/PROD in a way that shows: the
+-- calendar card reads arr_weapons, so those events would advertise weapons they
+-- do not run, and plan test 71.5 fails on a fresh database while passing on a
+-- migrated one.
+--
+-- Idempotent, and scoped to codes carrying a weapon suffix — ADR-046 and
+-- ADR-086 make that suffix the authoritative record. Events with no suffix
+-- (PPW, MPW, GP, IMEW, IMSW, MSW, DMEW, VFC) are left alone: they run all three
+-- weapons, verified against their own tournaments.
+UPDATE tbl_event e
+   SET arr_weapons = ARRAY(
+         SELECT w FROM (
+           SELECT CASE c WHEN 'e' THEN 'EPEE' WHEN 'f' THEN 'FOIL'
+                         WHEN 's' THEN 'SABRE' END AS w
+           FROM regexp_split_to_table(
+                  substring(split_part(e.txt_code, '-', 1) FROM '[efs]+$'), ''
+                ) AS c
+         ) x ORDER BY w
+       )::enum_weapon_type[]
+ WHERE split_part(e.txt_code, '-', 1) ~ '[efs]$'
+   AND arr_weapons IS DISTINCT FROM ARRAY(
+         SELECT w FROM (
+           SELECT CASE c WHEN 'e' THEN 'EPEE' WHEN 'f' THEN 'FOIL'
+                         WHEN 's' THEN 'SABRE' END AS w
+           FROM regexp_split_to_table(
+                  substring(split_part(e.txt_code, '-', 1) FROM '[efs]+$'), ''
+                ) AS c
+         ) x ORDER BY w
+       )::enum_weapon_type[];

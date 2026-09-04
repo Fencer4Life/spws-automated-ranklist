@@ -4,20 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="ee08e61abe96521202943e1a430302c0650aee050af2b3f439947cb428accae0">
+<meta name="adr-source-sha256" content="eca3ea6b130beba8c7cd3841a3dfc4db831bb0df0f46a33048834cff1156b84d">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">241 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">242 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28)
 <strong>Date:</strong> 2026-08-28
 <strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
 <strong>Amends:</strong> <a href="043-evf-event-allocator.html">ADR-043</a> §Amendment (2026-08-07) — &quot;missing/unsupported weapon sets … are hard errors&quot; and &quot;A later cancellation keeps its positive code&quot;; <a href="046-pew-weapon-suffix.html">ADR-046</a> §Amendment (2026-08-07) — &quot;If no authoritative weapon set can be established, the entire calendar write fails before mutation&quot; and &quot;An event cancelled later keeps its previously assigned positive code&quot;
 <strong>Relates to:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> (EVF calendar/results import), <a href="039-stale-event-gate.html">ADR-039</a> (stale-event gate), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (CERT→PROD reconciler carries the renames), <a href="036-prod-export-local-mirror.html">ADR-036</a> (monolithic seed dump loaded by <code>db reset</code>, after migrations)
-<strong>Source:</strong> <code>python/scrapers/evf_calendar.py</code>, <code>supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql</code></p>
+<strong>Source:</strong> <code>python/scrapers/evf_calendar.py</code>, <code>supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql</code>
+<strong>Amended by:</strong> <a href="089-event-weapons-and-card-header.html">ADR-089</a> (the weapon set this ADR's evidence ladder resolves now reaches <code>tbl_event.arr_weapons</code> as well as the event code — a fill-blank guard written against NULL on a column carrying a non-null DEFAULT meant it never landed, leaving 35 events contradicting their own code).</p>
 </div>
 </header>
 <div class="layout">
@@ -216,5 +217,5 @@ honour an empty string as a value. If blank should mean blank, it should mean it
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="087-pzsz-senior-calendar-source.html">→ ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar</a></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>ee08e61abe96521202943e1a430302c0650aee050af2b3f439947cb428accae0</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>eca3ea6b130beba8c7cd3841a3dfc4db831bb0df0f46a33048834cff1156b84d</code></footer>
 </div></body></html>

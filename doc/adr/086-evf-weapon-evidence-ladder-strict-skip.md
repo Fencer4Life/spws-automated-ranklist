@@ -6,6 +6,7 @@
 **Amends:** [ADR-043](043-evf-event-allocator.md) §Amendment (2026-08-07) — "missing/unsupported weapon sets … are hard errors" and "A later cancellation keeps its positive code"; [ADR-046](046-pew-weapon-suffix.md) §Amendment (2026-08-07) — "If no authoritative weapon set can be established, the entire calendar write fails before mutation" and "An event cancelled later keeps its previously assigned positive code"
 **Relates to:** [ADR-028](028-evf-calendar-results-import.md) (EVF calendar/results import), [ADR-039](039-stale-event-gate.md) (stale-event gate), [ADR-081](081-cert-prod-event-reconciler.md) (CERT→PROD reconciler carries the renames), [ADR-036](036-prod-export-local-mirror.md) (monolithic seed dump loaded by `db reset`, after migrations)
 **Source:** `python/scrapers/evf_calendar.py`, `supabase/migrations/20260828000004_evf_event_weapons_lifecycle_gate.sql`
+**Amended by:** [ADR-089](089-event-weapons-and-card-header.md) (the weapon set this ADR's evidence ladder resolves now reaches `tbl_event.arr_weapons` as well as the event code — a fill-blank guard written against NULL on a column carrying a non-null DEFAULT meant it never landed, leaving 35 events contradicting their own code).
 
 ## Context
 
