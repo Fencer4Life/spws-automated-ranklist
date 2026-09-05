@@ -1466,8 +1466,12 @@
     display: block;
   }
   .embed-title {
-    font-size: 26px;
+    /* Uppercased in CSS, not in the locale strings: the rendered form changes
+       but textContent stays "Znajdź zawody" / "Competition finder", so the
+       language tests keep asserting real values. */
+    font-size: 28px;
     font-weight: 800;
+    text-transform: uppercase;
     color: #173f70;
     /* Takes the slack so the actions sit hard right without justify-content,
        which would also push the mark away from the title. */
@@ -1494,7 +1498,7 @@
       padding: 8px;
     }
     .embed-title {
-      font-size: 21px;
+      font-size: 23px;
     }
     .embed-logo {
       height: 22px;
@@ -1508,7 +1512,7 @@
       gap: 8px;
     }
     .embed-title {
-      font-size: 18px;
+      font-size: 20px;
     }
     .embed-logo {
       height: 19px;
