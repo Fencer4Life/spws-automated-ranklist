@@ -9,7 +9,7 @@
        its own row below, which is what buys the space for all three. The code is
        complete — suffix and season — and the logo shrinks to make room. -->
   <div class="chd">
-    <img class="orglogo reg-{registry}" src={LOGO_SRC[registry]} alt={registry} />
+    <img class="orglogo reg-{registry}" src={assetUrl(LOGO_SRC[registry])} alt={registry} />
     {#if weapons.length > 0}
       <div class="wps">
         {#each weapons as weapon}
@@ -153,6 +153,7 @@
 
   import type { CalendarEvent } from '../lib/types'
   import { getEventDisplayStatus } from '../lib/eventStatus'
+  import { assetUrl } from '../lib/assetBase'
   import { t } from '../lib/locale.svelte'
   import CountryFlag from './CountryFlag.svelte'
   import {

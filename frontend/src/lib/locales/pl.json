@@ -546,5 +546,9 @@
   "cal_dow_short_4": "czw",
   "cal_dow_short_5": "pt",
   "cal_dow_short_6": "sob",
-  "cal_dow_short_7": "niedz"
+  "cal_dow_short_7": "niedz",
+  "embed_page_title": "Znajdź zawody",
+  "embed_home_label": "Przejdź do strony SPWS",
+  "embed_fullscreen": "Pełny ekran",
+  "embed_fullscreen_exit": "Zamknij pełny ekran"
 }

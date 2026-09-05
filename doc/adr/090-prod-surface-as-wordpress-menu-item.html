@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="090-prod-surface-as-wordpress-menu-item.md">
+<meta name="adr-source-sha256" content="caa3b295b8b4a73d2cc318dbfc74bc6818721ed50648c36a300ffd11dd1abd4f">
+<title>ADR-090 · Publishing a PROD surface as a full-screen WordPress menu item</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 090</p><h1>Publishing a PROD surface as a full-screen WordPress menu item</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-05; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">243 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-05; awaiting sign-off)
+<strong>Date:</strong> 2026-09-05
+<strong>Amends:</strong> <a href="007-shadow-dom-deferred.html">ADR-007</a> (the anticipated WordPress embed is now built, and the element gains a <code>view</code>/<code>chrome</code> interface), <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at <code>CERT</code>)
+<strong>Relates to:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> (the bundle ships through the existing release pipeline), <a href="083-server-enforced-authorization.html">ADR-083</a> (the exposure argument rests on the anon grants), <a href="079-event-self-registration-identity.html">ADR-079</a> (self-registration becomes reachable from the association's own menu), <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (the calendar is the first surface through the pattern), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> (the calculator will reuse the presentation, not the build)
+<strong>Source:</strong> <code>doc/plans/prod-deployment-wordpress-2026-09-05.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-embed-is-the-same-application-not-a-second-one">1 · The embed is the same application, not a second one</a></li><li class="depth-3"><a href="#2-a-surface-opens-on-the-environment-it-holds-credentials-for">2 · A surface opens on the environment it holds credentials for</a></li><li class="depth-3"><a href="#3-the-embed-ignores-admin-1">3 · The embed ignores `?admin=1`</a></li><li class="depth-3"><a href="#4-asset-paths-resolve-through-a-base-not-the-origin-root">4 · Asset paths resolve through a base, not the origin root</a></li><li class="depth-3"><a href="#5-one-row-replaces-the-removed-application-header">5 · One row replaces the removed application header</a></li><li class="depth-3"><a href="#6-the-bundle-keeps-a-stable-file-name">6 · The bundle keeps a stable file name</a></li><li class="depth-3"><a href="#7-the-page-carries-its-own-presentation-rules">7 · The page carries its own presentation rules</a></li><li class="depth-3"><a href="#8-nothing-is-published-without-per-page-approval">8 · Nothing is published without per-page approval</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The SPWS ranking, calendar and points calculator are published on GitHub Pages
+at <code>https://fencer4life.github.io/spws-automated-ranklist/</code>. That address is
+not the association's website. Fencers reach <code>weteraniszermierki.pl</code>, whose
+calendar page <code>/kalendarz-2/</code> is 25 KB of hand-typed event lines maintained by
+hand, three seasons deep, while the generated calendar with live registration
+sits on an address almost nobody knows.</p>
+<p>ADR-007 anticipated exactly this: the component was built as a custom element
+with Shadow DOM specifically so it could be embedded in a WordPress page. The
+mechanism has existed since M8 and has never been used.</p>
+<p>What was measured on 2026-09-05, against the live site and the live database,
+rather than assumed:</p>
+<ul>
+<li><strong>The embed survives WordPress's save-time filter.</strong> A draft page carrying
+<code>&lt;spws-calendar&gt;</code>, an external <code>&lt;script type=&quot;module&quot;&gt;</code>, an inline <code>&lt;script&gt;</code>,
+a <code>&lt;style&gt;</code> element and hyphenated custom attributes was written over XML-RPC
+and read back <strong>byte-identical</strong>. The administrator holds <code>unfiltered_html</code>,
+as the single-site install predicted. The planned <code>mu-plugins</code> fallback — and
+with it the dependency on a DirectAdmin login nobody holds — is not needed.</li>
+<li><strong>The render-time filter behaves differently from the save-time one.</strong>
+<code>wpautop</code> is active: measured against three published pages, bare text and a
+top-level <code>&lt;img&gt;</code> are wrapped in <code>&lt;p&gt;</code>, while a top-level <code>&lt;div&gt;</code> passes
+through untouched. <code>spws-calendar</code> is not a tag <code>wpautop</code> recognises, so the
+embed is wrapped in a <code>&lt;div&gt;</code> to keep it out of a paragraph.</li>
+<li><strong>The theme prints its own <code>&lt;h1 class=&quot;entry-title&quot;&gt;</code></strong> above the content
+area on every page. The plan's &quot;no page heading&quot; cannot be achieved by
+omitting a heading from the content; it needs a rule that hides the theme's.</li>
+<li><strong>PROD's security posture is green now</strong>, not as of the last deploy: all five
+ADR-083 assertions pass against <code>spws-ranklist-prod</code>.</li>
+<li><strong>PROD's calendar data is sound.</strong> 120 rows across 4 seasons; <code>arr_weapons</code>
+fully populated; none of the three known CERT defect classes present. The 23
+undated <code>CREATED</code> rows in the current season are ADR-077 planning skeletons
+and are already hidden twice over — <code>calendarMonths.ts:258</code> drops events with
+no <code>dt_start</code>, and <code>visibleEvents</code> at <code>calendarMonths.ts:545</code> filters
+<code>enum_status !== 'CREATED'</code>.</li>
+</ul>
+<p>Two defects in the existing code were found by the tests written for this work,
+both invisible while the application only ever ran on GitHub Pages:</p>
+<ol>
+<li><strong>A PROD-only embed rendered blank.</strong> <code>activeEnv</code> was initialised to the
+literal <code>'CERT'</code>, and <code>supabaseUrl</code> derived as
+<code>activeEnv === 'PROD' &amp;&amp; prodUrl ? prodUrl : certUrl</code>. Given only the PROD
+pair, that yields an empty string, the init effect's <code>supabaseUrl &amp;&amp; supabaseKey</code> guard never passes, and nothing loads — with no error anywhere.
+This is the mirror image of the 2026-08-17 <code>RegistrationElement</code> defect,
+where <code>(certUrl || prodUrl)</code> silently resolved to CERT: the same assumption
+that both credential pairs always exist, failing in the other direction.</li>
+<li><strong>Opening directly on the calendar loaded the ranking.</strong> <code>App.init()</code> ended
+in an unconditional <code>loadRanking()</code>. That was correct while <code>currentView</code>
+always started at <code>'ranklist'</code> and the calendar was only ever reached through
+<code>navigateTo()</code>, which loads it. An embed that opens on the calendar fetched
+ranking rows nobody sees and left the barrel with no events.</li>
+</ol>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<p>Publish an SPWS PROD surface as a <strong>full-screen-capable WordPress page reached
+from a menu item</strong>, with the bundle served from the existing GitHub Pages origin
+at a stable file name. The subject of this decision is the <strong>pattern</strong>, not the
+calendar: the ranking and the points calculator follow it without ADRs of their
+own.</p>
+<h3 id="1-the-embed-is-the-same-application-not-a-second-one">1 · The embed is the same application, not a second one</h3>
+<p><code>&lt;spws-calendar&gt;</code> mounts <code>App.svelte</code> with <code>view=&quot;calendar&quot; chrome=&quot;none&quot;</code>
+(<code>CalendarElement.svelte:9</code>), inheriting the client initialisation, the
+all-seasons load and the locale store that already work. It was previously a
+mock stub whose only prop was <code>demo</code> and which had never queried a database.</p>
+<p><code>App.svelte</code> gains two attributes, both defaulting to today's behaviour so the
+GitHub Pages build is unchanged:</p>
+<ul>
+<li><code>view</code> (<code>ranklist</code> | <code>calendar</code>), default <code>ranklist</code> — <code>App.svelte:379</code></li>
+<li><code>chrome</code> (<code>full</code> | <code>none</code>), default <code>full</code> — <code>App.svelte:380</code></li>
+</ul>
+<p><code>chrome=&quot;none&quot;</code> removes the header, the hamburger and the drawer: a single
+embed has no second view to navigate to.</p>
+<h3 id="2-a-surface-opens-on-the-environment-it-holds-credentials-for">2 · A surface opens on the environment it holds credentials for</h3>
+<p><code>activeEnv</code> is initialised as <code>certUrl &amp;&amp; certKey ? 'CERT' : 'PROD'</code>
+(<code>App.svelte:489</code>). With both pairs present the behaviour is exactly as ADR-009
+specifies — the Pages app opens on CERT and shows the CT/PD toggle. With only
+the PROD pair, the surface opens on PROD instead of resolving to an empty URL.</p>
+<p>This amends ADR-009's reactivity chain. The <code>dualEnv</code> flag and the toggle's
+meaning are unchanged.</p>
+<h3 id="3-the-embed-ignores-admin-1">3 · The embed ignores <code>?admin=1</code></h3>
+<p><code>adminRequested</code> is gated on <code>chrome !== 'none'</code> (<code>App.svelte:445</code>).
+Administration stays on GitHub Pages; the sign-in modal is not reachable from a
+public page on the association's site whatever the address bar says.</p>
+<h3 id="4-asset-paths-resolve-through-a-base-not-the-origin-root">4 · Asset paths resolve through a base, not the origin root</h3>
+<p>The four organizer marks and the header mark are referenced by bare file name,
+which resolves only because the Pages app sits at the origin root. A module-level
+base (<code>lib/assetBase.ts</code>) is set once from an <code>asset-base</code> attribute and read by
+<code>EventCard</code>, <code>Sidebar</code> and the embed bar. Empty by default, so Pages output is
+byte-for-byte what it was.</p>
+<p>It is a module singleton rather than a prop for the reason <code>initClient</code> is: the
+value arrives once as a static attribute and is read three components deep.</p>
+<h3 id="5-one-row-replaces-the-removed-application-header">5 · One row replaces the removed application header</h3>
+<p>At no extra height: the SPWS mark linked to <code>https://weteraniszermierki.pl</code> —
+the only way out once fullscreen hides the site menu — the page's name in the
+<strong>active language only</strong>, the language toggle, and a fullscreen button. The
+element requests fullscreen on itself, not the document, so the theme's header
+and footer do not come with it; the Fullscreen API only grants on a user
+gesture, so it cannot be forced on load.</p>
+<p>The drawer's mark in the Pages app gains the same link home
+(<code>Sidebar.svelte:8</code>), which is that copy's only route back to the association's
+site.</p>
+<h3 id="6-the-bundle-keeps-a-stable-file-name">6 · The bundle keeps a stable file name</h3>
+<p><code>vite.config.ce.ts:30</code> pins <code>output.entryFileNames</code> so the CE entry publishes as
+<code>assets/main.ce.js</code> rather than <code>main.ce-&lt;hash&gt;.js</code>. The WordPress page hard-codes
+that URL, so WordPress is touched once and every later release reaches the live
+page by replacing the file at the same address.</p>
+<p>The trade-off is deliberate: no content hash means no cache-busting. It is
+guarded rather than trusted — <code>release.yml:128</code> fails the release if the stable
+file is missing or a hashed sibling appears, because a rename would not fail in
+CI, it would fail silently on a live page on the association's website.</p>
+<h3 id="7-the-page-carries-its-own-presentation-rules">7 · The page carries its own presentation rules</h3>
+<p>The page body holds a small <code>&lt;style&gt;</code> that hides the theme's <code>.entry-title</code> and
+removes the content margin. This is what delivers the plan's &quot;no page heading&quot;:
+the heading is the theme's, not the content's. <code>&lt;style&gt;</code> was verified to survive
+the content filter in the same round-trip as the embed.</p>
+<h3 id="8-nothing-is-published-without-per-page-approval">8 · Nothing is published without per-page approval</h3>
+<p>The page and its menu item are created as drafts and stay drafts until the user
+approves that specific page. <code>/kalendarz-2/</code> and <code>/klasyfikacja/</code> are not
+modified; the old and new calendars can run side by side for as long as the
+association wants.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>An <code>&lt;iframe&gt;</code> pointing at the Pages site.</strong> Rejected: no style or height
+negotiation with the host page, poor behaviour at phone width — the binding
+constraint for every one of these surfaces — and no shadow-DOM isolation
+guarantee to inherit. The custom element already exists and ADR-007 built it
+for this.</li>
+<li><strong>Rebuilding the calendar as a WordPress plugin or theme template.</strong> Rejected:
+duplicates the ranking engine's read model in PHP, and puts a second
+implementation of the domain on a host nobody in this project controls.</li>
+<li><strong>A hashed bundle name with the WordPress page updated per release.</strong>
+Rejected: it makes every release a two-system change, and the failure mode is
+a live page silently loading a 404 until someone notices.</li>
+<li><strong>Publishing to a page template that omits the theme heading</strong>
+(<code>Redux pełna szerokość</code>). Not rejected on merit — rejected as <em>unmeasured</em>.
+No page on the site uses any non-default template, so its behaviour cannot be
+read without publishing something. A <code>&lt;style&gt;</code> rule achieves the same result
+on the known-good default template, and the template remains available later.</li>
+<li><strong>Moving PROD off GitHub Pages entirely.</strong> Out of scope. This is the first
+step of PROD leaving Pages, not the completion of it; the Pages origin still
+serves the bundle and the assets.</li>
+<li><strong>Blanking the CERT attributes and passing PROD in the CERT slots</strong>, as
+<code>register.html</code> does. Rejected: it makes the page lie about which environment
+it talks to. Fixing the resolution (§2) is a smaller change than a permanent
+misnaming, and it removes a defect class rather than working around it.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New files</strong></p>
+<ul>
+<li><code>frontend/src/lib/assetBase.ts</code> — the asset base singleton.</li>
+<li><code>frontend/tests/assetBase.test.ts</code> — 6 tests.</li>
+<li><code>frontend/tests/CalendarEmbed.test.ts</code> — 23 tests covering credential
+resolution, <code>chrome=&quot;none&quot;</code>, view routing, the top row and the element itself.</li>
+</ul>
+<p><strong>Changed</strong></p>
+<ul>
+<li><code>frontend/src/App.svelte</code> — <code>view</code>, <code>chrome</code>, <code>asset-base</code>; the embed bar;
+fullscreen; the <code>activeEnv</code> and <code>init()</code> fixes.</li>
+<li><code>frontend/src/ce/CalendarElement.svelte</code> — mock stub replaced by a mount of
+the real application; <code>:host</code> gives the element its viewport height.</li>
+<li><code>frontend/src/components/EventCard.svelte</code>, <code>Sidebar.svelte</code> — assets through
+<code>assetUrl</code>; the drawer's link home.</li>
+<li><code>frontend/src/lib/locales/{pl,en}.json</code> — 4 embed-only keys each (552 each,
+parity held).</li>
+<li><code>frontend/vite.config.ce.ts</code> — stable entry name.</li>
+<li><code>.github/workflows/release.yml</code> — the stable-name guard.</li>
+</ul>
+<p><strong>Test impact.</strong> 768 vitest tests pass (up from 738); <code>svelte-check</code> reports 0
+errors. No test was deleted or weakened. Both defects in Context were caught by
+a failing test written first, and the <code>init()</code> fix was verified by reverting it
+and confirming the test fails.</p>
+<p><strong>The registration form becomes materially more reachable.</strong> Nothing about its
+privilege changes — anon still holds no table write, and registrations go
+through <code>SECURITY DEFINER</code> RPCs — but ADR-079 §4's defence (d), the rate limit
+and salted-hash abuse log, still does not exist. Moving the form from an obscure
+Pages URL into the association's main menu changes how many people walk past an
+unthrottled public form. The exposure is accepted for now and the follow-up is
+scheduled for 2026-09-06 alongside the XML export work.</p>
+<p><strong>Cache behaviour changes for the CE bundle.</strong> A stable name means browsers key
+on the file name; a release replaces the file in place.</p>
+<p><strong>Found and deliberately not fixed.</strong> <code>scripts/cloud-sql.sh:96</code> strips SQL
+comments with <code>sed -E 's@--[^\n]*@ @g'</code>. <code>sed</code> has no <code>\n</code> escape inside a
+bracket expression, so <code>[^\n]</code> means &quot;not a backslash and not the letter n&quot;: any
+leading comment containing an <code>n</code> truncates the strip and a plain <code>SELECT</code> is
+routed to the write-confirmation gate. It fails safe and is outside this
+decision's scope.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong>The theme heading.</strong> §7 hides it with a <code>&lt;style&gt;</code> rule on the default
+template. If the <code>Redux pełna szerokość</code> template turns out to omit the
+heading and widen the content area, it is a one-attribute change on the same
+page — but it is unmeasured until something uses it. <em>Recommendation:</em> ship
+on the default template, measure the alternative later if the width is
+wanted.</li>
+<li><strong>The menu item.</strong> Not created. WordPress stores a menu item's structure in
+protected <code>_menu_item_*</code> meta, which XML-RPC accepts on write but hides on
+read, so a menu item cannot be verified through the channel that creates it.
+<em>Recommendation:</em> create it in <code>wp-admin</code>, where it can be seen, or accept an
+unverified draft item on explicit instruction. The live menu is <code>nav_menu</code>
+term 33 (&quot;Moje menu&quot;); the LINKI parent is item 7128.</li>
+<li><strong>Step 2's placement and timing</strong> — the ranking and the calculator — depend
+on an SPWS Board decision expected in the week of 2026-09-08, and the
+calculator additionally on a DirectAdmin/FTP login not yet held. Neither
+blocks this decision.</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="089-event-weapons-and-card-header.html">← ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>caa3b295b8b4a73d2cc318dbfc74bc6818721ed50648c36a300ffd11dd1abd4f</code></footer>
+</div></body></html>

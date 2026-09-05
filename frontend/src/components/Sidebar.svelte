@@ -3,7 +3,11 @@
 {/if}
 <nav class="sidebar" class:open>
   <div class="sidebar-brand">
-    <img src="SPWS-logo.png" alt="SPWS" class="sidebar-logo" />
+    <!-- The Pages copy of the app has no other route back to the association's
+         site — PROD deployment step 1, plan §03. -->
+    <a href="https://weteraniszermierki.pl" class="sidebar-home" aria-label={t('embed_home_label')}>
+      <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="sidebar-logo" />
+    </a>
   </div>
   <ul class="nav-list">
     <li>
@@ -63,6 +67,7 @@
 <script lang="ts">
   import type { AppView } from '../lib/types'
   import { t, getLocale } from '../lib/locale.svelte'
+  import { assetUrl } from '../lib/assetBase'
 
   let {
     open = false,
@@ -109,6 +114,10 @@
   }
   .sidebar-brand {
     padding: 20px 20px 12px;
+  }
+  .sidebar-home {
+    display: inline-block;
+    line-height: 0;
   }
   .sidebar-logo {
     width: 120px;

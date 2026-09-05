@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publish decision — the bundle is not on Pages yet</title>
+<style>
+
+
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.mkframe{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin:14px 0 4px;overflow-x:auto}
+.mkframe svg{display:block;width:100%;min-width:660px;height:auto}
+.figcap{font-size:13px;color:var(--muted);margin:0 0 22px;max-width:84ch}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+
+.prompt{background:var(--card);border:2px solid var(--green);border-radius:8px;padding:18px 20px;margin:14px 0 22px}
+.prompt .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--green);font-weight:700;display:block;margin-bottom:9px}
+.prompt pre{border-left-color:var(--green);margin:0;max-width:none;white-space:pre-wrap}
+</style></head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · PROD deployment · publish decision · 5 September 2026</div>
+  <h1>The page is ready to publish, but the file it loads is not on GitHub Pages yet.</h1>
+  <p class="dek">You asked me to publish it. I have not, because publishing right now puts an empty
+  box on the association's live website. It is an ordering problem with a five-minute fix, not a
+  defect in the page. Pick an option below and I will carry it out.</p>
+  <div class="chips">
+    <span class="chip good">page correct</span>
+    <span class="chip bad">bundle 404 on Pages</span>
+    <span class="chip warn">awaiting your choice</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2 id="what"><span class="num">01</span>What is actually wrong</h2>
+
+<p>The page body loads the calendar from a fixed address:</p>
+<pre><code>&lt;script src="https://fencer4life.github.io/spws-automated-ranklist/assets/main.ce.js"&gt;&lt;/script&gt;</code></pre>
+
+<div class="tw"><table>
+<tr><th>Checked just now</th><th>Result</th></tr>
+<tr><td><code>…/assets/main.ce.js</code> — what the page needs</td><td><span class="st s-bad">HTTP 404</span> not deployed</td></tr>
+<tr><td><code>…/</code> — the Pages site itself</td><td><span class="st s-ok">HTTP 200</span> live</td></tr>
+<tr><td><code>…/SPWS-logo.png</code> — the marks</td><td><span class="st s-ok">HTTP 200</span> live</td></tr>
+</table></div>
+
+<p>The stable-named build exists only in my working tree. It has not been committed, so no release has
+run, so GitHub Pages still serves the <b class="k">old hashed bundle</b> — which also still contains
+the <b class="k">old mock-stub</b> calendar element that never queried a database. Pointing the page
+at the old file would not help either: it would render two hard-coded fake events.</p>
+
+<div class="call">
+  <span class="lb">How bad is it, really</span>
+  Bounded. There is <b class="k">no menu item</b>, so nothing on the site links to the page — only
+  someone with the direct URL would find it. But it is a live public URL on the association's domain,
+  and search engines can reach a published page whether or not it is linked.
+</div>
+
+<h2 id="options"><span class="num">02</span>Your options</h2>
+
+<div class="tw"><table>
+<tr><th>#</th><th>Option</th><th>What happens</th><th>Cost</th></tr>
+<tr><td class="d">A</td><td><b class="k">Release first, then publish</b><br><span class="st s-ok">recommended</span></td>
+<td>I commit the work, push, and the release workflow deploys the bundle to Pages. I confirm
+<code>main.ce.js</code> returns 200 and that it is the new build. <b class="k">Then</b> I publish the
+page, and I verify the live page renders the real calendar before telling you it is done.</td>
+<td>One release run. The page is never publicly broken, not even briefly.</td></tr>
+
+<tr><td class="d">B</td><td>Publish now, release after</td>
+<td>The page goes live immediately as an empty box, and starts working once the release lands.</td>
+<td>A window where a live SPWS URL renders nothing. Nothing links to it, but it is indexable.</td></tr>
+
+<tr><td class="d">C</td><td>Publish now, no release yet</td>
+<td>Page live and broken until you decide to release.</td>
+<td><b class="k">Not recommended.</b> Open-ended broken public page.</td></tr>
+</table></div>
+
+<div class="call good">
+  <span class="lb">Recommendation — A</span>
+  It reaches exactly the state you asked for, and the only difference is the order of two steps I run
+  back to back. There is no upside to publishing before the file exists: nothing links to the page
+  yet, so nobody is waiting on it.
+</div>
+
+<h2 id="a"><span class="num">03</span>What option A involves, precisely</h2>
+<p class="sub">So you are approving something specific rather than "a release".</p>
+
+<ol class="steps">
+  <li><b class="k">The graph question first.</b> The repo rule is a refresh before every commit, and
+      <code>refresh-graph.sh</code> is refusing (76 deleted files, net &minus;45 nodes — pre-existing
+      drift from June, not from this work). Either you approve a full <code>/graphify .</code> rebuild,
+      or we commit with the code layer knowingly stale and clear it separately. <b class="k">Tell me
+      which</b>; I will not spend the rebuild without you.</li>
+  <li><b class="k">Commit</b> the 23 paths listed in the step 1 handover — frontend, the workflow
+      guard, ADR-090 and the documentation gate. Explicit paths only, nothing unrelated staged.</li>
+  <li><b class="k">Push and release</b>, watching the run rather than assuming it. The new
+      <code>release.yml</code> guard fails the build if the bundle is not named
+      <code>assets/main.ce.js</code>, so a naming regression stops there instead of on your website.</li>
+  <li><b class="k">Verify on Pages</b> that <code>main.ce.js</code> returns 200 and is the new build,
+      not a cached old one.</li>
+  <li><b class="k">Publish page 13472</b> — the step you actually asked for.</li>
+  <li><b class="k">Verify the live page</b> in a browser: real PROD events, logos loading, no theme
+      heading, correct at phone width. Then I report, with the live URL.</li>
+</ol>
+
+<div class="call stop">
+  <span class="lb">Still standing after this</span>
+  The <b class="k">menu item</b> is separate and still not created — it cannot be verified over
+  XML-RPC, so wp-admin remains the recommendation. Publishing the page does not put it in the menu.
+  <code>/kalendarz-2/</code> and <code>/klasyfikacja/</code> stay untouched.
+</div>
+
+<h2 id="say"><span class="num">04</span>What to say back</h2>
+<div class="tw"><table>
+<tr><th>If you want…</th><th>Say</th></tr>
+<tr><td>The recommended path, with the graph rebuilt first</td><td><em>&ldquo;A, rebuild the graph&rdquo;</em></td></tr>
+<tr><td>The recommended path, committing with the graph stale</td><td><em>&ldquo;A, skip the graph&rdquo;</em></td></tr>
+<tr><td>The page live right now regardless</td><td><em>&ldquo;B&rdquo;</em> &mdash; I will publish immediately and release straight after</td></tr>
+</table></div>
+
+</div>
+
+<footer>
+SPWS Automated Ranklist System · PROD deployment step 1 · publish decision · 5 September 2026.
+Page 13472 <code>znajdz-zawody</code> is a draft and remains one until you choose.
+Bundle status checked live at the time of writing: <code>assets/main.ce.js</code> &rarr; HTTP 404.
+Implementation handover: <code>doc/plans/prod-deployment-step1-handover-2026-09-05.html</code>.
+</footer>
+
+</div>
+</body>
+</html>

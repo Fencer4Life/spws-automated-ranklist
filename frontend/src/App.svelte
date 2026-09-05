@@ -1,24 +1,54 @@
-<Sidebar
-  open={sidebarOpen}
-  currentView={currentView}
-  isAdmin={isAdmin}
-  {adminTimerText}
-  onnavigate={(view) => { navigateTo(view) }}
-  onclose={() => { sidebarOpen = false }}
-  onlogout={() => { signOut() }}
-/>
+{#if !embedded}
+  <Sidebar
+    open={sidebarOpen}
+    currentView={currentView}
+    isAdmin={isAdmin}
+    {adminTimerText}
+    onnavigate={(view) => { navigateTo(view) }}
+    onclose={() => { sidebarOpen = false }}
+    onlogout={() => { signOut() }}
+  />
+{/if}
 
-<div class="ranklist-app">
-  <header class="app-header">
-    <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
-    <h2 class="app-title">
-      <img src="SPWS-logo.png" alt="SPWS" class="header-logo" />
-      {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_fencers' ? t('nav_admin_fencers') : t('app_title')}
-    </h2>
-    <div class="header-right">
-      <LangToggle />
+<div class="ranklist-app" class:embedded class:fullscreen={isFullscreen} bind:this={embedRoot}>
+  {#if !embedded}
+    <header class="app-header">
+      <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
+      <h2 class="app-title">
+        <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="header-logo" />
+        {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_fencers' ? t('nav_admin_fencers') : t('app_title')}
+      </h2>
+      <div class="header-right">
+        <LangToggle />
+      </div>
+    </header>
+  {:else}
+    <!-- The embed's one row, carrying what the removed header used to at no
+         extra height: the way back to the association's site (the only exit
+         once fullscreen hides the site menu), the page's own name in the
+         active language, the language toggle, and fullscreen. -->
+    <div class="embed-bar">
+      <a
+        class="embed-home"
+        href="https://weteraniszermierki.pl"
+        aria-label={t('embed_home_label')}
+        title={t('embed_home_label')}
+      >
+        <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="embed-logo" />
+      </a>
+      <span class="embed-title">{t('embed_page_title')}</span>
+      <div class="embed-actions">
+        <LangToggle />
+        <button
+          class="embed-fullscreen"
+          type="button"
+          onclick={toggleFullscreen}
+          aria-label={isFullscreen ? t('embed_fullscreen_exit') : t('embed_fullscreen')}
+          title={isFullscreen ? t('embed_fullscreen_exit') : t('embed_fullscreen')}
+        >{isFullscreen ? '✕' : '⛶'}</button>
+      </div>
     </div>
-  </header>
+  {/if}
 
   {#if currentView === 'ranklist'}
     <FilterBar
@@ -333,6 +363,7 @@
   // Phase 5.5 (ADR-058+059) — alias-create modal + cascade banner regen.
   import CreateFencerFromAliasModal from './components/CreateFencerFromAliasModal.svelte'
   import { getAuthState, startAuth, signIn, confirmEnroll, verifyChallenge, signOut, reset as resetAuth } from './lib/admin-auth.svelte'
+  import { setAssetBase, assetUrl } from './lib/assetBase'
 
   // ADR-041: github-pat / github-repo attributes removed. Workflow dispatch
   // is now server-side via the dispatch-workflow Edge Function — no PAT in
@@ -342,19 +373,78 @@
     'supabase-cert-key': certKey = '',
     'supabase-prod-url': prodUrl = '',
     'supabase-prod-key': prodKey = '',
+    // PROD deployment step 1 — the WordPress embed mounts this same component
+    // with `view="calendar" chrome="none"`. Both default to the Pages app's
+    // existing behaviour, so nothing on GitHub Pages changes.
+    view = 'ranklist',
+    chrome = 'full',
+    // Where the static marks live. Empty (the Pages default) leaves every asset
+    // path exactly as it is today; the embed points it at the Pages origin.
+    'asset-base': assetBase = '',
     demo = false,
   }: {
     'supabase-cert-url'?: string
     'supabase-cert-key'?: string
     'supabase-prod-url'?: string
     'supabase-prod-key'?: string
+    view?: AppView
+    chrome?: 'full' | 'none'
+    'asset-base'?: string
     demo?: boolean
   } = $props()
 
-  let currentView: AppView = $state('ranklist')
+  // Synchronously at init, not in an $effect: child components read this while
+  // rendering, and Svelte 5 runs child effects before the parent's own — an
+  // $effect here would let the first paint resolve against an unset base.
+  // svelte-ignore state_referenced_locally
+  setAssetBase(assetBase)
+
+  // `chrome="none"` strips the header, hamburger and drawer: a single embed has
+  // no second view to navigate to, so the navigation affordances have nothing
+  // to point at.
+  const embedded = $derived(chrome === 'none')
+
+  // Fullscreen. The API only grants on a user gesture, so this cannot be forced
+  // on load — it hangs off the button and nothing else.
+  //
+  // The element goes fullscreen, not the document: inside a WordPress page the
+  // embed is one box among the theme's header, menu and footer, and taking the
+  // document would put all of that on screen too.
+  let embedRoot: HTMLElement | null = $state(null)
+  let isFullscreen = $state(false)
+
+  function toggleFullscreen(): void {
+    // Guarded rather than assumed: older iOS Safari ships no Fullscreen API on
+    // ordinary elements at all, and the button must degrade quietly there
+    // rather than throw into the calendar's error boundary.
+    if (typeof document === 'undefined') return
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.()
+      return
+    }
+    void embedRoot?.requestFullscreen?.()
+  }
+
+  function syncFullscreen(): void {
+    isFullscreen = typeof document !== 'undefined' && !!document.fullscreenElement
+  }
+
+  // The one-shot capture is the point: `view` is the STARTING view, and
+  // navigateTo() owns it from then on. Re-deriving it from the prop would undo
+  // every navigation the moment anything re-rendered.
+  // svelte-ignore state_referenced_locally
+  let currentView: AppView = $state(view)
   let sidebarOpen = $state(false)
 
-  const adminRequested = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('admin') === '1'
+  // The embed ignores ?admin=1 outright. Administration stays on GitHub Pages,
+  // and the embed is a public page on the association's own site — the sign-in
+  // modal must not be reachable from it whatever the address bar says.
+  // Reads `chrome` rather than the `embedded` rune: this is a one-shot const
+  // evaluated at init, and the attribute is static once the element is created.
+  // svelte-ignore state_referenced_locally
+  const adminRequested = chrome !== 'none'
+    && typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('admin') === '1'
   const auth = getAuthState()
   let isAdmin = $derived(auth.step === 'authenticated')
 
@@ -389,7 +479,14 @@
 
   let adminTimerText = $derived(formatAdminTimer(adminRemainingMs))
 
-  let activeEnv: Environment = $state('CERT' as Environment)
+  // Open on the environment we actually hold credentials for. The WordPress
+  // embed is given ONLY the PROD pair; with a hardcoded 'CERT' start the
+  // derivations below fell through to an empty certUrl, the init effect's
+  // `supabaseUrl && supabaseKey` guard never passed, and the embed rendered
+  // blank with no error anywhere. Both pairs present still opens on CERT, so
+  // the Pages app is unchanged and its CT/PD toggle keeps its meaning.
+  // svelte-ignore state_referenced_locally
+  let activeEnv: Environment = $state((certUrl && certKey ? 'CERT' : 'PROD') as Environment)
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
   let supabaseUrl = $derived(activeEnv === 'PROD' && prodUrl ? prodUrl : certUrl)
   let supabaseKey = $derived(activeEnv === 'PROD' && prodKey ? prodKey : certKey)
@@ -470,6 +567,15 @@
     if (isAdmin) { startAdminTimer() } else { stopAdminTimer() }
   })
 
+  // Track fullscreen from the event rather than from our own click: the user
+  // can also leave with Escape or the browser's own control, and the button's
+  // label would otherwise stay wrong.
+  $effect(() => {
+    if (!embedded || typeof document === 'undefined') return
+    document.addEventListener('fullscreenchange', syncFullscreen)
+    return () => { document.removeEventListener('fullscreenchange', syncFullscreen) }
+  })
+
   function initDemo() {
     seasons = MOCK_SEASONS
     selectedSeasonId = MOCK_SEASONS[0].id_season
@@ -487,7 +593,17 @@
         selectedSeasonId = seasons[0].id_season
       }
       await refreshEvfToggle()
-      await loadRanking()
+      // Load whatever the app actually opened on. This was an unconditional
+      // loadRanking(), which was correct while `currentView` always started at
+      // 'ranklist' — the calendar was only ever reached through navigateTo(),
+      // which loads it. The WordPress embed opens directly on the calendar, so
+      // that path never ran: it fetched ranking rows nobody sees and left the
+      // barrel with no events at all.
+      if (currentView === 'calendar') {
+        await loadCalendar()
+      } else {
+        await loadRanking()
+      }
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : String(e)
     }
@@ -1352,6 +1468,113 @@
     margin: 0 auto;
     padding: 16px;
     color: #333;
+  }
+
+  /* ---- WordPress embed (chrome="none") ------------------------------------
+     Full viewport height by default: the barrel is built from geometry and the
+     WordPress page gives it no height of its own. `dvh` rather than `vh` so a
+     phone's collapsing address bar does not crop the last row. */
+  .ranklist-app.embedded {
+    max-width: none;
+    /* Fills the host, which owns the viewport height (see CalendarElement's
+       :host rule). 100% here rather than 100dvh so that going fullscreen —
+       where this element itself becomes the fullscreen box — still fits. */
+    height: 100%;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+  /* Fullscreen paints the element against the page's own backdrop, which is
+     transparent by default and shows black behind the drum. */
+  .ranklist-app.embedded.fullscreen {
+    background: #fff;
+  }
+  .embed-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex: 0 0 auto;
+  }
+  .embed-home {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+  .embed-logo {
+    height: 26px;
+    width: auto;
+    display: block;
+  }
+  .embed-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #173f70;
+    /* Takes the slack so the actions sit hard right without justify-content,
+       which would also push the mark away from the title. */
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .embed-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .embed-fullscreen {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 5px 8px;
+    color: #333;
+  }
+  .embed-fullscreen:hover {
+    background: #f2f5f9;
+  }
+  /* The calendar takes the remaining height; the barrel scrolls inside it
+     rather than growing the page. */
+  .ranklist-app.embedded :global(.calendar-view) {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  @media (max-width: 600px) {
+    .ranklist-app.embedded {
+      padding: 8px;
+    }
+    .embed-title {
+      font-size: 15px;
+    }
+    .embed-logo {
+      height: 22px;
+    }
+  }
+  /* A 375px phone leaves the title barely 110px between the mark and the two
+     controls, which clipped it to "Znajdź z…". Buy the width back from the
+     things around it rather than letting the page name go unreadable. */
+  @media (max-width: 430px) {
+    .embed-bar {
+      gap: 8px;
+    }
+    .embed-title {
+      font-size: 13.5px;
+    }
+    .embed-logo {
+      height: 19px;
+    }
+    .embed-actions {
+      gap: 5px;
+    }
+    .embed-fullscreen {
+      padding: 4px 6px;
+      font-size: 14px;
+    }
   }
   .app-header {
     display: flex;
