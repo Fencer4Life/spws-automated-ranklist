@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROD data defects — duplication and currency</title>
+<style>
+
+
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.mkframe{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin:14px 0 4px;overflow-x:auto}
+.mkframe svg{display:block;width:100%;min-width:660px;height:auto}
+.figcap{font-size:13px;color:var(--muted);margin:0 0 22px;max-width:84ch}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+
+.prompt{background:var(--card);border:2px solid var(--green);border-radius:8px;padding:18px 20px;margin:14px 0 22px}
+.prompt .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--green);font-weight:700;display:block;margin-bottom:9px}
+.prompt pre{border-left-color:var(--green);margin:0;max-width:none;white-space:pre-wrap}
+</style></head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · PROD data defects · investigation · 5 September 2026</div>
+  <h1>The duplicates are not a matching near-miss. A dateless skeleton cannot be matched at all.</h1>
+  <p class="dek">Two defects, two different root causes, both evidenced against live PROD. The currency
+  one is fixed — data and code. The duplication one is a design decision I should not take alone,
+  so it is written up with a recommendation.</p>
+  <div class="chips">
+    <span class="chip good">currency — fixed</span>
+    <span class="chip warn">duplication — needs your call</span>
+    <span class="chip bad">8 duplicate pairs live</span>
+  </div>
+</div>
+
+<div class="toc">
+<ol>
+  <li><a href="#dup">Duplication — what is happening</a></li>
+  <li><a href="#why">Why a skeleton can never match</a></li>
+  <li><a href="#scale">The scale, and what is still coming</a></li>
+  <li><a href="#fix">Three ways to fix it</a></li>
+  <li><a href="#cur">Currency — root cause and fix</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<h2 id="dup"><span class="num">01</span>Duplication — what is happening</h2>
+<p class="sub">Eight events in the current season exist twice: once as a dateless
+<code>CREATED</code> skeleton, once as the real <code>PLANNED</code> event.</p>
+
+<div class="tw"><table>
+<tr><th>Skeleton (CREATED)</th><th>Real event (PLANNED)</th><th>Weapons differ</th></tr>
+<tr><td class="d">PEW1efs</td><td class="d">PEW1f</td><td>EFS → F</td></tr>
+<tr><td class="d">PEW2efs</td><td class="d">PEW2es</td><td>EFS → ES</td></tr>
+<tr><td class="d">PEW3s</td><td class="d">PEW3ef</td><td>S → EF</td></tr>
+<tr><td class="d">PEW4efs</td><td class="d">PEW4fs</td><td>EFS → FS</td></tr>
+<tr><td class="d">PEW5s</td><td class="d">PEW5efs</td><td>S → EFS</td></tr>
+<tr><td class="d">PEW7ef</td><td class="d">PEW7es</td><td>EF → ES</td></tr>
+<tr><td class="d">PEW8f</td><td class="d">PEW8efs</td><td>F → EFS</td></tr>
+<tr><td class="d">PEW9efs</td><td class="d">PEW9fs</td><td>EFS → FS</td></tr>
+</table></div>
+
+<div class="call">
+  <span class="lb">The weapon suffix is a symptom, not the cause</span>
+  It is tempting to read this as "the code changed, so the match failed" — the skeleton predicted one
+  weapon set, EVF published another, and <code>PEW1efs</code> ≠ <code>PEW1f</code>. That reading is
+  wrong, and it matters: <b class="k">the matcher never compares codes at all.</b> Fixing the suffix
+  prediction would change nothing.
+</div>
+
+<h2 id="why"><span class="num">02</span>Why a skeleton can never match</h2>
+<p class="sub"><code>_find_existing_match</code> — <code>python/scrapers/evf_calendar.py:1225</code>,
+the ADR-039 dedup ladder.</p>
+
+<div class="tw"><table>
+<tr><th>Rung</th><th>Matches on</th><th>Skeleton has it?</th></tr>
+<tr><td class="d">Step 0</td><td>EVF calendar post id (<code>id_evf_calendar_event</code>)</td><td><span class="st s-bad">no — 0 of 23</span></td></tr>
+<tr><td class="d">Step 1</td><td>EVF results id (<code>id_evf_event</code>)</td><td><span class="st s-bad">no — 0 of 23</span></td></tr>
+<tr><td class="d">Step 2</td><td>EVF slug (<code>txt_evf_slug</code>)</td><td><span class="st s-bad">no — 0 of 23</span></td></tr>
+<tr><td class="d">Steps 3–5</td><td>date gate, then country / location</td><td><span class="st s-bad">no — 0 of 23 have a date</span></td></tr>
+</table></div>
+
+<p>Steps 3–5 never even reach the country and location comparison. The loop opens with</p>
+<pre><code>ex_date = str(ex.get("dt_start", ""))
+try:
+    ed = datetime.strptime(ex_date, "%Y-%m-%d").date()
+except (ValueError, TypeError):
+    continue        # &lt;-- every skeleton exits here, every run</code></pre>
+
+<div class="call stop">
+  <span class="lb">The finding</span>
+  A <code>CREATED</code> skeleton carries <b class="k">none of the four identities</b> the ladder can
+  use, and is eliminated by the date gate before the physical-property rungs are tried. It is
+  <b class="k">structurally unmatchable</b>. Every sync run therefore falls through to "no match" and
+  inserts a fresh row beside it. This is not intermittent and not a tolerance problem — it cannot
+  succeed.
+</div>
+
+<p>Measured on PROD, season 2026-2027:</p>
+<pre><code>status      rows  date  calId  evfId  slug
+CREATED       23     0      0      0     0     &lt;-- nothing to match on
+PLANNED       24    24     16      0    16
+CANCELLED      2     2      2      0     2</code></pre>
+
+<h2 id="scale"><span class="num">03</span>The scale, and what is still coming</h2>
+
+<div class="call warn">
+  <span class="lb">8 today, up to 23</span>
+  Only 8 skeletons have had their real event published by EVF so far. The remaining
+  <b class="k">15 will duplicate the same way</b> as EVF publishes them through the season. The count
+  grows on its own; it does not settle.
+</div>
+
+<p>What is <em>not</em> affected, and why you have not seen this on the public page: the calendar
+hides <code>CREATED</code> events twice over — <code>calendarMonths.ts:258</code> drops anything with
+no <code>dt_start</code>, and <code>visibleEvents</code> at <code>:545</code> filters
+<code>enum_status !== 'CREATED'</code> (ADR-077). So <b class="k">fencers see one event, correctly</b>.
+The duplication is visible to administrators, and it quietly inflates the season's event count.</p>
+
+<h2 id="fix"><span class="num">04</span>Three ways to fix it</h2>
+<p class="sub">This changes the skeleton lifecycle, which is ADR-077 territory — your call, not mine.</p>
+
+<div class="tw"><table>
+<tr><th>#</th><th>Approach</th><th>Trade-off</th></tr>
+<tr><td class="d">A<br><span class="st s-ok">recommended</span></td>
+<td><b class="k">Adopt the skeleton instead of inserting.</b> When a scraped event matches no existing
+row, look for an unclaimed dateless <code>CREATED</code> skeleton in the same season and same
+<code>PEW</code> number, and fill it in — date, name, weapons, EVF ids — instead of creating a row.
+The skeleton becomes the event, which is what a skeleton is for.</td>
+<td>A new rung below the ladder, deliberately last so it can never outrank a real identity. Needs a
+rule for what counts as "the same slot": the PEW number is the natural key, and it is what the
+season bootstrap assigns.</td></tr>
+
+<tr><td class="d">B</td>
+<td><b class="k">Give skeletons an identity at creation.</b> Carry the prior season's EVF calendar id
+or slug onto the skeleton so Step 0 or Step 2 matches.</td>
+<td>Cleanest conceptually — it makes skeletons first-class to the existing ladder with no new rung.
+But EVF issues a <em>new</em> post id per season, so last season's id will not match this season's
+event. Likely ineffective.</td></tr>
+
+<tr><td class="d">C</td>
+<td><b class="k">Reconcile after the fact.</b> Leave the sync alone; add a job that pairs orphan
+skeletons with real events and retires the skeleton.</td>
+<td>Does not prevent the duplicate, only cleans up behind it. More moving parts, and a window where
+both rows exist. Reasonable as a one-off to clear the 8 that exist now.</td></tr>
+</table></div>
+
+<div class="call">
+  <span class="lb">My recommendation</span>
+  <b class="k">A for the mechanism, C once as a cleanup</b> for the 8 pairs already on PROD. A stops
+  the bleeding at source and keeps the skeleton's purpose intact; C clears the existing pairs without
+  waiting for a season roll. B is worth ten minutes of checking — if EVF calendar ids <em>are</em>
+  stable across seasons it becomes the cheapest fix — but I expect them not to be.
+  <b class="k">I have changed nothing here.</b>
+</div>
+
+<h2 id="cur"><span class="num">05</span>Currency — root cause and fix</h2>
+
+<div class="call good">
+  <span class="lb">Fixed — data and code</span>
+  73 EVF and FIE rows now read EUR; the Budapest event on the live page shows <b class="k">40 EUR</b>
+  where it showed 40 PLN.
+</div>
+
+<p><b class="k">Nobody ever wrote PLN.</b> The scraper recognised only the symbols
+<code>€ £ $</code> and left <code>fee_currency = ""</code> otherwise
+(<code>evf_calendar.py:469-480</code>), so a listing written "50 EUR" — how EVF usually writes it —
+fell through to the column default:</p>
+<pre><code>ALTER TABLE tbl_event ADD COLUMN txt_entry_fee_currency TEXT DEFAULT 'PLN';
+-- 20260327000004_entry_fee_currency.sql:8</code></pre>
+
+<p>This is the <b class="k">same shape as the ADR-089 defect</b> already in the corpus: a column with a
+non-null default is never NULL, so nothing downstream can tell "not set" from "deliberately PLN", and
+40 EVF events across 12 countries — none of them Poland — were labelled Polish złoty.</p>
+
+<h3>What changed</h3>
+<ul>
+  <li><b class="k">Code.</b> <code>parse_fee_and_currency()</code> replaces the inline block: symbol
+      first, then the ISO code as a word (<code>EUR</code>, <code>GBP</code>, <code>USD</code>,
+      <code>PLN</code>, …, case-insensitive), then a bare number falls to <b class="k">EUR</b> rather
+      than to the database default. An explicit PLN is still honoured — that is a real claim.
+      "free", "TBC" and an empty cell give no fee and no currency at all. 15 new test cases.</li>
+  <li><b class="k">Data.</b> 63 rows in scope, 57 updated to EUR (the difference is the rows you had
+      already corrected by hand). A rollback snapshot was taken first and is kept. Verified through
+      <code>vw_calendar</code> — what the public page actually reads — not the write's own output.</li>
+</ul>
+
+<div class="call warn">
+  <span class="lb">Two things I did not do</span>
+  <b>1.</b> The column default <code>'PLN'</code> is still there. Dropping it would make "unset"
+  legible again and stop this class of bug recurring on any new code path — but it is a migration
+  touching a shared table, so it wants its own change. <b>2.</b> I scoped the fix to the families the
+  codebase itself classifies as EVF and FIE (<code>^PEW</code> and
+  <code>^(IMEW|IMSW|MEW|MSW|PSW)</code>, per <code>panelType</code>). <code>DMEW</code>,
+  <code>EVFLEGACY104</code>, <code>VFC</code> and the <code>GP</code> codes match neither pattern and
+  were left alone — <b class="k">tell me if any of those are EVF or FIE</b> and should be EUR too.
+</div>
+
+</div>
+
+<footer>
+SPWS Automated Ranklist System · PROD data defects · 5 September 2026.
+Evidence gathered read-only against <code>spws-ranklist-prod</code> via <code>scripts/cloud-sql.sh</code>.
+Currency: data corrected and scraper fixed (commit <code>4a2cdcf</code>), rollback snapshot retained.
+Duplication: investigated only — no code or data changed.
+</footer>
+
+</div>
+</body>
+</html>

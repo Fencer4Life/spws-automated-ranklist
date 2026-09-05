@@ -1466,12 +1466,11 @@
     display: block;
   }
   .embed-title {
-    /* Uppercased in CSS, not in the locale strings: the rendered form changes
-       but textContent stays "Znajdź zawody" / "Competition finder", so the
-       language tests keep asserting real values. */
+    /* Not uppercased: "COMPETITION FINDER" is materially wider than
+       "Competition finder" and barely fits a 375px phone beside the mark and
+       the language toggle. Sentence case buys the width back. */
     font-size: 28px;
     font-weight: 400;
-    text-transform: uppercase;
     color: #173f70;
     /* Takes the slack so the actions sit hard right without justify-content,
        which would also push the mark away from the title. */
