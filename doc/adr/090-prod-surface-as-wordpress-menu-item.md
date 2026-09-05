@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Draft (proposed 2026-09-05; awaiting sign-off)
+**Status:** Draft (proposed 2026-09-05; revised 2026-09-05 after live review; awaiting sign-off)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -115,16 +115,19 @@ value arrives once as a static attribute and is read three components deep.
 
 ### 5 · One row replaces the removed application header
 
-At no extra height: the SPWS mark linked to `https://weteraniszermierki.pl` —
-the only way out once fullscreen hides the site menu — the page's name in the
-**active language only**, the language toggle, and a fullscreen button. The
-element requests fullscreen on itself, not the document, so the theme's header
-and footer do not come with it; the Fullscreen API only grants on a user
-gesture, so it cannot be forced on load.
+At no extra height: the page's name in the **active language only**, the
+language toggle, and a fullscreen button. The element requests fullscreen on
+itself, not the document; the Fullscreen API only grants on a user gesture, so
+it cannot be forced on load.
 
-The drawer's mark in the Pages app gains the same link home
-(`Sidebar.svelte:8`), which is that copy's only route back to the association's
-site.
+The row carries **no SPWS mark**. An earlier revision linked one home as the
+exit from fullscreen, but §7 removes the theme's header and menu from the page
+entirely, so a second SPWS logo sat directly beneath nothing and cost the drum
+height it could not spare. The consequence is recorded plainly in §7.
+
+The drawer's mark in the Pages app does gain a link home (`Sidebar.svelte:8`),
+which is that copy's only route back to the association's site. That is the
+GitHub Pages build, not the embed, and it is unaffected.
 
 ### 6 · The bundle keeps a stable file name
 
@@ -138,12 +141,30 @@ guarded rather than trusted — `release.yml:128` fails the release if the stabl
 file is missing or a hashed sibling appears, because a rename would not fail in
 CI, it would fail silently on a live page on the association's website.
 
-### 7 · The page carries its own presentation rules
+### 7 · The page is presented full-screen, with the theme removed
 
-The page body holds a small `<style>` that hides the theme's `.entry-title` and
-removes the content margin. This is what delivers the plan's "no page heading":
-the heading is the theme's, not the content's. `<style>` was verified to survive
-the content filter in the same round-trip as the embed.
+The page body holds a `<style>` block that hides the theme's chrome on this page
+only — `header.header` (the site logo and the navigation), `section.page-image`,
+`.entry-header`/`.entry-title`, the `#slideout` and `#facebook` side tabs, and
+`footer.footer` — then zeroes the margins and padding of `#content.site-content`,
+`#primary.content` and `.entry-content` so the calendar occupies the viewport.
+Every selector was read off the rendered page rather than guessed. `<style>` was
+verified to survive the content filter in the same round-trip as the embed.
+
+This supersedes the plan's locked decision that the site's header and menu wrap
+the embed. The user directed the change after seeing the page live: the surface
+is a full-screen calendar, not a calendar inside a website page.
+
+**Known consequence, accepted:** with the theme's navigation gone and no mark in
+the embed row, the page offers **no in-page route back** to the rest of the site.
+A visitor leaves via the browser's back button. This is the deliberate shape of a
+full-screen surface; if a route back is wanted later, the cheapest form is a link
+in the embed row rather than restoring the theme's header.
+
+The page template is **not** the mechanism. `wp_page_template` cannot be set
+reliably over XML-RPC — the value does not stick and reads back as `None`, the
+same protected-meta limitation that blocks menu items (see Open items). The
+`<style>` approach needs no template and works on the default one.
 
 ### 8 · Nothing is published without per-page approval
 
@@ -165,11 +186,12 @@ association wants.
 3. **A hashed bundle name with the WordPress page updated per release.**
    Rejected: it makes every release a two-system change, and the failure mode is
    a live page silently loading a 404 until someone notices.
-4. **Publishing to a page template that omits the theme heading**
-   (`Redux pełna szerokość`). Not rejected on merit — rejected as *unmeasured*.
-   No page on the site uses any non-default template, so its behaviour cannot be
-   read without publishing something. A `<style>` rule achieves the same result
-   on the known-good default template, and the template remains available later.
+4. **Publishing to a page template that drops the theme chrome**
+   (`Redux pełna szerokość`, `Redux płótno`). Rejected on evidence, not taste:
+   `wp_page_template` set through `wp.editPost` does not take effect — it reads
+   back as `None` and the rendered page is byte-identical — so the template
+   cannot be selected through the only channel available here. A `<style>` block
+   achieves the result on the default template with no such dependency.
 5. **Moving PROD off GitHub Pages entirely.** Out of scope. This is the first
    step of PROD leaving Pages, not the completion of it; the Pages origin still
    serves the bundle and the assets.
@@ -189,8 +211,9 @@ association wants.
 
 **Changed**
 
-- `frontend/src/App.svelte` — `view`, `chrome`, `asset-base`; the embed bar;
-  fullscreen; the `activeEnv` and `init()` fixes.
+- `frontend/src/App.svelte` — `view`, `chrome`, `asset-base`; the embed bar
+  (name, language toggle, fullscreen; no mark); fullscreen; the `activeEnv` and
+  `init()` fixes.
 - `frontend/src/ce/CalendarElement.svelte` — mock stub replaced by a mount of
   the real application; `:host` gives the element its viewport height.
 - `frontend/src/components/EventCard.svelte`, `Sidebar.svelte` — assets through

@@ -23,19 +23,13 @@
       </div>
     </header>
   {:else}
-    <!-- The embed's one row, carrying what the removed header used to at no
-         extra height: the way back to the association's site (the only exit
-         once fullscreen hides the site menu), the page's own name in the
-         active language, the language toggle, and fullscreen. -->
+    <!-- The embed's one row: the page's own name in the active language, the
+         language toggle, and fullscreen.
+
+         It carries no SPWS mark. The host page is presented full-screen with
+         the theme's header, menu and footer removed, so a second logo directly
+         beneath the site's own bought nothing and cost the drum height. -->
     <div class="embed-bar">
-      <a
-        class="embed-home"
-        href="https://weteraniszermierki.pl"
-        aria-label={t('embed_home_label')}
-        title={t('embed_home_label')}
-      >
-        <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="embed-logo" />
-      </a>
       <span class="embed-title">{t('embed_page_title')}</span>
       <div class="embed-actions">
         <LangToggle />
@@ -1497,16 +1491,6 @@
     margin-bottom: 8px;
     flex: 0 0 auto;
   }
-  .embed-home {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-  }
-  .embed-logo {
-    height: 26px;
-    width: auto;
-    display: block;
-  }
   .embed-title {
     font-size: 17px;
     font-weight: 600;
@@ -1551,9 +1535,6 @@
     .embed-title {
       font-size: 15px;
     }
-    .embed-logo {
-      height: 22px;
-    }
   }
   /* A 375px phone leaves the title barely 110px between the mark and the two
      controls, which clipped it to "Znajdź z…". Buy the width back from the
@@ -1564,9 +1545,6 @@
     }
     .embed-title {
       font-size: 13.5px;
-    }
-    .embed-logo {
-      height: 19px;
     }
     .embed-actions {
       gap: 5px;
