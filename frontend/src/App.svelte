@@ -1466,12 +1466,13 @@
     display: block;
   }
   .embed-title {
-    /* Not uppercased: "COMPETITION FINDER" is materially wider than
-       "Competition finder" and barely fits a 375px phone beside the mark and
-       the language toggle. Sentence case buys the width back. */
+    /* Bilingual in one string, so it is long (34 characters) and never
+       uppercased — "COMPETITION FINDER" is materially wider still and would not
+       fit a phone at any readable size. */
     font-size: 28px;
     font-weight: 400;
     color: #173f70;
+    line-height: 1.15;
     /* Takes the slack so the actions sit hard right without justify-content,
        which would also push the mark away from the title. */
     flex: 1 1 auto;
@@ -1497,7 +1498,11 @@
       padding: 8px;
     }
     .embed-title {
-      font-size: 23px;
+      font-size: 17px;
+      /* Wraps at the slash instead of ellipsing. Two short lines cost ~20px of
+         height; an ellipsis costs the English half of the page's own name. */
+      white-space: normal;
+      overflow: visible;
     }
     .embed-logo {
       height: 22px;
@@ -1511,7 +1516,7 @@
       gap: 8px;
     }
     .embed-title {
-      font-size: 20px;
+      font-size: 15px;
     }
     .embed-logo {
       height: 19px;
