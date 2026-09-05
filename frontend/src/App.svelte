@@ -1470,7 +1470,7 @@
        but textContent stays "Znajdź zawody" / "Competition finder", so the
        language tests keep asserting real values. */
     font-size: 28px;
-    font-weight: 800;
+    font-weight: 400;
     text-transform: uppercase;
     color: #173f70;
     /* Takes the slack so the actions sit hard right without justify-content,
