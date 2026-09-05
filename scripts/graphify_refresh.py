@@ -10,8 +10,11 @@ detect_incremental, which honours .graphifyignore):
 
   * nothing changed        -> exit 0  (no-op)
   * whitespace-only & code  -> exit 0  (only with --skip-whitespace)
-  * doc/paper/image changed -> exit 10 (needs the LLM /graphify . --update flow;
-                                        prints the files + GRAPHIFY_NEEDS_SEMANTIC=n)
+  * docs changed            -> LOCAL structural extraction via
+                               scripts/graphify_docs_extract.py — deterministic,
+                               zero tokens, merged in with the code AST. exit 0.
+                               (Images/papers are reported and skipped; only they
+                               still want the LLM `/graphify . --update` flow.)
   * code-only / deletions   -> AST-extract ONLY the changed code files and
                                build_merge into the existing graph. This is the
                                free, headless path; it preserves the semantic
@@ -23,6 +26,7 @@ Crucially this does NOT call `graphify update .`, which re-extracts the whole
 tree structurally (markdown headings + docstrings) and overwrites the
 LLM-extracted doc concepts. We re-extract only the changed code files.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,9 +46,21 @@ DOC_CATEGORIES = ("document", "paper", "image", "video")
 
 def main() -> int:
     ap = argparse.ArgumentParser(add_help=True)
-    ap.add_argument("--skip-whitespace", action="store_true",
-                    help="skip refresh when only whitespace changed vs HEAD")
+    ap.add_argument(
+        "--skip-whitespace",
+        action="store_true",
+        help="skip refresh when only whitespace changed vs HEAD",
+    )
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="Write graph.json even when the rebuild has FEWER nodes than the "
+        "existing graph. The shrink guard exists because a partial "
+        "extraction clobbering a good graph is indistinguishable from a "
+        "legitimate deletion; pass this only when you deleted code on "
+        "purpose and have verified the reduction is yours.",
+    )
     args = ap.parse_args()
 
     def say(*a):
@@ -78,28 +94,44 @@ def main() -> int:
             say("refresh-graph: whitespace-only change vs HEAD — skipping refresh.")
             return 0
 
-    # (7) doc changes -> needs the LLM flow, which only the agent can drive
+    # (7) doc changes -> local structural extraction, no LLM. This used to
+    # return 10 and hand the job to `/graphify . --update`, which dispatches a
+    # subagent per ~20 documents; a routine docs pass here touches dozens of
+    # files, so refreshing a local, gitignored developer aid cost millions of
+    # tokens. scripts/graphify_docs_extract.py gets the cheap 90% — which doc
+    # cites which file, ADR and section — deterministically and for free.
+    # Images and papers still need vision/LLM; they are reported, not blocking.
+    doc_ext = None
     if changed_docs:
-        print(f"refresh-graph: {len(changed_docs)} content file(s) changed — "
-              "semantic re-extraction needed.")
-        print("  Run:  /graphify . --update   (dispatches extraction subagents), then commit.")
-        print("  Changed content files:")
-        root = str(Path(".").resolve())
-        for f in changed_docs:
-            rel = f[len(root) + 1:] if f.startswith(root + "/") else f
-            print(f"    {rel}")
-        print(f"GRAPHIFY_NEEDS_SEMANTIC={len(changed_docs)}")
-        return 10
+        try:  # invoked as scripts/graphify_refresh.py — sys.path[0] is scripts/
+            from graphify_docs_extract import DOC_SUFFIXES, extract_docs
+        except ImportError:  # imported as a package (pytest, repo root on path)
+            from scripts.graphify_docs_extract import DOC_SUFFIXES, extract_docs
 
-    # (6) code-only / deletions-only -> targeted AST merge (free, headless)
-    say("refresh-graph: code-only changes — targeted AST merge (no LLM)…")
-    from graphify.extract import extract, collect_files
-    from graphify.build import build_merge, build_from_json
+        textual = [Path(f) for f in changed_docs if Path(f).suffix.lower() in DOC_SUFFIXES]
+        other = [f for f in changed_docs if Path(f).suffix.lower() not in DOC_SUFFIXES]
+        if textual:
+            doc_ext = extract_docs(textual, graph_path=Path(GRAPH_JSON), root=Path("."))
+            say(
+                f"refresh-graph: {len(textual)} doc(s) — local structural extraction "
+                f"({len(doc_ext['nodes'])} nodes, {len(doc_ext['edges'])} edges, 0 tokens)…"
+            )
+        if other:
+            say(
+                f"refresh-graph: {len(other)} image/paper file(s) skipped — these still "
+                "need `/graphify . --update` if their semantic layer matters."
+            )
+
+    # (6) targeted AST merge for code + the local doc layer (free, headless)
+    if not changed_docs:
+        say("refresh-graph: code-only changes — targeted AST merge (no LLM)…")
+    from graphify.analyze import god_nodes, suggest_questions, surprising_connections
+    from graphify.build import build_merge
     from graphify.cluster import cluster, score_all
-    from graphify.analyze import god_nodes, surprising_connections, suggest_questions
-    from graphify.export import to_json, to_html
-    from graphify.report import generate
     from graphify.detect import save_manifest
+    from graphify.export import to_html, to_json
+    from graphify.extract import collect_files, extract
+    from graphify.report import generate
 
     before = len(json.loads(Path(GRAPH_JSON).read_text())["nodes"])
 
@@ -108,10 +140,15 @@ def main() -> int:
         p = Path(f)
         files.extend(collect_files(p) if p.is_dir() else [p])
 
+    exts: list[dict] = []
     if files:
-        ext = extract(files, cache_root=Path("."))
-    else:  # deletions only
-        ext = {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
+        exts.append(extract(files, cache_root=Path(".")))
+    if doc_ext is not None:
+        exts.append(doc_ext)
+    if not exts:  # deletions only
+        exts.append(
+            {"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
+        )
 
     # Carry over prior community labels by membership overlap so curated names
     # ("Pipeline Stages S1–S7", …) stay stable across incremental refreshes.
@@ -125,8 +162,9 @@ def main() -> int:
     if Path(LABELS_JSON).exists():
         old_labels = json.loads(Path(LABELS_JSON).read_text())
 
-    G = build_merge([ext], graph_path=GRAPH_JSON,
-                    prune_sources=(deleted or None), root=".", directed=False)
+    G = build_merge(
+        exts, graph_path=GRAPH_JSON, prune_sources=(deleted or None), root=".", directed=False
+    )
 
     communities = cluster(G)
     cohesion = score_all(G, communities)
@@ -169,12 +207,13 @@ def main() -> int:
     surprises = surprising_connections(G, communities)
     questions = suggest_questions(G, communities, labels)
 
-    wrote = to_json(G, communities, GRAPH_JSON, community_labels=labels)
+    wrote = to_json(G, communities, GRAPH_JSON, community_labels=labels, force=args.force)
     if not wrote:
-        print("refresh-graph: refused to shrink graph.json (existing has more nodes).",
-              file=sys.stderr)
-        print("  If you deleted code on purpose, run a full /graphify . rebuild.",
-              file=sys.stderr)
+        print(
+            "refresh-graph: refused to shrink graph.json (existing has more nodes).",
+            file=sys.stderr,
+        )
+        print("  If you deleted code on purpose, run a full /graphify . rebuild.", file=sys.stderr)
         return 2
 
     detection = {
@@ -183,12 +222,22 @@ def main() -> int:
         "total_words": r.get("total_words", 0),
         "skipped_sensitive": r.get("skipped_sensitive", []),
     }
-    report = generate(G, communities, cohesion, labels, gods, surprises,
-                      detection, {"input": 0, "output": 0}, ".",
-                      suggested_questions=questions)
+    report = generate(
+        G,
+        communities,
+        cohesion,
+        labels,
+        gods,
+        surprises,
+        detection,
+        {"input": 0, "output": 0},
+        ".",
+        suggested_questions=questions,
+    )
     Path(REPORT_MD).write_text(report)
-    Path(LABELS_JSON).write_text(json.dumps({str(k): v for k, v in labels.items()},
-                                            ensure_ascii=False))
+    Path(LABELS_JSON).write_text(
+        json.dumps({str(k): v for k, v in labels.items()}, ensure_ascii=False)
+    )
     save_manifest(r.get("files", {}), root=".")
 
     after = G.number_of_nodes()
@@ -198,8 +247,10 @@ def main() -> int:
         except Exception as e:  # noqa: BLE001 — html is best-effort
             say(f"refresh-graph: graph.html skipped ({e}); graph.json + report updated.")
     else:
-        say(f"refresh-graph: graph.html skipped ({after} > {HTML_NODE_LIMIT} nodes); "
-            "graph.json + report updated. Run a full /graphify . to regenerate viz.")
+        say(
+            f"refresh-graph: graph.html skipped ({after} > {HTML_NODE_LIMIT} nodes); "
+            "graph.json + report updated. Run a full /graphify . to regenerate viz."
+        )
 
     say(f"refresh-graph: graph updated (nodes {before} → {after}). Safe to commit.")
     return 0
