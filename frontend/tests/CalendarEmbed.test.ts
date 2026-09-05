@@ -143,13 +143,23 @@ describe('WordPress embed — the top row', () => {
     expect(container.querySelector('.embed-bar')).toBeNull()
   })
 
-  // The embed carries NO mark of its own. The page it lives on is presented
-  // full-screen with the theme's header, menu and footer removed, and a second
-  // SPWS logo directly under the site's own was redundant there.
-  it('carries no logo and no home link in the embed bar', () => {
+  // The host page hides the theme's header, navigation and footer, so this mark
+  // is the ONLY route back to weteraniszermierki.pl from the calendar. It was
+  // briefly removed on 2026-09-05 and that broke the way out — hence two tests.
+  it('links the SPWS mark to the association site', () => {
     const { container } = render(App, { props: embedProps() })
-    expect(container.querySelector('.embed-bar a.embed-home')).toBeNull()
-    expect(container.querySelector('.embed-bar img')).toBeNull()
+    const home = container.querySelector('.embed-bar a.embed-home') as HTMLAnchorElement
+    expect(home).not.toBeNull()
+    expect(home.getAttribute('href')).toBe('https://weteraniszermierki.pl')
+    expect(home.querySelector('img.embed-logo')).not.toBeNull()
+  })
+
+  it('resolves the embed mark through asset-base', () => {
+    const { container } = render(App, {
+      props: embedProps({ 'asset-base': 'https://spws.github.io/ranklist/' }),
+    })
+    const img = container.querySelector('.embed-bar a.embed-home img') as HTMLImageElement
+    expect(img.getAttribute('src')).toBe('https://spws.github.io/ranklist/SPWS-logo.png')
   })
 
   // The embed has its own language toggle, so it names itself in ONE language

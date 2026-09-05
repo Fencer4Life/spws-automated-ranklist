@@ -115,15 +115,15 @@ value arrives once as a static attribute and is read three components deep.
 
 ### 5 · One row replaces the removed application header
 
-At no extra height: the page's name in the **active language only**, the
-language toggle, and a fullscreen button. The element requests fullscreen on
-itself, not the document; the Fullscreen API only grants on a user gesture, so
-it cannot be forced on load.
+At no extra height: the **SPWS mark linked to `https://weteraniszermierki.pl`**,
+the page's name in the **active language only**, the language toggle, and a
+fullscreen button. The element requests fullscreen on itself, not the document;
+the Fullscreen API only grants on a user gesture, so it cannot be forced on load.
 
-The row carries **no SPWS mark**. An earlier revision linked one home as the
-exit from fullscreen, but §7 removes the theme's header and menu from the page
-entirely, so a second SPWS logo sat directly beneath nothing and cost the drum
-height it could not spare. The consequence is recorded plainly in §7.
+The mark is **required, not decorative**. Because §7 removes the theme's header,
+navigation and footer from this page, the mark is the **only route back** to the
+association's site from the calendar. It was briefly removed on 2026-09-05 and
+that left the page a dead end; two tests now pin its presence and its href.
 
 The drawer's mark in the Pages app does gain a link home (`Sidebar.svelte:8`),
 which is that copy's only route back to the association's site. That is the
@@ -155,11 +155,10 @@ This supersedes the plan's locked decision that the site's header and menu wrap
 the embed. The user directed the change after seeing the page live: the surface
 is a full-screen calendar, not a calendar inside a website page.
 
-**Known consequence, accepted:** with the theme's navigation gone and no mark in
-the embed row, the page offers **no in-page route back** to the rest of the site.
-A visitor leaves via the browser's back button. This is the deliberate shape of a
-full-screen surface; if a route back is wanted later, the cheapest form is a link
-in the embed row rather than restoring the theme's header.
+**Consequence:** with the theme's navigation gone, the SPWS mark in the embed row
+(§5) is the only in-page route back to the rest of the site. That is why the mark
+is mandatory rather than decorative, and why removing it is a regression the
+tests now catch.
 
 The page template is **not** the mechanism. `wp_page_template` cannot be set
 reliably over XML-RPC — the value does not stick and reads back as `None`, the
@@ -212,7 +211,7 @@ association wants.
 **Changed**
 
 - `frontend/src/App.svelte` — `view`, `chrome`, `asset-base`; the embed bar
-  (name, language toggle, fullscreen; no mark); fullscreen; the `activeEnv` and
+  (mark linked home, name, language toggle, fullscreen); the `activeEnv` and
   `init()` fixes.
 - `frontend/src/ce/CalendarElement.svelte` — mock stub replaced by a mount of
   the real application; `:host` gives the element its viewport height.
