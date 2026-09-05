@@ -46,10 +46,12 @@ Exit-code contract:
 
 | Exit | Meaning | Action |
 |------|---------|--------|
-| `0`  | Graph current (refreshed headlessly, or nothing relevant changed) | Commit. |
-| `10` | Doc/paper/image files changed — needs LLM re-extraction | Run `/graphify . --update` (dispatches extraction subagents), then commit. |
+| `0`  | Graph current — code **and** docs refreshed headlessly, or nothing relevant changed | Commit. |
 | `3`  | No graph yet (`graphify-out/graph.json` missing) | Run a full `/graphify .`, then commit. |
-| `2`  | Environment error / shrink guard | Read stderr; usually run a full `/graphify .`. |
+| `2`  | Environment error / shrink guard | Read stderr. If the shrink guard fired and the reduction is a deletion you made on purpose, verify that and re-run with `--force`; otherwise run a full `/graphify .`. |
+
+Exit `10` is retired. It meant "doc/paper/image files changed — needs LLM
+re-extraction"; docs are now extracted locally, so the script no longer emits it.
 
 Skip the refresh only for pure-formatting / no-op commits (or pass
 `--skip-whitespace`).
@@ -60,15 +62,22 @@ Skip the refresh only for pure-formatting / no-op commits (or pass
   deliberately does **not** call `graphify update .`, which re-extracts the whole
   tree structurally (markdown headings + docstrings) and would overwrite the
   LLM-extracted semantic doc layer.
-- **Doc changes = LLM.** Re-extracting docs needs the `/graphify . --update`
-  subagent flow, which only the agent can drive — hence exit 10 signals it
-  rather than attempting it headlessly.
+- **Doc changes = free too.** `scripts/graphify_docs_extract.py` derives the
+  cheap 90% of the doc layer — which document cites which file, ADR and section —
+  deterministically from the text at zero token cost, and merges it alongside the
+  code AST. A routine docs pass touches dozens of files; under the old exit-10
+  flow that dispatched a subagent per ~20 documents, so refreshing a local,
+  gitignored developer aid cost millions of tokens.
+- **Images and papers still need the LLM.** They are reported and skipped rather
+  than blocking; run `/graphify . --update` only when their semantic layer
+  matters.
 
 ### Notes
 - `doc/archive/` is excluded from the graph via `.graphifyignore`; archived narratives are never current architecture evidence.
-- There is intentionally **no git pre-commit hook**: semantic extraction needs
-  the agent, so a headless hook would silently skip doc re-extraction and give a
-  false sense of freshness. This is an agent-run command.
+- There is intentionally **no git pre-commit hook**. Code and text docs now
+  refresh headlessly, but images and papers still need the agent, and a hook that
+  silently skipped them would give a false sense of freshness. This stays an
+  agent-run command.
 - Interpreter is graphify's isolated env, pinned in
   `graphify-out/.graphify_python` (never the project `.venv`); the wrapper
   resolves it.

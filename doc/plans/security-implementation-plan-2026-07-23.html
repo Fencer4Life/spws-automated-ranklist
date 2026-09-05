@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SPWS security hardening — implementation plan (fixes A + B), 23 July 2026</title>
+<title>[SUPERSEDED — DO NOT EXECUTE] SPWS security hardening — implementation plan (fixes A + B), 23 July 2026</title>
 <style>
 :root{
  --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
@@ -110,22 +110,60 @@ footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
 <div class="page">
 
 <div class="hd">
-  <div class="eyebrow">SPWS · Implementation plan · 23 July 2026 · fixes A + B (C explicitly out of scope)</div>
+  <div class="eyebrow">SPWS · Implementation plan · 23 July 2026 · SUPERSEDED — historical record only</div>
   <h1>Security hardening: lock what exists, then stop new objects being born open.</h1>
   <p class="dek">Executable from a cold start in a new session. Every command, file path, assertion
   count and gate is named. Follows the project's mandatory order: RED before GREEN, ADR before
   migration merge, RTM and documentation in the same change, coherence gates before release.</p>
   <div class="chips">
-    <span class="chip ok">scope: A + B</span>
-    <span class="chip bad">C — schema split — NOT in scope</span>
-    <span class="chip">ADR-083</span>
-    <span class="chip">pgTAP 52 · 686 → 698</span>
-    <span class="chip">RTM FR-132/133 · NFR-14</span>
-    <span class="chip warn">2 operator-only steps</span>
+    <span class="chip bad">SUPERSEDED · do not execute</span>
+    <span class="chip ok">the work it describes SHIPPED 23 Jul (63e3105)</span>
+    <span class="chip warn">5 instructions in it are wrong</span>
+    <span class="chip">authority: ADR-083 + security-posture.html</span>
   </div>
 </div>
 
 <div class="body">
+
+<div class="call stop">
+  <span class="lb">Superseded — this document is history, not instructions</span>
+  The work described here <b class="k">was implemented and shipped to CERT and PROD on 23 July 2026</b>
+  (commit <code>63e3105</code>, verified live on both environments). This plan is retained because it
+  records how the finding developed. <b class="k">It is no longer a description of what to do, and five
+  of its instructions are wrong.</b> A session that executes it literally will break production.<br><br>
+  <b class="k">Current authority:</b>
+  <a href="../adr/083-server-enforced-authorization.html">ADR-083</a> for the decision, and
+  <a href="../handbook/reference/security-posture.html">doc/handbook/reference/security-posture.html</a>
+  for the model as built. The corrections below are recorded in full, with the evidence behind each, in
+  <a href="security-implementation-progress-2026-07-23.html">security-implementation-progress-2026-07-23.html</a>.
+</div>
+
+<div class="call stop">
+  <span class="lb">The five corrections — what this plan gets wrong</span>
+  <ol style="margin-bottom:0">
+    <li><b class="k">Block 4 would take the public registration form offline.</b> It instructs
+    <code>REVOKE EXECUTE ON FUNCTION fn_create_registration(...) FROM anon, PUBLIC</code>, reading the
+    call site backwards. <code>api.ts</code> calls it from <code>frontend/register.html</code>, which
+    is served to <b class="k">anonymous visitors</b> — it is the deliberate ADR-079 / FR-122 public
+    write path, <code>SECURITY DEFINER</code> precisely so <code>anon</code> can register without
+    holding INSERT on <code>tbl_registration</code>. pgTAP 49.14 asserts it succeeds <i>as anon</i>.
+    <b class="k">It was kept, and proven working after the migration.</b></li>
+    <li><b class="k">Thirteen write RPCs, not five.</b> Step 3's list is incomplete; live introspection
+    found thirteen, including <code>fn_merge_fencers</code> and <code>fn_refresh_active_season</code>.
+    Following Step 3 literally would have pinned the other eight into the allowlist as
+    <i>approved</i> anon-callable surface — writing the vulnerability in as intended behaviour.</li>
+    <li><b class="k">anon held DML on all sixteen tables, not six.</b> Block 2 revokes on six, while its
+    own assertion 52.3 says "any public table". <code>TRUNCATE</code> is not filtered by RLS at all, so
+    that grant defeated row-level security outright on the ten RLS-enabled tables too.</li>
+    <li><b class="k">Step 7 does not ship outside <code>release.yml</code>.</b> The manual
+    <code>supabase functions deploy</code> is redundant — <code>release.yml</code> already carries
+    <b class="k">Deploy Edge Functions to CERT</b> and <b class="k">to PROD</b> steps.</li>
+    <li><b class="k">Smaller items.</b> The migration needed <code>SET LOCAL lock_timeout = '2s'</code>
+    to match the repo's <code>20250301000002_rls_policies.sql</code> convention (postgrestools flags its
+    absence). And a second default-ACL grantor (<code>supabase_admin</code>) exists that this plan does
+    not mention; ADR-083 records why it is deliberately left alone.</li>
+  </ol>
+</div>
 
 <h2><span class="num">00</span>Cold-start briefing — read this first</h2>
 
@@ -149,7 +187,7 @@ to execute the rest safely.</p>
 </ol>
 
 <p>Full evidence, with re-runnable commands:
-<a href="doc/plans/security-case-cert-prod-2026-07-23.html">security-case-cert-prod-2026-07-23.html</a>.
+<a href="security-case-cert-prod-2026-07-23.html">security-case-cert-prod-2026-07-23.html</a>.
 Read it if any claim below needs justifying.</p>
 
 <h3>Scope decision — A and B, not C</h3>

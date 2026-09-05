@@ -161,6 +161,18 @@ przestaw pokrętła i zobacz, co dzieje się z prawdziwymi dorobkami zawodników
 razy współczynnik rangi zawodów — czy rywal był jeden, czy dwustu,
 <b class="k">podstawa punktowa jest zawsze 50</b>.</p>
 
+<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:24px 0 9px">Z czego składa się dzisiejszy wynik</h3>
+
+<div class="tw">
+<table>
+<thead><tr><th>Stawka</th><th>za miejsce</th><th>za rundy</th><th>za podium</th><th>razem</th></tr></thead>
+<tbody id="diag2"></tbody>
+</table>
+</div>
+<p><b class="k">Podstawa za 1 miejsce wynosi zawsze 50 punktów</b> — niezależnie od tego, czy pokonałeś
+jednego rywala, czy dziewięćdziesięciu dziewięciu. Przy stawce dwóch osób <b class="k">70% całego
+wyniku</b> pochodzi ze składnika, który stawki w ogóle nie widzi.</p>
+
 <h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:24px 0 9px">Czego nie naprawi współczynnik rangi</h3>
 
 <p>Te same zawody EVF, różna liczebność — wszystko przy tym samym współczynniku, bo to ten sam typ
@@ -175,18 +187,6 @@ zawodów:</p>
 pomoże — oba turnieje to PEW, więc mają ten sam współczynnik. Dokładnie przypadek zawodów EVF
 w Grecji, gdzie startuje mniej osób niż w krajowym pucharze.</p>
 
-<h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);margin:24px 0 9px">Gdzie naprawdę trzeba pokręcić</h3>
-
-<div class="tw">
-<table>
-<thead><tr><th>Stawka</th><th>za miejsce</th><th>za rundy</th><th>za podium</th><th>razem</th></tr></thead>
-<tbody id="diag2"></tbody>
-</table>
-</div>
-<p>Składnik <b class="k">za miejsce wynosi 50 punktów zawsze</b> — niezależnie od tego, czy pokonałeś
-jednego rywala, czy dziewięćdziesięciu dziewięciu. Przy stawce dwóch osób <b class="k">70% całego
-wyniku</b> pochodzi ze składnika, który stawki w ogóle nie widzi.</p>
-
 <div class="call">
   <span class="lb">Wniosek</span>
   Żeby wyśrubować istniejącą metodę, <b class="k">śruba nie jest we współczynniku rangi, tylko
@@ -194,7 +194,8 @@ wyniku</b> pochodzi ze składnika, który stawki w ogóle nie widzi.</p>
   różnicę <b class="k">wewnątrz typu</b> załatwi dopiero uzależnienie tej stałej od liczebności.
 </div>
 
-<p>Dlatego zastępujemy stałą <span class="now">funkcją liczby startujących</span>:</p>
+<p>Dlatego zastępujemy stałą 50 <span class="now">funkcją, której wynik jest zależny od liczby
+startujących</span>:</p>
 
 <pre><code><span class="c">dziś</span>          50
 <span class="c">proponowane</span>   <a href="#pelna-formula"><b>f(N) = k · log₂(B)</b></a>   <span class="c">← pełna implementacja na końcu strony</span></code></pre>

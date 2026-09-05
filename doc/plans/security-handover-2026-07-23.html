@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HANDOVER — SPWS security hardening, ready to implement, 23 July 2026</title>
+<title>[SUPERSEDED — WORK IS DONE] HANDOVER — SPWS security hardening, 23 July 2026 morning</title>
 <style>
 :root{
  --navy:#17457c;--paper:#f5f8fc;--ink:#101a29;--muted:#54657d;--line:#ccd8e6;--card:#fff;
@@ -102,30 +102,51 @@ footer{margin:60px 26px 0;padding-top:24px;border-top:2px solid var(--line);
 <div class="page">
 
 <div class="hd">
-  <div class="eyebrow">SPWS · HANDOVER · 23 July 2026 · security hardening, fixes A + B</div>
-  <h1>Nothing has been implemented. The analysis is finished, verified against PROD, and the plan is ready to execute.</h1>
-  <p class="dek">Give this file to a new session to begin implementation. It carries the verified
-  findings, the exact scope, the conventions the build enforces, and — most usefully — the five traps
-  that already caught the previous session, so you do not pay for them twice.</p>
+  <div class="eyebrow">SPWS · HANDOVER · 23 July 2026, morning · SUPERSEDED — historical record only</div>
+  <h1>SUPERSEDED. Written before implementation; the work described here shipped the same day and is verified on CERT and PROD.</h1>
+  <p class="dek">Every state claim below — signup open, dispatcher unauthenticated, zero changes made —
+  was true on the morning of 23 July and is <b>false now</b>. Retained for the reasoning and the traps,
+  which are still worth reading. Not for the state, and not as instructions.</p>
   <div class="chips">
-    <span class="chip bad">PROD signup still OPEN</span>
-    <span class="chip bad">PROD dispatcher still unauthenticated</span>
-    <span class="chip ok">zero changes made</span>
-    <span class="chip">scope: A + B · not C</span>
-    <span class="chip">ADR-083 · pgTAP 52 · 686→698</span>
+    <span class="chip bad">SUPERSEDED · state claims below are stale</span>
+    <span class="chip ok">signup CLOSED · dispatcher hardened · shipped 63e3105</span>
+    <span class="chip warn">its plan has 5 wrong instructions</span>
+    <span class="chip">authority: ADR-083 + security-posture.html</span>
   </div>
 </div>
 
 <div class="body">
 
+<div class="call stop">
+  <span class="lb">Superseded — do not act on any state claim in this file</span>
+  This handover was written on the <b class="k">morning</b> of 23 July, before implementation. The work
+  it hands over <b class="k">was completed and released the same day</b> (commit <code>63e3105</code>),
+  and independently verified against both CERT and PROD.<br><br>
+  Specifically, the alarming claims in the original masthead are <b class="k">no longer true</b>:
+  signup is <b class="k">closed</b> on both environments (<code>disable_signup: True</code>), and the
+  <code>dispatch-workflow</code> Edge Function now <b class="k">authenticates its caller and requires
+  <code>aal2</code></b> — the public anon key gets <code>401</code>. Do not read this file as a live
+  incident.<br><br>
+  <b class="k">Its working document is also unsafe.</b>
+  <a href="security-implementation-plan-2026-07-23.html">security-implementation-plan-2026-07-23.html</a>
+  contains five wrong instructions — most seriously, it would revoke
+  <code>fn_create_registration</code> from <code>anon</code> and take the deliberate public
+  registration path offline. That plan now carries the full correction list at its head.<br><br>
+  <b class="k">Current authority:</b>
+  <a href="../adr/083-server-enforced-authorization.html">ADR-083</a> and
+  <a href="../handbook/reference/security-posture.html">doc/handbook/reference/security-posture.html</a>.
+  For what was actually done, the corrections, and the post-deploy verification, see
+  <a href="security-implementation-progress-2026-07-23.html">security-implementation-progress-2026-07-23.html</a>.
+</div>
+
 <h2><span class="num">00</span>First five minutes</h2>
 
 <ol>
   <li><b class="k">Read the plan:</b>
-  <a href="doc/plans/security-implementation-plan-2026-07-23.html">security-implementation-plan-2026-07-23.html</a>
+  <a href="security-implementation-plan-2026-07-23.html">security-implementation-plan-2026-07-23.html</a>
   — 13 steps, every command and gate named. That is your working document.</li>
   <li><b class="k">Skim the evidence:</b>
-  <a href="doc/plans/security-case-cert-prod-2026-07-23.html">security-case-cert-prod-2026-07-23.html</a>
+  <a href="security-case-cert-prod-2026-07-23.html">security-case-cert-prod-2026-07-23.html</a>
   — only if a finding needs justifying. Do not re-derive it.</li>
   <li><b class="k">Read §04 of this file (Traps).</b> Non-optional. It contains a wrong conclusion the
   previous session reached and corrected; re-reaching it costs an hour.</li>
