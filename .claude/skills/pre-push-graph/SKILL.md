@@ -1,6 +1,6 @@
 ---
 name: pre-push-graph
-description: "MANDATORY before any `git push` in this repo (SPWS Automated Ranklist System). Brings the local graphify knowledge graph (graphify-out/, gitignored) up to the commits about to be pushed, so later `graphify query/explain/affected/path` calls reflect reality instead of stale July-era structure. Triggers on: preparing to push, `git push`, 'push to main', releasing, finishing a batch of commits, or any request to refresh/rebuild the knowledge graph. Runs the free SQL + code AST pass always; dispatches doc semantic extraction only when docs changed."
+description: "MANDATORY before any `git push` in this repo (SPWS Automated Ranklist System), and the ONLY correct way to refresh the graphify knowledge graph after ANY change including documentation. Brings graphify-out/ (gitignored) up to HEAD so later `graphify query/explain/affected/path` calls reflect reality instead of stale structure. Triggers on: preparing to push, `git push`, 'push to main', releasing, finishing a batch of commits, or any request to refresh/rebuild/update the knowledge graph after code, SQL or doc changes. It is one command — `./scripts/refresh-graph.sh` — which extracts code, SQL AND docs locally for zero tokens. Never dispatch `/graphify . --update` or extraction subagents for a routine refresh."
 ---
 
 # Pre-push graph refresh
@@ -65,33 +65,36 @@ exit, which is how a stale graph gets mistaken for a current one. The contract
 
 | Exit | Meaning | Action |
 | --- | --- | --- |
-| `0` | Graph current — refreshed headlessly (code/SQL AST merged for free), or nothing relevant changed. | Push. |
-| `10` | Doc/paper/image files changed — semantic re-extraction needs an LLM. Prints the changed files + `GRAPHIFY_NEEDS_SEMANTIC=<n>`. | Go to Step 3, then push. |
-| `3` | No graph yet (`graphify-out/graph.json` missing). | Run a full `/graphify .` (Step 3 covers the semantic half), then push. |
+| `0` | Graph current — code, SQL **and docs** merged headlessly for free, or nothing relevant changed. | Push. |
+| `3` | No graph yet (`graphify-out/graph.json` missing). | Run a full `/graphify .` once to seed it, then push. |
 | `2` | Environment error (graphify interpreter missing, shrink guard). | Fix the environment; do not push a stale graph silently. |
 
-Exit `0` is the common case for code-only work and needs nothing further — the
-SQL/code AST merge already ran. Stop here and push.
+**Exit `0` is the only outcome you should normally see, and it needs nothing
+further.** Docs included. Stop here and push.
 
-### 3. Only when exit was 10 (or 3): the semantic doc pass
+### 3. Do NOT dispatch subagents for documentation
 
-Doc extraction is the one step that costs tokens. Invoke the `graphify` skill
-with `--update` (incremental — only the changed docs) or, on exit 3, a full
-`/graphify .`:
+This is the trap this skill exists to close. A docs pass in this repo routinely
+touches 40+ files; `/graphify . --update` batches those into `general-purpose`
+subagents that each read every file in full. That is millions of tokens to
+refresh a **local, gitignored developer aid**, and it is never the right trade.
 
-```
-/graphify . --update
-```
+`scripts/graphify_docs_extract.py` replaced it. Docs here cite repo-relative
+source paths, `ADR-NNN` ids and sibling documents *literally in the prose*, so a
+parser recovers the useful structure — which document talks about which file,
+ADR and section — deterministically, with every edge marked `EXTRACTED` because
+it is written in the file rather than guessed. 40 documents extract in about
+four seconds for **zero tokens**, and `refresh-graph.sh` merges the result in
+alongside the code AST automatically. There is nothing to invoke by hand.
 
-- If `GEMINI_API_KEY` or `GOOGLE_API_KEY` is set, graphify runs the doc
-  extraction headlessly through Gemini — cheap, no subagents.
-- If neither is set (current state of this repo), the `graphify` skill
-  dispatches `general-purpose` subagents in batches of ~15 files. **This is the
-  only expensive part of a push.** State the batch size before dispatching, so
-  the cost is visible.
+What it deliberately skips: semantic concepts, `INFERRED` edges and rationale
+mining. Those genuinely need a model. If someone explicitly asks for that layer,
+`/graphify . --update` still exists — but it is an opt-in request, never a step
+in a routine refresh, and never something to reach for on your own initiative.
+Images and papers are the same: reported and skipped, not blocking.
 
-The AST half (all `.sql` invalidated in Step 1, plus any changed code) runs in
-the same pass for free, in parallel with the doc subagents.
+If you catch yourself about to spawn an extraction subagent, stop. Run
+`./scripts/refresh-graph.sh` instead.
 
 ### 4. Verify SQL actually landed, then push
 

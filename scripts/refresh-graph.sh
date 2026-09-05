@@ -7,16 +7,19 @@
 #
 # Run from anywhere; it locates the repo root from its own path.
 #
-#   scripts/refresh-graph.sh [--skip-whitespace] [--quiet]
+#   scripts/refresh-graph.sh [--skip-whitespace] [--quiet] [--force]
 #
 # Exit-code contract (the agent acts on this before committing):
 #   0  — graph is current: refreshed headlessly, or nothing relevant changed.
 #        Safe to commit.
-#   10 — doc/paper/image files changed: re-extraction needs LLM subagents.
-#        Run `/graphify . --update`, THEN commit. Changed files + a sentinel line
-#        `GRAPHIFY_NEEDS_SEMANTIC=<n>` are printed.
+#        Docs included: they are extracted locally and deterministically by
+#        scripts/graphify_docs_extract.py at zero token cost. Exit 10 is no
+#        longer produced — nothing here needs LLM subagents.
 #   3  — no graph yet (graphify-out/graph.json missing). Run a full `/graphify .`.
 #   2  — usage / environment error (graphify interpreter not found, shrink guard).
+#        The shrink guard fires when the rebuild has fewer nodes than graph.json.
+#        If you deleted code on purpose, verify the reduction is yours and re-run
+#        with --force; otherwise run a full `/graphify .` rebuild.
 #
 # Flags:
 #   --skip-whitespace  Skip when the only changes vs HEAD are whitespace (catches
