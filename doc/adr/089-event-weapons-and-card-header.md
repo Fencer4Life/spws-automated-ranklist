@@ -1,6 +1,6 @@
 # ADR-089: The event's weapons live on the event, and the card header carries identity
 
-**Status:** Draft (proposed 2026-09-04; awaiting sign-off)
+**Status:** Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.
 **Date:** 2026-09-04
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §8 and its registry-from-code assumption (the card's field order and its registry chip), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the resolved weapon set now reaches `arr_weapons`, not only the event code)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the weapon-letter suffix this keeps as authoritative), [ADR-088](088-calendar-location-contract.md) (the sibling "resolve it at the source" decision for the city)

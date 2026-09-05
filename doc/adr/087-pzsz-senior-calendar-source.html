@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
-<meta name="adr-source-sha256" content="badea10f005715e48a7e93a212e1069bed8994ecd0f6ab05a1f73a2b1b29dedc">
+<meta name="adr-source-sha256" content="49f7f6196af7d6ad90a694339d52df34155dcc1a437e1516661b7da5af1932e6">
 <title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 087</p><h1>PZSz as a fourth event source — Polish national senior events on the calendar</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-03; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">405 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-03; awaiting sign-off)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">410 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.
 <strong>Date:</strong> 2026-09-03
 <strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §F and §11 (<code>registryOf()</code> widens from three registries to four; a fourth hue enters the organizer channel; <code>PanelType</code> gains a fifth member)
 <strong>Relates to:</strong> <a href="046-pew-weapon-suffix.html">ADR-046</a> (the event-code shape this extends with a gender letter), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (childless CREATE, field ownership, code-keyed reconcile), <a href="028-evf-calendar-results-import.html">ADR-028</a> (the calendar-source precedent this deliberately does not generalise), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the partially-published-season lesson applied before it bit), <a href="083-server-enforced-authorization.html">ADR-083</a> (grants are table-level, so the new column needs none)
@@ -499,12 +499,17 @@ the results path — if PZSz populates it, the scoring deliverable may not need
 FencingTimeLive for PPS and MPS at all.</li>
 <li><strong>Backfill.</strong> Current season only; no historical PZSz events are imported.
 <strong>Recommendation:</strong> leave it that way unless the scoring deliverable needs a baseline.</li>
-<li><strong><code>queue: max</code> availability.</strong> Verified against GitHub documentation, not against this
-runner. <strong>Recommendation:</strong> watch the first scheduled run; the fallback is the 15-minute
-stagger in §9.</li>
+<li><s><strong><code>queue: max</code> availability.</strong></s> <strong>Resolved 2026-09-04.</strong> The key is documented
+(<code>single</code> the default, <code>max</code> allowing up to 100 pending) and it is accepted by this
+runner: every <code>prod-write</code> job carrying it has since run clean — both promotes in
+<code>evf-sync.yml</code>, the new <code>pzsz-sync.yml</code> promote, and two full releases. One constraint
+the plan did not mention surfaced in the documentation and was checked before shipping:
+<code>queue: max</code> combined with <code>cancel-in-progress: true</code> is a workflow validation error.
+All eight members are on <code>cancel-in-progress: false</code>, so none is affected. The
+15-minute stagger fallback is not needed.</li>
 </ol>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="088-calendar-location-contract.html">→ ADR-088: One location contract for every calendar scraper — city, venue and address</a></nav>
-<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>badea10f005715e48a7e93a212e1069bed8994ecd0f6ab05a1f73a2b1b29dedc</code></footer>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>49f7f6196af7d6ad90a694339d52df34155dcc1a437e1516661b7da5af1932e6</code></footer>
 </div></body></html>

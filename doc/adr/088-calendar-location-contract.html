@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="088-calendar-location-contract.md">
-<meta name="adr-source-sha256" content="d540bdd115c7b6cb826651c6e1d6188a1f6662c85bf9794c6391c9c2c13309c9">
+<meta name="adr-source-sha256" content="419333d13598c33b386ead02f9275abe2e2bf6d2b16139f93a558244baf4b6fa">
 <title>ADR-088 · One location contract for every calendar scraper — city, venue and address</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 088</p><h1>One location contract for every calendar scraper — city, venue and address</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-04; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>088-calendar-location-contract.md</code></dd></div><div><dt>Length</dt><dd class="">192 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-04; awaiting sign-off)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>088-calendar-location-contract.md</code></dd></div><div><dt>Length</dt><dd class="">192 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.
 <strong>Date:</strong> 2026-09-04
 <strong>Amends:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> (closes the recorded <code>txt_location</code> defect at the ingest, where that ADR left it), <a href="039-stale-event-gate.html">ADR-039</a> §dedup (the location rung now compares cities to cities), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> §7 (PZSz gains venue-title extraction from the komunikat)
 <strong>Relates to:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (the tile and card that consume this), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the evidence-ladder idiom this reuses)
@@ -234,5 +234,5 @@ fires.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="087-pzsz-senior-calendar-source.html">← ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="089-event-weapons-and-card-header.html">→ ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a></nav>
-<footer class="foot">Generated from <code>088-calendar-location-contract.md</code> · source SHA-256 <code>d540bdd115c7b6cb826651c6e1d6188a1f6662c85bf9794c6391c9c2c13309c9</code></footer>
+<footer class="foot">Generated from <code>088-calendar-location-contract.md</code> · source SHA-256 <code>419333d13598c33b386ead02f9275abe2e2bf6d2b16139f93a558244baf4b6fa</code></footer>
 </div></body></html>
