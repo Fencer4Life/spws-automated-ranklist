@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Draft (proposed 2026-09-05; revised 2026-09-05 after live review; awaiting sign-off)
+**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -116,8 +116,22 @@ value arrives once as a static attribute and is read three components deep.
 ### 5 · One row replaces the removed application header
 
 At no extra height: the **SPWS mark linked to `https://weteraniszermierki.pl`**,
-the page's name in the **active language only** (set large and bold — it is the
-page's only heading, since §7 removes the theme's), and the language toggle.
+the page's name in the **active language only** (set large at regular weight —
+it is the page's only heading, since §7 removes the theme's), and the language
+toggle.
+
+The name is **not bilingual**. A single `Znajdź zawody / Competition Finder`
+string was tried on 2026-09-05 so the row would read for both audiences at
+once; at 375px it wrapped to two lines and was reverted the same day. The
+language toggle already switches the title with the calendar, so the row shows
+`Znajdź zawody` or `Competition Finder`, never both.
+
+The English name binds the sizing, not the Polish. In a 164px title box it
+measures 167.2px at 20px and ellipsed to "Competition Finde…", while
+`Znajdź zawody` (133.6px) had 30px to spare. Below 430px the title is 19px on a
+6px bar gap, which leaves the English 6.7px of headroom and the Polish 41.1px,
+both on one line. The **mark keeps its full 84px** — it does not give up width
+for the title, for the reason below.
 
 There is **no fullscreen control**. One was built on the Fullscreen API, but §7
 already gives the element the whole viewport with no theme chrome around it, so
@@ -214,8 +228,8 @@ association wants.
 **Changed**
 
 - `frontend/src/App.svelte` — `view`, `chrome`, `asset-base`; the embed bar
-  (mark linked home, name, language toggle, fullscreen); the `activeEnv` and
-  `init()` fixes.
+  (mark linked home, name, language toggle); the `activeEnv` and `init()`
+  fixes; the phone-width rules for the title and the event card.
 - `frontend/src/ce/CalendarElement.svelte` — mock stub replaced by a mount of
   the real application; `:host` gives the element its viewport height.
 - `frontend/src/components/EventCard.svelte`, `Sidebar.svelte` — assets through
@@ -256,12 +270,15 @@ decision's scope.
    page — but it is unmeasured until something uses it. *Recommendation:* ship
    on the default template, measure the alternative later if the width is
    wanted.
-2. **The menu item.** Not created. WordPress stores a menu item's structure in
-   protected `_menu_item_*` meta, which XML-RPC accepts on write but hides on
-   read, so a menu item cannot be verified through the channel that creates it.
-   *Recommendation:* create it in `wp-admin`, where it can be seen, or accept an
-   unverified draft item on explicit instruction. The live menu is `nav_menu`
-   term 33 ("Moje menu"); the LINKI parent is item 7128.
+2. **The menu item.** Not created, and not creatable from here. WordPress stores
+   a menu item's structure in protected `_menu_item_*` meta, which XML-RPC
+   accepts on write but hides on read and does not apply, so the three items
+   attempted on 2026-09-05 (13494, 13495, 13497) came out with no type, no
+   object and no href, attached to no menu. All three were deleted the same day
+   and the live menu verified clean — 7 items rendered, zero broken markers,
+   LINKI (7128) intact. *Resolution:* it has to be built in `wp-admin`
+   (Wygląd → Menu → "Moje menu"), adding the published page under LINKI. The
+   live menu is `nav_menu` term 33; the LINKI parent is item 7128.
 3. **Step 2's placement and timing** — the ranking and the calculator — depend
    on an SPWS Board decision expected in the week of 2026-09-08, and the
    calculator additionally on a DirectAdmin/FTP login not yet held. Neither
