@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROD deployment — handover to implementation</title>
+<style>
+
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.mkframe{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin:14px 0 4px;overflow-x:auto}
+.mkframe svg{display:block;width:100%;min-width:660px;height:auto}
+.figcap{font-size:13px;color:var(--muted);margin:0 0 22px;max-width:84ch}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+
+.prompt{background:var(--card);border:2px solid var(--green);border-radius:8px;padding:18px 20px;margin:14px 0 22px}
+.prompt .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--green);font-weight:700;display:block;margin-bottom:9px}
+.prompt pre{border-left-color:var(--green);margin:0;max-width:none;white-space:pre-wrap}
+</style></head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · PROD deployment to WordPress · handover to implementation · 5 September 2026</div>
+  <h1>The plan is approved and access is live. Start at step 2 — steps 0 and 1 are already done.</h1>
+  <p class="dek">This file exists so a fresh session can start cutting code without re-deriving a day of
+  site archaeology and two dead authentication routes. Read it, then the plan, then begin.</p>
+  <div class="chips">
+    <span class="chip good">plan approved</span>
+    <span class="chip good">credential stored and verified</span>
+    <span class="chip bad">zero code written</span>
+    <span class="chip warn">publish only on explicit approval</span>
+  </div>
+</div>
+
+<div class="body">
+
+<h2 id="p"><span class="num">01</span>The prompt to open with</h2>
+<div class="prompt">
+  <span class="lb">Paste this into the new session</span>
+<pre><code>Implement STEP 1 of the approved PROD deployment plan.
+
+Read first, in this order:
+  1. doc/plans/prod-deployment-handover-2026-09-05.html   (this handover — traps and state)
+  2. doc/plans/prod-deployment-wordpress-2026-09-05.html  (the approved plan)
+
+Steps 0 and 1 are DONE (plan renamed; WP credential stored in .env and verified).
+Begin at step 2: confirm the embed survives WordPress's content filter.
+
+Rules that apply:
+- Follow the repo TDD order: failing test first, then code.
+- Run svelte-check after any .svelte/.ts edit; postgrestools after any SQL.
+- Query graphify before analysis, not grep.
+- Draft everything on WordPress. Publish NOTHING public without my explicit
+  say-so for that specific page.
+- Do not touch /kalendarz-2/ or /klasyfikacja/.
+- Complete the documentation coherence gate and draft the ADR for my sign-off.</code></pre>
+</div>
+
+<h2 id="s"><span class="num">02</span>State of play</h2>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th>State</th></tr></thead>
+<tbody>
+<tr><td class="d">The plan</td><td><span class="st s-ok">approved</span> <code>doc/plans/prod-deployment-wordpress-2026-09-05.html</code>, renamed from its working name on approval.</td></tr>
+<tr><td class="d">WordPress credential</td><td><span class="st s-ok">stored + verified</span> <code>.env</code> holds <code>WP_URL</code>, <code>WP_USER</code>, <code>WP_APP_PASSWORD</code>. Authenticates over XML-RPC as an <b>administrator</b>. <code>.env</code> is gitignored — confirmed.</td></tr>
+<tr><td class="d">Code</td><td><span class="st s-bad">nothing written</span> No branch, no commits, no edits to <code>frontend/</code>.</td></tr>
+<tr><td class="d">WordPress site</td><td><span class="st s-bad">untouched</span> No page created, no menu item, nothing drafted.</td></tr>
+<tr><td class="d">Worktree</td><td>Clean at session start apart from the two plan files under <code>doc/plans/</code>. Verify before committing; stage explicit paths only.</td></tr>
+</tbody></table></div>
+
+<h2 id="a"><span class="num">03</span>Access — what works and what is a dead end</h2>
+
+<div class="call good">
+  <span class="lb">Use this</span>
+  <b>XML-RPC at <code>https://weteraniszermierki.pl/xmlrpc.php</code></b>, authenticating with
+  <code>WP_USER</code> + <code>WP_APP_PASSWORD</code> passed as the first two params of the method call.
+  Verified working for <code>wp.getUsersBlogs</code>, <code>wp.getPost</code>, <code>wp.getPosts</code>,
+  <code>wp.getTerms</code>. <code>nav_menu_item</code> is an ordinary post type, so <code>wp.newPost</code>
+  creates menu items too.
+</div>
+
+<div class="call stop">
+  <span class="lb">Do not burn time here</span>
+  <b>The REST API cannot authenticate.</b> The host is LiteSpeed and it strips the
+  <code>Authorization</code> header before WordPress runs. This was proven, not guessed: a
+  <em>deliberately wrong</em> password returns the byte-identical <code>rest_not_logged_in</code> error as the
+  correct one. <code>?rest_route=</code> does not help either. It is fixed only by an <code>.htaccess</code>
+  rule, which needs a DirectAdmin login nobody has yet. <b>Do not debug this. Use XML-RPC.</b>
+</div>
+
+<h3>Three traps that already cost time</h3>
+<ol>
+  <li><b>The username is <code>Olek</code>.</b> „AutomatRanklista” is the <em>label</em> given to the
+  application password, not a user. Authenticating as <code>AutomatRanklista</code> fails with
+  <span lang="pl">„Błędna nazwa lub hasło”</span> and looks exactly like a bad password.</li>
+  <li><b>The host 403s Python's default User-Agent.</b> <code>urllib</code> out of the box gets
+  <code>HTTP 403 Forbidden</code> from <code>xmlrpc.php</code>. Send a normal browser-ish
+  <code>User-Agent</code> header and it works. <code>curl</code> is unaffected.</li>
+  <li><b>The application password contains spaces.</b> It is stored <b>quoted</b> in <code>.env</code>.
+  Load it with <code>set -a; . ./.env; set +a</code> — an unquoted value breaks shell sourcing mid-line.</li>
+</ol>
+
+<h3>Working snippet</h3>
+<pre><code>cd /Users/aleks/coding/SPWSranklist
+set -a; . ./.env; set +a
+python3 - &lt;&lt;'PY'
+import os, urllib.request
+u, p = os.environ['WP_USER'], os.environ['WP_APP_PASSWORD']
+body = f"""&lt;?xml version="1.0"?&gt;&lt;methodCall&gt;&lt;methodName&gt;wp.getUsersBlogs&lt;/methodName&gt;&lt;params&gt;
+&lt;param&gt;&lt;value&gt;&lt;string&gt;{u}&lt;/string&gt;&lt;/value&gt;&lt;/param&gt;
+&lt;param&gt;&lt;value&gt;&lt;string&gt;{p}&lt;/string&gt;&lt;/value&gt;&lt;/param&gt;&lt;/params&gt;&lt;/methodCall&gt;"""
+r = urllib.request.Request(os.environ['WP_URL'] + '/xmlrpc.php', data=body.encode(),
+    headers={'Content-Type': 'text/xml', 'User-Agent': 'Mozilla/5.0 spws-deploy/1.0'})
+print(urllib.request.urlopen(r, timeout=20).read().decode()[:400])
+PY</code></pre>
+
+<h2 id="t"><span class="num">04</span>Facts worth not rediscovering</h2>
+<div class="tw"><table>
+<tbody>
+<tr><td class="d">Target page</td><td>NEW page, slug <code>znajdz-zawody</code>, title „Znajdź zawody / Competition finder”. Menu item appended to the bottom of the <b>LINKI</b> submenu — parent <code>nav_menu_item</code> <b>7128</b>, a custom dropdown whose children are the EVF/FIE/PZSz and social links.</td></tr>
+<tr><td class="d">Menus</td><td>The theme ships many demo menus; there are <b>171</b> <code>nav_menu_item</code> posts in total. Do not assume the first menu you find is the live one — locate by the LINKI parent.</td></tr>
+<tr><td class="d">Page format</td><td>Existing pages are <b>classic HTML</b>, not Gutenberg blocks (<code>&lt;!--more--&gt;</code>, plain <code>&lt;ul&gt;</code>). The embed is pasted as raw HTML into the page body.</td></tr>
+<tr><td class="d">Filter risk</td><td>Single-site install (one blog, uploads at <code>uploads/2024/12/…</code> not <code>uploads/sites/N/…</code>), so the admin should hold <code>unfiltered_html</code> and both <code>&lt;script&gt;</code> and <code>&lt;spws-calendar&gt;</code> should survive. <b>Step 2 confirms it</b> — no page or post on the site currently contains either tag, so there is no precedent.</td></tr>
+<tr><td class="d">The code gap</td><td><code>src/ce/CalendarElement.svelte</code> is a <b>mock stub</b> — its only prop is <code>demo</code> and it has never queried a database. The real loader is in <code>App.svelte</code>. Mounting the app with <code>view="calendar"</code> inherits it.</td></tr>
+<tr><td class="d">Which fetch</td><td>Use <code>fetchAllCalendarEvents()</code>, <b>not</b> <code>fetchCalendarEvents(seasonId)</code>. The barrel crosses season boundaries, so the season-scoped fetch is the wrong one.</td></tr>
+<tr><td class="d">Broken paths</td><td><code>EventCard.svelte</code> loads the four organizer marks as bare names (<code>SPWS-logo.png</code> …); the header and drawer do the same. They 404 from <code>/znajdz-zawody/</code>. Fixed by the <code>asset-base</code> attribute.</td></tr>
+<tr><td class="d">Bundle</td><td><code>frontend/dist/assets/index-*.js</code> is <b>1.08 MB</b> uncompressed. Report the real gzipped figure during the browser check.</td></tr>
+<tr><td class="d">Hosting</td><td>zenbox.pl, server <code>s56.zenbox.pl</code>, LiteSpeed. DirectAdmin (not cPanel) at <code>https://s56.zenbox.pl:2222</code>, FTP port 21, panel at <code>panel.zenbox.pl</code>. Web root <code>domains/weteraniszermierki.pl/public_html/</code>. <b>Login not yet held.</b></td></tr>
+</tbody></table></div>
+
+<div class="call warn">
+  <span class="lb">Leave this alone</span>
+  <code>register.html</code> is built by <code>vite.config.ce.ts</code>, not the main build, and it is
+  deliberate: Svelte only bundles a nested child component's styles into a shadow root when the whole
+  compile graph runs with <code>customElement: true</code>. Moving it to the main build renders the
+  registration form completely unstyled. This was verified empirically and reverted once already.
+</div>
+
+<h2 id="o"><span class="num">05</span>The order of work</h2>
+<p class="sub">Numbering matches the plan's step 1. Items 0 and 1 are complete.</p>
+<ol class="steps">
+  <li><s>Store the credential and rename the plan.</s> <span class="st s-ok">done</span></li>
+  <li><b>Confirm the embed survives the content filter.</b> Create a <b>draft</b> page over XML-RPC holding
+  <code>&lt;spws-calendar&gt;&lt;/spws-calendar&gt;</code> and a <code>&lt;script&gt;</code>, read it back, compare.
+  If either is stripped, the fallback is a <code>wp-content/mu-plugins/</code> file — which needs the
+  DirectAdmin login, so report and stop rather than improvising.</li>
+  <li><b>Prove the PROD security posture is green now.</b> <code>scripts/check-security-posture.sh</code>
+  against PROD (read-only; uses <code>SUPABASE_ACCESS_TOKEN</code> from <code>.env</code>).</li>
+  <li><b>Verify PROD holds real calendar data.</b> Read-only via <code>scripts/cloud-sql.sh</code> under the
+  <code>cloud-db-ops</code> skill: event count, seasons, whether <code>arr_weapons</code> and the location
+  fields are populated. Check for the known CERT defect classes — venue text in the city field, empty
+  <code>arr_weapons</code>, one competition split across three rows. <b>Report them; do not fix them.</b></li>
+  <li><b>Element interface, TDD.</b> <code>view</code> (<code>calendar</code>|<code>ranklist</code>) and
+  <code>chrome</code> (<code>full</code>|<code>none</code>) on <code>App.svelte</code>; rewire
+  <code>CalendarElement.svelte</code> to mount the real application; credential, <code>lang</code> and
+  <code>asset-base</code> attributes mirroring <code>RanklistElement.svelte</code>; suppress
+  <code>?admin=1</code>. <code>chrome="none"</code> removes header, hamburger <b>and</b> drawer.</li>
+  <li><b>The embed's top row.</b> SPWS mark linked to <code>https://weteraniszermierki.pl</code>; the page
+  name in the <b>active language only</b> („Znajdź zawody” / “Competition finder”) via embed-only locale
+  keys; the 🇵🇱/🇬🇧 toggle lifted out of the deleted header; a ⛶ fullscreen button on the Fullscreen API.
+  Embed defaults to full viewport height. No page H1 or intro.</li>
+  <li><b>Asset paths and the drawer link.</b> <code>asset-base</code> applied to the four logos and the
+  header mark; <code>Sidebar.svelte</code>'s SPWS logo wrapped in a link home. Extend the existing “no
+  localhost, no <code>service_role</code> in <code>dist</code>” guards in <code>release.yml</code>.</li>
+  <li><b>Publish the bundle.</b> Stable-named entry built and deployed by <code>release.yml</code>, PROD
+  credentials injected the way <code>register.html</code> already gets them.</li>
+  <li><b>Browser-verify before the live site sees it.</b> Barrel renders, logos load, a registration
+  completes end to end, no CSS bleed either way, behaves at phone width. Report gzipped size.</li>
+  <li><b>Create the page and the menu item</b> over XML-RPC — page as a <b>draft</b>.</li>
+  <li><b>Stop. Show the user. Publish only on their word.</b> Then a short Polish note in
+  <code>doc/tools/</code> recording what was done.</li>
+</ol>
+
+<h2 id="g"><span class="num">06</span>Gates and hard rules</h2>
+<div class="call stop">
+  <span class="lb">Non-negotiable</span>
+  <ul style="margin-bottom:0">
+    <li><b>Nothing goes public without explicit per-page approval.</b> This is a live association website.
+    Approval for one page is not approval for the next.</li>
+    <li><b>Do not modify <code>/kalendarz-2/</code> or <code>/klasyfikacja/</code>.</b> They stay exactly as
+    they are. An earlier draft of the plan proposed editing them; that was dropped.</li>
+    <li><b>Never</b> run a bare <code>supabase db reset</code> — use <code>./scripts/reset-dev.sh</code>.</li>
+    <li><b>Never</b> <code>git reset --hard</code> a dirty tree. Preserve unrelated worktree changes and
+    stage explicit paths only.</li>
+    <li><b>Never</b> improvise <code>curl</code> against the Supabase Management API — use
+    <code>scripts/cloud-sql.sh</code> per the <code>cloud-db-ops</code> skill.</li>
+    <li><b>Never</b> quote, log or commit the credential. It lives in <code>.env</code> only.</li>
+  </ul>
+</div>
+
+<h3>Skills to invoke</h3>
+<div class="tw"><table>
+<tbody>
+<tr><td class="d">pre-analysis-check</td><td>Before any analysis, impact check or planning — graphify and the LSP first, never grep alone.</td></tr>
+<tr><td class="d">svelte-check</td><td>After every <code>.svelte</code> or frontend <code>.ts</code> edit.</td></tr>
+<tr><td class="d">cloud-db-ops</td><td>Before any read against PROD.</td></tr>
+<tr><td class="d">new-adr</td><td>For the ADR. Runs the supersede/amend audit first.</td></tr>
+<tr><td class="d">pre-push-graph</td><td><code>./scripts/refresh-graph.sh</code> before every commit. One local command, zero tokens — do not dispatch extraction subagents.</td></tr>
+<tr><td class="d">release</td><td>For the CI/release run and any workflow repair.</td></tr>
+</tbody></table></div>
+
+<h2 id="d"><span class="num">07</span>Documentation obligations</h2>
+<ul>
+  <li><b>An ADR</b> whose subject is <b>the pattern</b> — how a PROD surface becomes a full-screen
+  WordPress menu item — not the calendar specifically, so the ranking and calculator are covered without
+  ADRs of their own. It records the second publication target, the first step of PROD leaving GitHub
+  Pages, and that step 2's placement and timing depend on an SPWS Board decision. <b>Amends ADR-007</b>;
+  relates to <b>ADR-011</b> and <b>ADR-085</b>. Draft for sign-off before acceptance; register in
+  specification Appendix C.</li>
+  <li><b>The coherence gate:</b> <code>doc/handbook/subsystems/frontend-and-automation.html</code>,
+  <code>doc/handbook/operations/environments-and-release.html</code>, the workflow catalogue, the RTM if a
+  requirement changes, and <code>scripts/check_docs.py</code> green.</li>
+  <li>Update current pages in present tense; archive superseded prose rather than appending history.</li>
+</ul>
+
+<h2 id="x"><span class="num">08</span>Explicitly not this session's work</h2>
+<div class="tw"><table>
+<tbody>
+<tr><td class="d">Registration rate limit</td><td>ADR-079 §4 defence (d). The sign-up RPCs are anon-callable by design and have no throttle. <b>Accepted and deferred</b> — scheduled for <b>6 September 2026</b> alongside the XML export work, tracked there.</td></tr>
+<tr><td class="d">Step 2</td><td>Ranking <em>and</em> calculator, each to its own menu item, neither placement decided. Waits on step 1 sign-off, an <b>SPWS Board decision</b> expected in the week of <b>8 September 2026</b>, and the DirectAdmin login.</td></tr>
+<tr><td class="d">Calculator + <code>.htaccess</code></td><td>Both need the DirectAdmin/FTP login. Not held yet.</td></tr>
+<tr><td class="d">Also out</td><td>Moving <code>register.html</code>; retiring GitHub Pages for CERT; moving the admin UI; rewriting the calculator against the ranking engine; repairing calendar data defects.</td></tr>
+</tbody></table></div>
+
+</div>
+
+<footer>
+  SPWS Automated Ranklist System · PROD deployment · handover written 5 September 2026, immediately after
+  plan approval. Plan: <code>doc/plans/prod-deployment-wordpress-2026-09-05.html</code>. Nothing is
+  deployed and no code exists yet.
+</footer>
+
+</div>
+</body>
+</html>
