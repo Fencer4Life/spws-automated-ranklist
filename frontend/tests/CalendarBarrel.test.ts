@@ -472,16 +472,34 @@ describe('CalendarBarrel — jump back to the opening row', () => {
       ),
     )
 
+  /**
+   * Where the control is mounted. Going FORWARD it is pinned to the viewport
+   * rather than parented to the lowest seam's row: that row sits at d = -3, so
+   * it inherits rowOpacity 0.19, and it projects ~23px past the viewport's
+   * bottom edge where `overflow: hidden` removes it outright. Both were
+   * measured on screen before the control was hoisted.
+   */
+  const mount = (container: HTMLElement) => {
+    const j = container.querySelector('.jmp')
+    if (!j) return { present: false as const }
+    return {
+      present: true as const,
+      pinned: j.classList.contains('pinned'),
+      insideRow: j.closest('.ln') !== null,
+      arrow: [...j.querySelector('.arw')!.classList].find((c) => ['up', 'left', 'down'].includes(c)),
+    }
+  }
+
   it('CB.25: no control while the drum is already where it opens', () => {
     const rows = nine()
     const { container } = barrel({ rows, anchorIndex: 4 })
     expect(container.querySelector('.jmp')).toBeNull()
   })
 
-  // The control rides the receded row in the DIRECTION the drum must roll, so
-  // its position is the direction cue. Index order is chronological and the
-  // cylinder puts later months higher, so `dn` (active + 1) renders above.
-  it('CB.26: sits on the row toward the anchor, and says what it does', async () => {
+  // Going BACK, the control stays on the adjacent upper seam — already the
+  // shortest possible hop, with nothing to steady. Index order is chronological
+  // and the cylinder puts later months higher, so `dn` (active + 1) is above.
+  it('CB.26: points UP from the past, on the seam toward the anchor', async () => {
     const rows = nine()
     const { container } = barrel({ rows, anchorIndex: 6 })
     // rotate backwards, away from the anchor
@@ -501,16 +519,49 @@ describe('CalendarBarrel — jump back to the opening row', () => {
     expect(arrow.getAttribute('aria-hidden')).toBe('true')
     expect(jump.textContent!.trim()).toBe(t('calendar_jump_to_next'))
     expect(jump.closest('.ln')!.classList.contains('dn')).toBe(true)
+    // The drum travels vertically, so the glyph names the direction of travel.
+    expect(mount(container)).toEqual({ present: true, pinned: false, insideRow: true, arrow: 'up' })
   })
 
-  it('CB.27: flips to the other side once the anchor is behind you', async () => {
+  /**
+   * Rolling FORWARD, the control stops tracking the focus and settles at the
+   * lowest visible seam, so it holds one position instead of moving under the
+   * reader at every step. VISIBLE_SPAN is floor(HORIZON / ROW_ANGLE) =
+   * floor(80 / 26) = 3, so the host is `active - 3`.
+   */
+  it('CB.27: two or more rows into the future — DOWN, at the lowest seam', async () => {
     const rows = nine()
     const { container } = barrel({ rows, anchorIndex: 1 })
-    await fireEvent.click(container.querySelector('.ln.dn')!)
-    await fireEvent.click(container.querySelector('.ln.dn')!)
+    await fireEvent.click(container.querySelector('.ln.dn')!) // active 2
+    await fireEvent.click(container.querySelector('.ln.dn')!) // active 3
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[3]!))
 
-    const jump = container.querySelector('.jmp')!
-    expect(jump.closest('.ln')!.classList.contains('up')).toBe(true)
+    expect(mount(container)).toEqual({ present: true, pinned: true, insideRow: false, arrow: 'down' })
+  })
+
+  // Exactly one row ahead: the anchor is adjacent, so the arrow says "it is
+  // right there" rather than naming a direction of travel. The control still
+  // sits at the lowest seam — one home for every forward state.
+  it('CB.27b: exactly one row into the future — LEFT, at the lowest seam', async () => {
+    const rows = nine()
+    const { container } = barrel({ rows, anchorIndex: 3 })
+    await fireEvent.click(container.querySelector('.ln.dn')!) // active 4
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[4]!))
+
+    expect(mount(container)).toEqual({ present: true, pinned: true, insideRow: false, arrow: 'left' })
+  })
+
+  // Near the start of the drum there is no row three below; the host clamps to
+  // 0 rather than resolving to a negative index and rendering nothing at all.
+  it('CB.27c: the lowest seam clamps to row 0 near the start of the drum', async () => {
+    const rows = nine()
+    const { container } = barrel({ rows, anchorIndex: 0 })
+    await fireEvent.click(container.querySelector('.ln.dn')!) // active 1
+    expect(container.querySelector('.ln.mid .sm b')!.textContent).toBe(seam(rows[1]!))
+
+    // Near the drum's start there is no row three below at all; the pinned
+    // control does not need one, which is the second reason it is hoisted.
+    expect(mount(container)).toEqual({ present: true, pinned: true, insideRow: false, arrow: 'left' })
   })
 
   it('CB.28: tapping it returns to the opening row and selects there', async () => {

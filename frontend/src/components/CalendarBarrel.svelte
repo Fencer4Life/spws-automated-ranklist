@@ -1,3 +1,39 @@
+<!-- One definition, rendered from two places: inside a receded row when the
+     anchor is BEHIND the focus, and pinned to the viewport when it is AHEAD.
+     See the `{#if}` sites below for why the two cases cannot share a parent.
+
+     The arrow is an aria-hidden SVG, not a character in the translated string.
+     A screen reader announces the button by its label alone, which is the
+     useful half. Drawn rather than typed because an arrow glyph renders at
+     whatever weight and baseline the system font decides — it sat visibly low
+     against an 11px cap height and did not match the label's stroke. The path
+     inherits `currentColor`, so it tracks the accent through both themes, and
+     it is ONE path rotated per direction rather than three separate paths.
+
+     stopPropagation because a row is itself a tap target that rotates one step
+     — without it, the jump and a single step would fight over the same tap.
+     Harmless for the pinned copy, which has no row underneath it. -->
+{#snippet jumpControl(arrow: 'up' | 'left' | 'down', pinned: boolean)}
+  <button
+    class="jmp"
+    class:pinned
+    type="button"
+    onclick={(e) => {
+      e.stopPropagation()
+      jumpToAnchor()
+    }}
+  ><svg class="arw {arrow}" viewBox="0 0 16 16" aria-hidden="true" focusable="false"
+    ><path
+      d="M2.5 8h10M8.75 4.25 12.5 8l-3.75 3.75"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    /></svg
+  >{t('calendar_jump_to_next')}</button>
+{/snippet}
+
 <div class="vp" bind:this={viewportEl}>
   <div
     class="drum"
@@ -27,41 +63,10 @@
              The code shows on the focused row and permanently on a season
              boundary, whose rule is also drawn heavier — this is where the
              deleted season dropdown's information went. -->
-        {#if showJumpOn === state}
-          <!-- Jump back to where the drum opens. It rides the receded row in
-               the DIRECTION the drum has to roll, so its position already
-               carries that cue; the leading arrow makes the button read as a
-               destination — "→ to the nearest competition" — rather than as a
-               label for the row it happens to sit on.
-
-               The arrow is an aria-hidden SVG, not a character in the
-               translated string. A screen reader announces the button by its
-               label alone, which is the useful half. Drawn rather than typed
-               because "→" renders at whatever weight and baseline the system
-               font decides — it sat visibly low against an 11px cap height and
-               did not match the label's stroke. The path inherits
-               `currentColor`, so it tracks the accent through both themes.
-
-               stopPropagation because the row underneath is itself a tap target
-               that rotates one step — without it, the jump and a single step
-               would fight over the same tap. -->
-          <button
-            class="jmp"
-            type="button"
-            onclick={(e) => {
-              e.stopPropagation()
-              jumpToAnchor()
-            }}
-          ><svg class="arw" viewBox="0 0 16 16" aria-hidden="true" focusable="false"
-            ><path
-              d="M2.5 8h10M8.75 4.25 12.5 8l-3.75 3.75"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /></svg
-          >{t('calendar_jump_to_next')}</button>
+        <!-- Anchor BEHIND the focus: the control rides the adjacent upper seam,
+             which is on screen at 0.81 opacity and needs no special handling. -->
+        {#if jumpCue?.row === qi && !jumpCue.pinned}
+          {@render jumpControl(jumpCue.arrow, false)}
         {/if}
         <div class="sm" class:bd={row.isSeasonBoundary}>
           <b>{seamLabel(row)}</b>
@@ -118,6 +123,24 @@
       </div>
     {/each}
   </div>
+
+  <!-- Anchor AHEAD of the focus: pinned to the viewport's lower edge rather
+       than parented to the lowest seam's row.
+
+       Parenting it there was tried and is not viable, for two compounding
+       reasons measured on screen. That row sits at d = -3, so it inherits
+       `rowOpacity` = cos(78°) x 0.9 = 0.19, and opacity applies to the whole
+       subtree, so a child cannot opt out. Worse, the row projects to y = 269 in
+       a 246px-tall viewport — about 23px PAST the bottom edge — where
+       `.vp { overflow: hidden }` clips it away completely. The control was not
+       merely faint, it was absent.
+
+       Pinned here it holds the same visual position the lowest seam occupies,
+       at full opacity, and it no longer depends on a row existing three below
+       the focus — which it does not, near the start of the drum. -->
+  {#if jumpCue?.pinned}
+    {@render jumpControl(jumpCue.arrow, true)}
+  {/if}
 </div>
 
 <div class="crw">
@@ -190,6 +213,9 @@
   const ROW_ANGLE = 26
   const HORIZON = 80
   const DRUM_R = Math.round(ROW_H / 2 / Math.tan((ROW_ANGLE / 2) * (Math.PI / 180)))
+  /* Rows still on screen each side of the focus — derived, not written as `3`,
+     so it follows the geometry if either angle is ever retuned. */
+  const VISIBLE_SPAN = Math.floor(HORIZON / ROW_ANGLE)
 
   /**
    * The drum must ARRIVE at its opening angle, not travel to it.
@@ -339,20 +365,44 @@
    * was named there.
    */
   /**
-   * Which receded row carries the jump control, or '' when the drum is already
-   * where it opens.
+   * Where the jump control sits and which way its arrow points, or null when
+   * the drum is already where it opens.
    *
    * Index order is chronological, and the cylinder puts LATER months higher up
    * the screen — so `dn` (active + 1) renders above and `up` (active - 1)
-   * below. An anchor ahead of the focused row therefore lives on `dn`.
+   * below.
+   *
+   * The arrow carries DIRECTION AND DISTANCE, which a fixed right arrow could
+   * not: the drum travels vertically, so a rightward glyph pointed at nothing.
+   *   - past (anchor ahead, above)      -> up
+   *   - future by exactly one row       -> left, the anchor is adjacent
+   *   - future by two rows or more      -> down
+   *
+   * Going forward the control also stops tracking the focus and settles at the
+   * LOWEST visible seam, so it holds one position instead of drifting with
+   * every step. `max(0, ...)` covers the start of the drum, where there is no
+   * row three below. Going back it stays on the adjacent upper seam: that is
+   * already the shortest possible hop and there is nothing to steady.
+   *
+   * This carries a row INDEX rather than a `rowState`, because `rowState`
+   * collapses everything at |d| >= 2 to 'far' — matching on the state would
+   * paint the button onto every far row at once.
    *
    * The destination is `anchorIndex`, NOT the month containing today: today's
    * month is frequently empty — August 2026 holds no events at all — and the
    * drum never rests on an empty row, so a literal "jump to today" would land
    * somewhere it immediately rolls off.
    */
-  const showJumpOn = $derived(
-    anchorIndex === active || !rows[anchorIndex] ? '' : anchorIndex > active ? 'dn' : 'up',
+  const jumpCue = $derived.by(
+    (): { row: number; arrow: 'up' | 'left' | 'down'; pinned: boolean } | null => {
+      if (!rows[anchorIndex] || anchorIndex === active) return null
+      if (anchorIndex > active) return { row: active + 1, arrow: 'up', pinned: false }
+      return {
+        row: Math.max(0, active - VISIBLE_SPAN),
+        arrow: active - anchorIndex === 1 ? 'left' : 'down',
+        pinned: true,
+      }
+    },
   )
 
   /**
@@ -917,11 +967,30 @@
     white-space: nowrap;
   }
   /* Sized to the label's cap height rather than its font size, so the icon
-     reads as the same weight as the text beside it. */
+     reads as the same weight as the text beside it.
+
+     ONE path, rotated — not three path definitions. Three would drift apart in
+     stroke weight and cap geometry the first time any of them was retouched; a
+     rotation of the same path cannot. The base path points right. */
   .arw {
     width: 11px;
     height: 11px;
     flex: 0 0 11px;
+  }
+  .arw.up {
+    transform: rotate(-90deg);
+  }
+  .arw.down {
+    transform: rotate(90deg);
+  }
+  .arw.left {
+    transform: rotate(180deg);
+  }
+  /* Pinned to the viewport, not to a row: same place the lowest seam occupies,
+     but outside the drum's opacity and outside its overflow clip. */
+  .jmp.pinned {
+    top: auto;
+    bottom: 4px;
   }
   .mt {
     font-size: 11px;
