@@ -7,7 +7,7 @@
 // this repo has had came from resolution logic that assumed both pairs exist.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent } from '@testing-library/svelte'
+import { render } from '@testing-library/svelte'
 import { tick, type ComponentProps } from 'svelte'
 
 vi.mock('../src/lib/api', () => ({
@@ -184,22 +184,22 @@ describe('WordPress embed — the top row', () => {
     expect(container.querySelector('.embed-bar .lang-toggle')).not.toBeNull()
   })
 
-  it('offers a fullscreen control', () => {
+  // No fullscreen control. The host page already removes the theme's header,
+  // navigation and footer and gives the element the whole viewport, so the
+  // button had nothing left to add and read as a stray glyph beside the flags.
+  it('offers no fullscreen control', () => {
     const { container } = render(App, { props: embedProps() })
-    const btn = container.querySelector('button.embed-fullscreen')
-    expect(btn).not.toBeNull()
-    expect(btn?.getAttribute('aria-label')).toBeTruthy()
+    expect(container.querySelector('button.embed-fullscreen')).toBeNull()
   })
 
-  // The Fullscreen API only grants on a user gesture, so this cannot be forced
-  // on load — it must hang off the button.
-  it('requests fullscreen on click', async () => {
+  it('keeps only the mark, the name and the language toggle on the row', () => {
     const { container } = render(App, { props: embedProps() })
-    const requestFullscreen = vi.fn().mockResolvedValue(undefined)
-    const root = container.querySelector('.ranklist-app') as HTMLElement
-    root.requestFullscreen = requestFullscreen
-    await fireEvent.click(container.querySelector('button.embed-fullscreen')!)
-    expect(requestFullscreen).toHaveBeenCalled()
+    const bar = container.querySelector('.embed-bar')!
+    expect(bar.querySelector('a.embed-home')).not.toBeNull()
+    expect(bar.querySelector('.embed-title')).not.toBeNull()
+    expect(bar.querySelector('.lang-toggle')).not.toBeNull()
+    // the language toggle's own two buttons, and nothing else
+    expect(bar.querySelectorAll('button').length).toBe(2)
   })
 })
 

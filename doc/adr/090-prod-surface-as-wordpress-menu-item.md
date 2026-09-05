@@ -116,9 +116,12 @@ value arrives once as a static attribute and is read three components deep.
 ### 5 · One row replaces the removed application header
 
 At no extra height: the **SPWS mark linked to `https://weteraniszermierki.pl`**,
-the page's name in the **active language only**, the language toggle, and a
-fullscreen button. The element requests fullscreen on itself, not the document;
-the Fullscreen API only grants on a user gesture, so it cannot be forced on load.
+the page's name in the **active language only** (set large and bold — it is the
+page's only heading, since §7 removes the theme's), and the language toggle.
+
+There is **no fullscreen control**. One was built on the Fullscreen API, but §7
+already gives the element the whole viewport with no theme chrome around it, so
+the button had nothing left to add and read as a stray glyph beside the flags.
 
 The mark is **required, not decorative**. Because §7 removes the theme's header,
 navigation and footer from this page, the mark is the **only route back** to the
@@ -217,7 +220,7 @@ association wants.
   the real application; `:host` gives the element its viewport height.
 - `frontend/src/components/EventCard.svelte`, `Sidebar.svelte` — assets through
   `assetUrl`; the drawer's link home.
-- `frontend/src/lib/locales/{pl,en}.json` — 4 embed-only keys each (552 each,
+- `frontend/src/lib/locales/{pl,en}.json` — 2 embed-only keys each (550 each,
   parity held).
 - `frontend/vite.config.ce.ts` — stable entry name.
 - `.github/workflows/release.yml` — the stable-name guard.

@@ -10,7 +10,7 @@
   />
 {/if}
 
-<div class="ranklist-app" class:embedded class:fullscreen={isFullscreen} bind:this={embedRoot}>
+<div class="ranklist-app" class:embedded>
   {#if !embedded}
     <header class="app-header">
       <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
@@ -25,8 +25,8 @@
   {:else}
     <!-- The embed's one row, carrying what the removed application header used
          to at no extra height: the SPWS mark linked back to the association's
-         site, the page's own name in the active language, the language toggle,
-         and fullscreen.
+         site, the page's own name in the active language, and the language
+         toggle.
 
          The mark is REQUIRED, not decorative. The host page hides the theme's
          header, navigation and footer, so this is the only route back to
@@ -43,13 +43,6 @@
       <span class="embed-title">{t('embed_page_title')}</span>
       <div class="embed-actions">
         <LangToggle />
-        <button
-          class="embed-fullscreen"
-          type="button"
-          onclick={toggleFullscreen}
-          aria-label={isFullscreen ? t('embed_fullscreen_exit') : t('embed_fullscreen')}
-          title={isFullscreen ? t('embed_fullscreen_exit') : t('embed_fullscreen')}
-        >{isFullscreen ? '✕' : '⛶'}</button>
       </div>
     </div>
   {/if}
@@ -408,30 +401,6 @@
   // to point at.
   const embedded = $derived(chrome === 'none')
 
-  // Fullscreen. The API only grants on a user gesture, so this cannot be forced
-  // on load — it hangs off the button and nothing else.
-  //
-  // The element goes fullscreen, not the document: inside a WordPress page the
-  // embed is one box among the theme's header, menu and footer, and taking the
-  // document would put all of that on screen too.
-  let embedRoot: HTMLElement | null = $state(null)
-  let isFullscreen = $state(false)
-
-  function toggleFullscreen(): void {
-    // Guarded rather than assumed: older iOS Safari ships no Fullscreen API on
-    // ordinary elements at all, and the button must degrade quietly there
-    // rather than throw into the calendar's error boundary.
-    if (typeof document === 'undefined') return
-    if (document.fullscreenElement) {
-      void document.exitFullscreen?.()
-      return
-    }
-    void embedRoot?.requestFullscreen?.()
-  }
-
-  function syncFullscreen(): void {
-    isFullscreen = typeof document !== 'undefined' && !!document.fullscreenElement
-  }
 
   // The one-shot capture is the point: `view` is the STARTING view, and
   // navigateTo() owns it from then on. Re-deriving it from the prop would undo
@@ -569,15 +538,6 @@
 
   $effect(() => {
     if (isAdmin) { startAdminTimer() } else { stopAdminTimer() }
-  })
-
-  // Track fullscreen from the event rather than from our own click: the user
-  // can also leave with Escape or the browser's own control, and the button's
-  // label would otherwise stay wrong.
-  $effect(() => {
-    if (!embedded || typeof document === 'undefined') return
-    document.addEventListener('fullscreenchange', syncFullscreen)
-    return () => { document.removeEventListener('fullscreenchange', syncFullscreen) }
   })
 
   function initDemo() {
@@ -1481,18 +1441,12 @@
   .ranklist-app.embedded {
     max-width: none;
     /* Fills the host, which owns the viewport height (see CalendarElement's
-       :host rule). 100% here rather than 100dvh so that going fullscreen —
-       where this element itself becomes the fullscreen box — still fits. */
+       :host rule). */
     height: 100%;
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-  }
-  /* Fullscreen paints the element against the page's own backdrop, which is
-     transparent by default and shows black behind the drum. */
-  .ranklist-app.embedded.fullscreen {
-    background: #fff;
   }
   .embed-bar {
     display: flex;
@@ -1512,8 +1466,8 @@
     display: block;
   }
   .embed-title {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 26px;
+    font-weight: 800;
     color: #173f70;
     /* Takes the slack so the actions sit hard right without justify-content,
        which would also push the mark away from the title. */
@@ -1529,19 +1483,6 @@
     gap: 8px;
     flex: 0 0 auto;
   }
-  .embed-fullscreen {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-    font-size: 15px;
-    line-height: 1;
-    padding: 5px 8px;
-    color: #333;
-  }
-  .embed-fullscreen:hover {
-    background: #f2f5f9;
-  }
   /* The calendar takes the remaining height; the barrel scrolls inside it
      rather than growing the page. */
   .ranklist-app.embedded :global(.calendar-view) {
@@ -1553,7 +1494,7 @@
       padding: 8px;
     }
     .embed-title {
-      font-size: 15px;
+      font-size: 21px;
     }
     .embed-logo {
       height: 22px;
@@ -1567,17 +1508,13 @@
       gap: 8px;
     }
     .embed-title {
-      font-size: 13.5px;
+      font-size: 18px;
     }
     .embed-logo {
       height: 19px;
     }
     .embed-actions {
       gap: 5px;
-    }
-    .embed-fullscreen {
-      padding: 4px 6px;
-      font-size: 14px;
     }
   }
   .app-header {

@@ -548,7 +548,5 @@
   "cal_dow_short_6": "Sat",
   "cal_dow_short_7": "Sun",
   "embed_page_title": "Competition finder",
-  "embed_home_label": "Go to the SPWS website",
-  "embed_fullscreen": "Full screen",
-  "embed_fullscreen_exit": "Exit full screen"
+  "embed_home_label": "Go to the SPWS website"
 }
