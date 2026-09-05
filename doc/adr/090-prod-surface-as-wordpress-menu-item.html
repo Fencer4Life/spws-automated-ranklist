@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="090-prod-surface-as-wordpress-menu-item.md">
-<meta name="adr-source-sha256" content="352f6427b2bfd950c98b2210188ef6972eb904f72dff1835e0ee7a9bb24fdf08">
+<meta name="adr-source-sha256" content="887d49006c3b631bcbb28e7246a20f2c4a195f41547f93ca3ecb34863b96a84e">
 <title>ADR-090 · Publishing a PROD surface as a full-screen WordPress menu item</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 090</p><h1>Publishing a PROD surface as a full-screen WordPress menu item</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-05; revised 2026-09-05 after live review; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">268 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-05; revised 2026-09-05 after live review; awaiting sign-off)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">285 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05)
 <strong>Date:</strong> 2026-09-05
 <strong>Amends:</strong> <a href="007-shadow-dom-deferred.html">ADR-007</a> (the anticipated WordPress embed is now built, and the element gains a <code>view</code>/<code>chrome</code> interface), <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at <code>CERT</code>)
 <strong>Relates to:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> (the bundle ships through the existing release pipeline), <a href="083-server-enforced-authorization.html">ADR-083</a> (the exposure argument rests on the anon grants), <a href="079-event-self-registration-identity.html">ADR-079</a> (self-registration becomes reachable from the association's own menu), <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (the calendar is the first surface through the pattern), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> (the calculator will reuse the presentation, not the build)
@@ -114,8 +114,20 @@ byte-for-byte what it was.</p>
 value arrives once as a static attribute and is read three components deep.</p>
 <h3 id="5-one-row-replaces-the-removed-application-header">5 · One row replaces the removed application header</h3>
 <p>At no extra height: the <strong>SPWS mark linked to <code>https://weteraniszermierki.pl</code></strong>,
-the page's name in the <strong>active language only</strong> (set large and bold — it is the
-page's only heading, since §7 removes the theme's), and the language toggle.</p>
+the page's name in the <strong>active language only</strong> (set large at regular weight —
+it is the page's only heading, since §7 removes the theme's), and the language
+toggle.</p>
+<p>The name is <strong>not bilingual</strong>. A single <code>Znajdź zawody / Competition Finder</code>
+string was tried on 2026-09-05 so the row would read for both audiences at
+once; at 375px it wrapped to two lines and was reverted the same day. The
+language toggle already switches the title with the calendar, so the row shows
+<code>Znajdź zawody</code> or <code>Competition Finder</code>, never both.</p>
+<p>The English name binds the sizing, not the Polish. In a 164px title box it
+measures 167.2px at 20px and ellipsed to &quot;Competition Finde…&quot;, while
+<code>Znajdź zawody</code> (133.6px) had 30px to spare. Below 430px the title is 19px on a
+6px bar gap, which leaves the English 6.7px of headroom and the Polish 41.1px,
+both on one line. The <strong>mark keeps its full 84px</strong> — it does not give up width
+for the title, for the reason below.</p>
 <p>There is <strong>no fullscreen control</strong>. One was built on the Fullscreen API, but §7
 already gives the element the whole viewport with no theme chrome around it, so
 the button had nothing left to add and read as a stray glyph beside the flags.</p>
@@ -199,8 +211,8 @@ resolution, <code>chrome=&quot;none&quot;</code>, view routing, the top row and 
 <p><strong>Changed</strong></p>
 <ul>
 <li><code>frontend/src/App.svelte</code> — <code>view</code>, <code>chrome</code>, <code>asset-base</code>; the embed bar
-(mark linked home, name, language toggle, fullscreen); the <code>activeEnv</code> and
-<code>init()</code> fixes.</li>
+(mark linked home, name, language toggle); the <code>activeEnv</code> and <code>init()</code>
+fixes; the phone-width rules for the title and the event card.</li>
 <li><code>frontend/src/ce/CalendarElement.svelte</code> — mock stub replaced by a mount of
 the real application; <code>:host</code> gives the element its viewport height.</li>
 <li><code>frontend/src/components/EventCard.svelte</code>, <code>Sidebar.svelte</code> — assets through
@@ -238,12 +250,15 @@ heading and widen the content area, it is a one-attribute change on the same
 page — but it is unmeasured until something uses it. <em>Recommendation:</em> ship
 on the default template, measure the alternative later if the width is
 wanted.</li>
-<li><strong>The menu item.</strong> Not created. WordPress stores a menu item's structure in
-protected <code>_menu_item_*</code> meta, which XML-RPC accepts on write but hides on
-read, so a menu item cannot be verified through the channel that creates it.
-<em>Recommendation:</em> create it in <code>wp-admin</code>, where it can be seen, or accept an
-unverified draft item on explicit instruction. The live menu is <code>nav_menu</code>
-term 33 (&quot;Moje menu&quot;); the LINKI parent is item 7128.</li>
+<li><strong>The menu item.</strong> Not created, and not creatable from here. WordPress stores
+a menu item's structure in protected <code>_menu_item_*</code> meta, which XML-RPC
+accepts on write but hides on read and does not apply, so the three items
+attempted on 2026-09-05 (13494, 13495, 13497) came out with no type, no
+object and no href, attached to no menu. All three were deleted the same day
+and the live menu verified clean — 7 items rendered, zero broken markers,
+LINKI (7128) intact. <em>Resolution:</em> it has to be built in <code>wp-admin</code>
+(Wygląd → Menu → &quot;Moje menu&quot;), adding the published page under LINKI. The
+live menu is <code>nav_menu</code> term 33; the LINKI parent is item 7128.</li>
 <li><strong>Step 2's placement and timing</strong> — the ranking and the calculator — depend
 on an SPWS Board decision expected in the week of 2026-09-08, and the
 calculator additionally on a DirectAdmin/FTP login not yet held. Neither
@@ -252,5 +267,5 @@ blocks this decision.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="089-event-weapons-and-card-header.html">← ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>352f6427b2bfd950c98b2210188ef6972eb904f72dff1835e0ee7a9bb24fdf08</code></footer>
+<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>887d49006c3b631bcbb28e7246a20f2c4a195f41547f93ca3ecb34863b96a84e</code></footer>
 </div></body></html>
