@@ -143,20 +143,13 @@ describe('WordPress embed — the top row', () => {
     expect(container.querySelector('.embed-bar')).toBeNull()
   })
 
-  // Fullscreen hides the site menu, so this mark is the only way back out.
-  it('links the SPWS mark to the association site', () => {
+  // The embed carries NO mark of its own. The page it lives on is presented
+  // full-screen with the theme's header, menu and footer removed, and a second
+  // SPWS logo directly under the site's own was redundant there.
+  it('carries no logo and no home link in the embed bar', () => {
     const { container } = render(App, { props: embedProps() })
-    const home = container.querySelector('.embed-bar a.embed-home') as HTMLAnchorElement
-    expect(home).not.toBeNull()
-    expect(home.getAttribute('href')).toBe('https://weteraniszermierki.pl')
-  })
-
-  it('resolves the embed mark through asset-base', () => {
-    const { container } = render(App, {
-      props: embedProps({ 'asset-base': 'https://spws.github.io/ranklist/' }),
-    })
-    const img = container.querySelector('.embed-bar a.embed-home img') as HTMLImageElement
-    expect(img.getAttribute('src')).toBe('https://spws.github.io/ranklist/SPWS-logo.png')
+    expect(container.querySelector('.embed-bar a.embed-home')).toBeNull()
+    expect(container.querySelector('.embed-bar img')).toBeNull()
   })
 
   // The embed has its own language toggle, so it names itself in ONE language
