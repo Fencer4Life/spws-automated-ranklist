@@ -162,21 +162,24 @@ describe('WordPress embed — the top row', () => {
     expect(img.getAttribute('src')).toBe('https://spws.github.io/ranklist/SPWS-logo.png')
   })
 
-  // The embed has its own language toggle, so it names itself in ONE language
-  // at a time — never the bilingual slash form the WordPress menu item uses.
-  it('names the page in Polish by default', () => {
+  // The page names itself bilingually in ONE string, matching the WordPress page
+  // and menu item: the site has no multilingual plugin and its menu is static
+  // text, so the name has to read for both audiences at once. Deliberately the
+  // same in both locales — the toggle switches the calendar, not the title.
+  const BILINGUAL_TITLE = 'Znajdź zawody / Competition Finder'
+
+  it('names the page bilingually in Polish', () => {
     const { container } = render(App, { props: embedProps() })
-    const title = container.querySelector('.embed-title')
-    expect(title?.textContent?.trim()).toBe('Znajdź zawody')
-    expect(title?.textContent).not.toContain('/')
+    expect(container.querySelector('.embed-title')?.textContent?.trim())
+      .toBe(BILINGUAL_TITLE)
   })
 
-  it('names the page in English once the language is switched', async () => {
+  it('keeps the same bilingual name in English', async () => {
     const { container } = render(App, { props: embedProps() })
     setLocale('en')
     await tick()
     expect(container.querySelector('.embed-title')?.textContent?.trim())
-      .toBe('Competition finder')
+      .toBe(BILINGUAL_TITLE)
   })
 
   it('carries the language toggle lifted out of the deleted header', () => {
