@@ -797,9 +797,16 @@
     margin-top: 9px;
   }
   .pl {
-    font-size: 11px;
+    /* Sized to hold its own label. At 11px with 4px/10px padding the Polish
+       labels ("Zapisz się", "Lista startowa") crowded the pill and could break
+       across lines inside it; `nowrap` keeps each label on one line and the
+       pill grows to fit rather than the text spilling. `.pills` already wraps,
+       so a pill that no longer fits the row moves down as a whole. */
+    font-size: 13px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 6px 13px;
+    line-height: 1.25;
+    white-space: nowrap;
     border-radius: 14px;
     border: 1px solid var(--accent, #185fa5);
     color: var(--accent, #185fa5);
