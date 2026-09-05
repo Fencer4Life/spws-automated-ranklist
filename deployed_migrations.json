@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-09-04T19:22:21Z",
-    "last_sha": "31b83bf9cf4fb09f3145b97845782046a7ad6903",
+    "last_updated": "2026-09-05T19:20:47Z",
+    "last_sha": "e5ccb327a200f212b8d024ea39d759eb1088b1b9",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -161,9 +161,10 @@
       "20260902000002_event_payment_details_write_paths.sql",
       "20260903000001_pzsz_organizer_and_event_id.sql",
       "20260904000001_event_weapons_from_code.sql",
-      "20260904000002_calendar_organizer_code.sql"
+      "20260904000002_calendar_organizer_code.sql",
+      "20260905000001_entry_fee_currency_from_organizer.sql"
     ],
-    "schema_fingerprint": "aa8521cb1a3f32f337c60ef70cfd6124"
+    "schema_fingerprint": "9eaf58e3429ec1ecce0f501cc72e6955"
   },
   "prod": {
     "last_updated": "2026-09-04T19:23:40Z",
