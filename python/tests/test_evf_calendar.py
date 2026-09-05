@@ -31,6 +31,8 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
+from python.scrapers.evf_calendar import parse_fee_and_currency
+
 FIXTURES = Path(__file__).parent / "fixtures"
 FIXTURE_PATH = FIXTURES / "evf_calendar.html"
 
@@ -2599,3 +2601,47 @@ class TestLocationContract:
         )
         by_name = {e["name"]: e for e in events}
         assert by_name["Levi Open (FIN)"]["location"] == ""
+
+
+# ---------------------------------------------------------------------------
+# evf.69–evf.72 — entry-fee currency parsing.
+#
+# EVF quotes its circuit fees in EUR. The scraper only ever recognised the
+# SYMBOLS (€ £ $) and left fee_currency = "" otherwise, so any listing written
+# as "50 EUR" fell through to tbl_event's column default — which is 'PLN'
+# (20260327000004_entry_fee_currency.sql:8). Nobody wrote PLN; the column did,
+# to 41 EVF events across 12 countries, none of them Poland.
+#
+# Same shape as the ADR-089 defect: a column with a non-null default is never
+# NULL, so nothing downstream can tell "unset" from "deliberately PLN".
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "cost_text,expected",
+    [
+        # Symbols — the behaviour that already worked, kept working.
+        ("€50", (50.0, "EUR")),
+        ("£45", (45.0, "GBP")),
+        ("$40", (40.0, "USD")),
+        ("€ 50.50", (50.5, "EUR")),
+        # ISO codes as words — what EVF actually writes, and what was missed.
+        ("50 EUR", (50.0, "EUR")),
+        ("EUR 50", (50.0, "EUR")),
+        ("50 eur", (50.0, "EUR")),
+        ("45 GBP", (45.0, "GBP")),
+        ("40 USD", (40.0, "USD")),
+        # An explicit PLN is still honoured — it must mean PLN, not "unset".
+        ("50 PLN", (50.0, "PLN")),
+        # Bare number: EVF prices in EUR, so EUR is the default rather than
+        # whatever the database column happens to default to.
+        ("50", (50.0, "EUR")),
+        ("Entry fee: 60", (60.0, "EUR")),
+        # Nothing parseable -> no fee and no currency claim at all.
+        ("", (None, "")),
+        ("free", (None, "")),
+        ("TBC", (None, "")),
+    ],
+)
+def test_parse_fee_and_currency(cost_text, expected):
+    assert parse_fee_and_currency(cost_text) == expected

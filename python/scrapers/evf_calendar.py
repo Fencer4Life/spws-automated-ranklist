@@ -411,6 +411,53 @@ def _tribe_event_end_date(article, dt_start: str) -> str:
     return start_text
 
 
+# EVF prices its circuit in EUR. Recognising only the SYMBOLS (€ £ $) meant a
+# listing written "50 EUR" — which is how EVF usually writes it — produced no
+# currency at all, and the row then took tbl_event's column default of 'PLN'
+# (20260327000004_entry_fee_currency.sql:8). That silently labelled 41 EVF
+# events across 12 countries, none of them Poland, as Polish złoty.
+#
+# Same shape as ADR-089: a column with a non-null default is never NULL, so
+# nothing downstream can distinguish "not set" from "deliberately PLN".
+#
+# Order matters. The symbol is checked first because it is unambiguous; the
+# ISO code second because EVF writes both forms; and a bare number falls to EUR
+# rather than to whatever the database happens to default to. An explicit PLN
+# is still honoured — if EVF ever quotes złoty, that is a real claim.
+_CURRENCY_SYMBOLS = (("€", "EUR"), ("£", "GBP"), ("$", "USD"))
+_CURRENCY_CODES = ("EUR", "GBP", "USD", "PLN", "CHF", "SEK", "NOK", "DKK", "CZK", "HUF")
+_FEE_RE = re.compile(r"(\d+(?:[.,]\d+)?)")
+
+
+def parse_fee_and_currency(cost_text: str) -> tuple[float | None, str]:
+    """Pull an entry fee and its currency out of an EVF cost string.
+
+    Returns ``(fee, currency)``. ``(None, "")`` when there is no number to read —
+    "free", "TBC" and an empty cell all mean "we do not know", and must not be
+    turned into a fee of zero or a currency claim.
+    """
+    text = (cost_text or "").strip()
+    if not text:
+        return None, ""
+
+    match = _FEE_RE.search(text)
+    if not match:
+        return None, ""
+    fee = float(match.group(1).replace(",", "."))
+
+    for symbol, code in _CURRENCY_SYMBOLS:
+        if symbol in text:
+            return fee, code
+
+    upper = text.upper()
+    for code in _CURRENCY_CODES:
+        if re.search(rf"\b{code}\b", upper):
+            return fee, code
+
+    # A number with no currency marker at all: EVF quotes EUR.
+    return fee, "EUR"
+
+
 def parse_evf_calendar_html(html: str) -> list[dict]:
     """Parse veteransfencing.eu/calendar/ HTML into event dicts.
 
@@ -465,19 +512,7 @@ def parse_evf_calendar_html(html: str) -> list[dict]:
         is_team = "team" in name.lower()
 
         cost_el = article.select_one(".tribe-events-calendar-list__event-cost")
-        fee = None
-        fee_currency = ""
-        if cost_el:
-            cost_text = cost_el.get_text().strip()
-            fee_match = re.search(r"[€$£]?\s*(\d+(?:\.\d+)?)", cost_text)
-            if fee_match:
-                fee = float(fee_match.group(1))
-                if "€" in cost_text:
-                    fee_currency = "EUR"
-                elif "£" in cost_text:
-                    fee_currency = "GBP"
-                elif "$" in cost_text:
-                    fee_currency = "USD"
+        fee, fee_currency = parse_fee_and_currency(cost_el.get_text() if cost_el else "")
 
         # The city is resolved here, once, rather than guessed at render time.
         # EVF's own event naming is the best evidence: it is the editorial choice
