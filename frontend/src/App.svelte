@@ -1440,6 +1440,12 @@
      phone's collapsing address bar does not crop the last row. */
   .ranklist-app.embedded {
     max-width: none;
+    /* The event card's entry animation is a perspective rotateX, and while it
+       plays the card's bounding box is a few px wider than its container. On a
+       phone that briefly spilled sideways and made the card's right border look
+       cut off. The overflow is transient and purely decorative, so clip it
+       rather than reserve permanent width for it. */
+    overflow-x: hidden;
     /* Fills the host, which owns the viewport height (see CalendarElement's
        :host rule). */
     height: 100%;
@@ -1505,13 +1511,23 @@
   }
   /* A 375px phone leaves the title barely 110px between the mark and the two
      controls, which clipped it to "Znajdź z…". Buy the width back from the
-     things around it rather than letting the page name go unreadable. */
+     things around it rather than letting the page name go unreadable.
+
+     The ENGLISH name is the binding case, not the Polish one. At 20px
+     "Competition Finder" measures 167.2px against a 164px box and ellipsed to
+     "Competition Finde…", while "Znajdź zawody" (133.6px) had 30px to spare.
+     19px plus a 6px bar gap gives the English 6.7px of headroom and the Polish
+     41.1px, both on one line, with the SPWS mark left at its full 84px. */
   @media (max-width: 430px) {
+    .ranklist-app.embedded {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
     .embed-bar {
-      gap: 8px;
+      gap: 6px;
     }
     .embed-title {
-      font-size: 20px;
+      font-size: 19px;
     }
     .embed-logo {
       height: 19px;

@@ -176,7 +176,7 @@ describe('WordPress embed — the top row', () => {
     setLocale('en')
     await tick()
     expect(container.querySelector('.embed-title')?.textContent?.trim())
-      .toBe('Competition finder')
+      .toBe('Competition Finder')
   })
 
   it('carries the language toggle lifted out of the deleted header', () => {
