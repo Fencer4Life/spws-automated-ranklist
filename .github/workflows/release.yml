@@ -116,6 +116,27 @@ jobs:
           ! grep -r '127.0.0.1' frontend/dist/
           ! grep -r 'supabase-demo' frontend/dist/
 
+      # PROD deployment step 1 — the WordPress page at
+      # weteraniszermierki.pl/znajdz-zawody/ hard-codes this exact URL:
+      #   https://fencer4life.github.io/spws-automated-ranklist/assets/main.ce.js
+      # It is the one file on Pages whose NAME is part of another system's
+      # configuration, so a rename does not fail here — it fails silently, on a
+      # live page on the association's website, whenever someone next looks at
+      # it. vite.config.ce.ts pins the name via output.entryFileNames; this
+      # guard makes a regression (a Vite upgrade restoring content hashes, or
+      # that option being dropped) fail the release instead.
+      - name: Verify the embedded bundle keeps its stable name
+        run: |
+          test -f frontend/dist/assets/main.ce.js \
+            || { echo "::error::frontend/dist/assets/main.ce.js is missing — the WordPress embed at /znajdz-zawody/ points at this exact path. Check output.entryFileNames in frontend/vite.config.ce.ts."; \
+                 echo "assets/ contains:"; ls -1 frontend/dist/assets/; exit 1; }
+          # A hashed sibling means the stable file is a leftover, not the build.
+          if ls frontend/dist/assets/ | grep -qE '^main\.ce-[A-Za-z0-9_-]+\.js$'; then
+            echo "::error::a content-hashed main.ce-<hash>.js was emitted alongside the stable name — the embed would load a stale bundle."
+            ls -1 frontend/dist/assets/
+            exit 1
+          fi
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

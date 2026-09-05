@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROD deployment — steps 2–4 verified</title>
+<style>
+
+
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.mkframe{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin:14px 0 4px;overflow-x:auto}
+.mkframe svg{display:block;width:100%;min-width:660px;height:auto}
+.figcap{font-size:13px;color:var(--muted);margin:0 0 22px;max-width:84ch}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+
+.prompt{background:var(--card);border:2px solid var(--green);border-radius:8px;padding:18px 20px;margin:14px 0 22px}
+.prompt .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--green);font-weight:700;display:block;margin-bottom:9px}
+.prompt pre{border-left-color:var(--green);margin:0;max-width:none;white-space:pre-wrap}
+</style></head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · PROD deployment · steps 2–4 verified · 5 September 2026</div>
+  <h1>The embed survives WordPress untouched. PROD is green and its calendar data is sound.</h1>
+  <p class="dek">Three read-only gates from the approved plan are now measured rather than assumed.
+  Nothing has been published, and no application code has been changed yet. One decision below is
+  yours before the page is created; it does not block the code.</p>
+  <div class="chips">
+    <span class="chip good">step 2 — filter passed</span>
+    <span class="chip good">step 3 — posture green</span>
+    <span class="chip good">step 4 — data sound</span>
+    <span class="chip warn">1 decision for you</span>
+    <span class="chip bad">nothing published</span>
+  </div>
+</div>
+
+<div class="toc">
+<ol>
+  <li><a href="#s2">Step 2 — the content filter</a></li>
+  <li><a href="#render">What rendering does to it</a></li>
+  <li><a href="#s3">Step 3 — PROD security posture</a></li>
+  <li><a href="#s4">Step 4 — PROD calendar data</a></li>
+  <li><a href="#decide">The decision I need from you</a></li>
+  <li><a href="#side">Three side findings</a></li>
+  <li><a href="#next">What happens next</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<h2 id="s2"><span class="num">01</span>Step 2 — the content filter</h2>
+<p class="sub">The blocking question was whether WordPress would strip the embed on save. It does not.</p>
+
+<div class="call good">
+  <span class="lb">Result — passed, byte-identical</span>
+  A draft page was created over XML-RPC carrying the full embed, then read back. The stored content
+  is <b class="k">byte-for-byte identical</b> to what was sent: 397 characters out, 397 back.
+  The administrator holds <code>unfiltered_html</code>, exactly as the single-site install predicted.
+</div>
+
+<p>Each construct the real embed needs was checked as a separate marker, so a partial strip could not
+hide behind an overall pass:</p>
+
+<div class="tw"><table>
+<tr><th>Marker</th><th>Why it was at risk</th><th>Result</th></tr>
+<tr><td class="d">&lt;spws-calendar&gt;</td><td>Unknown tag — the first thing <code>wp_kses_post</code> removes</td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">asset-base="…"</td><td>Hyphenated custom attribute on an unknown tag</td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">&lt;/spws-calendar&gt;</td><td>Closing tag can be dropped independently of the opener</td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">&lt;script src&gt;</td><td>Stripped for any user without <code>unfiltered_html</code></td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">type="module"</td><td>Attribute filtering on script elements</td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">inline &lt;script&gt;</td><td>The most commonly stripped construct of all</td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">style="height:100vh"</td><td>Inline style attributes are frequently sanitised</td><td><span class="st s-ok">kept</span></td></tr>
+<tr><td class="d">&lt;div class&gt;</td><td>Control — proves the probe itself was sound</td><td><span class="st s-ok">kept</span></td></tr>
+</table></div>
+
+<div class="call good">
+  <span class="lb">Consequence — a dependency just disappeared</span>
+  The plan's fallback was a <code>wp-content/mu-plugins/</code> file, which needs the DirectAdmin
+  login nobody holds. <b class="k">That fallback is not needed.</b> Step 1 no longer depends on
+  DirectAdmin, FTP, or open question A in any way.
+</div>
+
+<h2 id="render"><span class="num">02</span>What rendering does to it</h2>
+<p class="sub">The plan named the save-time filter. There is a second filter at render time, and it
+behaves differently — worth knowing now rather than discovering on the live page.</p>
+
+<p>WordPress filters content at two separate moments. Saving runs <code>wp_kses_post</code>, which is
+what step 2 tested and passed. Displaying runs <code>wpautop</code>, which inserts paragraph and line
+breaks. A draft cannot be rendered without a login session, so instead I compared three
+<em>published</em> pages' stored content against their live HTML. That measures the real pipeline
+without publishing anything.</p>
+
+<div class="tw"><table>
+<tr><th>Stored</th><th>Rendered</th><th>Reading</th></tr>
+<tr><td>bare text line</td><td><code>&lt;p&gt;</code>-wrapped</td><td><code>wpautop</code> is active on this theme</td></tr>
+<tr><td>newline inside a <code>&lt;div&gt;</code></td><td><code>&lt;br /&gt;</code> inserted</td><td>it rewrites inside elements too</td></tr>
+<tr><td>top-level <code>&lt;img&gt;</code></td><td><code>&lt;p&gt;</code>-wrapped</td><td>non-block elements get wrapped</td></tr>
+<tr><td>top-level <code>&lt;div&gt;</code></td><td>untouched</td><td><code>div</code> is a known block — passes through</td></tr>
+</table></div>
+
+<div class="call warn">
+  <span class="lb">Consequence for the embed</span>
+  <code>spws-calendar</code> is not a tag <code>wpautop</code> recognises, so on its own line it would
+  be wrapped in a <code>&lt;p&gt;</code> — which constrains a full-viewport-height element.
+  The fix costs nothing: <b class="k">wrap the embed in a plain <code>&lt;div&gt;</code></b>, which the
+  measurements above show passes through untouched. That is how the page will be built. It is
+  confirmed on the live page before the menu item points anywhere.
+</div>
+
+<h2 id="s3"><span class="num">03</span>Step 3 — PROD security posture</h2>
+<p class="sub">Proven now, against the actual deployed database — not as of the last deploy.</p>
+
+<pre><code>=== ADR-083 security posture: PROD ===
+  PASS: tables in public with RLS disabled = 0
+  PASS: tables where anon holds INSERT/UPDATE/DELETE/TRUNCATE = 0
+  PASS: anon SELECT on vw_fencer_aliases = 0
+  PASS: default privileges granted to anon/authenticated by postgres = 0
+  PASS: anon-EXECUTEable functions outside the 52.7 allowlist = ''
+
+Security posture OK — deny-by-default holds.</code></pre>
+
+<p>All five ADR-083 assertions hold on <code>spws-ranklist-prod</code>. The plan's §09 analysis stands
+unchanged: publishing the anon key on the association's own site widens nothing, because the key's
+blast radius is set by the grants, and the grants are clean.</p>
+
+<h2 id="s4"><span class="num">04</span>Step 4 — PROD calendar data</h2>
+<p class="sub">Read-only through <code>scripts/cloud-sql.sh</code>. The plan asked for the three known
+CERT defect classes to be checked here, because on this site they would be public.</p>
+
+<div class="tw"><table>
+<tr><th>What was measured</th><th>PROD</th></tr>
+<tr><td>Calendar rows</td><td class="d">120, across 4 seasons (2022-01-08 → 2027-06-18)</td></tr>
+<tr><td>Current season 2026-2027</td><td class="d">49 rows, 26 of them upcoming</td></tr>
+<tr><td><code>arr_weapons</code> empty</td><td><span class="st s-ok">0 rows</span> — the CERT defect is absent here</td></tr>
+<tr><td>Venue text in the city field</td><td><span class="st s-ok">0 rows</span></td></tr>
+<tr><td>Free-text country</td><td><span class="st s-ok">0 rows</span></td></tr>
+<tr><td>One competition split across rows</td><td><span class="st s-ok">not present</span> — one 2024 same-day épée/sabre pair, which is normal</td></tr>
+</table></div>
+
+<h3>The one thing that looked like a defect, and is not</h3>
+<p>23 rows in the current season carry no date, no real name (the name simply repeats the code) and
+status <code>CREATED</code> — for example <code>PEW63e-2026-2027</code>. On a public page that would
+read as 23 lines of noise.</p>
+
+<div class="call good">
+  <span class="lb">Already handled, by design</span>
+  These are dated-later planning skeletons under <b class="k">ADR-077</b>, and the frontend hides them
+  in two independent places: <code>calendarMonths.ts:258</code> drops any event without a
+  <code>dt_start</code>, and <code>calendarMonths.ts:549</code> filters
+  <code>enum_status !== 'CREATED'</code> outright. Both run in the calendar's own view-model builder
+  and both are covered by tests. <b class="k">No code change and no data repair is needed.</b>
+</div>
+
+<p>So the plan's instruction to report defects rather than fix them ends with nothing to report:
+PROD's calendar data is in better shape than CERT's.</p>
+
+<h2 id="decide"><span class="num">05</span>The decision I need from you</h2>
+<p class="sub">This affects how the page is created at the end of step 1. It does not block the code,
+which I am starting now.</p>
+
+<div class="call warn">
+  <span class="lb">The theme prints its own page heading</span>
+  The plan locked <em>“no H1 and no intro paragraph”</em> — vertical space belongs to the drum. But the
+  heading on these pages is printed by the <b class="k">theme</b>, not by the page content:
+  every page renders <code>&lt;h1 class="entry-title"&gt;</code> above the content area. Removing the
+  content H1 does not remove that one.
+</div>
+
+<p>The theme offers page templates that no page on the site currently uses — all 39 published pages
+run the default. The relevant ones are <code>Redux pełna szerokość</code> (full width) and
+<code>Redux płótno</code> (canvas). Because nothing uses them, I cannot read what they do without
+creating a page that uses one.</p>
+
+<div class="tw"><table>
+<tr><th>Option</th><th>What you would get</th><th>Cost</th></tr>
+<tr><td class="d">A · Default template<br>(recommended)</td><td>Site header and menu exactly as the mock shows. The theme's H1 “Znajdź zawody” sits above the embed — one line of duplicated naming.</td><td>None. Known-good: every page on the site renders this way.</td></tr>
+<tr><td class="d">B · Redux pełna szerokość</td><td>Probably drops the content container and possibly the H1, giving the drum more width.</td><td>Unmeasured. No page uses it, so its behaviour is discovered on the live page.</td></tr>
+<tr><td class="d">C · Redux płótno (canvas)</td><td>A bare page with no theme chrome at all.</td><td><b class="k">Contradicts the plan</b> — the mock deliberately keeps the site's header and menu around the embed.</td></tr>
+</table></div>
+
+<div class="call">
+  <span class="lb">My recommendation — A, with a measurement</span>
+  Create the draft on the <b class="k">default template</b>, which is the only known-good option and
+  matches the mock. When you review the draft, we will both see whether the theme's H1 is actually a
+  problem in context — it may read as a perfectly natural page title. If it bothers you, B is a
+  one-attribute change on the same page, and by then we can measure it instead of guessing.
+  <b class="k">Option C is not recommended</b>: it would remove the site header and menu the mock relies on.
+</div>
+
+<h2 id="side"><span class="num">06</span>Three side findings</h2>
+
+<h3>1 · A draft probe page now exists on the site</h3>
+<p>The filter test needed a real page. <b class="k">Page 13469</b>, slug
+<code>spws-embed-filter-probe</code>, titled “SPWS — próba filtra treści (robocza, do usunięcia)”,
+exists as a <b class="k">draft</b>. It is not published, not in any menu, and carries only placeholder
+values — no real key was ever sent to WordPress. I have not deleted it, because deleting things on your
+live site is your call. <b class="k">Say the word and I will remove it</b>, or you can bin it from
+Pages → Szkice.</p>
+
+<h3>2 · Two project refs were missing from <code>.env</code></h3>
+<p>Steps 3 and 4 need <code>SUPABASE_PROD_REF</code>, which <code>cloud-sql.sh</code> documents as
+living in <code>.env</code>. Neither ref was there, so both checks failed at the first hurdle. I
+resolved them from <code>supabase projects list</code> and appended
+<code>SUPABASE_CERT_REF</code> and <code>SUPABASE_PROD_REF</code>. These are not secrets — they ship
+inside the public frontend bundle. <code>.env</code> remains gitignored and the worktree is clean.</p>
+
+<h3>3 · A bug in the <code>cloud-sql.sh</code> safety gate</h3>
+<p>A plain <code>SELECT</code> was sent to the write-confirmation gate. The cause is at
+<code>scripts/cloud-sql.sh:96</code>:</p>
+<pre><code>sed -E 's@--[^\n]*@ @g'</code></pre>
+<p><code>sed</code> has no <code>\n</code> escape inside a bracket expression, so <code>[^\n]</code>
+means <em>“not a backslash and not the letter n”</em>. Any leading SQL comment containing an
+<code>n</code> — most comments — truncates the strip, and the first-word detection then misreads the
+statement. It fails <em>safe</em>, so nothing dangerous happens; it just blocks read-only queries that
+open with a comment. This is the same defect class the script's own comment records having fixed once
+before. Worth a one-line fix, but it is outside this plan's scope, so I have not touched it.</p>
+
+<h2 id="next"><span class="num">07</span>What happens next</h2>
+<p class="sub">Steps 5 onward are the code. I am starting them now; none depend on the decision above.</p>
+
+<ol class="steps">
+  <li><b class="k">Element interface, TDD.</b> <code>view</code> and <code>chrome</code> on
+      <code>App.svelte</code>; <code>CalendarElement.svelte</code> rewired from its mock stub to mount
+      the real application; credential, <code>lang</code> and <code>asset-base</code> attributes;
+      <code>?admin=1</code> suppressed. Failing test first.</li>
+  <li><b class="k">The top row.</b> SPWS mark linked home, page name in the active language, language
+      toggle, fullscreen button.</li>
+  <li><b class="k">Asset paths and the drawer link</b>, plus extending the release guards.</li>
+  <li><b class="k">Publish the bundle</b> at a stable name through <code>release.yml</code>.</li>
+  <li><b class="k">Browser verification</b> before the live site sees anything — including the real
+      gzipped size, which answers open question C.</li>
+  <li><b class="k">Create the page and menu item as a draft</b>, then stop and show you.</li>
+</ol>
+
+<div class="call stop">
+  <span class="lb">Standing rule</span>
+  Nothing becomes public without your explicit say-so for that specific page.
+  <code>/kalendarz-2/</code> and <code>/klasyfikacja/</code> are not touched.
+</div>
+
+</div>
+
+<footer>
+SPWS Automated Ranklist System · PROD deployment, steps 2–4 verified · 5 September 2026.
+Plan: <code>doc/plans/prod-deployment-wordpress-2026-09-05.html</code> ·
+handover: <code>doc/plans/prod-deployment-handover-2026-09-05.html</code>.
+Measured against <code>spws-ranklist-prod</code> and <code>weteraniszermierki.pl</code>.
+No application code changed yet; nothing published.
+</footer>
+
+</div>
+</body>
+</html>

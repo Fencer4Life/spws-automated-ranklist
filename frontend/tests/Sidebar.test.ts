@@ -173,3 +173,16 @@ describe('Sidebar (T8.4)', () => {
     expect(adminSection).toBeNull()
   })
 })
+
+// PROD deployment step 1 — the Pages copy of the app has no other route back to
+// the association's site, so the drawer's mark becomes that route.
+// Plan: doc/plans/prod-deployment-wordpress-2026-09-05.html §03.
+describe('Sidebar — the way back to the association site', () => {
+  it('wraps the SPWS mark in a link home', () => {
+    const { container } = render(Sidebar, { props: { open: true, currentView: 'ranklist' } })
+    const link = container.querySelector('.sidebar-brand a') as HTMLAnchorElement
+    expect(link).not.toBeNull()
+    expect(link.getAttribute('href')).toBe('https://weteraniszermierki.pl')
+    expect(link.querySelector('img.sidebar-logo')).not.toBeNull()
+  })
+})
