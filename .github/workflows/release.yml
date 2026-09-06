@@ -37,7 +37,14 @@ jobs:
       # --- Schema fingerprint from LOCAL Docker Supabase ---
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned, not `latest`. `latest` makes the action resolve the version
+          # through the GitHub releases API on every job, unauthenticated, and
+          # that lookup is rate-limited: it failed deploy-cert and then
+          # deploy-prod within one evening on 2026-09-05, each time needing a
+          # manual re-run of a job that had nothing wrong with it. 2.116.0 is
+          # what `latest` was already resolving to on the green runs, so this
+          # freezes current behaviour rather than changing it.
+          version: 2.116.0
 
       - name: Start Supabase local stack
         run: supabase start
@@ -196,7 +203,9 @@ jobs:
       # the function on each deploy. Function source: supabase/functions/.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned for the same reason as the build job above: `latest` costs a
+          # rate-limited GitHub API lookup per job. Keep all three in step.
+          version: 2.116.0
       - name: Deploy Edge Functions to CERT
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -319,7 +328,9 @@ jobs:
       # ADR-041: deploy Edge Functions to PROD.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned for the same reason as the build job above: `latest` costs a
+          # rate-limited GitHub API lookup per job. Keep all three in step.
+          version: 2.116.0
       - name: Deploy Edge Functions to PROD
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
