@@ -7,7 +7,7 @@
 // Plan: doc/plans/kalendarz-barrel-2026-08-08.html §06.
 // Tests: frontend/tests/calendarMonths.test.ts (CQ.1–CQ.69).
 
-import type { CalendarEvent } from './types'
+import type { CalendarEvent, WeaponType } from './types'
 
 /**
  * Four buckets, ported from `slotTypeClass()` (CalendarView.svelte:241-246)
@@ -1007,15 +1007,48 @@ export function isRegistrationOpen(
 }
 
 
+/**
+ * Keep events that run at least one of the selected weapons.
+ *
+ * The event's weapons live in `arr_weapons` — an ARRAY of EPEE/FOIL/SABRE, not
+ * three boolean columns — so membership is one set overlap.
+ *
+ * Selecting every weapon is a no-op rather than a filter, which matters
+ * because it is the default: an event whose `arr_weapons` is empty or null
+ * would otherwise vanish from an unfiltered calendar. Once the reader has
+ * actually narrowed the selection, an event with no recorded weapons matches
+ * nothing — there is no evidence it runs the weapon being asked for, and
+ * guessing yes would put épée events in a sabre-only view.
+ *
+ * Note this thins the EVF circuit far more than the domestic calendar: PPW,
+ * MPW, GP, IMEW, IMSW, MSW, DMEW and VFC legitimately run all three weapons
+ * (ADR-089), so they match every possible selection. That is correct, not a
+ * leak — a Polish championship really is an épée, foil AND sabre competition.
+ */
+export function filterByWeapons(
+  events: CalendarEvent[],
+  selected: readonly WeaponType[],
+): CalendarEvent[] {
+  if (selected.length === 0 || selected.length >= 3) return events.slice()
+  return events.filter((e) => (e.arr_weapons ?? []).some((w) => selected.includes(w)))
+}
+
 /** The single call the orchestrator makes: filter, bucket, ring, anchor. */
 export function buildCalendar(options: {
   events: CalendarEvent[]
   today?: string
   scope: CalendarScope
   showEvfToggle: boolean
+  weapons?: readonly WeaponType[]
 }): CalendarModel {
   const today = options.today ?? todayIso()
-  const scoped = filterByScope(visibleEvents(options.events, today), options.scope, options.showEvfToggle)
+  // Weapons filter BEFORE the ring and the anchor are derived. Both must come
+  // from the set actually on screen, or the drum rings an event the filter has
+  // hidden and opens on a row that is no longer there.
+  const scoped = filterByWeapons(
+    filterByScope(visibleEvents(options.events, today), options.scope, options.showEvfToggle),
+    options.weapons ?? [],
+  )
   const rows = buildMonths(scoped)
   const nextUpcoming = findNextUpcoming(scoped, today)
   return { rows, nextUpcoming, anchorIndex: resolveAnchorRow(rows, nextUpcoming, today) }

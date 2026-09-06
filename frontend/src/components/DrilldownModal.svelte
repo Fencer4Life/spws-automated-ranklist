@@ -26,13 +26,13 @@
                 class="toggle-btn"
                 class:active={mode === 'PPW'}
                 onclick={() => setMode('PPW')}
-              >PPW</button>
+              >SPWS</button>
               <button
                 class="toggle-btn"
                 class:active={mode === 'KADRA'}
                 disabled={kadraDisabled}
                 onclick={() => setMode('KADRA')}
-              >+EVF</button>
+              >EVF+</button>
             </div>
           {/if}
           <button class="btn-export-sub" title={t('export_to_ods')} onclick={handleExport}>&#9113;</button>

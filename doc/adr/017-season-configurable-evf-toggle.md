@@ -2,7 +2,18 @@
 
 **Status:** Accepted
 **Date:** 2026-03-29 (M9)
-**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (records the Calendar's own toggle field and the data constraint it carries).
+**Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (records the Calendar's own toggle field and the data constraint it carries; §K renames the control to `SPWS | EVF+` across all three surfaces).
+
+## Amendment (2026-09-06 — the toggle is labelled `SPWS | EVF+`)
+
+The three toggles this ADR describes are now labelled **`SPWS` / `EVF+`**, not
+`PPW` / `+EVF`. The behaviour, the flag and the mode values are unchanged — the
+internal modes are still `PPW` and `KADRA`, which are data — and all three
+surfaces were renamed together (`FilterBar`, `DrilldownModal`, the calendar
+footer) so the same control cannot read two ways on two screens. The prose below
+keeps the original labels as the historical record; see
+[ADR-084](084-calendar-quarter-barrel-event-card.md) §K for the rename and the
+weapon filter it shipped beside.
 
 ## Amendment (2026-08-09 — the Calendar's toggle is a separate field)
 

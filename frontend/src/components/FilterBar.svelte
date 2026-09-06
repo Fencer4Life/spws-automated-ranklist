@@ -46,14 +46,14 @@
             class="toggle-btn"
             class:active={mode === 'PPW'}
             onclick={() => setMode('PPW')}
-          >PPW</button>
+          >SPWS</button>
           <button
             class="toggle-btn"
             class:active={mode === 'KADRA'}
             disabled={category === 'V0'}
             title={category === 'V0' ? t('kadra_disabled_title') : t('kadra_title')}
             onclick={() => setMode('KADRA')}
-          >+EVF</button>
+          >EVF+</button>
         </div>
       </div>
     {/if}

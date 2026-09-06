@@ -167,7 +167,7 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
     expect(panels(container).length).toBe(5)
     const evf = [...container.querySelectorAll('.scope-filter-btn')]
-      .find((b) => b.textContent?.trim() === '+EVF')
+      .find((b) => b.textContent?.trim() === 'EVF+')
     expect(evf!.classList.contains('active')).toBe(true)
   })
 
@@ -182,7 +182,7 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     expect(panels(container).length).toBe(5)
 
     const ppw = [...container.querySelectorAll('.scope-filter-btn')]
-      .find((b) => b.textContent?.trim() === 'PPW')!
+      .find((b) => b.textContent?.trim() === 'SPWS')!
     await fireEvent.click(ppw)
 
     expect(panels(container).length).toBe(3)
@@ -220,7 +220,7 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     expect(cardName(container)).toBe('EVF Wieden')
 
     const ppw = [...container.querySelectorAll('.scope-filter-btn')]
-      .find((b) => b.textContent?.trim() === 'PPW')!
+      .find((b) => b.textContent?.trim() === 'SPWS')!
     await fireEvent.click(ppw)
 
     expect(cardName(container)).toBe('Puchar Gdansk')
@@ -236,16 +236,19 @@ describe('CalendarView orchestrator (ADR-084)', () => {
   // it, so dropping the env toggle fails only at runtime.
   it('CV.11: shows the CERT/PROD toggle only when dualEnv is set', () => {
     const off = render(CalendarView, { props: { events: EVENTS } })
-    expect(off.container.querySelector('.calendar-footer')).toBeNull()
+    // The footer itself now survives both flags being off, because the weapon
+    // chips live in it and are always available. Only the env segment is gated.
+    expect(off.container.querySelector('.env-toggle')).toBeNull()
 
     const on = render(CalendarView, { props: { events: EVENTS, dualEnv: true } })
     const btns = on.container.querySelectorAll('.env-btn')
     expect([...btns].map((b) => b.textContent?.trim())).toEqual(['CT', 'PD'])
   })
 
-  // CV.11b — both segments share one footer row, scope first. Pinned because
-  // the ordering is the requirement, not an accident of markup order.
-  it('CV.11b: puts the scope segment left of the env toggle in one footer row', () => {
+  // CV.11b — all three segments share one footer row, in this order. Pinned
+  // because the ordering is the requirement, not an accident of markup order:
+  // weapons read left-to-right into the scope they apply to.
+  it('CV.11b: puts weapons, then scope, then the env toggle in one footer row', () => {
     const { container } = render(CalendarView, {
       props: { events: EVENTS, showEvfToggle: true, dualEnv: true },
     })
@@ -253,7 +256,7 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     expect(footer).not.toBeNull()
     // Svelte appends a scoped-style hash to className, so compare first tokens.
     const kids = [...footer.children].map((e) => e.classList[0])
-    expect(kids).toEqual(['scope-filters', 'env-toggle'])
+    expect(kids).toEqual(['weapon-filters', 'scope-filters', 'env-toggle'])
     // and the scope segment still renders without the env toggle
     const scopeOnly = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
     expect(scopeOnly.container.querySelectorAll('.scope-filter-btn').length).toBe(2)
@@ -301,5 +304,94 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     await fireEvent.click(container.querySelector('.modal-overlay') as HTMLElement)
     expect(container.querySelector('.modal-overlay')).toBeNull()
     expect(container.querySelector('.card')).not.toBeNull()
+  })
+})
+
+describe('CalendarView weapon filter', () => {
+  const chips = (c: HTMLElement) => [...c.querySelectorAll('.weapon-btn')] as HTMLElement[]
+  const on = (c: HTMLElement) =>
+    chips(c).filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent!.trim())
+
+  // CV.W1 — the drum opens as the whole season; narrowing is a deliberate act.
+  it('CV.W1: renders three chips, all selected by default', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(chips(container).length).toBe(3)
+    expect(on(container).length).toBe(3)
+  })
+
+  it('CV.W2: a chip toggles off and back on', async () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    await fireEvent.click(chips(container)[0]!)
+    expect(on(container).length).toBe(2)
+    await fireEvent.click(chips(container)[0]!)
+    expect(on(container).length).toBe(3)
+  })
+
+  /**
+   * CV.W3 — the last chip cannot be turned off.
+   *
+   * Zero-means-all was rejected: it gives an empty-looking control a second
+   * hidden meaning, and an unexplained empty calendar is the worse failure of
+   * the two when the reader does not know the rule.
+   */
+  it('CV.W3: refuses to deselect the last remaining weapon', async () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    await fireEvent.click(chips(container)[0]!)
+    await fireEvent.click(chips(container)[1]!)
+    expect(on(container).length).toBe(1)
+    await fireEvent.click(chips(container)[2]!)
+    expect(on(container).length).toBe(1)
+  })
+
+  // CV.W4 — chips stay in weapon order however they are toggled, so they never
+  // reshuffle under the reader's finger.
+  it('CV.W4: chip order is stable across toggles', async () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    const before = chips(container).map((b) => b.textContent!.trim())
+    await fireEvent.click(chips(container)[0]!)
+    await fireEvent.click(chips(container)[0]!)
+    expect(chips(container).map((b) => b.textContent!.trim())).toEqual(before)
+  })
+
+  // CV.W5 — the chips appear even without the EVF flag; they are not part of
+  // the scope segment, which the season config gates.
+  it('CV.W5: chips render even when the scope segment is hidden', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS } })
+    expect(container.querySelectorAll('.scope-filter-btn').length).toBe(0)
+    expect(chips(container).length).toBe(3)
+  })
+
+  /**
+   * CV.W7 — the three values that make the Polish footer fit on one row.
+   *
+   * Measured on a 375px viewport: usable width 339px, and the row comes to
+   * 317px with 22px to spare. In Polish the glyphs are only ~113px of the chip
+   * row and padding was ~72px, so the fit was bought by trimming the chips'
+   * horizontal padding to 8px — NOT by shrinking the type, which stays at
+   * 13px/600 like every other control in that row.
+   *
+   * This is pinned because the regression is invisible in English: `Epee /
+   * Foil / Sabre` leave ~54px of slack where `Szpada / Floret / Szabla` leave
+   * 22px, so raising the padding back to its neighbours' 12px, or the weight
+   * past 600, wraps Polish while English still looks correct.
+   *
+   * jsdom has no layout engine — it cannot measure the wrap — but it does
+   * resolve these declarations, so pinning the inputs is the guard that is
+   * actually available here.
+   */
+  it('CV.W7: chip type and padding stay at the values that fit Polish', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    const cs = getComputedStyle(container.querySelector('.weapon-btn')!)
+    expect(cs.fontSize).toBe('13px')
+    expect(cs.fontWeight).toBe('600')
+    expect(cs.paddingLeft).toBe('8px')
+    expect(cs.paddingRight).toBe('8px')
+  })
+
+  // CV.W6 — the relabelled scope control.
+  it('CV.W6: the scope segment reads SPWS / EVF+', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect([...container.querySelectorAll('.scope-filter-btn')].map((b) => b.textContent!.trim()))
+      .toEqual(['SPWS', 'EVF+'])
   })
 })

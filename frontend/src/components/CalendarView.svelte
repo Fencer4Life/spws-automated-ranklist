@@ -22,20 +22,46 @@
        the right. The env toggle is ADR-009's and retires with the WordPress
        migration; `activeEnv` is $bindable and App.svelte re-points the Supabase
        client from it. -->
-  {#if showEvfToggle || dualEnv}
+  {#if hasEvents || showEvfToggle || dualEnv}
     <div class="calendar-footer">
+      <!-- Weapon chips share the row with the scope control. They carry the
+           event card's own pill colours, so a chip here and a pill there mean
+           the same weapon.
+
+           Type is 13px/600, matching every other control in this row. Fitting
+           three Polish words plus the scope toggle into 339px was solved by
+           trimming the chips' horizontal PADDING to 8px, not by shrinking the
+           type: in Polish the glyphs are only 113px of the row, and padding was
+           72px of it. Shrinking the font would have saved less and left a
+           lighter weight for someone to "correct" later, breaking Polish while
+           English still looked right. -->
+      <div class="weapon-filters">
+        {#each WEAPON_ORDER as weapon}
+          {@const letter = WEAPON_LETTER[weapon]}
+          {@const on = weapons.includes(weapon)}
+          <button
+            class="weapon-btn"
+            type="button"
+            aria-pressed={on}
+            style:background={on ? WEAPON_COLOR[letter].bg : 'transparent'}
+            style:color={on ? WEAPON_COLOR[letter].fg : 'var(--text-muted, #8a887f)'}
+            style:border-color={on ? 'transparent' : 'var(--border, rgba(0, 0, 0, 0.13))'}
+            onclick={() => toggleWeapon(weapon)}
+          >{t(WEAPON_KEY[letter])}</button>
+        {/each}
+      </div>
       {#if showEvfToggle}
         <div class="scope-filters">
           <button
             class="scope-filter-btn"
             class:active={scopeFilter === 'ppw'}
             onclick={() => { scopeFilter = 'ppw'; scopeUserOverride = true }}
-          >PPW</button>
+          >SPWS</button>
           <button
             class="scope-filter-btn"
             class:active={scopeFilter === 'all'}
             onclick={() => { scopeFilter = 'all'; scopeUserOverride = true }}
-          >+EVF</button>
+          >EVF+</button>
         </div>
       {/if}
       {#if dualEnv}
@@ -73,6 +99,8 @@
   import type { CalendarEvent, Environment } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import { buildCalendar, type CalendarScope } from '../lib/calendarMonths'
+  import { WEAPON_ORDER, WEAPON_LETTER, WEAPON_KEY, WEAPON_COLOR } from '../lib/weapons'
+  import type { WeaponType } from '../lib/types'
   import CalendarBarrel from './CalendarBarrel.svelte'
   import EventCard from './EventCard.svelte'
   import RegistrationModal from './RegistrationModal.svelte'
@@ -99,8 +127,34 @@
     if (!scopeUserOverride) scopeFilter = showEvfToggle ? 'all' : 'ppw'
   })
 
+  /**
+   * Which weapons the calendar shows. All three by default — the drum opens as
+   * the whole season, and narrowing is the reader's deliberate act.
+   *
+   * Reassigned rather than mutated so the `$derived` model recomputes.
+   */
+  let weapons = $state<WeaponType[]>([...WEAPON_ORDER])
+
+  /**
+   * At least one weapon always stays selected: turning off the last one is
+   * refused, not obeyed.
+   *
+   * The alternative — zero meaning "show everything" — was rejected. It gives
+   * an empty-looking control a second hidden meaning, and if the reader does
+   * not know the rule, an empty calendar with no explanation is the worse
+   * failure of the two.
+   */
+  function toggleWeapon(weapon: WeaponType): void {
+    if (weapons.includes(weapon)) {
+      if (weapons.length === 1) return
+      weapons = weapons.filter((w) => w !== weapon)
+    } else {
+      weapons = WEAPON_ORDER.filter((w) => w === weapon || weapons.includes(w))
+    }
+  }
+
   const model = $derived(
-    buildCalendar({ events, scope: scopeFilter, showEvfToggle }),
+    buildCalendar({ events, scope: scopeFilter, showEvfToggle, weapons }),
   )
 
   const hasEvents = $derived(model.rows.some((q) => q.events.length > 0))
@@ -161,6 +215,26 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     overflow: hidden;
+  }
+  .weapon-filters {
+    display: flex;
+    gap: 4px;
+  }
+  /* 8px horizontal padding, not the 12px its neighbours use. That is what buys
+     the row: at 13px/600 the three Polish labels plus the scope control come to
+     318px of the 339px available at 375px. It is not a novel value either —
+     the card's weapon pills, which these echo, sit at `padding: 0 6px`. */
+  .weapon-btn {
+    padding: 5px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.15;
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.13));
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .scope-filter-btn {
     padding: 5px 12px;
