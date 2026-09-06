@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="091-no-season-skeletons-for-scraped-events.md">
-<meta name="adr-source-sha256" content="21a82370fb0669594f3c0009a6b577265a8e720d99048c4bb9d12b06a7a668eb">
+<meta name="adr-source-sha256" content="68e3f4f1809040f87e00e6a83b12b2638b97e83b44aafc1142aa2cc8f23893b4">
 <title>ADR-091 · A season is bootstrapped only with skeletons nobody discovers for us</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 091</p><h1>A season is bootstrapped only with skeletons nobody discovers for us</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-06; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-06</dd></div><div><dt>Source</dt><dd class=""><code>091-no-season-skeletons-for-scraped-events.md</code></dd></div><div><dt>Length</dt><dd class="">213 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-06; awaiting sign-off)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-06, accepted 2026-09-06). Implemented and released to CERT and PROD — <code>IMEW-2026-2027</code> was the only row the prune matched in either environment, and the five SPWS skeletons are untouched.</dd></div><div><dt>Date</dt><dd class="">2026-09-06</dd></div><div><dt>Source</dt><dd class=""><code>091-no-season-skeletons-for-scraped-events.md</code></dd></div><div><dt>Length</dt><dd class="">213 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-06, accepted 2026-09-06). Implemented and released to CERT and PROD — <code>IMEW-2026-2027</code> was the only row the prune matched in either environment, and the five SPWS skeletons are untouched.
 <strong>Date:</strong> 2026-09-06
 <strong>Amends:</strong> <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> §3 (season-skeleton provisioning narrows from &quot;the expected events&quot; to &quot;the expected events nobody else publishes for us&quot; — PEW, IMEW and DMEW leave the set; PPW, MPW and MSW stay), <a href="044-phase3-wizard.html">ADR-044</a> §3 (the wizard's step-3 inventory no longer counts the EVF circuit or the European singleton: &quot;5 PPW + 9 PEW + 1 MPW + 1 MSW + 1 IMEW = 17&quot; becomes &quot;5 PPW + 1 MPW + 1 MSW = 7&quot;)
 <strong>Relates to:</strong> <a href="039-stale-event-gate.html">ADR-039</a> (the dedup ladder a skeleton carries no key for), <a href="043-evf-event-allocator.html">ADR-043</a> (the allocator's Step A and its <code>EVFLEGACY</code> quarantine — both retained, both reached far less often), <a href="088-calendar-location-contract.html">ADR-088</a> (whose timing is the proximate cause), <a href="036-prod-export-local-mirror.html">ADR-036</a> as amended 2026-07-14 (migrations run before the seed dump, which is why the prune is called twice), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (CERT→PROD mirroring of the rows this stops creating)
@@ -246,5 +246,5 @@ them. <em>Recommendation:</em> audit them separately before the next season roll
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="090-prod-surface-as-wordpress-menu-item.html">← ADR-090: Publishing a PROD surface as a full-screen WordPress menu item</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>091-no-season-skeletons-for-scraped-events.md</code> · source SHA-256 <code>21a82370fb0669594f3c0009a6b577265a8e720d99048c4bb9d12b06a7a668eb</code></footer>
+<footer class="foot">Generated from <code>091-no-season-skeletons-for-scraped-events.md</code> · source SHA-256 <code>68e3f4f1809040f87e00e6a83b12b2638b97e83b44aafc1142aa2cc8f23893b4</code></footer>
 </div></body></html>
