@@ -68,6 +68,18 @@ Skip the refresh only for pure-formatting / no-op commits (or pass
   code AST. A routine docs pass touches dozens of files; under the old exit-10
   flow that dispatched a subagent per ~20 documents, so refreshing a local,
   gitignored developer aid cost millions of tokens.
+- **Svelte components need a second local pass, and get one.** graphify hands a
+  whole `.svelte` file to a JavaScript tree-sitter parser; the markup is not
+  valid JS, so the parse errors at the top level and the declarations are lost.
+  graphify says as much about *imports* in its own extractor (#713) and rescues
+  those by regex, but not declarations. Measured 2026-09-06, before the fix: 36
+  components held **54** nodes against **610** available from their `<script>`
+  bodies — `App.svelte` had 2, so a query for `loadCalendar` or
+  `handleWizardCommit` returned nothing and read as "does not exist".
+  `scripts/graphify_svelte_extract.py` cuts each script body out, extracts that,
+  and reattributes the result to the component with the line numbers offset.
+  Deterministic, zero tokens, wired into the same refresh. If a frontend query
+  comes back empty, that is now evidence rather than a known blind spot.
 - **Images and papers still need the LLM.** They are reported and skipped rather
   than blocking; run `/graphify . --update` only when their semantic layer
   matters.
