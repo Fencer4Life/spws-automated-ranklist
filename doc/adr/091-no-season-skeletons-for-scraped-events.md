@@ -1,6 +1,6 @@
 # ADR-091: A season is bootstrapped only with skeletons nobody discovers for us
 
-**Status:** Draft (proposed 2026-09-06; awaiting sign-off)
+**Status:** Accepted (proposed 2026-09-06, accepted 2026-09-06). Implemented and released to CERT and PROD — `IMEW-2026-2027` was the only row the prune matched in either environment, and the five SPWS skeletons are untouched.
 **Date:** 2026-09-06
 **Amends:** [ADR-077](077-event-lifecycle-season-skeletons.md) §3 (season-skeleton provisioning narrows from "the expected events" to "the expected events nobody else publishes for us" — PEW, IMEW and DMEW leave the set; PPW, MPW and MSW stay), [ADR-044](044-phase3-wizard.md) §3 (the wizard's step-3 inventory no longer counts the EVF circuit or the European singleton: "5 PPW + 9 PEW + 1 MPW + 1 MSW + 1 IMEW = 17" becomes "5 PPW + 1 MPW + 1 MSW = 7")
 **Relates to:** [ADR-039](039-stale-event-gate.md) (the dedup ladder a skeleton carries no key for), [ADR-043](043-evf-event-allocator.md) (the allocator's Step A and its `EVFLEGACY` quarantine — both retained, both reached far less often), [ADR-088](088-calendar-location-contract.md) (whose timing is the proximate cause), [ADR-036](036-prod-export-local-mirror.md) as amended 2026-07-14 (migrations run before the seed dump, which is why the prune is called twice), [ADR-081](081-cert-prod-event-reconciler.md) (CERT→PROD mirroring of the rows this stops creating)
