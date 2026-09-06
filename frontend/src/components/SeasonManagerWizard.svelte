@@ -147,12 +147,10 @@
                     <span class="label">{t('wizard_skel_ppw')}</span>
                   </div>
                 {/if}
-                {#if priorBreakdown.PEW > 0}
-                  <div class="item">
-                    <span class="count" data-field="wizard-skel-pew">{priorBreakdown.PEW}</span>
-                    <span class="label">{t('wizard_skel_pew')}</span>
-                  </div>
-                {/if}
+                <!-- No PEW row. Since migration 20260906000001 fn_init_season
+                     does not provision the EVF circuit — evf_sync discovers it —
+                     so listing the prior season's PEW count here would promise
+                     rows the season never creates. -->
                 <div class="item">
                   <span class="count" data-field="wizard-skel-mpw">1</span>
                   <span class="label">{t('wizard_skel_mpw')}</span>
@@ -161,18 +159,9 @@
                   <span class="count" data-field="wizard-skel-msw">1</span>
                   <span class="label">{t('wizard_skel_msw')}</span>
                 </div>
-                {#if draftEuropean === 'IMEW'}
-                  <div class="item">
-                    <span class="count" data-field="wizard-skel-imew">1</span>
-                    <span class="label">{t('wizard_skel_imew')}</span>
-                  </div>
-                {/if}
-                {#if draftEuropean === 'DMEW'}
-                  <div class="item">
-                    <span class="count" data-field="wizard-skel-dmew">1</span>
-                    <span class="label">{t('wizard_skel_dmew')}</span>
-                  </div>
-                {/if}
+                <!-- Nor an IMEW/DMEW row, for the same reason: the European
+                     singleton is EVF's. The segmented control above still
+                     records which championship the season expects. -->
               </div>
             {:else}
               <p class="wizard-lead">{t('wizard_lead_step3_first')}</p>
@@ -314,13 +303,15 @@
     capturedScoring ?? priorScoringConfig ?? { ...STATIC_DEFAULT_CONFIG, season_code: draftCode || 'NEW-SEASON' },
   )
 
-  // Total skeleton count for the commit button. Uses prior PPW + PEW counts
-  // (when prior exists) plus 1 MPW + 1 MSW + optional 1 European singleton.
+  // Total skeleton count for the commit button — what fn_init_season actually
+  // creates: one per prior-season PPW, plus MPW and MSW. The prior PEW count and
+  // the European singleton were dropped with migration 20260906000001; EVF
+  // events arrive by scrape, so counting them here overstated the result by the
+  // whole circuit (17 promised against 7 created, on the 2026-2027 prior data).
   let previewTotal = $derived(
-    (priorBreakdown ? priorBreakdown.PPW + priorBreakdown.PEW : 0)
+    (priorBreakdown ? priorBreakdown.PPW : 0)
     + 1 // MPW
-    + 1 // MSW
-    + (draftEuropean ? 1 : 0),
+    + 1, // MSW
   )
 
   function isStep1Valid(): boolean {

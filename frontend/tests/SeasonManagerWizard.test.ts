@@ -192,9 +192,31 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
       expect(container.querySelector('[data-field="wizard-step3"]')).not.toBeNull()
     })
     expect(container.querySelector('[data-field="wizard-skel-ppw"]')?.textContent).toContain('5')
-    expect(container.querySelector('[data-field="wizard-skel-pew"]')?.textContent).toContain('9')
     expect(container.querySelector('[data-field="wizard-skel-mpw"]')?.textContent).toContain('1')
     expect(container.querySelector('[data-field="wizard-skel-msw"]')?.textContent).toContain('1')
+    // The PEW row is gone with migration 20260906000001: fn_init_season no
+    // longer provisions the EVF circuit, so promising 9 of them here would be a
+    // number the season never produces. The prop still carries a PEW key.
+    expect(container.querySelector('[data-field="wizard-skel-pew"]')).toBeNull()
+  })
+
+  // ph3.27b — the count in the lead sentence is what actually gets created:
+  // PPW + MPW + MSW. It previously added the prior season's PEW count and a
+  // European singleton, neither of which fn_init_season creates any more.
+  it('ph3.27b: the previewed total counts only the skeletons that are created', async () => {
+    const { container } = render(SeasonManagerWizard, { props: defaultProps() })
+    await fillStep1(container)
+    await fireEvent.click(container.querySelector('[data-field="wizard-european-imew"]')!)
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step2"]'))
+    await fireEvent.click(container.querySelector('.config-save-btn') as HTMLButtonElement)
+    await vi.waitFor(() => container.querySelector('[data-field="wizard-step3"]'))
+    // 5 PPW + 1 MPW + 1 MSW = 7, with IMEW selected and PEW: 9 in the prop.
+    // The old total was 5 + 9 + 1 + 1 + 1 = 17, so assert against 17 explicitly:
+    // "17" contains "7", and a substring check alone would pass either way.
+    const lead = container.querySelector('[data-field="wizard-step3"]')?.textContent ?? ''
+    expect(lead).not.toContain('17')
+    expect(lead).toMatch(/(^|\D)7(\D|$)/)
   })
 
   // ph3.28 — ✓ Utwórz calls oncommit with the assembled payload
@@ -309,8 +331,10 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     expect(container.querySelector('[data-field="wizard-overlay"]')).toBeNull()
   })
 
-  // ph3.34 — IMEW / DMEW segmented adds an extra row in the breakdown
-  it('ph3.34: IMEW segmented shows IMEW row in step 3 breakdown', async () => {
+  // ph3.34 v2 — REVERSED by migration 20260906000001. IMEW is EVF's and arrives
+  // by scrape like the rest of the circuit, so selecting it still records what
+  // the season expects but no longer promises a skeleton that will not exist.
+  it('ph3.34 v2: IMEW segmented shows no IMEW row in step 3 breakdown', async () => {
     const { container } = render(SeasonManagerWizard, { props: defaultProps() })
     await fillStep1(container)
     await fireEvent.click(container.querySelector('[data-field="wizard-european-imew"]')!)
@@ -318,7 +342,7 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     await vi.waitFor(() => container.querySelector('[data-field="wizard-step2"]'))
     await fireEvent.click(container.querySelector('.config-save-btn') as HTMLButtonElement)
     await vi.waitFor(() => container.querySelector('[data-field="wizard-step3"]'))
-    expect(container.querySelector('[data-field="wizard-skel-imew"]')).not.toBeNull()
+    expect(container.querySelector('[data-field="wizard-skel-imew"]')).toBeNull()
   })
 
   // ph3.35 — dt_end before dt_start blocks advance with validation error

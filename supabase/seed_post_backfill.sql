@@ -322,3 +322,15 @@ UPDATE tbl_event e
                 ) AS c
          ) x ORDER BY w
        )::enum_weapon_type[];
+
+
+-- =============================================================================
+-- Unclaimed EVF season skeletons — removed after the seed, not before it
+-- =============================================================================
+-- Migration 20260906000001 stops fn_init_season predicting the EVF circuit and
+-- prunes the skeletons already provisioned. On CERT and PROD that migration runs
+-- against live data and is sufficient. On a fresh bootstrap it is not: migrations
+-- run BEFORE this dump loads, so the migration's prune matches nothing and the
+-- dump then reinstates all 18 skeletons — reproduced on a real reset before this
+-- call was added. Same function, same predicate, so the two paths cannot drift.
+SELECT fn_prune_unclaimed_evf_skeletons();
