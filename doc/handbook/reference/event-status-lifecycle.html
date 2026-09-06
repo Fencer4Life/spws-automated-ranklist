@@ -37,7 +37,7 @@
 <div class="tablewrap"><table>
 <thead><tr><th>Status</th><th>Meaning</th><th>Set by</th><th>On the public calendar</th></tr></thead>
 <tbody>
-<tr><td><code>CREATED</code></td><td>A childless, usually date-less skeleton created when a season is provisioned.</td><td><code>fn_init_season</code>; the CERT→PROD mirror on first promotion</td><td><b>Hidden</b></td></tr>
+<tr><td><code>CREATED</code></td><td>A childless, usually date-less skeleton created when a season is provisioned. Only for events nobody discovers for us — PPW and MPW (SPWS) and MSW (FIE, but unscraped). There is deliberately <b>no</b> skeleton for the EVF circuit: PEW, IMEW and DMEW arrive from the calendar scrape, and a skeleton for them duplicated instead of matching (ADR-091).</td><td><code>fn_init_season</code>; the CERT→PROD mirror on first promotion</td><td><b>Hidden</b></td></tr>
 <tr><td><code>PLANNED</code></td><td>A dated event with no results yet. The default working state.</td><td>admin; the calendar scrape; CERT→PROD automation</td><td>Shown — <em>Awaiting results</em> once its end date passes</td></tr>
 <tr><td><code>IN_PROGRESS</code></td><td>At least one tournament ingested.</td><td>results ingestion; <code>promote_event</code> on PROD</td><td>Shown</td></tr>
 <tr><td><code>SCORED</code></td><td>Results ingested and engine-scored, before sign-off.</td><td>the scoring pipeline</td><td>Shown</td></tr>

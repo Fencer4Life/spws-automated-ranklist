@@ -120,12 +120,20 @@ SELECT is(
   'ph3.2: every skeleton event has enum_status=CREATED'
 );
 
--- ph3.3 — PEW skeletons copy txt_location + txt_country from prior
+-- ph3.3 v2 — REVERSED by migration 20260906000001 (amends ADR-077 §3).
+-- Was: "PEW1 skeleton inherits txt_location from prior PEW1efs". The inherited
+-- city was the skeleton's ONLY handle for fn_allocate_evf_event_code Step A,
+-- and it was empty on all 23 PROD skeletons because the season was bootstrapped
+-- (2026-06-28) before ADR-088 made txt_location reliable (2026-09-04) — so the
+-- adopt rung never fired and every scrape minted a duplicate. EVF events are no
+-- longer predicted at all; evf_sync discovers them. Positive coverage for what
+-- IS still provisioned lives in 74_no_evf_season_skeletons.sql.
 SELECT is(
-  (SELECT txt_location FROM tbl_event
-     WHERE txt_code = 'PEW1efs-2026-2027'),
-  (SELECT txt_location FROM tbl_event WHERE txt_code = 'PEW1efs-2025-2026'),
-  'ph3.3: PEW1 skeleton inherits txt_location from prior PEW1efs'
+  (SELECT COUNT(*)::INT FROM tbl_event
+     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
+       AND txt_code ~ '^PEW\d+[efs]*-'),
+  0,
+  'ph3.3 v2: no PEW skeleton is provisioned (EVF events arrive by scrape)'
 );
 
 -- ph3.4 — PPW skeletons have NULL location (rotating venues each season)
@@ -160,13 +168,16 @@ SELECT is(
   'ph3.6 v2: fn_init_season creates childless skeleton events (zero tournaments)'
 );
 
--- ph3.7 — IMEW skeleton present when enum_european_event_type='IMEW'
+-- ph3.7 v2 — REVERSED by migration 20260906000001 (amends ADR-077 §3).
+-- IMEW is EVF's, and evf_sync discovers it like the rest of the circuit.
+-- enum_european_event_type still records which championship the season expects;
+-- it no longer pre-creates the row.
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_event
      WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027')
        AND txt_code LIKE 'IMEW%'),
-  1,
-  'ph3.7: IMEW skeleton created when enum_european_event_type=IMEW'
+  0,
+  'ph3.7 v2: no IMEW skeleton, even when enum_european_event_type=IMEW'
 );
 
 -- ph3.11 — idempotent: second call raises (skeletons already exist)
@@ -190,13 +201,14 @@ INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
 
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2027-2028'));
 
--- ph3.8 — DMEW skeleton present when enum_european_event_type='DMEW'
+-- ph3.8 v2 — REVERSED by migration 20260906000001, same reason as ph3.7:
+-- DMEW is EVF's team championship and arrives by scrape.
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_event
      WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2027-2028')
        AND txt_code LIKE 'DMEW%'),
-  1,
-  'ph3.8: DMEW skeleton created when enum_european_event_type=DMEW'
+  0,
+  'ph3.8 v2: no DMEW skeleton, even when enum_european_event_type=DMEW'
 );
 
 ROLLBACK TO SAVEPOINT s_dmew;
@@ -376,7 +388,17 @@ INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
   VALUES ('SPWS-2026-2027', '2026-09-01', '2027-07-31', 'IMEW');
 SELECT fn_init_season((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 
--- fn_init_season now creates CHILDLESS skeletons (ph3.6 v2), so build the 6 V2
+-- The PEW skeleton this fixture renames used to come from fn_init_season. Since
+-- migration 20260906000001 the bootstrap no longer provisions EVF events, so the
+-- fixture builds its own — which it should have done anyway: the cascade-rename
+-- behaviour under test has nothing to do with which kinds a season bootstraps.
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+SELECT 'PEW1efs-2026-2027', 'PEW1efs-2026-2027',
+       (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'),
+       (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF'),
+       'CREATED';
+
+-- fn_init_season creates CHILDLESS skeletons (ph3.6 v2), so build the 6 V2
 -- children fixture explicitly to exercise fn_update_event's cascade rename.
 SELECT _fn_create_skeleton_children(
   (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),

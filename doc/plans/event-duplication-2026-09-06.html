@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event duplication — the allocator, not the matcher</title>
+<style>
+
+
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--violet:#5b3a8e;
+ --grey:#6f7d8f;--grey-bg:#e6eaef;
+ --serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--violet:#b49ae0;
+  --grey:#8c99a9;--grey-bg:#212b38}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(90deg,var(--navy) 0 8px,var(--paper) 8px);
+ font-family:var(--sans);color:var(--ink);font-size:16px;line-height:1.62;min-height:100vh;overflow-x:hidden}
+.page{max-width:1080px;margin:0 auto;padding:0 0 70px 8px}
+.hd{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);
+ padding:24px 26px 20px;margin:28px 22px 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--serif);font-size:clamp(25px,5.4vw,35px);line-height:1.16;margin:9px 0 8px;
+ letter-spacing:-.015em;font-weight:600}
+.dek{font-family:var(--serif);font-size:clamp(15px,2.7vw,17px);color:var(--muted);
+ font-style:italic;margin:0 0 15px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 9px;border:1px solid var(--line);
+ border-radius:3px;color:var(--muted);background:var(--paper)}
+.chip.bad{background:var(--coral-bg);color:var(--coral);border-color:var(--coral)}
+.chip.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+.chip.good{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:15px 20px;margin:18px 22px 0}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;max-width:none}
+.toc li{margin-bottom:5px;font-size:14px}
+.body{padding:26px 22px 0}
+h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em;
+ margin:40px 0 8px;padding-top:22px;border-top:1px solid var(--line);scroll-margin-top:12px}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--navy);display:block;
+ letter-spacing:.13em;margin-bottom:6px;font-weight:600}
+h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);margin:26px 0 8px;font-weight:600}
+.sub{font-size:14px;color:var(--muted);margin:0 0 16px;max-width:84ch}
+ul,ol{margin:0 0 15px;padding-left:22px;max-width:82ch}
+li{margin-bottom:8px}
+p{max-width:84ch}
+code{font-family:var(--mono);font-size:.87em;background:var(--paper);padding:1px 5px;
+ border:1px solid var(--line);border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:var(--card);
+ border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;overflow-x:auto;margin:0 0 18px;max-width:86ch}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+b.k{color:var(--navy)}
+a{color:var(--navy)}
+.call{background:var(--navy-soft);border-left:4px solid var(--navy);border-radius:0 5px 5px 0;
+ padding:14px 18px;margin:16px 0 20px;font-size:15px;max-width:86ch}
+.call .lb{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--navy);font-weight:600;display:block;margin-bottom:6px}
+.call.stop{background:var(--coral-bg);border-left-color:var(--coral)}
+.call.stop .lb{color:var(--coral)}
+.call.warn{background:var(--amber-bg);border-left-color:var(--amber)}
+.call.warn .lb{color:var(--amber)}
+.call.good{background:var(--green-bg);border-left-color:var(--green)}
+.call.good .lb{color:var(--green)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--card);margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);background:var(--paper)}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+tr:last-child td{border-bottom:none}
+td.d{font-family:var(--mono);font-size:12px;color:var(--navy);font-weight:600}
+.st{font-family:var(--mono);font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;
+ padding:2px 7px;border-radius:2px;font-weight:600;white-space:nowrap}
+.s-ok{background:var(--green-bg);color:var(--green)}
+.s-bad{background:var(--coral-bg);color:var(--coral)}
+.s-wip{background:var(--amber-bg);color:var(--amber)}
+.steps{counter-reset:st;list-style:none;padding-left:0;max-width:84ch}
+.steps li{counter-increment:st;position:relative;padding-left:38px;margin-bottom:11px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:1px;width:25px;height:25px;
+ border-radius:50%;background:var(--navy-soft);color:var(--navy);font-family:var(--mono);
+ font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.mkframe{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin:14px 0 4px;overflow-x:auto}
+.mkframe svg{display:block;width:100%;min-width:660px;height:auto}
+.figcap{font-size:13px;color:var(--muted);margin:0 0 22px;max-width:84ch}
+footer{margin:44px 22px 0;padding-top:17px;border-top:1px solid var(--line);
+ font-size:13px;color:var(--muted);max-width:86ch}
+@media(max-width:680px){
+ .hd,.body,footer,.toc{margin-left:10px;margin-right:10px}
+ .body{padding-left:0;padding-right:0}h2{font-size:21px}.toc ol{columns:1}}
+
+.prompt{background:var(--card);border:2px solid var(--green);border-radius:8px;padding:18px 20px;margin:14px 0 22px}
+.prompt .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--green);font-weight:700;display:block;margin-bottom:9px}
+.prompt pre{border-left-color:var(--green);margin:0;max-width:none;white-space:pre-wrap}
+</style><body>
+<div class="page">
+
+<div class="hd">
+  <div class="eyebrow">SPWS · event duplication · analysis and one decision · 6 September 2026</div>
+  <h1>The duplicates are gone, and last night's diagnosis was pointing at the wrong layer.</h1>
+  <p class="dek">The eight pairs no longer exist on either environment. The mechanism that made them
+  does — and it is not the Python matcher I blamed yesterday. It is a SQL rung that was written to do
+  exactly the right thing and is defeated by what a skeleton knows about itself. Your instinct to stop
+  creating EVF skeletons is the correct fix; I need one boundary from you before building it.</p>
+  <div class="chips">
+    <span class="chip good">0 duplicate pairs live</span>
+    <span class="chip good">root cause found</span>
+    <span class="chip warn">one decision needed</span>
+  </div>
+</div>
+
+<div class="toc">
+<ol>
+  <li><a href="#now">What changed since last night</a></li>
+  <li><a href="#wrong">Where yesterday's report was wrong</a></li>
+  <li><a href="#root">The real root cause</a></li>
+  <li><a href="#why">Why removing EVF skeletons is the right fix</a></li>
+  <li><a href="#ask">The decision I need — which skeletons survive</a></li>
+  <li><a href="#build">What I will build once you choose</a></li>
+</ol>
+</div>
+
+<div class="body">
+
+<h2 id="now"><span class="num">01</span>What changed since last night</h2>
+<p class="sub">Both environments now hold six skeletons, none of them PEW, and zero duplicate pairs.</p>
+
+<p>Measured just now against live PROD and CERT — they are identical:</p>
+
+<div class="tw">
+<table>
+<tr><th>Season</th><th>Status</th><th>Rows</th><th>with date</th><th>with EVF cal id</th><th>with slug</th></tr>
+<tr><td class="d">SPWS-2026-2027</td><td>CREATED</td><td>6</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td class="d">SPWS-2026-2027</td><td>PLANNED</td><td>24</td><td>24</td><td>16</td><td>16</td></tr>
+<tr><td class="d">SPWS-2026-2027</td><td>CANCELLED</td><td>2</td><td>2</td><td>2</td><td>2</td></tr>
+</table>
+</div>
+
+<p>Yesterday there were <b class="k">23</b> CREATED rows and <b class="k">8</b> duplicate pairs. The
+seventeen PEW skeletons are gone and every PEW slot from 0 to 17 now holds exactly one real row. The six
+that remain are <span class="lb">IMEW</span>, <span class="lb">MPW</span> and
+<span class="lb">PPW2–PPW5</span>.</p>
+
+<div class="call">
+<p><b class="k">I did not do this, and no commit explains it.</b> Nothing in the repository history
+since the report touches event data, and the only scheduled workflows that ran overnight were
+Recompute Self-Heal Drain, which does not delete events. The most likely explanation is that you
+removed them yourself in the admin UI after reading the report. Worth confirming, because if something
+automated did it, that is its own finding.</p>
+</div>
+
+<p>The practical consequence: <b class="k">option C from yesterday — the one-off cleanup — is no longer
+needed.</b> There is nothing left to clean up.</p>
+
+<h2 id="wrong"><span class="num">02</span>Where yesterday's report was wrong</h2>
+<p class="sub">It blamed the Python dedup ladder. The Python ladder is not the layer that decides.</p>
+
+<p>Yesterday I wrote that <span class="lb">_find_existing_match</span> in
+<span class="lb">evf_calendar.py</span> eliminates every skeleton at its date gate, so the scrape falls
+through to "no match" and inserts a fresh row. The first half is true. The second half is not — because
+that Python function is not what creates the row.</p>
+
+<p>The insert happens in SQL, in <span class="lb">fn_ingest_evf_calendar</span>
+(<span class="lb">20260711000001_prod_event_reconciler.sql:215</span>), which asks
+<span class="lb">fn_allocate_evf_event_code</span>
+(<span class="lb">20260429000001_phase4_pew_split.sql:55</span>) whether this scraped event should reuse
+an existing slot or mint a new code. <b class="k">That allocator already has an adopt-the-skeleton
+rung.</b> It is Step A, and it was written for exactly this case:</p>
+
+<pre><code>-- Step A: current-season CREATED slot reuse (matches PEW{N} or PEW{N}{letters})
+IF v_loc_key &lt;&gt; '' THEN
+  SELECT COUNT(*)::INT, MAX(e.txt_code), MAX(e.id_prior_event)
+    INTO v_match_count, v_match_code, v_match_prior
+    FROM tbl_event e,
+         LATERAL fn_normalize_city_key(e.txt_location, e.txt_country) n
+   WHERE e.id_season = p_id_season
+     AND e.enum_status = 'CREATED'
+     AND e.txt_code ~ '^PEW\d+[efs]*-'
+     AND n.loc_key     = v_loc_key
+     AND n.country_key = v_ctry_key;</code></pre>
+
+<p>So yesterday's recommendation — "add a new rung that adopts the skeleton" — was proposing something
+the codebase already had. Fixing the Python matcher would have changed nothing, and neither would adding
+a rung beside one that already exists.</p>
+
+<h2 id="root"><span class="num">03</span>The real root cause</h2>
+<p class="sub">Step A adopts a skeleton by <b>city</b>. The skeletons had no city.</p>
+
+<p>Every one of the six surviving skeletons has an empty location and an empty country, so
+<span class="lb">fn_normalize_city_key</span> returns an empty <span class="lb">loc_key</span> for all of
+them:</p>
+
+<div class="tw">
+<table>
+<tr><th>Skeleton</th><th>txt_location</th><th>txt_country</th><th>loc_key</th></tr>
+<tr><td class="d">IMEW-2026-2027</td><td>(empty)</td><td>(empty)</td><td class="d">""</td></tr>
+<tr><td class="d">MPW-2026-2027</td><td>(empty)</td><td>(empty)</td><td class="d">""</td></tr>
+<tr><td class="d">PPW2–PPW5-2026-2027</td><td>(empty)</td><td>(empty)</td><td class="d">""</td></tr>
+</table>
+</div>
+
+<p>A scraped EVF event always has a city. An empty skeleton key can never equal a non-empty scraped key,
+so Step A matches nothing, and the allocator falls through to Step C — <span class="lb">next-free
+PEW{N+1}</span> — which mints a brand-new code beside the skeleton. Every run. That is the duplicate.</p>
+
+<div class="call warn">
+<p><b class="k">Why the skeletons were placeless, which is the part that makes this a trap.</b>
+<span class="lb">fn_init_season</span> does copy the prior season's city onto each PEW skeleton
+(<span class="lb">20260429000001_phase4_pew_split.sql</span>, the live definition —
+note the older one at <span class="lb">20260428000003</span> is superseded and its
+<span class="lb">^PEW\d+-</span> regex would have matched none of the real suffixed codes anyway).
+The skeletons were created on <b class="k">28 June 2026</b>. The work that made
+<span class="lb">txt_location</span> reliably hold a city — ADR-088's one location contract — was
+accepted on <b class="k">4 September 2026</b>, more than two months later. So at bootstrap time the
+prior season's cities were largely unpopulated, the skeletons inherited nothing, and Step A was dead on
+arrival for all of them.</p>
+</div>
+
+<p>This matters for what you decide next: a season bootstrapped <i>today</i> would inherit real cities
+and Step A would mostly work. The defect is partly self-healing. <b class="k">Only partly</b> — Step A
+needs an exact city match, and EVF moves its circuit between cities from season to season. Every event
+that moves is a skeleton that cannot be adopted, and a duplicate.</p>
+
+<h2 id="why"><span class="num">04</span>Why removing EVF skeletons is the right fix</h2>
+<p class="sub">A PEW skeleton is a guess at what an external body will publish. EVF publishes the truth
+within the same season.</p>
+
+<p>The distinction that decides which skeletons earn their place is not who organises the event — it is
+<b class="k">whether anything automated will independently create the row</b>:</p>
+
+<div class="tw">
+<table>
+<tr><th>Skeleton</th><th>Organizer</th><th>Created independently by a scraper?</th><th>Can duplicate?</th></tr>
+<tr><td class="d">PPW1–N</td><td>SPWS</td><td>no — SPWS schedules these by hand</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">MPW</td><td>SPWS</td><td>no</td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">MSW</td><td>FIE</td><td>no — there is no FIE scraper in <span class="lb">python/scrapers/</span></td><td><span class="st s-ok">no</span></td></tr>
+<tr><td class="d">PEW1–N</td><td>EVF</td><td><b class="k">yes</b> — <span class="lb">evf_calendar.py</span> / <span class="lb">evf_sync.py</span></td><td><span class="st s-bad">yes</span></td></tr>
+<tr><td class="d">IMEW / DMEW</td><td>EVF</td><td><b class="k">yes</b> — same scraper</td><td><span class="st s-bad">yes</span></td></tr>
+</table>
+</div>
+
+<p>A skeleton exists to hold a slot for something the association knows it will run but has not yet
+scheduled. For PPW and MPW that is real: SPWS commits to the event, and an administrator fills in the
+date and venue later. For PEW it is not. SPWS does not schedule the European circuit; EVF does, and the
+scraper discovers it. The skeleton contributes no information that will not arrive authoritatively
+within the season — and it contributes three problems:</p>
+
+<ul>
+  <li>it carries <b class="k">none</b> of the four identities the dedup ladder can use — no date, no
+  EVF calendar id, no EVF results id, no slug;</li>
+  <li>its only remaining handle is a <b class="k">guessed city</b>, which is wrong whenever EVF moves
+  the event;</li>
+  <li>it guesses the weapon suffix, and got it wrong in <b class="k">8 of 8</b> observed cases.</li>
+</ul>
+
+<p>Fencers never saw any of it: the calendar hides CREATED events twice over
+(<span class="lb">calendarMonths.ts:258</span> drops rows with no <span class="lb">dt_start</span>,
+and <span class="lb">visibleEvents</span> at <span class="lb">:545</span> filters
+<span class="lb">enum_status !== 'CREATED'</span>, per ADR-077). The cost was to administrators and to
+the season's event count.</p>
+
+<h2 id="ask"><span class="num">05</span>The decision I need — which skeletons survive</h2>
+<p class="sub">You said "remove the EVF skeletons", then "leave only the SPWS skeletons". Those two
+sentences draw the line in different places, and the difference is MSW.</p>
+
+<p><b class="k">MSW is the World Veterans Championships and its organizer is FIE, not SPWS</b>
+(<span class="lb">fn_init_season</span> assigns it <span class="lb">v_fie_org</span>). Read literally,
+"only the SPWS skeletons" removes it. Read as "remove what duplicates", it stays — because no FIE
+scraper exists, so an MSW skeleton cannot be duplicated by anything.</p>
+
+<div class="tw">
+<table>
+<tr><th>&nbsp;</th><th>Option</th><th>Skeletons kept</th><th>Skeletons dropped</th></tr>
+<tr>
+  <td class="d"><b class="k">D1</b><br><span class="st s-ok">recommended</span></td>
+  <td>Drop the skeletons that a scraper will create anyway</td>
+  <td>PPW1–N, MPW, <b class="k">MSW</b></td>
+  <td>PEW1–N, IMEW, DMEW</td>
+</tr>
+<tr>
+  <td class="d"><b class="k">D2</b></td>
+  <td>Drop everything not organised by SPWS — your second sentence, read strictly</td>
+  <td>PPW1–N, MPW</td>
+  <td>PEW1–N, IMEW, DMEW, <b class="k">MSW</b></td>
+</tr>
+</table>
+</div>
+
+<div class="call good">
+<p><b class="k">My recommendation is D1.</b> The rule that survives contact with the next scraper you
+add is "a skeleton is for an event nobody will discover for us", not "a skeleton is for an SPWS event".
+MSW is the case that separates them: it is somebody else's competition, but nothing automated creates
+it, so its skeleton is the only thing holding that slot in the season — and dropping it would silently
+remove a real event from the season structure and its six V2 child tournaments. If you would rather
+keep the rule blunt and organiser-based, say D2 and I will build that instead.</p>
+</div>
+
+<h2 id="build"><span class="num">06</span>What I will build once you choose</h2>
+<p class="sub">Four changes, TDD order, plus an ADR amendment. Nothing here is started.</p>
+
+<ol>
+  <li><b class="k">A migration</b> redefining <span class="lb">fn_init_season</span> so it no longer
+  creates the dropped kinds, and no longer emits their six V2 child tournaments each. The
+  <span class="lb">by_kind</span> return value keeps its keys and reports zero, so nothing reading it
+  breaks.</li>
+  <li><b class="k">A data migration</b> removing the one EVF skeleton still live —
+  <span class="lb">IMEW-2026-2027</span> — and its children, guarded so it only ever touches a CREATED
+  row with no date, no results and no tournament children with scores.</li>
+  <li><b class="k">pgTAP tests first</b>, failing before the change: that a freshly initialised season
+  contains no PEW/IMEW/DMEW skeleton, that it still contains the kept kinds with their children, and
+  that an EVF scrape into a season with no skeletons allocates each event exactly once.</li>
+  <li><b class="k">The wizard's own count is wrong and gets fixed with it.</b>
+  <span class="lb">App.svelte:1170</span> predicts the skeleton breakdown with
+  <span class="lb">/^PEW\d+[efs]*-/</span> and shows the user "5 PPW + 9 PEW" before they commit. Once
+  PEW skeletons are gone that number is a lie, so the breakdown drops the EVF kinds too.</li>
+</ol>
+
+<div class="call">
+<p><b class="k">ADR-077 has to be amended, not just edited around.</b> It is the record that says a
+season is bootstrapped with skeletons for its expected events. Narrowing that to "expected events nobody
+else will publish for us" is a change to the decision, and it needs to be written down as one — with
+the reason, so nobody restores EVF skeletons in a year wondering why they were missing. I will draft the
+amendment for your sign-off rather than marking it accepted myself.</p>
+</div>
+
+<div class="call stop">
+<p><b class="k">One thing I am deliberately not doing.</b> The allocator's Step A stays exactly as it
+is. It is correct for what remains — an administrator who creates a skeleton and types a city should
+have it adopted rather than duplicated — and with EVF out of the picture nothing reaches it with a
+guessed city any more. Removing a working rung because it failed on inputs that will no longer exist
+would be the wrong lesson.</p>
+</div>
+
+</div>
+</div>
+</body>
+</html>

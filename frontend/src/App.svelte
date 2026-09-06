@@ -1168,7 +1168,11 @@
     const priorEvents = await fetchCalendarEvents(priorSeason.id_season)
     const breakdown: Required<SkeletonByKind> = {
       PPW: priorEvents.filter((e) => /^PPW\d+-/.test(e.txt_code)).length,
-      PEW: priorEvents.filter((e) => /^PEW\d+[efs]*-/.test(e.txt_code)).length,
+      // Always 0 since migration 20260906000001: fn_init_season no longer
+      // provisions the EVF circuit, so the prior season's PEW count predicts
+      // nothing. The key stays because SkeletonByKind and the RPC's by_kind
+      // both still carry it.
+      PEW: 0,
       MPW: 1,
       MSW: 1,
       IMEW: 0,
