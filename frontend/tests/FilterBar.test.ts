@@ -27,7 +27,23 @@ describe('FilterBar', () => {
     const selects = container.querySelectorAll('select')
     expect(selects.length).toBe(3) // weapon, gender, category (no seasons passed)
     const toggleBtns = container.querySelectorAll('.toggle-btn')
-    expect(toggleBtns.length).toBe(2) // PPW, Kadra
+    expect(toggleBtns.length).toBe(2) // SPWS, EVF+
+  })
+
+  /**
+   * 6.2b — the scope toggle reads SPWS / EVF+.
+   *
+   * ADR-017 records this control in THREE places: here, the drill-down modal
+   * and the calendar footer. They were renamed together, so pinning the labels
+   * in each is what stops one drifting back and leaving the same control
+   * reading two different ways on two screens.
+   *
+   * The mode VALUES stay 'PPW' and 'KADRA' — those are data, not labels.
+   */
+  it('6.2b: the scope toggle is labelled SPWS / EVF+', () => {
+    const { container } = render(FilterBar, { props: { showEvfToggle: true } })
+    expect([...container.querySelectorAll('.toggle-btn')].map((b) => b.textContent!.trim()))
+      .toEqual(['SPWS', 'EVF+'])
   })
 
   // 6.10 — PPW/Kadra toggle hidden by default (showEvfToggle=false)

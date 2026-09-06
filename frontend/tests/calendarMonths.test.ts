@@ -8,38 +8,39 @@
 import { describe, it, expect } from 'vitest'
 import type { CalendarEvent, EventStatus } from '../src/lib/types'
 import {
-  buildCalendar,
-  buildMonths,
-  countryCode,
-  filterByScope,
-  findNextUpcoming,
-  isInternationalEvent,
-  isWithinCancellationNoticeWindow,
-  movedFromDate,
-  panelType,
-  monthKeyOf,
-  monthLabel,
-  registrationState,
-  resolveAnchorRow,
-  settleRow,
-  isRegistrationOpen,
-  eventTimeState,
-  seasonShortCode,
-  visibleEvents,
-  allowsFeeTier,
-  composeAddress,
-  formatDeadline,
-  caretOffset,
-  rowScroll,
-  layoutRow,
-  panelLabel,
-  registryOf,
-  PANEL_W,
   PANEL_GAP,
   PANEL_STEP_FLOOR,
+  PANEL_W,
   PANEL_W_SELECTED_CITY,
+  allowsFeeTier,
+  buildCalendar,
+  buildMonths,
+  caretOffset,
+  composeAddress,
+  countryCode,
+  eventTimeState,
+  filterByScope,
+  filterByWeapons,
+  findNextUpcoming,
+  formatDeadline,
+  isInternationalEvent,
+  isRegistrationOpen,
+  isWithinCancellationNoticeWindow,
+  layoutRow,
+  monthKeyOf,
+  monthLabel,
+  movedFromDate,
+  panelLabel,
+  panelType,
+  registrationState,
+  registryOf,
+  resolveAnchorRow,
   resultUrls,
+  rowScroll,
+  seasonShortCode,
+  settleRow,
   tournamentsPluralKey,
+  visibleEvents,
   weaponLetters,
 } from '../src/lib/calendarMonths'
 
@@ -1336,5 +1337,68 @@ describe('PZSz events', () => {
     expect(panelLabel('PPS4Me-2025-2026')).toBe('PPS4M')
     expect(panelLabel('PPS1s-2026-2027')).toBe('PPS1')
     expect(panelType('PPS4We-2025-2026')).toBe('pzs')
+  })
+})
+
+describe('weapon filter', () => {
+  const epee = ev({ txt_code: 'E1-2026-2027', arr_weapons: ['EPEE'], dt_start: '2026-10-03' })
+  const foil = ev({ txt_code: 'F1-2026-2027', arr_weapons: ['FOIL'], dt_start: '2026-10-10' })
+  const sabre = ev({ txt_code: 'S1-2026-2027', arr_weapons: ['SABRE'], dt_start: '2026-10-17' })
+  // A domestic championship really does run all three (ADR-089).
+  const all3 = ev({
+    txt_code: 'MPW-2026-2027',
+    arr_weapons: ['EPEE', 'FOIL', 'SABRE'],
+    dt_start: '2026-10-24',
+  })
+  const unset = ev({ txt_code: 'X1-2026-2027', arr_weapons: [], dt_start: '2026-10-31' })
+  const pool = [epee, foil, sabre, all3, unset]
+  const codes = (list: CalendarEvent[]) => list.map((e) => e.txt_code).sort()
+
+  // CM.W1 — the default selection must not filter, or an event with no recorded
+  // weapons would vanish from a calendar nobody has narrowed.
+  it('CM.W1: selecting every weapon is a no-op, unset events included', () => {
+    expect(codes(filterByWeapons(pool, ['EPEE', 'FOIL', 'SABRE']))).toEqual(codes(pool))
+  })
+
+  it('CM.W2: an empty selection is also a no-op', () => {
+    expect(codes(filterByWeapons(pool, []))).toEqual(codes(pool))
+  })
+
+  // CM.W3 — one weapon keeps its own events AND the all-three events, because
+  // those genuinely run it. This is the behaviour that surprises: choosing
+  // sabre still shows every Polish championship.
+  it('CM.W3: a single weapon keeps that weapon and the all-three events', () => {
+    expect(codes(filterByWeapons(pool, ['SABRE']))).toEqual(
+      ['MPW-2026-2027', 'S1-2026-2027'].sort(),
+    )
+  })
+
+  it('CM.W4: two weapons union rather than intersect', () => {
+    expect(codes(filterByWeapons(pool, ['EPEE', 'FOIL']))).toEqual(
+      ['E1-2026-2027', 'F1-2026-2027', 'MPW-2026-2027'].sort(),
+    )
+  })
+
+  // CM.W5 — once the reader HAS narrowed, an event with no recorded weapons is
+  // no evidence it runs the one being asked for; guessing yes would put epee
+  // events in a sabre-only view.
+  it('CM.W5: an event with no recorded weapons drops out of a narrowed view', () => {
+    expect(codes(filterByWeapons(pool, ['EPEE']))).not.toContain('X1-2026-2027')
+  })
+
+  // CM.W6 — the ring and the opening row must come from the FILTERED set, or
+  // the drum rings an event the filter has hidden.
+  it('CM.W6: buildCalendar re-rings and re-anchors from the filtered set', () => {
+    const events = [
+      ev({ txt_code: 'E9-2026-2027', arr_weapons: ['EPEE'], dt_start: '2026-10-03' }),
+      ev({ txt_code: 'S9-2026-2027', arr_weapons: ['SABRE'], dt_start: '2026-11-07' }),
+    ]
+    const opts = { events, today: '2026-09-01', scope: 'all' as const, showEvfToggle: true }
+    expect(buildCalendar({ ...opts, weapons: ['EPEE', 'FOIL', 'SABRE'] }).nextUpcoming?.txt_code)
+      .toBe('E9-2026-2027')
+    const sabreOnly = buildCalendar({ ...opts, weapons: ['SABRE'] })
+    expect(sabreOnly.nextUpcoming?.txt_code).toBe('S9-2026-2027')
+    expect(sabreOnly.rows[sabreOnly.anchorIndex]?.events.map((e) => e.txt_code))
+      .toEqual(['S9-2026-2027'])
   })
 })

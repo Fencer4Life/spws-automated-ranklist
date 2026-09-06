@@ -13,7 +13,10 @@
     {#if weapons.length > 0}
       <div class="wps">
         {#each weapons as weapon}
-          <span class="wp {weapon}">{t(WEAPON_KEY[weapon])}</span>
+          <span
+            class="wp"
+            style:background={WEAPON_COLOR[weapon].bg}
+            style:color={WEAPON_COLOR[weapon].fg}>{t(WEAPON_KEY[weapon])}</span>
         {/each}
       </div>
     {/if}
@@ -170,14 +173,10 @@
     todayIso,
     type WeaponLetter,
   } from '../lib/calendarMonths'
-  import type { WeaponType } from '../lib/types'
-
-  const WEAPON_KEY: Record<WeaponLetter, string> = { E: 'epee', F: 'foil', S: 'sabre' }
-  const WEAPON_TYPE: Record<WeaponLetter, WeaponType> = {
-    E: 'EPEE',
-    F: 'FOIL',
-    S: 'SABRE',
-  }
+  // Shared with the calendar footer's weapon chips so the pill and the chip
+  // cannot drift apart — see lib/weapons.ts for why the colours are applied
+  // inline rather than by class.
+  import { WEAPON_KEY, WEAPON_TYPE, WEAPON_COLOR } from '../lib/weapons'
 
   /** The organizer's own mark, replacing the registry abbreviation chip.
    *  `alt` carries the abbreviation, which is now its only appearance — it is
@@ -829,18 +828,6 @@
   /* One filled hue per weapon. Text is the darkest stop of its own ramp on a
      light tint, which keeps contrast without the pills shouting over the event
      name directly beneath them. */
-  .wp.E {
-    background: #cfe8dd;
-    color: #0b3d2e;
-  }
-  .wp.F {
-    background: #ddd9f5;
-    color: #2b2564;
-  }
-  .wp.S {
-    background: #f7ddd2;
-    color: #5c2410;
-  }
   .wp {
     font-size: 9px;
     line-height: 1.5;

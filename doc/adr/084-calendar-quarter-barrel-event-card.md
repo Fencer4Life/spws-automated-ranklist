@@ -1,6 +1,6 @@
 # ADR-084: Calendar Quarter Barrel + Single Event Card
 
-**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment.
+**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment. **Amended 2026-09-06:** a weapon filter joins the calendar footer, and the scope control is renamed `SPWS | EVF+`.
 **Date:** 2026-08-09
 **Supersedes:** [ADR-015](015-m8-ui-design-decisions.md) §2 (Calendar Layout — Vertical Timeline) and its `m8_calendar_view.html` mockup registry entry. ADR-015 §§1, 3–9 are untouched.
 **Amends:** [ADR-018](018-rolling-score.md) (withdraws the calendar rolling-progress strip; the scoring rule is unaffected), [ADR-017](017-season-configurable-evf-toggle.md) (records the calendar's own toggle field and the data constraint), [ADR-079](079-event-self-registration-identity.md) §7 (decouples the entry-list gate from the registration cutoff), [ADR-030](030-event-registration-url-deadline.md) (relocates the registration DOM contract), [ADR-005](005-svelte-state-i18n.md) (retires the no-pluralisation trade-off), [ADR-028](028-evf-calendar-results-import.md) (carves out one-time curated enrichment), [ADR-037](037-derived-display-status-awaiting-results.md) (repoints consumers), [ADR-040](040-multi-slot-event-urls.md) (permits render-time day labels)
@@ -1010,6 +1010,54 @@ The arrow is an **`aria-hidden` SVG**, not a character in the translated string:
 It targets **`anchorIndex`, not the month containing today**, and that distinction is the whole point: today's month is frequently empty — August 2026 holds no events at all — and the drum never rests on an empty row, so a literal "jump to today" would land somewhere it immediately rolls off. It is labelled by **what the destination is** — "Najbliższe zawody" / "Nearest competition" (`calendar_jump_to_next`) — rather than by the month it lands on. Naming the month was the first form and it has two faults: it makes the reader decode a date to work out where the button goes, and the month is not stable — it changes under the reader as the pool moves. Naming it "today" is not available either, for the reason just given: a button reading "today" that lands you in September would be a small lie. Naming the destination by what it IS avoids all three: it is accurate whatever the pool holds, and it says what the button does.
 
 The jump is **instant**. Crossing forty rows is over a thousand degrees, nearly three full turns, the same failure the opening frame avoids. And it stops the tap reaching the row beneath it, which is itself a target that rotates one step — without that, the jump and a single step would fight over the same tap, precisely when someone is already lost.
+
+### K · A weapon filter, and the scope control renamed
+
+**The calendar shows a whole season regardless of weapon.** A veteran who only
+fences sabre reads past épée and foil rows to find their own year. The event
+already carries the answer and nothing read it: `arr_weapons` — an **array** of
+`EPEE | FOIL | SABRE` on `tbl_event`, exposed on `vw_calendar`, not three
+boolean columns — so membership is one set overlap, `filterByWeapons()`.
+
+Three chips sit in `.calendar-footer` beside the scope control: **all three
+selected by default**, independently toggleable, and **at least one always
+stays selected**. Zero-meaning-all was rejected: it gives an empty-looking
+control a second hidden meaning, and an unexplained empty calendar is the worse
+failure when the reader does not know the rule.
+
+The filter runs **before** the ring and the anchor are derived. §10 already
+records that next-upcoming must come from the filtered set so toggling scope
+moves the ring; the same holds here, and the wrong order leaves the drum
+ringing an event the filter has hidden.
+
+**Selecting one weapon thins the EVF circuit, not the domestic calendar.** PPW,
+MPW, GP, IMEW, IMSW, MSW, DMEW and VFC legitimately run all three weapons
+(ADR-089), so they match every possible selection — choosing sabre still shows
+every Polish championship. That is correct, not a leak.
+
+**§10's control is renamed `SPWS | EVF+`** (from `PPW | +EVF`). The behaviour in
+§10 is unchanged; only the labels move, and they remain hardcoded abbreviations
+rather than translated strings.
+
+**Fitting one row was a padding problem, not a type problem.** At 375px the
+footer has 339px. In Polish the three labels' glyphs are only ~113px of a 206px
+chip row — ~72px was padding — so trimming the chips to `padding: 5px 8px` while
+keeping `13px/600`, the same type as every other control in that row, lands the
+row at **317px with 22px to spare**. Shrinking the font instead saved less and
+would have left a lighter weight for a later editor to "correct" back to 600.
+The rename itself costs 7px, `SPWS`/`EVF+` being wider than what they replace.
+
+**Polish is the binding case and English is never the test:** `Epee/Foil/Sabre`
+measure 28/19/32px against `Szpada/Floret/Szabla` at 41/31/37px, so English
+holds ~54px of slack where Polish holds 22. A padding or weight regression wraps
+Polish while English still looks right. `CV.W7` pins those declarations — jsdom
+has no layout engine and cannot measure the wrap, but it does resolve the
+declarations, so pinning the inputs is the guard actually available.
+
+Chips carry the card's own weapon-pill colours, and `lib/weapons.ts` now holds
+that palette plus the letter/type/locale maps as the single source both
+components read; the colours are applied inline because Svelte scopes component
+styles and this repo has no global stylesheet to share custom properties on.
 
 ### What this amendment does *not* settle
 

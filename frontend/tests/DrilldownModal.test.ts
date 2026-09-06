@@ -175,6 +175,17 @@ describe('DrilldownModal', () => {
     expect(tableTotal?.textContent).toContain('285')
   })
 
+  // 6.11b — same rename as FilterBar and the calendar footer (ADR-017 lists
+  // this control in three places). Values stay 'PPW'/'KADRA'; only labels move.
+  it('6.11b: the scope toggle is labelled SPWS / EVF+', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', showEvfToggle: true, context: CTX },
+    })
+    const btns = [...container.querySelectorAll('.toggle-btn')].map((b) => b.textContent!.trim())
+    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle), [2]=SPWS, [3]=EVF+ (subheader toggle)
+    expect(btns.slice(2)).toEqual(['SPWS', 'EVF+'])
+  })
+
   // 6.12 — V0 disables +EVF in drill-down
   it('disables +EVF toggle when kadraDisabled is true', () => {
     const { container } = render(DrilldownModal, {

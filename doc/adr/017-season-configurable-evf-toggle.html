@@ -4,22 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="017-season-configurable-evf-toggle.md">
-<meta name="adr-source-sha256" content="577159867fa0b4d1ae29689372c9b8a86fe1705907a1219212224a079df138a7">
+<meta name="adr-source-sha256" content="676e3e50ab192ace00539e89541f4a08a789379e5d4df9412beea19b61d6d616">
 <title>ADR-017 · Season-Configurable EVF Toggle</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 017</p><h1>Season-Configurable EVF Toggle</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M9) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (records the Calendar's own toggle field and the data constraint it carries).</dd></div><div><dt>Source</dt><dd class=""><code>017-season-configurable-evf-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">140 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M9) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (records the Calendar's own toggle field and the data constraint it carries; §K renames the control to <code>SPWS | EVF+</code> across all three surfaces).</dd></div><div><dt>Source</dt><dd class=""><code>017-season-configurable-evf-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">151 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2026-03-29 (M9)
-<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (records the Calendar's own toggle field and the data constraint it carries).</p>
+<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (records the Calendar's own toggle field and the data constraint it carries; §K renames the control to <code>SPWS | EVF+</code> across all three surfaces).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-08-09-the-calendar-s-toggle-is-a-separate-field">Amendment (2026-08-09 — the Calendar&#x27;s toggle is a separate field)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#ui-behavior-matrix">UI Behavior Matrix</a></li><li class="depth-3"><a href="#admin-control">Admin Control</a></li><li class="depth-3"><a href="#toggle-visibility-3-components">Toggle Visibility (3 components)</a></li><li class="depth-3"><a href="#default-mode-on-state-transitions">Default Mode on State Transitions</a></li><li class="depth-3"><a href="#calendarview-scope-filter-logic">CalendarView Scope Filter Logic</a></li><li class="depth-3"><a href="#v0-category-guard">V0 Category Guard</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li></ol></nav>
-  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-calendar-s-toggle-is-a-separate-field">Amendment (2026-08-09 — the Calendar's toggle is a separate field)</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-06-the-toggle-is-labelled-spws-evf">Amendment (2026-09-06 — the toggle is labelled `SPWS | EVF+`)</a></li><li class="depth-2"><a href="#amendment-2026-08-09-the-calendar-s-toggle-is-a-separate-field">Amendment (2026-08-09 — the Calendar&#x27;s toggle is a separate field)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#ui-behavior-matrix">UI Behavior Matrix</a></li><li class="depth-3"><a href="#admin-control">Admin Control</a></li><li class="depth-3"><a href="#toggle-visibility-3-components">Toggle Visibility (3 components)</a></li><li class="depth-3"><a href="#default-mode-on-state-transitions">Default Mode on State Transitions</a></li><li class="depth-3"><a href="#calendarview-scope-filter-logic">CalendarView Scope Filter Logic</a></li><li class="depth-3"><a href="#v0-category-guard">V0 Category Guard</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-06-the-toggle-is-labelled-spws-evf">Amendment (2026-09-06 — the toggle is labelled <code>SPWS | EVF+</code>)</h2>
+<p>The three toggles this ADR describes are now labelled <strong><code>SPWS</code> / <code>EVF+</code></strong>, not
+<code>PPW</code> / <code>+EVF</code>. The behaviour, the flag and the mode values are unchanged — the
+internal modes are still <code>PPW</code> and <code>KADRA</code>, which are data — and all three
+surfaces were renamed together (<code>FilterBar</code>, <code>DrilldownModal</code>, the calendar
+footer) so the same control cannot read two ways on two screens. The prose below
+keeps the original labels as the historical record; see
+<a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §K for the rename and the
+weapon filter it shipped beside.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-calendar-s-toggle-is-a-separate-field">Amendment (2026-08-09 — the Calendar's toggle is a separate field)</h2>
 <p><a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> records what this ADR's single-flag model became: the Calendar reads <strong><code>bool_show_evf_toggle_calendar</code></strong> (default TRUE — the richer EVF+FIE view), which is independent of the Ranklist's <code>bool_show_evf_toggle</code> (default FALSE). The split shipped under the ADR-044 amendment; this note exists so a reader of ADR-017 alone does not assume one flag still governs both surfaces.</p>
 <p>Two consequences the barrel makes load-bearing:</p>
 <ol>
@@ -265,5 +275,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="016-supabase-auth-totp-mfa.html">← ADR-016: Supabase Auth with TOTP MFA for Admin Access</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="018-rolling-score.html">→ ADR-018: Rolling Score for Active Season</a></nav>
-<footer class="foot">Generated from <code>017-season-configurable-evf-toggle.md</code> · source SHA-256 <code>577159867fa0b4d1ae29689372c9b8a86fe1705907a1219212224a079df138a7</code></footer>
+<footer class="foot">Generated from <code>017-season-configurable-evf-toggle.md</code> · source SHA-256 <code>676e3e50ab192ace00539e89541f4a08a789379e5d4df9412beea19b61d6d616</code></footer>
 </div></body></html>
