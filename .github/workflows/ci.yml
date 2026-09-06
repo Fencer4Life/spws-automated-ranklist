@@ -20,7 +20,14 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.84.2
+          # Was 2.84.2, pinned on 2026-04-20 because v2.90.0 dropped connections
+          # in the pgTAP auth tests (4b6d359). release.yml now pins 2.116.0
+          # (6427ec7), verified green through a full CERT+PROD deploy, so the two
+          # workflows were validating against different CLI versions. This run is
+          # the test of whether the 2.90.0 regression still exists: if the pgTAP
+          # auth tests drop connections again, revert to 2.84.2 and record HERE
+          # that the divergence is deliberate, so nobody "aligns" it a third time.
+          version: 2.116.0
 
       - name: Start Supabase local stack
         run: supabase start
