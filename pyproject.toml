@@ -43,6 +43,11 @@ markers = [
 [tool.basedpyright]
 include = ["python"]
 exclude = ["**/__pycache__", "**/node_modules", "frontend"]
+# `scripts/` holds the graph tooling (graphify_docs_extract, graphify_svelte_extract)
+# that refresh-graph.sh imports by filename, so it is not a package and cannot be
+# imported normally. Tests reach it via sys.path; this tells the checker the same,
+# so a genuinely missing import is still an error rather than expected noise.
+extraPaths = ["scripts"]
 pythonVersion = "3.14"
 typeCheckingMode = "standard"   # start non-strict to avoid a wall of findings on legacy code
 

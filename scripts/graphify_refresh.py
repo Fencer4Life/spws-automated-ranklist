@@ -143,6 +143,32 @@ def main() -> int:
     exts: list[dict] = []
     if files:
         exts.append(extract(files, cache_root=Path(".")))
+
+    # Svelte components need a second, local pass. graphify hands the WHOLE
+    # .svelte file to a JavaScript tree-sitter parser; the markup is not valid
+    # JS, the parse errors at the top level, and the declarations are lost —
+    # graphify's own extractor says as much about imports (#713) and rescues
+    # those by regex, but not the declarations. Measured 2026-09-06: 36 .svelte
+    # files held 54 nodes against 610 available from their <script> bodies, so
+    # ~91% of the frontend's component logic was absent from a graph this repo
+    # requires you to consult before analysis. Deterministic and zero-token,
+    # same as the doc pass above.
+    svelte_files = [p for p in files if p.suffix.lower() == ".svelte"]
+    if svelte_files:
+        try:  # invoked as scripts/graphify_refresh.py — sys.path[0] is scripts/
+            from graphify_svelte_extract import extract_svelte_scripts
+        except ImportError:  # imported as a package (pytest, repo root on path)
+            from scripts.graphify_svelte_extract import extract_svelte_scripts
+
+        sv_ext = extract_svelte_scripts(svelte_files, root=Path("."))
+        if sv_ext["nodes"]:
+            exts.append(sv_ext)
+            say(
+                f"refresh-graph: {len(svelte_files)} svelte component(s) — script-body "
+                f"rescue ({len(sv_ext['nodes'])} nodes, {len(sv_ext['edges'])} edges, "
+                "0 tokens)…"
+            )
+
     if doc_ext is not None:
         exts.append(doc_ext)
     if not exts:  # deletions only
