@@ -195,3 +195,80 @@ describe('EntryList — modal-embed close affordance', () => {
     expect(onclose).toHaveBeenCalled()
   })
 })
+
+// Surname ordering (2026-09-09). The roster arrives in registration order —
+// fetchEntryList orders by id_registration — which means nothing to a fencer
+// scanning for their own name. Polish collation is the whole difficulty: a
+// naive Array.sort() compares UTF-16 code units, so Ć, Ł and Ż all land after
+// Z and ŁUKASIEWICZ renders below ŻAK.
+const UNSORTED: RegistrationEntry[] = [
+  { id_registration: 1, id_event: 3, txt_surname: 'ŻAK', txt_first_name: 'Adam', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+  { id_registration: 2, id_event: 3, txt_surname: 'KOWALSKI', txt_first_name: 'Piotr', enum_gender: 'M', arr_weapons: ['FOIL'], enum_age_category: 'V2' },
+  { id_registration: 3, id_event: 3, txt_surname: 'ĆWIKLIŃSKI', txt_first_name: 'Marek', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V0' },
+  { id_registration: 4, id_event: 3, txt_surname: 'KOWALSKI', txt_first_name: 'Anna', enum_gender: 'F', arr_weapons: ['EPEE'], enum_age_category: 'V3' },
+  { id_registration: 5, id_event: 3, txt_surname: 'ŁUKASIEWICZ', txt_first_name: 'Ewa', enum_gender: 'F', arr_weapons: ['SABRE'], enum_age_category: 'V2' },
+  { id_registration: 6, id_event: 3, txt_surname: 'CZAJKA', txt_first_name: 'Jan', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+]
+
+function renderedNames(container: HTMLElement): (string | undefined)[] {
+  return Array.from(container.querySelectorAll('td.el-name')).map((td) => td.textContent?.trim())
+}
+
+describe('EntryList — surname ordering', () => {
+  it('renders rows by surname A–Z under Polish collation, not in registration order', async () => {
+    mockFetchEntryList.mockResolvedValue(UNSORTED)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('CZAJKA Jan')
+    // Ć sorts after CZ and before K; Ł between K and M; Ż last. Every one of
+    // those rungs is wrong under a naive sort.
+    expect(renderedNames(container)).toEqual([
+      'CZAJKA Jan',
+      'ĆWIKLIŃSKI Marek',
+      'KOWALSKI Anna',
+      'KOWALSKI Piotr',
+      'ŁUKASIEWICZ Ewa',
+      'ŻAK Adam',
+    ])
+  })
+
+  it('breaks a shared surname on the first name', async () => {
+    mockFetchEntryList.mockResolvedValue(UNSORTED)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('CZAJKA Jan')
+    const names = renderedNames(container)
+    // Anna registered second (id 4), Piotr first (id 2) — the display order is
+    // the alphabet's, not the registrations'.
+    expect(names.indexOf('KOWALSKI Anna')).toBeLessThan(names.indexOf('KOWALSKI Piotr'))
+  })
+
+  it('sorts case-insensitively so a lower-case surname does not sink to the bottom', async () => {
+    // The self-registration form takes free text, so mixed case will arrive
+    // even though the seeded roster is upper-case.
+    mockFetchEntryList.mockResolvedValue([
+      { id_registration: 1, id_event: 3, txt_surname: 'ZALEWSKI', txt_first_name: 'Jan', enum_gender: 'M', arr_weapons: ['EPEE'], enum_age_category: 'V1' },
+      { id_registration: 2, id_event: 3, txt_surname: 'baran', txt_first_name: 'Ewa', enum_gender: 'F', arr_weapons: ['FOIL'], enum_age_category: 'V2' },
+    ])
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('baran Ewa')
+    expect(renderedNames(container)).toEqual(['baran Ewa', 'ZALEWSKI Jan'])
+  })
+
+  // Constraint from the design discussion: the sort must not entangle the
+  // filtering that was already there. Array.prototype.filter preserves input
+  // order, so a filtered roster stays alphabetical for free.
+  it('keeps the alphabetical order after a filter narrows the roster', async () => {
+    mockFetchEntryList.mockResolvedValue(UNSORTED)
+    const { container, findByText } = render(EntryList, { props: { eventId: 3 } })
+    await findByText('CZAJKA Jan')
+    const weaponSelect = container.querySelector('select[name="weaponFilter"]') as HTMLSelectElement
+    await fireEvent.change(weaponSelect, { target: { value: 'EPEE' } })
+    await waitFor(() =>
+      expect(renderedNames(container)).toEqual([
+        'CZAJKA Jan',
+        'ĆWIKLIŃSKI Marek',
+        'KOWALSKI Anna',
+        'ŻAK Adam',
+      ]),
+    )
+  })
+})
