@@ -167,6 +167,8 @@
 
 <p>The roster is a deliberately narrow projection: surname, given name, gender, weapons and the age category. <b>Birth year and club are excluded</b>, which is why the page says so in plain language at the bottom. Every declared registration appears; there is no payment gate.</p>
 
+<p>Rows are displayed <b>surname A–Z</b>, given name breaking a shared surname. The ordering is applied in the browser under Polish collation, fixed regardless of the interface language, because a code-unit comparison sorts Ć, Ę, Ł and Ż after Z and the surnames are Polish whatever the labels say. The projection itself is unordered; the query's registration order survives only as the final tie-break between two people sharing both names.</p>
+
 <div class="warning">
 <p>The projection publishes the row identifier and the age category. The category is a ten-year band, so it narrows the birth year considerably — and the match lookup answers per birth year <em>before</em> anything is written, which makes an exact year recoverable by an anonymous caller. Any reasoning that treats the birth year as private is therefore unsound. This is the single largest open gap.</p>
 </div>

@@ -122,9 +122,31 @@
   let categoryFilter = $state<AgeCategory | ''>('')
   let genderFilter = $state<GenderType | ''>('')
 
+  // Polish collation, fixed regardless of the PL/EN toggle: the surnames are
+  // Polish whatever language the labels are in, and tying the order to the
+  // toggle would visibly reshuffle the roster when a visitor switches
+  // language. A naive comparison would be worse than wrong on one rung — it
+  // compares UTF-16 code units, so Ć, Ł and Ż all sort after Z. Built once at
+  // module scope because constructing a collator is the expensive part;
+  // .compare is cheap. sensitivity 'base' keeps a lower-case surname with its
+  // peers: the seeded roster is upper-case, but the self-registration form
+  // takes free text from fencers.
+  const byName = new Intl.Collator('pl', { sensitivity: 'base' })
+
+  // Sorted here, once, as the roster enters the component rather than inside
+  // filteredRows — so the filtering below is left exactly as it was.
+  // Array.prototype.filter preserves input order, so every filtered view
+  // inherits the alphabet for free. The server's own .order('id_registration')
+  // in fetchEntryList is deliberately kept: Array.prototype.sort is stable, so
+  // registration order survives as the final tie-break for two fencers sharing
+  // both names.
   $effect(() => {
     fetchEntryList(eventId).then((r) => {
-      rows = r
+      rows = [...r].sort(
+        (a, b) =>
+          byName.compare(a.txt_surname, b.txt_surname) ||
+          byName.compare(a.txt_first_name, b.txt_first_name),
+      )
     })
   })
 
