@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intake — a fourth entry in the ranklist drawer</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+     font-size:16px;line-height:1.6}
+.page{max-width:860px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);
+  font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:6px}
+.q{font-family:var(--serif);font-size:17.5px;font-weight:600;margin:0 0 10px}
+.rec{background:var(--green-bg);color:var(--green);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:14.5px}
+.rec b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px}
+ul.gate{list-style:none;padding-left:0}
+ul.gate li{padding:3px 0}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">SPWS · intake · 11 September 2026</p>
+<h1>A fourth entry in the ranklist drawer</h1>
+<p class="dek">Yes — the mechanism you are describing already exists in this repository and is proven
+in production. One thing is not yet settled, and it is a decision rather than a technical obstacle.</p>
+
+<div class="toc">
+<ol>
+  <li><a href="#answer">Short answer</a></li>
+  <li><a href="#how">How the existing path works</a></li>
+  <li><a href="#atomic">What “atomic” has to mean for this path</a></li>
+  <li><a href="#blocker">The one open item — ADR-085 §2</a></li>
+  <li><a href="#questions">Questions for you</a></li>
+  <li><a href="#next">What happens once you paste the file</a></li>
+</ol>
+</div>
+
+<h2 id="answer">1 · Short answer</h2>
+
+<div class="card locked">
+<span class="lb">Confirmed</span>
+<p style="margin:0">Yes. Paste the document. A single self-contained HTML file dropped into
+<code>frontend/public/</code> is published to GitHub Pages by the existing release pipeline with
+<b>no new build step, no workflow change and no new hosting</b>, and the drawer links it with a
+plain relative <code>&lt;a href&gt;</code>. This is exactly how the points calculator reaches
+fencers today.</p>
+</div>
+
+<h2 id="how">2 · How the existing path works</h2>
+
+<p>Four moving parts, all already in place:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Step</th><th>Where</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td>1. The file</td><td><code>frontend/public/&lt;name&gt;.html</code></td>
+    <td>Hand-maintained. Vite copies <code>public/</code> into <code>dist/</code> by itself — no entry in
+        <code>vite.config.ts</code>, no workflow step.</td></tr>
+<tr><td>2. The build</td><td><code>.github/workflows/release.yml</code>, job <code>build</code></td>
+    <td><code>npx vite build --base ./</code>, then the dist tree is uploaded with
+        <code>actions/upload-pages-artifact@v3</code> from <code>frontend/dist</code>.</td></tr>
+<tr><td>3. The deploy</td><td>same workflow, job <code>deploy-pages</code></td>
+    <td><code>actions/deploy-pages@v4</code>. The page is then live at
+        <code>fencer4life.github.io/spws-automated-ranklist/&lt;name&gt;.html</code>.</td></tr>
+<tr><td>4. The menu entry</td><td><code>frontend/src/components/Sidebar.svelte</code></td>
+    <td>A fourth <code>&lt;li&gt;</code> holding an <code>&lt;a class="nav-item"&gt;</code> with a relative
+        <code>href</code>, <code>target="_blank"</code>, <code>rel="noopener"</code> and
+        <code>onclick={onclose}</code>. Label comes from a new <code>nav_*</code> key in both
+        <code>frontend/src/lib/locales/pl.json</code> and <code>en.json</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Worth knowing: the drawer is <b>not</b> a configuration file or a data-driven nav. It is hard-coded
+markup in one Svelte component, and <code>frontend/tests/Sidebar.test.ts</code> asserts the entries and
+their <b>order</b> (tests 8.84–8.87). So the entry is a code change covered by tests, not a content edit.</p>
+
+<h2 id="atomic">3 · What “atomic” has to mean for this path</h2>
+
+<p>Your instinct is right, and these are the constraints the pipeline actually imposes:</p>
+
+<div class="card">
+<span class="lb">Hard requirements</span>
+<ul>
+  <li><b>One file, nothing fetched.</b> Inline every style and script; embed images as
+      <code>data:</code> URIs, as the calculator does with the SPWS logo. The file bypasses the
+      bundler, so a relative <code>&lt;script src&gt;</code> or image path would have to be published
+      separately and would be easy to break.</li>
+  <li><b>No <code>127.0.0.1</code>, no <code>service_role</code>, no <code>supabase-demo</code>.</b>
+      The release job greps the whole of <code>frontend/dist/</code> for these three strings and
+      <b>fails the release</b> if it finds any. This is a guard you benefit from, but it does mean
+      a file carrying a LOCAL URL or a service key cannot ship.</li>
+  <li><b>The filename becomes a public URL.</b> Lowercase, ASCII, hyphenated, and chosen once —
+      renaming it later breaks any link already shared with fencers or pasted into WordPress.</li>
+  <li><b>It is public.</b> Pages serves it to anyone with the address. Add
+      <code>&lt;meta name="robots" content="noindex, nofollow"&gt;</code> if it should stay out of
+      search results, as the calculator does.</li>
+  <li><b>Bilingual, if it reaches fencers.</b> The drawer passes the ranking's active locale as
+      <code>?lang=pl</code> / <code>?lang=en</code>. The calculator reads that parameter and switches
+      itself. If your page is single-language, the link simply should not carry the parameter.</li>
+</ul>
+</div>
+
+<p>Two things the file will <b>not</b> get, and you should decide knowingly: it is outside the build,
+so <b>no type checking and no minification</b> cover it, and <code>npm run check</code> will not see it.</p>
+
+<h2 id="blocker">4 · The one open item — ADR-085 §2</h2>
+
+<div class="card warn">
+<span class="lb">Needs your decision before I write code</span>
+<p>ADR-085, signed off 15 August 2026, established this publication path for the calculator and then
+closed it explicitly. Section 2 is titled <i>“This is an exception, not a pattern”</i> and states that
+no other static page is expected to be published this way, that the decision establishes no rule for
+future tools, and that <b>any further standalone page requires its own decision</b> — with the default
+routes being a view inside the application, or the <code>register.html</code> custom-element mechanism.</p>
+<p style="margin-bottom:0">Your new page is precisely that “further standalone page”. The code change is
+small; the governance step is the real work, and skipping it would leave the ADR corpus stating
+something that is no longer true.</p>
+</div>
+
+<h2 id="questions">5 · Questions for you</h2>
+
+<div class="card open">
+<p class="q">Q1 — How should the second static page be recorded?</p>
+<table>
+<thead><tr><th>Option</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td><b>A — Amend ADR-085</b></td>
+    <td>Rewrite §2 from “one-off exception” to a bounded, named pattern: standalone informational
+        pages live in <code>frontend/public/</code> and are linked from the drawer, under stated
+        conditions. One ADR edit, one HTML regeneration.</td></tr>
+<tr><td><b>B — New ADR-091</b></td>
+    <td>A decision of its own for this page, citing ADR-085 §2 as the reason it exists, leaving
+        ADR-085 untouched and still expiring with the calculator.</td></tr>
+<tr><td><b>C — Build it as an application view instead</b></td>
+    <td>The default route ADR-085 points at. No ADR exception needed at all, but it stops being an
+        atomic file you can also hand to someone as an attachment or paste into WordPress.</td></tr>
+</tbody>
+</table>
+<div class="rec"><b>Recommendation</b>
+<b style="display:inline;font-family:inherit;font-size:inherit;letter-spacing:0;text-transform:none">B — a new ADR-091.</b>
+ADR-085 carries an expiry condition: when the proposed scoring is adopted, that page is deleted and the
+ADR is marked superseded. Folding a general pattern into a document scheduled for supersession would
+retire the rule along with the calculator. A separate decision keeps the two lifetimes apart, and it is
+the literal instruction in ADR-085 §2 — “its own decision”.</div>
+</div>
+
+<div class="card open">
+<p class="q">Q2 — Where does the entry sit, and what is it called?</p>
+<p>I need the Polish and English labels for <code>nav_*</code>, and the position in the drawer.
+Today the order is fixed and asserted by tests: <b>Ranklista → Kalendarz → Kalkulator punktów</b>,
+with the admin section below a divider.</p>
+<div class="rec"><b>Recommendation</b>
+Fourth position, after the calculator — it keeps the two primary application views at the top and
+groups the external static pages together at the bottom. Test 8.86 asserts the calculator comes
+<i>directly after</i> Kalendarz, so appending leaves the existing assertions intact.</div>
+</div>
+
+<div class="card open">
+<p class="q">Q3 — Does this page also need to reach the association's WordPress site?</p>
+<p>PROD is moving to the WordPress CMS, and ADR-090 publishes a PROD surface as a full-screen
+WordPress menu item. The drawer on Pages and the WordPress menu at
+<code>weteraniszermierki.pl</code> are two different menus. Adding the entry to the drawer does
+<b>not</b> put it in the association's own navigation.</p>
+<div class="rec"><b>Recommendation</b>
+Start with the drawer only, and treat the WordPress menu item as a separate step once the page is
+live and you have seen it at its real address. Menu items cannot be verified over XML-RPC — they
+have to be built in <code>wp-admin</code> — so that step is manual either way and is better done
+against a page that already works.</div>
+</div>
+
+<h2 id="next">6 · What happens once you paste the file</h2>
+
+<ol>
+  <li>I read the whole document before it goes anywhere near a publish — it will be served publicly,
+      so I check it for LOCAL URLs, keys, external requests and the three guard strings.</li>
+  <li>ADR first, per your answer to Q1, drafted for your sign-off before any code is written.</li>
+  <li>RED tests in <code>frontend/tests/Sidebar.test.ts</code> for the new entry, its
+      <code>href</code>, its position and the drawer closing on click — failing, then GREEN.</li>
+  <li>The file into <code>frontend/public/</code>, the entry into
+      <code>Sidebar.svelte</code>, the label into both locale files.</li>
+  <li><code>svelte-check</code> on the changed Svelte and TypeScript, then the frontend suite.</li>
+  <li>Documentation coherence gate: RTM entry, the frontend subsystem page in the handbook, and the
+      ADR registry in specification Appendix C.</li>
+  <li><code>scripts/refresh-graph.sh</code>, then the release, then verification that the page is
+      actually live at its address and reachable from the drawer.</li>
+</ol>
+
+<div class="card">
+<span class="lb">One thing I cannot do for you</span>
+<p style="margin:0">If the page needs to be added to the WordPress menu, that is built by hand in
+<code>wp-admin</code>. I can prepare the page and its address, and tell you exactly what to enter.</p>
+</div>
+
+<footer>
+Evidence read for this note: <code>frontend/src/components/Sidebar.svelte</code>,
+<code>frontend/public/kalkulator-punktow.html</code>, <code>frontend/tests/Sidebar.test.ts</code>,
+<code>.github/workflows/release.yml</code> (jobs <code>build</code>, <code>deploy-pages</code>),
+<code>frontend/src/lib/locales/{pl,en}.json</code>,
+<code>doc/adr/085-points-calculator-temporary-static-page.md</code>.
+</footer>
+
+</div>
+</body>
+</html>

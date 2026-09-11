@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="092-scoring-table-annex-bilingual-static-page.md">
+<meta name="adr-source-sha256" content="97d14c2da2c42c6199e3967c24bf66c4dde60833351f99337799145505aa1d17">
+<title>ADR-092 · A Second Standalone Static Page — the Scoring-Table Annex, Published Bilingually</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 092</p><h1>A Second Standalone Static Page — the Scoring-Table Annex, Published Bilingually</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-11, signed off 2026-09-11)</dd></div><div><dt>Date</dt><dd class="">2026-09-11</dd></div><div><dt>Source</dt><dd class=""><code>092-scoring-table-annex-bilingual-static-page.md</code></dd></div><div><dt>Length</dt><dd class="">172 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-11, signed off 2026-09-11)
+<strong>Date:</strong> 2026-09-11
+<strong>Amends:</strong> <a href="015-m8-ui-design-decisions.html">ADR-015</a> §1 (App Navigation — Sidebar Drawer) — the drawer gains a <strong>fourth</strong> entry, again an external link rather than a view switch; §§2–9 untouched. <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> — its <em>Tests</em> consequence only: plan test 8.84 pins the drawer's entry list as an equality, so a fourth entry necessarily extends that assertion. ADR-085 §§1–3 — the calculator's publication mechanism, its status as an exception and its expiry condition — are untouched.
+<strong>Relates to:</strong> <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §2, which requires any further standalone page to carry its own decision — this is that decision; <a href="011-artifact-release-pipeline.html">ADR-011</a> (the page rides the existing Pages artifact, unchanged); <a href="090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> (the eventual WordPress destination); <a href="079-event-self-registration-identity.html">ADR-079</a> and <a href="007-shadow-dom-deferred.html">ADR-007</a> (<code>register.html</code>, built as a custom element through <code>vite.config.ce.ts</code> — deliberately <em>not</em> the mechanism used here)
+<strong>Source:</strong> <code>doc/plans/tabela-punktacji-2026-09-11.html</code> §6</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-publication-mechanism">1 · Publication mechanism</a></li><li class="depth-3"><a href="#2-bilingual-in-one-file-switched-by-css">2 · Bilingual in one file, switched by CSS</a></li><li class="depth-3"><a href="#3-this-remains-an-exception">3 · This remains an exception</a></li><li class="depth-3"><a href="#4-noindex-while-unadopted-and-succession">4 · `noindex` while unadopted, and succession</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> is <strong>Załącznik nr 1</strong> to the Regulation on
+selecting the Polish veterans national team. It carries a single-result calculator, the full
+scoring table for fields of 4 to 300 entries across places 1 to 300, and a CSV export. It is one
+self-contained file: styles, script and all content inline, with no external requests.</p>
+<p>It has to be reachable <strong>at an address</strong>, for the reason ADR-085 recorded and verified on
+2026-08-15: messenger and iOS Files previews open HTML with JavaScript disabled, and this document
+computes its entire table in the browser. Sent as an attachment it arrives blank. The ranklist is
+already built to <code>frontend/dist</code> and published to GitHub Pages by <code>.github/workflows/release.yml</code>
+(jobs <code>build</code> → <code>deploy-pages</code>), so the address exists at no additional cost.</p>
+<p><strong>The annex and the calculator implement the same formula, and this was verified rather than
+assumed.</strong> The annex's <code>firstPlaceBase</code> (<code>:233</code>) matches the calculator's <code>fN</code>, including the
+<code>max(2, n)</code> floor; <code>wonRounds</code> matches <code>rundy</code>, including the <code>(n &amp; (n − 1))</code> power-of-two test;
+<code>scoreParts</code> matches <code>parts</code>, including the place formula <code>base − (base − 1)·ln(m)/ln(N)</code>, the
+<code>{1:3, 2:2, 3:1}</code> podium factors and the <code>3·∛N</code> unit; and the rank slider matches <code>#fW</code> at
+<code>min=1 max=3 step=0.1</code>. One difference is deliberate and stated in the annex's own heading: its
+domain starts at <code>N ≥ 4</code> (<code>:209</code>) where the calculator accepts <code>N ≥ 2</code>.</p>
+<p>Two facts shape the decision beyond publication. First, the annex is destined for
+<code>weteraniszermierki.pl</code> as a PROD deployment once it is adopted (ADR-090), so nothing in its design
+may depend on the ranklist application around it — a WordPress page has no <code>Sidebar.svelte</code> and no
+<code>?lang=</code> contract. Second, it must serve fencers who read Polish and an audience abroad who do not,
+which the calculator solves with a JavaScript string dictionary (<code>:272</code>) that this document cannot
+reuse: it is prose as well as UI, and a dictionary renders an <strong>empty page</strong> when JavaScript does
+not run — the exact failure that made hosting necessary.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-publication-mechanism">1 · Publication mechanism</h3>
+<p>The annex ships as a static page at <code>frontend/public/tabela-punktacji.html</code>. Vite copies <code>public/</code>
+into <code>dist/</code> on its own, so no workflow step and no build-configuration entry is required. The
+ranklist links to it from the navigation drawer as a <strong>fourth</strong> entry, directly after the
+calculator, with a plain relative <code>&lt;a href&gt;</code> carrying the application's active locale as
+<code>?lang=pl</code> or <code>?lang=en</code>, opened in a new tab so the ranking view keeps its filters — the same
+shape as the calculator entry (<code>Sidebar.svelte:40</code>).</p>
+<p>The published name is lowercase and hyphenated, matching <code>kalkulator-punktow.html</code>, because it
+becomes a permanent public URL and later a WordPress slug. The hand-maintained source of truth
+stays at <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>, with the published copy held
+byte-identical to it by test, as ADR-085 §3 does for the calculator.</p>
+<h3 id="2-bilingual-in-one-file-switched-by-css">2 · Bilingual in one file, switched by CSS</h3>
+<p>Polish and English both live in the markup as sibling blocks, each carrying its own <code>lang</code>
+attribute, and the PL/EN toggle is a radio pair switched by <strong>CSS alone</strong>:</p>
+<pre><code>#langPl:checked ~ main .copy-en { display: none }
+#langEn:checked ~ main .copy-pl { display: none }
+</code></pre>
+<p>JavaScript adds enhancements only, never preconditions: it honours <code>?lang=pl|en</code> when present,
+remembers the choice, and corrects <code>document.documentElement.lang</code> and <code>document.title</code>. It reuses
+the calculator's hand-rolled <code>param()</code> helper (<code>:421</code>) and its <code>try/catch</code> around <code>localStorage</code>
+(<code>:431</code>) — that guard exists because storage access <em>throws</em> when the file is opened over <code>file:</code>.</p>
+<p>Three properties follow, and all three are the point:</p>
+<ul>
+<li>The document works <strong>with JavaScript disabled</strong>, in either language. The previews that render the
+calculator blank still show a readable annex.</li>
+<li>It works <strong>opened cold at any address</strong>, with or without a query string. It depends on nothing
+around it, which is what the WordPress destination requires.</li>
+<li>Only the static copy is duplicated. The table, the calculator logic and the script stay single;
+<code>numberPl</code> gains an English branch for the decimal separator, mirroring the calculator's <code>num()</code>.</li>
+</ul>
+<p>English terminology is carried over verbatim from the calculator's <code>T.en</code> (<code>:272</code>) — <em>Number of
+entries</em>, <em>Finishing place</em>, <em>Competition rank coefficient</em>, <em>Base for 1st place</em>, <em>Round bonus</em>,
+<em>Podium bonus</em> and the rest. Two documents describing one formula must not ship two competing
+English vocabularies for it.</p>
+<h3 id="3-this-remains-an-exception">3 · This remains an exception</h3>
+<p>Two pages now use this route. Both are informational documents about the scoring formula, both are
+hand-maintained single files, and both have a known destination outside the application. <strong>This
+still establishes no general pattern.</strong> A third standalone page requires its own decision. The
+default routes remain a view inside the application, or the mechanism used for <code>register.html</code>.</p>
+<h3 id="4-noindex-while-unadopted-and-succession">4 · <code>noindex</code> while unadopted, and succession</h3>
+<p>The page carries <code>&lt;meta name=&quot;robots&quot; content=&quot;noindex, nofollow&quot;&gt;</code> for as long as the annex is not
+adopted.</p>
+<p>This is <strong>load-bearing, not boilerplate</strong>. The document's header originally displayed
+<em>Wersja 0.1 · Status: projekt</em>; that was removed on 2026-09-11 at the user's request, so the page no
+longer states anywhere that it is a draft. The <code>noindex</code> meta is now the only thing keeping an
+unadopted regulation annex out of search results, where it could be found and read as adopted
+policy. Removing it is a deliberate act performed at adoption, not a tidy-up.</p>
+<p>On adoption the annex moves to <code>weteraniszermierki.pl</code> as a PROD deployment. The file transfers
+unchanged, because it never depended on the drawer, the <code>?lang=</code> parameter or any relative path; the
+drawer entry is replaced by a WordPress menu item built by hand in <code>wp-admin</code>, which is the only
+route available since menu items cannot be verified over XML-RPC. <strong>This ADR is revisited at that
+point rather than silently outlived.</strong></p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Reuse the existing calculator entry, serving the annex when a desktop browser is detected.</strong>
+Proposed and rejected on 2026-09-11. A single entry labelled &quot;Kalkulator punktów&quot; that opens a
+different document on desktop misdescribes itself on half of all visits; viewport width is not
+device, so an iPad in landscape, a narrowed window or Android's &quot;Request desktop site&quot; each
+misfire and leave the visitor with no route at all to the other document; and a shared URL stops
+being shareable. Decisively, the drawer exists only in the Pages copy of the application, so
+branching logic written into it is scaffolding discarded at the WordPress migration while the
+document survives. Behaviour that matters long-term belongs inside the file.</li>
+<li><strong>One drawer entry opening an index page listing both documents.</strong> Rejected for now: it keeps the
+drawer at three entries but adds a layer to solve a problem two documents do not yet have, and it
+costs the calculator — the more frequently used of the two — an extra click. Worth revisiting at
+a third document.</li>
+<li><strong>Two files, one per language, cross-linked.</strong> Rejected: duplicated chrome and CSS, two permanent
+URLs and two WordPress slugs to keep alive, and nothing mechanically prevents the versions
+drifting apart.</li>
+<li><strong>The calculator's JavaScript string dictionary.</strong> Rejected: it would put whole paragraphs of
+prose into JavaScript string literals and render an empty page when JavaScript does not run,
+which is the failure this publication exists to avoid.</li>
+<li><strong>Build it through <code>vite.config.ce.ts</code>, as <code>register.html</code> is built.</strong> Rejected for the reason
+ADR-085 gave: it adds a build step and a workflow copy step for a file that needs neither, splits
+one hand-maintained file into an input and an output, and the same file must stay directly
+uploadable to the SPWS WordPress site.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>The scoring function now exists in three implementations.</strong> The ranklist engine
+(<code>fn_calc_tournament_scores</code>, the scoring in force), the calculator page and this annex — the
+latter two both expressing the proposal. The two pages are <strong>verified identical by reading, not by
+a test</strong>, because they are independent documents rather than copies of one file; a byte-identity
+assertion of the kind that guards the calculator's three copies cannot express this. ADR-085 §3
+already commits to collapsing the duplication when the proposal becomes the scoring in force.</li>
+<li><strong>A pinned test changes rather than being deleted.</strong> Plan test 8.84 (<code>Sidebar.test.ts:86</code>) asserts
+the drawer's entries as an <strong>equality</strong>, so the fourth entry necessarily extends it. The assertion
+is extended, not loosened to a containment, because the <em>order</em> is the property worth holding.</li>
+<li><strong>The file bypasses the build pipeline</strong>, so type checking and minification do not cover it — the
+same accepted cost as ADR-085. Correctness is held by the byte-identity test against the
+<code>doc/tools/</code> source, by assertions that both language blocks and the CSS switch rules are present,
+and by the verified parity recorded in <em>Context</em>.</li>
+<li><strong>A silent failure mode is introduced and recorded.</strong> The CSS switch uses the general sibling
+combinator, which requires the radio inputs to precede the content blocks and share a parent with
+<code>&lt;main&gt;</code>. Reordering the markup later breaks the switch with no error — the page simply sticks in
+one language. <code>:has()</code> would lift the constraint and is deliberately not used, consistent with the
+conservative-API house style of these files.</li>
+<li><strong>New files:</strong> <code>frontend/public/tabela-punktacji.html</code>, <code>doc/plans/tabela-punktacji-2026-09-11.html</code>.
+<strong>Changed:</strong> <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> (<code>noindex</code>, bilingual layer, English
+copy), <code>frontend/src/components/Sidebar.svelte</code> (fourth entry),
+<code>frontend/src/lib/locales/{pl,en}.json</code> (<code>nav_points_table</code>), RTM FR-59.</li>
+<li><strong>Tests:</strong> 8.84 extended; 8.90–8.96 added; no test removed.</li>
+<li><strong>Publication is public.</strong> GitHub Pages serves the page to anyone with the address. The <code>noindex</code>
+meta keeps search engines away, but the drawer entry makes it reachable by every ranklist visitor
+while the annex is still a draft. This is the same trade the user accepted for the calculator on
+2026-08-15, made again here knowingly.</li>
+<li><strong>A dependency on an absolute URL is accepted.</strong> The annex links to the calculator at its full
+Pages address rather than relatively, which is correct for the WordPress destination — a relative
+link would 404 under a WordPress path. It follows that when the <em>calculator</em> moves to WordPress,
+this link must be updated; nothing detects that automatically.</li>
+<li><strong>Known divergence, deliberately not fixed:</strong> the approved mockup <code>doc/mockups/m8_app_shell.html</code>
+(ADR-015) shows a two-entry drawer and was already divergent after ADR-085. It remains a record of
+what was approved in M8; this ADR is the current statement.</li>
+<li><strong>Observed and deliberately not addressed here:</strong> the annex renders roughly 89,100 table cells
+(297 rows × 300 columns) as DOM nodes in twelve-row chunks, and its print stylesheet lifts the
+container's <code>max-height</code>, so printing yields the entire table. The user has tested the document as
+it stands. If either is ever addressed, the fix belongs <strong>inside</strong> the document — fewer default
+columns, virtualised rows, a bounded print range — and never in drawer navigation.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="091-no-season-skeletons-for-scraped-events.html">← ADR-091: A season is bootstrapped only with skeletons nobody discovers for us</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>092-scoring-table-annex-bilingual-static-page.md</code> · source SHA-256 <code>97d14c2da2c42c6199e3967c24bf66c4dde60833351f99337799145505aa1d17</code></footer>
+</div></body></html>

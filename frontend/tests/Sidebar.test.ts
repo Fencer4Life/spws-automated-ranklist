@@ -82,13 +82,15 @@ describe('Sidebar (T8.4)', () => {
     expect(onclose).toHaveBeenCalled()
   })
 
-  // 8.84 — Trzecia pozycja „Kalkulator punktów” stoi bezpośrednio po „Kalendarz”
-  it('renders the calculator entry directly after Kalendarz', () => {
+  // 8.84 — Kolejność pozycji w szufladzie. Asercja jest RÓWNOŚCIĄ, nie zawieraniem:
+  // to kolejność jest własnością wartą pilnowania, więc czwarta pozycja (ADR-092)
+  // ROZSZERZA tę listę, a nie rozluźnia asercję.
+  it('renders the drawer entries in order, the points table fourth', () => {
     const { container } = render(Sidebar, { props: defaultProps })
     const texts = Array.from(container.querySelectorAll('.nav-list .nav-item')).map((el) =>
       el.textContent?.trim(),
     )
-    expect(texts).toEqual(['Ranking', 'Kalendarz', 'Kalkulator punktów'])
+    expect(texts).toEqual(['Ranking', 'Kalendarz', 'Kalkulator punktów', 'Tabela punktacji'])
   })
 
   // 8.85 — Kalkulator to odnośnik do samodzielnej strony, nie widok aplikacji
@@ -129,6 +131,58 @@ describe('Sidebar (T8.4)', () => {
     expect(item.getAttribute('href')).toBe(
       `kalkulator-punktow.html?lang=${getLocale()}`,
     )
+  })
+
+  // Plan tests 8.90–8.93 — czwarta pozycja prowadząca do Załącznika nr 1
+  // (tabela punktacji). ADR-092. Ta sama budowa co pozycja kalkulatora:
+  // odnośnik, nie przycisk — strona jest samodzielna, nie widokiem aplikacji.
+  // See doc/plans/tabela-punktacji-2026-09-11.html §7.
+
+  // 8.90 — Tabela to odnośnik do samodzielnej strony, nie widok aplikacji
+  it('renders the points table entry as a link that does not navigate the app', async () => {
+    const onnavigate = vi.fn()
+    const { container } = render(Sidebar, {
+      props: { ...defaultProps, onnavigate },
+    })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Tabela punktacji'),
+    ) as HTMLAnchorElement
+    expect(item).not.toBeUndefined()
+    expect(item.tagName).toBe('A')
+    await fireEvent.click(item)
+    expect(onnavigate).not.toHaveBeenCalled()
+  })
+
+  // 8.91 — Odnośnik niesie język ustawiony w aplikacji
+  it('carries the active locale in the points table link', () => {
+    const { container } = render(Sidebar, { props: defaultProps })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Tabela punktacji'),
+    ) as HTMLAnchorElement
+    expect(item.getAttribute('href')).toBe(`tabela-punktacji.html?lang=${getLocale()}`)
+  })
+
+  // 8.92 — Nowa karta, bez dostępu do okna otwierającego
+  it('opens the points table in a new tab with rel=noopener', () => {
+    const { container } = render(Sidebar, { props: defaultProps })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Tabela punktacji'),
+    ) as HTMLAnchorElement
+    expect(item.getAttribute('target')).toBe('_blank')
+    expect(item.getAttribute('rel')).toBe('noopener')
+  })
+
+  // 8.93 — Kliknięcie tabeli zamyka szufladę
+  it('emits close when the points table entry is clicked', async () => {
+    const onclose = vi.fn()
+    const { container } = render(Sidebar, {
+      props: { ...defaultProps, onclose },
+    })
+    const item = Array.from(container.querySelectorAll('.nav-item')).find((el) =>
+      el.textContent?.includes('Tabela punktacji'),
+    )
+    await fireEvent.click(item!)
+    expect(onclose).toHaveBeenCalled()
   })
 
   // 8.31 — Sidebar overlay dims content
