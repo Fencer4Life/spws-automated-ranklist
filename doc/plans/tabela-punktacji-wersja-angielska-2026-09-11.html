@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English copy for review — Tabela punktacji</title>
+<style>
+:root{--navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+--green:#1c5a3e;--green-bg:#cfe8d9;--navy-soft:#e4ecf7;
+--serif:"Iowan Old Style",Charter,Georgia,serif;--sans:Inter,system-ui,-apple-system,sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;
+--card:#1a2330;--navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
+.page{max-width:1080px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,32px);margin:8px 0;font-weight:600}
+h2{font-family:var(--serif);font-size:20px;margin:32px 0 6px;padding-top:16px;border-top:1px solid var(--line)}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0 0 10px;max-width:75ch}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;width:50%}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.pre{white-space:pre-wrap;font-family:var(--mono);font-size:12.5px}
+.tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;background:var(--green-bg);
+color:var(--green);font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);
+border-radius:10px;padding:14px 18px;margin:18px 0}
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style></head><body><div class="page">
+<p class="eyebrow">SPWS · do przeglądu · 11 września 2026</p>
+<h1>Wersja angielska — do zatwierdzenia</h1>
+<p class="dek">Pełna treść angielska Załącznika nr 1, zestawiona z polskim oryginałem. Wiersze
+wyciągnięte wprost z pliku, nie przepisane ręcznie — to dokładnie ten tekst, który zobaczy czytelnik
+po kliknięciu EN.</p>
+
+<div class="card">
+<b>Słownictwo przeniesione z kalkulatora.</b> Pozycje oznaczone <span class="tag">z kalkulatora</span>
+są przepisane <i>dosłownie</i> z <code>T.en</code> w <code>kalkulator-punktow.html</code>. Oba dokumenty
+opisują ten sam wzór, więc nie powinny mówić o nim dwoma różnymi słownikami. Zmiana któregokolwiek z nich
+tutaj rozjedzie je z kalkulatorem.
+</div>
+
+<h2>Treść statyczna</h2><p class="dek">Leży w znaczniku, w dwóch blokach przełączanych samym CSS-em — działa przy wyłączonym JavaScripcie.</p><div class="tw"><table>
+<thead><tr><th>Polski</th><th>English</th></tr></thead><tbody>
+<tr><td>Załącznik nr 1 ·</td><td>Annex 1 ·</td></tr>
+<tr><td>Tabela punktacji Pucharu Polski Weteranów w szermierce</td><td>Scoring Table of the Polish Veterans Fencing Cup</td></tr>
+<tr><td>Punkty rankingowe za miejsce zdobyte w stawce liczącej od 4 do 300 uczestników — sezon 2026/2027.</td><td>Ranking points for a finishing place in fields of 4 to 300 entries — season 2026/2027.</td></tr>
+<tr><td>Data: 11.09.2026</td><td>Date: 11.09.2026</td></tr>
+<tr><td>Kalkulator pojedynczego wyniku</td><td>Single result calculator</td></tr>
+<tr><td>Wprowadź liczbę zawodników w stawce, zajęte miejsce i współczynnik rangi zawodów. Wynik oraz wskazana komórka tabeli zostaną zaktualizowane automatycznie.</td><td>Enter the number of entries, the finishing place and the competition rank coefficient. The result and the highlighted table cell update automatically.</td></tr>
+<tr><td>Liczba zawodników w stawce</td><td>Number of entries <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Zajęte miejsce</td><td>Finishing place <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Współczynnik rangi zawodów</td><td>Competition rank coefficient <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>1,0</td><td>1.0</td></tr>
+<tr><td>pkt</td><td>pts <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Zasada obliczeń</td><td>How this is calculated</td></tr>
+<tr><td>Strona stosuje algorytm oznaczony jako „SPWS” w oficjalnym kalkulatorze. Podstawa za pierwsze miejsce rośnie wraz z liczebnością stawki, lecz nie przekracza 50 punktów.</td><td>This page applies the algorithm marked “SPWS” in the official calculator. The base for first place grows with the size of the field but never exceeds 50 points.</td></tr>
+<tr><td class="pre">podstawa = min(50, 10 × log₂N)
+punkty za miejsce = podstawa − (podstawa − 1) × ln(m) / ln(N)
+premia za rundy = liczba wygranych rund DE × 10
+premia za podium = c × 3 × ∛N
+
+wynik = (miejsce + rundy + podium) × współczynnik rangi
+
+c: 3 dla 1. miejsca, 2 dla 2., 1 dla 3., poza podium 0</td><td class="pre">base = min(50, 10 × log₂N)
+place points = base − (base − 1) × ln(m) / ln(N)
+round bonus = DE rounds won × 10
+podium bonus = c × 3 × ∛N
+
+result = (place + rounds + podium) × rank coefficient
+
+c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</td></tr>
+<tr><td>Kalkulator online:</td><td>Online calculator:</td></tr>
+<tr><td>Kalkulator punktów za wynik — SPWS</td><td>Result points calculator — SPWS <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Tabela poniżej wykorzystuje ten sam algorytm i sposób prezentacji wyniku z dokładnością do jednego miejsca po przecinku.</td><td>The table below uses the same algorithm and presents results to one decimal place.</td></tr>
+<tr><td>Pełna tabela: stawka 4–300 zawodników, miejsca 1–300</td><td>Full table: fields of 4–300 entries, places 1–300</td></tr>
+<tr><td>Wiersz wskazuje liczbę zawodników w stawce, a kolumna — zajęte miejsce. Znak „—” oznacza miejsce niemożliwe dla danej stawki zawodników. Punkty w tabeli uwzględniają współczynnik rangi wskazany w kalkulatorze powyżej.</td><td>The row gives the number of entries and the column the finishing place. A “—” marks a place that is not possible for that field size. Points in the table include the rank coefficient set in the calculator above.</td></tr>
+<tr><td>Pokaż wybrany wynik w tabeli</td><td>Show selected result in the table</td></tr>
+<tr><td>Pobierz tabelę CSV</td><td>Download table as CSV</td></tr>
+<tr><td>Tabela punktów rankingowych Pucharu Polski Weteranów w szermierce według liczby zawodników w stawce i zajętego miejsca</td><td>Table of ranking points for the Polish Veterans Fencing Cup by number of entries and finishing place</td></tr>
+<tr><td>wartość punktowa</td><td>points value</td></tr>
+<tr><td>miejsce niemożliwe</td><td>place not possible</td></tr>
+<tr><td>Projekt załącznika do Regulaminu powoływania reprezentacji Polski weteranów w szermierce · sezon 2026/2027</td><td>Draft annex to the Regulation on selecting the Polish veterans national fencing team · season 2026/2027</td></tr>
+</tbody></table></div>
+
+<h2>Treść generowana przez skrypt</h2><p class="dek">Słownik T w skrypcie. Wartości liczbowe pokazane na przykładach; liczebniki angielskie składa funkcja ord() przeniesiona z kalkulatora.</p><div class="tw"><table>
+<thead><tr><th>Polski</th><th>English</th></tr></thead><tbody>
+<tr><td>Załącznik nr 1 — Tabela punktacji Pucharu Polski Weteranów w szermierce</td><td>Annex 1 — Scoring Table of the Polish Veterans Fencing Cup</td></tr>
+<tr><td>Uczestnicy ↓ / Miejsce →</td><td>Entries ↓ / Place →</td></tr>
+<tr><td>Przygotowywanie tabeli…</td><td>Preparing the table…</td></tr>
+<tr><td>Obliczono wiersze do 120 z 300…</td><td>Rows computed up to 120 of 300…</td></tr>
+<tr><td>Tabela gotowa · współczynnik rangi 1,0</td><td>Table ready · rank coefficient 1.0</td></tr>
+<tr><td>3. miejsce w stawce 7 zawodników · współczynnik rangi 1,0</td><td>3rd place out of 7 entries · rank coefficient 1.0</td></tr>
+<tr><td>Podaj liczbę zawodników w stawce od 4 do 300 oraz możliwe miejsce.</td><td>Enter a number of entries between 4 and 300, and a possible place.</td></tr>
+<tr><td>3. miejsce / stawka 7 zawodników</td><td>3rd place / field of 7 entries</td></tr>
+<tr><td>Miejsce 9: niemożliwe</td><td>Place 9: not possible</td></tr>
+<tr><td>Podstawa za 1. miejsce</td><td>Base for 1st place <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Punkty za miejsce</td><td>Place points <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Premia za wygrane rundy</td><td>Round bonus <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Premia za podium</td><td>Podium bonus <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Razem przed mnożnikiem</td><td>Subtotal <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>Wynik końcowy</td><td>Result <span class="tag">z kalkulatora</span></td></tr>
+<tr><td>liczba zawodników w stawce / miejsce 7</td><td>number of entries / place 7</td></tr>
+<tr><td>tabela-punktacji-SPWS-wspolczynnik-1-0.csv</td><td>spws-scoring-table-rank-1-0.csv</td></tr>
+</tbody></table></div>
+
+<footer>Źródło: <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> ·
+opublikowana kopia: <code>frontend/public/tabela-punktacji.html</code> · ADR-092</footer>
+</div></body></html>
