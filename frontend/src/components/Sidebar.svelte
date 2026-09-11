@@ -45,6 +45,25 @@
         {t('nav_calculator')}
       </a>
     </li>
+    <li>
+      <!-- Załącznik nr 1 do Regulaminu powoływania reprezentacji — tabela punktacji.
+           Druga (i ostatnia) strona statyczna publikowana tą drogą; ADR-092 zapisuje
+           to jako WYJĄTEK, nie wzorzec — trzecia taka strona wymaga własnej decyzji.
+           Dokument jest dwujęzyczny sam z siebie: przełącznik PL/EN działa na samym
+           CSS, więc strona czyta się także przy wyłączonym JavaScripcie. Parametr
+           ?lang= jest tylko podpowiedzią z aplikacji, nigdy warunkiem — po przyjęciu
+           załącznika strona przenosi się na WordPressa, gdzie nie ma ani tej szuflady,
+           ani tego parametru. -->
+      <a
+        class="nav-item"
+        href="tabela-punktacji.html?lang={getLocale()}"
+        target="_blank"
+        rel="noopener"
+        onclick={onclose}
+      >
+        {t('nav_points_table')}
+      </a>
+    </li>
   </ul>
 
   {#if isAdmin}
