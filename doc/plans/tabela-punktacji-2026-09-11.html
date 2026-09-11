@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan — Tabela punktacji as a fourth drawer entry</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+pre{overflow-x:auto;background:#101b29;color:#eef5ff;border-radius:9px;padding:14px 16px;font:13px/1.7 var(--mono);margin:14px 0}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+ul.gate{list-style:none;padding-left:0}
+ul.gate li{padding:4px 0}
+ul.gate li:before{content:"☐ ";font-family:var(--mono);color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">SPWS · plan · 11 September 2026</p>
+<h1>Tabela punktacji as a fourth drawer entry</h1>
+<p class="dek">Załącznik nr 1 to the national-team selection regulation, published as a bilingual
+standalone page on GitHub Pages and linked from the ranklist navigation drawer — a second bounded
+exception under ADR-085 §2, on its way to WordPress.</p>
+
+<div class="toc">
+<ol>
+  <li><a href="#why">Why this is being done</a></li>
+  <li><a href="#gate">Planning-gate result</a></li>
+  <li><a href="#decisions">Decisions closed</a></li>
+  <li><a href="#locale">Locale implementation</a></li>
+  <li><a href="#english">The English version</a></li>
+  <li><a href="#adr">ADR-092 — for sign-off</a></li>
+  <li><a href="#tests">Acceptance tests (RED before GREEN)</a></li>
+  <li><a href="#scope">File-level scope of change</a></li>
+  <li><a href="#walk">Scenario walk-through</a></li>
+  <li><a href="#done">Definition of done</a></li>
+  <li><a href="#coherence">Documentation coherence gate</a></li>
+</ol>
+</div>
+
+<h2 id="why">1 · Why this is being done</h2>
+
+<p><code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> is a finished, self-contained Polish
+document — <b>Załącznik nr 1</b> to the Regulation on selecting the Polish veterans national team. It
+carries a single-result calculator, the full scoring table for fields of 4–300 entries across places
+1–300, and a CSV export. Version 0.1, status <i>projekt</i>, dated 11.09.2026.</p>
+
+<p>It has to be reachable <b>at an address</b>, for the same reason the points calculator did:
+messenger and iOS Files previews open HTML with JavaScript disabled, and this document computes its
+entire table in the browser. Sent as an attachment it arrives blank.</p>
+
+<p>GitHub Pages is the review-and-circulation address. The document's final home is
+<code>weteraniszermierki.pl</code> as a PROD deployment once the annex is official — which is why
+nothing in its design may depend on the ranklist application around it.</p>
+
+<h2 id="gate">2 · Planning-gate result</h2>
+
+<h3>Publication path — already proven</h3>
+<p>Vite copies <code>frontend/public/</code> into <code>dist/</code> unaided; no build-configuration
+entry and no workflow step are required. <code>.github/workflows/release.yml</code> uploads
+<code>frontend/dist</code> with <code>actions/upload-pages-artifact@v3</code> (job <code>build</code>)
+and publishes it with <code>actions/deploy-pages@v4</code> (job <code>deploy-pages</code>). The points
+calculator has shipped this way since 15 August 2026.</p>
+
+<h3>Algorithm parity — verified, exact</h3>
+<p>The document states it uses the algorithm marked “SPWS” in the official calculator. That claim was
+checked against the implementation rather than taken on trust, and it holds line for line:</p>
+<div class="tw">
+<table>
+<thead><tr><th>Document</th><th>Calculator</th><th>Agreement</th></tr></thead>
+<tbody>
+<tr><td><code>firstPlaceBase(N)</code></td><td><code>fN(n)</code></td>
+    <td><code>min(50, 10·log₂(max(2,N)))</code> — identical, including the <code>max(2,·)</code> floor</td></tr>
+<tr><td><code>wonRounds(m,N)</code></td><td><code>rundy(place,n)</code></td>
+    <td>identical, including the <code>(n &amp; (n−1))</code> power-of-two test</td></tr>
+<tr><td><code>scoreParts</code></td><td><code>parts</code></td>
+    <td>same place formula <code>base − (base−1)·ln(m)/ln(N)</code>, same <code>{1:3,2:2,3:1}</code> podium factors, same <code>3·∛N</code> unit</td></tr>
+<tr><td><code>#rank</code> slider</td><td><code>#fW</code></td>
+    <td><code>min=1 max=3 step=0.1</code> — identical</td></tr>
+</tbody>
+</table>
+</div>
+<p>One deliberate difference, stated in the document's own heading: the table's domain starts at
+<b>N ≥ 4</b> where the calculator accepts <b>N ≥ 2</b>. Not a defect — a scope choice — but worth
+knowing that the two tools answer over different ranges.</p>
+
+<h3>Release guards</h3>
+<p>The release job greps the whole of <code>frontend/dist/</code> for <code>service_role</code>,
+<code>127.0.0.1</code> and <code>supabase-demo</code> and fails on a hit. The document contains none of
+the three. Its only external reference is an <b>absolute</b> link to the calculator on Pages, which is
+the right choice for the WordPress destination — a relative link would 404 under a WordPress path.</p>
+
+<h3>Governance</h3>
+<p>ADR-085 §2 closed the static-page route as a one-off and requires any further standalone page to
+carry <i>its own decision</i>. This plan supplies that as <b>ADR-092</b>. Two corrections to earlier
+assumptions, both verified against the corpus:</p>
+<div class="card warn">
+<span class="lb">Corrections</span>
+<ul style="margin:0">
+  <li><b>ADR-091 is already taken</b> — <code>091-no-season-skeletons-for-scraped-events</code>. The
+      next free number is <b>ADR-092</b>.</li>
+  <li><b>The calculator was never given its own FR.</b> It was folded into <b>FR-59</b> (app shell /
+      drawer navigation). Following that precedent, this change <b>amends FR-59</b> rather than
+      minting FR-136.</li>
+</ul>
+</div>
+<p>ADR-085 itself needs <b>no amendment</b>: it anticipated this case. Leaving it untouched keeps it
+free to be superseded on its own expiry condition, when the proposed scoring becomes the scoring in
+force and the calculator page is deleted.</p>
+
+<h2 id="decisions">3 · Decisions closed</h2>
+
+<div class="card locked">
+<span class="lb">Settled with the user, 11 September 2026</span>
+<div class="tw">
+<table>
+<thead><tr><th>Question</th><th>Decision</th></tr></thead>
+<tbody>
+<tr><td>How is the second static page recorded?</td>
+    <td>A new ADR — <b>ADR-092</b> — framed as a bounded <b>exception</b>, complementary to the
+        calculator, not a general pattern.</td></tr>
+<tr><td>Where in the drawer?</td><td><b>Fourth position</b>, after “Kalkulator punktów”.</td></tr>
+<tr><td>Languages?</td><td>Polish and English in <b>one file</b>, with a switch.</td></tr>
+<tr><td>Device detection behind the existing calculator entry?</td>
+    <td><b>Dropped.</b> The drawer exists only in the Pages copy of the application; a WordPress page
+        has no <code>Sidebar.svelte</code> and no <code>?lang=</code> contract, so drawer-level
+        branching is scaffolding discarded at migration while the document survives. Anything that
+        matters long-term lives inside the file.</td></tr>
+<tr><td>WordPress?</td><td>Yes, once official — as a PROD deployment. The menu item itself stays
+        manual and out of this plan's scope.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<h2 id="locale">4 · Locale implementation</h2>
+
+<p>The calculator holds every string in a JavaScript dictionary <code>T = {pl:{…}, en:{…}}</code> and
+rewrites <code>[data-i18n]</code> text nodes. That suits a UI of about twenty-five short labels. It does
+not transfer here: this document is prose as well as UI, and a dictionary would render an
+<b>empty page</b> when JavaScript does not run — the exact failure that made hosting necessary in the
+first place.</p>
+
+<p>Instead: one file, both languages in the markup, switched by <b>CSS alone</b>.</p>
+
+<pre><code>&lt;nav class="seg lang"&gt;          &lt;!-- radios PRECEDE the content, sharing a parent with &lt;main&gt; --&gt;
+  &lt;input type="radio" name="lang" id="langPl" checked&gt;&lt;label for="langPl"&gt;PL&lt;/label&gt;
+  &lt;input type="radio" name="lang" id="langEn"&gt;&lt;label for="langEn"&gt;EN&lt;/label&gt;
+&lt;/nav&gt;
+&lt;main&gt;
+  &lt;div class="copy-pl" lang="pl"&gt;…&lt;/div&gt;
+  &lt;div class="copy-en" lang="en"&gt;…&lt;/div&gt;
+&lt;/main&gt;
+
+#langPl:checked ~ main .copy-en { display: none }
+#langEn:checked ~ main .copy-pl { display: none }</code></pre>
+
+<p>What this buys:</p>
+<ul>
+  <li><b>The switch works with JavaScript disabled.</b> Polish renders from the markup alone, and the
+      toggle still functions — so even the messenger and Files previews that broke the calculator show
+      a usable document, in either language.</li>
+  <li><b>JavaScript adds enhancements only, never preconditions</b>: honour <code>?lang=pl|en</code>
+      when present, remember the choice, and correct <code>document.documentElement.lang</code> and
+      <code>document.title</code>. Reuse the calculator's <code>param()</code> regex helper and its
+      <code>try/catch</code> around <code>localStorage</code> — that guard exists because storage
+      access <b>throws</b> when the file is opened over <code>file:</code>.</li>
+  <li><b>One URL, one file, one upload.</b> The same <code>?lang=</code> contract the drawer already
+      speaks, and a file that is fully functional opened cold at any address.</li>
+  <li><b>Only the static copy is duplicated.</b> The table, the calculator logic and the script stay
+      single.</li>
+</ul>
+
+<div class="card open">
+<span class="lb">Implementation constraint worth recording</span>
+<p style="margin:0">The general sibling combinator <code>~</code> requires the radio inputs to
+<b>precede</b> the content blocks and share a parent with <code>&lt;main&gt;</code>. Reorder the markup
+later and the switch stops working <b>silently</b> — no error, just a page stuck in one language.
+<code>:has()</code> would lift the constraint and is deliberately not used: these files are opened
+straight from phone filesystems, and the house style for them avoids newer browser APIs, which is why
+the calculator hand-rolls <code>param()</code> instead of using <code>URLSearchParams</code> and
+<code>numberPl</code> instead of <code>Intl</code>.</p>
+</div>
+
+<h2 id="english">5 · The English version</h2>
+
+<p>Roughly thirty static strings: the eyebrow and <code>h1</code>, the lead, three meta chips, both
+card headings and their prose, the formula legend, the source note, the table heading and its
+explanatory paragraph, two button captions, the status-line templates, six breakdown labels, the
+legend, the footer, <code>&lt;title&gt;</code> and the <code>description</code> meta.</p>
+
+<div class="card locked">
+<span class="lb">Terminology is reused, not invented</span>
+<p style="margin:0">The calculator's <code>T.en</code> already defines every term this document needs
+— <i>Number of entries</i>, <i>Finishing place</i>, <i>Competition rank coefficient</i>, <i>pts</i>,
+<i>Place</i>, <i>Points</i>, <i>Base for 1st place</i>, <i>Place points</i>, <i>Round bonus</i>,
+<i>Podium bonus</i>, <i>Subtotal</i>, <i>Result</i>. Two documents describing one formula must not
+ship two competing English vocabularies for it, so these are carried over verbatim. New terms needed
+beyond that set: <i>Annex 1</i>, <i>Polish Veterans Fencing Cup</i>, <i>Draft</i>, <i>place not
+possible</i>, <i>Download table as CSV</i>, <i>Show selected result in the table</i>.</p>
+</div>
+
+<p>Three script-level additions, since the script is shared: <code>numberPl</code> gains an English
+branch (decimal point rather than comma, mirroring the calculator's <code>num()</code>), the CSV header
+row is localised, and the CSV download filename gets an English form.</p>
+
+<p><b>The translation goes to the user for review before release.</b> It reaches fencers, so approving
+it is the user's call, not the implementer's.</p>
+
+<h2 id="adr">6 · ADR-092 — for sign-off</h2>
+
+<div class="card open">
+<span class="lb">Draft decision, to be signed off before any code</span>
+<p><b>Title:</b> A second standalone static page — the scoring-table annex, published bilingually.</p>
+<p><b>Status:</b> Proposed, 2026-09-11. <b>Relates to:</b> ADR-085 §2 (which requires this decision to
+exist), ADR-011 (the page rides the existing Pages artifact), ADR-090 (the WordPress destination),
+ADR-015 §1 as amended by ADR-085 (the drawer gains a fourth entry).</p>
+<p><b>Decision, in four parts:</b></p>
+<ol>
+  <li>The annex ships as <code>frontend/public/tabela-punktacji.html</code>, copied into
+      <code>dist/</code> by Vite and published to Pages by the existing release pipeline. The drawer
+      links it with a relative <code>&lt;a href&gt;</code> carrying the active locale, opened in a new
+      tab.</li>
+  <li><b>Bilingual in one file, switched by CSS</b>, so the document works with JavaScript disabled
+      and depends on nothing around it — a precondition for the WordPress destination.</li>
+  <li><b>This remains an exception.</b> Two pages now use this route, both informational documents
+      about the scoring formula. It still establishes no general pattern; a third requires its own
+      decision. The default routes remain a view inside the application, or the
+      <code>register.html</code> mechanism.</li>
+  <li><b>Expiry and succession.</b> While the annex carries <i>Status: projekt</i> the page is
+      <code>noindex, nofollow</code>. When the annex is adopted it moves to
+      <code>weteraniszermierki.pl</code> as a PROD deployment; the drawer entry then becomes a
+      WordPress menu item and this ADR is revisited rather than silently outlived.</li>
+</ol>
+<p><b>Why neither default route applies:</b> the annex is content, not application state; it needs no
+ranklist data and no scoring engine; and it must remain a single file that transfers byte-identically
+to WordPress, which a bundled view cannot.</p>
+<p style="margin-bottom:0"><b>Consequence to accept, stated plainly:</b> the scoring function now
+exists in <b>three</b> implementations — the ranklist engine (<code>fn_calc_tournament_scores</code>,
+the scoring in force), the calculator page and this annex (both the proposal). The two pages are
+verified identical by reading, not by a test, because they are independent documents rather than copies
+of one file. ADR-085's own expiry condition already commits to collapsing this duplication when the
+proposal becomes the scoring in force.</p>
+</div>
+
+<h2 id="tests">7 · Acceptance tests (RED before GREEN)</h2>
+
+<div class="card warn">
+<span class="lb">One existing test goes RED by design</span>
+<p style="margin:0">Test <b>8.84</b> in <code>frontend/tests/Sidebar.test.ts:86</code> asserts the
+drawer's entries <b>exactly equal</b> <code>['Ranking','Kalendarz','Kalkulator punktów']</code> — an
+equality, not a containment. Adding a fourth entry fails it. That failure is the RED step; the
+assertion is updated to the new four-entry list rather than loosened, because the <i>order</i> is the
+property worth holding.</p>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Id</th><th>Assertion</th><th>File</th></tr></thead>
+<tbody>
+<tr><td>8.89</td><td>The drawer's entries equal <code>['Ranking','Kalendarz','Kalkulator punktów','Tabela punktacji']</code> — the new entry is fourth (8.84 updated)</td><td><code>Sidebar.test.ts</code></td></tr>
+<tr><td>8.90</td><td>The entry is an <code>&lt;a&gt;</code>, not a button, and clicking it does not call <code>onnavigate</code></td><td><code>Sidebar.test.ts</code></td></tr>
+<tr><td>8.91</td><td>Its <code>href</code> is exactly <code>tabela-punktacji.html?lang={getLocale()}</code></td><td><code>Sidebar.test.ts</code></td></tr>
+<tr><td>8.92</td><td>It carries <code>target="_blank"</code> and <code>rel="noopener"</code></td><td><code>Sidebar.test.ts</code></td></tr>
+<tr><td>8.93</td><td>Clicking it fires <code>onclose</code></td><td><code>Sidebar.test.ts</code></td></tr>
+<tr><td>8.94</td><td>The published copy is byte-identical to the <code>doc/tools/</code> source</td><td><code>assets.test.ts</code></td></tr>
+<tr><td>8.95</td><td>The published copy carries <code>noindex</code> while the annex is a draft</td><td><code>assets.test.ts</code></td></tr>
+<tr><td>8.96</td><td>Both language blocks are present, each with its own <code>lang</code> attribute, and the CSS switch rules exist</td><td><code>assets.test.ts</code></td></tr>
+</tbody>
+</table>
+</div>
+<p class="dek" style="font-style:normal;font-family:var(--sans);font-size:14px">Each new assertion is
+confirmed by mutation — reverted in the source, observed to fail, restored.</p>
+
+<h2 id="scope">8 · File-level scope of change</h2>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code></td><td>Modified — <code>noindex</code> meta, bilingual layer, English copy. Remains the source of truth.</td></tr>
+<tr><td><code>frontend/public/tabela-punktacji.html</code></td><td><b>New</b> — byte-identical published copy. Lowercase hyphenated name, matching <code>kalkulator-punktow.html</code>, because it becomes a permanent public URL and later a WordPress slug.</td></tr>
+<tr><td><code>frontend/src/components/Sidebar.svelte</code></td><td>Modified — a fourth <code>&lt;li&gt;</code> after the calculator, same anchor shape.</td></tr>
+<tr><td><code>frontend/src/lib/locales/{pl,en}.json</code></td><td>Modified — <code>nav_points_table</code>: „Tabela punktacji” / “Points table”.</td></tr>
+<tr><td><code>frontend/tests/Sidebar.test.ts</code></td><td>Modified — 8.84 updated; 8.90–8.93 added.</td></tr>
+<tr><td><code>frontend/tests/assets.test.ts</code></td><td>Modified — 8.94–8.96 added.</td></tr>
+<tr><td><code>doc/adr/092-*.md</code> + <code>.html</code></td><td><b>New</b> — ADR-092 and its generated twin.</td></tr>
+<tr><td><code>doc/requirements-traceability-matrix.{md,html}</code></td><td>Modified — FR-59 amended.</td></tr>
+<tr><td><code>doc/handbook/subsystems/frontend-and-automation.html</code></td><td>Modified — the drawer now has four entries and two standalone pages.</td></tr>
+<tr><td>Specification Appendix C</td><td>Modified — ADR-092 registered.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="walk">9 · Scenario walk-through</h2>
+<p><b>A fencer on a phone, Polish interface.</b> Opens the ranklist, taps the hamburger, sees four
+entries, taps “Tabela punktacji”. A new tab opens at
+<code>…/tabela-punktacji.html?lang=pl</code>; the drawer closes behind them. The document renders in
+Polish, the calculator is usable immediately, and the table fills in progressively with a status line
+reporting progress.</p>
+<p><b>The same fencer sends the link to a colleague abroad.</b> The colleague opens it with the
+ranklist set to English — or simply taps EN on the page itself. Either route reaches the English copy;
+the URL alone is enough, because language is a property of the page rather than of the app that linked
+it.</p>
+<p><b>A board member opens the file from a WhatsApp attachment.</b> JavaScript does not run in the
+preview. Polish still renders, the PL/EN toggle still works, and the page says plainly what it is —
+the calculator and table are inert, which is the signal to open the link instead. The calculator page,
+by contrast, shows nothing at all in this situation.</p>
+<p><b>After adoption.</b> The annex moves to <code>weteraniszermierki.pl</code>. The file transfers
+unchanged because it never depended on the drawer, the <code>?lang=</code> parameter or any relative
+path. The <code>noindex</code> meta is removed as a deliberate act, and the drawer entry is replaced by
+a WordPress menu item built by hand in <code>wp-admin</code>.</p>
+
+<h2 id="done">10 · Definition of done</h2>
+<ul class="gate">
+  <li>ADR-092 signed off <b>before</b> any code, rendered to HTML, registered in Appendix C.</li>
+  <li>8.84 seen RED, then GREEN; 8.90–8.96 added and each confirmed by mutation.</li>
+  <li><code>npx vitest run</code> green across the frontend suite; <code>npx svelte-check</code> clean.</li>
+  <li><code>python scripts/check_docs.py</code> passes.</li>
+  <li>English copy reviewed and approved by the user.</li>
+  <li>The live Pages URL verified in a browser: document renders, table completes, PL/EN switch works
+      — <b>and the same re-checked with JavaScript disabled</b>.</li>
+  <li>Two table cells spot-checked against the published calculator, confirming parity survived the edit.</li>
+  <li><code>scripts/refresh-graph.sh</code> run before the commit.</li>
+  <li>The page confirmed reachable from the drawer on the deployed site — verified, not inferred from
+      a green workflow.</li>
+</ul>
+
+<h2 id="coherence">11 · Documentation coherence gate</h2>
+<ul class="gate">
+  <li><b>Handbook</b> — <code>doc/handbook/subsystems/frontend-and-automation.html</code>: the drawer
+      carries four entries, two of which are standalone static pages.</li>
+  <li><b>Governance</b> — FR-59 amended in the RTM (Markdown source and HTML twin).</li>
+  <li><b>Decisions</b> — ADR-092 authored as Markdown per ADR-082, rendered by
+      <code>scripts/render_adrs.py</code>, registered in specification Appendix C.</li>
+  <li><b>Archive</b> — nothing superseded; ADR-085 deliberately untouched.</li>
+  <li>Present tense throughout; no implementation history appended to current pages.</li>
+</ul>
+
+<footer>
+Source evidence: <code>frontend/src/components/Sidebar.svelte</code>,
+<code>frontend/public/kalkulator-punktow.html</code>,
+<code>frontend/tests/{Sidebar,assets}.test.ts</code>,
+<code>.github/workflows/release.yml</code>,
+<code>frontend/src/lib/locales/{pl,en}.json</code>,
+<code>doc/adr/085-points-calculator-temporary-static-page.md</code>,
+<code>doc/requirements-traceability-matrix.md</code>,
+<code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>.
+Intake note: <code>doc/plans/nowa-pozycja-menu-2026-09-11.html</code>.
+</footer>
+
+</div>
+</body>
+</html>

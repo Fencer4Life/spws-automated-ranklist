@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Załącznik nie jest jeszcze przyjęty, a nagłówek nie mówi już o tym ani słowa
+       (chip „Status: projekt” usunięty 11.09.2026). Ten meta jest JEDYNYM, co trzyma
+       projekt regulaminu poza wyszukiwarkami — ADR-092 §4. Zdejmuje się go świadomie,
+       w chwili przyjęcia załącznika, nie przy porządkach. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Tabela punktacji Pucharu Polski Weteranów w szermierce według liczby zawodników w stawce i zajętego miejsca, sezon 2026/2027.">
+  <title>Załącznik nr 1 — Tabela punktacji Pucharu Polski Weteranów w szermierce</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #153f73;
+      --navy-2: #0d2f58;
+      --blue-soft: #eaf2fb;
+      --paper: #f4f6f9;
+      --card: #ffffff;
+      --ink: #172231;
+      --muted: #5d6a7c;
+      --line: #d9e0e8;
+      --line-strong: #aebccc;
+      --accent: #b42332;
+      --accent-soft: #fbecef;
+      --good: #17653d;
+      --shadow: 0 14px 40px rgba(18, 43, 72, .09);
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.55;
+    }
+    a { color: var(--navy); text-underline-offset: 3px; }
+    button, input { font: inherit; }
+    .wrap { width: min(1800px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 56px; }
+    .document-head {
+      padding: clamp(24px, 5vw, 54px);
+      color: #fff;
+      background: linear-gradient(135deg, var(--navy-2), #2864a4);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .78; }
+    h1 { max-width: 970px; margin: 0; font-size: clamp(30px, 5vw, 58px); line-height: 1.08; letter-spacing: -.025em; }
+    .lead { max-width: 850px; margin: 18px 0 0; font-size: clamp(16px, 2vw, 20px); opacity: .9; }
+    .meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
+    .meta span { padding: 6px 10px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; font-size: 12px; font-weight: 700; }
+
+    .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(310px, .9fr); gap: 20px; margin: 22px 0; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: 0 5px 18px rgba(18,43,72,.045); }
+    h2 { margin: 0 0 12px; color: var(--navy-2); font-size: clamp(22px, 3vw, 30px); line-height: 1.2; }
+    h3 { margin: 22px 0 8px; color: var(--navy-2); }
+    p { margin: 8px 0; }
+    .note { color: var(--muted); font-size: 14px; }
+    code { font-family: var(--mono); font-size: .9em; }
+
+    .calculator { display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .field input[type="number"] { width: 100%; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); }
+    .rank-control { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+    .rank-control input { flex: 1; }
+    .rank-value { min-width: 3.2em; font: 700 16px var(--mono); text-align: right; }
+    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 8px; }
+    .result strong { font-size: clamp(34px, 6vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; }
+    .result .unit { font-weight: 800; }
+    .result .description { flex-basis: 100%; color: var(--muted); font-size: 14px; }
+    .breakdown { display: grid; grid-template-columns: 1fr auto; gap: 5px 18px; margin: 14px 0 0; font-size: 14px; }
+    .breakdown dt { color: var(--muted); }
+    .breakdown dd { margin: 0; font-family: var(--mono); font-weight: 700; text-align: right; }
+    .breakdown .total { padding-top: 7px; border-top: 1px solid var(--line); color: var(--ink); font-weight: 800; }
+
+    .formula { overflow-x: auto; margin: 14px 0 0; padding: 14px 16px; background: #101b29; color: #eef5ff; border-radius: 9px; font: 13px/1.7 var(--mono); white-space: pre; }
+    .source { margin-top: 16px; padding: 12px 14px; border-left: 4px solid var(--good); background: #eaf7ef; font-size: 14px; }
+
+    .table-section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: var(--shadow); }
+    .table-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 14px 0; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .button { min-height: 40px; padding: 8px 13px; border: 1px solid var(--navy); border-radius: 8px; color: #fff; background: var(--navy); font-weight: 750; cursor: pointer; }
+    .button.secondary { color: var(--navy); background: #fff; }
+    .button:hover { filter: brightness(.95); }
+    .button:focus-visible, input:focus-visible { outline: 3px solid #79aee6; outline-offset: 2px; }
+    .status { color: var(--muted); font-size: 13px; }
+    .status.done { color: var(--good); font-weight: 700; }
+    .table-shell { max-height: 74vh; overflow: auto; border: 1px solid var(--line-strong); border-radius: 9px; background: #fff; }
+    table { border-collapse: separate; border-spacing: 0; font-size: 11px; font-variant-numeric: tabular-nums; }
+    caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    th, td { min-width: 62px; height: 29px; padding: 5px 7px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    thead th { position: sticky; top: 0; z-index: 4; background: var(--navy); color: #fff; font-weight: 800; }
+    thead th:first-child { left: 0; z-index: 6; min-width: 108px; text-align: left; }
+    tbody th { position: sticky; left: 0; z-index: 3; min-width: 108px; background: var(--blue-soft); color: var(--navy-2); text-align: left; font-weight: 800; }
+    tbody tr:nth-child(even) td { background: #fafbfd; }
+    td.impossible { color: #a5afba; background: #f1f3f6 !important; text-align: center; }
+    th.tenth, td.tenth { border-right: 2px solid #8ea3ba; }
+    .selected-row td, .selected-row th { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+    td.selected-cell { position: relative; z-index: 2; color: #fff; background: var(--accent) !important; font-weight: 900; outline: 2px solid var(--accent); }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line-strong); background: #fff; }
+    .legend .not-possible::before { background: #f1f3f6; }
+    footer { margin-top: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+
+    /* ---- Przełącznik języka -------------------------------------------
+       Przełącznik działa na SAMYM CSS. Radiobuttony leżą bezpośrednio w elemencie
+       BODY, PRZED elementem MAIN, bo tylko wtedy kombinator ~ sięga tekstu
+       zagnieżdżonego gdziekolwiek w dokumencie. PRZESTAWIENIE TEGO PORZĄDKU
+       ZEPSUJE PRZEŁĄCZNIK BEZ CICHO — strona zostanie w jednym języku, bez
+       żadnego błędu w konsoli.
+       :has() zniósłby to ograniczenie i jest świadomie nieużyty: ten plik bywa
+       otwierany prosto z dysku telefonu, więc trzymamy się najprostszych
+       mechanizmów języka, tak jak kalkulator trzyma się param() zamiast
+       URLSearchParams.
+       Skutek uboczny, który jest tu celem: przy WYŁĄCZONYM JavaScripcie strona
+       nadal się czyta i nadal przełącza język. */
+    .lang-radio { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .lang-switch { display: flex; justify-content: flex-end; gap: 0; margin: 0 0 10px; }
+    .lang-switch label {
+      min-width: 46px; padding: 7px 12px; border: 1px solid var(--line-strong);
+      background: #fff; color: var(--muted); font: 700 13px var(--mono);
+      text-align: center; cursor: pointer; user-select: none;
+    }
+    .lang-switch label:first-of-type { border-radius: 8px 0 0 8px; }
+    .lang-switch label:last-of-type { border-radius: 0 8px 8px 0; border-left: none; }
+    #langPl:checked ~ main .lang-switch label[for="langPl"],
+    #langEn:checked ~ main .lang-switch label[for="langEn"] {
+      background: var(--navy); border-color: var(--navy); color: #fff;
+    }
+    #langPl:focus-visible ~ main .lang-switch label[for="langPl"],
+    #langEn:focus-visible ~ main .lang-switch label[for="langEn"] {
+      outline: 3px solid #79aee6; outline-offset: 2px;
+    }
+    /* Sam przełącznik treści. */
+    #langPl:checked ~ main .copy-en { display: none; }
+    #langEn:checked ~ main .copy-pl { display: none; }
+
+    @media (max-width: 850px) {
+      .grid { grid-template-columns: 1fr; }
+      .calculator { grid-template-columns: 1fr; }
+      .wrap { width: min(100% - 16px, 1800px); padding-top: 8px; }
+      .document-head, .card, .table-section { border-radius: 10px; }
+    }
+    @media print {
+      @page { size: A4 landscape; margin: 8mm; }
+      body { background: #fff; }
+      .wrap { width: 100%; padding: 0; }
+      .document-head { color: #000; background: none; box-shadow: none; border: 2px solid #000; }
+      .grid { grid-template-columns: 1fr 1fr; }
+      .actions { display: none; }
+      .table-shell { max-height: none; }
+      .table-section, .card { box-shadow: none; }
+      .lang-switch { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Radiobuttony MUSZĄ stać tutaj: bezpośrednio w BODY, przed MAIN.
+       Patrz komentarz przy .lang-switch w arkuszu stylów. -->
+  <input class="lang-radio" type="radio" name="lang" id="langPl" checked>
+  <input class="lang-radio" type="radio" name="lang" id="langEn">
+
+  <main class="wrap">
+    <nav class="lang-switch" aria-label="język / language">
+      <label for="langPl" lang="pl">PL</label><label for="langEn" lang="en">EN</label>
+    </nav>
+
+    <header class="document-head">
+      <p class="eyebrow"><span class="copy-pl">Załącznik nr 1 ·</span><span class="copy-en">Annex 1 ·</span></p>
+      <h1><span class="copy-pl" lang="pl">Tabela punktacji Pucharu Polski Weteranów w szermierce</span><span class="copy-en" lang="en">Scoring Table of the Polish Veterans Fencing Cup</span></h1>
+      <p class="lead"><span class="copy-pl" lang="pl">Punkty rankingowe za miejsce zdobyte w stawce liczącej od 4 do 300 uczestników — sezon 2026/2027.</span><span class="copy-en" lang="en">Ranking points for a finishing place in fields of 4 to 300 entries — season 2026/2027.</span></p>
+      <div class="meta" aria-label="Metryka dokumentu">
+        <span><span class="copy-pl">Data: 11.09.2026</span><span class="copy-en">Date: 11.09.2026</span></span>
+      </div>
+    </header>
+
+    <section class="grid" aria-label="Kalkulator i metoda obliczeń">
+      <article class="card">
+        <h2><span class="copy-pl" lang="pl">Kalkulator pojedynczego wyniku</span><span class="copy-en" lang="en">Single result calculator</span></h2>
+        <p class="note"><span class="copy-pl" lang="pl">Wprowadź liczbę zawodników w stawce, zajęte miejsce i współczynnik rangi zawodów. Wynik oraz wskazana komórka tabeli zostaną zaktualizowane automatycznie.</span><span class="copy-en" lang="en">Enter the number of entries, the finishing place and the competition rank coefficient. The result and the highlighted table cell update automatically.</span></p>
+        <div class="calculator">
+          <div class="field">
+            <label for="participants"><span class="copy-pl" lang="pl">Liczba zawodników w stawce</span><span class="copy-en" lang="en">Number of entries</span></label>
+            <input id="participants" type="number" min="4" max="300" step="1" value="4" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="place"><span class="copy-pl" lang="pl">Zajęte miejsce</span><span class="copy-en" lang="en">Finishing place</span></label>
+            <input id="place" type="number" min="1" max="4" step="1" value="1" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="rank"><span class="copy-pl" lang="pl">Współczynnik rangi zawodów</span><span class="copy-en" lang="en">Competition rank coefficient</span></label>
+            <div class="rank-control">
+              <input id="rank" type="range" min="1" max="3" step="0.1" value="1">
+              <span class="rank-value" id="rankValue"><span class="copy-pl">1,0</span><span class="copy-en">1.0</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="result" aria-live="polite">
+          <strong id="resultValue">—</strong><span class="unit"><span class="copy-pl">pkt</span><span class="copy-en">pts</span></span>
+          <span class="description" id="resultDescription"></span>
+        </div>
+        <dl class="breakdown" id="breakdown"></dl>
+      </article>
+
+      <article class="card">
+        <h2><span class="copy-pl" lang="pl">Zasada obliczeń</span><span class="copy-en" lang="en">How this is calculated</span></h2>
+        <p><span class="copy-pl" lang="pl">Strona stosuje algorytm oznaczony jako „SPWS” w oficjalnym kalkulatorze. Podstawa za pierwsze miejsce rośnie wraz z liczebnością stawki, lecz nie przekracza 50 punktów.</span><span class="copy-en" lang="en">This page applies the algorithm marked “SPWS” in the official calculator. The base for first place grows with the size of the field but never exceeds 50 points.</span></p>
+        <div class="formula" aria-label="Wzór punktacji"><span class="copy-pl" lang="pl">podstawa = min(50, 10 × log₂N)
+punkty za miejsce = podstawa − (podstawa − 1) × ln(m) / ln(N)
+premia za rundy = liczba wygranych rund DE × 10
+premia za podium = c × 3 × ∛N
+
+wynik = (miejsce + rundy + podium) × współczynnik rangi
+
+c: 3 dla 1. miejsca, 2 dla 2., 1 dla 3., poza podium 0</span><span class="copy-en" lang="en">base = min(50, 10 × log₂N)
+place points = base − (base − 1) × ln(m) / ln(N)
+round bonus = DE rounds won × 10
+podium bonus = c × 3 × ∛N
+
+result = (place + rounds + podium) × rank coefficient
+
+c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
+        <div class="source">
+          <strong><span class="copy-pl" lang="pl">Kalkulator online:</span><span class="copy-en" lang="en">Online calculator:</span></strong>
+          <a href="https://fencer4life.github.io/spws-automated-ranklist/kalkulator-punktow.html?lang=pl"><span class="copy-pl" lang="pl">Kalkulator punktów za wynik — SPWS</span><span class="copy-en" lang="en">Result points calculator — SPWS</span></a>.
+          <span class="copy-pl" lang="pl">Tabela poniżej wykorzystuje ten sam algorytm i sposób prezentacji wyniku z dokładnością do jednego miejsca po przecinku.</span><span class="copy-en" lang="en">The table below uses the same algorithm and presents results to one decimal place.</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="table-section" aria-labelledby="tableTitle">
+      <h2 id="tableTitle"><span class="copy-pl" lang="pl">Pełna tabela: stawka 4–300 zawodników, miejsca 1–300</span><span class="copy-en" lang="en">Full table: fields of 4–300 entries, places 1–300</span></h2>
+      <p><span class="copy-pl" lang="pl">Wiersz wskazuje liczbę zawodników w stawce, a kolumna — zajęte miejsce. Znak „—” oznacza miejsce niemożliwe dla danej stawki zawodników. Punkty w tabeli uwzględniają współczynnik rangi wskazany w kalkulatorze powyżej.</span><span class="copy-en" lang="en">The row gives the number of entries and the column the finishing place. A “—” marks a place that is not possible for that field size. Points in the table include the rank coefficient set in the calculator above.</span></p>
+      <div class="table-toolbar">
+        <div class="actions">
+          <button class="button" type="button" id="locate"><span class="copy-pl" lang="pl">Pokaż wybrany wynik w tabeli</span><span class="copy-en" lang="en">Show selected result in the table</span></button>
+          <button class="button secondary" type="button" id="download"><span class="copy-pl" lang="pl">Pobierz tabelę CSV</span><span class="copy-en" lang="en">Download table as CSV</span></button>
+        </div>
+        <span class="status" id="status" role="status"></span>
+      </div>
+      <div class="table-shell" id="tableShell" tabindex="0" aria-label="Przewijana tabela punktacji">
+        <table id="pointsTable">
+          <caption><span class="copy-pl" lang="pl">Tabela punktów rankingowych Pucharu Polski Weteranów w szermierce według liczby zawodników w stawce i zajętego miejsca</span><span class="copy-en" lang="en">Table of ranking points for the Polish Veterans Fencing Cup by number of entries and finishing place</span></caption>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><span class="copy-pl" lang="pl">wartość punktowa</span><span class="copy-en" lang="en">points value</span></span>
+        <span class="not-possible"><span class="copy-pl" lang="pl">miejsce niemożliwe</span><span class="copy-en" lang="en">place not possible</span></span>
+      </div>
+    </section>
+
+    <footer><span class="copy-pl" lang="pl">Projekt załącznika do Regulaminu powoływania reprezentacji Polski weteranów w szermierce · sezon 2026/2027</span><span class="copy-en" lang="en">Draft annex to the Regulation on selecting the Polish veterans national fencing team · season 2026/2027</span></footer>
+  </main>
+
+  <script>
+    'use strict';
+
+    // Implementacja zgodna z opublikowanym kalkulatorem SPWS, odczytanym 11.09.2026.
+    const MIN_PARTICIPANTS = 4;
+    const MAX_PARTICIPANTS = 300;
+    const MAX_PLACE = 300;
+    const NACHYLENIE = 10;
+    const PULAP = 50;
+
+    const byId = id => document.getElementById(id);
+    const participantsInput = byId('participants');
+    const placeInput = byId('place');
+    const rankInput = byId('rank');
+
+    /* ------------------------------------------------------------------ *
+     * Teksty generowane przez skrypt.
+     * Statyczna treść strony NIE jest tutaj — ta leży w znaczniku, w dwóch
+     * blokach .copy-pl/.copy-en przełączanych samym CSS-em, żeby dokument dało
+     * się przeczytać przy wyłączonym JavaScripcie. Słownik obsługuje wyłącznie
+     * to, co skrypt składa w locie.
+     * Słownictwo angielskie przeniesione z kalkulatora (T.en), żeby jeden wzór
+     * nie doczekał się dwóch różnych tłumaczeń.
+     * ------------------------------------------------------------------ */
+    const T = {
+      pl: {
+        htmlLang: 'pl',
+        docTitle: 'Załącznik nr 1 — Tabela punktacji Pucharu Polski Weteranów w szermierce',
+        corner: 'Uczestnicy ↓<br>Miejsce →',
+        preparing: 'Przygotowywanie tabeli…',
+        progress: (done, all) => `Obliczono wiersze do ${done} z ${all}…`,
+        ready: rank => `Tabela gotowa · współczynnik rangi ${rank}`,
+        describe: (m, n, w) => `${m}. miejsce w stawce ${n} zawodników · współczynnik rangi ${w}`,
+        errRange: `Podaj liczbę zawodników w stawce od ${MIN_PARTICIPANTS} do ${MAX_PARTICIPANTS} oraz możliwe miejsce.`,
+        cellTitle: (m, n) => `${m}. miejsce / stawka ${n} zawodników`,
+        impossible: m => `Miejsce ${m}: niemożliwe`,
+        bBase: 'Podstawa za 1. miejsce', bPlace: 'Punkty za miejsce',
+        bRounds: 'Premia za wygrane rundy', bPodium: 'Premia za podium',
+        bSum: 'Razem przed mnożnikiem', bTotal: 'Wynik końcowy',
+        csvHead: 'liczba zawodników w stawce', csvPlace: m => `miejsce ${m}`,
+        csvName: rank => `tabela-punktacji-SPWS-wspolczynnik-${rank}.csv`
+      },
+      en: {
+        htmlLang: 'en',
+        docTitle: 'Annex 1 — Scoring Table of the Polish Veterans Fencing Cup',
+        corner: 'Entries ↓<br>Place →',
+        preparing: 'Preparing the table…',
+        progress: (done, all) => `Rows computed up to ${done} of ${all}…`,
+        ready: rank => `Table ready · rank coefficient ${rank}`,
+        describe: (m, n, w) => `${ord(m)} place out of ${n} entries · rank coefficient ${w}`,
+        errRange: `Enter a number of entries between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS}, and a possible place.`,
+        cellTitle: (m, n) => `${ord(m)} place / field of ${n} entries`,
+        impossible: m => `Place ${m}: not possible`,
+        bBase: 'Base for 1st place', bPlace: 'Place points',
+        bRounds: 'Round bonus', bPodium: 'Podium bonus',
+        bSum: 'Subtotal', bTotal: 'Result',
+        csvHead: 'number of entries', csvPlace: m => `place ${m}`,
+        csvName: rank => `spws-scoring-table-rank-${rank}.csv`
+      }
+    };
+
+    // Liczebniki porządkowe — przepisane z kalkulatora.
+    function ord(n) {
+      const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    let lang = 'pl';
+    const t = () => T[lang];
+
+    // Formatowanie liczb bez Intl — polski przecinek, angielska kropka.
+    // Ten sam sposób zaokrąglania i prezentacji co w kalkulatorze online.
+    function num(value, decimals) {
+      const absolute = Math.abs(value).toFixed(decimals);
+      const sign = value < 0 ? '-' : '';
+      return sign + (lang === 'pl' ? absolute.replace('.', ',') : absolute);
+    }
+    const formatter = {format: value => num(value, 1)};
+    const detailFormatter = {format: value => num(value, 2)};
+    let tableReady = false;
+    let renderToken = 0;
+
+    function isPowerOfTwo(value) {
+      return value > 0 && (value & (value - 1)) === 0;
+    }
+
+    function firstPlaceBase(participants) {
+      return Math.min(PULAP, NACHYLENIE * Math.log2(Math.max(2, participants)));
+    }
+
+    function wonRounds(place, participants) {
+      if (participants <= 1) return 0;
+      return Math.max(
+        0,
+        Math.floor(Math.log2(participants)) - Math.ceil(Math.log2(place)) + (isPowerOfTwo(participants) ? 0 : 1)
+      );
+    }
+
+    function scoreParts(place, participants) {
+      if (participants < 1 || place < 1 || place > participants) return null;
+      const base = firstPlaceBase(participants);
+      const placePoints = participants === 1
+        ? base
+        : base - (base - 1) * Math.log(place) / Math.log(participants);
+      const podiumFactor = ({1: 3, 2: 2, 3: 1})[place] || 0;
+      return {
+        base,
+        place: placePoints,
+        rounds: wonRounds(place, participants) * 10,
+        podium: podiumFactor * 3 * Math.cbrt(participants)
+      };
+    }
+
+    function totalScore(place, participants, rank) {
+      const parts = scoreParts(place, participants);
+      return parts === null ? null : (parts.place + parts.rounds + parts.podium) * rank;
+    }
+
+    function validInputs() {
+      const participants = Number.parseInt(participantsInput.value, 10);
+      const place = Number.parseInt(placeInput.value, 10);
+      const rank = Number.parseFloat(rankInput.value);
+      const valid = Number.isInteger(participants) && participants >= MIN_PARTICIPANTS && participants <= MAX_PARTICIPANTS
+        && Number.isInteger(place) && place >= 1 && place <= participants
+        && Number.isFinite(rank) && rank >= 1 && rank <= 3;
+      return {participants, place, rank, valid};
+    }
+
+    function renderCalculator() {
+      const values = validInputs();
+      byId('rankValue').textContent = formatter.format(values.rank);
+      placeInput.max = Number.isInteger(values.participants) ? Math.min(values.participants, MAX_PLACE) : MAX_PLACE;
+
+      if (!values.valid) {
+        byId('resultValue').textContent = '—';
+        byId('resultDescription').textContent = t().errRange;
+        byId('breakdown').innerHTML = '';
+        return;
+      }
+
+      const parts = scoreParts(values.place, values.participants);
+      const subtotal = parts.place + parts.rounds + parts.podium;
+      const score = subtotal * values.rank;
+      byId('resultValue').textContent = formatter.format(score);
+      byId('resultDescription').textContent =
+        t().describe(values.place, values.participants, formatter.format(values.rank));
+      const rows = [
+        [t().bBase, detailFormatter.format(parts.base)],
+        [t().bPlace, detailFormatter.format(parts.place)],
+        [t().bRounds, detailFormatter.format(parts.rounds)],
+        [t().bPodium, detailFormatter.format(parts.podium)],
+        [t().bSum, detailFormatter.format(subtotal)],
+        [t().bTotal, detailFormatter.format(score)]
+      ];
+      byId('breakdown').innerHTML = rows.map(([label, value], index) =>
+        `<dt class="${index === rows.length - 1 ? 'total' : ''}">${label}</dt>` +
+        `<dd class="${index === rows.length - 1 ? 'total' : ''}">${value}</dd>`
+      ).join('');
+    }
+
+    function renderHeader() {
+      let cells = `<tr><th scope="col">${t().corner}</th>`;
+      for (let place = 1; place <= MAX_PLACE; place += 1) {
+        cells += `<th scope="col" class="${place % 10 === 0 ? 'tenth' : ''}">${place}</th>`;
+      }
+      byId('tableHead').innerHTML = cells + '</tr>';
+    }
+
+    async function renderTable() {
+      const token = ++renderToken;
+      const rank = Number.parseFloat(rankInput.value);
+      const body = byId('tableBody');
+      const status = byId('status');
+      tableReady = false;
+      body.innerHTML = '';
+      status.className = 'status';
+      status.textContent = t().preparing;
+
+      for (let start = MIN_PARTICIPANTS; start <= MAX_PARTICIPANTS; start += 12) {
+        if (token !== renderToken) return;
+        let html = '';
+        const end = Math.min(MAX_PARTICIPANTS, start + 11);
+        for (let participants = start; participants <= end; participants += 1) {
+          html += `<tr id="row-${participants}"><th scope="row">${participants}</th>`;
+          for (let place = 1; place <= MAX_PLACE; place += 1) {
+            const tenth = place % 10 === 0 ? ' tenth' : '';
+            if (place > participants) {
+              html += `<td class="impossible${tenth}" aria-label="${t().impossible(place)}">—</td>`;
+            } else {
+              html += `<td id="cell-${participants}-${place}" class="${tenth.trim()}" title="${t().cellTitle(place, participants)}">${formatter.format(totalScore(place, participants, rank))}</td>`;
+            }
+          }
+          html += '</tr>';
+        }
+        body.insertAdjacentHTML('beforeend', html);
+        status.textContent = t().progress(end, MAX_PARTICIPANTS);
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      }
+
+      if (token !== renderToken) return;
+      tableReady = true;
+      status.textContent = t().ready(formatter.format(rank));
+      status.className = 'status done';
+      highlightSelection(false);
+    }
+
+    function highlightSelection(scroll) {
+      document.querySelectorAll('.selected-row').forEach(element => element.classList.remove('selected-row'));
+      document.querySelectorAll('.selected-cell').forEach(element => element.classList.remove('selected-cell'));
+      const {participants, place, valid} = validInputs();
+      if (!valid || !tableReady) return;
+      const row = byId(`row-${participants}`);
+      const cell = byId(`cell-${participants}-${place}`);
+      if (!row || !cell) return;
+      row.classList.add('selected-row');
+      cell.classList.add('selected-cell');
+      if (scroll) cell.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+    }
+
+    function csvValue(value) {
+      return `"${String(value).split('"').join('""')}"`;
+    }
+
+    function downloadCsv() {
+      const rank = Number.parseFloat(rankInput.value);
+      const lines = [];
+      const header = [t().csvHead];
+      for (let place = 1; place <= MAX_PLACE; place += 1) header.push(t().csvPlace(place));
+      lines.push(header.map(csvValue).join(';'));
+      for (let participants = MIN_PARTICIPANTS; participants <= MAX_PARTICIPANTS; participants += 1) {
+        const row = [participants];
+        for (let place = 1; place <= MAX_PLACE; place += 1) {
+          row.push(place <= participants ? formatter.format(totalScore(place, participants, rank)) : '');
+        }
+        lines.push(row.map(csvValue).join(';'));
+      }
+      const blob = new Blob(['\ufeff' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = t().csvName(rank.toFixed(1).replace('.', '-'));
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }
+
+    /* ------------------------------------------------------------------ *
+     * Język. Sam PRZEŁĄCZNIK działa na CSS i nie potrzebuje tego kodu —
+     * tutaj dokładamy wyłącznie udogodnienia: parametr ?lang= z szuflady
+     * rankingu, zapamiętanie wyboru, oraz poprawienie <html lang> i tytułu
+     * dla czytników ekranu i zakładek. Żadne z nich nie jest warunkiem
+     * działania strony.
+     * ------------------------------------------------------------------ */
+    function param(name) {
+      // bez URLSearchParams — zwykłe wyrażenie regularne działa wszędzie
+      const m = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    function store() {
+      // dostęp do localStorage potrafi RZUCIĆ WYJĄTKIEM przy otwarciu pliku
+      // prosto z dysku (protokół file:) — dlatego cały dostęp jest w klamrze
+      try { localStorage.setItem('spws-tabela', JSON.stringify({lang})); } catch (e) {}
+    }
+
+    function applyLang() {
+      document.documentElement.lang = t().htmlLang;
+      document.title = t().docTitle;
+    }
+
+    function restore() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem('spws-tabela') || '{}') || {}; } catch (e) { saved = {}; }
+      const l = (param('lang') || saved.lang || '').toLowerCase();
+      if (l === 'en' || l === 'pl') lang = l;
+      byId(lang === 'en' ? 'langEn' : 'langPl').checked = true;
+    }
+
+    document.querySelectorAll('input[name=lang]').forEach(radio =>
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+        lang = radio.id === 'langEn' ? 'en' : 'pl';
+        store();
+        applyLang();
+        renderHeader();
+        renderCalculator();
+        renderTable();
+      }));
+
+    participantsInput.addEventListener('input', () => { renderCalculator(); highlightSelection(false); });
+    placeInput.addEventListener('input', () => { renderCalculator(); highlightSelection(false); });
+    rankInput.addEventListener('input', renderCalculator);
+    rankInput.addEventListener('change', renderTable);
+    byId('locate').addEventListener('click', () => highlightSelection(true));
+    byId('download').addEventListener('click', downloadCsv);
+
+    // Gdyby cokolwiek wysypało się przy starcie, ma to być widać NA STRONIE,
+    // a nie w konsoli — na telefonie nikt do konsoli nie zajrzy.
+    try {
+      restore();
+      applyLang();
+      renderHeader();
+      renderCalculator();
+      renderTable();
+    } catch (err) {
+      const box = byId('status');
+      if (box) {
+        box.className = 'status';
+        box.textContent = 'Strona nie wystartowała / The page failed to start: '
+                        + (err && err.message ? err.message : String(err));
+      }
+    }
+  </script>
+</body>
+</html>

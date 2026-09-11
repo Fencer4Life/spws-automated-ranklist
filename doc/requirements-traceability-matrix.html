@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="46ac7aa61eb95bf0787631f076784fb0bd598745d84cde02229e9333651179ef">
+<meta name="doc-source-sha256" content="8dc213280e90415c4d56dd4af06516a856234019bde535b1c8dc67122a89fc16">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -439,10 +439,10 @@
 </tr>
 <tr>
 <td>FR-59</td>
-<td>App shell: sidebar drawer with Ranklista + Kalendarz view navigation, plus a link to the standalone points calculator shipped as a temporary static page (ADR-085, one-off exception; removed when the proposed formula becomes the live SPWS scoring)</td>
-<td>UC12, UC21</td>
-<td>8.27–8.37, 8.84–8.88</td>
-<td>Covered (M8; calculator link 2026-08-15)</td>
+<td>App shell: sidebar drawer with Ranklista + Kalendarz view navigation, plus links to two standalone static pages. The points calculator (ADR-085, one-off exception; removed when the proposed formula becomes the live SPWS scoring). <strong>Amended 2026-09-11 (ADR-092):</strong> a <strong>fourth</strong> entry, „Tabela punktacji”, links Załącznik nr 1 to the national-team selection regulation — the scoring table for fields of 4–300 entries across places 1–300, published as <code>frontend/public/tabela-punktacji.html</code>. It is <strong>bilingual in one file, switched by CSS alone</strong>, so it stays readable and switchable with JavaScript disabled — the failure that made hosting necessary (messenger and iOS previews run no script, and the page computes its table in the browser). <code>?lang=</code> from the drawer is honoured as a hint, never a precondition, because the page is destined for WordPress where there is no drawer and no such parameter. Parity with the calculator was verified against source, not assumed: the scoring functions match line for line; the domain deliberately differs (<code>N≥4</code> vs <code>N≥2</code>). <code>noindex, nofollow</code> holds while the annex is unadopted and is load-bearing — the visible <em>Status: projekt</em> chip was removed 2026-09-11, so nothing else marks it a draft. Test 8.84 pins the entry list as an <strong>equality</strong>, so the fourth entry extends that assertion rather than loosening it; order is the property held.</td>
+<td>UC12, UC21, ADR-092</td>
+<td>8.27–8.37, 8.84–8.88, 8.90–8.96</td>
+<td>Covered (M8; calculator link 2026-08-15; scoring table 2026-09-11)</td>
 </tr>
 <tr>
 <td>FR-60</td>
@@ -1169,5 +1169,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>46ac7aa61eb95bf0787631f076784fb0bd598745d84cde02229e9333651179ef</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8dc213280e90415c4d56dd4af06516a856234019bde535b1c8dc67122a89fc16</code></footer>
 </div></body></html>
