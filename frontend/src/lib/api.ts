@@ -553,6 +553,7 @@ export async function createRegistration(params: CreateRegistrationParams): Prom
     p_email_hash: params.emailHash ?? null,
     p_consent_version: params.consentVersion ?? null,
     p_edit_token: params.editToken ?? null,
+    p_club: params.club ?? null,
   })
   if (error) throw error
   return data as number
@@ -572,6 +573,7 @@ export async function updateRegistration(params: UpdateRegistrationParams): Prom
     p_gender: params.gender,
     p_birth_year: params.birthYear,
     p_weapons: params.weapons,
+    p_club: params.club ?? null,
   })
   if (error) throw error
   return data as number

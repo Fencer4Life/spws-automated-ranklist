@@ -67,6 +67,10 @@ class FencerEntry:
     id_fencer: int | None
     surname: str
     first_name: str
+    # Declared club (2026-09-13, ADR-080 amendment (f)). None for roster
+    # entries — fn_ftl_roster's rows come from tbl_fencer, which carries no
+    # club for any PROD fencer today, so the roster path never gains one.
+    club: str | None = None
 
 
 @dataclass
@@ -226,9 +230,10 @@ def build_fie_xml(
     """Builds one FIE <BaseCompetitionIndividuelle> XML document (ADR-080
     Section 1). No DateNaissance (FTL infers/enforces an age category from it
     otherwise; the authoritative BY lives only in tbl_registration). No
-    Lateralite (FTL accepts import without it). Club/Licence always "" (not
-    collected). Matches the validated reference files in
-    doc/external_files/FTL_SRC/.
+    Lateralite (FTL accepts import without it). Licence always "" (not
+    collected). Club is the declared value when given (2026-09-13, ADR-080
+    amendment (f)), else "" — same as before this field existed. Matches the
+    validated reference files in doc/external_files/FTL_SRC/.
     """
     root = ET.Element(
         "BaseCompetitionIndividuelle",
@@ -255,7 +260,7 @@ def build_fie_xml(
                 "Nom": t["nom"],
                 "Prenom": t["prenom"],
                 "Sexe": t["sexe"],
-                "Club": "",
+                "Club": t.get("club") or "",
                 "Nation": "POL",
                 "Licence": "",
                 "Statut": "N",
@@ -333,7 +338,9 @@ def assemble_mixall_subrankings(
         ordered = sorted(regs, key=_sort_key)
         out[key] = [
             FencerEntry(
-                reg.get("id_fencer"), *to_canonical_name(reg["txt_surname"], reg["txt_first_name"])
+                reg.get("id_fencer"),
+                *to_canonical_name(reg["txt_surname"], reg["txt_first_name"]),
+                club=reg.get("txt_club"),
             )
             for reg in ordered
         ]
@@ -359,6 +366,7 @@ def mixall_tireurs(
                 "prenom": entry.first_name,
                 "sexe": key[0],
                 "classement": seed,
+                "club": entry.club,
             }
         )
     return tireurs

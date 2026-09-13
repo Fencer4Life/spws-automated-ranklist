@@ -1,6 +1,6 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d).
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d). **Amended 2026-09-13:** open item 2 (club) resolved by migration `20260913000001` — `tbl_registration.txt_club` now round-trips through both write RPCs and the token-gated FTL export; `CONSENT_VERSION` bumped to `v1.1`.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
@@ -255,11 +255,15 @@ by registering once against the deployed URL and then querying **both** database
    people. Existing duplicates are collapsed by the migration keeping the highest
    `id_registration` per identity — the most recent submission is the entrant's current
    intent, and is the row the upsert would have produced.
-2. **Club is collected and discarded.** There is no `txt_club` column, and
-   `ftl_seed_export.py` hardcodes `"Club": ""`. The user has asked for it to reach the seed
-   file. Note this **inverts the current consent text**, which states *"Klub — tylko do plików
-   startowych · nie zapisujemy"*; storing it is a genuine `CONSENT_VERSION` bump to `v1.1`,
-   not a silent string edit. Not yet decided.
+2. ~~**Club is collected and discarded.**~~ **Resolved 2026-09-13**, migration
+   `20260913000001_registration_club.sql`. `tbl_registration.txt_club` now exists and is
+   populated by both write RPCs; `fn_ftl_export_entries` returns it to the token-gated
+   organizer export, and `vw_registration_entry_list`/`fn_ftl_roster` are unchanged, so the
+   public roster still never sees it. This did invert the consent text as predicted — *"Klub
+   — tylko do plików startowych · nie zapisujemy"* became untrue the moment the value was
+   stored — so `CONSENT_VERSION` moved `v1.0` → `v1.1` rather than being edited under an
+   unchanged stamp. See [ADR-080](080-clean-roster-ftl-seeding.md) amendment (f) and
+   [ADR-078](078-gdpr-data-handling.md) §1 for the full detail.
 3. **Whether registration should be accepted after the advertised deadline.** Raised as a
    revenue question and explicitly deferred by the user on 2026-08-17. The D10 guard is
    enforced in the database, so this is not a copy change. **Recommendation:** gate the guard

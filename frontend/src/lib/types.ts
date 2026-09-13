@@ -421,6 +421,11 @@ export interface UpdateRegistrationParams {
   gender: GenderType
   birthYear: number
   weapons: WeaponType[]
+  // Declared club (2026-09-13, ADR-080 amendment (f)). Set directly by
+  // fn_update_registration, not COALESCEd — an edit that clears this field
+  // actually clears the stored club. Never published by
+  // vw_registration_entry_list, only by the token-gated FTL export.
+  club?: string | null
 }
 
 export interface CreateRegistrationParams {
@@ -441,6 +446,10 @@ export interface CreateRegistrationParams {
   // RODO-accept version stamp (D5) — the write happens at RODO-accept, so this
   // is always passed by the real flow; optional here for legacy callers.
   consentVersion?: string | null
+  // Declared club (2026-09-13, ADR-080 amendment (f)), optional. Stored
+  // verbatim (trimmed to NULL when blank); never published by
+  // vw_registration_entry_list, only by the token-gated FTL export.
+  club?: string | null
 }
 
 // How a fencer already in tbl_fencer relates to what this registrant typed.

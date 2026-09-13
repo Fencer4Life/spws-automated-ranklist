@@ -40,6 +40,7 @@ const ENTRIES = [
     enum_age_category: 'V2',
     enum_weapon: 'EPEE',
     int_order: 1,
+    txt_club: null,
   },
 ]
 

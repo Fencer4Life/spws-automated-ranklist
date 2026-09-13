@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
-<meta name="adr-source-sha256" content="934973b438aee5660fdaf31fbeae4bfaa2e734b10cd7de8200581a2f2e6727ca">
+<meta name="adr-source-sha256" content="63b6596bb1069df53b778dabe70627c4c2de52be7abd59e91e9a93da19469c15">
 <title>ADR-080 · Clean-Roster FTL Seeding</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">435 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093.)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">472 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2.)
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-2026-09-13-slug-correction-full-token-lifecycle-moved-to-adr-095">Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>&quot;FTL&quot; is <strong>Fencing Time</strong> (results at fencingtimelive.com), the software the
 organizer runs. A domestic SPWS event is run as, per weapon, one <strong>mix-all pool
@@ -47,8 +47,9 @@ see ADR-079 §4) and deliver them to the organizer on demand.</p>
 <li>One <code>&lt;BaseCompetitionIndividuelle&gt;</code> XML <strong>per competition</strong>: the mix-all pool per
 weapon + one per gender×category DE bracket (single or predicted-combined).</li>
 <li><code>&lt;Tireur&gt;</code> attributes: <code>Nom</code>, <code>Prenom</code>, <code>Sexe</code>, <code>Nation=&quot;POL&quot;</code>, <code>ID</code>, <code>Classement</code>
-(seed). <code>Club=&quot;&quot;</code> and <code>Licence=&quot;&quot;</code> (not collected). <code>Lateralite</code> omitted (FTL
-accepts import without it).</li>
+(seed). <code>Club</code> is the declared value when given (amendment (f), 2026-09-13), else
+<code>&quot;&quot;</code> — the field was never collected before that date. <code>Licence=&quot;&quot;</code> (not
+collected). <code>Lateralite</code> omitted (FTL accepts import without it).</li>
 <li><strong>Canonical name form:</strong> <code>Nom</code> = surname in <strong>UPPERCASE</strong>, <code>Prenom</code> = given name in
 <strong>Title case</strong> (e.g. <code>Nom=&quot;KOWALSKI&quot; Prenom=&quot;Jan (2)&quot;</code>) — the same casing used in the
 entry list and the ranklist; normalised on export (fixes legacy all-caps given names).</li>
@@ -329,9 +330,24 @@ naive rule — exclude any fencer whose name matches a registration, ignoring bi
 — would hide the 19-result MŁYNEK Janusz from the roster because a <em>different</em> Janusz
 registered, which is precisely the person the organizer might need to tick in.</p>
 <h3 id="f-club-and-the-public-download-page">(f) Club, and the public download page</h3>
-<p>The club is harvested on scrape into <code>tbl_fencer.txt_club</code> (overwrite on non-null,
-storing <code>club1</code>), asked again at registration per event, and emitted only when given.
-PROD holds 0 fencers with a club today, so this starts empty by construction.</p>
+<p><strong>Built 2026-09-13, migration <code>20260913000001_registration_club.sql</code></strong> — narrower
+than this section originally predicted. The club is asked at registration, per
+event, and emitted only when given: <code>tbl_registration.txt_club</code>, populated by both
+<code>fn_create_registration</code> and <code>fn_update_registration</code>, trimmed to NULL when blank by
+the same trigger that trims the two name columns, and returned by
+<code>fn_ftl_export_entries</code> to the token-gated organizer export — never by
+<code>vw_registration_entry_list</code> or <code>fn_ftl_roster</code>, so the public roster still never
+sees it. See <a href="078-gdpr-data-handling.html">ADR-078</a> §1 for the GDPR inventory entry
+and the <code>CONSENT_VERSION</code> <code>v1.0</code> → <code>v1.1</code> bump this required.</p>
+<p><strong>Not built, and out of scope for this amendment:</strong> this section originally also
+predicted the club being &quot;harvested on scrape into <code>tbl_fencer.txt_club</code>
+(overwrite on non-null, storing <code>club1</code>)&quot; — a second, independent source that
+would pre-fill a returning fencer's club from FTL results. That scrape-harvest
+path was never wired up; PROD holds 0 fencers with a club on <code>tbl_fencer</code> as of
+2026-09-13, and <code>tbl_fencer.txt_club</code> remains a distinct column from
+<code>tbl_registration.txt_club</code>, never synchronised with it. A future session could
+revisit pre-filling from the scrape, but every 2026-09-13 registrant declares
+their club fresh.</p>
 <p>Delivery gains a public page on weteraniszermierki.pl, treated like <code>/znajdz-zawody/</code>
 and <strong>not</strong> a menu item (ADR-090), from which the organizer downloads the files
 directly, with a PL and EN manual beside it. §5's on-demand email to the organizer is
@@ -343,15 +359,18 @@ unchanged and remains the delivery path until that page exists.</p>
 <p>Built 2026-09-12. The download page is public and static-hosted, so the XML is generated
 in the browser and its data comes from one new function, migration
 <code>20260912000004_ftl_export_entries.sql</code>:</p>
-<pre><code>fn_ftl_export_entries(p_id_event INT)
+<pre><code>fn_ftl_export_entries(p_id_event INT, p_token UUID)
   RETURNS TABLE (txt_surname, txt_first_name, enum_gender,
-                 enum_age_category, enum_weapon, int_order)
+                 enum_age_category, enum_weapon, int_order, txt_club)
 </code></pre>
+<p>(<code>txt_club</code> added 2026-09-13 by amendment (f) above; the original 2026-09-12 shape
+had six columns and no club.)</p>
 <p>One row per registration × declared weapon. It is <code>SECURITY DEFINER</code> because it has to
 be — <code>tbl_registration</code>'s RLS admits only <code>authenticated</code>, and that is correct, since
 the table carries the declared birth year and the <code>uuid_edit_token</code> that authorises an
 edit. What it publishes is the columns <code>vw_registration_entry_list</code> already serves
-anonymously, plus one integer.</p>
+anonymously, plus one integer — plus, since 2026-09-13, the declared club, which the
+public view does <strong>not</strong> serve.</p>
 <p><strong>That integer is the design.</strong> The obvious projection would return <code>id_fencer</code> and let
 the page call <code>fn_ranking_ppw</code> per sub-ranking to sort — 22 round trips at PPW1, and 22
 chances to render a half-ordered file. Returning the already-resolved seed position
@@ -433,7 +452,9 @@ too, because in an association of 367 people the stock placeholders are real mem
 the in-file <code>TitreLong</code> stays <strong>Polish even in the English interface</strong>: it is the string
 Fencing Time displays, and <code>_detect_weapon_from_title</code> reads the weapon back out of it
 (<code>python/scrapers/ftl.py:248</code>), so its language is load-bearing in both directions.</p>
-<p><em>Still pending from this amendment:</em> the club of (f).</p>
+<p><em>The club of (f) was pending as of 2026-09-12; built 2026-09-13, migration
+<code>20260913000001_registration_club.sql</code>.</em> Nothing else from this amendment remains
+pending.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
 <ul>
@@ -441,8 +462,20 @@ Fencing Time displays, and <code>_detect_weapon_from_title</code> reads the weap
 (combined-category splitting), ADR-056 (BY→V-cat), ADR-065 (FTL marker), ADR-066
 (min-participants/walkover), ADR-027/036 (seed export), ADR-030 (registration URL).</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-13-slug-correction-full-token-lifecycle-moved-to-adr-095">Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)</h2>
+<p>§(h) cited the capability link as <code>/pliki-startowe/?k=&lt;uuid&gt;</code>. That slug was drafted but
+never published. The page that actually shipped on 2026-09-13 carries the slug
+<code>pliki-zasilajace-xml-ftl</code> instead (confirmed with the association after a spelling
+correction to the working title), at <code>https://weteraniszermierki.pl/pliki-zasilajace-xml-ftl/</code>
+— WordPress page id 13505, published over XML-RPC via the new <code>scripts/wp_publish_page.py</code>,
+not added to any WP menu, matching (f) and (h)'s &quot;capability-link-only&quot; intent unchanged.</p>
+<p>§(h)'s closing line — &quot;the capability... gives us something to rotate when a link goes
+astray — one <code>UPDATE</code>&quot; — understated the operation. <strong><a href="095-ftl-export-token-lifecycle.html">ADR-095</a></strong>
+is now the canonical, detailed reference for finding the current link, minting a token for a
+new organizer, and rotating or revoking one; nothing here is superseded, only extended.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
-<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>934973b438aee5660fdaf31fbeae4bfaa2e734b10cd7de8200581a2f2e6727ca</code></footer>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>63b6596bb1069df53b778dabe70627c4c2de52be7abd59e91e9a93da19469c15</code></footer>
 </div></body></html>
