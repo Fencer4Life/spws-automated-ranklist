@@ -302,7 +302,12 @@ describe('scope filter', () => {
   })
 
   it('CQ.20: isInternationalEvent honours the code prefixes', () => {
-    for (const code of ['PEW1e', 'MEW-2026', 'MSW-2026', 'PSW-2026', 'IMEW-2026', 'IMSW-2026']) {
+    // DMEW added 2026-09-13 (ADR-096): a childless CREATED/PLANNED event can
+    // no longer get its international flag from vw_calendar's child-derived
+    // bool_has_international, so this code-prefix fallback is DMEW-2025-2026's
+    // only remaining route to the international styling while it awaits
+    // results.
+    for (const code of ['PEW1e', 'MEW-2026', 'MSW-2026', 'PSW-2026', 'IMEW-2026', 'IMSW-2026', 'DMEW-2025-2026']) {
       expect(isInternationalEvent(ev({ txt_code: code }))).toBe(true)
     }
     expect(isInternationalEvent(ev({ txt_code: 'MPW-2026-2027' }))).toBe(false)

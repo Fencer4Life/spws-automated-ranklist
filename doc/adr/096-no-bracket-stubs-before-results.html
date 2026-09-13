@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="096-no-bracket-stubs-before-results.md">
+<meta name="adr-source-sha256" content="4e0b85fd7db479d84934f6978b6808d671b02660a93e661d5c8a4b28b5c45504">
+<title>ADR-096 · A bracket is created by results ingestion, never by calendar discovery</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 096</p><h1>A bracket is created by results ingestion, never by calendar discovery</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented and verified on LOCAL; 154 CERT rows and 82 PROD rows measured for the prune, not yet applied there.</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>096-no-bracket-stubs-before-results.md</code></dd></div><div><dt>Length</dt><dd class="">233 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented and verified on LOCAL; 154 CERT rows and 82 PROD rows measured for the prune, not yet applied there.
+<strong>Date:</strong> 2026-09-13
+<strong>Amends:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> §Calendar Scraping (the calendar RPC no longer creates a child <code>tbl_tournament</code> row for each weapon × gender; that sentence, dated April 2026, is superseded by the decision below), <a href="046-pew-weapon-suffix.html">ADR-046</a> (the canonical tournament-code formula gains one shared implementation, <code>fn_rebuild_tournament_codes</code>, instead of two independently-drifting copies)
+<strong>Relates to:</strong> <a href="091-no-season-skeletons-for-scraped-events.html">ADR-091</a> (the same &quot;a skeleton is a PREDICTION of a row that is going to arrive anyway&quot; ruling, one layer up, for events instead of brackets), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (the CERT→PROD reconciler's CREATE path is already childless — test 51.1b — and needed no change here), <a href="083-server-enforced-authorization.html">ADR-083</a> (the new functions stay off the anon-EXECUTEable allowlist)
+<strong>Source:</strong> <code>supabase/migrations/20260913000002_no_bracket_stubs.sql</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-created-planned-event-carries-event-level-facts-only">1 · A `CREATED`/`PLANNED` event carries event-level facts only</a></li><li class="depth-3"><a href="#2-one-shared-implementation-of-the-adr-046-code-formula">2 · One shared implementation of the ADR-046 code formula</a></li><li class="depth-3"><a href="#3-the-existing-stubs-are-pruned-guarded-exactly-as-measured">3 · The existing stubs are pruned, guarded exactly as measured</a></li><li class="depth-3"><a href="#4-no-uniqueness-index-considered-deliberately-not-added">4 · No uniqueness index — considered, deliberately not added</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The <strong>EVF Sync</strong> GitHub Actions job failed from 2026-09-10:</p>
+<pre><code>ERROR: calendar sync failed: Management API error (400):
+  23505: duplicate key value violates unique constraint &quot;idx_tournament_code&quot;
+  DETAIL:  Key (txt_code)=(PEW13es-2026-2027-V2-M-EPEE) already exists.
+</code></pre>
+<p>The scrape itself was healthy — 18 competitions found, <code>0 new, 18 already in CERT</code>.
+It fired because EVF moved Athens (calendar id 3438) from 2027-05-22 to
+2027-03-27, which shifts three events' chronological PEW numbers. Athens held 8
+child <code>tbl_tournament</code> rows where a real bracket set would hold 4, and the
+renumbering step tried to collapse each duplicate pair onto one code.</p>
+<p><strong>Root cause.</strong> <code>fn_import_evf_events</code> (ADR-028, April 2026) inserted one stub
+tournament per weapon × gender at calendar-import time — hardcoded
+<code>enum_age_category = 'V2'</code>, <code>int_participant_count = 0</code>,
+<code>enum_import_status = 'PLANNED'</code>. That block was copied forward through nine
+rewrites of the calendar ingest. Querying every live <code>plpgsql</code> function's
+definition on CERT for the stub-code pattern found exactly one survivor: the
+2-arg <code>fn_ingest_evf_calendar(p_events jsonb, p_id_season integer)</code> in
+<code>20260711000001_prod_event_reconciler.sql</code>.</p>
+<p>Every original justification for the stub loop has expired:</p>
+<ul>
+<li><strong>The dedup marker it existed to serve is gone.</strong> ADR-028's own text records
+the old matcher as <code>BETWEEN ±3 days AND EXISTS(tournament)</code> — a child row was
+the only signal an event had been imported. That matcher was replaced by
+Python's <code>_find_existing_match</code> id→slug→fuzzy ladder in the 2026-04-25
+rev 3 amendment.</li>
+<li><strong>The weapon/type facts it carried now live on the event.</strong>
+<code>tbl_event.arr_weapons</code> is maintained for every family, derived from the
+event code (migration <code>20260904000001</code>, test 71), and the frontend calendar
+reads weapons from <code>arr_weapons</code>, never from children.</li>
+<li><strong><code>vw_calendar.bool_has_international</code>'s only consumer already has a
+fallback.</strong> <code>isInternationalEvent()</code> in <code>calendarMonths.ts</code> falls back to the
+code prefix when the bool is false.</li>
+</ul>
+<p>And the predicted <strong>shape</strong> was always wrong, not merely premature. A real EVF
+weekend ends with 10–23 brackets across V1–V4 (PROD 2025-2026: <code>PEW6efs</code> 23
+brackets, <code>PEW4efs</code> 10 brackets with 389 participants). The stub set is
+weapons × 2 genders at V2 only; when results land, <code>fn_find_or_create_tournament</code>
+reuses the V2 stub and mints V1/V3/V4 fresh regardless. This is the same defect
+class ADR-091 ruled on seven days earlier one level up — a skeleton is a
+prediction of a row that is going to arrive anyway — applied one layer down, to
+brackets instead of events.</p>
+<p><strong>It is worse than a shape mismatch.</strong> <code>fn_ingest_evf_calendar_identity_v1</code>
+delegates every pre-terminal event to the 2-arg function on <strong>every</strong> sync, not
+only newly-created ones. An event that already holds a real, results-backed
+bracket gets two more stub rows injected alongside it on every single calendar
+refresh, guarded only by a string match against the stub's own code shape
+(<code>code || '-M-' || weapon</code>), which the real bracket never has, so the guard
+never fires. The stub and the real bracket then collide the next time the event
+renumbers, because the rebuild rewrites every child of that event to the same
+canonical formula in one <code>UPDATE</code> — two rows landing on the identical target
+string in the same statement. Reproduced locally in <code>79_no_bracket_stubs.sql</code>
+79.3b; observed live as run 34468447030.</p>
+<p><strong>Audit trail for the specific bracket the failing run died on</strong> (Athens,
+tournament row 1921; <code>trg_audit_tournament</code> fires on UPDATE/DELETE but not
+INSERT, which is why the two halves of the pair are visible separately):</p>
+<pre><code>07-14 05:41  INSERT  PEW79-2026-2027-M-EPEE            &lt;- 2-arg delegate, stub
+08-08 06:55  UPDATE  PEW79-2026-2027-M-EPEE      -&gt; __evfcal_1921
+08-08 06:55  UPDATE  __evfcal_1921               -&gt; PEW14es-2026-2027-V2-M-EPEE
+08-28 16:43  UPDATE  PEW14es-2026-2027-V2-M-EPEE -&gt; __evfcal_1921
+08-28 16:43  UPDATE  __evfcal_1921               -&gt; PEW15es-2026-2027-V2-M-EPEE
+08-28 16:43  (no audit rows)  id 2065 = PEW15es-2026-2027-M-EPEE   &lt;- the duplicate
+</code></pre>
+<p>The reflow rebuild also wrote a <strong>third code dialect</strong>,
+<code>&lt;event-code-with-season&gt;-&lt;Vcat&gt;-&lt;gender&gt;-&lt;weapon&gt;</code> (e.g.
+<code>PEW14es-2026-2027-V2-M-EPEE</code>), used nowhere else in the codebase. Canonical is
+<code>&lt;base&gt;-&lt;Vcat&gt;-&lt;gender&gt;-&lt;weapon&gt;-&lt;season&gt;</code> (<code>fn_find_or_create_tournament</code>,
+<code>fn_pew_recompute_event_code</code>, this ADR's own §2 below); the stub shape is
+<code>&lt;event-code-with-season&gt;-&lt;gender&gt;-&lt;weapon&gt;</code>. After the dialect drifted, the
+2-arg delegate's <code>NOT EXISTS</code> guard tested a string the rebuild had just
+changed, and stopped seeing the row it was meant to protect.</p>
+<p>A manual cleanup deleted 62 duplicate rows on 2026-08-28 at 15:50; the 16:43
+sync recreated 68. <strong>A data-only repair does not hold</strong> while the function that
+creates the collision is still live.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-a-created-planned-event-carries-event-level-facts-only">1 · A <code>CREATED</code>/<code>PLANNED</code> event carries event-level facts only</h3>
+<p>The 2-arg <code>fn_ingest_evf_calendar</code>'s entire weapon-loop <code>INSERT INTO tbl_tournament</code> block is deleted. A bracket is created by exactly one thing:
+results ingestion, via <code>fn_find_or_create_tournament</code>. Calendar discovery never
+creates one. This is the whole behavioral change; everything else in the
+function (identity pre-check, <code>fn_allocate_evf_event_code</code>,
+<code>CURRENT_SLOT_REUSE</code>/<code>CREATE</code>) is unchanged.</p>
+<p>This closes the defect completely rather than containing it: there is no
+longer a stub for a real bracket to collide with, on the first sync or the
+fiftieth.</p>
+<h3 id="2-one-shared-implementation-of-the-adr-046-code-formula">2 · One shared implementation of the ADR-046 code formula</h3>
+<p><code>fn_rebuild_tournament_codes(p_id_event, p_new_event_code)</code> is extracted from
+<code>fn_update_event</code>'s existing shape-sniffing block (migration <code>20260902000002</code>),
+which already distinguishes canonical (<code>-V\d-</code> present) from placeholder
+dialect and rebuilds accordingly. Two hardenings over <strong>both</strong> prior
+copies — <code>fn_update_event</code>'s own block and
+<code>fn_ingest_evf_calendar_identity_v1</code>'s inline one:</p>
+<ul>
+<li>the sniff is <code>bool_or()</code> across <strong>all</strong> of an event's children instead of an
+unordered <code>LIMIT 1</code> sample, which could pick the wrong dialect when a stub
+and a real bracket briefly coexisted;</li>
+<li>every child is parked on a neutral placeholder (<code>'__tcode_' || id_tournament</code>) <strong>before</strong> any of them is rebuilt, so an A→B, B→C shuffle
+within one event cannot have one child's new code collide with a sibling's
+still-old one.</li>
+</ul>
+<p><code>fn_update_event</code> and <code>fn_ingest_evf_calendar_identity_v1</code> both call the shared
+helper now, so the admin rename path and the calendar reflow path agree by
+construction rather than by two people remembering to keep two copies in sync.</p>
+<h3 id="3-the-existing-stubs-are-pruned-guarded-exactly-as-measured">3 · The existing stubs are pruned, guarded exactly as measured</h3>
+<p><code>fn_prune_bracket_stubs()</code> deletes a <code>tbl_tournament</code> row only when <strong>all</strong> of:
+its event is non-terminal (<code>CREATED/PLANNED/SCHEDULED/CHANGED/CANCELLED</code>);
+<code>enum_import_status = 'PLANNED'</code>; <code>int_participant_count</code> is 0 or NULL;
+<code>url_results IS NULL</code>; no <code>tbl_result</code> row references it; no
+<code>tbl_tournament_ingest_history</code> row references it. Measured reach 2026-09-12:
+<strong>CERT 154 rows / 19 events, PROD 82 rows / 18 events</strong>, zero rows anywhere
+failing only one of these six guards — the predicate is neither accidentally
+narrow nor accidentally wide.</p>
+<p>Called from the migration for CERT/PROD, and from <code>seed_post_backfill.sql</code> for
+a fresh bootstrap — migrations run <strong>before</strong> the seed dump on CI and
+<code>scripts/reset-dev.sh</code> (the ADR-036 amendment of 2026-07-14), so a
+migration-only delete would be reinstated by the dump. Same pattern as
+ADR-091's <code>fn_prune_unclaimed_evf_skeletons</code>, one layer up.</p>
+<h3 id="4-no-uniqueness-index-considered-deliberately-not-added">4 · No uniqueness index — considered, deliberately not added</h3>
+<p>A <code>UNIQUE</code> index on <code>(id_event, enum_age_category, enum_gender, enum_weapon)</code>
+would convert a recurrence of this defect into a local insert failure instead
+of a delayed renumber-time collision, and the tuple is already the natural key
+<code>fn_find_or_create_tournament</code> treats it as — PROD has zero violations across
+all 788 scored rows, including all three joint-pool splits.</p>
+<p>It was not added. At least four pre-existing pgTAP fixtures
+(<code>01_database_foundation</code>, <code>02_scoring_engine</code>, <code>03_views_api</code>,
+<code>05_calendar_view</code>) deliberately share <strong>one</strong> throwaway event across several
+synthetic tournaments distinguished only by <code>enum_type</code> — all at
+<code>(V2, M, EPEE)</code> — to exercise the scoring formula for different tournament
+types and participant counts without creating six throwaway events. The index
+broke all four the first time it was tried. Decisions 1–3 above already remove
+the defect completely without it; the index would have been pure hardening
+against a class of bug that can no longer occur through the code path it
+guarded. Worth reconsidering if those fixtures are ever untangled from their
+shared-event convention.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Fix only the code-rebuild dialect and the delegate's string guard, keep
+the stub loop.</strong> This was the plan's first framing. Rejected once measured
+against the design's own stated purposes: every one had already expired
+(§Context), the predicted shape was provably wrong regardless of dialect,
+and containing the collision would still leave every future EVF event
+acquiring 4–6 fictional V2 rows — the same class ADR-091 had just ruled
+against for events.</li>
+<li><strong>Canonicalize the placeholder dialect everywhere instead of removing the
+stubs.</strong> Rejected: PROD's entire current season (2026-2027) is
+placeholder-shaped and every settled season is canonical; rewriting 82 live
+PROD rows to fix a bug in the rebuild formula would be disproportionate,
+and the placeholder shape only existed to serve the stub creation this ADR
+removes.</li>
+<li><strong>Add the uniqueness index despite the fixture conflict, and fix the four
+fixtures.</strong> Rejected as out of scope: those fixtures test the scoring
+engine and unrelated views, not the calendar ingest, and untangling their
+shared-event convention across four files is a separate piece of work with
+its own risk, for a hardening this fix does not need.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New:</strong></p>
+<ul>
+<li><code>supabase/migrations/20260913000002_no_bracket_stubs.sql</code> — redefines the
+2-arg <code>fn_ingest_evf_calendar</code> and <code>fn_ingest_evf_calendar_identity_v1</code>,
+refactors <code>fn_update_event</code>, adds <code>fn_rebuild_tournament_codes</code> and
+<code>fn_prune_bracket_stubs()</code>.</li>
+<li><code>supabase/tests/79_no_bracket_stubs.sql</code> — plan-test-IDs 79.1–79.6.</li>
+</ul>
+<p><strong>Changed:</strong></p>
+<ul>
+<li><code>supabase/seed_post_backfill.sql</code> — calls <code>fn_prune_bracket_stubs()</code> after
+the dump loads, mirroring the season-skeleton prune's own ordering fix.</li>
+<li><code>supabase/tests/18_evf_event_allocator.sql</code> — evf.37 reversed in place
+(2 tournaments → 0 tournaments), no assertion-count change.</li>
+<li><code>frontend/src/lib/calendarMonths.ts</code> — <code>INTL_PREFIXES</code> gains <code>DMEW</code>, so
+<code>DMEW-2025-2026</code> keeps its international calendar styling once it is
+childless and <code>bool_has_international</code> can no longer supply it.</li>
+<li><code>frontend/tests/calendarMonths.test.ts</code> — CQ.20 extended with the <code>DMEW</code>
+case.</li>
+</ul>
+<p><strong>Test impact.</strong> pgTAP 1019 → 1026 assertions, all passing on a database
+rebuilt from scratch (<code>./scripts/reset-dev.sh</code>) so the seed-ordering fix in
+<code>fn_prune_bracket_stubs()</code>'s second call site is exercised, not assumed.
+pytest 1245 passed (unchanged — no Python file touched; <code>evf_sync.py</code>'s call
+contract to <code>fn_ingest_evf_calendar</code> is unchanged). vitest 875 passed (unchanged
+file count; 122 in <code>calendarMonths.test.ts</code> including the new case).
+<code>svelte-check</code> 0 errors. <code>postgrestools check</code> 0 findings on the migration and
+seed files (pgTAP test files carry a pre-existing baseline of pgtap-extension
+typecheck noise unrelated to this change, reproduced identically on an
+untouched file).</p>
+<p><strong>Not yet done.</strong> The prune has been measured against CERT and PROD
+(154 / 82 rows) but not yet run there — this ADR records the decision and the
+LOCAL implementation; the CERT and PROD runs are a deployment step, not a
+design question.</p>
+<p><strong>Noted, not fixed here.</strong> PROD's mirror never rebuilds child tournament
+codes on a CERT→PROD sync (it copies event fields only), so PROD still carries
+a second generation of duplicate-shaped rows under stale numbers (e.g.
+<code>PEW7efs-*</code> beneath current event <code>PEW7es</code>) from before this fix landed. It has
+not collided because PROD never renumbers. Worth its own look if PROD's mirror
+is ever asked to.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="095-ftl-export-token-lifecycle.html">← ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>096-no-bracket-stubs-before-results.md</code> · source SHA-256 <code>4e0b85fd7db479d84934f6978b6808d671b02660a93e661d5c8a4b28b5c45504</code></footer>
+</div></body></html>
