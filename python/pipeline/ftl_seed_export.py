@@ -102,10 +102,10 @@ def format_nom_with_marker(surname_canon: str, vcat_digit: str) -> str:
     2026-09-12).
 
     MID-NAME, not appended to the given name. Fencing Time renders the entry as
-    "Nom Prenom", so this produces "KAMIŃSKA (1) Gabriela" — which is the form
+    "Nom Prenom", so this produces "PRZYKŁADOWSKA (1) Anna" — which is the form
     our own scraper reads, and the form every one of MPW 2026's 20 events uses
-    in the wild. The previous placement ("Gabriela (1)") produced
-    "KAMIŃSKA Gabriela (1)", which `split_name_marker` does not match: our seed
+    in the wild. The previous placement ("Anna (1)") produced
+    "PRZYKŁADOWSKA Anna (1)", which `split_name_marker` does not match: our seed
     files did not round-trip through our own pipeline, and only organizer-typed
     files did. The reader still accepts the old suffix form so historical
     events keep parsing.

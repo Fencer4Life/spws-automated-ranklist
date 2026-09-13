@@ -43,6 +43,12 @@
 
 ## Validation commands
 
+**Run `scripts/preflight.sh` — it runs every gate below in one pass and reports
+all failures at once.** Use the individual commands only to re-check one thing
+while iterating; use preflight before any commit or push. A plan's definition of
+done is `scripts/preflight.sh` exiting 0, never a hand-copied subset of this
+list (see `doc/claude/planning.md` rule 5a for what a copied list cost).
+
 - Python: `source .venv/bin/activate && python -m pytest python/tests/ -v`
 - Ruff: `source .venv/bin/activate && ruff check python/ && ruff format --check python/`
 - Python types: `source .venv/bin/activate && basedpyright python/`

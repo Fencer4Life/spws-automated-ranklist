@@ -26,15 +26,35 @@ edited unless proven otherwise.
 
 ## Validate locally
 
-Run narrow checks first, then applicable release gates:
+Run narrow checks while iterating. Then, before staging and again before
+pushing, run the whole gate set with one command:
 
-- Python: pytest, `ruff check`, `ruff format --check`, and basedpyright.
-- Frontend: Vitest, `svelte-check`, and Playwright when browser behavior changed.
-- SQL: targeted postgrestools and pgTAP with local Supabase running.
-- Repository: `scripts/check-coherence.sh` and `scripts/check-spec-sync.sh`.
-- Run `scripts/refresh-graph.sh` before committing.
+```bash
+scripts/preflight.sh
+```
+
+**Do not hand-pick gates from a list, including the list below.** Preflight runs
+every CI job's checks plus the AGENTS.md gates CI does not run, continues past
+the first failure, and prints a pass/fail line per gate — so you see everything
+wrong at once rather than serially from a red CI run. On 2026-09-13 a subset was
+run by hand instead; CI then failed on `main` for `basedpyright` and
+`check-coherence.sh`, and each remaining gate surfaced one at a time afterwards.
+A push to `main` auto-deploys PROD, so that discovery order is a release hazard.
+
+What preflight covers: ruff (lint + format), basedpyright, `render_adrs.py
+--check`, `render_docs.py --check`, `check_docs.py`, pytest, Vitest,
+`check-coherence.sh`, `supabase test db`, `check-spec-sync.sh`, `svelte-check`,
+and the `git diff --check` that `integrate-agent-branch.sh` enforces.
+
+Still owed separately, because they are per-change rather than global:
+
+- `postgrestools check <path>` for every `.sql` touched.
+- `scripts/refresh-graph.sh` before committing.
+- Playwright (`npm run test:e2e`) when browser behavior changed.
 
 Never report a command as passing unless it completed successfully in this run.
+`scripts/preflight.sh` exiting 0 is the only evidence that counts for "gates
+pass"; quote its summary rather than asserting it.
 
 ## Prepare the release change
 
