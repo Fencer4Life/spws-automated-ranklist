@@ -41,7 +41,7 @@ def test_extract_vcat_marker_bare_digit():
     """5.M1.2 — bare digit between whitespace runs."""
     from python.pipeline.review_cli import _extract_vcat_marker
 
-    assert _extract_vcat_marker("KAMIŃSKA   1 Gabriela") == 1
+    assert _extract_vcat_marker("PRZYKŁADOWSKA   1 Anna") == 1
     assert _extract_vcat_marker("KRUJALSKIENE  0 Julia") == 0
     assert _extract_vcat_marker("WALECKA  2 Wanda") == 2
 
@@ -92,7 +92,7 @@ def test_bracket_marker_conflict_joint_pool_passthrough():
     """5.M1.6 — bracket already joint-pool (None) → no conflict signal."""
     from python.pipeline.review_cli import _bracket_marker_conflict
 
-    parsed = _FakeParsed(results=[_FakeResult("KAMIŃSKA  1 Gabriela")])
+    parsed = _FakeParsed(results=[_FakeResult("PRZYKŁADOWSKA  1 Anna")])
     has_conflict, summary = _bracket_marker_conflict(parsed, None)
     assert has_conflict is False
     assert summary == "joint"
@@ -104,7 +104,7 @@ def test_bracket_marker_conflict_no_markers():
 
     parsed = _FakeParsed(
         results=[
-            _FakeResult("KAMIŃSKA Gabriela"),
+            _FakeResult("PRZYKŁADOWSKA Anna"),
             _FakeResult("WASILCZUK Beata"),
         ]
     )
@@ -135,7 +135,7 @@ def test_bracket_marker_conflict_misregistered_bracket():
 
     parsed = _FakeParsed(
         results=[
-            _FakeResult("KAMIŃSKA   1 Gabriela"),  # V1
+            _FakeResult("PRZYKŁADOWSKA   1 Anna"),  # V1
             _FakeResult("WASILCZUK (2) Beata"),  # V2
             _FakeResult("KRUJALSKIENE  0 Julia"),  # V0
             _FakeResult("WALECKA  2 Wanda"),  # V2
@@ -195,7 +195,7 @@ def test_format_marker_puts_the_digit_after_the_surname():
     All 20 MPW 2026 events use this form in the wild, including per-category
     brackets where the digit is redundant.
     """
-    assert format_marker("KAMIŃSKA", "1") == "KAMIŃSKA (1)"
+    assert format_marker("PRZYKŁADOWSKA", "1") == "PRZYKŁADOWSKA (1)"
 
 
 def test_format_marker_accepts_an_int():
@@ -226,9 +226,10 @@ def test_format_marker_rejects_an_out_of_range_category():
 def test_split_name_marker_round_trips_what_format_marker_wrote():
     """V.5 — the property that actually matters. If this fails, a seed file we
     generated cannot be ingested by the pipeline that generated it."""
-    nom = format_marker("KAMIŃSKA", "1")
-    surname, digit, given = split_name_marker(f"{nom} Gabriela")
-    assert (surname, digit, given) == ("KAMIŃSKA", "1", "Gabriela")
+    nom = format_marker("PRZYKŁADOWSKA", "1")
+    result = split_name_marker(f"{nom} Anna")
+    assert result is not None
+    assert result == ("PRZYKŁADOWSKA", "1", "Anna")
 
 
 def test_split_name_marker_accepts_a_bare_digit():
@@ -238,7 +239,9 @@ def test_split_name_marker_accepts_a_bare_digit():
 
 def test_split_name_marker_handles_a_compound_given_name():
     """V.7 — everything after the digit is the given name, spaces included."""
-    assert split_name_marker("DE LA CRUZ (0) Maria Jose")[2] == "Maria Jose"
+    result = split_name_marker("DE LA CRUZ (0) Maria Jose")
+    assert result is not None
+    assert result[2] == "Maria Jose"
 
 
 def test_split_name_marker_returns_none_when_there_is_no_marker():
@@ -249,7 +252,7 @@ def test_split_name_marker_returns_none_when_there_is_no_marker():
 
 def test_extract_marker_finds_the_digit_without_splitting():
     """V.9 — the splitter only needs the V-cat, not the name parts."""
-    assert extract_marker("KAMIŃSKA (1) Gabriela") == "1"
+    assert extract_marker("PRZYKŁADOWSKA (1) Anna") == "1"
     assert extract_marker("KOWALSKI Jan") is None
 
 
@@ -262,7 +265,7 @@ def test_strip_marker_removes_every_form():
     tbl_fencer holds 367 rows and not one contains a digit or a parenthesis;
     that invariant is this function's job.
     """
-    assert strip_marker("KAMIŃSKA (1) Gabriela") == "KAMIŃSKA Gabriela"
+    assert strip_marker("PRZYKŁADOWSKA (1) Anna") == "PRZYKŁADOWSKA Anna"
     assert strip_marker("KOWALSKI 2 Jan") == "KOWALSKI Jan"
     assert strip_marker("NOWAK (kat V3) Adam") == "NOWAK Adam"
 

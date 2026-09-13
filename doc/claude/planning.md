@@ -54,10 +54,41 @@ When proposing new infrastructure (Storage, workflows, edge functions):
 
 Quality gates:
 - Every test ID lands in RTM before code lands.
-- All three suites green (pgTAP + pytest + vitest) before any smoke test.
+- **`scripts/preflight.sh` exits 0** before any smoke test, and again before any
+  push. It is the ONLY correct spelling of "the gates pass" — see rule 5a.
 - No skipped tests introduced.
 - No test passes before its implementation lands.
 - Implementation diff = minimum to flip the test surface.
+
+## 5a. Definition of done — one command, never a copied list
+
+A plan's *Verification* section must name **`scripts/preflight.sh`**. It must
+NOT enumerate its own list of suites to run.
+
+The rule exists because the alternative was tried and failed. On 2026-09-13 a
+plan's Verification section listed pytest, vitest, pgTAP, svelte-check,
+postgrestools and `check_docs.py` — a plausible-looking list that silently
+omitted `basedpyright`, `ruff`, `check-coherence.sh` and `check-spec-sync.sh`.
+All of the omitted gates then failed, but they were discovered ONE AT A TIME
+from a red CI run on `main`, after the push. Pushing `main` auto-deploys PROD,
+so a hand-copied gate list is not a documentation problem; it is a release
+hazard. "All three suites green" used to live on the line above this section
+and is precisely the habit that produced that list.
+
+`scripts/preflight.sh` runs every CI job's checks plus the AGENTS.md gates CI
+does not run (`check-spec-sync.sh`, `svelte-check`) plus the `git diff --check`
+that `integrate-agent-branch.sh` enforces. It runs all of them to completion
+even after one fails, then prints a pass/fail line per gate, so a plan learns
+everything wrong with it in a single pass instead of serially from CI.
+
+Two things stay outside it because they are per-change rather than global, and
+a plan touching either must say so explicitly:
+
+- `postgrestools check <file>` for every `.sql` touched ([plpgsql-check](../../.claude/skills/plpgsql-check/SKILL.md)).
+- `scripts/refresh-graph.sh` before the commit ([pre-push-graph](../../.claude/skills/pre-push-graph/SKILL.md)).
+
+When a gate is added to CI, add it to `scripts/preflight.sh` in the same
+change. The list is maintained in exactly one file on purpose.
 
 ## 6. ADRs — propose, sign off, then disk
 

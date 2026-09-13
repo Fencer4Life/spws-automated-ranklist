@@ -139,7 +139,7 @@ export function toCanonicalName(surname: string, firstName: string): [string, st
 /**
  * The surname carrying its (N) age-category marker (ADR-080 §1, amended
  * 2026-09-12). MID-NAME: Fencing Time renders "Nom Prenom", so this produces
- * "KAMIŃSKA (1) Gabriela", which is the form our own scraper reads back and
+ * "PRZYKŁADOWSKA (1) Anna", which is the form our own scraper reads back and
  * the form all 20 MPW 2026 events use in the wild. Appended to the given name
  * it did not round-trip through our own pipeline.
  */
