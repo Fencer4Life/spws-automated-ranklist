@@ -95,6 +95,9 @@ fi
 # ---------------------------------------------------------------------------
 if [[ $CI_ONLY -eq 0 ]]; then
   gate "check-spec-sync.sh (AGENTS)"  bash scripts/check-spec-sync.sh
+  # The anon allowlist lives in two files. pgTAP only reads one of them, so a
+  # drift stays green through all of CI and fails in the deploy job instead.
+  gate "anon allowlist in sync (deploy)" bash scripts/check-anon-allowlist-sync.sh
   gate "svelte-check (AGENTS)"        bash -c 'cd frontend && npm run check'
   # Trailing whitespace blocks scripts/integrate-agent-branch.sh, which runs
   # `git diff --check` before it will merge a task branch.

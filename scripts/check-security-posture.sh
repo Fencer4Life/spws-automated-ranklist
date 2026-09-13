@@ -38,6 +38,14 @@ fi
 # explains why each name is on it. Three of these are the ADR-079 / FR-122 public
 # self-registration path (register.html is served to anonymous visitors); the
 # rest are the public ranking and calendar read surface.
+#
+# ADDING A FUNCTION HERE IS TWO EDITS, ALWAYS. This list and 52.7 are separate
+# copies that can disagree, and they did on 2026-09-12: 52.7 was updated for the
+# identity block and the FTL export page, this was not, and pgTAP stayed green
+# all the way through CI. The disagreement only surfaced at deploy time, where
+# it failed CERT's posture check and blocked the PROD job — which is the gate
+# working, but it is a slow place to learn. If you edit 52.7, edit this in the
+# same change.
 read -r -d '' ALLOWLIST <<'EOF' || true
 'fn_age_category','fn_compare_carryover_engines','fn_copy_prior_scoring_config',
 'fn_create_registration','fn_effective_gender','fn_event_position',
@@ -46,8 +54,14 @@ read -r -d '' ALLOWLIST <<'EOF' || true
 'fn_match_registration_fencer','fn_update_registration',
 'fn_ranking_kadra','fn_ranking_kadra_event_code_matching',
 'fn_ranking_kadra_event_fk_matching','fn_ranking_ppw','fn_ranking_ppw_event_code_matching',
-'fn_ranking_ppw_event_fk_matching','fn_season_summary','fn_vcat_violation_msg'
+'fn_ranking_ppw_event_fk_matching','fn_season_summary','fn_vcat_violation_msg',
+'fn_registration_identity_candidates','fn_confirm_registration_identity',
+'fn_ftl_export_entries','fn_ftl_export_events','fn_ftl_roster'
 EOF
+# The five names on the last two lines are the 2026-09-12 additions: the
+# identity block (ADR-093) and the public FTL export page (ADR-080 amendment).
+# Each is justified in full at 52.7. No comments inside the heredoc — it is
+# flattened with `tr -d '\n'` below, so a `--` would comment out the rest.
 ALLOWLIST=$(echo "$ALLOWLIST" | tr -d '\n')
 
 SQL="SELECT json_build_object(
