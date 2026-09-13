@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="096-no-bracket-stubs-before-results.md">
-<meta name="adr-source-sha256" content="4e0b85fd7db479d84934f6978b6808d671b02660a93e661d5c8a4b28b5c45504">
+<meta name="adr-source-sha256" content="ef4f88d32d1941ec29e7a68f1057da5a68a601dd3b8803bd1032687df46d0c41">
 <title>ADR-096 · A bracket is created by results ingestion, never by calendar discovery</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 096</p><h1>A bracket is created by results ingestion, never by calendar discovery</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented and verified on LOCAL; 154 CERT rows and 82 PROD rows measured for the prune, not yet applied there.</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>096-no-bracket-stubs-before-results.md</code></dd></div><div><dt>Length</dt><dd class="">233 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented and verified on LOCAL; 154 CERT rows and 82 PROD rows measured for the prune, not yet applied there.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented, deployed and verified on LOCAL, CERT and PROD: the migration ran clean via the standard <code>main</code> release pipeline, a manually-dispatched <strong>EVF Calendar + Results Sync</strong> completed with zero errors (Athens synced at <code>PEW13es-2026-2027</code>, <code>0 new, 18 already in CERT</code>), and a direct query confirmed all 31 non-terminal events on both CERT and PROD hold zero child tournaments.</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>096-no-bracket-stubs-before-results.md</code></dd></div><div><dt>Length</dt><dd class="">238 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented, deployed and verified on LOCAL, CERT and PROD: the migration ran clean via the standard <code>main</code> release pipeline, a manually-dispatched <strong>EVF Calendar + Results Sync</strong> completed with zero errors (Athens synced at <code>PEW13es-2026-2027</code>, <code>0 new, 18 already in CERT</code>), and a direct query confirmed all 31 non-terminal events on both CERT and PROD hold zero child tournaments.
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> §Calendar Scraping (the calendar RPC no longer creates a child <code>tbl_tournament</code> row for each weapon × gender; that sentence, dated April 2026, is superseded by the decision below), <a href="046-pew-weapon-suffix.html">ADR-046</a> (the canonical tournament-code formula gains one shared implementation, <code>fn_rebuild_tournament_codes</code>, instead of two independently-drifting copies)
 <strong>Relates to:</strong> <a href="091-no-season-skeletons-for-scraped-events.html">ADR-091</a> (the same &quot;a skeleton is a PREDICTION of a row that is going to arrive anyway&quot; ruling, one layer up, for events instead of brackets), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (the CERT→PROD reconciler's CREATE path is already childless — test 51.1b — and needed no change here), <a href="083-server-enforced-authorization.html">ADR-083</a> (the new functions stay off the anon-EXECUTEable allowlist)
@@ -209,10 +209,13 @@ file count; 122 in <code>calendarMonths.test.ts</code> including the new case).
 seed files (pgTAP test files carry a pre-existing baseline of pgtap-extension
 typecheck noise unrelated to this change, reproduced identically on an
 untouched file).</p>
-<p><strong>Not yet done.</strong> The prune has been measured against CERT and PROD
-(154 / 82 rows) but not yet run there — this ADR records the decision and the
-LOCAL implementation; the CERT and PROD runs are a deployment step, not a
-design question.</p>
+<p><strong>Deployed and verified (2026-09-13).</strong> The migration ran on CERT and PROD
+through the standard <code>main</code> release pipeline (<code>integration/main</code> → <code>main</code>,
+CI green, <code>deploy-cert</code>/<code>deploy-prod</code> both green, security posture verified
+on both). A direct query against each confirms zero non-terminal event holds
+a child tournament: CERT 31/31 events (<code>PLANNED</code>/<code>CREATED</code>) at <code>n_children = 0</code>, PROD the same 31/31. The manually-dispatched <strong>EVF Calendar + Results
+Sync</strong> workflow (<code>workflow_dispatch</code>, <code>mode=calendar</code>) completed with no
+<code>23505</code> and Athens correctly synced at <code>PEW13es-2026-2027</code> among <code>0 new, 18 already in CERT</code> — the exact regression this ADR fixes, reproduced clean.</p>
 <p><strong>Noted, not fixed here.</strong> PROD's mirror never rebuilds child tournament
 codes on a CERT→PROD sync (it copies event fields only), so PROD still carries
 a second generation of duplicate-shaped rows under stale numbers (e.g.
@@ -222,5 +225,5 @@ is ever asked to.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="095-ftl-export-token-lifecycle.html">← ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>096-no-bracket-stubs-before-results.md</code> · source SHA-256 <code>4e0b85fd7db479d84934f6978b6808d671b02660a93e661d5c8a4b28b5c45504</code></footer>
+<footer class="foot">Generated from <code>096-no-bracket-stubs-before-results.md</code> · source SHA-256 <code>ef4f88d32d1941ec29e7a68f1057da5a68a601dd3b8803bd1032687df46d0c41</code></footer>
 </div></body></html>
