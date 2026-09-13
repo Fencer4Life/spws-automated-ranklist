@@ -28,7 +28,13 @@ import type {
   UpdateRegistrationParams,
   RegistrationEntry,
   RegistrationEventInfo,
+  IdentityCandidate,
+  IdentityCandidateKind,
+  ConfirmIdentityParams,
+  IdentityProposal,
+  FtlExportEvent,
 } from './types'
+import type { ExportEntryRow, RosterRow } from './ftlSeedExport'
 
 let client: SupabaseClient | null = null
 
@@ -420,6 +426,118 @@ export async function matchRegistrationFencer(
   return (data as number | null) ?? null
 }
 
+// The near-miss lookup, called ONLY when matchRegistrationFencer above has
+// already missed. That ordering is deliberate and load-bearing: the exact
+// matcher keeps serving the registrations that resolve cleanly — 36 of PPW1's
+// 43 on PROD — with the same call, the same result and no extra round trip, so
+// the path that already works is not disturbed by the path that fixes the rest.
+//
+// Scans tbl_fencer by NAME rather than by tuple, so unlike the exact matcher it
+// can see fencers whose birth year we never recorded. Returns EVERY candidate:
+// where two people share a name (MŁYNEK Janusz 1951 with 19 results beside
+// MŁYNEK Janusz 1984), picking one of them in software is exactly the
+// unrecoverable mistake this design refuses to make.
+export async function fetchIdentityCandidates(
+  surname: string,
+  firstName: string,
+  birthYear: number,
+): Promise<IdentityCandidate[]> {
+  const { data, error } = await getClient().rpc('fn_registration_identity_candidates', {
+    p_surname: surname,
+    p_first_name: firstName,
+    p_birth_year: birthYear,
+  })
+  if (error) throw error
+  return ((data ?? []) as RawIdentityCandidate[]).map((r) => ({
+    idFencer: r.id_fencer,
+    surname: r.txt_surname,
+    firstName: r.txt_first_name,
+    birthYear: r.int_birth_year,
+    birthYearEstimated: r.bool_birth_year_estimated,
+    kind: r.enum_kind,
+  }))
+}
+
+interface RawIdentityCandidate {
+  id_fencer: number
+  txt_surname: string
+  txt_first_name: string
+  int_birth_year: number | null
+  bool_birth_year_estimated: boolean
+  enum_kind: IdentityCandidateKind
+}
+
+// Records the fencer's answer to the B or D prompt. Called AFTER the
+// registration exists, because the write is authorised by that row's edit
+// token — the caller must hold the handle for the row they just created, which
+// is what keeps a master-data write out of reach of a passing visitor.
+//
+// ADOPT_DECLARED writes tbl_fencer, deliberately reversing ADR-079's
+// read-only-birth-year invariant: a fencer's own declaration about their own
+// birth year outranks a value we derived by scraping.
+export async function confirmRegistrationIdentity(
+  params: ConfirmIdentityParams,
+): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_confirm_registration_identity', {
+    p_id_registration: params.idRegistration,
+    p_edit_token: params.editToken,
+    p_id_fencer: params.idFencer,
+    p_action: params.action,
+  })
+  if (error) throw error
+  return data as number
+}
+
+// Pending birth-year proposals awaiting an administrator. Read directly rather
+// than through an RPC: `authenticated` holds SELECT on the table and the RLS
+// policy is the control, matching how every other admin projection here works.
+// anon has no grant at all, so this is unreachable from the public bundle.
+export async function fetchIdentityProposals(): Promise<IdentityProposal[]> {
+  const { data, error } = await getClient()
+    .from('tbl_registration_identity_override')
+    .select('id_override, id_fencer, txt_surname, txt_first_name, int_birth_year_before, int_birth_year_after, ts_created')
+    .eq('enum_status', 'PENDING')
+    .order('ts_created', { ascending: true })
+  if (error) throw error
+  return ((data ?? []) as RawIdentityProposal[]).map((r) => ({
+    idOverride: r.id_override,
+    idFencer: r.id_fencer,
+    surname: r.txt_surname,
+    firstName: r.txt_first_name,
+    birthYearBefore: r.int_birth_year_before,
+    birthYearAfter: r.int_birth_year_after,
+    tsCreated: r.ts_created,
+  }))
+}
+
+interface RawIdentityProposal {
+  id_override: number
+  id_fencer: number
+  txt_surname: string
+  txt_first_name: string
+  int_birth_year_before: number
+  int_birth_year_after: number
+  ts_created: string
+}
+
+// The two decisions. Both close the proposal, so neither can be applied twice;
+// the server raises on a second call rather than silently repeating the write.
+export async function applyIdentityOverride(idOverride: number): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_apply_identity_override', {
+    p_id_override: idOverride,
+  })
+  if (error) throw error
+  return data as number
+}
+
+export async function rejectIdentityOverride(idOverride: number): Promise<number> {
+  const { data, error } = await getClient().rpc('fn_reject_identity_override', {
+    p_id_override: idOverride,
+  })
+  if (error) throw error
+  return data as number
+}
+
 // The sole public write path (FR-122). anon has no INSERT policy on
 // tbl_registration; this SECURITY DEFINER RPC upserts on (id_event, id_fencer)
 // and returns the new/updated registration id.
@@ -486,6 +604,56 @@ export async function fetchEventForRegistration(code: string): Promise<Registrat
     .single()
   if (error) return null
   return (data as RegistrationEventInfo) ?? null
+}
+
+// ---------------------------------------------------------------------------
+// The FTL export surface (migration 20260912000004/5).
+//
+// All three calls are gated on the same capability token, checked inside the
+// functions rather than here: the bundle is public, so a check in this file
+// would be decoration. An absent, unknown or revoked token returns no rows
+// rather than raising, so a stale link renders an empty page instead of an
+// error.
+// ---------------------------------------------------------------------------
+
+/** Events with entries that have not happened yet — the page's event picker. */
+export async function fetchFtlExportEvents(token: string): Promise<FtlExportEvent[]> {
+  const { data, error } = await getClient().rpc('fn_ftl_export_events', { p_token: token })
+  if (error) throw error
+  return (data ?? []) as FtlExportEvent[]
+}
+
+/**
+ * The public seed projection. One row per registration × declared weapon,
+ * carrying the canonical-name inputs, the sub-ranking key and the resolved seed
+ * position — and deliberately no birth year, fencer id or edit token, so this
+ * call is safe from a page holding only the anon key.
+ */
+export async function fetchFtlExportEntries(
+  idEvent: number,
+  token: string,
+): Promise<ExportEntryRow[]> {
+  const { data, error } = await getClient().rpc('fn_ftl_export_entries', {
+    p_id_event: idEvent,
+    p_token: token,
+  })
+  if (error) throw error
+  return (data ?? []) as ExportEntryRow[]
+}
+
+/** The organizer's pick-list for one weapon, already suppressed and ordered. */
+export async function fetchFtlRoster(
+  idEvent: number,
+  weapon: string,
+  token: string,
+): Promise<RosterRow[]> {
+  const { data, error } = await getClient().rpc('fn_ftl_roster', {
+    p_id_event: idEvent,
+    p_weapon: weapon,
+    p_token: token,
+  })
+  if (error) throw error
+  return (data ?? []) as RosterRow[]
 }
 
 export async function fetchOrganizers(): Promise<Organizer[]> {

@@ -81,23 +81,22 @@ class FtlSeedExporter:
         self,
         id_event: int,
         weapons: list[str],
-        season_code: str,
-        event_code_stem: str,
+        event_code: str,
         season_end_year: int,
         season: int | None = None,
         date_fichier_xml: str = "",
     ) -> dict[str, str]:
-        """Fetch inputs and build {filename: xml} for every weapon with
-        registrants. `weapons` is the event's declared weapon set (tbl_event
-        arr_weapons)."""
+        """Fetch inputs and build {filename: xml} — the mix-all plus its DE
+        files for every weapon with registrants. `event_code` is
+        tbl_event.txt_code in full ('PPW1-2026-2027'); `weapons` is the event's
+        declared weapon set (tbl_event arr_weapons)."""
         registrations = self.fetch_registrations(id_event)
         rankings_by_weapon = {w: self.fetch_weapon_rankings(w, season) for w in weapons}
         return build_event_mixall_files(
             registrations=registrations,
             weapons=weapons,
             rankings_by_weapon=rankings_by_weapon,
-            season_code=season_code,
-            event_code_stem=event_code_stem,
+            event_code=event_code,
             season_end_year=season_end_year,
             date_fichier_xml=date_fichier_xml,
         )

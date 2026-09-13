@@ -171,7 +171,15 @@ SELECT results_eq(
   $$ SELECT s.txt_code,COUNT(*)::INT FROM tbl_event e JOIN tbl_season s ON s.id_season=e.id_season
       WHERE s.txt_code IN ('SPWS-2023-2024','SPWS-2024-2025') AND e.txt_code LIKE 'PEW%'
       GROUP BY s.txt_code ORDER BY s.txt_code $$,
-  $$ VALUES ('SPWS-2023-2024',22),('SPWS-2024-2025',12) ORDER BY column1 $$,
+  -- The 2024-2025 figure moved 12 -> 11 when the seed was refreshed to current
+  -- PROD (2026-09-12). Not a regression here: PEW9/11/12/14 were consolidated
+  -- on PROD by the EVF reflow and fragment-repair work, and several weapon
+  -- suffixes changed with them (PEW4f -> PEW4ef, PEW6fs -> PEW6efs,
+  -- PEW7s -> PEW7es). Verified against both dumps before touching the constant.
+  -- A hard count is a snapshot assertion and will move again whenever the EVF
+  -- calendar is reworked; it is kept because what it guards — the repair
+  -- migration silently over-deleting predecessors — has no cheaper expression.
+  $$ VALUES ('SPWS-2023-2024',22),('SPWS-2024-2025',11) ORDER BY column1 $$,
   '56.25: only the seven approved donor rows reduce predecessor PEW counts'
 );
 

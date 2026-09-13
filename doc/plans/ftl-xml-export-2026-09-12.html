@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTL XML export — plan for PPW1</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n{text-align:right;font-family:var(--mono);font-size:13px}
+tfoot td{font-weight:600;border-top:2px solid var(--line)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+pre code{background:none;padding:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.q{font-family:var(--serif);font-size:17.5px;font-weight:600;margin:0 0 10px}
+.rec{background:var(--green-bg);color:var(--green);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:14.5px}
+.rec b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px}
+.opt{margin:10px 0 0;padding-left:0;list-style:none}
+.opt li{padding:7px 0 7px 34px;position:relative;border-top:1px solid var(--line)}
+.opt li:before{content:attr(data-k);position:absolute;left:0;top:7px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--navy);background:var(--navy-soft);border-radius:4px;padding:2px 6px}
+ol.steps{padding-left:20px}
+ol.steps li{margin:6px 0}
+.mock{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin:12px 0;max-width:440px}
+.mock .fld{font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.mock .val{border:1px solid var(--line);border-radius:6px;padding:7px 10px;margin:3px 0 10px;background:var(--paper)}
+.mock .alert{border:1px solid var(--coral);background:var(--coral-bg);border-radius:6px;padding:10px 12px;margin:8px 0}
+.mock .alert b{color:var(--coral)}
+.mock .big{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--coral);display:block;margin:4px 0}
+.btn{display:inline-block;border:1px solid var(--navy);color:var(--navy);border-radius:6px;padding:5px 11px;font-size:13.5px;margin:4px 6px 0 0}
+.btn.p{background:var(--navy);color:#fff}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">SPWS · registration · FTL XML export · <b>accepted 12 September 2026</b></p>
+<h1>Two weeks to PPW1 — the plan</h1>
+<p style="margin:10px 0 14px;padding:9px 13px;border-left:4px solid var(--green);background:var(--green-bg);color:var(--green);border-radius:0 6px 6px 0;font-size:14.5px">
+<b>Status — accepted.</b> Implementation handover:
+<a href="ftl-xml-export-handover-2026-09-12.html" style="color:var(--green)"><code>ftl-xml-export-handover-2026-09-12.html</code></a>.</p>
+<p class="dek">Yes, it makes sense — and the hardest part is already built. A birth-year change on a
+fencer <b>already</b> enqueues a recompute of every event they played, and the PROD drain runs every
+fifteen minutes. §6 states the four problems; <b>§7 solves all four with two database functions</b>,
+because the guard that fixes the first is the same mechanism that fixes the second, and the
+capability that fixes the third is already on the table.</p>
+
+<div class="toc">
+<ol>
+  <li><a href="#decided">Decided</a></li>
+  <li><a href="#ppw1">PPW1 on PROD — the numbers</a></li>
+  <li><a href="#anomalies">Two entry lists, three anomaly classes</a></li>
+  <li><a href="#by"><b>New: the entry list as a birth-year source</b></a></li>
+  <li><a href="#ui"><b>The identity prompts — B and D</b></a></li>
+  <li><a href="#problems"><b>Problems I see</b></a></li>
+  <li><a href="#solutions"><b>How each one is solved</b></a></li>
+  <li><a href="#naming">Naming · <a href="#manual">Manual</a> · <a href="#build">Build order</a></a></li>
+</ol>
+</div>
+
+<h2 id="decided">1 · Decided</h2>
+
+<div class="card locked">
+<span class="lb">Carried into the build</span>
+<ul style="margin:0">
+<li><b>Seeding</b> ADR-080 §2 round-robin. <b>Marker</b> age digit only, mid-name
+<code>Nom="KAMIŃSKA (1)"</code> — MPW 2026 proves it round-trips with zero markers leaking into
+stored names. <b>Marker code</b> unified into one owner.</li>
+<li><b>Club</b> harvested on scrape into <code>tbl_fencer.txt_club</code> (overwrite on non-null,
+store <code>club1</code>); asked again at registration, per-event; emitted only when given.</li>
+<li><b>Delivery</b> public WordPress page, <code>/znajdz-zawody/</code> shape, not a menu item,
+PL + EN. <b>Files</b> mix-all per weapon + one DE per gender × category present + roster per weapon.
+<b>Roster</b> any result in that weapon, full history, all nationalities.</li>
+<li><b>New fencers with no <code>tbl_fencer</code> row</b> are not a problem — they seed on their
+declared data. <b>Null gender/birth year at registration is impossible</b> — both columns are
+<code>NOT NULL</code>; PROD shows 0 of 57.</li>
+<li><b>Priority</b> — the identity work in §4 and §5 is implemented first, with TDD.</li>
+</ul>
+</div>
+
+<h2 id="ppw1">2 · PPW1 on PROD — the numbers</h2>
+<p><code>PPW1-2026-2027</code>, registration open until <b>20 September</b>. <b>43 registrations →
+53 weapon-entries</b> → <b>3 mix-all + 22 DE + 3 roster = 28 files</b>. Épée 26 entries (9 DE),
+foil 12 (7 DE), sabre 15 (6 DE). Six DE files hold one fencer, four hold two — the organizer will
+combine, which is fine and which the manual says out loud. Roster sizes: épée 206, foil 76,
+sabre 102. <code>tbl_fencer</code> holds 367 rows; 349 came from the 28 June bootstrap.</p>
+
+<h2 id="anomalies">3 · Two entry lists, three anomaly classes</h2>
+
+<div class="tw">
+<table>
+<thead><tr><th>Class</th><th>PPW1 (43 regs, 7 unmatched)</th><th>Łomianki (14 regs, 6 unmatched)</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><b>A · birth year disagrees</b></td>
+<td><code>BUJKO Paulina</code> 1982 vs #30 1979<br><code>STAŃCZYK MARCIN</code> 1979 vs #280 1980</td>
+<td><code>MADDEN Gerard</code> 1990 vs #176 1991<br><code>LEAHEY john</code> 1969 vs #167 1976</td>
+<td>exact-tuple match fails → new person → <b>same fencer appears twice</b></td></tr>
+<tr><td><b>B · name fields swapped</b></td>
+<td><code>KRZYSZTOF Łęcki</code> 1991</td>
+<td><code>ORSOLYA Nagy Dr.</code> 1974</td>
+<td>wrong name in FTL and on scrape-back</td></tr>
+<tr><td><b>C · casing</b></td>
+<td><code>STAŃCZYK MARCIN</code>, <code>ZANEUSKAYA HANNA</code></td>
+<td><code>RODARY EMMANUEL</code>, <code>LEAHEY john</code></td>
+<td><b>none</b> — <code>to_canonical_name()</code> fixes it on export</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Root cause of A: <code>fn_match_registration_fencer</code> matches the exact tuple
+<code>(upper(surname), upper(first), birth year)</code>. That is deliberate — it can never merge two
+different people — but it leaves <b>no near-miss path at all</b>, so every discrepancy is forced
+into the unmatched bucket and nobody is told. The fix is to show the near-miss to a human, not to
+loosen the matcher.</p>
+
+<h2 id="by">4 · New requirement — the entry list as a birth-year source</h2>
+
+<p>A registration is a <b>first-hand declaration</b> by the fencer about their own birth year. It
+outranks anything we derived. So it writes back, on a three-rung ladder:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>State of <code>tbl_fencer</code></th><th>Action</th><th>Flag after</th><th>PROD today</th></tr></thead>
+<tbody>
+<tr><td><code>int_birth_year IS NULL</code></td><td><b>Populate</b> from the declaration, silently.</td><td><code>bool_birth_year_estimated = false</code></td><td class="n">9 rows</td></tr>
+<tr><td>present and <code>bool_birth_year_estimated = true</code></td><td><b>Overwrite</b> with the declaration, silently.</td><td><code>false</code></td><td class="n">20 rows (18 with results)</td></tr>
+<tr><td>present and <b>confirmed</b>, and it differs</td><td><b>Ask</b> — the §5 D prompt. Never silent.</td><td>per the answer</td><td class="n">4 cases across 2 events</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card locked">
+<span class="lb">The good news — the dangerous half is already built</span>
+<p>My first worry was that changing a birth year would silently rot the ranking. It does not, and
+the reason is machinery you already have. <code>trg_assert_result_vcat</code> fires
+<code>BEFORE INSERT OR UPDATE OF id_fencer, id_tournament ON tbl_result</code> — so it does
+<b>not</b> fire on a <code>tbl_fencer</code> update, and on its own a birth-year change would indeed
+leave old results in their old V-cat with no error.</p>
+<p style="margin-bottom:0">But <code>trg_fencer_change_enqueue</code> fires
+<code>AFTER UPDATE ON tbl_fencer</code> and is <b>column-aware</b> — the migration says it plainly:
+<em>"BY / nationality change → enqueue; name / alias change → nothing."</em> A birth-year change
+enqueues a recompute of <b>every event that fencer participated in</b>
+(<code>fn_enqueue_affected_events</code> → <code>tbl_recompute_queue</code>, ADR-071 /
+<code>20260615000001_cdc_recompute_dedup.sql</code>). The ranking heals itself. The plan's only
+obligation is to <b>not bypass it</b> — the write must be a plain <code>UPDATE</code>, never a
+trigger-disabling path.</p>
+</div>
+
+<h2 id="ui">5 · The identity prompts — B and D</h2>
+
+<h3>B — swapped-name alert, with the red line you asked for</h3>
+<p>When the exact lookup misses, retry it with surname and given name exchanged. A hit is
+near-certain proof of a swap.</p>
+
+<div class="mock">
+<div class="fld">Nazwisko</div><div class="val">Krzysztof</div>
+<div class="fld">Imię</div><div class="val">Łęcki</div>
+<div class="alert">
+<b>Czy na pewno?</b>
+<span style="display:block;margin-top:6px;font-size:14px">W Rankingu występuje szermierz</span>
+<span class="big">ŁĘCKI Krzysztof</span>
+<span style="display:block;font-size:14px">Ty podałeś: <b>KRZYSZTOF Łęcki</b></span>
+</div>
+<span class="btn p">To ja — zamień</span><span class="btn">Zostaw tak, jak podałem</span>
+</div>
+
+<p><b>Verified against PROD: this works for our real case.</b> <code>ŁĘCKI Krzysztof</code> is in
+the table as <b>#168, birth year 1991</b> — identical to what the registration declared. Swap the
+two fields and the exact tuple matches perfectly. B would have caught it, and after the swap he
+matches cleanly forever after.</p>
+
+<h3>D — birth-year near-miss, with three outcomes</h3>
+<p>When the exact tuple misses but <code>(surname, given name)</code> hits with a different year:</p>
+
+<div class="mock">
+<div class="alert" style="border-color:var(--amber);background:var(--amber-bg)">
+<b style="color:var(--amber)">Znaleźliśmy podobnego zawodnika</b>
+<span class="big" style="color:var(--amber)">BUJKO Paulina, rocznik 1979</span>
+<span style="display:block;font-size:14px">Ty podałeś rocznik <b>1982</b>.</span>
+</div>
+<span class="btn p">To ja — mój rocznik to 1982</span>
+<span class="btn">To ja — pomyliłem się</span>
+<span class="btn">To inna osoba</span>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr><th>Answer</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td>It is me, my year is right</td><td>Registration links to that fencer <b>and</b> the master birth year is corrected to the declared value, marked confirmed. The recompute queue takes care of the ranking.</td></tr>
+<tr><td>It is me, I mistyped</td><td>Registration's birth year is corrected to the table's; the fencer row is untouched. Now an exact match.</td></tr>
+<tr><td>It is someone else</td><td>Registration stays unmatched. The fencer row is created at scraping time, as today — nothing new.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="problems">6 · Problems I see</h2>
+
+<div class="card warn">
+<span class="lb">Problem 1 · same name, different person — this is live on PROD</span>
+<p>Not hypothetical. Two pairs exist right now, both with confirmed birth years:</p>
+<pre><code>#197 MŁYNEK Janusz   1951   19 results
+#356 MŁYNEK Janusz   1984    0 results     ← 33 years apart
+
+#354 KRAWCZYK Paweł  1989    0 results
+#355 KRAWCZYK Paweł  1954    0 results     ← 35 years apart</code></pre>
+<p style="margin-bottom:0">So a name-only lookup can return <b>more than one row</b>. Every rule in
+§4 and §5 must therefore carry the same guard: <b>act only when exactly one row matches on
+(surname, given name); otherwise do nothing and surface it.</b> Without that guard, a
+<code>MŁYNEK Janusz</code> registering could write his birth year onto the wrong Janusz — and one of
+them has 19 results behind him.</p>
+</div>
+
+<div class="card warn">
+<span class="lb">Problem 2 · the null-birth-year match cannot happen through the existing matcher</span>
+<p style="margin:0"><code>fn_match_registration_fencer</code> requires <code>int_birth_year</code>
+equality, and <b>NULL is never equal to anything</b>. So a fencer whose birth year is NULL can never
+be matched by it — the populate rule in §4 would never fire through the existing path. It needs its
+own lookup: surname + given name, restricted to <code>int_birth_year IS NULL</code>, with the
+exactly-one guard from Problem 1. Small, but it has to be built deliberately rather than assumed.</p>
+</div>
+
+<div class="card warn">
+<span class="lb">Problem 3 · this lets an anonymous form write master data — and it reverses ADR-079</span>
+<p>ADR-079 made the declared birth year a <b>read-only invariant</b> that never writes back to
+<code>tbl_fencer</code>; ADR-080 §2 repeats it. This requirement deliberately reverses that, which
+is your call — but it should be on the record as a decision, not arrive as a side effect.</p>
+<p>The concrete exposure: <code>fn_create_registration</code> is <code>SECURITY DEFINER</code> and
+granted to <code>anon</code>. Adding a master-data write widens what an anonymous visitor can do
+from <em>"insert a registration row"</em> to <em>"mutate the fencer table"</em>. Anyone who knows
+a fencer's name can change that fencer's birth year.</p>
+<p style="margin-bottom:0"><b>Three guards make it acceptable</b>, and two are already yours:
+a <b>confirmed</b> birth year is never overwritten silently (only NULL or estimated), the
+exactly-one-match guard from Problem 1, and <code>trg_audit_fencer</code> — which already logs every
+<code>UPDATE</code> on <code>tbl_fencer</code>, so every write of this kind is traceable after the
+fact. With those three, the residual risk is someone vandalising one estimated birth year, which the
+recompute queue would then propagate. For a veterans' ranking I think that is acceptable; it is
+worth one sentence in the ADR saying we accepted it knowingly.</p>
+</div>
+
+<div class="card warn">
+<span class="lb">Problem 4 · B does not cover the Łomianki case</span>
+<p style="margin:0">B fires only when the swapped name <b>hits an existing fencer</b>.
+<code>ŁĘCKI Krzysztof</code> is #168, so PPW1's case is caught. <b><code>NAGY Orsolya</code> is not
+in the table at all</b> — she is a foreign EVF entrant — so B stays silent and
+<code>ORSOLYA Nagy Dr.</code> enters exactly as typed. B covers people we already know; it cannot
+cover a first-time international entrant, which is the population most likely to write their name in
+a different order. Not a reason to change the decision — just the honest boundary of it. The
+organizer's roster file and the reconciliation report remain the backstop, and the canonical-name
+echo is there to be added later if this keeps happening.</p>
+</div>
+
+<h3>Two smaller ones</h3>
+<ul>
+<li><b>Roster suppression must key on the fencer, not the name.</b> The rule was "exclude any fencer
+whose name matches a registration, ignoring birth year". Given <code>MŁYNEK Janusz</code>, that
+would hide the 19-result Janusz from the roster because a <em>different</em> Janusz registered —
+exactly the person the organizer might need to tick in. Refined rule: suppress the
+<b>matched <code>id_fencer</code></b> always, and suppress by name only when <b>exactly one</b>
+fencer bears that name.</li>
+<li><b>The recompute queue drains, but verify the worker still runs.</b> PROD shows 42
+<code>DONE</code> rows and nothing <code>PENDING</code>, last activity 14 July — which is consistent
+with "working, nothing to do since". Before relying on it for a live birth-year correction, confirm
+the consumer is still scheduled. If it is not, a correction would sit un-propagated and we would not
+notice.</li>
+</ul>
+
+<div class="rec"><b>Overall</b> The design is sound and the riskiest part — keeping the ranking
+consistent after a birth-year change — is already solved by the CDC recompute queue. What it needs
+is the exactly-one-match guard applied uniformly in four places, a dedicated NULL-birth-year lookup,
+and an ADR that says out loud we are reversing ADR-079's read-only invariant and why.</div>
+
+<h3>TDD scope for this block</h3>
+<ul>
+<li><b>pgTAP</b> — populate on NULL; overwrite when estimated; <b>refuse</b> when confirmed;
+<b>refuse</b> when two fencers share the name (the <code>MŁYNEK</code> case, as a fixture);
+confirm <code>bool_birth_year_estimated</code> ends <code>false</code>; confirm a row lands in
+<code>tbl_recompute_queue</code> for each affected event; confirm <code>trg_audit_fencer</code>
+recorded the change.</li>
+<li><b>Python</b> — the swapped-name retry returns the twin for <code>KRZYSZTOF Łęcki</code> and
+nothing for a name absent from the table; the near-miss lookup returns exactly one candidate or
+none.</li>
+<li><b>vitest</b> — each of D's three answers produces the right call; the B alert renders the
+canonical form; neither prompt appears on a clean exact match.</li>
+<li><b>Regression</b> — an ordinary matching registration still takes the fast path and shows no
+prompt at all. This is the one that protects the other 36 of 43.</li>
+</ul>
+
+<h2 id="solutions">7 · How each one is solved</h2>
+
+<p>All four collapse into <b>one lookup function plus one write function</b>, because the guard that
+fixes Problem 1 is the same mechanism that fixes Problem 2, and the capability that fixes Problem 3
+is already on the table.</p>
+
+<h3>The lookup — one function, four classifications</h3>
+
+<pre><code>fn_registration_identity_candidates(p_surname TEXT, p_first TEXT, p_birth_year SMALLINT)
+  RETURNS TABLE (id_fencer INT, txt_surname TEXT, txt_first_name TEXT,
+                 int_birth_year SMALLINT, bool_birth_year_estimated BOOL,
+                 enum_kind TEXT)   -- EXACT | SWAPPED | BY_NULL | BY_DIFFERS</code></pre>
+
+<p>It scans by <b>name</b>, not by tuple, so it sees the nine NULL-birth-year rows the current
+matcher structurally cannot — <b>that is Problem 2, gone</b>, with no second lookup to build and no
+change to <code>fn_match_registration_fencer</code>, which stays exactly as it is and keeps serving
+the fast path for the 36 of 43 who match cleanly.</p>
+
+<p>The caller resolves in a fixed order, and <b>the "exactly one" guard is the order itself</b>
+rather than a condition bolted onto each rule:</p>
+
+<div class="tw">
+<table>
+<thead><tr><th class="n">#</th><th>Condition</th><th>Action</th><th>Prompt?</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>exactly one <code>EXACT</code></td><td>link and stop — today's behaviour, untouched</td><td>none</td></tr>
+<tr><td class="n">2</td><td>more than one <code>EXACT</code></td><td><b>refuse</b> and flag: two fencer rows share a name and a birth year, which is a duplicate-fencer defect</td><td>admin</td></tr>
+<tr><td class="n">3</td><td>exactly one <code>SWAPPED</code></td><td><b>B prompt</b></td><td>fencer</td></tr>
+<tr><td class="n">4</td><td>exactly one <code>BY_NULL</code></td><td>link, populate the birth year silently, mark confirmed</td><td>none</td></tr>
+<tr><td class="n">5</td><td>any <code>BY_DIFFERS</code></td><td><b>D prompt, listing every candidate</b></td><td>fencer</td></tr>
+<tr><td class="n">6</td><td>nothing matched</td><td>new person — canonical-form confirmation (see Problem 4)</td><td>fencer</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card locked">
+<span class="lb">Problem 1 · solved, and it mostly dissolves on inspection</span>
+<p><b>MŁYNEK Janusz 1984 registering hits rung 1, not rung 5.</b> There <em>is</em> an exact
+match — #356 — so the ambiguity with #197 never arises. Ambiguity only bites when no exact match
+exists, and then rung 5 shows <b>both</b> Januszes with their birth years and lets the person pick.
+That is better than the "refuse and surface" I proposed: the one human who knows the answer is
+already looking at the screen.</p>
+<p style="margin-bottom:0">Rung 2 covers the case I cannot rule out: <code>tbl_fencer</code> has
+<b>no uniqueness constraint</b> on name + birth year — only <code>idx_fencer_name</code>
+(non-unique) and the primary key. PROD has <b>zero</b> duplicate triples today, so this is a guard
+against a future defect, not a present one. It must exist anyway, because a silent write to the
+wrong one of two identical rows is unrecoverable.</p>
+</div>
+
+<h3>The write — gated on a capability that already exists</h3>
+
+<pre><code>fn_confirm_registration_identity(
+    p_id_registration INT,
+    p_edit_token      UUID,      -- tbl_registration.uuid_edit_token
+    p_id_fencer       INT,       -- must be in this registration's candidate set
+    p_action          TEXT       -- ADOPT_DECLARED | FIX_REGISTRATION | DIFFERENT_PERSON
+)  SECURITY DEFINER</code></pre>
+
+<div class="card locked">
+<span class="lb">Problem 3 · solved — this is not "any anonymous visitor"</span>
+<p><code>tbl_registration.uuid_edit_token</code> already exists (migration
+<code>20260828000003_registration_edit_handle.sql</code>) and <code>fn_update_registration</code>
+already takes it as a parameter. So the master-data write is gated on a capability <b>only the
+person who made that registration holds</b>. We reuse an established pattern instead of widening
+<code>fn_create_registration</code>, which stays a registration-only function.</p>
+<p>Four rules inside, each closing a specific hole:</p>
+<ul style="margin-bottom:0">
+<li><b>The token must match the registration</b> — otherwise no write.</li>
+<li><b><code>p_id_fencer</code> must be in the candidate set</b>, recomputed server-side from the
+registration's own name. Without this, a caller could name any fencer and rewrite their birth year;
+with it, the reachable set is the handful of people who share the registrant's name.</li>
+<li><b>Confirmed birth years are never touched by a rule</b> — only rungs 4 and 5 write, and rung 5
+requires an explicit human answer. That is the difference between your two requirements: NULL and
+estimated are overwritten by policy, confirmed only by a person saying so.</li>
+<li><b>Plain <code>UPDATE</code></b>, never a trigger-disabling path — so
+<code>trg_fencer_change_enqueue</code> fires and <code>trg_audit_fencer</code> records it.</li>
+</ul>
+</div>
+
+<p>The three actions map to D's three buttons: <code>ADOPT_DECLARED</code> links and corrects the
+master birth year; <code>FIX_REGISTRATION</code> corrects the registration and leaves the fencer
+untouched; <code>DIFFERENT_PERSON</code> links nothing, and the fencer is created at scraping time
+as today.</p>
+
+<div class="card locked">
+<span class="lb">Problem 4 · solved by narrowing option A instead of adding it whole</span>
+<p>You declined the canonical-form echo because it would sit in front of everyone. So put it on
+<b>rung 6 only</b> — the path where we are about to mint a brand-new identity.</p>
+<p>That is precisely the population B cannot reach. B needs a fencer already in the table:
+<code>ŁĘCKI Krzysztof</code> is #168, so PPW1's case is caught; <code>NAGY Orsolya</code> is absent,
+so B stays silent for her. Rung 6 catches her, because she is new by definition.</p>
+<p style="margin-bottom:0"><b>Cost: zero for everyone who matches.</b> It fires for 7 of 43 at PPW1
+and 6 of 14 at Łomianki. And it is honest about why it is asking — <em>"nie mamy Cię jeszcze w
+bazie, sprawdź proszę, czy tak ma wyglądać Twoje nazwisko na liście startowej: <b>NAGY
+Orsolya</b>"</em> — with a swap button. Nobody is accused of a mistake; they are asked to check
+a name we have never seen.</p>
+</div>
+
+<h3>The two smaller ones</h3>
+
+<div class="card locked">
+<span class="lb">Roster suppression · keyed on the fencer, with a narrow name fallback</span>
+<p style="margin:0">Two clauses in <code>fn_ftl_roster</code>, not one. <b>Always</b> suppress any
+<code>id_fencer</code> that a registration for this event and weapon already points at — exact,
+unambiguous, no names involved. <b>Additionally</b> suppress by name only when an
+<em>unmatched</em> registration bears that name <b>and exactly one fencer does too</b>. So
+registration-BUJKO hides fencer #30 BUJKO (one name-holder), while a registering
+<code>MŁYNEK Janusz 1984</code> hides only himself and leaves the 19-result Janusz in the roster
+where the organizer can still tick him in.</p>
+</div>
+
+<div class="card locked">
+<span class="lb">Recompute worker · verified, not assumed</span>
+<p style="margin:0"><code>.github/workflows/recompute-drain-prod.yml</code> runs on
+<code>cron: '*/15 * * * *'</code> and its last five scheduled runs all succeeded — most recently
+<b>2026-09-12 05:50Z</b>, in 19 seconds. So the queue is drained every quarter hour and the
+self-heal path a birth-year change depends on is live. The 42 <code>DONE</code> / 0
+<code>PENDING</code> reading was "working, nothing to do", as hoped.</p>
+</div>
+
+<div class="rec"><b>Net effect on the build</b> Two new database functions and one extra prompt
+branch, instead of four separate fixes. Nothing existing changes behaviour:
+<code>fn_match_registration_fencer</code> and <code>fn_create_registration</code> keep their current
+signatures and their current fast path, so the 36 of 43 registrations that already work keep working
+byte-for-byte — which is also the regression test that matters most.</div>
+
+<h2 id="naming">8 · Naming</h2>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th><code>TitreLong</code> shown in Fencing Time</th></tr></thead>
+<tbody>
+<tr><td><code>PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml</code></td>
+<td><code>SPWS PPW1 2026/27 · SZPADA · ELIMINACJE MIX — kobiety+mężczyźni, V0–V4</code></td></tr>
+<tr><td><code>PPW1-2026-2027_EPEE_DE_MEN_V2.xml</code></td>
+<td><code>SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V2</code></td></tr>
+<tr><td><code>PPW1-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml</code></td>
+<td><code>SPWS · BAZA ZAWODNIKÓW — szpada (nie importować jako zawody)</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>ASCII/English filenames, Polish in-file titles. Every name states event, weapon, phase, gender and
+category range — replacing ADR-080 §4. MPW 2026's foil mix-all is called <em>"Floret Mężczyzn
+V3, V4"</em> while holding 25 fencers spanning V0–V4 including the women; our file cannot read that
+way.</p>
+
+<h2 id="manual">9 · The instruction manual — PL and EN</h2>
+<p>Two files, linked side by side from the download page, written against the Fencing Time 4.7
+User's Guide with menu paths quoted.</p>
+<ol class="steps">
+<li><b>What you are downloading</b> — the file manifest: exact name, fencer count, purpose, and
+whether it is imported as a competition or used as a pick-list. <b>Generated</b> from the same query
+that builds the files, so it cannot drift.</li>
+<li><b>Before the event</b> — <em>Import Events</em> → choose file → check Age/Gender/Weapon →
+<em>Import</em> (pp. 22, 144). Per weapon, then the DE files.</li>
+<li><b>These are the maximal split</b> — combine freely (<em>Combine Events</em>, p.22); we re-split
+by birth year regardless. Please do not rename an event to a category it does not contain.</li>
+<li><b>The digit in the name</b> — <code>KAMIŃSKA (1) Gabriela</code> means V1. Leave it; it is how
+we read results back.</li>
+<li><b>On the morning</b> — re-download, then <em>Re-Import Competitors from XML File</em> on the
+Summary tab (p.144). Rounds and entered scores are kept.</li>
+<li><b>Someone turns up unannounced</b> — Event Competitors → <em>Import from XML</em> → the roster
+→ tick that one person → OK (p.145). <b>Do not type the name.</b></li>
+<li><b>Sending results back.</b> &nbsp; 8. <b>Contact.</b></li>
+</ol>
+
+<h2 id="build">10 · Build order</h2>
+<ol class="steps">
+<li><b>Identity block — first, with TDD</b> (§4, §5, §7): <code>fn_registration_identity_candidates</code>
+with its four classifications and the six-rung resolution order, then
+<code>fn_confirm_registration_identity</code> with its token check, candidate-set check and three
+actions. Then the B, D and rung-6 prompts in the form. RED → GREEN, pgTAP + Python + vitest per §6.</li>
+<li><b><code>python/pipeline/vcat_marker.py</code></b> — single owner of the marker convention
+(<code>format_marker</code>, <code>split_name_marker</code>, <code>extract_marker</code>,
+<code>strip_marker</code>). Sites <code>ftl.py:98</code>, <code>review_cli.py:544</code>,
+<code>fuzzy_match.py:83</code>, <code>ftl_seed_export.format_prenom_with_marker</code> import from
+it. <b>Pure refactor</b>; <code>test_vcat_marker.py</code> (11), <code>test_matcher.py</code>,
+<code>test_ftl_seed_export.py</code> green before and after.</li>
+<li><b>Marker moves to mid-name</b>; test vectors updated.</li>
+<li><b>Reconciliation report</b> (read-only) + apply the four class-A corrections and
+<code>KRZYSZTOF Łęcki</code>, checking each birth-year change for a V-cat boundary crossing first.
+Both PPW1 cases are V-cat-neutral for 2026/27; <code>LEAHEY</code>'s seven-year gap is not yet
+checked.</li>
+<li><b><code>fn_ftl_roster(p_event, p_weapon, p_season)</code></b> — results-based population,
+V-cat for the event's season, plus the refined suppression from §6. Anon grant, pgTAP,
+<code>postgrestools</code>. A function, not a view, because the V-cat depends on the season.</li>
+<li><b>Club</b> — scrape harvest into <code>tbl_fencer.txt_club</code>; <code>txt_club</code> on
+<code>tbl_registration</code> + both RPC signatures + the form wiring at
+<code>RegistrationForm.svelte:95</code>; conditional <code>Club</code> on export.</li>
+<li><b>Generator</b> — DE per live gender × category, roster file, §7 naming for filename and
+<code>TitreLong</code>.</li>
+<li><b>TypeScript twin</b> of <code>interleave_mixall</code>, <code>to_canonical_name</code>,
+<code>build_fie_xml</code> and the naming rules, vitest on ADR-080 §2's worked example.</li>
+<li><b><code>FtlExportElement.svelte</code></b> in <code>main.ce.ts</code>; <code>lang</code>
+attribute + PL/EN toggle (first custom element to expose <code>lang</code>); keys in both
+<code>locales/{pl,en}.json</code>; <code>Blob</code> download; the generated manifest.</li>
+<li><b>Manual</b> PL + EN. <b>Publish</b> the page over XML-RPC per ADR-090.</li>
+<li><b>ADRs</b> — ADR-080 amendment (marker position, club, roster population and suppression,
+combining dropped, §4 → §7 naming, public page, Context correction). <b>New ADR</b>: the entry list
+as an authoritative birth-year source, amending ADR-079's read-only invariant, recording the
+anon-write exposure and the three guards.</li>
+<li><b>Documentation coherence gate</b> —
+<code>doc/handbook/subsystems/events-and-registration.html</code>,
+<code>doc/handbook/product/product-surfaces.html</code>,
+<code>doc/handbook/reference/registration-lifecycle.html</code>, RTM FR-126.
+<code>scripts/refresh-graph.sh</code> before the commit.</li>
+</ol>
+
+<footer>
+Measured 12 September 2026, PROD reads only via <code>scripts/cloud-sql.sh prod</code>:
+<code>PPW1-2026-2027</code> 43 regs / 53 weapon-entries / 36 matched / deadline 20 Sep;
+<code>PEW5efs-2026-2027</code> 14 regs / 8 matched; <code>tbl_registration</code> 57 rows, 0 without
+gender or birth year (both <code>NOT NULL</code>); <code>tbl_fencer</code> 367 rows, 9 with no birth
+year, <b>20 estimated (18 with results)</b>, 2 same-name pairs, 0 with a club;
+<code>ŁĘCKI Krzysztof</code> = #168 by 1991; <code>NAGY</code>/<code>ORSOLYA</code> absent;
+<code>tbl_recompute_queue</code> 42 DONE / 0 PENDING, watermark 14 Jul. Triggers read from
+<code>pg_trigger</code>. Sources: <code>20260615000001_cdc_recompute_dedup.sql</code> (ADR-071),
+ADR-079, ADR-080, ADR-056; Fencing Time ® 4.7 User's Guide pp. 22, 25, 41, 45, 144, 145.
+</footer>
+
+</div>
+</body>
+</html>

@@ -14,6 +14,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
+
+from python.pipeline.vcat_marker import (
+    extract_marker,
+    format_marker,
+    split_name_marker,
+    strip_marker,
+)
+
 # ---------------------------------------------------------------------------
 # extract_vcat_marker — pure regex helper
 # ---------------------------------------------------------------------------
@@ -160,3 +169,106 @@ def test_bracket_marker_conflict_empty_results():
     has_conflict, summary = _bracket_marker_conflict(parsed, "V1")
     assert has_conflict is False
     assert summary == "no results"
+
+
+# ===========================================================================
+# The single owner — python/pipeline/vcat_marker.py (ADR-080 §1, amended
+# 2026-09-12). The convention above lived in four places that had drifted: the
+# SCRAPER read the digit from BETWEEN surname and given name, while the
+# EXPORTER appended it to the given name, so our own seed files did not
+# round-trip through our own scraper. Only organizer-typed files did, which is
+# why MPW 2026 ingested cleanly and nothing raised the alarm.
+#
+# The tests above are the regression guard for that consolidation: they call
+# review_cli's helpers, which now delegate here, and must stay green unchanged.
+#
+# Plan IDs V.1-V.11.
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# Writing the marker
+# ---------------------------------------------------------------------------
+def test_format_marker_puts_the_digit_after_the_surname():
+    """V.1 — mid-name, which is what the scraper reads and what FTL shows.
+
+    All 20 MPW 2026 events use this form in the wild, including per-category
+    brackets where the digit is redundant.
+    """
+    assert format_marker("KAMIŃSKA", "1") == "KAMIŃSKA (1)"
+
+
+def test_format_marker_accepts_an_int():
+    """V.2 — callers hold the V-cat as a digit or an int; both are the same."""
+    assert format_marker("NOWAK", 3) == "NOWAK (3)"
+
+
+def test_format_marker_rejects_a_gendered_marker():
+    """V.3 — the decision is the AGE DIGIT ONLY.
+
+    Gender travels as the FIE `Sexe` attribute. Widening this to carry it would
+    put the same fact in two places that can disagree, and the scraper would
+    then have to guess which one is authoritative.
+    """
+    with pytest.raises(ValueError):
+        format_marker("NOWAK", "MV3")
+
+
+def test_format_marker_rejects_an_out_of_range_category():
+    """V.4 — V0-V4 is the whole domain (ADR-010)."""
+    with pytest.raises(ValueError):
+        format_marker("NOWAK", "7")
+
+
+# ---------------------------------------------------------------------------
+# Reading it back
+# ---------------------------------------------------------------------------
+def test_split_name_marker_round_trips_what_format_marker_wrote():
+    """V.5 — the property that actually matters. If this fails, a seed file we
+    generated cannot be ingested by the pipeline that generated it."""
+    nom = format_marker("KAMIŃSKA", "1")
+    surname, digit, given = split_name_marker(f"{nom} Gabriela")
+    assert (surname, digit, given) == ("KAMIŃSKA", "1", "Gabriela")
+
+
+def test_split_name_marker_accepts_a_bare_digit():
+    """V.6 — organizers type it both ways; both are seen in the wild."""
+    assert split_name_marker("KOWALSKI 2 Jan") == ("KOWALSKI", "2", "Jan")
+
+
+def test_split_name_marker_handles_a_compound_given_name():
+    """V.7 — everything after the digit is the given name, spaces included."""
+    assert split_name_marker("DE LA CRUZ (0) Maria Jose")[2] == "Maria Jose"
+
+
+def test_split_name_marker_returns_none_when_there_is_no_marker():
+    """V.8 — most scraped names carry no marker at all, and that is not an
+    error. Returning None keeps the caller's branch explicit."""
+    assert split_name_marker("KOWALSKI Jan") is None
+
+
+def test_extract_marker_finds_the_digit_without_splitting():
+    """V.9 — the splitter only needs the V-cat, not the name parts."""
+    assert extract_marker("KAMIŃSKA (1) Gabriela") == "1"
+    assert extract_marker("KOWALSKI Jan") is None
+
+
+# ---------------------------------------------------------------------------
+# Removing it
+# ---------------------------------------------------------------------------
+def test_strip_marker_removes_every_form():
+    """V.10 — matching must never see a marker.
+
+    tbl_fencer holds 367 rows and not one contains a digit or a parenthesis;
+    that invariant is this function's job.
+    """
+    assert strip_marker("KAMIŃSKA (1) Gabriela") == "KAMIŃSKA Gabriela"
+    assert strip_marker("KOWALSKI 2 Jan") == "KOWALSKI Jan"
+    assert strip_marker("NOWAK (kat V3) Adam") == "NOWAK Adam"
+
+
+def test_strip_marker_leaves_a_clean_name_untouched():
+    """V.11 — and it must not eat a name that merely contains a number, which
+    is the failure mode that would silently corrupt the master list."""
+    assert strip_marker("KOWALSKI Jan") == "KOWALSKI Jan"
+    assert strip_marker("O'NEILL-SMITH Anna") == "O'NEILL-SMITH Anna"

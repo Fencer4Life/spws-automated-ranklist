@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FTL XML export — implementation handover</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n{text-align:right;font-family:var(--mono);font-size:13px}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+pre code{background:none;padding:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{background:var(--green-bg);color:var(--green);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:14.5px}
+.rec b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px}
+ol.steps{padding-left:20px}
+ol.steps li{margin:6px 0}
+.prompt{background:var(--navy-soft);border:1px solid var(--navy);border-radius:10px;padding:16px 18px;margin:14px 0}
+.prompt pre{background:var(--card);margin:10px 0 0}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">SPWS · implementation handover · 12 September 2026</p>
+<h1>FTL XML export — handover to the build session</h1>
+<p class="dek">Everything a session starting from zero needs in order to build the accepted plan
+without re-deriving it. §2 is the only part that matters if you read nothing else: what was measured
+versus what was assumed.</p>
+
+<div class="toc">
+<ol>
+  <li><a href="#what">What is being built, in one paragraph</a></li>
+  <li><a href="#truth"><b>Verified vs assumed</b></a></li>
+  <li><a href="#read">What to read, in order</a></li>
+  <li><a href="#coords">Code coordinates</a></li>
+  <li><a href="#env">Environment — things that cost this session time</a></li>
+  <li><a href="#traps">Traps</a></li>
+  <li><a href="#order">Build order and definition of done</a></li>
+  <li><a href="#prompt"><b>The start prompt</b></a></li>
+</ol>
+</div>
+
+<h2 id="what">1 · What is being built</h2>
+
+<p>A public page on <code>weteraniszermierki.pl</code> — same treatment as
+<code>/znajdz-zawody/</code>, not a menu item — from which the organizer of
+<code>PPW1-2026-2027</code> downloads FIE-XML files and loads them straight into Fencing Time:
+a mix-all pool per weapon seeded in the ADR-080 §2 snake order, one DE file per gender × age
+category actually present, and a roster file per weapon so a fencer who turns up unannounced is
+<em>ticked in</em> rather than typed. Plus a PL and EN instruction manual. Before any of that,
+a registration-identity block that stops the same person entering the organizer's software twice.
+<b>PPW1 is on 26 September; registration closes 20 September.</b></p>
+
+<h2 id="truth">2 · Verified vs assumed</h2>
+
+<div class="card warn">
+<span class="lb">Read this before trusting any number below</span>
+<p style="margin:0">Everything in the "verified" table was measured against <b>PROD</b> or the
+<b>live FTL site</b> on 12 September 2026. <b>Registration is still open</b>, so every count
+involving <code>tbl_registration</code> will have grown. Re-measure before generating files or
+quoting a figure; the <em>shapes</em> hold, the <em>numbers</em> do not.</p>
+</div>
+
+<h3>Verified — measured, not inferred</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fact</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>Marker convention in the wild is <b>mid-name</b>: <code>KAMIŃSKA (1) Gabriela</code>. Used in all 20 MPW 2026 events, including per-category brackets where redundant.</td><td>live FTL, tournament <code>CE6AC3F161E34438BF2C5FB192A4C6BE</code></td></tr>
+<tr><td>MPW 2026 ingested cleanly through our pipeline: 20 FTL events → 28 per-category tournaments, counts matching the scraped marker distribution exactly. <b>Zero rows in <code>tbl_fencer</code> contain a digit or parenthesis</b> — no marker ever leaked into a stored name.</td><td>PROD + live FTL</td></tr>
+<tr><td>Results JSON returns <code>clubs</code>, <code>club1</code>, <code>club2</code> per fencer. <code>parse_ftl_json</code> never reads them. ADR-080's Context claim ("only name · place · country") is <b>wrong</b>.</td><td>live FTL payload</td></tr>
+<tr><td><code>tbl_registration.enum_gender</code> and <code>int_birth_year</code> are <b><code>NOT NULL</code></b>. PROD: 57 registrations, 0 missing either.</td><td>PROD schema + rows</td></tr>
+<tr><td><code>tbl_fencer</code> 367 rows; 349 created 2026-06-28 (bootstrap); 9 with no birth year, 2 with no gender — <b>all 11 have 0 results and 0 registrations</b>, so they are inert. 20 rows have <code>bool_birth_year_estimated = true</code>, <b>18 of them with results</b>. 0 rows have a club.</td><td>PROD</td></tr>
+<tr><td><b>Same name, different person is live</b>: <code>#197 MŁYNEK Janusz 1951</code> (19 results) vs <code>#356 MŁYNEK Janusz 1984</code> (0); <code>#354 KRAWCZYK Paweł 1989</code> vs <code>#355 …1954</code>. <code>tbl_fencer</code> has <b>no uniqueness constraint</b> on name+BY — only non-unique <code>idx_fencer_name</code> and the PK. Duplicate exact triples today: <b>0</b>.</td><td>PROD</td></tr>
+<tr><td><code>ŁĘCKI Krzysztof</code> is <b>#168, birth year 1991</b> — identical to the swapped registration's declared year, so option B catches it. <code>NAGY</code> / <code>ORSOLYA</code> are <b>absent</b> from <code>tbl_fencer</code>.</td><td>PROD</td></tr>
+<tr><td><code>trg_fencer_change_enqueue</code> fires <code>AFTER UPDATE ON tbl_fencer</code> and is column-aware (BY / nationality → enqueue; name / alias → nothing). <code>trg_assert_result_vcat</code> fires only on <code>tbl_result</code>, so it does <b>not</b> guard a BY change.</td><td><code>pg_trigger</code> on PROD</td></tr>
+<tr><td><code>.github/workflows/recompute-drain-prod.yml</code> runs <code>cron: '*/15 * * * *'</code>; last five scheduled runs green, most recently 2026-09-12 05:50Z in 19 s.</td><td><code>gh run list</code></td></tr>
+<tr><td>Fencing Time 4.7 Guide: p.145 Event Competitors → <b>Import from XML</b> lists every fencer with a checkbox (the walk-up mechanism); p.41 imported fencers persist in FT's database; p.144 <b>Re-Import Competitors from XML File</b> refreshes an entry list in place; p.145 rank import reads <code>Classement</code>; p.45 bulk DB import is CSV-only and needs the tournament closed.</td><td><a href="https://fencingtime.s3.amazonaws.com/FencingTimeUsersGuide.pdf">FencingTimeUsersGuide.pdf</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Assumed — not yet checked, check before relying on it</h3>
+<ul>
+<li><b><code>LEAHEY john 1969</code> vs <code>#167 John 1976</code></b> — a seven-year gap. PPW1's two
+birth-year corrections are V-cat-neutral for 2026/27; <b>this one is not verified</b> and could cross
+a category boundary. Check before applying it.</li>
+<li>That the organizer will accept one DE file per gender × category rather than the combined
+brackets they build by hand. The manual tells them to combine freely; nobody has confirmed they
+will.</li>
+<li>That the WordPress page will carry a new custom element as cleanly as
+<code>&lt;spws-calendar&gt;</code> did. The pattern is proven (ADR-090) but this element is the first
+to expose a <code>lang</code> attribute.</li>
+<li>PPW1's exact file count. <b>28 as of 12 September</b> (3 mix-all + 22 DE + 3 roster) — it grows
+until the 20th.</li>
+</ul>
+
+<h2 id="read">3 · What to read, in order</h2>
+<ol class="steps">
+<li><b><a href="ftl-xml-export-2026-09-12.html">ftl-xml-export-2026-09-12.html</a></b> — the accepted
+plan. §7 is the design that matters; §6 is why it is shaped that way.</li>
+<li><b><a href="../adr/080-clean-roster-ftl-seeding.html">ADR-080</a></b> §1–§4 — the seed format and
+the snake. Note its Context section is wrong about scraped fields, and §1's "gender is not in the
+marker" still holds (we kept the digit only); §3's combined-bracket prediction is being
+<b>dropped</b> and §4's naming <b>replaced</b>.</li>
+<li><b><a href="../adr/079-event-self-registration-identity.html">ADR-079</a></b> — identity
+resolution, and the read-only-birth-year invariant this work deliberately reverses.</li>
+<li><b><a href="../adr/065-ftl-per-fencer-vcat-marker-check.html">ADR-065</a></b> including its
+26 June amendment — why the marker matters and how duplicate fencer <code>#330</code> happened.</li>
+<li><b><a href="../adr/090-prod-surface-as-wordpress-menu-item.html">ADR-090</a></b> — how a surface
+reaches <code>weteraniszermierki.pl</code>.</li>
+<li><code>python/pipeline/ftl_seed_export.py</code> — the generator, already built and tested.</li>
+</ol>
+
+<h2 id="coords">4 · Code coordinates</h2>
+<div class="tw">
+<table>
+<thead><tr><th>What</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td>Snake interleave, XML writer, canonical name, filename</td><td><code>python/pipeline/ftl_seed_export.py</code> — <code>interleave_mixall</code>, <code>build_fie_xml</code>, <code>to_canonical_name</code>, <code>seed_filename</code>, <code>mixall_tireurs</code></td></tr>
+<tr><td>Supabase glue for the generator</td><td><code>python/pipeline/ftl_seed_export_db.py</code></td></tr>
+<tr><td>The four marker regexes to unify</td><td><code>python/scrapers/ftl.py:98</code> · <code>python/pipeline/review_cli.py:544</code> · <code>python/matcher/fuzzy_match.py:83</code> · <code>ftl_seed_export.format_prenom_with_marker</code></td></tr>
+<tr><td>Registration RPCs</td><td><code>supabase/migrations/20260704000001_event_registration_schema.sql</code> (<code>fn_create_registration</code>, <code>fn_match_registration_fencer</code>, <code>vw_registration_entry_list</code>) · <code>20260828000003_registration_edit_handle.sql</code> (<code>uuid_edit_token</code>, <code>fn_update_registration</code>) · <code>20260828000002…twin.sql</code></td></tr>
+<tr><td>The dead club input to wire up</td><td><code>frontend/src/components/RegistrationForm.svelte:95</code>, bound to <code>club</code> at <code>:242</code> — never sent anywhere</td></tr>
+<tr><td>Recompute / CDC</td><td><code>supabase/migrations/20260615000001_cdc_recompute_dedup.sql</code> · <code>python/pipeline/recompute/worker.py</code> · <code>.github/workflows/recompute-drain-prod.yml</code></td></tr>
+<tr><td>Custom elements + i18n</td><td><code>frontend/src/ce/</code>, registered in <code>frontend/src/main.ce.ts</code> · <code>frontend/src/lib/locale.svelte.ts</code> + <code>locales/{pl,en}.json</code> (default <code>pl</code>)</td></tr>
+<tr><td>Browser-side file download pattern</td><td><code>frontend/src/lib/export.ts</code></td></tr>
+<tr><td>Validated reference XML / round-trip</td><td><code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code> · <code>doc/external_files/FTL_OUT/</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="env">5 · Environment — things that cost this session time</h2>
+<pre><code># `python` is NOT on PATH. Use the venv binary.
+.venv/bin/python -m pytest ...
+
+# `psql` is NOT installed. LOCAL Postgres is reachable only through docker:
+docker exec supabase_db_SPWSranklist psql -U postgres -d postgres -At -F' | ' -c "SELECT ..."
+
+# PROD / CERT reads — always strip the stale shell token first (see the
+# cloud-db-ops skill's "phantom 401"):
+env -u SUPABASE_ACCESS_TOKEN scripts/cloud-sql.sh prod "SELECT ..."
+
+# cloud-sql.sh returns JSON and the response gets TRUNCATED on long results.
+# Collapse to one row with string_agg() instead of paging.
+
+# FTL needs the repo's own authenticated client; never a browser login:
+set -a; source .env; set +a
+.venv/bin/python -c "from python.scrapers.ftl_auth import get_authed_ftl_client; ..."
+
+# The FT Guide PDF: pdftotext is absent, pypdf 6.14 is installed.
+</code></pre>
+
+<div class="card open">
+<span class="lb">Mandatory skills for this work</span>
+<p style="margin:0"><code>pre-analysis-check</code> (graphify + LSP before any analysis) ·
+<code>cloud-db-ops</code> (every CERT/PROD query) · <code>plpgsql-check</code> (after every SQL
+edit) · <code>svelte-check</code> (after every <code>.svelte</code>/frontend <code>.ts</code> edit) ·
+<code>new-adr</code> (for both ADRs) · <code>ftl-scrape</code> (any fencingtimelive.com fetch) ·
+<code>pre-push-graph</code> (<code>scripts/refresh-graph.sh</code> before committing).</p>
+</div>
+
+<h2 id="traps">6 · Traps</h2>
+<ol class="steps">
+<li><b>Do not widen the marker regexes.</b> The decision is the age digit <em>only</em>; gender
+travels as the FIE <code>Sexe</code> attribute. Unifying the four regexes into
+<code>vcat_marker.py</code> is a <b>pure refactor</b> — if a test changes behaviour, the refactor is
+wrong.</li>
+<li><b>Do not bypass <code>trg_fencer_change_enqueue</code>.</b> A birth-year write must be a plain
+<code>UPDATE</code>. Anything that disables triggers leaves the ranking inconsistent with no error —
+<code>trg_assert_result_vcat</code> does not fire on <code>tbl_fencer</code>.</li>
+<li><b>Do not loosen <code>fn_match_registration_fencer</code>.</b> Its exact-tuple strictness is
+deliberate: it can never merge two people. The new candidate function is <em>additive</em> and only
+runs when the fast path misses. 36 of 43 registrations must keep taking the existing path untouched
+— that is the regression test that matters most.</li>
+<li><b>Never let a name-based rule act on more than one row.</b> <code>MŁYNEK Janusz</code> is the
+fixture. Silent writes to the wrong one of two identical names are unrecoverable.</li>
+<li><b><code>fn_confirm_registration_identity</code> must recompute the candidate set server-side</b>
+and refuse a <code>p_id_fencer</code> outside it. Without that check, a caller could name any fencer
+and rewrite their birth year.</li>
+<li><b>Never run a bare <code>supabase db reset</code></b> — use <code>./scripts/reset-dev.sh</code>.
+LOCAL data is not PROD data: LOCAL carries triplicated result-less rows that PROD does not.</li>
+<li><b>Do not write test data to PROD.</b> If a write is unavoidable, prove the delete path first —
+see the <code>cloud-db-ops</code> skill.</li>
+</ol>
+
+<h2 id="order">7 · Build order and definition of done</h2>
+<p>Full detail in the plan's §10. Sequence: <b>(1)</b> identity block, TDD, first —
+<code>fn_registration_identity_candidates</code> then
+<code>fn_confirm_registration_identity</code>, then the B / D / rung-6 prompts. <b>(2)</b>
+<code>python/pipeline/vcat_marker.py</code> as the single marker owner, pure refactor.
+<b>(3)</b> marker to mid-name. <b>(4)</b> reconciliation report + apply the corrections.
+<b>(5)</b> <code>fn_ftl_roster</code>. <b>(6)</b> club, three parts. <b>(7)</b> generator: DE files,
+roster, naming. <b>(8)</b> TypeScript twin. <b>(9)</b> <code>FtlExportElement.svelte</code>.
+<b>(10)</b> manual PL+EN and publish. <b>(11)</b> two ADRs. <b>(12)</b> documentation coherence gate
+and <code>scripts/refresh-graph.sh</code>.</p>
+
+<p>Core if time runs short: 1, 2, 7, 9, 10. Roster (5), club (6) and the EN translation are each
+independently droppable. Keep (4).</p>
+
+<div class="rec"><b>Done means</b> Existing suites green before and after the refactor;
+<code>postgrestools</code> on every migration and pgTAP for both new functions;
+<code>npm run check</code> and vitest green; PPW1's files generated against <b>current</b> PROD data
+with BUJKO and STAŃCZYK each appearing exactly once; one mix-all and one DE imported into a real
+Fencing Time, exported, and round-tripped through the unified stripper; the manual walked end to end
+in both languages; and the page live on <code>weteraniszermierki.pl</code>.</div>
+
+<h2 id="prompt">8 · The start prompt</h2>
+
+<div class="prompt">
+<p style="margin:0 0 4px"><b>Paste this into the new session.</b> It assumes nothing beyond the
+repository.</p>
+<pre><code>Implement the accepted plan in doc/plans/ftl-xml-export-2026-09-12.html.
+Read doc/plans/ftl-xml-export-handover-2026-09-12.html FIRST — section 2
+separates what was measured from what was assumed, and section 6 lists the
+traps. Both files are the source of truth for this work; do not re-derive
+the design.
+
+Context: PPW1-2026-2027 is on 26 September and registration closes on the
+20th, so the PROD numbers in the plan have moved — re-measure before
+generating anything or quoting a figure.
+
+Start with build step 1, the registration-identity block, RED->GREEN:
+fn_registration_identity_candidates, then fn_confirm_registration_identity,
+then the B / D / rung-6 prompts in RegistrationForm.svelte. Do not touch
+fn_match_registration_fencer or fn_create_registration — the 36 of 43
+registrations that already match must keep taking the existing fast path
+byte-for-byte, and that is the regression test that matters most.
+
+Follow the repo's mandatory skills: pre-analysis-check before any analysis,
+cloud-db-ops for every CERT/PROD query, plpgsql-check after every SQL edit,
+svelte-check after every .svelte edit, new-adr for the two ADRs,
+pre-push-graph before committing. Ask me one plain-text question at a time
+if you need a decision; put any document you produce in .html.</code></pre>
+</div>
+
+<footer>
+Handover written 12 September 2026 from the session that produced the plan. PROD figures measured
+that day via <code>scripts/cloud-sql.sh prod</code> (reads only, no writes). Live FTL read through
+<code>python/scrapers/ftl_auth.py</code>: events <code>DA82898D…</code>, <code>BC9C27F2…</code> and
+all 20 events of tournament <code>CE6AC3F1…</code>. Fencing Time ® 4.7 User's Guide, August 2026.
+</footer>
+
+</div>
+</body>
+</html>

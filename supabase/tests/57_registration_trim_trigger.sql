@@ -58,7 +58,9 @@ SELECT id_event, 'PGTAP57_TRAIL  ', 'Anna', 'F', 1975, ARRAY['EPEE']::enum_weapo
 FROM tbl_event WHERE txt_code = 'REG57EVT';
 
 SELECT is(
-  (SELECT txt_surname FROM tbl_registration WHERE int_birth_year = 1975 AND txt_first_name = 'Anna'),
+  (SELECT txt_surname FROM tbl_registration
+    WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG57EVT')
+      AND int_birth_year = 1975 AND txt_first_name = 'Anna'),
   'PGTAP57_TRAIL',
   '57.3 — trailing whitespace on txt_surname stripped on INSERT'
 );
@@ -99,7 +101,9 @@ RESET ROLE;
 
 SELECT is(
   (SELECT txt_surname || '|' || txt_first_name
-     FROM tbl_registration WHERE int_birth_year = 1979),
+     FROM tbl_registration
+    WHERE id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REG57EVT')
+      AND int_birth_year = 1979),
   'PGTAP57_RPC|Piotr',
   '57.6 — fn_create_registration stores both names trimmed'
 );

@@ -43,9 +43,27 @@
       var eventCode = params.get('event') || '';
       var view = params.get('view') || '';
       var root = document.getElementById('reg-root');
-      var tag = view === 'list' ? 'spws-entry-list' : 'spws-registration';
+      // view=export is the organizer's FTL seed download (plan §9). It rides on
+      // this page rather than a new one because it needs exactly the same
+      // credential injection, and the GH Actions sed step that fills them in
+      // only knows about the files already in the CE build input. The public
+      // WordPress page mounts <spws-ftl-export> directly (ADR-090); this is the
+      // same element, reachable without waiting on a CMS edit.
+      var tag =
+        view === 'list' ? 'spws-entry-list'
+        : view === 'export' ? 'spws-ftl-export'
+        : 'spws-registration';
       var el = document.createElement(tag);
       el.setAttribute('event', eventCode);
+      if (tag === 'spws-ftl-export') {
+        // ?lang=en for an organizer who does not read Polish. Absent means
+        // Polish, which is the right default for a Polish federation's events.
+        el.setAttribute('lang', params.get('lang') || '');
+        // ?k=<uuid> is the capability. The element also reads it from the URL
+        // itself, so this is belt and braces for a host page that mounts the
+        // element with its own attributes instead.
+        el.setAttribute('token', params.get('k') || '');
+      }
       el.setAttribute('supabase-cert-url', root.getAttribute('supabase-cert-url') || '');
       el.setAttribute('supabase-cert-key', root.getAttribute('supabase-cert-key') || '');
       el.setAttribute('supabase-prod-url', root.getAttribute('supabase-prod-url') || '');

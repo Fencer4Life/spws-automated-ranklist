@@ -15,6 +15,8 @@ import csv
 import io
 import re
 
+from python.pipeline.vcat_marker import split_name_marker
+
 # Pattern matches a standalone digit (age category) between surname and first name
 # e.g., "ATANASSOW 2 Aleksander" → groups: ("ATANASSOW", "Aleksander")
 _CATEGORY_RE = re.compile(r"^(\S+)\s+\d+\s+(.+)$")
@@ -92,10 +94,13 @@ def parse_ftl_json(data: list[dict]) -> list[dict]:
     return results
 
 
-# Pattern preserves the standalone digit (or parenthesised digit) — the FTL
-# age-category marker between surname and given name. ADR-024 + Phase 4 use
-# this digit to split combined-category tournaments into per-category rows.
-_MARKER_RE = re.compile(r"^(\S+)\s+\(?(\d+)\)?\s+(.+)$")
+# The marker convention has ONE owner (ADR-080 §1, amended 2026-09-12); this
+# module reads it rather than restating it. The local pattern it replaces
+# required a single-token surname (`^(\S+)`), which silently dropped the marker
+# for a two-word surname and put that fencer in the wrong category split —
+# ALONSO ESCOBAR Javier is a live PEW5-2026-2027 registrant, so this is not
+# hypothetical. It also accepted any digit run; a V-category is 0-4 (ADR-010),
+# and a "7" is not a marker to be honoured.
 
 
 def parse_ftl_with_marker(data: list[dict]) -> list[dict]:
@@ -113,10 +118,11 @@ def parse_ftl_with_marker(data: list[dict]) -> list[dict]:
     results = []
     for entry in non_excluded:
         raw = entry["name"].strip()
-        m = _MARKER_RE.match(raw)
-        if m:
-            cleaned = f"{m.group(1)} {m.group(3)}"
-            marker = int(m.group(2))
+        parts = split_name_marker(raw)
+        if parts:
+            surname, digit, given = parts
+            cleaned = f"{surname} {given}"
+            marker = int(digit)
         else:
             cleaned = raw
             marker = None
@@ -259,10 +265,13 @@ def _split_name_and_marker(raw: str) -> tuple[str, str | None]:
     raw_age_marker (string); the cleaned name drops it for matching.
     """
     raw = raw.strip()
-    m = _MARKER_RE.match(raw)
-    if m:
-        return f"{m.group(1)} {m.group(3)}", m.group(2)
-    # Suffix form like "KAMIŃSKA Gabriela (1)"
+    parts = split_name_marker(raw)
+    if parts:
+        surname, digit, given = parts
+        return f"{surname} {given}", digit
+    # Suffix form like "KAMIŃSKA Gabriela (1)". Kept because it is what OUR OWN
+    # exporter produced until 2026-09-12, so historical files still read back;
+    # new files carry the mid-name form the canonical writer emits.
     m2 = _SUFFIX_CATEGORY_RE.match(raw)
     if m2:
         suffix_digit = re.search(r"\((\d+)\)", raw)

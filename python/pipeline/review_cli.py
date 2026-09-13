@@ -53,6 +53,7 @@ from python.pipeline.three_way_diff import (
     render_markdown,
     write_diff,
 )
+from python.pipeline.vcat_marker import extract_marker
 
 # ===========================================================================
 # Parity-payload extractor for the EVF API path
@@ -541,7 +542,7 @@ import re as _re  # noqa: E402  (deliberate local import near use)
 # joint-pool (BY-derivation per ADR-056).
 # ---------------------------------------------------------------------------
 
-_VCAT_MARKER_RE = _re.compile(r"\s+\(?([0-4])\)?\s+")
+# The marker convention has one owner — see python/pipeline/vcat_marker.py.
 
 
 def _extract_vcat_marker(fencer_name: str) -> int | None:
@@ -554,8 +555,8 @@ def _extract_vcat_marker(fencer_name: str) -> int | None:
     """
     if not fencer_name:
         return None
-    m = _VCAT_MARKER_RE.search(fencer_name)
-    return int(m.group(1)) if m else None
+    digit = extract_marker(fencer_name)
+    return int(digit) if digit is not None else None
 
 
 def _bracket_marker_conflict(parsed, bracket_vcat: str | None) -> tuple[bool, str]:
@@ -944,7 +945,6 @@ class ReviewSession:
         # browser); txt_source_url_used keeps the actual fetched endpoint
         # (e.g. FTL JSON `/events/results/data/<UUID>`) for the audit trail.
         # ADR-046: child code is `{parent_kind}-V{cat}-{gender}-{weapon}-{season}`.
-        import re as _re
 
         m = _re.match(r"^(.*)-(\d{4}-\d{4})$", self.event_code)
         if m:

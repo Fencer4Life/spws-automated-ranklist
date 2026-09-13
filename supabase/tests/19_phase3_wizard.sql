@@ -92,6 +92,19 @@ SAVEPOINT s_imew;
 -- doesn't depend on scoring config values).
 -- ADR-077 Phase C: SPWS-2026-2027 now exists in the seed (promoted skeleton).
 -- Remove it within this savepoint so the fixture recreates it; ROLLBACK restores it.
+-- Clear the dependants first. When this fixture was written SPWS-2026-2027 was
+-- a bare promoted skeleton, so deleting its events was safe; the season has
+-- since acquired real competitions with tournaments and results behind them,
+-- and tbl_tournament_id_event_fkey has no ON DELETE CASCADE — so the bare
+-- event delete now aborts the file. All inside the savepoint; the ROLLBACK
+-- at the end restores every row.
+DELETE FROM tbl_result WHERE id_tournament IN (
+  SELECT t.id_tournament FROM tbl_tournament t
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
+DELETE FROM tbl_tournament WHERE id_event IN (
+  SELECT id_event FROM tbl_event
+   WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
@@ -268,6 +281,19 @@ SAVEPOINT s_parity;
 
 -- Insert SPWS-2026-2027 (FK-matching engine via DEFAULT after Phase 3 migration)
 -- ADR-077 Phase C: clear the seeded SPWS-2026-2027 first (savepoint-local; restored on ROLLBACK).
+-- Clear the dependants first. When this fixture was written SPWS-2026-2027 was
+-- a bare promoted skeleton, so deleting its events was safe; the season has
+-- since acquired real competitions with tournaments and results behind them,
+-- and tbl_tournament_id_event_fkey has no ON DELETE CASCADE — so the bare
+-- event delete now aborts the file. All inside the savepoint; the ROLLBACK
+-- at the end restores every row.
+DELETE FROM tbl_result WHERE id_tournament IN (
+  SELECT t.id_tournament FROM tbl_tournament t
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
+DELETE FROM tbl_tournament WHERE id_event IN (
+  SELECT id_event FROM tbl_event
+   WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
@@ -381,6 +407,19 @@ SAVEPOINT s_update;
 -- assertion brittle; using a skeleton is the realistic Phase 3 use case
 -- anyway (admin renames a CREATED skeleton during planning).
 -- ADR-077 Phase C: clear the seeded SPWS-2026-2027 first (savepoint-local; restored on ROLLBACK).
+-- Clear the dependants first. When this fixture was written SPWS-2026-2027 was
+-- a bare promoted skeleton, so deleting its events was safe; the season has
+-- since acquired real competitions with tournaments and results behind them,
+-- and tbl_tournament_id_event_fkey has no ON DELETE CASCADE — so the bare
+-- event delete now aborts the file. All inside the savepoint; the ROLLBACK
+-- at the end restores every row.
+DELETE FROM tbl_result WHERE id_tournament IN (
+  SELECT t.id_tournament FROM tbl_tournament t
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
+DELETE FROM tbl_tournament WHERE id_event IN (
+  SELECT id_event FROM tbl_event
+   WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';

@@ -443,11 +443,80 @@ export interface CreateRegistrationParams {
   consentVersion?: string | null
 }
 
+// How a fencer already in tbl_fencer relates to what this registrant typed.
+// Returned by fn_registration_identity_candidates, which CLASSIFIES and never
+// decides — the six-rung resolution order lives in the form.
+//   EXACT      — same name, same birth year. The fast path already found this.
+//   SWAPPED    — surname and given name typed into each other's boxes.
+//   BY_NULL    — same name, and we hold no birth year for them at all.
+//   BY_DIFFERS — same name, but a different birth year than declared.
+export type IdentityCandidateKind = 'EXACT' | 'SWAPPED' | 'BY_NULL' | 'BY_DIFFERS'
+
+export interface IdentityCandidate {
+  idFencer: number
+  surname: string
+  firstName: string
+  // Null exactly when the kind is BY_NULL.
+  birthYear: number | null
+  birthYearEstimated: boolean
+  kind: IdentityCandidateKind
+}
+
+// The three answers on the D prompt, and the only actions
+// fn_confirm_registration_identity accepts.
+//   ADOPT_DECLARED   — "it is me, my year is right": corrects the MASTER row.
+//   FIX_REGISTRATION — "it is me, I mistyped": corrects the REGISTRATION.
+//   DIFFERENT_PERSON — writes nothing; identity is resolved at ingestion.
+export type IdentityAction = 'ADOPT_DECLARED' | 'FIX_REGISTRATION' | 'DIFFERENT_PERSON'
+
+// A request from a public registration to change an already-CONFIRMED birth
+// year. The public can only ever create one of these — applying it is
+// administrator-only (migration 20260912000003), because the action a fencer
+// picks arrives as an ordinary parameter and the server cannot tell a button
+// press from a crafted call.
+//
+// The declared name is carried on the proposal rather than joined from the
+// registration: ADR-079 purges tbl_registration once results are ingested, so
+// a join would lose the evidence exactly when somebody asks what happened.
+export interface IdentityProposal {
+  idOverride: number
+  idFencer: number
+  surname: string
+  firstName: string
+  birthYearBefore: number
+  birthYearAfter: number
+  tsCreated: string
+}
+
+export interface ConfirmIdentityParams {
+  idRegistration: number
+  // Same capability fn_update_registration requires. The server refuses the
+  // write without it, so a caller who did not create this row cannot reach
+  // tbl_fencer through it.
+  editToken: string
+  idFencer: number
+  action: IdentityAction
+}
+
 // The subset of vw_calendar the standalone registration page needs to
 // resolve `?event=<txt_code>` (P2.2, D7). Deliberately its own type rather
 // than widening CalendarEvent here — the admin-facing bool_use_spws_
 // registration/url_entry_list additions to CalendarEvent are P2.8 scope
 // (Calendar integration), shipped alongside the admin toggle that writes them.
+/**
+ * One row of fn_ftl_export_events — an event with entries that has not happened
+ * yet, for the FTL export page's picker. Public facts only: every field is
+ * already served by vw_calendar or derivable from the public entry list.
+ */
+export interface FtlExportEvent {
+  id_event: number
+  txt_code: string
+  txt_name: string
+  txt_location: string | null
+  dt_start: string | null
+  int_registrations: number
+}
+
 export interface RegistrationEventInfo {
   id_event: number
   txt_code: string

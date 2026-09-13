@@ -160,7 +160,57 @@ SELECT set_eq(
     -- projection returns. id_registration alone cannot authorise it — that
     -- column IS published by vw_registration_entry_list.
     'fn_update_registration',
-    'fn_match_registration_fencer'
+    'fn_match_registration_fencer',
+    -- The identity block (2026-09-12). fn_registration_identity_candidates is
+    -- a read of tbl_fencer, which anon can already SELECT directly under the
+    -- "Public read fencers" policy — it exposes no column the fencer table
+    -- does not already publish, and it is STABLE with no SECURITY DEFINER.
+    'fn_registration_identity_candidates',
+    -- fn_confirm_registration_identity is the one genuinely new capability on
+    -- this surface: it is SECURITY DEFINER and it can write tbl_fencer, which
+    -- deliberately reverses ADR-079's read-only-birth-year invariant. It is
+    -- anon-callable because the fencer correcting their own entry IS the
+    -- anonymous visitor. It is not an unguarded write — the caller must
+    -- present the row's uuid_edit_token (as fn_update_registration does), and
+    -- the fencer named must fall inside a candidate set the function
+    -- recomputes server-side from that registration's own declared name, so
+    -- the reachable set is the handful of people sharing the registrant's
+    -- name rather than all of tbl_fencer. A confirmed birth year is never
+    -- overwritten without an explicit human answer, and trg_audit_fencer
+    -- records every such write. Asserted from the other side by 75.10.
+    'fn_confirm_registration_identity',
+    -- The FTL export page (2026-09-12) is public, so its data source is
+    -- anon-callable. fn_ftl_export_entries is SECURITY DEFINER — it has to be,
+    -- because tbl_registration's RLS admits only `authenticated` — but what it
+    -- publishes is strictly the columns vw_registration_entry_list already
+    -- serves anonymously (name, gender, weapon, age category) plus one integer:
+    -- the fencer's resolved position inside their own sub-ranking, which is a
+    -- projection of fn_ranking_ppw, itself already on this list. It returns no
+    -- birth year, no id_fencer, no id_registration, no uuid_edit_token and no
+    -- e-mail hash — asserted from the function signature by 76.4 — and it is
+    -- STABLE, so it can read nothing into existence and write nothing.
+    -- fn_ftl_export_use_rolling is deliberately absent: it is composed into
+    -- this one and is not part of the public surface (76.6).
+    'fn_ftl_export_entries',
+    -- fn_ftl_export_events is the same surface's event picker: code, name, city,
+    -- date and entry count for every event with entries whose end date has not
+    -- passed. Every one of those facts is already public through vw_calendar and
+    -- vw_registration_entry_list. Both functions are gated on a capability token
+    -- (tbl_ftl_export_token) checked inside them — the page is public and its
+    -- bundle is readable, so a check in the client would be decoration. An
+    -- absent, unknown or revoked token returns no rows rather than raising
+    -- (76.21-76.24). fn_ftl_export_token_valid is deliberately absent from this
+    -- list: it is composed into these two and is not itself callable from a
+    -- browser (76.29).
+    'fn_ftl_export_events',
+    -- fn_ftl_roster is the third function of the same surface: the organizer's
+    -- pick-list, so a fencer who turns up unannounced is ticked in rather than
+    -- typed (typing is what creates a duplicate identity — ADR-065's amendment
+    -- records fencer #330). It publishes name, gender, weapon and age category
+    -- for fencers who already have a public result in that weapon, which is
+    -- strictly less than the ranklist shows about the same people, and no birth
+    -- year or fencer id (77.2). Same capability token, same silent refusal.
+    'fn_ftl_roster'
   ],
   '52.7: the anon-EXECUTEable function set equals the documented allowlist'
 );

@@ -90,7 +90,8 @@ SELECT lives_ok(
 SELECT is(
   (SELECT prior.txt_name FROM tbl_event current_event
     JOIN tbl_event prior ON prior.id_event = current_event.id_prior_event
-    WHERE current_event.id_evf_calendar_event = 2113),
+    WHERE current_event.id_evf_calendar_event = 2113
+      AND current_event.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFPRIOR-CURR')),
   'EVF Circuit Guildford',
   '54.2: Guildford receives the Guildford prior-season rolling link'
 );
@@ -114,7 +115,8 @@ SELECT is(
 SELECT is(
   (SELECT prior.txt_name FROM tbl_event current_event
     JOIN tbl_event prior ON prior.id_event = current_event.id_prior_event
-    WHERE current_event.id_evf_calendar_event = 3438),
+    WHERE current_event.id_evf_calendar_event = 3438
+      AND current_event.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFPRIOR-CURR')),
   'EVF Circuit Chania',
   '54.5: Athens receives Chania after its unrelated-number carrier relinquishes the link'
 );

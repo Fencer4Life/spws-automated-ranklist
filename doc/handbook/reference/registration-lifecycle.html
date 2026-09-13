@@ -83,10 +83,22 @@
 <p><b>The birth year is not validated.</b> Continuing requires only that a number is present — there is no lower or upper bound, and the computed category is display-only, so a year that resolves to no veteran category at all still passes. Since the birth year is part of the dedupe key for an unlinked entrant, a mistyped year does not correct an earlier entry, it creates a second one. This is a known gap, not intended behaviour.</p>
 </div>
 
-<p>On continuing, the declared triple is looked up against the fencer master list. The match is <b>exact</b> — no fuzzy matching happens in the browser, by decision. A hit links the registration to that fencer; a miss is accepted and recorded with no link, which is the normal path for a newcomer and for anyone whose stored birth year was only ever an estimate.</p>
+<p>On continuing, the declared triple is looked up against the fencer master list. The match is <b>exact</b> — no fuzzy matching happens in the browser, by decision. A hit links the registration to that fencer and the entrant continues straight to consent, seeing nothing further; this is the path most entries take.</p>
+
+<p>A miss is not a dead end, and since September 2026 it is no longer silent either. Only after the exact lookup misses is a second, name-based lookup consulted, which classifies every fencer sharing that name as an exact match, a pair of exchanged name fields, a fencer held with no birth year, or a fencer held with a different one. The form then resolves a fixed order:</p>
+
+<ul>
+<li><b>The two name fields were exchanged</b> — the entrant is shown the fencer already on the list and asked which way round it goes. Accepting rewrites the two fields locally, after which the ordinary exact match finds them; nothing is written to the master list.</li>
+<li><b>We hold them with no birth year at all</b> — the declared year is filled in silently and marked confirmed. Nothing contradicts it, so there is nothing to ask.</li>
+<li><b>We hold a different birth year</b> — the entrant is asked, and <b>every</b> candidate is listed. Where two people share a name this is the only safe resolution: the person reading the screen is the one who knows which of them they are. They may adopt their declared year, accept the stored one, or say it is someone else.</li>
+<li><b>Nobody matches at all</b> — the name is echoed back in the form it will take on the entry list, with a swap button, before a new identity is created. This is the only step that can catch a first-time international entrant who writes their name in a different order, because the exchanged-fields check needs a fencer already on the list.</li>
+</ul>
+
+<p>An entrant who matches cleanly sees none of this.</p>
 
 <div class="invariant">
 <p>A failed lookup is deliberately treated as "no match" rather than as an error, so a network problem never blocks an entry. The cost is that a fencer who <em>is</em> on the master list can be recorded as unlinked when the lookup times out. Stage 5 absorbs that case rather than leaving two rows.</p>
+<p>The same posture covers the name-based lookup: if it fails, the entrant is treated as a newcomer rather than shown an error. A correction to the master list is an improvement on top of a stored declaration, never a precondition for one.</p>
 </div>
 </section>
 
@@ -178,16 +190,27 @@
 <p class="kicker">Stage 9 · Handover</p>
 <h2>What the organizer receives</h2>
 <p>The organizer runs the competition on their own timing software, so the association sends a seed file rather than access. It is generated on demand from <b>every</b> declared registration at the moment of sending, never from a stored snapshot, so it cannot drift from the roster.</p>
-<p>Names are canonicalised on export — surname uppercased, given name in title case, both stripped — which is why padding in stored names never reached the file even before the database normalised it. Each entrant carries an age-category marker, and the seeding order interleaves the sub-rankings so that a single pool sheet is balanced across categories. The club field is emitted empty, per the consent text. A successful send is stamped on the event so it is visible that the organizer has been given the file.</p>
+<p>Names are canonicalised on export — surname uppercased, given name in title case, both stripped — which is why padding in stored names never reached the file even before the database normalised it. Each entrant carries an age-category marker on the <b>surname</b>, because the organizer’s software renders surname then given name and that is the order our own result reader expects; an entry read back the other way round carries no recoverable category. The seeding order interleaves the sub-rankings so that a single pool sheet is balanced across categories, and the order itself comes from the ranking the fencers see — which, at the first event of a season, means the carry-over ranking, since the season holds no results of its own yet. The club field is emitted empty, per the consent text. A successful send is stamped on the event so it is visible that the organizer has been given the file.</p>
+<p>A set is one mixed-pool competition per weapon plus one direct-elimination table per gender and age category present. That split is deliberately the finest one possible: the organizer is told to combine tables freely in their own software, because the results are re-split by birth year when they come back, and predicting which tables they would combine produced files whose names claimed categories they did not contain. Every file name states the event, weapon, phase, gender and category range in ASCII; the Polish title inside the file is what their software displays.</p>
+<p>The organizer no longer has to wait to be sent the files. One page, reached by a link that carries its own key, lists every event that has entries and has not yet happened; choosing one shows that event’s files with each file’s name, the title their software will display, how many fencers it holds and what to do with it, grouped by weapon so the set reads as three lines rather than thirty. One control bundles everything, because a single event can produce dozens of files.</p>
+<p>The files are built at the moment of download, not when the page is opened: the entry list is re-read first, so an organizer who leaves the page open all morning still receives what is current, and the page states which moment the list it holds was taken. Alongside the files the archive carries the same instructions in both languages, because the page is read at a desk days beforehand while the archive is opened at the venue, often with no usable connection.</p>
+<p>That page is served the entry list through a projection carrying no birth year and no database identity: the names, genders, weapons and age categories already published on the public entry list, plus each entrant’s position within their own sub-ranking. Its key is checked in the database rather than in the page, and a key that is absent, unknown or withdrawn yields an empty page rather than an error. It is the one public surface with a language of its own, because organizers of European-circuit events may not read Polish. The on-demand send remains, and is unchanged.</p>
 </section>
 
 <section id="after">
 <p class="kicker">Stage 10 · After the competition</p>
 <h2>Resolution, and the end of the row</h2>
-<p>A registration never writes to the fencer master list. It records what somebody declared; it does not assert that the person exists. The link between the two is made at results ingestion, which is also where an unlinked entrant first becomes a fencer record.</p>
+<p>A registration creates no fencer, and touches no result and no ranking score. It records what somebody declared. An unlinked entrant first becomes a fencer record at results ingestion, which is also where most links are made.</p>
+
+<p>There is one exception, and it is deliberate: <b>a registration may correct a birth year on the master list</b>. A fencer stating their own birth year is first-hand evidence, and it outranks a value derived by scraping. The write happens only when the entrant answers the question above, only for the fencer they picked from a candidate set the server recomputes from their own declared name, and only for somebody holding the edit handle for the registration they just made. Nothing else about a fencer can be written this way.</p>
+
+<p>A birth year we never held, or held only as an estimate, is corrected without comment. A birth year somebody had already <b>confirmed</b> is different: changing it moves that fencer between age categories and re-scores every event they have played, so the entrant's answer is recorded as a <b>proposal</b> and nothing is changed. An operator is alerted within fifteen minutes and decides. The declaration is never lost; it simply does not take effect until somebody looks.</p>
+<p>That split exists because the form's question is not a control the server can rely on. The action a fencer chooses arrives as an ordinary value in the request, so anyone able to make a request can send it — which means a prompt can protect a person from a mistake, but never a record from a stranger. Filling a blank or correcting a guess is worth allowing on those terms; overwriting something already checked is not.</p>
+
+<p>The ranking repairs itself afterwards without anyone acting: changing a birth year queues a recompute of every event that fencer played, and the queue drains on a schedule.</p>
 <ul class="sequence">
 <li>Where the stored birth year was an <b>estimate</b>, the declaration wins and the stored value is corrected. Collecting exactly this is one reason unlinked registration is accepted at all.</li>
-<li>Where the stored birth year is <b>known</b> and the declaration disagrees, the conflict is held for review rather than applied. A namesake and a bad edit look identical at this point, and only one of them should change a record.</li>
+<li>Where the stored birth year is <b>known</b> and the declaration disagrees, ingestion still holds the conflict for review rather than applying it. A namesake and a bad edit look identical <em>here</em>, because nobody is present to ask. That is precisely why the question is now put at registration instead, where the one person who can answer it is looking at the screen.</li>
 </ul>
 <p>Once results are ingested and reconciled, the registration has done its work and the row is purged. The ranking record is durable; the registration is not. That is the end of the lifecycle, and it is the reason nothing downstream may treat a registration as a lasting identity.</p>
 </section>
@@ -234,6 +257,7 @@
 <li><a href="../../adr/079-event-self-registration-identity.html">ADR-079</a> — the identity model, the read-only invariant, impersonation posture, and the amendments covering unlinked registration, twin absorption and the edit path.</li>
 <li><a href="../../adr/078-gdpr-data-handling.html">ADR-078</a> — lawful bases, the data inventory, and the rights matrix including rectification.</li>
 <li><a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> — the seed file format, category markers and seeding order.</li>
+<li><a href="../../adr/093-registration-as-birth-year-source.html">ADR-093</a> — why a declaration may correct a birth year, the six-rung order, the four guards on the write, and why overwriting a confirmed year is never silent.</li>
 <li><a href="../../adr/083-server-enforced-authorization.html">ADR-083</a> — why the public functions are the entire anonymous surface, and why that surface is an allowlist.</li>
 <li><a href="../subsystems/events-and-registration.html">Events and registration</a> — the owning subsystem page. <a href="../architecture/end-to-end-flows.html">End-to-end flows</a> places this journey among the others.</li>
 </ul>
