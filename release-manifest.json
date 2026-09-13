@@ -26,9 +26,9 @@
       "schema_fingerprint": "6af83f8e3dad053cd31b5bea36516384"
     },
     "prod": {
-      "at": "2026-09-13T06:41:57Z",
-      "sha": "c4802b095efe358345c2a2e04203ac6b7ab5f9c3",
-      "schema_fingerprint": "cd34f5a9ee9608af092eb894bb899302"
+      "at": "2026-09-13T15:53:31Z",
+      "sha": "868a6ce480b1b911f67004d4a5633478181272d1",
+      "schema_fingerprint": "6af83f8e3dad053cd31b5bea36516384"
     }
   }
 }
