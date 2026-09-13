@@ -54,8 +54,17 @@ SELECT lives_ok(
     v_levi INT;
     v_fach INT;
   BEGIN
-    SELECT id_event INTO v_levi FROM tbl_event WHERE id_evf_calendar_event = 4855;
-    SELECT id_event INTO v_fach FROM tbl_event WHERE id_evf_calendar_event = 882;
+    -- Scoped to the fixture season. EVF calendar ids are not unique across
+    -- seasons and PROD now carries real events on both 4855 and 882, so an
+    -- unscoped SELECT INTO silently binds whichever row Postgres returns first
+    -- — renaming a real event and leaving the fixture's untouched, which is
+    -- what 63.3 was actually reporting.
+    SELECT id_event INTO v_levi FROM tbl_event
+      WHERE id_evf_calendar_event = 4855
+        AND id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-6300-6301');
+    SELECT id_event INTO v_fach FROM tbl_event
+      WHERE id_evf_calendar_event = 882
+        AND id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-6300-6301');
     PERFORM fn_mirror_events_to_prod(
       '[]'::JSONB,
       jsonb_build_array(

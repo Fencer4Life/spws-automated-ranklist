@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2.)
+**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -219,6 +219,214 @@ directly; the mix-all pool is pools-only and not ranked.
 - Delivery is intentionally at-least-once. An SMTP-accepted/stamp-failed run can
   duplicate on retry; exact-once delivery would require a durable attempt/lease
   model and is not justified for the current one-recipient operational volume.
+
+## Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)
+
+Accepted with the plan `doc/plans/ftl-xml-export-2026-09-12.html`. **Implementation
+status: only the identity block is built** (see [ADR-093](093-registration-as-birth-year-source.md));
+items (a) to (f) below are decided and not yet implemented, and this section is a record
+of the decision, not a description of the system. §§1, 2, 5 and 6 stand — the FIE-XML
+format, the snake interleave, organizer delivery and the ingestion writers are unchanged.
+
+### (a) Context correction — the scrape does expose a club
+
+§Context states the scraped results expose *"only `name · place · country`"*. That is
+wrong, and has been since it was written. The Fencing Time results JSON returns
+`clubs`, `club1` and `club2` per fencer; `parse_ftl_json` simply never reads them
+(verified against live FTL, 2026-09-12). Nothing downstream depended on the false
+claim, so no behaviour changes — but the sentence was load-bearing in argument, because
+it was part of why the name is the only join key.
+
+### (b) The V-category marker moves mid-name
+
+ADR-065's marker is kept as the age digit only — gender still travels as the FIE `Sexe`
+attribute — but its position changes to **mid-name**: `Nom="KAMIŃSKA (1)"`,
+`Prenom="Gabriela"`. This is not a preference. All 20 events of MPW 2026 use that form
+in the wild, including per-category brackets where the digit is redundant, and MPW 2026
+ingested cleanly through our own pipeline: 20 FTL events to 28 per-category tournaments
+with counts matching the scraped marker distribution exactly, and **zero rows in
+`tbl_fencer` containing a digit or a parenthesis** — no marker has ever leaked into a
+stored name.
+
+The four places that currently know the convention — `python/scrapers/ftl.py:98`,
+`python/pipeline/review_cli.py:544`, `python/matcher/fuzzy_match.py:83` and
+`ftl_seed_export.format_prenom_with_marker` — become importers from a single owner,
+`python/pipeline/vcat_marker.py`. That consolidation is a **pure refactor**: if a test
+changes behaviour, the refactor is wrong. The regexes are deliberately **not** widened.
+
+### (c) §3's predicted combined brackets are dropped
+
+§3 predicted the combined DE brackets the organizer would build and generated files to
+match. That prediction is abandoned. We emit the **maximal split** — one DE file per
+gender × age category actually present — and the manual tells the organizer to combine
+freely using Fencing Time's own *Combine Events*, because we re-split by birth year on
+scrape-back regardless. Predicting a human's combining decision was a guess we had no
+need to make.
+
+*Not yet confirmed:* that the organizer accepts one file per gender × category rather
+than the brackets they build by hand. The manual says it out loud; nobody has agreed to
+it.
+
+### (d) §4's file naming is replaced
+
+§4's scheme is superseded by names that state event, weapon, phase, gender and category
+range, ASCII and English in the filename, Polish in the in-file `TitreLong`:
+
+```
+PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml
+PPW1-2026-2027_EPEE_DE_MEN_V2.xml
+PPW1-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml
+```
+
+The reason is legibility under a real failure: MPW 2026's foil mix-all is named
+*"Floret Mężczyzn V3, V4"* while actually holding 25 fencers spanning V0–V4 including
+the women. A file that reads as a category it does not contain is how a bracket gets
+imported into the wrong event.
+
+### (e) A roster file per weapon, and how it is suppressed
+
+Built 2026-09-12 as `fn_ftl_roster(p_id_event, p_weapon, p_token)`, migration
+`20260912000005`, tests pgTAP 77. A third file kind: every fencer with any result in that weapon, full history, all
+nationalities — imported as a pick-list so a fencer who turns up unannounced is
+**ticked in rather than typed** (Fencing Time 4.7 Guide p.145, *Event Competitors →
+Import from XML*). Typing is how a duplicate identity is born.
+
+Suppression is keyed on the **fencer**, not the name: always suppress any `id_fencer` a
+registration for this event and weapon already points at, and suppress by name only
+when an unmatched registration bears that name **and exactly one fencer does too**. The
+naive rule — exclude any fencer whose name matches a registration, ignoring birth year
+— would hide the 19-result MŁYNEK Janusz from the roster because a *different* Janusz
+registered, which is precisely the person the organizer might need to tick in.
+
+### (f) Club, and the public download page
+
+The club is harvested on scrape into `tbl_fencer.txt_club` (overwrite on non-null,
+storing `club1`), asked again at registration per event, and emitted only when given.
+PROD holds 0 fencers with a club today, so this starts empty by construction.
+
+Delivery gains a public page on weteraniszermierki.pl, treated like `/znajdz-zawody/`
+and **not** a menu item (ADR-090), from which the organizer downloads the files
+directly, with a PL and EN manual beside it. §5's on-demand email to the organizer is
+unchanged and remains the delivery path until that page exists.
+
+*Not yet confirmed:* that the WordPress page carries a new custom element as cleanly as
+`<spws-calendar>` did. The pattern is proven, but this element is the first to expose a
+`lang` attribute.
+
+### (g) How the browser gets the data, and what it is not given
+
+Built 2026-09-12. The download page is public and static-hosted, so the XML is generated
+in the browser and its data comes from one new function, migration
+`20260912000004_ftl_export_entries.sql`:
+
+```
+fn_ftl_export_entries(p_id_event INT)
+  RETURNS TABLE (txt_surname, txt_first_name, enum_gender,
+                 enum_age_category, enum_weapon, int_order)
+```
+
+One row per registration × declared weapon. It is `SECURITY DEFINER` because it has to
+be — `tbl_registration`'s RLS admits only `authenticated`, and that is correct, since
+the table carries the declared birth year and the `uuid_edit_token` that authorises an
+edit. What it publishes is the columns `vw_registration_entry_list` already serves
+anonymously, plus one integer.
+
+**That integer is the design.** The obvious projection would return `id_fencer` and let
+the page call `fn_ranking_ppw` per sub-ranking to sort — 22 round trips at PPW1, and 22
+chances to render a half-ordered file. Returning the already-resolved seed position
+instead means one call, and the join key never leaves the database, so the public
+surface never names a person by database identity. No birth year, no `id_fencer`, no
+`id_registration`, no edit token, no e-mail hash; test 76.4 asserts their absence from
+the function's own signature so a later widening cannot happen quietly, and 52.7 carries
+the anon-allowlist justification.
+
+The seed order comes from the **rolling** ranking, via `fn_ftl_export_use_rolling` — the
+SQL twin of `frontend/src/lib/rolling.ts` (ADR-018/021): live or upcoming season ranks on
+carry-over, a finished season on its own results. This is not a refinement. PPW1 is the
+first event of SPWS-2026-2027, so the season has no results of its own: measured on the
+PROD mirror on 2026-09-12, `fn_ranking_ppw('EPEE','M','V2', 4, false)` returns 0 rows and
+`true` returns 22. Without carry-over the mix-all file would have seeded the entire field
+in the order people happened to fill in the form, and looked perfectly correct doing it.
+
+The generator itself now exists twice on purpose: `python/pipeline/ftl_seed_export.py`
+for the e-mail path of §5, and `frontend/src/lib/ftlSeedExport.ts` for the page. The
+duplication is deliberate — static hosting cannot run the Python — and is held honest by
+`frontend/tests/ftlSeedExport.test.ts`, which asserts the generated XML **byte for byte**
+against ElementTree's real output, attribute order and the space before `/>` included.
+"Structurally equivalent" is not a property Fencing Time has been shown to accept; the
+validated reference files in `doc/external_files/FTL_SRC/` are.
+
+`<spws-ftl-export>` is registered in `frontend/src/main.ce.ts` and reachable immediately
+at `register.html?view=export&event=<code>` (add `&lang=en`), which rides on the existing
+page because the credential-injection step only knows about files already in the CE build
+input. The WordPress page of (f) mounts the same element.
+
+Also built: a dependency-free stored-ZIP writer (`frontend/src/lib/zip.ts`). PPW1 produces
+25 files and a browser will not start 25 downloads. Verified on 2026-09-12 by opening a
+bundle it produced with Python's `zipfile` — `testzip()` returned `None` and the Polish
+names survived.
+
+### (h) The page is one page, protected by a capability, and shows only live events
+
+Built 2026-09-12, after review of (g)'s first version. Four things were wrong with it, and
+each fix is a decision worth recording.
+
+**It was one page per event.** The association always has more than one event taking
+entries — two on the day this was written — and the page depended on whoever sent the link
+having picked the right event code. `fn_ftl_export_events(p_token)` now lists every event
+with at least one registration whose end date has not passed, and the page renders one card
+per event. There is **no grace period**: the seed files set a competition up, and once it
+has been fenced there is nothing left to seed.
+
+**It had no access control at all.** ADR-090 §3 settled that administration stays on GitHub
+Pages and that a sign-in modal is not reachable from a public page on the association's
+site, so a login here would reverse a decision taken a week earlier. The surface is
+protected by a **capability** instead — `/pliki-startowe/?k=<uuid>`, held in
+`tbl_ftl_export_token` and checked *inside* all three functions. The check is in Postgres
+and not in the page because the bundle is public, so a check in JavaScript would be
+decoration.
+
+Be precise about what the token defends, because it is easy to overrate: every name,
+gender, weapon and age category this page shows is **already public** through
+`vw_registration_entry_list`, and the ranking positions come from `fn_ranking_ppw`, which
+anon has always been able to call. The token keeps an organizer-only tool off four hundred
+fencers' screens, and it gives us something to rotate when a link goes astray — one
+`UPDATE`. It is not the reason birth years are safe; that is the projection's column list.
+An absent, unknown or revoked token returns **no rows rather than raising**: a stale link
+should look empty, not broken, and an error would confirm to a prober that they had found a
+real endpoint. The page's empty line is therefore worded to be true whether the cause is a
+dead token or a genuinely empty calendar.
+
+**The files were built on page load, not on download.** The page fetched once, generated
+every XML into memory, and the button only serialised what was already there. A page opened
+at 08:00 and used at 10:00 handed over the 08:00 entry list with nothing on screen to say
+so, and the Polish copy ("powstają na bieżąco") concealed it rather than stating it. Both
+download paths now re-read first — one call, ~30 ms for a full event — and the page shows
+the moment the list it holds was taken.
+
+**Twenty-eight rows buried the instruction.** The file list is now one collapsed section
+per weapon whose header carries the summary ("eliminacje mix + 9 tabel DE + baza zawodników
+(181)"), so the page opens as three lines and the eight-step instruction is immediately
+visible. That instruction — Import Events (p. 22), Combine Events (p. 22), the marker, the
+morning Re-Import (p. 144), the walk-up via Event Competitors → Import from XML (p. 145) —
+is the deliverable, and the first version had replaced it with a four-word table column.
+
+It also travels **inside the archive**, one self-contained file per language
+(`INSTRUKCJA.txt`, `INSTRUCTIONS.txt`), each carrying the file list and all eight steps.
+The page is read at a desk days before; the archive is opened at the venue, often without
+usable wifi, which is exactly when the question gets asked. Both languages always go,
+whatever the page was set to, because the person who downloads the files is frequently not
+the person who runs the software.
+
+Two smaller notes on this surface. The **example name in the instruction is invented** —
+`PRZYKŁADOWSKA (1) Anna`. The first draft used a real fencer entered for a live event, and
+this text is published; `Kowalski`, `Kowalska` and `Nowak` were all checked and rejected
+too, because in an association of 367 people the stock placeholders are real members. And
+the in-file `TitreLong` stays **Polish even in the English interface**: it is the string
+Fencing Time displays, and `_detect_weapon_from_title` reads the weapon back out of it
+(`python/scrapers/ftl.py:248`), so its language is load-bearing in both directions.
+
+*Still pending from this amendment:* the club of (f).
 
 ## References
 

@@ -6,12 +6,12 @@ New module python/pipeline/ftl_seed_export.py — NOT a reuse of export_seed.py
 
 Covers the pure, unit-testable core of the exporter:
 - canonical name casing (Nom=UPPERCASE, Prenom=Title case)
-- (N) category-marker formatting
+- (N) category-marker formatting (mid-name, ADR-080 §1 amended 2026-09-12)
 - mix-all pool interleave ("snake by rank" across the 10 sub-rankings, ADR-080 §2)
 - predicted combined DE bracket accumulation (T=4, left-to-right ascending, ADR-080 §3)
 - seed file naming convention (ADR-080 §4)
 - FIE XML generation (ADR-080 §1): no DateNaissance, no Lateralite, Club="",
-  Licence="", canonical Nom/Prenom, (N) marker survives into Prenom.
+  Licence="", canonical Nom/Prenom, (N) marker survives into Nom.
 
 DB-querying glue (fn_ranking_ppw + tbl_fencer join, tbl_registration query —
 every declared registration, no payment filter) is integration-level and
@@ -25,11 +25,12 @@ import defusedxml.ElementTree as ET
 from python.pipeline.ftl_seed_export import (
     FencerEntry,
     build_fie_xml,
-    combined_bracket_scope,
-    format_prenom_with_marker,
+    de_title,
+    export_filename,
+    format_nom_with_marker,
     interleave_mixall,
-    predict_combined_brackets,
-    seed_filename,
+    mixall_title,
+    roster_title,
     to_canonical_name,
 )
 
@@ -61,12 +62,17 @@ def test_to_canonical_name_trims_whitespace():
 # ---------------------------------------------------------------------------
 # (N) category marker (ADR-080 §1)
 # ---------------------------------------------------------------------------
-def test_format_prenom_with_marker():
-    assert format_prenom_with_marker("Jan", "2") == "Jan (2)"
+def test_format_nom_with_marker():
+    """Mid-name. Fencing Time renders "Nom Prenom", so this yields
+    "KOWALSKI (2) Jan" — the form our own scraper reads back. The previous
+    placement produced "KOWALSKI Jan (2)", which it does not match, so our
+    seed files did not round-trip through our own pipeline."""
+    assert format_nom_with_marker("KOWALSKI", "2") == "KOWALSKI (2)"
 
 
-def test_format_prenom_with_marker_vcat_zero():
-    assert format_prenom_with_marker("Sandra", "0") == "Sandra (0)"
+def test_format_nom_with_marker_vcat_zero():
+    """V0 is a real category, not an absent marker."""
+    assert format_nom_with_marker("PĘCZEK", "0") == "PĘCZEK (0)"
 
 
 # ---------------------------------------------------------------------------
@@ -107,62 +113,85 @@ def test_interleave_mixall_all_empty_sub_rankings():
 
 
 # ---------------------------------------------------------------------------
-# Predicted combined DE brackets — T=4, left-to-right ascending (ADR-080 §3)
+# File naming and titles (plan §8, replacing ADR-080 §4)
+#
+# ADR-080 §3's combined-bracket PREDICTION is dropped with this change: we emit
+# the maximal split (one DE file per gender × category actually present) and the
+# manual tells the organizer to combine in Fencing Time, because we re-split by
+# birth year on the way back regardless. Predicting their combining was guessing
+# at a decision that is theirs to make, and a wrong guess produced a file whose
+# name claimed a category range it did not hold.
+#
+# Filenames are ASCII/English so they survive any operating system and any
+# mail client; the Polish is in the TitreLong, which is what Fencing Time shows.
+# Every name states event, weapon, phase, gender and category range — MPW 2026's
+# foil mix-all is called "Floret Mężczyzn V3, V4" while holding 25 fencers
+# spanning V0-V4 including the women, and ours must not be able to read that way.
 # ---------------------------------------------------------------------------
-def test_predict_combined_brackets_exact_t_closes_singleton():
-    # V0 alone already hits T=4 -> closes on its own; V1..V4 (1 each) accumulate
-    # to exactly 4 -> a second bracket. No merging needed, no trailing leftover.
-    counts = {"V0": 4, "V1": 1, "V2": 1, "V3": 1, "V4": 1}
-    assert predict_combined_brackets(counts, t=4) == [["V0"], ["V1", "V2", "V3", "V4"]]
-
-
-def test_predict_combined_brackets_skips_empty_categories_for_adjacency():
-    # V1 empty -> V0 and V2 become adjacent in the LIVE sequence and may combine.
-    counts = {"V0": 1, "V1": 0, "V2": 3, "V3": 0, "V4": 1}
-    # V0(1)->1, V2(3)->4 close [V0,V2]; V4(1)->1 trailing, folds into previous.
-    assert predict_combined_brackets(counts, t=4) == [["V0", "V2", "V4"]]
-
-
-def test_predict_combined_brackets_trailing_leftover_folds_into_previous():
-    counts = {"V0": 1, "V1": 1, "V2": 1, "V3": 1, "V4": 1}
-    # V0..V3 accumulate to 4 and close; V4(1) is a trailing sub-T leftover.
-    assert predict_combined_brackets(counts, t=4) == [["V0", "V1", "V2", "V3", "V4"]]
-
-
-def test_predict_combined_brackets_whole_weapon_gender_under_t_is_one_bracket():
-    counts = {"V0": 1, "V2": 1}
-    assert predict_combined_brackets(counts, t=4) == [["V0", "V2"]]
-
-
-def test_predict_combined_brackets_all_empty_returns_no_brackets():
-    assert predict_combined_brackets({"V0": 0, "V1": 0}, t=4) == []
-
-
-# ---------------------------------------------------------------------------
-# File naming (ADR-080 §4)
-# ---------------------------------------------------------------------------
-def test_seed_filename_mixall():
+def test_export_filename_mixall_both_genders():
+    """X7.1 — the worked example from plan §8."""
     assert (
-        seed_filename("SPWS-2025-2026", "PPW5", "E", "mixall") == "SPWS-2025-2026_PPW5_E_mixall.xml"
+        export_filename("PPW1-2026-2027", "EPEE", "POOLS-MIXED", "all-categories_W+M")
+        == "PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml"
     )
 
 
-def test_seed_filename_single_de_bracket():
-    assert seed_filename("SPWS-2025-2026", "PPW5", "E", "M-V2") == "SPWS-2025-2026_PPW5_E_M-V2.xml"
-
-
-def test_seed_filename_combined_de_bracket():
+def test_export_filename_de_bracket():
+    """X7.2 — one DE file per gender x category, named for exactly that."""
     assert (
-        seed_filename("SPWS-2025-2026", "PPW5", "E", "M-V0V1") == "SPWS-2025-2026_PPW5_E_M-V0V1.xml"
+        export_filename("PPW1-2026-2027", "EPEE", "DE", "MEN_V2")
+        == "PPW1-2026-2027_EPEE_DE_MEN_V2.xml"
     )
 
 
-def test_combined_bracket_scope_single_category():
-    assert combined_bracket_scope("M", ["V2"]) == "M-V2"
+def test_export_filename_roster():
+    """X7.3 — the pick-list file, named so nobody imports it as a competition."""
+    assert (
+        export_filename("PPW1-2026-2027", "EPEE", "ROSTER", "all-known-epee-fencers")
+        == "PPW1-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml"
+    )
 
 
-def test_combined_bracket_scope_combined_categories_joined_compact():
-    assert combined_bracket_scope("F", ["V3", "V4"]) == "F-V3V4"
+def test_mixall_title_worked_example():
+    """X7.4 — plan §8, verbatim."""
+    assert mixall_title("PPW1-2026-2027", "EPEE", ["F", "M"], ["V0", "V1", "V2", "V3", "V4"]) == (
+        "SPWS PPW1 2026/27 · SZPADA · ELIMINACJE MIX — kobiety+mężczyźni, V0–V4"
+    )
+
+
+def test_mixall_title_states_the_range_actually_present():
+    """X7.5 — the whole point of the rename. A file holding only V2 and V3 men
+    must not claim V0-V4, and must not claim women it does not contain."""
+    assert mixall_title("PPW1-2026-2027", "SABRE", ["M"], ["V2", "V3"]) == (
+        "SPWS PPW1 2026/27 · SZABLA · ELIMINACJE MIX — mężczyźni, V2–V3"
+    )
+
+
+def test_mixall_title_single_category_is_not_written_as_a_range():
+    """X7.6 — "V2–V2" would read as a defect."""
+    assert mixall_title("PPW1-2026-2027", "FOIL", ["F"], ["V2"]) == (
+        "SPWS PPW1 2026/27 · FLORET · ELIMINACJE MIX — kobiety, V2"
+    )
+
+
+def test_de_title_worked_example():
+    """X7.7 — plan §8, verbatim."""
+    assert de_title("PPW1-2026-2027", "EPEE", "M", "V2") == (
+        "SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V2"
+    )
+
+
+def test_de_title_women():
+    """X7.8 — genders are never merged in a DE file (ADR-080 §3)."""
+    assert de_title("PPW1-2026-2027", "FOIL", "F", "V0") == (
+        "SPWS PPW1 2026/27 · FLORET · DE kobiety V0"
+    )
+
+
+def test_roster_title_says_out_loud_it_is_not_a_competition():
+    """X7.9 — the roster is a pick-list (FT Guide p.145), and the one file an
+    organizer could destroy their event with by importing it as an event."""
+    assert roster_title("EPEE") == "SPWS · BAZA ZAWODNIKÓW — szpada (nie importować jako zawody)"
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +203,7 @@ def test_build_fie_xml_omits_datenaissance_and_lateralite():
         weapon_code="E",
         gender_code="M",
         title="SPWS Szpada ELIMINACJE (mix-all) 2025/2026",
-        tireurs=[{"id": 1, "nom": "KOWALSKI", "prenom": "Jan (2)", "sexe": "M", "classement": 1}],
+        tireurs=[{"id": 1, "nom": "KOWALSKI (2)", "prenom": "Jan", "sexe": "M", "classement": 1}],
     )
     assert "DateNaissance" not in xml_text
     assert "Lateralite" not in xml_text
@@ -202,13 +231,14 @@ def test_build_fie_xml_tireur_attributes_canonical_and_empty_club_licence():
         weapon_code="S",
         gender_code="F",
         title="Title",
-        tireurs=[{"id": 7, "nom": "NOWAK", "prenom": "Anna (1)", "sexe": "F", "classement": 3}],
+        tireurs=[{"id": 7, "nom": "NOWAK (1)", "prenom": "Anna", "sexe": "F", "classement": 3}],
     )
     root = ET.fromstring(xml_text.split("\n", 2)[-1] if xml_text.startswith("<?xml") else xml_text)
     tireur = root.find(".//Tireur")
     assert tireur is not None
-    assert tireur.get("Nom") == "NOWAK"
-    assert tireur.get("Prenom") == "Anna (1)"
+    assert tireur.get("Nom") == "NOWAK (1)"
+    assert tireur.get("Nom") == "NOWAK (1)"
+    assert tireur.get("Prenom") == "Anna"
     assert tireur.get("Sexe") == "F"
     assert tireur.get("Classement") == "3"
     assert tireur.get("Club") == ""
@@ -223,10 +253,10 @@ def test_build_fie_xml_multiple_tireurs_preserve_order():
         gender_code="M",
         title="Title",
         tireurs=[
-            {"id": 1, "nom": "AAA", "prenom": "A (0)", "sexe": "M", "classement": 1},
-            {"id": 2, "nom": "BBB", "prenom": "B (1)", "sexe": "F", "classement": 2},
+            {"id": 1, "nom": "AAA (0)", "prenom": "A", "sexe": "M", "classement": 1},
+            {"id": 2, "nom": "BBB (1)", "prenom": "B", "sexe": "F", "classement": 2},
         ],
     )
     root = ET.fromstring(xml_text.split("\n", 2)[-1] if xml_text.startswith("<?xml") else xml_text)
     tireurs = root.findall(".//Tireur")
-    assert [t.get("Nom") for t in tireurs] == ["AAA", "BBB"]
+    assert [t.get("Nom") for t in tireurs] == ["AAA (0)", "BBB (1)"]

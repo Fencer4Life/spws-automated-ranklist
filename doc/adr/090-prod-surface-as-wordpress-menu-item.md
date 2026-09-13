@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05)
+**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule.)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -283,3 +283,30 @@ decision's scope.
    on an SPWS Board decision expected in the week of 2026-09-08, and the
    calculator additionally on a DirectAdmin/FTP login not yet held. Neither
    blocks this decision.
+
+## Amendment (2026-09-12 — a protected surface, without a sign-in)
+
+§3 says the embed ignores `?admin=1` and that administration stays on GitHub Pages: the
+sign-in modal is not reachable from a public page on the association's site. That still
+holds, and it created a question the FTL organizer export had to answer — how to protect a
+page on weteraniszermierki.pl that is not meant for four hundred fencers, without putting a
+login on it.
+
+The answer adopted, and the pattern for anything similar: a **capability link**,
+`/<page>/?k=<uuid>`, with the token checked **inside the SECURITY DEFINER functions** rather
+than in the page. The bundle is public and readable, so a check in the client would be
+decoration; a check in Postgres is a boundary. An absent, unknown or revoked token returns
+no rows rather than raising, so a stale link renders an empty page instead of an error, and
+a prober learns nothing from the difference. Tokens live in `tbl_ftl_export_token`, are
+revoked by setting `ts_revoked` rather than deleted, and are shaped to carry an organizer id
+later so a link can be scoped to one organizer's events without the URL changing.
+
+This is **not** a substitute for authentication and must not be used as one. It is
+proportionate where the underlying data is already public — the FTL export shows exactly
+what `vw_registration_entry_list` and `fn_ranking_ppw` already publish — and where the aim
+is to keep a tool off the wrong screens and to have something revocable when a link goes
+astray. A capability URL also travels in browser history and in the `Referer` header, which
+rotation is the answer to. Anything that would expose a fact the public cannot already reach
+still belongs behind Supabase Auth on GitHub Pages, exactly as §3 requires.
+
+See ADR-080's 2026-09-12 amendment (h) for the first use.

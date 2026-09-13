@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
-<meta name="adr-source-sha256" content="0b8456b7698286777e87fb7597ca8a3554fb9b25d030131b362e3285ed5b3530">
+<meta name="adr-source-sha256" content="934973b438aee5660fdaf31fbeae4bfaa2e734b10cd7de8200581a2f2e6727ca">
 <title>ADR-080 · Clean-Roster FTL Seeding</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">227 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2.)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">435 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093.)
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>&quot;FTL&quot; is <strong>Fencing Time</strong> (results at fencingtimelive.com), the software the
 organizer runs. A domestic SPWS event is run as, per weapon, one <strong>mix-all pool
@@ -268,6 +268,173 @@ duplicate on retry; exact-once delivery would require a durable attempt/lease
 model and is not justified for the current one-recipient operational volume.</li>
 </ul>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</h2>
+<p>Accepted with the plan <code>doc/plans/ftl-xml-export-2026-09-12.html</code>. <strong>Implementation
+status: only the identity block is built</strong> (see <a href="093-registration-as-birth-year-source.html">ADR-093</a>);
+items (a) to (f) below are decided and not yet implemented, and this section is a record
+of the decision, not a description of the system. §§1, 2, 5 and 6 stand — the FIE-XML
+format, the snake interleave, organizer delivery and the ingestion writers are unchanged.</p>
+<h3 id="a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</h3>
+<p>§Context states the scraped results expose <em>&quot;only <code>name · place · country</code>&quot;</em>. That is
+wrong, and has been since it was written. The Fencing Time results JSON returns
+<code>clubs</code>, <code>club1</code> and <code>club2</code> per fencer; <code>parse_ftl_json</code> simply never reads them
+(verified against live FTL, 2026-09-12). Nothing downstream depended on the false
+claim, so no behaviour changes — but the sentence was load-bearing in argument, because
+it was part of why the name is the only join key.</p>
+<h3 id="b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</h3>
+<p>ADR-065's marker is kept as the age digit only — gender still travels as the FIE <code>Sexe</code>
+attribute — but its position changes to <strong>mid-name</strong>: <code>Nom=&quot;KAMIŃSKA (1)&quot;</code>,
+<code>Prenom=&quot;Gabriela&quot;</code>. This is not a preference. All 20 events of MPW 2026 use that form
+in the wild, including per-category brackets where the digit is redundant, and MPW 2026
+ingested cleanly through our own pipeline: 20 FTL events to 28 per-category tournaments
+with counts matching the scraped marker distribution exactly, and <strong>zero rows in
+<code>tbl_fencer</code> containing a digit or a parenthesis</strong> — no marker has ever leaked into a
+stored name.</p>
+<p>The four places that currently know the convention — <code>python/scrapers/ftl.py:98</code>,
+<code>python/pipeline/review_cli.py:544</code>, <code>python/matcher/fuzzy_match.py:83</code> and
+<code>ftl_seed_export.format_prenom_with_marker</code> — become importers from a single owner,
+<code>python/pipeline/vcat_marker.py</code>. That consolidation is a <strong>pure refactor</strong>: if a test
+changes behaviour, the refactor is wrong. The regexes are deliberately <strong>not</strong> widened.</p>
+<h3 id="c-3-s-predicted-combined-brackets-are-dropped">(c) §3's predicted combined brackets are dropped</h3>
+<p>§3 predicted the combined DE brackets the organizer would build and generated files to
+match. That prediction is abandoned. We emit the <strong>maximal split</strong> — one DE file per
+gender × age category actually present — and the manual tells the organizer to combine
+freely using Fencing Time's own <em>Combine Events</em>, because we re-split by birth year on
+scrape-back regardless. Predicting a human's combining decision was a guess we had no
+need to make.</p>
+<p><em>Not yet confirmed:</em> that the organizer accepts one file per gender × category rather
+than the brackets they build by hand. The manual says it out loud; nobody has agreed to
+it.</p>
+<h3 id="d-4-s-file-naming-is-replaced">(d) §4's file naming is replaced</h3>
+<p>§4's scheme is superseded by names that state event, weapon, phase, gender and category
+range, ASCII and English in the filename, Polish in the in-file <code>TitreLong</code>:</p>
+<pre><code>PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml
+PPW1-2026-2027_EPEE_DE_MEN_V2.xml
+PPW1-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml
+</code></pre>
+<p>The reason is legibility under a real failure: MPW 2026's foil mix-all is named
+<em>&quot;Floret Mężczyzn V3, V4&quot;</em> while actually holding 25 fencers spanning V0–V4 including
+the women. A file that reads as a category it does not contain is how a bracket gets
+imported into the wrong event.</p>
+<h3 id="e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</h3>
+<p>Built 2026-09-12 as <code>fn_ftl_roster(p_id_event, p_weapon, p_token)</code>, migration
+<code>20260912000005</code>, tests pgTAP 77. A third file kind: every fencer with any result in that weapon, full history, all
+nationalities — imported as a pick-list so a fencer who turns up unannounced is
+<strong>ticked in rather than typed</strong> (Fencing Time 4.7 Guide p.145, <em>Event Competitors →
+Import from XML</em>). Typing is how a duplicate identity is born.</p>
+<p>Suppression is keyed on the <strong>fencer</strong>, not the name: always suppress any <code>id_fencer</code> a
+registration for this event and weapon already points at, and suppress by name only
+when an unmatched registration bears that name <strong>and exactly one fencer does too</strong>. The
+naive rule — exclude any fencer whose name matches a registration, ignoring birth year
+— would hide the 19-result MŁYNEK Janusz from the roster because a <em>different</em> Janusz
+registered, which is precisely the person the organizer might need to tick in.</p>
+<h3 id="f-club-and-the-public-download-page">(f) Club, and the public download page</h3>
+<p>The club is harvested on scrape into <code>tbl_fencer.txt_club</code> (overwrite on non-null,
+storing <code>club1</code>), asked again at registration per event, and emitted only when given.
+PROD holds 0 fencers with a club today, so this starts empty by construction.</p>
+<p>Delivery gains a public page on weteraniszermierki.pl, treated like <code>/znajdz-zawody/</code>
+and <strong>not</strong> a menu item (ADR-090), from which the organizer downloads the files
+directly, with a PL and EN manual beside it. §5's on-demand email to the organizer is
+unchanged and remains the delivery path until that page exists.</p>
+<p><em>Not yet confirmed:</em> that the WordPress page carries a new custom element as cleanly as
+<code>&lt;spws-calendar&gt;</code> did. The pattern is proven, but this element is the first to expose a
+<code>lang</code> attribute.</p>
+<h3 id="g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</h3>
+<p>Built 2026-09-12. The download page is public and static-hosted, so the XML is generated
+in the browser and its data comes from one new function, migration
+<code>20260912000004_ftl_export_entries.sql</code>:</p>
+<pre><code>fn_ftl_export_entries(p_id_event INT)
+  RETURNS TABLE (txt_surname, txt_first_name, enum_gender,
+                 enum_age_category, enum_weapon, int_order)
+</code></pre>
+<p>One row per registration × declared weapon. It is <code>SECURITY DEFINER</code> because it has to
+be — <code>tbl_registration</code>'s RLS admits only <code>authenticated</code>, and that is correct, since
+the table carries the declared birth year and the <code>uuid_edit_token</code> that authorises an
+edit. What it publishes is the columns <code>vw_registration_entry_list</code> already serves
+anonymously, plus one integer.</p>
+<p><strong>That integer is the design.</strong> The obvious projection would return <code>id_fencer</code> and let
+the page call <code>fn_ranking_ppw</code> per sub-ranking to sort — 22 round trips at PPW1, and 22
+chances to render a half-ordered file. Returning the already-resolved seed position
+instead means one call, and the join key never leaves the database, so the public
+surface never names a person by database identity. No birth year, no <code>id_fencer</code>, no
+<code>id_registration</code>, no edit token, no e-mail hash; test 76.4 asserts their absence from
+the function's own signature so a later widening cannot happen quietly, and 52.7 carries
+the anon-allowlist justification.</p>
+<p>The seed order comes from the <strong>rolling</strong> ranking, via <code>fn_ftl_export_use_rolling</code> — the
+SQL twin of <code>frontend/src/lib/rolling.ts</code> (ADR-018/021): live or upcoming season ranks on
+carry-over, a finished season on its own results. This is not a refinement. PPW1 is the
+first event of SPWS-2026-2027, so the season has no results of its own: measured on the
+PROD mirror on 2026-09-12, <code>fn_ranking_ppw('EPEE','M','V2', 4, false)</code> returns 0 rows and
+<code>true</code> returns 22. Without carry-over the mix-all file would have seeded the entire field
+in the order people happened to fill in the form, and looked perfectly correct doing it.</p>
+<p>The generator itself now exists twice on purpose: <code>python/pipeline/ftl_seed_export.py</code>
+for the e-mail path of §5, and <code>frontend/src/lib/ftlSeedExport.ts</code> for the page. The
+duplication is deliberate — static hosting cannot run the Python — and is held honest by
+<code>frontend/tests/ftlSeedExport.test.ts</code>, which asserts the generated XML <strong>byte for byte</strong>
+against ElementTree's real output, attribute order and the space before <code>/&gt;</code> included.
+&quot;Structurally equivalent&quot; is not a property Fencing Time has been shown to accept; the
+validated reference files in <code>doc/external_files/FTL_SRC/</code> are.</p>
+<p><code>&lt;spws-ftl-export&gt;</code> is registered in <code>frontend/src/main.ce.ts</code> and reachable immediately
+at <code>register.html?view=export&amp;event=&lt;code&gt;</code> (add <code>&amp;lang=en</code>), which rides on the existing
+page because the credential-injection step only knows about files already in the CE build
+input. The WordPress page of (f) mounts the same element.</p>
+<p>Also built: a dependency-free stored-ZIP writer (<code>frontend/src/lib/zip.ts</code>). PPW1 produces
+25 files and a browser will not start 25 downloads. Verified on 2026-09-12 by opening a
+bundle it produced with Python's <code>zipfile</code> — <code>testzip()</code> returned <code>None</code> and the Polish
+names survived.</p>
+<h3 id="h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</h3>
+<p>Built 2026-09-12, after review of (g)'s first version. Four things were wrong with it, and
+each fix is a decision worth recording.</p>
+<p><strong>It was one page per event.</strong> The association always has more than one event taking
+entries — two on the day this was written — and the page depended on whoever sent the link
+having picked the right event code. <code>fn_ftl_export_events(p_token)</code> now lists every event
+with at least one registration whose end date has not passed, and the page renders one card
+per event. There is <strong>no grace period</strong>: the seed files set a competition up, and once it
+has been fenced there is nothing left to seed.</p>
+<p><strong>It had no access control at all.</strong> ADR-090 §3 settled that administration stays on GitHub
+Pages and that a sign-in modal is not reachable from a public page on the association's
+site, so a login here would reverse a decision taken a week earlier. The surface is
+protected by a <strong>capability</strong> instead — <code>/pliki-startowe/?k=&lt;uuid&gt;</code>, held in
+<code>tbl_ftl_export_token</code> and checked <em>inside</em> all three functions. The check is in Postgres
+and not in the page because the bundle is public, so a check in JavaScript would be
+decoration.</p>
+<p>Be precise about what the token defends, because it is easy to overrate: every name,
+gender, weapon and age category this page shows is <strong>already public</strong> through
+<code>vw_registration_entry_list</code>, and the ranking positions come from <code>fn_ranking_ppw</code>, which
+anon has always been able to call. The token keeps an organizer-only tool off four hundred
+fencers' screens, and it gives us something to rotate when a link goes astray — one
+<code>UPDATE</code>. It is not the reason birth years are safe; that is the projection's column list.
+An absent, unknown or revoked token returns <strong>no rows rather than raising</strong>: a stale link
+should look empty, not broken, and an error would confirm to a prober that they had found a
+real endpoint. The page's empty line is therefore worded to be true whether the cause is a
+dead token or a genuinely empty calendar.</p>
+<p><strong>The files were built on page load, not on download.</strong> The page fetched once, generated
+every XML into memory, and the button only serialised what was already there. A page opened
+at 08:00 and used at 10:00 handed over the 08:00 entry list with nothing on screen to say
+so, and the Polish copy (&quot;powstają na bieżąco&quot;) concealed it rather than stating it. Both
+download paths now re-read first — one call, ~30 ms for a full event — and the page shows
+the moment the list it holds was taken.</p>
+<p><strong>Twenty-eight rows buried the instruction.</strong> The file list is now one collapsed section
+per weapon whose header carries the summary (&quot;eliminacje mix + 9 tabel DE + baza zawodników
+(181)&quot;), so the page opens as three lines and the eight-step instruction is immediately
+visible. That instruction — Import Events (p. 22), Combine Events (p. 22), the marker, the
+morning Re-Import (p. 144), the walk-up via Event Competitors → Import from XML (p. 145) —
+is the deliverable, and the first version had replaced it with a four-word table column.</p>
+<p>It also travels <strong>inside the archive</strong>, one self-contained file per language
+(<code>INSTRUKCJA.txt</code>, <code>INSTRUCTIONS.txt</code>), each carrying the file list and all eight steps.
+The page is read at a desk days before; the archive is opened at the venue, often without
+usable wifi, which is exactly when the question gets asked. Both languages always go,
+whatever the page was set to, because the person who downloads the files is frequently not
+the person who runs the software.</p>
+<p>Two smaller notes on this surface. The <strong>example name in the instruction is invented</strong> —
+<code>PRZYKŁADOWSKA (1) Anna</code>. The first draft used a real fencer entered for a live event, and
+this text is published; <code>Kowalski</code>, <code>Kowalska</code> and <code>Nowak</code> were all checked and rejected
+too, because in an association of 367 people the stock placeholders are real members. And
+the in-file <code>TitreLong</code> stays <strong>Polish even in the English interface</strong>: it is the string
+Fencing Time displays, and <code>_detect_weapon_from_title</code> reads the weapon back out of it
+(<code>python/scrapers/ftl.py:248</code>), so its language is load-bearing in both directions.</p>
+<p><em>Still pending from this amendment:</em> the club of (f).</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="references">References</h2>
 <ul>
 <li>ADR-078 (GDPR / organizer recipient), ADR-079 (registration/identity), ADR-024
@@ -277,5 +444,5 @@ model and is not justified for the current one-recipient operational volume.</li
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
-<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>0b8456b7698286777e87fb7597ca8a3554fb9b25d030131b362e3285ed5b3530</code></footer>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>934973b438aee5660fdaf31fbeae4bfaa2e734b10cd7de8200581a2f2e6727ca</code></footer>
 </div></body></html>
