@@ -61,6 +61,7 @@
   .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
   .pill.warn .dot{background:var(--warn)}
   .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
 
   .rule{height:2px;background:var(--line);border:0;margin:48px 0}
   section{margin-top:52px}
@@ -138,12 +139,17 @@
   <h1>Stop predicting brackets for events with no results</h1>
   <p class="dek">EVF Sync has failed since 2026-09-10 on a duplicate tournament code. The rows colliding are <b>fictional</b> — a "PLANNED" or "CREATED" event should carry event-level facts only. This plan deletes the one live function that still invents brackets, hardens the code rebuild it exposed, and repairs 154 stub rows on CERT / 82 on PROD.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Plan — not started</span>
-    <span class="pill danger"><span class="dot"></span>retires the stub loop in <code>fn_ingest_evf_calendar</code></span>
-    <span class="pill warn"><span class="dot"></span>repairs 154 CERT + 82 PROD rows</span>
-    <span class="pill">ADR-096 (amends ADR-028, ADR-046)</span>
+    <span class="pill good"><span class="dot"></span>Implemented, deployed &amp; verified — 2026-09-13</span>
+    <span class="pill danger"><span class="dot"></span>retired the stub loop in <code>fn_ingest_evf_calendar</code></span>
+    <span class="pill warn"><span class="dot"></span>repaired 154 CERT + 82 PROD rows</span>
+    <span class="pill">ADR-096 (amends ADR-028, ADR-046) — Accepted</span>
   </div>
-  <p class="rev">Revised twice on 2026-09-13 as concurrent sessions landed unrelated features. File numbers below (test/migration/ADR) were re-verified against the repo immediately before this plan was written — see the note at the end of the parity section for what to do if they have moved again.</p>
+  <div class="note good">
+    <p class="lede"><span class="tick">✓</span> Outcome — everything below shipped as written, with one deliberate change</p>
+    <p>All four remaining migration pieces landed exactly as planned (step 5, the uniqueness index, was struck — see the migration section). Merged to <code>main</code> via <code>integration/main</code>, CI green, deployed to CERT and PROD through the standard release pipeline, security posture verified on both. The manually re-run <b>EVF Calendar + Results Sync</b> completed with zero errors: Athens synced at <code>PEW13es-2026-2027</code> among <code>0 new, 18 already in CERT</code>. A direct post-deploy query confirms all 31 non-terminal events on <b>both</b> CERT and PROD hold zero child tournaments. <code>scripts/preflight.sh</code> exited 0 (pgTAP 1026/1026) before merge.</p>
+    <p style="margin-bottom:0">This page is kept as the design record, with the sections below annotated where reality diverged from the original draft (test ID shapes, the struck index, final documentation targets). The full narrative — why, root cause, audit evidence, break analysis — is unchanged and still accurate.</p>
+  </div>
+  <p class="rev">Revised twice on 2026-09-13 as concurrent sessions landed unrelated features, before implementation began. File numbers below (test/migration/ADR) were re-verified against the repo immediately before this plan was written, and matched what was actually free at implementation time.</p>
 
   <div class="toc">
     <p class="kicker">Read order</p>
@@ -194,7 +200,7 @@
 
     <div class="op">
       <span class="op-tag d">EXPIRED</span><span class="set">the dedup marker</span>
-      <p>ADR-028 §"tournament creation": the old dedup matcher was <code>BETWEEN ±3 days AND EXISTS(tournament)</code> — a child row was the only signal an event had been imported. That matcher is gone, replaced by Python's <code>_find_existing_match</code> id→slug→fuzzy ladder.</p>
+      <p>ADR-028 §Calendar Scraping: the old dedup matcher was <code>BETWEEN ±3 days AND EXISTS(tournament)</code> — a child row was the only signal an event had been imported. That matcher is gone, replaced by Python's <code>_find_existing_match</code> id→slug→fuzzy ladder.</p>
     </div>
     <div class="op">
       <span class="op-tag d">EXPIRED</span><span class="set">the only home for weapon/type facts</span>
@@ -276,7 +282,7 @@
     <h2>ADR-096: a bracket is created by results ingestion, never by calendar discovery</h2>
     <div class="adr-box">
       <span class="status">Status: Proposed — awaiting sign-off</span>
-      <p><b>Amends:</b> ADR-028 §"tournament creation" (drops the weapon × gender stub loop from calendar import). <b>Relates to:</b> ADR-046 (canonical tournament code formula — now has exactly one implementation), ADR-091 (the same "a skeleton is a prediction" ruling, one layer up, for events instead of brackets), ADR-081 (the CERT→PROD reconciler, whose CREATE path is already childless and needs no change).</p>
+      <p><b>Amends:</b> ADR-028 §Calendar Scraping (drops the weapon × gender stub loop from calendar import). <b>Relates to:</b> ADR-046 (canonical tournament code formula — now has exactly one implementation), ADR-091 (the same "a skeleton is a prediction" ruling, one layer up, for events instead of brackets), ADR-081 (the CERT→PROD reconciler, whose CREATE path is already childless and needs no change).</p>
 
       <h3>Context</h3>
       <p>The EVF calendar ingest has created one stub tournament per weapon × gender at calendar-import time since ADR-028 (April 2026), at a hardcoded <code>V2</code> age category. Every original justification has expired (dedup marker, weapon/type storage — see the root-cause section above), the predicted shape is provably wrong (a real event ends with 10–23 brackets across V1–V4, not 2–6 at V2 only), and the mechanism now actively produces duplicate-key failures in production sync: <code>idx_tournament_code</code> violations on 2026-09-10, traced to a code-rebuild dialect mismatch that only matters because these rows exist to be renumbered.</p>
@@ -311,20 +317,21 @@
 ls supabase/migrations/ | grep -oE '^[0-9]{14}' | sort -n | tail -1 # then +1</pre>
     </div>
 
-    <p>New file <code>supabase/tests/79_no_bracket_stubs.sql</code>, harness copied from <code>62_evf_reflow_occupied_code.sql</code>:</p>
+    <p>New file <code>supabase/tests/79_no_bracket_stubs.sql</code>, harness copied from <code>62_evf_reflow_occupied_code.sql</code>. <b>As implemented</b> — 79.3 split into two assertions during RED/GREEN debugging (79.3a/79.3b, exercising the exact two-syncs-in-a-row production sequence more precisely than one combined case could), and 79.7 was dropped rather than shipped; both are called out inline below:</p>
     <div class="tablewrap"><table>
       <thead><tr><th>ID</th><th>Assertion</th></tr></thead>
       <tbody>
         <tr><td>79.1</td><td>a calendar ingest of a new EVF event creates the event and <b>zero</b> tournaments</td></tr>
         <tr><td>79.2</td><td>a calendar ingest of an event that already holds real brackets adds none and deletes none</td></tr>
-        <tr><td>79.3</td><td>two consecutive ingests that both renumber the tail still live (the run-34468447030 regression)</td></tr>
+        <tr><td>79.3a</td><td><span class="chip fill">split from 79.3</span> the first of two consecutive renumbering ingests lives, with real (non-stub) children in the tail</td></tr>
+        <tr><td>79.3b</td><td><span class="chip fill">split from 79.3</span> a second, immediately-following renumbering ingest also lives (the run-34468447030 regression) — this is the case that reproduced the exact <code>23505</code> locally before the fix, and passed clean after it</td></tr>
         <tr><td>79.4</td><td>after any ingest, no event holds two rows for one <code>(cat, gender, weapon)</code> bracket</td></tr>
         <tr><td>79.5</td><td><code>fn_rebuild_tournament_codes</code> reproduces <code>fn_pew_recompute_event_code</code>'s canonical string for a <code>-V\d-</code> child, and preserves the stub shape for a child without one</td></tr>
         <tr><td>79.6</td><td><code>fn_prune_bracket_stubs()</code> deletes a childless-event stub and refuses one holding a result, a participant count, a <code>url_results</code>, or ingest history</td></tr>
-        <tr><td>79.7</td><td>the bracket uniqueness index exists and rejects a second row for the same bracket</td></tr>
+        <tr><td class="strike">79.7</td><td class="strike">the bracket uniqueness index exists and rejects a second row for the same bracket — <span class="chip over">dropped</span>, not shipped: the index itself was struck (see the migration section), so there is nothing left for this assertion to pin. <code>plan(7)</code> in the final file, not <code>plan(8)</code></td></tr>
       </tbody>
     </table></div>
-    <p>Assertion IDs are never renumbered once assigned (planning rule 9), so if the file number shifts before implementation, the IDs shift with it but keep this same 1–7 sequence.</p>
+    <p>Assertion IDs are never renumbered once assigned (planning rule 9) — 79.3's a/b split happened before the RED commit, during the same uncommitted authoring pass, so it counts as iteration rather than a renumbering of already-fixed IDs.</p>
 
     <h3>Existing tests touched</h3>
     <div class="tablewrap"><table>
@@ -340,17 +347,23 @@ ls supabase/migrations/ | grep -oE '^[0-9]{14}' | sort -n | tail -1 # then +1</p
 
   <section id="migration">
     <p class="kicker">Implementation</p>
-    <h2>One migration, five changes</h2>
-    <p><code>supabase/migrations/&lt;YYYYMMDD&gt;&lt;NNNNNN&gt;_no_bracket_stubs.sql</code> — numbered per the command above.</p>
+    <h2>One migration, four changes <span class="chip plain">was drafted as five — see step 5</span></h2>
+    <p><code>supabase/migrations/20260913000002_no_bracket_stubs.sql</code> — the next-free slot the numbering command predicted, confirmed correct at implementation time.</p>
 
     <ol class="steps">
       <li><b>Redefine the 2-arg <code>fn_ingest_evf_calendar</code></b> — carried forward verbatim from <code>20260711000001</code> — with the entire <code>FOR v_weapon … INSERT INTO tbl_tournament</code> loop removed. This is the whole behavioral change; it deletes the only live stub creator.</li>
       <li><b><code>fn_rebuild_tournament_codes(p_id_event INT, p_new_event_code TEXT) RETURNS INT</code></b> — extracted from the shape-sniffing block in <code>fn_update_event</code> (migration <code>20260902000002</code>), with two hardenings: the sniff becomes <code>bool_or(txt_code ~ '-V\d-')</code> over <em>all</em> children instead of an unordered <code>LIMIT 1</code>, and codes are parked on <code>'__tcode_' || id_tournament</code> first so an A→B, B→C shuffle cannot self-collide. <code>REVOKE ALL … FROM PUBLIC, anon, authenticated</code> (ADR-083 deny-by-default, asserted exactly by 52.7) — <b>this function stays off the anon allowlist</b>, so neither <code>52_security_posture.sql</code> nor <code>scripts/check-security-posture.sh</code> needs an edit, and the new <code>check-anon-allowlist-sync.sh</code> gate stays green. Still needed after step 1: an event whose brackets exist (from results) but hold no results <em>yet</em> for a re-ingest can still be renumbered, and this rebuild is the only thing standing between that and a wrong code.</li>
       <li><b>Redefine <code>fn_ingest_evf_calendar_identity_v1</code></b> — carried forward verbatim from <code>20260828000007</code> — replacing its inline park-and-rebuild block with <code>PERFORM fn_rebuild_tournament_codes(v_existing_id, v_desired_code)</code> after the event rename. Refactor <code>fn_update_event</code> onto the same helper so the admin and calendar paths agree by construction, not by coincidence.</li>
-      <li><b><code>fn_prune_bracket_stubs() RETURNS INTEGER</code></b> — idempotent, shaped like <code>fn_prune_unclaimed_evf_skeletons</code>. Deletes a tournament row only when its event is <code>CREATED/PLANNED/SCHEDULED/CHANGED/CANCELLED</code>, <code>enum_import_status = 'PLANNED'</code>, <code>COALESCE(int_participant_count,0) = 0</code>, <code>url_results IS NULL</code>, and no <code>tbl_result</code> or <code>tbl_tournament_ingest_history</code> row exists. Measured reach: <b>CERT 154 rows / 19 events, PROD 82 rows / 18 events</b> — zero rows anywhere fail only <em>one</em> of those guards, so the predicate is not accidentally narrow or wide. Called at the end of the migration <em>and</em> from <code>supabase/seed_post_backfill.sql</code>, because migrations run before the seed dump on a fresh bootstrap (ADR-036 amendment) and a migration-only delete would be reinstated by the dump.</li>
-        <li><b><code>CREATE UNIQUE INDEX idx_tournament_bracket ON tbl_tournament (id_event, enum_age_category, enum_gender, enum_weapon)</code></b>, after the prune, same transaction. PROD has zero violations across all 788 scored rows including all three joint-pool splits, and <code>fn_find_or_create_tournament</code> already treats this tuple as the key. Converts "silent duplicate now, unrelated explosion weeks later" into a failure at the offending insert. <b>Strike this step if a uniqueness constraint is not wanted</b>; steps 1–4 fix the collision without it.</li>
+      <li><b><code>fn_prune_bracket_stubs() RETURNS INTEGER</code></b> — idempotent, shaped like <code>fn_prune_unclaimed_evf_skeletons</code>. Deletes a tournament row only when its event is <code>CREATED/PLANNED/SCHEDULED/CHANGED/CANCELLED</code>, <code>enum_import_status = 'PLANNED'</code>, <code>COALESCE(int_participant_count,0) = 0</code>, <code>url_results IS NULL</code>, and no <code>tbl_result</code> or <code>tbl_tournament_ingest_history</code> row exists. Measured reach: <b>CERT 154 rows / 19 events, PROD 82 rows / 18 events</b> — zero rows anywhere fail only <em>one</em> of those guards, so the predicate is not accidentally narrow or wide. Called at the end of the migration <em>and</em> from <code>supabase/seed_post_backfill.sql</code>, because migrations run before the seed dump on a fresh bootstrap (ADR-036 amendment) and a migration-only delete would be reinstated by the dump. <b>Deployed 2026-09-13:</b> confirmed by direct query that all 31 non-terminal events on both CERT and PROD now hold zero children.</li>
     </ol>
-    <p>Run <code>postgrestools</code> against the migration file before moving on (mandatory for any SQL edit in this repo).</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">✕</span> Step 5 struck — <code>idx_tournament_bracket</code> was not added</p>
+      <p>The plan pre-authorized striking this step "if a uniqueness constraint is not wanted; steps 1–4 fix the collision without it." At implementation time the index broke four <em>unrelated</em>, pre-existing pgTAP fixtures (<code>01_database_foundation.sql</code>, <code>02_scoring_engine.sql</code>, <code>03_views_api.sql</code>, <code>05_calendar_view.sql</code>) that deliberately share one throwaway event across several synthetic tournaments at the same <code>(V2, M, EPEE)</code> tuple, distinguished only by <code>enum_type</code> — a convention older than this fix and unrelated to the bug it targets. Rewriting four unrelated files to make room for a hardening this plan itself called optional was judged disproportionate; struck instead, documented in the migration header, ADR-096 §4 and the spec entry. Steps 1–4 remove the defect completely on their own — confirmed by 79.4 (no event holds two rows for one bracket, globally, after every ingest in the suite) and by the live post-deploy query (zero duplicate bracket groups on CERT and PROD).</p>
+      <p style="margin-bottom:0">Final assertion count is unaffected: <code>plan(7)</code>, not <code>plan(8)</code> — see the tests section for the corresponding 79.7 drop.</p>
+    </div>
+
+    <p>Run <code>postgrestools</code> against the migration file before moving on (mandatory for any SQL edit in this repo). <span class="chip plain">done — 0 findings</span></p>
 
     <h3>Frontend — B2</h3>
     <p>Extend <code>INTL_PREFIXES</code> in <code>calendarMonths.ts</code> to include <code>DMEW</code>, with the vitest case from the tests section. Run <code>npm run check</code>.</p>
@@ -359,26 +372,29 @@ ls supabase/migrations/ | grep -oE '^[0-9]{14}' | sort -n | tail -1 # then +1</p
     <p class="kicker">Close-out · non-negotiable, in scope</p>
     <h2>Documentation coherence gate</h2>
     <ul>
-      <li><b>ADR-096</b> — draft above; on sign-off, write <code>doc/adr/096-no-bracket-stubs-before-results.md</code>, generate HTML via <code>python scripts/render_adrs.py</code>, add the spec Appendix C row.</li>
-      <li><b>Operator runbook</b> (<code>doc/handbook/operations/operator-runbooks.html</code>) and the <b>workflow catalog</b> (<code>doc/handbook/reference/workflow-catalog.html</code>): document B3's route — <code>populate-urls</code> and <code>scrape-tournament</code> act on brackets that already exist; an EVF event's first ingest goes through <code>ingest-event.yml</code> or <code>evf_sync --mode results</code>.</li>
-      <li><b>Spec Appendix D</b>: add this file's <code>plan(N)</code> to the documented <code>pgTAP total</code>, plus the per-suite Count row. <b>Read the current total out of the spec at that moment</b> — it moved 952 → 1002 → 1019 in two days, so any number quoted in this plan is stale by construction. <code>bash scripts/check-coherence.sh</code> prints the arithmetic and is a hard CI fail (Gate 3).</li>
-      <li><b>Handbook</b>: the EVF calendar subsystem page, updated in present tense, <code>last-verified</code> bumped.</li>
-      <li><code>python scripts/check_docs.py --changed-from main</code> and <code>bash scripts/check-coherence.sh</code>, both passing.</li>
-      <li><code>./scripts/refresh-graph.sh</code> before the commit.</li>
+      <li><b>ADR-096</b> — draft above; on sign-off, write <code>doc/adr/096-no-bracket-stubs-before-results.md</code>, generate HTML via <code>python scripts/render_adrs.py</code>, add the spec Appendix C row. <span class="chip fill">done</span></li>
+      <li><b>Operator runbook</b> (<code>doc/handbook/operations/operator-runbooks.html</code>): document B3's route — <code>populate-urls</code> and <code>scrape-tournament</code> act on brackets that already exist; an EVF event's first ingest goes through <code>ingest-event.yml</code> or <code>evf_sync --mode results</code>. <span class="chip fill">done</span> — added to the existing "Synchronize EVF" runbook's step list.</li>
+      <li><b>Workflow catalog</b> (<code>doc/handbook/reference/workflow-catalog.html</code>) — <span class="chip plain">deliberately not touched</span>: that page's own stated scope is the exact workflow inventory (triggers/inputs/schedules/entrypoints), not operator procedure or decision points, which the runbook above already owns per that division of labor. Grepped for stub/weapon-pattern content — zero matches, nothing there was stale.</li>
+      <li><b>Spec Appendix D</b>: add this file's <code>plan(N)</code> to the documented <code>pgTAP total</code>, plus the per-suite Count row. <span class="chip fill">done</span> — total moved 1019 → 1026 (7 new assertions: 79.1, 79.2, 79.3a, 79.3b, 79.4, 79.5, 79.6).</li>
+      <li><b>Handbook</b> — <span class="chip plain">no dedicated EVF calendar subsystem page exists</span>; the owning page is <code>doc/handbook/subsystems/events-and-registration.html</code>, whose present-tense "Current flow" already said <em>"Admin creates/initializes a season and future events without manufacturing tournament children"</em> and <em>"Ingestion creates/fetches tournament slots when actual results require them"</em> — written as the intended design back in an earlier commit, months before this bug was found. This fix makes the implementation match that page for the first time; no edit was needed there. Two pages that <em>were</em> stale got fixed instead: <code>doc/handbook/reference/test-and-traceability.html</code> (hardcoded pgTAP baseline count) and the operator runbook above.</li>
+      <li><code>python scripts/check_docs.py --changed-from main</code> and <code>bash scripts/check-coherence.sh</code>, both passing. <span class="chip fill">done</span></li>
+      <li><code>./scripts/refresh-graph.sh</code> before the commit. <span class="chip fill">done</span> — 10140 → 10171 nodes, no shrink.</li>
     </ul>
 
     <div class="success">
-      <strong>☐ Documentation coherence gate complete</strong>
+      <strong>☑ Documentation coherence gate complete</strong>
       <pre class="binary">Impact: architecture, operations
 Canonical docs affected: doc/handbook/operations/operator-runbooks.html,
-  doc/handbook/reference/workflow-catalog.html,
-  [EVF calendar subsystem page — name via documentation map at implementation time]
-ADR impact: new (ADR-096, amends ADR-028 & ADR-046, relates to ADR-091 & ADR-081)
+  doc/handbook/reference/test-and-traceability.html
+  (doc/handbook/subsystems/events-and-registration.html verified already correct,
+  no edit needed; doc/handbook/reference/workflow-catalog.html out of scope by its
+  own stated division of labor with the runbook page)
+ADR impact: new (ADR-096, amends ADR-028 & ADR-046, relates to ADR-091, ADR-081 & ADR-083)
 Operational impact: populate-urls.yml / scrape-tournament.yml usage note for EVF events
-Source-map / last-verified updated: yes
-Validation: python scripts/check_docs.py --changed-from main [run at implementation time]
+Source-map / last-verified updated: yes (both pages bumped to 2026-09-13)
+Validation: check-spec-sync.sh and check-coherence.sh both pass, zero errors
 Superseded prose archived rather than appended: not applicable — no prose superseded</pre>
-      <p style="margin-bottom:0">The box is binary: it cannot be checked until every field is resolved and the validator passes.</p>
+      <p style="margin-bottom:0">Complete as of 2026-09-13.</p>
     </div>
   </section>
 
@@ -391,24 +407,24 @@ Superseded prose archived rather than appended: not applicable — no prose supe
     </div>
 
     <ol class="steps">
-      <li><code>scripts/preflight.sh</code> exits 0.</li>
-      <li>On LOCAL, replay the failing payload: Athens at 2027-03-27 shifting <code>PEW15es → PEW13es</code> with the duplicate children seeded, and assert the ingest lives.</li>
-      <li>Also on LOCAL: ingest a season snapshot into an empty season and assert every event lands childless; then ingest one event's results and assert its brackets appear with canonical codes.</li>
-      <li>Apply to CERT via CI, then with <code>scripts/cloud-sql.sh cert</code>: zero duplicate bracket groups, zero stub rows, 18 EVF events intact with their <code>arr_weapons</code>, and no scored tournament touched (788 canonical rows unchanged).</li>
-      <li>Re-run <b>EVF Sync</b>; expect completion with <code>created=0, slot_reused=18</code> and Athens at <code>PEW13es-2026-2027</code>. This change touches SQL and frontend, so the docs-only release skip (<code>scripts/release-gate.sh</code>) does <b>not</b> apply — the full build and deploy runs.</li>
-      <li>Confirm the CERT calendar page renders all 18 events with correct weapons and international styling, <code>DMEW-2025-2026</code> included.</li>
-      <li>Apply to PROD, verify the 82 stubs are gone and the public calendar is unchanged.</li>
+      <li><code>scripts/preflight.sh</code> exits 0. <span class="chip fill">✓ done</span> — ruff, ruff format, basedpyright, ADR/docs render checks, pytest, vitest, <code>check-coherence.sh</code>, pgTAP (<code>supabase test db</code>, 1026/1026), <code>check-spec-sync.sh</code>, anon-allowlist sync and <code>svelte-check</code> all passed before merge.</li>
+      <li>On LOCAL, replay the failing payload. <span class="chip fill">✓ covered</span> — not the literal Athens scenario, but 79.3a/79.3b exercise the identical pattern (two consecutive renumbering ingests) and 79.3b reproduced the exact <code>23505</code> before the fix and passed clean after it.</li>
+      <li>Also on LOCAL: season-snapshot-into-empty-season scenario. <span class="chip fill">✓ covered</span> — by 79.1 (new event → 0 tournaments) and 79.2 (already-real-brackets event → untouched); not run as one literal end-to-end snapshot import, but both halves are pinned.</li>
+      <li>Apply to CERT via CI, then verify. <span class="chip fill">✓ done</span> — merged <code>claude/no-bracket-stubs</code> → <code>integration/main</code> → pushed <code>main</code>; CI green; <code>deploy-cert</code> applied the migration and passed its security-posture check. Direct query post-deploy: <b>zero</b> duplicate bracket groups, <b>zero</b> stub rows, all 31 non-terminal events (18 EVF + 13 domestic) at 0 children, <code>arr_weapons</code> intact.</li>
+      <li>Re-run <b>EVF Sync</b>. <span class="chip fill">✓ done</span> — manually dispatched (<code>workflow_dispatch</code>, <code>mode=calendar</code>) rather than waiting for the next 06:00 UTC schedule. Completed with <code>0 new, 18 already in CERT</code> and Athens listed correctly at 2027-03-27; no <code>23505</code>, no error of any kind. The full release pipeline ran (build, deploy-cert, deploy-pages, deploy-prod) since this change touches SQL and frontend, so the docs-only skip did not apply, exactly as predicted.</li>
+      <li>Confirm the CERT calendar page renders correctly. <span class="chip warn">not done</span> — not re-verified visually in a browser; the underlying data (<code>arr_weapons</code>, event codes, <code>DMEW</code> international flag) is confirmed correct at the database and sync-log level, which is what actually changed, but nobody loaded the page.</li>
+      <li>Apply to PROD, verify the stubs are gone. <span class="chip fill">✓ done</span> — <code>deploy-prod</code> applied the migration and passed security posture; direct query confirms all 31 non-terminal events on PROD also at 0 children, identical to CERT. Public calendar was not separately screenshotted.</li>
     </ol>
 
     <div class="note good">
-      <p class="lede"><span class="tick">✓</span> Definition of done</p>
+      <p class="lede"><span class="tick">✓</span> Definition of done — achieved 2026-09-13</p>
       <ul style="margin-bottom:0">
-        <li>EVF Sync completes green on schedule; Athens sits at <code>PEW13es-2026-2027</code>.</li>
-        <li>No <code>CREATED</code>/<code>PLANNED</code> event in either environment holds a child tournament.</li>
-        <li>Brackets appear only from results ingestion, with canonical codes.</li>
-        <li><code>idx_tournament_bracket</code> in place (unless struck).</li>
-        <li>ADR-096 landed and registered, runbook and workflow catalog updated, Appendix D total correct, graph refreshed.</li>
-        <li><code>scripts/preflight.sh</code> exits 0.</li>
+        <li><span class="tick">✓</span> EVF Sync completes green; Athens sits at <code>PEW13es-2026-2027</code>. Confirmed by manual dispatch rather than waiting for the schedule.</li>
+        <li><span class="tick">✓</span> No <code>CREATED</code>/<code>PLANNED</code> event in either environment holds a child tournament — verified by direct query, 31/31 on each side.</li>
+        <li><span class="tick">✓</span> Brackets appear only from results ingestion, with canonical codes (unchanged by this fix; the migration doesn't touch that path).</li>
+        <li><span class="strike">idx_tournament_bracket in place</span> — <b>struck</b>, not added; see the migration section for why.</li>
+        <li><span class="tick">✓</span> ADR-096 landed and registered, runbook updated (workflow catalog deliberately out of scope, see docs section), Appendix D total correct (1026), graph refreshed.</li>
+        <li><span class="tick">✓</span> <code>scripts/preflight.sh</code> exits 0.</li>
       </ul>
     </div>
   </section>
@@ -416,7 +432,8 @@ Superseded prose archived rather than appended: not applicable — no prose supe
   <section id="appendix">
     <p class="kicker">Appendix</p>
     <h2>The 68 duplicate pairs on CERT</h2>
-    <p>Read 2026-09-12, re-verified twice on 2026-09-13 after each concurrent landing: CERT still 68 duplicate bracket groups and 154 stub rows, PROD still 0 and 82, and <b>zero</b> scored brackets in <code>SPWS-2026-2027</code> on either side. Nothing here has moved.</p>
+    <p>Read 2026-09-12, re-verified twice on 2026-09-13 after each concurrent landing, before implementation: CERT then held 68 duplicate bracket groups and 154 stub rows, PROD 0 duplicate groups and 82 stub rows, and <b>zero</b> scored brackets in <code>SPWS-2026-2027</code> on either side.</p>
+    <div class="note good"><p class="lede" style="margin-bottom:0"><span class="tick">✓</span> All 136 CERT rows below, plus the other 18 CERT stub rows and all 82 PROD stub rows, are gone as of the 2026-09-13 deploy — confirmed by direct post-deploy query on both environments (0 duplicate bracket groups, 0 non-terminal event with any child, on CERT and PROD alike). This table is a historical record of what the prune removed, not current state.</p></div>
     <p>Every pair is one bracket holding two rows. "Kept" is the original stub, since rewritten into the <code>-V2-</code> dialect by the reflow rebuild; "extra" is the row the delegate re-inserted on 2026-08-28 16:43 because its string guard could no longer see the original. All 136 rows are <code>PLANNED</code>, <code>int_participant_count = 0</code>, with no <code>tbl_result</code> and no <code>tbl_tournament_ingest_history</code>. Season <code>SPWS-2026-2027</code>, age category V2 throughout. The prune deletes all 136 of these along with the other 18 stub rows on CERT.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Event</th><th>Bracket</th><th>Kept (id, code, born)</th><th>Extra (id, code, born)</th></tr></thead>
