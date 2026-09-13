@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="f2f0d5a9d4eee0189c9e05486b2529b8e12e19c5b576147853004c9afcbb86e3">
+<meta name="adr-source-sha256" content="2048e5f4fdaac1ee2fb597a5bbc65140c3c8f72db30c2c28a8ea6b112a05009f">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">179 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">186 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
@@ -170,6 +170,12 @@ No other file in the classifier's scope changes shape or risk: both
 additions are exact filenames, not prefixes, so they cannot accidentally
 swallow a real deployable path the way a broader <code>^release-</code> or <code>.json$</code>
 pattern could.</p>
+<p>The commit that landed this fix itself touched <code>scripts/release-gate.sh</code> and
+a Python test — genuinely deployable — so it correctly triggered a full
+deploy and proved nothing about the skip path on its own via live CI. This
+paragraph is itself that live proof: a follow-up, docs-only-by-construction
+commit, pushed to observe the gate's actual verdict on <code>main</code> with no other
+Release run's tracking commit interleaved.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ul>
@@ -182,5 +188,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>f2f0d5a9d4eee0189c9e05486b2529b8e12e19c5b576147853004c9afcbb86e3</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>2048e5f4fdaac1ee2fb597a5bbc65140c3c8f72db30c2c28a8ea6b112a05009f</code></footer>
 </div></body></html>
