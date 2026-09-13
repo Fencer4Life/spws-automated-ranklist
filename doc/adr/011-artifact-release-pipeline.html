@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="011-artifact-release-pipeline.md">
-<meta name="adr-source-sha256" content="179629a862f22773bb426a43cf946739f95b191e911a7fb79a8064e1ad66f3bf">
+<meta name="adr-source-sha256" content="d66a2fb70b1ccb8103c75726835ce1fbc4f203146f68edba7c25bd2c8397fbf7">
 <title>ADR-011 · Three-Tier Artifact Release Pipeline with Schema Fingerprinting</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 011</p><h1>Three-Tier Artifact Release Pipeline with Schema Fingerprinting</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-22 (M7)</dd></div><div><dt>Source</dt><dd class=""><code>011-artifact-release-pipeline.md</code></dd></div><div><dt>Length</dt><dd class="">37 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-22 (M7) <strong>Amended by:</strong> <a href="094-release-docs-only-skip.html">ADR-094</a> (2026-09-13) — <code>release.yml</code>'s trigger below is no longer &quot;CI success&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs, skipping the whole chain for a documentation-only CI run.</dd></div><div><dt>Source</dt><dd class=""><code>011-artifact-release-pipeline.md</code></dd></div><div><dt>Length</dt><dd class="">38 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
-<strong>Date:</strong> 2025-03-22 (M7)</p>
+<strong>Date:</strong> 2025-03-22 (M7)
+<strong>Amended by:</strong> <a href="094-release-docs-only-skip.html">ADR-094</a> (2026-09-13) — <code>release.yml</code>'s trigger below is no longer &quot;CI success&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs, skipping the whole chain for a documentation-only CI run.</p>
 </div>
 </header>
 <div class="layout">
@@ -54,5 +55,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="010-age-category-by-birth-year.html">← ADR-010: Age Category by Birth Year (Cross-Category Carryover)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="012-sql-pre-deploy-snapshots.html">→ ADR-012: SQL-Level Pre-Deploy Snapshots for PROD</a></nav>
-<footer class="foot">Generated from <code>011-artifact-release-pipeline.md</code> · source SHA-256 <code>179629a862f22773bb426a43cf946739f95b191e911a7fb79a8064e1ad66f3bf</code></footer>
+<footer class="foot">Generated from <code>011-artifact-release-pipeline.md</code> · source SHA-256 <code>d66a2fb70b1ccb8103c75726835ce1fbc4f203146f68edba7c25bd2c8397fbf7</code></footer>
 </div></body></html>

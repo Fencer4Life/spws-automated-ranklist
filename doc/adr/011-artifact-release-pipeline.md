@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2025-03-22 (M7)
+**Amended by:** [ADR-094](094-release-docs-only-skip.md) (2026-09-13) — `release.yml`'s trigger below is no longer "CI success" alone; a `gate` job now decides whether `build` runs, skipping the whole chain for a documentation-only CI run.
 
 ## Context
 
