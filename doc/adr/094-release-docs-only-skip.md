@@ -170,6 +170,13 @@ additions are exact filenames, not prefixes, so they cannot accidentally
 swallow a real deployable path the way a broader `^release-` or `.json$`
 pattern could.
 
+The commit that landed this fix itself touched `scripts/release-gate.sh` and
+a Python test — genuinely deployable — so it correctly triggered a full
+deploy and proved nothing about the skip path on its own via live CI. This
+paragraph is itself that live proof: a follow-up, docs-only-by-construction
+commit, pushed to observe the gate's actual verdict on `main` with no other
+Release run's tracking commit interleaved.
+
 ## Open items
 
 - Whether the same gate should also suppress `evf-sync.yml`/`pzsz-sync.yml`'s
