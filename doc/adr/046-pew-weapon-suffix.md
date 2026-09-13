@@ -4,6 +4,7 @@
 **Date:** 2026-04-27 (amended 2026-06-25 and 2026-08-07)
 **Relates to:** ADR-043 (EVF event allocator — amended by this ADR), ADR-044 (Phase 3 wizard — adapts skeleton iteration)
 **Amended by:** [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (weapon evidence ladder; an unestablished weapon set holds the entry back instead of failing the calendar write; a later cancellation may renumber when future, unregistered and result-less).
+**Amended by:** [ADR-096](096-no-bracket-stubs-before-results.md) (the canonical code formula this ADR establishes gains one shared implementation, `fn_rebuild_tournament_codes`, used by both the admin rename path and the calendar reflow path, which had each carried an independent, drifting copy).
 
 ## Context
 

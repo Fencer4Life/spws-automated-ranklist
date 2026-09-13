@@ -68,8 +68,15 @@ export interface CalendarModel {
 
 const DAY_MS = 86_400_000
 
-/** Ported verbatim from CalendarView.svelte:231-233. */
-const INTL_PREFIXES = /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/
+/**
+ * Originally ported verbatim from CalendarView.svelte:231-233. DMEW added
+ * 2026-09-13 (ADR-096): a CREATED/PLANNED event no longer holds child
+ * tournaments, so vw_calendar.bool_has_international — computed from
+ * children — can no longer flag DMEW-2025-2026 while it awaits results. This
+ * fallback was already the only thing keeping a childless PEW/MEW/etc. event
+ * flagged; DMEW was the one family missing from it.
+ */
+const INTL_PREFIXES = /^(PEW|MEW|MSW|PSW|IMEW|IMSW|DMEW)/
 
 /**
  * Free-text country name → ISO-3166 alpha-2.

@@ -334,3 +334,14 @@ UPDATE tbl_event e
 -- dump then reinstates all 18 skeletons — reproduced on a real reset before this
 -- call was added. Same function, same predicate, so the two paths cannot drift.
 SELECT fn_prune_unclaimed_evf_skeletons();
+
+-- =============================================================================
+-- Calendar-created bracket stubs — same ordering trap, same fix (ADR-096)
+-- =============================================================================
+-- Migration 20260913000002 stops the calendar ingest predicting weapon x
+-- gender brackets and prunes the stubs already provisioned. Same reasoning as
+-- the skeleton prune immediately above: migrations run before this dump loads
+-- on a fresh bootstrap, so the migration's prune matches nothing and the dump
+-- then reinstates the stub rows. Same function, same predicate, so the two
+-- paths cannot drift.
+SELECT fn_prune_bracket_stubs();
