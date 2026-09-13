@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093.)
+**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -37,8 +37,9 @@ see ADR-079 §4) and deliver them to the organizer on demand.
 - One `<BaseCompetitionIndividuelle>` XML **per competition**: the mix-all pool per
   weapon + one per gender×category DE bracket (single or predicted-combined).
 - `<Tireur>` attributes: `Nom`, `Prenom`, `Sexe`, `Nation="POL"`, `ID`, `Classement`
-  (seed). `Club=""` and `Licence=""` (not collected). `Lateralite` omitted (FTL
-  accepts import without it).
+  (seed). `Club` is the declared value when given (amendment (f), 2026-09-13), else
+  `""` — the field was never collected before that date. `Licence=""` (not
+  collected). `Lateralite` omitted (FTL accepts import without it).
 - **Canonical name form:** `Nom` = surname in **UPPERCASE**, `Prenom` = given name in
   **Title case** (e.g. `Nom="KOWALSKI" Prenom="Jan (2)"`) — the same casing used in the
   entry list and the ranklist; normalised on export (fixes legacy all-caps given names).
@@ -300,9 +301,25 @@ registered, which is precisely the person the organizer might need to tick in.
 
 ### (f) Club, and the public download page
 
-The club is harvested on scrape into `tbl_fencer.txt_club` (overwrite on non-null,
-storing `club1`), asked again at registration per event, and emitted only when given.
-PROD holds 0 fencers with a club today, so this starts empty by construction.
+**Built 2026-09-13, migration `20260913000001_registration_club.sql`** — narrower
+than this section originally predicted. The club is asked at registration, per
+event, and emitted only when given: `tbl_registration.txt_club`, populated by both
+`fn_create_registration` and `fn_update_registration`, trimmed to NULL when blank by
+the same trigger that trims the two name columns, and returned by
+`fn_ftl_export_entries` to the token-gated organizer export — never by
+`vw_registration_entry_list` or `fn_ftl_roster`, so the public roster still never
+sees it. See [ADR-078](078-gdpr-data-handling.md) §1 for the GDPR inventory entry
+and the `CONSENT_VERSION` `v1.0` → `v1.1` bump this required.
+
+**Not built, and out of scope for this amendment:** this section originally also
+predicted the club being "harvested on scrape into `tbl_fencer.txt_club`
+(overwrite on non-null, storing `club1`)" — a second, independent source that
+would pre-fill a returning fencer's club from FTL results. That scrape-harvest
+path was never wired up; PROD holds 0 fencers with a club on `tbl_fencer` as of
+2026-09-13, and `tbl_fencer.txt_club` remains a distinct column from
+`tbl_registration.txt_club`, never synchronised with it. A future session could
+revisit pre-filling from the scrape, but every 2026-09-13 registrant declares
+their club fresh.
 
 Delivery gains a public page on weteraniszermierki.pl, treated like `/znajdz-zawody/`
 and **not** a menu item (ADR-090), from which the organizer downloads the files
@@ -320,16 +337,20 @@ in the browser and its data comes from one new function, migration
 `20260912000004_ftl_export_entries.sql`:
 
 ```
-fn_ftl_export_entries(p_id_event INT)
+fn_ftl_export_entries(p_id_event INT, p_token UUID)
   RETURNS TABLE (txt_surname, txt_first_name, enum_gender,
-                 enum_age_category, enum_weapon, int_order)
+                 enum_age_category, enum_weapon, int_order, txt_club)
 ```
+
+(`txt_club` added 2026-09-13 by amendment (f) above; the original 2026-09-12 shape
+had six columns and no club.)
 
 One row per registration × declared weapon. It is `SECURITY DEFINER` because it has to
 be — `tbl_registration`'s RLS admits only `authenticated`, and that is correct, since
 the table carries the declared birth year and the `uuid_edit_token` that authorises an
 edit. What it publishes is the columns `vw_registration_entry_list` already serves
-anonymously, plus one integer.
+anonymously, plus one integer — plus, since 2026-09-13, the declared club, which the
+public view does **not** serve.
 
 **That integer is the design.** The obvious projection would return `id_fencer` and let
 the page call `fn_ranking_ppw` per sub-ranking to sort — 22 round trips at PPW1, and 22
@@ -426,10 +447,26 @@ the in-file `TitreLong` stays **Polish even in the English interface**: it is th
 Fencing Time displays, and `_detect_weapon_from_title` reads the weapon back out of it
 (`python/scrapers/ftl.py:248`), so its language is load-bearing in both directions.
 
-*Still pending from this amendment:* the club of (f).
+*The club of (f) was pending as of 2026-09-12; built 2026-09-13, migration
+`20260913000001_registration_club.sql`.* Nothing else from this amendment remains
+pending.
 
 ## References
 
 - ADR-078 (GDPR / organizer recipient), ADR-079 (registration/identity), ADR-024
   (combined-category splitting), ADR-056 (BY→V-cat), ADR-065 (FTL marker), ADR-066
   (min-participants/walkover), ADR-027/036 (seed export), ADR-030 (registration URL).
+
+## Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)
+
+§(h) cited the capability link as `/pliki-startowe/?k=<uuid>`. That slug was drafted but
+never published. The page that actually shipped on 2026-09-13 carries the slug
+`pliki-zasilajace-xml-ftl` instead (confirmed with the association after a spelling
+correction to the working title), at `https://weteraniszermierki.pl/pliki-zasilajace-xml-ftl/`
+— WordPress page id 13505, published over XML-RPC via the new `scripts/wp_publish_page.py`,
+not added to any WP menu, matching (f) and (h)'s "capability-link-only" intent unchanged.
+
+§(h)'s closing line — "the capability... gives us something to rotate when a link goes
+astray — one `UPDATE`" — understated the operation. **[ADR-095](095-ftl-export-token-lifecycle.md)**
+is now the canonical, detailed reference for finding the current link, minting a token for a
+new organizer, and rotating or revoking one; nothing here is superseded, only extended.

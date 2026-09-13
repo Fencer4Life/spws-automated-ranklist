@@ -331,7 +331,7 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
     expect(checkbox.classList.contains('reg-invalid')).toBe(true)
   })
 
-  it('ticking the checkbox clears the invalid flag, then accept writes with consentVersion v1.0', async () => {
+  it('ticking the checkbox clears the invalid flag, then accept writes with consentVersion v1.1', async () => {
     const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
     await toRodo(container, findByText)
     const acceptBtn = container.querySelector('button.reg-rodo-accept') as HTMLButtonElement
@@ -349,7 +349,8 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
         firstName: 'Jan',
         birthYear: 1970,
         fencerId: 42,
-        consentVersion: 'v1.0',
+        consentVersion: 'v1.1',
+        club: null,
       }),
     )
   })

@@ -49,7 +49,7 @@ class FtlSeedExporter:
             self._sb.table("tbl_registration")
             .select(
                 "id_registration, id_fencer, txt_surname, txt_first_name, "
-                "enum_gender, int_birth_year, arr_weapons, ts_created"
+                "enum_gender, int_birth_year, arr_weapons, ts_created, txt_club"
             )
             .eq("id_event", id_event)
             .order("ts_created")

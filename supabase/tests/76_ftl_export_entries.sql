@@ -41,7 +41,7 @@
 
 BEGIN;
 
-SELECT plan(29);
+SELECT plan(32);
 
 DO $setup$
 DECLARE
@@ -94,24 +94,24 @@ BEGIN
   -- unranked registrants, and a fixture that relied on insertion order would
   -- prove nothing about the ORDER BY.
   INSERT INTO tbl_registration (id_event, id_fencer, txt_surname, txt_first_name,
-                                enum_gender, int_birth_year, arr_weapons, ts_created)
+                                enum_gender, int_birth_year, arr_weapons, ts_created, txt_club)
   VALUES
     -- ranked, and entered LAST — so a result that merely preserved arrival
-    -- order would put him third.
+    -- order would put him third. Also the club fixture (76.4b/76.4c).
     (v_ev, v_f, 'PGTAP76RANK', 'Robert', 'M', 1965,
-     ARRAY['EPEE', 'FOIL']::enum_weapon_type[], '2019-10-03T00:00:00Z'),
-    -- unranked, entered second
+     ARRAY['EPEE', 'FOIL']::enum_weapon_type[], '2019-10-03T00:00:00Z', 'Klub Testowy 76'),
+    -- unranked, entered second, no declared club
     (v_ev, NULL, 'PGTAP76LATE', 'Bogdan', 'M', 1965,
-     ARRAY['EPEE']::enum_weapon_type[], '2019-10-02T00:00:00Z'),
+     ARRAY['EPEE']::enum_weapon_type[], '2019-10-02T00:00:00Z', NULL),
     -- unranked, entered first
     (v_ev, NULL, 'PGTAP76EARLY', 'Cezary', 'M', 1966,
-     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z'),
+     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL),
     -- 25 years old in the 2019/20 season — not a veteran, no sub-ranking
     (v_ev, NULL, 'PGTAP76YOUNG', 'Damian', 'M', 1995,
-     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z'),
+     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL),
     -- same weapon and category, different gender — a separate competition
     (v_ev, NULL, 'PGTAP76WOMAN', 'Ewa', 'F', 1965,
-     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z');
+     ARRAY['EPEE']::enum_weapon_type[], '2019-10-01T00:00:00Z', NULL);
 
   -- The picker's own fixtures. FTLX76EVT above is in the PAST (2019), which is
   -- exactly the case 76.23 needs; the picker itself needs events that have not
@@ -162,6 +162,27 @@ SELECT ok(
   AND pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) NOT LIKE '%uuid_edit_token%'
   AND pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) NOT LIKE '%email%',
   '76.4 the projection publishes no birth year, fencer id, registration id, edit token or e-mail hash');
+
+-- 76.4b/76.4c — the declared club (2026-09-13, ADR-080 amendment (f)) IS part
+-- of this projection, given or not.
+SELECT ok(
+  pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) LIKE '%txt_club%',
+  '76.4b the projection DOES publish txt_club — the organizer-only surface that widens for it');
+
+SELECT is(
+  (SELECT txt_club FROM fn_ftl_export_entries(
+     (SELECT id_event FROM tbl_event WHERE txt_code = 'FTLX76EVT'), '76000000-0000-4000-8000-000000000001'::UUID)
+   -- PGTAP76RANK declared two weapons (EPEE+FOIL), so scope to one row.
+   WHERE txt_surname = 'PGTAP76RANK' AND enum_weapon = 'EPEE'),
+  'Klub Testowy 76',
+  '76.4c a declared club is returned verbatim');
+
+SELECT is(
+  (SELECT txt_club FROM fn_ftl_export_entries(
+     (SELECT id_event FROM tbl_event WHERE txt_code = 'FTLX76EVT'), '76000000-0000-4000-8000-000000000001'::UUID)
+   WHERE txt_surname = 'PGTAP76LATE'),
+  NULL,
+  '76.4d a registration with no declared club returns NULL, not an empty string');
 
 SELECT ok(
   has_function_privilege('anon', 'fn_ftl_export_entries(integer,uuid)', 'EXECUTE'),

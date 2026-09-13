@@ -32,6 +32,7 @@ const entry = (
   enum_age_category: cat,
   enum_weapon: weapon,
   int_order: order,
+  txt_club: null,
 })
 
 const ROWS: ExportEntryRow[] = [

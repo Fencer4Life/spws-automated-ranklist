@@ -1,0 +1,222 @@
+<meta charset="utf-8">
+<title>PPW1 XML export — findings and the club decision</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62}
+  .wrap{max-width:52rem;margin:0 auto;padding:60px 30px 100px}
+  code{font-family:var(--mono);background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,44px);line-height:1.1;letter-spacing:-.015em;margin:0 0 20px;max-width:22ch}
+  .dek{font-size:22px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink)}
+  .rule{height:2px;background:var(--line);border:0;margin:44px 0}
+  section{margin-top:44px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:29px;line-height:1.16;margin:0 0 16px}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  strong{font-weight:700}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:18px;margin:0 0 8px}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .opt{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:18px 22px;margin:16px 0}
+  .opt.rec{border-color:var(--good);background:var(--good-soft)}
+  .opt h3{margin:0 0 8px;font-size:19px;font-weight:800}
+  .opt .tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;background:var(--good);color:#fff;margin-left:10px;vertical-align:middle}
+  .opt p{margin:0 0 8px}
+  .foot{margin-top:52px;padding-top:20px;border-top:2px solid var(--line);font-size:14px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+  .tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:16px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700;background:var(--surface-2)}
+  tr:last-child td{border-bottom:0}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Findings + decision needed · 13 September 2026 · PPW1 XML export</p>
+  <h1>The club field was never stored — and never reached the start files</h1>
+  <p class="dek">Two defects were reported. <b>One is not a defect</b>: the épée file is complete. <b>The other is worse than reported</b>: the club box on the registration form is wired to nothing at all, and the clubs your 43 PPW1 entrants typed in were discarded at the moment they pressed submit. They cannot be recovered.</p>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Report 1 · verified against PROD</p>
+    <h2>No fencers are missing from the XML</h2>
+    <p>Checked directly against PROD (event <code>PPW1-2026-2027</code>, <code>id_event = 85</code>), not against CERT:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Measure</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>Registrations for PPW1</td><td>43</td></tr>
+        <tr><td>Weapon-entries (a 2-weapon entry counts twice)</td><td>53</td></tr>
+        <tr><td>Rows returned by <code>fn_ftl_export_entries</code></td><td><strong>53</strong></td></tr>
+        <tr><td>Registrations dropped for a missing category or gender</td><td>0</td></tr>
+        <tr><td>Registrations with no declared weapon</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+    <p>The export loses nobody. The file you opened is the <em>épée</em> file, and épée has exactly 26 entries
+    — which is exactly how many <code>&lt;Tireur&gt;</code> records it holds. The remaining 27 entries are in
+    the other two weapons' files:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Weapon</th><th>Entries</th><th>File</th></tr></thead>
+      <tbody>
+        <tr><td>Épée</td><td>26</td><td><code>PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml</code></td></tr>
+        <tr><td>Foil</td><td>12</td><td><code>PPW1-2026-2027_FOIL_POOLS-MIXED_…</code></td></tr>
+        <tr><td>Sabre</td><td>15</td><td><code>PPW1-2026-2027_SABRE_POOLS-MIXED_…</code></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">If a specific person is missing, name them</p>
+      <p>The totals reconcile exactly, so there is no silent drop to fix. If you are looking at a particular
+      fencer who is on the entry list but not in a file, tell me who and I will trace that one registration —
+      that would be a different defect from the one reported, and worth finding.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Report 2 · confirmed, and larger than reported</p>
+    <h2>The club box is decorative</h2>
+    <p>In <code>RegistrationForm.svelte</code> the club input appears exactly three times, and one of those is
+    a privacy label:</p>
+    <ul>
+      <li>line 307 — <code>let club = $state('')</code> declares it;</li>
+      <li>line 95 — <code>&lt;input bind:value={club} …&gt;</code> binds it;</li>
+      <li><strong>nothing reads it.</strong> It is never passed to <code>createRegistration</code>, because
+      <code>fn_create_registration</code> has no club parameter, because <code>tbl_registration</code> has no
+      club column.</li>
+    </ul>
+    <p>So the value is typed, held in memory, and thrown away when the page closes. Downstream, every layer
+    then hardcodes the gap: <code>fn_ftl_export_entries</code> returns no club, and
+    <code>ftlSeedExport.ts</code> emits a literal <code>Club=""</code> on every <code>&lt;Tireur&gt;</code>
+    (line 323), as does its Python twin.</p>
+    <div class="note warn">
+      <p class="lede">The clubs for PPW1 are gone, and a fix will not bring them back</p>
+      <p>Nothing was written, so there is nothing to backfill. <code>tbl_fencer.txt_club</code> exists, but of
+      the 43 PPW1 registrants <strong>0</strong> have a club recorded there (36 are matched to a fencer row;
+      none of those rows carry a club). Repairing the pipeline today produces correct <em>future</em> files
+      and a still-empty PPW1 file.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Why this is a decision and not just a bug fix</p>
+    <h2>The form promises the fencer we do not store it</h2>
+    <p>This is the part that stops me from simply adding a column. The field's own label and the RODO notice
+    beneath the form both say so, in both languages:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Key</th><th>Polish</th><th>English</th></tr></thead>
+      <tbody>
+        <tr><td><code>reg_club_optional</code></td><td>Klub (opcjonalnie — <strong>nie zapisujemy</strong>)</td><td>Club (optional — <strong>not stored</strong>)</td></tr>
+        <tr><td><code>reg_rodo_basis_club</code></td><td>Klub — tylko do plików startowych</td><td>Club — only for the start files</td></tr>
+        <tr><td><code>reg_rodo_basis_club_law</code></td><td><strong>nie zapisujemy</strong></td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <p>The intent was clearly right: the club is for the start files and for nothing else. But the design is
+    self-contradictory as built. The start files are generated <em>days later</em>, by the organizer, on a
+    different page, from the database. A value that is never stored cannot be there when they press download.
+    "Not stored" and "appears in the start files" cannot both hold.</p>
+    <p>So storing the club is not a neutral bug fix — it reverses a promise currently displayed to every
+    fencer who registers, and ADR-078's minimisation rule is what put that promise there.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The choice</p>
+    <h2>Three ways to make the club reach Fencing Time</h2>
+
+    <div class="opt rec">
+      <h3>A — Store the club on the registration, and change the notice to match <span class="tag">Recommended</span></h3>
+      <p>Add <code>txt_club</code> to <code>tbl_registration</code>, thread it through
+      <code>fn_create_registration</code>, return it from <code>fn_ftl_export_entries</code>, and emit it in
+      both exporters. Change the two locale strings from "nie zapisujemy" to something truthful — the club is
+      kept for the event's start files and is not published on the public entry list.</p>
+      <p><strong>Why this one:</strong> it is the only option that actually delivers what the form already
+      promises the club is <em>for</em>. The public entry-list view stays unchanged, so the club is still not
+      published to four hundred fencers — only the token-gated organizer export sees it. That keeps ADR-078's
+      substance (don't publish it) while dropping a clause the system was never honouring anyway.</p>
+      <p><strong>Cost:</strong> one migration, RPC + view changes, both exporters and their byte-for-byte
+      tests, locale copy in two languages, an ADR-078 amendment. Does nothing for PPW1's existing 43.</p>
+    </div>
+
+    <div class="opt">
+      <h3>B — Keep the promise: remove the club field entirely</h3>
+      <p>Delete the input and its RODO row. Fencing Time gets <code>Club=""</code> forever, which is what it
+      gets today, and the form stops asking for something it discards.</p>
+      <p>Honest and cheap. But the organizer keeps typing clubs in by hand, and the reason the field was added
+      does not go away.</p>
+    </div>
+
+    <div class="opt">
+      <h3>C — Organizer supplies the clubs at download time</h3>
+      <p>Truly stores nothing: the export page lets the organizer paste or edit a club per fencer before
+      building the XML, held in the browser only.</p>
+      <p>Keeps the privacy promise exactly and fixes PPW1 immediately — but it is the most build, it puts
+      the typing back on the organizer that the form was meant to remove, and the work is lost on every
+      re-download.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">For PPW1, right now</p>
+    <h2>Whichever you pick, this event's clubs need collecting again</h2>
+    <p>A, B and C all leave the 43 existing registrations without a club, because the data never existed. If
+    the clubs matter for PPW1 specifically, they have to be gathered outside the system — and option C is the
+    only one of the three that gives the organizer somewhere to put them without a database write.</p>
+    <p>Tell me which option, and I will build it. Nothing has been changed yet.</p>
+  </section>
+
+  <p class="foot">PROD verified via scripts/cloud-sql.sh · id_event 85 · 43 registrations / 53 weapon-entries / 53 exported · 0 clubs stored</p>
+</div>

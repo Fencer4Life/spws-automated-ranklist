@@ -245,7 +245,8 @@ RETURNING uuid_token, txt_label, ts_created;</pre>
         <thead><tr><th>Item</th><th>Where it stands</th></tr></thead>
         <tbody>
           <tr><td>Club harvesting on scrape into <code>tbl_fencer.txt_club</code></td><td><span class="chip warn">open</span> ADR-080 amendment (f). FR-136 records it as pending.</td></tr>
-          <tr><td>Standalone PL/EN manual + WordPress publish</td><td><span class="chip warn">open</span> Plan step 10. Until that page exists the surface is <code>register.html?view=export&amp;k=…</code>.</td></tr>
+          <tr><td>WordPress publish</td><td><span class="chip never">done, 13 Sep</span> Live at <code>weteraniszermierki.pl/pliki-zasilajace-xml-ftl/</code> (slug confirmed with the user, corrects two spelling slips from the plan's draft title), mounting <code>&lt;spws-ftl-export&gt;</code> per ADR-080 (f). Not a menu item. See <code>doc/plans/ftl-token-scoping-question-2026-09-13.html</code>'s "Superseded" section.</td></tr>
+          <tr><td>Standalone downloadable PL/EN manual files</td><td><span class="chip plain">not done, by choice</span> Plan item 9's separate files were skipped — the same 8-step instructions already exist as locale strings and render inline on every surface (register.html, the new WP page, and the archive), so a second authored copy would just fork the content. Revisit only if that's not enough.</td></tr>
           <tr><td>Reconciliation report</td><td><span class="chip warn">open</span> Plan step 4.</td></tr>
           <tr><td>Per-organizer token scoping</td><td><span class="chip plain">shaped, not built</span> The table has a label; the functions ignore it.</td></tr>
           <tr><td>Print stylesheet for the instruction</td><td><span class="chip plain">raised, undecided</span></td></tr>

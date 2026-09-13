@@ -1,6 +1,6 @@
 # ADR-078: GDPR Data Handling & Data-Subject Rights
 
-**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. **Amended 2026-08-28:** §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion.
+**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. **Amended 2026-08-28:** §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. **Amended 2026-09-13:** §1's club row corrected again — the club is now genuinely stored (`tbl_registration.txt_club`), closing [ADR-079](079-event-self-registration-identity.md) open item 2; `CONSENT_VERSION` bumped to `v1.1` and the RODO text corrected to match.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080
 
@@ -59,15 +59,26 @@ amendment of the same date a non-exact match registers *without* an email step. 
 deleted, because the lawful-basis analysis is sound and will apply unchanged when
 Phases 4/5 ship — the entries are provisioned, not active.
 
-**Club — corrected.** The row read "Generate FTL seed files only … Discarded after
-seed generation", implying the value reaches the seed. It does not: the form field is
-never transmitted, there is no `txt_club` column, and `ftl_seed_export.py` writes
-`"Club": ""` unconditionally. The value is discarded in the browser. The current
-consent text is accurate on this point — *"Klub — tylko do plików startowych · nie
-zapisujemy"* — but the inventory was not. Storing it is
-[ADR-079](079-event-self-registration-identity.md) open item 2, and would require a
-`CONSENT_VERSION` bump rather than a silent schema addition; that decision is not taken
-here.
+**Club — corrected, then corrected again.** The 2026-08-17 amendment above found the
+row wrong in one direction: it read "Generate FTL seed files only … Discarded after
+seed generation", implying the value reached the seed, when in fact the form field
+was never transmitted at all. As of 2026-09-13 the row is wrong in the *other*
+direction: the club is now genuinely stored. `tbl_registration.txt_club` (migration
+`20260913000001`) is populated by both `fn_create_registration` and
+`fn_update_registration`, trimmed to NULL when blank by the same trigger that trims
+the two name columns, and read by `fn_ftl_export_entries` — the token-gated organizer
+export, not the public entry list. `vw_registration_entry_list` and `fn_ftl_roster`
+are unchanged, so the club still never reaches the four-hundred-fencer public roster;
+it reaches only whichever organizer holds a live export token for that event. This
+closes [ADR-079](079-event-self-registration-identity.md) open item 2. The RODO text
+— *"Klub — tylko do plików startowych"* — was already correct about *why* the club is
+asked for; only its law-basis line changed, from "nie zapisujemy" to "umowa · art.
+6(1)(b)" (Contract), matching the weapon/category row's basis: entering a competition.
+Because this reverses what the fencer was told about storage, not merely what the
+system did internally, it is a genuine consent-text change and `CONSENT_VERSION`
+moved from `v1.0` to `v1.1` rather than being edited silently underneath an unchanged
+version stamp. See [ADR-080](080-clean-roster-ftl-seeding.md) amendment (f) for the
+full technical detail (schema, RPCs, projection, tests).
 
 ### What did not change
 
@@ -124,14 +135,14 @@ below.
 
 ### 1. Personal-data inventory
 
-| Data element | Purpose | Lawful basis (Art. 6) | Storage | Retention | Status (2026-08-17) |
+| Data element | Purpose | Lawful basis (Art. 6) | Storage | Retention | Status (2026-09-13) |
 |---|---|---|---|---|---|
 | Surname, first name, gender, birth year | Ranking + age-category verification | Legitimate interest 6(1)(f) | `tbl_fencer` (durable), `tbl_registration` (ephemeral) | Ranking record durable; registration purged post-ingest | **Collected** |
 | Weapon + category selections | Register the fencer for the event | Contract 6(1)(b) | `tbl_registration` | Purged after results ingested + reconciled | **Collected** |
 | Email (only on non-exact match) | One-time verification (friction/accountability) | Legitimate interest 6(1)(f) | GoTrue auth (**not** `tbl_fencer`) | Transient; not persisted in domain tables | **Not collected** — Phases 4/5 unbuilt, and since 2026-08-17 a non-exact match registers without email (ADR-079 amendment a) |
 | Salted email **hash** + request timestamps | Abuse defence (repeat erase/register) | Legal claims 17(3)(e) | `tbl_registration` / abuse log | Minimal, bounded | **Not collected** — `txt_email_hash` exists and stays NULL |
 | Edit handle (random UUID) | Authorise a fencer to correct their own declaration (Art. 16) | Contract 6(1)(b) | `tbl_registration.uuid_edit_token` | Purged with the registration | **Not personal data** — random, unlinked to any person, never returned by a public projection |
-| Club (free text) | Intended for FTL seed files | — (transient) | **Never stored** | n/a | **Collected and immediately discarded** — the form field is never sent to the server, there is no `txt_club` column, and `ftl_seed_export.py` writes `"Club": ""`. Storing it is ADR-079 open item 2 and would require a consent-text change |
+| Club (free text), optional | Organizer's FTL start files only | Contract 6(1)(b) | `tbl_registration.txt_club` (ephemeral) | Purged with the registration | **Collected** (2026-09-13) — read only by the token-gated `fn_ftl_export_entries`; `vw_registration_entry_list` and `fn_ftl_roster` are unchanged and never expose it. Closes ADR-079 open item 2; see [ADR-080](080-clean-roster-ftl-seeding.md) amendment (f) |
 
 Birth **date** is not collected (year-only suffices for the age category); full
 DOB is an optional field used *only* to disambiguate a same-name-same-year
