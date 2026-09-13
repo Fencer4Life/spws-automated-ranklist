@@ -16,7 +16,23 @@ export function setLocale(l: Locale): void {
 }
 
 export function t(key: string, vars?: Record<string, string | number>): string {
-  let str = locales[current][key] ?? key
+  return tIn(current, key, vars)
+}
+
+/**
+ * The same lookup, in a language the viewer is not currently reading.
+ *
+ * The FTL export archive carries its instructions in BOTH languages whatever
+ * the page is set to, because the person who downloads it is often not the
+ * person who reads it at the venue. Without this, rendering the Polish copy
+ * would mean switching the whole UI and switching it back.
+ */
+export function tIn(
+  locale: Locale,
+  key: string,
+  vars?: Record<string, string | number>,
+): string {
+  let str = locales[locale][key] ?? key
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       str = str.replace(`{${k}}`, String(v))

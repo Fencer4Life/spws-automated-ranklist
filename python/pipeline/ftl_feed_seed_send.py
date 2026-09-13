@@ -164,8 +164,7 @@ def send_seed_to_organizer(
     files = exporter.build_bundle(
         id_event=meta["id_event"],
         weapons=meta["weapons"],
-        season_code=meta["season_code"],
-        event_code_stem=meta["event_code_stem"],
+        event_code=meta["txt_code"],
         season_end_year=meta["season_end_year"],
         season=meta["id_season"],
     )

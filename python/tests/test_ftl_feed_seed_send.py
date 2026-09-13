@@ -19,7 +19,7 @@ from python.pipeline.ftl_feed_seed_send import (
     send_via_gmail_smtp,
     sweep_deadlines,
 )
-from python.pipeline.ftl_seed_export import format_prenom_with_marker
+from python.pipeline.ftl_seed_export import format_nom_with_marker
 
 
 def _db() -> MagicMock:
@@ -286,6 +286,12 @@ def test_sweep_skips_empty_bundle_and_continues(
 
 
 def test_generated_marker_roundtrips_to_canonical_scraped_name():
-    """FTLDEL-PY-07: exporter and matcher agree across their graph boundary."""
-    prenom = format_prenom_with_marker("Martyna", "1")
-    assert canonicalize_scraped_name(f"SAMECKA-NACZYŃSKA {prenom}") == ("SAMECKA-NACZYŃSKA Martyna")
+    """FTLDEL-PY-07: exporter and matcher agree across their graph boundary.
+
+    Built from the marker's real placement (ADR-080 §1 amended 2026-09-12):
+    Fencing Time renders "Nom Prenom", so the string the scraper actually meets
+    is "SAMECKA-NACZYŃSKA (1) Martyna". The previous form put the digit last,
+    where split_name_marker does not match it at all.
+    """
+    nom = format_nom_with_marker("SAMECKA-NACZYŃSKA", "1")
+    assert canonicalize_scraped_name(f"{nom} Martyna") == ("SAMECKA-NACZYŃSKA Martyna")

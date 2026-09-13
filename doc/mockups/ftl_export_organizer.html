@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup · FTL export dla organizatora</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#1a1a2e;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:28px 16px}
+.wrap{max-width:900px;margin:0 auto}
+.mocknote{max-width:900px;margin:0 auto 20px;padding:10px 14px;border:1px dashed #6b7b95;border-radius:8px;color:#9fb0c9;font-size:.85rem;line-height:1.5}
+.mocknote b{color:#f0b967}
+.ftl{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:22px}
+.ftl-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.ftl h2{margin:0 0 4px;font-size:1.25rem;font-weight:600;color:#fff}
+.lang{display:inline-flex;border:1px solid #1a4a8a;border-radius:6px;overflow:hidden;flex:none}
+.lang button{padding:5px 10px;border:0;background:#0d1b2a;font-size:17px;line-height:1;cursor:pointer;color:#7fd8ff}
+.lang button+button{border-left:1px solid #1a4a8a}
+.lang button.on{background:#1a4a8a}
+.picklead{margin:16px 0 8px;color:#7fbadc;font-size:.85rem}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.card{flex:1 1 230px;text-align:left;background:#0d1b2a;border:1px solid #1a3a63;border-radius:10px;padding:11px 13px;cursor:pointer;font-family:inherit;color:#c3cede}
+.card:hover{border-color:#1a4a8a}
+.card.on{border-color:#00d4ff;background:#102a44;box-shadow:0 0 0 1px #00d4ff inset}
+.card .cd{font-family:ui-monospace,Menlo,monospace;font-size:.76rem;color:#8894a8}
+.card .cn{display:block;color:#fff;font-weight:600;font-size:.92rem;margin:3px 0 4px;line-height:1.3}
+.card .cm{font-size:.8rem;color:#7fbadc}
+.card.zero .cm{color:#8894a8}
+.card.zero{opacity:.72}
+.ftl-event{margin:2px 0 16px;color:#7fbadc;font-size:1.02rem}
+.ftl-event .loc{color:#fff;font-weight:600;letter-spacing:.04em}
+.ftl-event .code{font-family:ui-monospace,Menlo,monospace;font-size:.82em;color:#8894a8;margin-left:8px}
+.ftl-intro{margin:0 0 16px;line-height:1.55;color:#c3cede}
+.actions{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.all{background:#0d1b2a;border:1px solid #1a4a8a;color:#7fd8ff;border-radius:8px;padding:10px 18px;font-size:.95rem;font-weight:600;cursor:pointer}
+.fc{color:#8894a8;font-size:.9rem}
+.tw{overflow-x:auto}
+.acc{border:1px solid #1a3a63;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.acc-h{width:100%;display:flex;align-items:center;gap:12px;background:#0d1b2a;border:0;padding:12px 14px;cursor:pointer;text-align:left;font-family:inherit;color:#e0e0e0}
+.acc-h:hover{background:#102a44}
+.acc-h .chev{color:#7fd8ff;font-size:.8rem;width:12px;flex:none;transition:transform .15s}
+.acc.open .acc-h .chev{transform:rotate(90deg)}
+.acc-h .w{font-weight:700;letter-spacing:.05em;color:#fff;font-size:.95rem;flex:none;min-width:74px}
+.acc-h .sum{color:#7fbadc;font-size:.85rem}
+.acc-h .nf{margin-left:auto;color:#8894a8;font-size:.82rem;white-space:nowrap;flex:none}
+.acc-b{display:none;border-top:1px solid #1a3a63}
+.acc.open .acc-b{display:block}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #16273f;vertical-align:top}
+th{font-weight:600;color:#7fbadc;border-bottom:1px solid #1a4a8a;white-space:nowrap}
+td.n{text-align:right}
+td code{font-family:ui-monospace,Menlo,monospace;font-size:.82rem;color:#e0e0e0;display:block;word-break:break-all}
+.it{display:block;color:#8894a8;font-size:.82rem;margin-top:3px}
+.one{background:transparent;border:1px solid #1a4a8a;color:#7fd8ff;border-radius:6px;padding:5px 12px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.warn{color:#f0b967}
+.howto{margin-top:26px;border-top:1px solid #1a4a8a;padding-top:18px}
+.howto h3{margin:0 0 4px;font-size:1.08rem;color:#fff;font-weight:600}
+.lead{margin:0 0 16px;color:#8894a8;font-size:.86rem;line-height:1.5}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:0 0 16px 44px;margin-bottom:14px;border-bottom:1px solid #16273f}
+ol.steps li:last-child{border-bottom:0}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:29px;height:29px;border-radius:50%;background:#0d1b2a;border:1px solid #1a4a8a;color:#7fd8ff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+ol.steps h4{margin:4px 0 5px;font-size:.96rem;color:#fff;font-weight:600}
+ol.steps p{margin:0;line-height:1.6;font-size:.9rem;color:#c3cede}
+ol.steps code{background:#0d1b2a;border:1px solid #1a3a63;border-radius:4px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:.85em;color:#7fd8ff;white-space:nowrap}
+.ex{font-family:ui-monospace,Menlo,monospace;background:#0d1b2a;border:1px solid #1a3a63;border-radius:4px;padding:1px 6px;color:#9fe08c}
+.pending{margin-top:8px;font-size:.82rem;color:#f0b967;border-left:2px solid #f0b967;padding-left:9px}
+.dec{max-width:900px;margin:26px auto 0;background:#11182b;border:1px solid #2a3category;border-radius:12px;padding:20px}
+.dec{border-color:#2a3550}
+.dec h3{margin:0 0 6px;color:#fff;font-size:1.05rem}
+.dec p.sub{margin:0 0 16px;color:#8894a8;font-size:.86rem;line-height:1.5}
+.q{border-top:1px solid #22304d;padding-top:14px;margin-top:14px}
+.q:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.q h4{margin:0 0 6px;color:#f0b967;font-size:.94rem}
+.q>p{margin:0 0 10px;color:#c3cede;font-size:.88rem;line-height:1.55}
+.opt{background:#0d1b2a;border:1px solid #1a3a63;border-radius:8px;padding:10px 13px;margin-bottom:8px}
+.opt b{color:#fff;font-size:.9rem}
+.opt.rec{border-color:#9fe08c}
+.opt.rec b::after{content:' — rekomendacja';color:#9fe08c;font-weight:600;font-size:.82em}
+.opt p{margin:4px 0 0;color:#9fb0c9;font-size:.85rem;line-height:1.5}
+</style></head><body>
+<div class="mocknote"><b>MOCKUP</b> — nic tu nie pobiera plików, przyciski są nieaktywne. Dane są prawdziwe: LOCAL = kopia PROD z 12.09.2026. Przełącznik języka i wybór zawodów <b>działają</b>.</div>
+<div class="wrap"><div class="ftl">
+  <div class="ftl-top">
+    <div><h2 id="t"></h2></div>
+    <div class="lang"><button id="bpl" class="on">&#127477;&#127473;</button><button id="ben">&#127468;&#127463;</button></div>
+  </div>
+  <p class="picklead" id="lpick"></p><div class="cards" id="cards"></div>
+  <p class="ftl-event" id="ev-line"></p>
+  <p class="ftl-intro" id="intro"></p>
+  <div class="actions"><button class="all" id="all"></button><span class="fc" id="fc"></span></div>
+  <div id="groups"></div>
+  <div class="howto">
+    <h3 id="hh"></h3><p class="lead" id="hl"></p>
+    <ol class="steps" id="steps"></ol>
+  </div>
+</div></div>
+<div class="dec">
+  <h3>Dwie decyzje do podjęcia, zanim to zbuduję</h3>
+  <p class="sub">Obie dotyczą treści, którą widać w makiecie na żółto. Nie zgaduję.</p>
+  <div class="q">
+    <h4>Decyzja 1 — krok 6: plik bazy zawodników</h4>
+    <p>Krok 6 mówi organizatorowi, żeby dołożył nieoczekiwanego zawodnika <b>zaznaczając go z naszej bazy</b>, a nie wpisując z ręki — bo ręcznie wpisane nazwisko zakłada w rankingu duplikat. Tego pliku jeszcze nie generujemy (to <code>fn_ftl_roster</code>, krok 5 planu).</p>
+    <div class="opt rec"><b>Zbudować teraz</b><p>Dokładam <code>fn_ftl_roster</code> z dwiema regułami wygaszania (zawsze po <code>id_fencer</code>; po nazwisku tylko gdy dokładnie jedna osoba je nosi — zabezpieczenie MŁYNEK), plik ROSTER do generatora, obu bliźniaków i manifestu. Instrukcja nie ma wtedy dziury, a przypadek „ktoś przyszedł bez zapisów” — ten, który tworzy duplikaty — jest naprawdę rozwiązany. Więcej pracy i więcej pgTAP.</p></div>
+    <div class="opt"><b>Wysłać z adnotacją, zbudować później</b><p>Krok 6 pokazuje pełną procedurę Fencing Time plus jedno zdanie: pliku bazy jeszcze nie ma w tym pobraniu, więc prześlij nam nazwisko, imię i rocznik. Szybciej, ale zostaje krok, który sam przyznaje, że jest niekompletny.</p></div>
+  </div>
+  <div class="q">
+    <h4>Decyzja 2 — krok 8: adres kontaktowy</h4>
+    <p>W repozytorium jest tylko <code>rodo@spws.pl</code> — skrzynka do spraw RODO, nie do obsługi organizatorów. Nie wymyślę adresu.</p>
+    <div class="opt rec"><b>Bez adresu, „odpisz na wiadomość z linkiem”</b><p>Krok 8 mówi, żeby odpisać na wiadomość, w której organizator dostał link. Element dostaje opcjonalny atrybut <code>contact="..."</code>, więc prawdziwy adres można wstawić później bez zmiany kodu.</p></div>
+    <div class="opt"><b>Podaj adres</b><p>Powiedz jaki, wstawię go w kroku 8 i w obu wersjach językowych.</p></div>
+  </div>
+</div>
+<script>
+const DATA = [{"id":74,"code":"PPW1-2026-2027","name":"I Puchar Polski Weteranów w Szermierce","loc":"Opole","start":"2026-09-26","n":43,"files":[{"kind":"MIXALL","filename":"PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml","title":"SPWS PPW1 2026/27 · SZPADA · ELIMINACJE MIX — kobiety+mężczyźni, V0–V4","count":26},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_WOMEN_V0.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE kobiety V0","count":1},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_WOMEN_V1.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE kobiety V1","count":3},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_WOMEN_V2.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE kobiety V2","count":5},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_WOMEN_V4.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE kobiety V4","count":1},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_MEN_V0.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V0","count":2},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_MEN_V1.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V1","count":3},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_MEN_V2.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V2","count":5},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_MEN_V3.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V3","count":5},{"kind":"DE","filename":"PPW1-2026-2027_EPEE_DE_MEN_V4.xml","title":"SPWS PPW1 2026/27 · SZPADA · DE mężczyźni V4","count":1},{"kind":"MIXALL","filename":"PPW1-2026-2027_FOIL_POOLS-MIXED_all-categories_W+M.xml","title":"SPWS PPW1 2026/27 · FLORET · ELIMINACJE MIX — kobiety+mężczyźni, V0–V4","count":12},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_WOMEN_V0.xml","title":"SPWS PPW1 2026/27 · FLORET · DE kobiety V0","count":2},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_WOMEN_V2.xml","title":"SPWS PPW1 2026/27 · FLORET · DE kobiety V2","count":2},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_WOMEN_V4.xml","title":"SPWS PPW1 2026/27 · FLORET · DE kobiety V4","count":1},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_MEN_V1.xml","title":"SPWS PPW1 2026/27 · FLORET · DE mężczyźni V1","count":2},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_MEN_V2.xml","title":"SPWS PPW1 2026/27 · FLORET · DE mężczyźni V2","count":1},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_MEN_V3.xml","title":"SPWS PPW1 2026/27 · FLORET · DE mężczyźni V3","count":2},{"kind":"DE","filename":"PPW1-2026-2027_FOIL_DE_MEN_V4.xml","title":"SPWS PPW1 2026/27 · FLORET · DE mężczyźni V4","count":2},{"kind":"MIXALL","filename":"PPW1-2026-2027_SABRE_POOLS-MIXED_all-categories_W+M.xml","title":"SPWS PPW1 2026/27 · SZABLA · ELIMINACJE MIX — kobiety+mężczyźni, V1–V4","count":15},{"kind":"DE","filename":"PPW1-2026-2027_SABRE_DE_WOMEN_V1.xml","title":"SPWS PPW1 2026/27 · SZABLA · DE kobiety V1","count":3},{"kind":"DE","filename":"PPW1-2026-2027_SABRE_DE_WOMEN_V3.xml","title":"SPWS PPW1 2026/27 · SZABLA · DE kobiety V3","count":1},{"kind":"DE","filename":"PPW1-2026-2027_SABRE_DE_MEN_V1.xml","title":"SPWS PPW1 2026/27 · SZABLA · DE mężczyźni V1","count":3},{"kind":"DE","filename":"PPW1-2026-2027_SABRE_DE_MEN_V2.xml","title":"SPWS PPW1 2026/27 · SZABLA · DE mężczyźni V2","count":4},{"kind":"DE","filename":"PPW1-2026-2027_SABRE_DE_MEN_V3.xml","title":"SPWS PPW1 2026/27 · SZABLA · DE mężczyźni V3","count":2},{"kind":"DE","filename":"PPW1-2026-2027_SABRE_DE_MEN_V4.xml","title":"SPWS PPW1 2026/27 · SZABLA · DE mężczyźni V4","count":2},{"kind":"ROSTER","filename":"PPW1-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml","title":"SPWS · BAZA ZAWODNIKÓW — szpada (nie importować jako zawody)","count":181},{"kind":"ROSTER","filename":"PPW1-2026-2027_FOIL_ROSTER_all-known-foil-fencers.xml","title":"SPWS · BAZA ZAWODNIKÓW — floret (nie importować jako zawody)","count":68},{"kind":"ROSTER","filename":"PPW1-2026-2027_SABRE_ROSTER_all-known-sabre-fencers.xml","title":"SPWS · BAZA ZAWODNIKÓW — szabla (nie importować jako zawody)","count":89}]},{"id":85,"code":"PEW5efs-2026-2027","name":"EVF Circuit – Łomianki (POL)","loc":"Łomianki","start":"2026-12-12","n":14,"files":[{"kind":"MIXALL","filename":"PEW5efs-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml","title":"SPWS PEW5efs 2026/27 · SZPADA · ELIMINACJE MIX — kobiety+mężczyźni, V0–V3","count":12},{"kind":"DE","filename":"PEW5efs-2026-2027_EPEE_DE_WOMEN_V2.xml","title":"SPWS PEW5efs 2026/27 · SZPADA · DE kobiety V2","count":1},{"kind":"DE","filename":"PEW5efs-2026-2027_EPEE_DE_MEN_V0.xml","title":"SPWS PEW5efs 2026/27 · SZPADA · DE mężczyźni V0","count":1},{"kind":"DE","filename":"PEW5efs-2026-2027_EPEE_DE_MEN_V1.xml","title":"SPWS PEW5efs 2026/27 · SZPADA · DE mężczyźni V1","count":3},{"kind":"DE","filename":"PEW5efs-2026-2027_EPEE_DE_MEN_V2.xml","title":"SPWS PEW5efs 2026/27 · SZPADA · DE mężczyźni V2","count":6},{"kind":"DE","filename":"PEW5efs-2026-2027_EPEE_DE_MEN_V3.xml","title":"SPWS PEW5efs 2026/27 · SZPADA · DE mężczyźni V3","count":1},{"kind":"MIXALL","filename":"PEW5efs-2026-2027_FOIL_POOLS-MIXED_all-categories_M.xml","title":"SPWS PEW5efs 2026/27 · FLORET · ELIMINACJE MIX — mężczyźni, V1–V3","count":3},{"kind":"DE","filename":"PEW5efs-2026-2027_FOIL_DE_MEN_V1.xml","title":"SPWS PEW5efs 2026/27 · FLORET · DE mężczyźni V1","count":1},{"kind":"DE","filename":"PEW5efs-2026-2027_FOIL_DE_MEN_V3.xml","title":"SPWS PEW5efs 2026/27 · FLORET · DE mężczyźni V3","count":2},{"kind":"MIXALL","filename":"PEW5efs-2026-2027_SABRE_POOLS-MIXED_all-categories_M.xml","title":"SPWS PEW5efs 2026/27 · SZABLA · ELIMINACJE MIX — mężczyźni, V2","count":2},{"kind":"DE","filename":"PEW5efs-2026-2027_SABRE_DE_MEN_V2.xml","title":"SPWS PEW5efs 2026/27 · SZABLA · DE mężczyźni V2","count":2},{"kind":"ROSTER","filename":"PEW5efs-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml","title":"SPWS · BAZA ZAWODNIKÓW — szpada (nie importować jako zawody)","count":200},{"kind":"ROSTER","filename":"PEW5efs-2026-2027_FOIL_ROSTER_all-known-foil-fencers.xml","title":"SPWS · BAZA ZAWODNIKÓW — floret (nie importować jako zawody)","count":74},{"kind":"ROSTER","filename":"PEW5efs-2026-2027_SABRE_ROSTER_all-known-sabre-fencers.xml","title":"SPWS · BAZA ZAWODNIKÓW — szabla (nie importować jako zawody)","count":100}]}];
+const COPY = {"pl": {"title": "Pliki XML do pobrania w formacie FencingTimeLive", "pick": "Wybierz zawody — na liście są tylko te z otwartymi zapisami, które jeszcze się nie odbyły:", "pick_meta": "{n} zapisanych", "empty": "Na tę listę startową nikt się jeszcze nie zapisał, więc nie ma czego pobierać. Wróć tu bliżej terminu zgłoszeń.",
+  "intro": "Pliki tworzą się w chwili pobrania, z listy startowej w tym momencie — nic nie jest tu przygotowane wcześniej. Pobierz je ponownie rano w dniu zawodów; do tego czasu lista może się jeszcze zmienić.", "all": "Pobierz wszystko (.zip)", "count": "Plików: {n}", "c_file": "Plik", "c_contents": "Zawartość", "c_fencers": "Zawodników", "c_do": "Co zrobić",
+  "w_EPEE": "SZPADA", "w_FOIL": "FLORET", "w_SABRE": "SZABLA",
+  "sum_line": "eliminacje mix + {de} tabel DE + baza zawodników ({r})", "one": "Pobierz", "k_MIXALL": "Zasilenie Grup mieszanych", "k_DE": "Zasilenie Tabeli Eliminacji", "k_ROSTER": "Baza zawodników", "d_comp": "Wczytaj jako zawody — krok 2", "d_pick": "NIE wczytuj jako zawody — to lista do zaznaczania, krok 6", "howto": "Instrukcja krok po kroku", "howto_lead": "Ścieżki menu podajemy tak, jak brzmią w Fencing Time — program jest po angielsku. Numery stron odsyłają do „Fencing Time 4.7 User's Guide”.", "steps": [["Pobierz pliki i rozpakuj archiwum", "Kliknij <b>Pobierz wszystko (.zip)</b> i rozpakuj je na tym komputerze, na którym działa Fencing Time. Pojedynczy plik możesz pobrać przyciskiem w jego wierszu."], ["Wczytaj zawody", "<code>File → Import → Import Events</code> (str. 22). Wskaż plik, sprawdź na podglądzie broń, płeć i kategorię wiekową, kliknij <b>Import</b>. Zacznij od plików <code>POOLS-MIXED</code> — po jednym na każdą broń — a dopiero potem wczytaj pliki <code>DE</code>."], ["Połącz tabele eliminacji, jeśli tak Ci wygodniej", "Pliki <code>DE</code> są rozbite maksymalnie: osobna tabela na płeć i kategorię. Część z nich ma jednego albo dwóch zawodników i tak ma być. Łącz je swobodnie: <code>Combine Events</code> (str. 22). Wyniki i tak rozdzielamy z powrotem po roczniku, więc Twoje połączenia niczego nam nie psują. Prosimy tylko nie nazywać zawodów kategorią, której nie zawierają."], ["Nie usuwaj cyfry z nazwiska", "<span class=\"ex\">PRZYKŁADOWSKA (1) Anna</span> oznacza kategorię <b>V1</b>. Po tej cyfrze odczytujemy wyniki z powrotem do rankingu. Nazwisko bez cyfry wraca do nas bez kategorii i trzeba je poprawiać ręcznie."], ["Rano w dniu zawodów odśwież listę startową", "Pobierz pliki jeszcze raz, a potem w Fencing Time na zakładce <code>Summary</code> wybierz <code>Re-Import Competitors from XML File</code> (str. 144). Rozegrane rundy i wpisane wyniki zostają na miejscu — odświeża się sama lista zawodników."], ["Ktoś przyszedł bez zapisów", "Nie wpisuj nazwiska z ręki. Ręcznie wpisane nazwisko wraca do nas jako <b>nowa osoba</b> i zakłada w rankingu duplikat, którego później nie da się po cichu połączyć. Dokładasz taką osobę z naszej bazy zawodników: <code>Event Competitors → Import from XML</code> (str. 145), wskazujesz plik bazy, zaznaczasz tę jedną osobę i klikasz <b>OK</b>."], ["Odeślij wyniki", "Jeśli publikujesz zawody na Fencing Time Live, nie musisz robić nic więcej — wyniki pobieramy stamtąd sami. Jeśli zawody nie trafiły na FTL, odeślij nam plik wyników wyeksportowany z Fencing Time."], ["Masz pytanie albo coś się nie zgadza", "Napisz do nas, <b>zanim</b> zaczniesz cokolwiek poprawiać ręcznie w nazwiskach — prawie zawsze szybciej jest wygenerować pliki na nowo."]], "step6_note": "Plik bazy zawodników nie jest jeszcze częścią tego pobrania — patrz decyzja 1 poniżej.", "step8_note": "Adres kontaktowy do ustalenia — patrz decyzja 2 poniżej."}, "en": {"title": "XML files to download for FencingTimeLive", "pick": "Choose an event — only those with entries that have not happened yet are listed:", "pick_meta": "{n} entered", "empty": "Nobody has entered this event yet, so there is nothing to download. Come back closer to the entry deadline.",
+  "intro": "The files are built at the moment you download them, from the entry list as it stands then — nothing here is prepared in advance. Download them again on the morning of the event; the list can still change until then.", "all": "Download everything (.zip)", "count": "Files: {n}", "c_file": "File", "c_contents": "Contents", "c_fencers": "Fencers", "c_do": "What to do",
+  "w_EPEE": "EPEE", "w_FOIL": "FOIL", "w_SABRE": "SABRE",
+  "sum_line": "mixed pools + {de} DE tables + fencer database ({r})", "one": "Download", "k_MIXALL": "Seeding for the mixed pools", "k_DE": "Seeding for the elimination table", "k_ROSTER": "Fencer database", "d_comp": "Import as a competition — step 2", "d_pick": "Do NOT import as a competition — it is a pick-list, step 6", "howto": "Step by step", "howto_lead": "Menu paths are given as they appear in Fencing Time. Page numbers refer to the Fencing Time 4.7 User's Guide.", "steps": [["Download the files and unzip them", "Click <b>Download everything (.zip)</b> and unzip it on the machine that runs Fencing Time. A single file can be taken with the button in its own row."], ["Import the competitions", "<code>File → Import → Import Events</code> (p. 22). Choose the file, check the weapon, gender and age category on the preview, then click <b>Import</b>. Start with the <code>POOLS-MIXED</code> files — one per weapon — and only then import the <code>DE</code> files."], ["Combine the elimination tables if you prefer", "The <code>DE</code> files are split as finely as possible: one table per gender and category. Some hold one or two fencers, and that is intended. Combine them freely: <code>Combine Events</code> (p. 22). We re-split the results by birth year regardless, so your combining costs us nothing. We only ask that you do not rename an event to a category it does not contain."], ["Do not remove the digit from the surname", "<span class=\"ex\">PRZYKŁADOWSKA (1) Anna</span> means category <b>V1</b>. That digit is how we read the results back into the ranking. A surname without it reaches us with no category and has to be fixed by hand."], ["Refresh the entry list on the morning of the event", "Download the files again, then in Fencing Time open the <code>Summary</code> tab and choose <code>Re-Import Competitors from XML File</code> (p. 144). Rounds already fenced and scores already entered stay where they are — only the list of competitors is refreshed."], ["Somebody turns up unannounced", "Do not type the name in. A hand-typed name comes back to us as a <b>new person</b> and creates a duplicate in the ranking that cannot quietly be merged afterwards. Add them from our fencer database instead: <code>Event Competitors → Import from XML</code> (p. 145), choose the database file, tick that one person and click <b>OK</b>."], ["Send the results back", "If you publish the competition on Fencing Time Live there is nothing more to do — we collect the results from there ourselves. If it did not reach FTL, send us the results file exported from Fencing Time."], ["A question, or something looks wrong", "Write to us <b>before</b> you start correcting names by hand — regenerating the files is almost always quicker."]], "step6_note": "The fencer database file is not part of this download yet — see decision 1 below.", "step8_note": "Contact address still to be settled — see decision 2 below."}};
+let lang='pl', evIdx=0;
+const $=id=>document.getElementById(id);
+function fmtDate(d){ if(!d) return ''; const [y,m,dd]=d.split('-'); return dd+'.'+m+'.'+y; }
+function render(){
+  const c=COPY[lang], ev=DATA[evIdx];
+  document.documentElement.lang=lang;
+  $('t').textContent=c.title;
+  $('lpick').textContent=c.pick;
+  $('bpl').className=lang==='pl'?'on':''; $('ben').className=lang==='en'?'on':'';
+  $('cards').innerHTML=DATA.map((e,i)=>'<button class="card'+(i===evIdx?' on':'')+(e.n===0?' zero':'')+'" data-i="'+i+'"><span class="cd">'+e.code+'</span><span class="cn">'+e.name+'</span><span class="cm">'+e.loc+' · '+fmtDate(e.start)+' · '+c.pick_meta.replace('{n}',e.n).replace('{d}','')+'</span></button>').join('');
+  [...document.querySelectorAll('.card')].forEach(b=>b.onclick=()=>{evIdx=+b.dataset.i;render()});
+  $('ev-line').innerHTML=ev.name+' <span class="loc">'+ev.loc.toUpperCase()+'</span><span class="code">'+ev.code+'</span>';
+  $('intro').textContent=c.intro;
+  $('all').textContent=c.all;
+  $('fc').textContent=c.count.replace('{n}',ev.files.length);
+  const none=ev.files.length===0;
+  $('all').style.display=none?'none':'';
+  $('intro').textContent=none?c.empty:c.intro;
+  $('groups').style.display=none?'none':'';
+  document.querySelector('.howto').style.display=none?'none':'';
+  const byW={};
+  ev.files.forEach(f=>{const w=f.filename.split('_')[1];(byW[w]=byW[w]||[]).push(f)});
+  $('groups').innerHTML=['EPEE','FOIL','SABRE'].filter(w=>byW[w]).map(w=>{
+    const fs=byW[w];
+    const nDE=fs.filter(f=>f.kind==='DE').length;
+    const rost=fs.find(f=>f.kind==='ROSTER');
+    const sum=c.sum_line.replace('{de}',nDE).replace('{r}',rost?rost.count:0);
+    const head='<button class="acc-h"><span class="chev">&#9654;</span><span class="w">'+c['w_'+w]+'</span><span class="sum">'+sum+'</span><span class="nf">'+c.count.replace('{n}',fs.length)+'</span></button>';
+    const rows=fs.map(f=>'<tr><td><code>'+f.filename+'</code><span class="it">'+f.title+'</span></td><td>'+c['k_'+f.kind]+'</td><td class="n">'+f.count+'</td><td'+(f.kind==='ROSTER'?' class="warn"':'')+'>'+(f.kind==='ROSTER'?c.d_pick:c.d_comp)+'</td><td><button class="one">'+c.one+'</button></td></tr>').join('');
+    const table='<div class="tw"><table><thead><tr><th>'+c.c_file+'</th><th>'+c.c_contents+'</th><th style="text-align:right">'+c.c_fencers+'</th><th>'+c.c_do+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    return '<div class="acc">'+head+'<div class="acc-b">'+table+'</div></div>';
+  }).join('');
+  [...document.querySelectorAll('.acc-h')].forEach(h=>h.onclick=()=>h.parentElement.classList.toggle('open'));
+  $('hh').textContent=c.howto; $('hl').textContent=c.howto_lead;
+  $('steps').innerHTML=c.steps.map((s,i)=>'<li><h4>'+s[0]+'</h4><p>'+s[1]+'</p>'+(i===5?'<p class="pending">'+c.step6_note+'</p>':'')+(i===7?'<p class="pending">'+c.step8_note+'</p>':'')+'</li>').join('');
+}
+$('bpl').onclick=()=>{lang='pl';render()};
+$('ben').onclick=()=>{lang='en';render()};
+render();
+</script></body></html>
