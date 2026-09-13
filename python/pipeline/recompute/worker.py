@@ -37,6 +37,54 @@ def _default_run_recompute(id_event: int, *, db, svc=None) -> None:
     )
 
 
+def report_identity_overrides(db, *, notifier=None) -> int:
+    """Announce every CONFIRMED birth year overwritten through the public form.
+
+    Returns the number of alerts actually sent.
+
+    These are PROPOSALS, not completed changes. A public caller cannot alter a
+    confirmed birth year at all (migration 20260912000003) — `ADOPT_DECLARED` is
+    a parameter rather than a click, so the server cannot tell a fencer pressing
+    the button from a crafted RPC call, and the capability was removed instead
+    of narrowed. What the caller can do is ask, and this is the asking reaching
+    somebody who can answer.
+
+    That makes the alert load-bearing rather than informational: until it is
+    read, a genuine fencer's correction sits unapplied.
+
+    Deliberately quiet otherwise: populating a NULL or correcting an estimate
+    raises nothing. An alert that fires routinely is an alert nobody reads, and
+    the one that matters would then arrive into a muted channel.
+
+    The claim is what stamps the rows, so it happens even with no notifier
+    configured (LOCAL has no Telegram token) — otherwise a developer's machine
+    would accumulate a backlog that PROD then re-reports.
+    """
+    rows = db.claim_identity_override_alerts()
+    if not rows:
+        return 0
+
+    sent = 0
+    for r in rows:
+        if notifier is None:
+            continue
+        try:
+            notifier.warning(
+                "Birth-year change PROPOSED from a public registration — "
+                "nothing has been changed yet: "
+                f"{r['txt_surname']} {r['txt_first_name']} (fencer #{r['id_fencer']}) "
+                f"{r['int_birth_year_before']} -> {r['int_birth_year_after']}. "
+                f"Approve or reject proposal #{r['id_override']}."
+            )
+            sent += 1
+        except Exception:
+            # The recompute is the load-bearing work here. Losing an alert is
+            # bad; losing the self-heal that keeps the ranking consistent
+            # because Telegram was down is worse.
+            continue
+    return sent
+
+
 def drain_recompute_queue(
     db,
     *,
@@ -95,12 +143,39 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("nothing to do; pass --drain")
 
     db = create_db_connector()
+
+    # Reported BEFORE the drain and independently of it. An override always
+    # enqueues a recompute, but the debounce can hold that queue for several
+    # ticks — and the operator should not learn that a confirmed birth year was
+    # rewritten only once the roster happens to go quiet.
+    notifier = _build_notifier()
+    overrides = report_identity_overrides(db, notifier=notifier)
+    if overrides:
+        print(f"reported {overrides} confirmed-birth-year override(s)")
+
     events = drain_recompute_queue(db, debounce_window=args.debounce)
     if events:
         print(f"recomputed {len(events)} event(s): {events}")
     else:
         print("queue quiescent (nothing drained)")
     return 0
+
+
+def _build_notifier():
+    """Telegram notifier from the environment, or None where it is unconfigured.
+
+    None is the normal LOCAL case, not an error: the overrides are still claimed
+    and printed, they simply are not pushed anywhere.
+    """
+    import os
+
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        return None
+    from python.pipeline.notifications import TelegramNotifier
+
+    return TelegramNotifier(token, chat_id)
 
 
 if __name__ == "__main__":

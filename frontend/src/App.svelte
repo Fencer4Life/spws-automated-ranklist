@@ -171,7 +171,7 @@
         <button class="tab-btn" class:active={fencerTab === 'identities'} onclick={() => { fencerTab = 'identities' }}>
           {t('fencer_tab_identities')}
         </button>
-        <button class="tab-btn" class:active={fencerTab === 'birth_year_review'} onclick={() => { fencerTab = 'birth_year_review' }}>
+        <button class="tab-btn" class:active={fencerTab === 'birth_year_review'} onclick={() => { fencerTab = 'birth_year_review'; loadIdentityProposals() }}>
           {t('fencer_tab_birth_year')}
         </button>
         <button class="tab-btn" class:active={fencerTab === 'aliases'} onclick={() => { fencerTab = 'aliases'; loadAliasFencers() }}>
@@ -193,6 +193,15 @@
         onupdategender={handleUpdateFencerGender}
       />
     {:else if fencerTab === 'birth_year_review'}
+      <!-- Above the review list, not beside it: a pending proposal is the one
+           thing on this screen that is waiting on a person. -->
+      <IdentityProposals
+        proposals={identityProposals}
+        isAdmin={isAdmin}
+        deciding={decidingProposal}
+        onapply={handleApplyProposal}
+        onreject={handleRejectProposal}
+      />
       <BirthYearReview
         fencers={allFencers}
         isAdmin={isAdmin}
@@ -281,7 +290,7 @@
     CalendarEvent,
     TournamentType,
   } from './lib/types'
-  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, FencerWithAliases, EuropeanEventType, CarryoverEngine, SkeletonByKind } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, FencerWithAliases, EuropeanEventType, CarryoverEngine, SkeletonByKind, IdentityProposal } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -331,6 +340,9 @@
     requestDispatch,                 // ADR-077 season-skeleton promotion
     fetchSeasonChildState,           // ADR-077
     fetchProdSeasonCodes,            // ADR-077
+    fetchIdentityProposals,
+    applyIdentityOverride,
+    rejectIdentityOverride,
   } from './lib/api'
   import {
     MOCK_SEASONS,
@@ -356,6 +368,7 @@
   import EventManager from './components/EventManager.svelte'
   import IdentityManager from './components/IdentityManager.svelte'
   import BirthYearReview from './components/BirthYearReview.svelte'
+  import IdentityProposals from './components/IdentityProposals.svelte'
   import FencerAliasManager from './components/FencerAliasManager.svelte'
   // Phase 5.5 (ADR-058+059) — alias-create modal + cascade banner regen.
   import CreateFencerFromAliasModal from './components/CreateFencerFromAliasModal.svelte'
@@ -910,6 +923,43 @@
   // Phase 4 (ADR-050) — alias management. Modal-based UX (FencerSearchModal /
   // CreateFencerModal reuse) is a follow-up; v1 uses browser dialogs as a
   // placeholder so the locked Option A layout can ship.
+  // Pending birth-year proposals from public registrations (ADR-093). A fencer
+  // may declare a year that contradicts one we hold as CONFIRMED; the public
+  // cannot change it, only ask, so this list is where the correction lands.
+  let identityProposals = $state<IdentityProposal[]>([])
+  let decidingProposal = $state<number | null>(null)
+
+  async function loadIdentityProposals() {
+    if (!isAdmin) return
+    try {
+      identityProposals = await fetchIdentityProposals()
+    } catch {
+      // Never block the birth-year screen on this panel: the review list below
+      // is the reason an administrator opened the tab.
+      identityProposals = []
+    }
+  }
+
+  async function decideProposal(idOverride: number, decide: (id: number) => Promise<number>) {
+    if (decidingProposal !== null) return
+    decidingProposal = idOverride
+    try {
+      await decide(idOverride)
+      // Re-read rather than splicing locally: applying moves a birth year, and
+      // the authoritative list is the one the server still calls PENDING.
+      await loadIdentityProposals()
+      // Applying moves a birth year, so the review list below is now stale.
+      allFencers = await fetchAllFencers()
+    } catch {
+      birthYearError = t('identity_proposals_failed')
+    } finally {
+      decidingProposal = null
+    }
+  }
+
+  const handleApplyProposal = (id: number) => decideProposal(id, applyIdentityOverride)
+  const handleRejectProposal = (id: number) => decideProposal(id, rejectIdentityOverride)
+
   async function loadAliasFencers() {
     aliasError = null
     try {

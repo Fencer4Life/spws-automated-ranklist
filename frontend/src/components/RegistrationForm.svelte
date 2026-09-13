@@ -108,6 +108,60 @@
     <div class="reg-end">
       <button class="reg-btn reg-continue" disabled={!canContinue} onclick={submitIdentity}>{isEditing ? t('reg_save_changes') : t('reg_continue')}</button>
     </div>
+  {:else if step === 'identity_check'}
+    <!-- Reached only when the exact-tuple lookup missed. Each branch asks one
+         question and offers a way out that believes the fencer. -->
+    {#if identityPrompt === 'swap' && identityCandidates[0]}
+      <p class="reg-rodo-heading">{t('reg_swap_title')}</p>
+      <div class="reg-idcheck">
+        <p class="reg-stepline">{t('reg_swap_intro')}</p>
+        <p class="reg-idname">{identityCandidates[0].surname.toUpperCase()} {identityCandidates[0].firstName}</p>
+        <p class="reg-muted">{t('reg_swap_typed', { typed: `${surname.toUpperCase()} ${firstName}` })}</p>
+      </div>
+      <div class="reg-end reg-idactions">
+        <button class="reg-btn reg-continue reg-id-accept" onclick={acceptSwap}>{t('reg_swap_accept')}</button>
+        <button class="reg-btn reg-id-keep" onclick={keepAsTyped}>{t('reg_swap_keep')}</button>
+      </div>
+    {:else if identityPrompt === 'birth_year'}
+      <p class="reg-rodo-heading">{t('reg_by_title')}</p>
+      <!-- Every candidate, never just the first. Where two fencers share a
+           name, this list is the only safe resolution: the person reading it
+           is the one who knows which of them they are. -->
+      {#each identityCandidates as c (c.idFencer)}
+        <div class="reg-idcheck">
+          <p class="reg-idname">
+            {t('reg_by_candidate', {
+              name: `${c.surname.toUpperCase()} ${c.firstName}`,
+              year: c.birthYear ?? '—',
+            })}
+          </p>
+          <p class="reg-muted">{t('reg_by_declared', { year: birthYear ?? '' })}</p>
+          <div class="reg-end reg-idactions">
+            <button class="reg-btn reg-continue reg-id-adopt" onclick={() => answerBirthYear(c, 'ADOPT_DECLARED')}>
+              {t('reg_by_adopt', { year: birthYear ?? '' })}
+            </button>
+            <button class="reg-btn reg-id-fix" onclick={() => answerBirthYear(c, 'FIX_REGISTRATION')}>
+              {t('reg_by_fix')}
+            </button>
+          </div>
+        </div>
+      {/each}
+      <div class="reg-end reg-idactions">
+        <button class="reg-btn reg-id-other" onclick={() => answerBirthYear(identityCandidates[0], 'DIFFERENT_PERSON')}>
+          {t('reg_by_other')}
+        </button>
+      </div>
+    {:else if identityPrompt === 'new_person'}
+      <p class="reg-rodo-heading">{t('reg_new_title')}</p>
+      <div class="reg-idcheck">
+        <p class="reg-stepline">{t('reg_new_intro')}</p>
+        <p class="reg-idname">{surname.toUpperCase()} {firstName}</p>
+      </div>
+      <div class="reg-end reg-idactions">
+        <button class="reg-btn reg-continue reg-id-confirm" onclick={confirmNewPerson}>{t('reg_new_confirm')}</button>
+        <button class="reg-btn reg-id-swap" onclick={swapNewPerson}>{t('reg_new_swap')}</button>
+      </div>
+    {/if}
   {:else if step === 'rodo'}
     {#if isNewFencer}
       <div class="reg-notice">{t('reg_new_fencer_notice')}</div>
@@ -185,6 +239,8 @@
   import {
     fetchEventForRegistration,
     matchRegistrationFencer,
+    fetchIdentityCandidates,
+    confirmRegistrationIdentity,
     createRegistration,
     updateRegistration,
     fetchEntryList,
@@ -192,7 +248,13 @@
   import { newEditToken } from '../lib/editToken'
   import { birthYearToVcat } from '../lib/birthYearEstimate'
   import { WEAPON_PL } from '../lib/orgPayment'
-  import type { RegistrationEventInfo, GenderType, WeaponType } from '../lib/types'
+  import type {
+    RegistrationEventInfo,
+    GenderType,
+    WeaponType,
+    IdentityCandidate,
+    IdentityAction,
+  } from '../lib/types'
 
   const CONSENT_VERSION = 'v1.0'
 
@@ -215,7 +277,10 @@
     onclose?: () => void
   } = $props()
 
-  type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'rodo' | 'payment' | 'list'
+  // 'identity_check' sits between 'identity' and 'rodo' and is reached ONLY
+  // when the exact-tuple lookup missed. Everyone it matches — 36 of PPW1's 43
+  // on PROD — walks past it without knowing it exists.
+  type Step = 'loading' | 'not_found' | 'external' | 'expired' | 'closed' | 'identity' | 'identity_check' | 'rodo' | 'payment' | 'list'
   let step = $state<Step>('loading')
   // Where the roster was opened from. Not hardcoded to 'payment': the closed
   // step carries the same affordance, and someone who arrived after the
@@ -249,6 +314,17 @@
   // carries the full declaration on its own and the FTL seed exporter already
   // handles unranked newcomers. tbl_fencer is never written (ADR-079 §1).
   let isNewFencer = $state(false)
+  // Which prompt the resolution ladder landed on, and the candidates behind it.
+  // 'none' is the overwhelmingly common outcome and renders nothing at all.
+  type IdentityPrompt = 'none' | 'swap' | 'birth_year' | 'new_person'
+  let identityPrompt = $state<IdentityPrompt>('none')
+  let identityCandidates = $state<IdentityCandidate[]>([])
+  // The answer, held until the registration exists. The confirmation RPC is
+  // authorised by that row's edit token, so it cannot be called from here —
+  // acceptRodo() replays it once createRegistration has returned an id and a
+  // token. Deliberate: a master-data write that needs the handle for a row the
+  // caller just created is not reachable by a passing visitor.
+  let pendingIdentity = $state<{ idFencer: number; action: IdentityAction } | null>(null)
   let submitting = $state(false)
   let submitError = $state(false)
   let duplicateWarning = $state(false)
@@ -403,8 +479,156 @@
     }
     fencerId = id
     isNewFencer = id == null
+
+    // RUNG 1 — exactly one exact match. Today's behaviour, untouched: no
+    // second lookup, no prompt, straight on to RODO. This is the path 36 of
+    // PPW1's 43 registrations take, and it must stay byte-for-byte what it was.
+    if (id != null) {
+      identityPrompt = 'none'
+      pendingIdentity = null
+      await checkForExistingEntry()
+      step = 'rodo'
+      return
+    }
+
+    // Only a MISS gets here, and a miss is not the dead end it looks like. Of
+    // PPW1's seven misses on PROD, three were near misses (BUJKO, STAŃCZYK,
+    // KRZYSZTOF Łęcki) and four were genuine newcomers.
+    await resolveIdentity()
+  }
+
+  // Rungs 3 to 6 of the plan's §7 ladder. The "exactly one" guard is the ORDER
+  // itself rather than a condition repeated on each rule, which is what keeps
+  // the same-name case safe: where two people share a name, rung 5 shows both
+  // and lets the one human who knows the answer pick. Software never picks.
+  async function resolveIdentity() {
+    identityPrompt = 'none'
+    pendingIdentity = null
+    identityCandidates = []
+
+    let candidates: IdentityCandidate[] = []
+    try {
+      candidates = await fetchIdentityCandidates(surname, firstName, birthYear as number)
+    } catch {
+      // Same posture as the exact lookup above: a lookup failure must never
+      // block an entry. Fall through as an unprompted newcomer — the
+      // declaration is what matters, and identity is re-derived at ingestion.
+      candidates = []
+    }
+
+    const swapped = candidates.filter((c) => c.kind === 'SWAPPED')
+    const byNull = candidates.filter((c) => c.kind === 'BY_NULL')
+    const byDiffers = candidates.filter((c) => c.kind === 'BY_DIFFERS')
+
+    if (swapped.length === 1) {
+      // RUNG 3 — the two name fields were typed into each other's boxes. A hit
+      // on the exchanged pair is near-certain proof, which is why this asks
+      // rather than tells.
+      identityCandidates = swapped
+      identityPrompt = 'swap'
+    } else if (byNull.length === 1) {
+      // RUNG 4 — we hold this person with no birth year at all, which the exact
+      // matcher structurally cannot reach (NULL is never equal to anything).
+      // Populate it silently: there is nothing to contradict and nothing to ask.
+      identityCandidates = byNull
+      pendingIdentity = { idFencer: byNull[0].idFencer, action: 'ADOPT_DECLARED' }
+      fencerId = byNull[0].idFencer
+      isNewFencer = false
+    } else if (byDiffers.length > 0) {
+      // RUNG 5 — a confirmed birth year is never overwritten silently. Every
+      // candidate is listed, not just the first: this is the MŁYNEK case.
+      identityCandidates = byDiffers
+      identityPrompt = 'birth_year'
+    } else {
+      // RUNG 6 — nobody at all, so we are about to mint a brand-new identity.
+      // That is exactly the population rung 3 cannot help: it needs a fencer
+      // already in the table, so a first-time international entrant writing
+      // their name in a different order goes unnoticed. Costs nothing for
+      // anyone who matched, because nobody who matched reaches this line.
+      identityPrompt = 'new_person'
+    }
+
+    await checkForExistingEntry()
+    step = identityPrompt === 'none' ? 'rodo' : 'identity_check'
+  }
+
+  // B — "that's me, swap them". Rewriting the two fields locally is the whole
+  // fix: the ordinary exact matcher then finds ŁĘCKI Krzysztof #168 on its own,
+  // and he matches cleanly on every future entry. No master-data write at all.
+  async function acceptSwap() {
+    const c = identityCandidates[0]
+    if (!c) return
+    surname = c.surname
+    firstName = c.firstName
+    identityPrompt = 'none'
+    identityCandidates = []
+    fencerId = c.idFencer
+    isNewFencer = false
     await checkForExistingEntry()
     step = 'rodo'
+  }
+
+  // B — "leave it as I typed it". Believed without argument; the entry is
+  // written exactly as declared and resolved at ingestion, as today.
+  function keepAsTyped() {
+    identityPrompt = 'none'
+    identityCandidates = []
+    pendingIdentity = null
+    step = 'rodo'
+  }
+
+  // D — the three answers. Only ADOPT_DECLARED reaches tbl_fencer, and only
+  // because a person explicitly said their own declared year is the right one.
+  function answerBirthYear(candidate: IdentityCandidate, action: IdentityAction) {
+    if (action === 'DIFFERENT_PERSON') {
+      // Nothing is written and nothing is linked. The fencer row is created at
+      // scraping time exactly as it is today.
+      pendingIdentity = null
+      fencerId = null
+      isNewFencer = true
+    } else {
+      pendingIdentity = { idFencer: candidate.idFencer, action }
+      fencerId = candidate.idFencer
+      isNewFencer = false
+      if (action === 'FIX_REGISTRATION' && candidate.birthYear != null) {
+        // The person said the table was right, so the declaration moves. Mirror
+        // it locally too, or the form would go on displaying the year they just
+        // disowned — and fn_create_registration would write it.
+        birthYear = candidate.birthYear
+      }
+    }
+    identityPrompt = 'none'
+    identityCandidates = []
+    step = 'rodo'
+  }
+
+  // Rung 6 — the canonical-form echo, with a swap button. Nobody is accused of
+  // a mistake; they are asked to check a name we have never seen before.
+  function confirmNewPerson() {
+    identityPrompt = 'none'
+    step = 'rodo'
+  }
+
+  async function swapNewPerson() {
+    const s = surname
+    // Uppercased on the way in, exactly as onSurnameInput does for anything
+    // typed into that box. Without this the swapped value keeps the casing it
+    // had as a given name, and the lookup goes out in a form the fencer could
+    // not have produced by typing.
+    surname = firstName.toUpperCase()
+    firstName = s
+    // The exchanged pair may well be someone we already hold — run the whole
+    // ladder again rather than assuming a newcomer.
+    const id = await matchRegistrationFencer(surname, firstName, birthYear as number).catch(() => null)
+    if (id != null) {
+      fencerId = id
+      isNewFencer = false
+      identityPrompt = 'none'
+      await checkForExistingEntry()
+      step = 'rodo'
+      return
+    }
+    await resolveIdentity()
   }
 
   // Soft duplicate guard. The hard one is a partial unique index on
@@ -501,6 +725,28 @@
       })
       registrationId = id
       editToken = token
+
+      // Replay the identity answer now that the row — and therefore the
+      // capability that authorises the write — exists. Deliberately AFTER the
+      // registration is safely stored: the declaration is the thing that must
+      // not be lost, and a correction to the master fencer row is an
+      // improvement on top of it, never a precondition for it. So a failure
+      // here is swallowed rather than surfaced as a registration error; the
+      // entry stands and identity is re-derived at ingestion, as it is today.
+      if (pendingIdentity) {
+        try {
+          await confirmRegistrationIdentity({
+            idRegistration: id,
+            editToken: token,
+            idFencer: pendingIdentity.idFencer,
+            action: pendingIdentity.action,
+          })
+        } catch {
+          // Intentionally silent — see above.
+        }
+        pendingIdentity = null
+      }
+
       step = 'payment'
     } catch {
       // The RPC raises on a closed registration window (D10 guard), and the
@@ -729,6 +975,27 @@
     background: rgba(240, 159, 39, 0.12);
     color: #f0b967;
     margin-bottom: 18px;
+  }
+  /* The identity prompts. Deliberately styled as a panel rather than as a
+     warning: none of these is an error, and two of the three are us asking
+     the fencer to confirm something we are unsure about. */
+  .reg-idcheck {
+    background: #0d1b2a;
+    border: 1px solid #1a4a8a;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .reg-idname {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: #fff;
+    margin: 6px 0;
+  }
+  .reg-idactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .reg-panel {
     background: #0d1b2a;

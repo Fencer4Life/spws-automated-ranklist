@@ -1,6 +1,6 @@
 # ADR-036: PROD Export & Local Mirror (Single Monolithic Dump)
 
-**Status:** Implemented  
+**Status:** Implemented (amended 2026-07-14 and 2026-09-12; see the amendments)  
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
 
@@ -176,6 +176,67 @@ than call a fail-loud RPC (e.g. `fn_update_fencer_birth_year`, which `RAISE EXCE
 NULL id) directly. On the seeded tiers the guard is a harmless no-op; on the fresh-bootstrap
 build it lets the migration sequence complete. (Applied 2026-07-14: the 10 birth-year
 corrections were wrapped in a guarded `DO` block — commit `57655a4`.)
+
+## Amendment (2026-09-12) — the seed must be idempotent against the migrations that precede it
+
+The 2026-07-14 amendment established that a fresh bootstrap runs **every migration
+before this dump**. It drew one consequence — name lookups must disambiguate duplicate
+names — and stopped one step short of the general rule. Three defects found while
+rebuilding LOCAL from a dump taken on 2026-09-12, the first PROD export after PZSz
+reached the organizer table:
+
+### 1. The seed could not load at all
+
+Migration `20260903000001` inserts the PZSz organizer, and does so idempotently — its
+own comment says this is so *"the seed dump that follows on a fresh bootstrap cannot
+duplicate it"*. But the guard was only on the migration's side. The dump emitted a
+plain `INSERT INTO tbl_organizer`, so the migration inserted PZSz, the seed inserted it
+again, and the whole seed aborted on `idx_organizer_code`. **Two idempotent halves are
+not idempotent together unless both guard.** The dump now upserts on `txt_code`, and
+the dump wins, because it *is* the PROD truth: a migration seeding a placeholder must
+not mask the real payee and IBAN behind it.
+
+### 2. LOCAL was never a copy of PROD, and was wrong where it mattered most
+
+Three data migrations add fencers by hand (`20260714000003`'s fifteen reconciled rows,
+plus KOSZYK and CISZEWSKA/SZUMIELEWICZ). All three carry `WHERE NOT EXISTS` guards —
+which pass, because on a fresh bootstrap they run against an **empty table**. The seed
+then inserted the same eighteen people a second time.
+
+| | LOCAL, before | PROD |
+| --- | --- | --- |
+| Fencers | 385 | 367 |
+| Same-name pairs | 17 | 2 |
+| Duplicate exact triples | 17 | 0 |
+
+Those phantom pairs are not inert: same-name collisions are exactly the input that
+makes identity resolution ambiguous (ADR-093), so every local test of duplicate-name
+behaviour had been running against eight times the collisions PROD actually has. The
+dump now skips anyone already present on the identity triple, comparing birth years
+with `IS NOT DISTINCT FROM` — `= NULL` is never true, so the nine fencers with no birth
+year would otherwise duplicate on every reset.
+
+A guard on the migration protects against re-running the migration. Only a guard on the
+**seed** protects against the seed.
+
+### 3. The suite was calibrated to a seed snapshot
+
+Refreshing the dump from 2026-08-08 to 2026-09-12 turned six pgTAP files red, none of
+them because code had changed. Four were latent defects the old snapshot had hidden:
+`19_phase3_wizard` and `74_no_evf_season_skeletons` deleted a season's events without
+clearing the tournaments that now hang off them, and `54_evf_calendar_prior_link_reassignment`
+and `63_prod_mirror_rename` looked up events by EVF calendar id with no season scope —
+so `SELECT INTO` silently bound a **real** PROD event and renamed it. Two were genuine
+data drift: `56.25`'s PEW count (PROD consolidated PEW9/11/12/14) and `67.4`, which
+asserted that *no* event shows the moved-date pill — true in August, and false since
+EVF moved PEW14ef-2026-2027. All six are fixed; `67.4` is restated as "nothing
+*unexpected*", which survives both a genuine mover appearing and this one ageing out.
+
+The rule this amendment adds: **a refresh of the dump is a change to the test suite's
+inputs, and must be run through the full suite before the `seed_prod_latest.sql`
+pointer is moved.** `scripts/mirror-prod-local.sh` rebuilds LOCAL as a faithful PROD
+copy for exactly this check, and deliberately restores that pointer on any exit so a
+local experiment cannot silently become a CI change.
 
 ## Related ADRs
 

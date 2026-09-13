@@ -1,0 +1,232 @@
+<title>Identity block — verified on PROD data</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n{text-align:right;font-family:var(--mono);font-size:13px}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+pre code{background:none;padding:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.ok{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{background:var(--green-bg);color:var(--green);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:14.5px}
+.rec b{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px}
+.opt{margin:10px 0 0;padding-left:0;list-style:none}
+.opt li{padding:7px 0 7px 34px;position:relative;border-top:1px solid var(--line)}
+.opt li:before{content:attr(data-k);position:absolute;left:0;top:7px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--navy);background:var(--navy-soft);border-radius:4px;padding:2px 6px}
+.q{font-family:var(--serif);font-size:17.5px;font-weight:600;margin:0 0 10px}
+.big{font-family:var(--serif);font-size:28px;font-weight:600;color:var(--navy)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+<div class="page">
+<p class="eyebrow">SPWS · registration identity · verification · 12 September 2026</p>
+<h1>The identity block, run against PROD data</h1>
+<p class="dek">LOCAL was rebuilt as a faithful copy of PROD and the six-rung ladder was replayed
+over all 57 real registrations. It landed exactly where the plan predicted. Getting there exposed
+three defects in the bootstrap path, and one open decision.</p>
+
+<h2>1 · The headline</h2>
+
+<div class="card ok">
+<span class="lb">The regression that matters most</span>
+<p><span class="big">36 of 43</span> PPW1 registrations take the untouched fast path —
+no second lookup, no prompt, no change of any kind. Verified against the real declarations,
+not against fixtures.</p>
+</div>
+
+<p>The remaining seven are the seven the plan named, classified the way it said they would be.
+Nothing was invented and nothing was missed.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Event</th><th>Rung 1<br>fast path</th><th>Rung 3<br>B prompt</th><th>Rung 5<br>D prompt</th><th>Rung 6<br>name check</th><th>Total</th></tr></thead>
+<tbody>
+<tr><td>PPW1-2026-2027</td><td class="n">36</td><td class="n">1</td><td class="n">2</td><td class="n">4</td><td class="n">43</td></tr>
+<tr><td>PEW5efs-2026-2027</td><td class="n">8</td><td class="n">0</td><td class="n">2</td><td class="n">4</td><td class="n">14</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>PPW1's seven, in full:</p>
+
+<pre><code>KRZYSZTOF / Łęcki 1991       rung 3  B prompt, swap → ŁĘCKI Krzysztof
+BUJKO / Paulina 1982         rung 5  D prompt vs 1979 (confirmed)
+STAŃCZYK / MARCIN 1979       rung 5  D prompt vs 1980 (confirmed)
+KANIECKI / Rafał 1987        rung 6  new person, name check
+PERKOWSKI / Maciej 1984      rung 6  new person, name check
+SIEJKOWSKI / Waldemar 1954   rung 6  new person, name check
+ZANEUSKAYA / HANNA 1994      rung 6  new person, name check</code></pre>
+
+<p>Both birth-year candidates are <strong>confirmed</strong>, not estimated, so neither can be
+overwritten silently — they reach a human, which is the whole point of rung 5. Łomianki adds
+<code>LEAHEY / john 1969</code> against a confirmed 1976 and <code>MADDEN / Gerard 1990</code>
+against a confirmed 1991; both likewise ask rather than act. That settles one of the handover's
+open assumptions: LEAHEY's seven-year gap never reaches a silent write.</p>
+
+<h2>2 · The write, end to end, on a real fencer</h2>
+
+<p>BUJKO Paulina is the useful case because she is not inert — she carries a result, so the
+self-heal path has something to heal. Running <code>ADOPT_DECLARED</code> against her real
+registration:</p>
+
+<pre><code>RESULTS behind this fencer: 1
+BEFORE: BY=1979 est=f | registration linked=NULL
+AFTER:  BY=1982 est=f | registration linked=yes
+QUEUE:  1 event(s) enqueued for recompute
+AUDIT:  1 row(s) logged
+GUARD held → Fencer 98 is not a candidate for registration 51</code></pre>
+
+<p>The birth year moves to the declared value and stays <em>confirmed</em>; the registration links;
+<code>trg_fencer_change_enqueue</code> queues the event she actually played, so the ranking repairs
+itself on the next drain; <code>trg_audit_fencer</code> records the write. The last line is the
+guard that matters: asked to write MŁYNEK Janusz 1951 — a real fencer with 19 results — from
+BUJKO's registration, the function refuses, because he is not in the candidate set it recomputes
+server-side from that registration's own declared name. Everything above was rolled back.</p>
+
+<h2>3 · What rebuilding LOCAL exposed</h2>
+
+<p>These were all found while trying to make LOCAL match PROD, and all three are pre-existing.
+None was introduced by the identity work.</p>
+
+<h3>a · The seed could no longer load at all</h3>
+<p>Migration <code>20260903000001</code> inserts the PZSz organizer, idempotently, and its comment
+says plainly that this is so "the seed dump that follows on a fresh bootstrap cannot duplicate it".
+But the guard was only on the migration's side: the seed's own <code>INSERT INTO tbl_organizer</code>
+was unguarded. Once PZSz reached PROD, the first dump taken afterwards failed the entire seed on
+<code>idx_organizer_code</code>. Two idempotent halves are not idempotent together unless both
+guard. <strong>Fixed</strong> in <code>export_seed.py</code>: the seed now upserts on
+<code>txt_code</code>, and wins, because the dump is the PROD truth.</p>
+
+<h3>b · LOCAL was never a copy of PROD — and wrong in the worst possible place</h3>
+<div class="card warn">
+<p>Three data migrations add fencers by hand and run <em>before</em> the seed, against an empty
+table — so their own <code>WHERE NOT EXISTS</code> guards pass, they insert, and the seed then
+inserted the same 18 people a second time.</p>
+<div class="tw">
+<table>
+<thead><tr><th></th><th>LOCAL, before</th><th>PROD</th></tr></thead>
+<tbody>
+<tr><td>Fencers</td><td class="n">385</td><td class="n">367</td></tr>
+<tr><td>Same-name pairs</td><td class="n">17</td><td class="n">2</td></tr>
+<tr><td>Duplicate exact triples</td><td class="n">17</td><td class="n">0</td></tr>
+</tbody>
+</table>
+</div>
+<p>Same-name pairs are precisely the input that makes identity resolution ambiguous, so every local
+test of duplicate-name behaviour was running against a table PROD does not have — and against
+<em>eight times</em> as many collisions. <strong>Fixed</strong>: the seed now skips anyone already
+present on the identity triple, using <code>IS NOT DISTINCT FROM</code> so the nine fencers with no
+birth year do not duplicate on every reset. LOCAL now reads 367 / 9 null / 20 estimated / 2 pairs /
+0 duplicate triples — PROD exactly.</p>
+</div>
+
+<h3>c · A registration test that only passed on an empty table</h3>
+<p><code>57_registration_trim_trigger</code> identified its fixture row by birth year alone
+(<code>WHERE int_birth_year = 1979</code>). That is unique only while <code>tbl_registration</code>
+holds nothing but the test's own data; PROD has several fencers born 1979, so the subquery returned
+more than one row and the file aborted. <strong>Fixed</strong> by scoping both affected assertions to
+the test's own event. This is the same class of fragility as (a) and (b): correct against an empty
+database, wrong against a real one.</p>
+
+<h2>4 · Repeatable, and CI-safe</h2>
+
+<p><code>scripts/mirror-prod-local.sh</code> now does the whole thing in one command: export PROD
+read-only, reset LOCAL against that dump, and load the registrations. It deliberately does
+<strong>not</strong> disturb the committed <code>seed_prod_latest.sql</code> pointer — the symlink is
+repointed for the duration of the reset and restored on any exit, including a failed one, so a local
+experiment can never silently become a CI change.</p>
+
+<p>Registrations are fetched separately rather than added to the dump, because ADR-079 makes
+<code>tbl_registration</code> ephemeral — purged once results are ingested. Baking real declarations
+into the shared seed would push 57 people's entries into every CI run and every developer's machine,
+permanently. They are resolved by natural key, since surrogate ids differ between environments.</p>
+
+<h2>5 · The open decision</h2>
+
+<div class="card open">
+<p class="q">Do we adopt the fresh 2026-09-12 seed, or keep the committed pointer at 2026-08-08?</p>
+<p>On the 2026-08-08 snapshot the suite is <strong>946/946 green</strong>. On current PROD data,
+six files fail — and not because the code changed, but because they assert things about the shape
+of the data that were true in August and are not true now:</p>
+<div class="tw">
+<table>
+<thead><tr><th>File</th><th>Why it fails on current PROD data</th></tr></thead>
+<tbody>
+<tr><td><code>19_phase3_wizard</code></td><td>deletes an event that now has tournaments — FK violation</td></tr>
+<tr><td><code>54_evf_calendar_prior_link_reassignment</code></td><td>subquery now matches more than one event</td></tr>
+<tr><td><code>56_evf_predecessor_event_fragment_repair</code></td><td>56.25 expects a PEW count of 12</td></tr>
+<tr><td><code>63_prod_mirror_rename</code></td><td>63.3 expects a specific post-rename event code</td></tr>
+<tr><td><code>67_event_first_published_date</code></td><td>67.4 asserts <em>no</em> event shows the moved-date pill; one now does</td></tr>
+<tr><td><code>74_no_evf_season_skeletons</code></td><td>deletes an event that now has tournaments — FK violation</td></tr>
+</tbody>
+</table>
+</div>
+<p>All six are calendar/event tests. <strong>Every registration and identity test passes on current
+PROD data</strong>, including all 25 of the new file, 52's security posture, and 57/58/59.</p>
+<ul class="opt">
+<li data-k="A"><strong>Keep the pointer at 2026-08-08.</strong> CI stays green. The fresh dump stays
+a local testing artifact, reachable any time via the mirror script. Nothing is hidden — the six
+tests are still coupled, we simply have not paid for it yet.</li>
+<li data-k="B"><strong>Adopt 2026-09-12 and fix the six.</strong> Honest, and stops the coupling
+growing quietly worse, but it is real work on event/calendar tests that has nothing to do with
+PPW1 — and PPW1 is in fourteen days.</li>
+</ul>
+<div class="rec"><b>Recommendation</b>
+<strong>A for now, B after PPW1.</strong> The coupling is worth fixing, but not in the two weeks
+before the event it would delay, and not mixed into the identity change where a red suite would
+obscure what the identity work actually did. The exporter fixes in (a) and (b) stay regardless —
+without them no future refresh loads at all, and that is the part that would have bitten silently.
+Worth logging (67.4 especially: it asserts a property of PROD's data, not of our code, so it will
+keep drifting).</div>
+</div>
+
+<h2>6 · Status</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>pgTAP, 2026-08-08 seed (CI's state)</td><td>946 / 946 pass</td></tr>
+<tr><td>pgTAP registration + identity, PROD-mirrored</td><td>68 / 68 pass (52, 57, 58, 59, 75)</td></tr>
+<tr><td>Ladder over 57 real registrations</td><td>matches the plan's prediction exactly</td></tr>
+<tr><td><code>ADOPT_DECLARED</code> end to end on a real fencer</td><td>BY corrected, event re-queued, audit logged, rolled back</td></tr>
+<tr><td>Candidate-set guard vs a real same-name neighbour</td><td>refused</td></tr>
+<tr><td>vitest</td><td>809 / 809 pass</td></tr>
+<tr><td>svelte-check</td><td>0 errors</td></tr>
+<tr><td>postgrestools on the migration</td><td>clean</td></tr>
+<tr><td>Coherence, spec-sync, docs</td><td>all pass</td></tr>
+</tbody>
+</table>
+</div>
+<p>Nothing is committed. The graph refresh (<code>scripts/refresh-graph.sh</code>) and the two ADRs
+are still outstanding, as is the rung-2 question from the previous report.</p>
+
+<footer>Measured 12 September 2026. PROD read-only via <code>scripts/cloud-sql.sh prod</code> and
+<code>python.pipeline.export_seed</code>; every write in this report was to LOCAL, and the
+end-to-end probe was rolled back. LOCAL rebuilt with
+<code>scripts/mirror-prod-local.sh</code>.</footer>
+</div>
