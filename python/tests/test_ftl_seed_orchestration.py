@@ -29,7 +29,9 @@ import defusedxml.ElementTree as ET
 from python.pipeline.ftl_seed_export import (
     assemble_mixall_subrankings,
     build_event_mixall_files,
+    build_event_seed_files,
     bundle_seed_zip,
+    export_manifest,
     mixall_tireurs,
     mixall_title,
     registration_subranking_key,
@@ -130,15 +132,15 @@ def test_mixall_tireurs_running_id_sexe_and_marker():
     # FV0 comes before MV2 in the fixed order → Sandra seed 1, Jan seed 2.
     assert tireurs[0] == {
         "id": 1,
-        "nom": "PECZEK",
-        "prenom": "Sandra (0)",
+        "nom": "PECZEK (0)",
+        "prenom": "Sandra",
         "sexe": "F",
         "classement": 1,
     }
     assert tireurs[1] == {
         "id": 2,
-        "nom": "KOWALSKI",
-        "prenom": "Jan (2)",
+        "nom": "KOWALSKI (2)",
+        "prenom": "Jan",
         "sexe": "M",
         "classement": 2,
     }
@@ -152,8 +154,12 @@ def test_season_pretty():
 
 
 def test_mixall_title_polish_weapon_name():
-    assert mixall_title("EPEE", "SPWS-2025-2026") == "SPWS Szpada ELIMINACJE (mix-all) 2025/2026"
-    assert mixall_title("SABRE", "SPWS-2025-2026") == "SPWS Szabla ELIMINACJE (mix-all) 2025/2026"
+    assert mixall_title("PPW5-2025-2026", "EPEE", ["M"], ["V0"]).startswith(
+        "SPWS PPW5 2025/26 · SZPADA · ELIMINACJE MIX"
+    )
+    assert mixall_title("PPW5-2025-2026", "SABRE", ["M"], ["V0"]).startswith(
+        "SPWS PPW5 2025/26 · SZABLA · ELIMINACJE MIX"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -168,17 +174,19 @@ def test_build_event_mixall_files_one_per_weapon_with_registrants():
         registrations=regs,
         weapons=["EPEE", "FOIL", "SABRE"],
         rankings_by_weapon={},
-        season_code="SPWS-2025-2026",
-        event_code_stem="PPW5",
+        event_code="PPW5-2025-2026",
         season_end_year=SEY,
     )
-    # EPEE has 2, SABRE has 1, FOIL has 0 → FOIL file omitted.
-    assert set(files) == {
-        "SPWS-2025-2026_PPW5_E_mixall.xml",
-        "SPWS-2025-2026_PPW5_S_mixall.xml",
+    # EPEE has 2, SABRE has 1, FOIL has 0 → FOIL omitted entirely.
+    assert {n for n in files if "POOLS-MIXED" in n} == {
+        "PPW5-2025-2026_EPEE_POOLS-MIXED_all-categories_W+M.xml",
+        "PPW5-2025-2026_SABRE_POOLS-MIXED_all-categories_M.xml",
     }
-    root = ET.fromstring(files["SPWS-2025-2026_PPW5_E_mixall.xml"].split("\n", 2)[-1])
-    assert root.get("ID") == "SPWS-2025-2026_PPW5_E_mixall"
+    assert not [n for n in files if "FOIL" in n]
+    root = ET.fromstring(
+        files["PPW5-2025-2026_EPEE_POOLS-MIXED_all-categories_W+M.xml"].split("\n", 2)[-1]
+    )
+    assert root.get("ID") == "PPW5-2025-2026_EPEE_POOLS-MIXED_all-categories_W+M"
     assert root.get("Arme") == "E"
     assert len(root.findall(".//Tireur")) == 2
 
@@ -193,15 +201,19 @@ def test_build_event_mixall_files_interleave_and_marker_end_to_end():
         registrations=regs,
         weapons=["EPEE"],
         rankings_by_weapon={},
-        season_code="SPWS-2025-2026",
-        event_code_stem="PPW5",
+        event_code="PPW5-2025-2026",
         season_end_year=SEY,
     )
-    root = ET.fromstring(files["SPWS-2025-2026_PPW5_E_mixall.xml"].split("\n", 2)[-1])
+    root = ET.fromstring(
+        files["PPW5-2025-2026_EPEE_POOLS-MIXED_all-categories_W+M.xml"].split("\n", 2)[-1]
+    )
     tireurs = root.findall(".//Tireur")
     # Fixed order FV0,FV4,MV0 → Sandra(0), Halina(4), Jan(0); running Classement.
-    assert [t.get("Nom") for t in tireurs] == ["PECZEK", "BORKOWSKA", "KOWALSKI"]
-    assert [t.get("Prenom") for t in tireurs] == ["Sandra (0)", "Halina (4)", "Jan (0)"]
+    # The marker rides on Nom (ADR-080 §1 amended 2026-09-12): FTL renders
+    # "Nom Prenom", so this reads back as "PECZEK (0) Sandra" — the form the
+    # scraper matches. It used to sit on Prenom, which did not round-trip.
+    assert [t.get("Nom") for t in tireurs] == ["PECZEK (0)", "BORKOWSKA (4)", "KOWALSKI (0)"]
+    assert [t.get("Prenom") for t in tireurs] == ["Sandra", "Halina", "Jan"]
     assert [t.get("Classement") for t in tireurs] == ["1", "2", "3"]
 
 
@@ -248,11 +260,210 @@ def test_exporter_build_bundle_wires_rankings_and_returns_files():
     files = exp.build_bundle(
         id_event=42,
         weapons=["EPEE"],
-        season_code="SPWS-2025-2026",
-        event_code_stem="PPW5",
+        event_code="PPW5-2025-2026",
         season_end_year=SEY,
         season=None,
     )
-    assert "SPWS-2025-2026_PPW5_E_mixall.xml" in files
+    assert "PPW5-2025-2026_EPEE_POOLS-MIXED_all-categories_M.xml" in files
     # rpc was called for the ranking lookups (10 sub-rankings for one weapon)
     assert sb.rpc.call_count >= 1
+
+
+# ---------------------------------------------------------------------------
+# build_event_seed_files — the whole deliverable set, with its manifest
+#
+# One mix-all per weapon (the seeding order) plus ONE DE FILE PER GENDER x
+# CATEGORY PRESENT (plan §1, replacing ADR-080 §3's predicted combining). Six of
+# PPW1's 22 DE files hold a single fencer and four hold two; that is deliberate,
+# and the manual tells the organizer to combine them in Fencing Time. We re-split
+# by birth year when the results come back, so their combining costs us nothing —
+# whereas guessing it wrong costs them a file that lies about its own contents.
+# ---------------------------------------------------------------------------
+def test_seed_files_emit_one_de_per_live_gender_and_category():
+    """X7.10 — the maximal split, and nothing for a category nobody entered."""
+    regs = [
+        _reg(1, "Peczek", "Sandra", "F", 1990, ["EPEE"]),  # FV0
+        _reg(2, "Kowalski", "Jan", "M", 1990, ["EPEE"]),  # MV0
+        _reg(3, "Nowak", "Piotr", "M", 1970, ["EPEE"]),  # MV2
+    ]
+    seed = build_event_seed_files(
+        registrations=regs,
+        weapons=["EPEE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+    )
+    names = {f.filename for f in seed}
+    assert names == {
+        "PPW1-2026-2027_EPEE_POOLS-MIXED_all-categories_W+M.xml",
+        "PPW1-2026-2027_EPEE_DE_WOMEN_V0.xml",
+        "PPW1-2026-2027_EPEE_DE_MEN_V0.xml",
+        "PPW1-2026-2027_EPEE_DE_MEN_V2.xml",
+    }
+
+
+def test_de_file_holds_only_its_own_gender_and_category_reseeded_from_one():
+    """X7.11 — a DE file is a standalone competition: Classement restarts at 1,
+    and its root Sexe is the real gender (the mix-all's is nominal)."""
+    regs = [
+        _reg(1, "Aaa", "First", "M", 1970, ["EPEE"]),
+        _reg(2, "Bbb", "Second", "M", 1970, ["EPEE"]),
+        _reg(3, "Ccc", "Other", "F", 1970, ["EPEE"]),
+    ]
+    seed = build_event_seed_files(
+        registrations=regs,
+        weapons=["EPEE"],
+        rankings_by_weapon={"EPEE": {"MV2": [2, 1]}},  # id 2 outranks id 1
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+    )
+    de = next(f for f in seed if f.filename.endswith("_DE_MEN_V2.xml"))
+    root = ET.fromstring(de.xml.split("\n", 2)[-1])
+    assert root.get("Sexe") == "M"
+    assert root.get("Arme") == "E"
+    tireurs = root.findall(".//Tireur")
+    assert [t.get("Nom") for t in tireurs] == ["BBB (2)", "AAA (2)"]
+    assert [t.get("Classement") for t in tireurs] == ["1", "2"]
+    assert [t.get("Sexe") for t in tireurs] == ["M", "M"]
+
+
+def test_seed_files_skip_a_weapon_nobody_entered():
+    """X7.12 — no empty competitions; FTL cannot import one."""
+    regs = [_reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"])]
+    seed = build_event_seed_files(
+        registrations=regs,
+        weapons=["EPEE", "FOIL", "SABRE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+    )
+    assert all("FOIL" not in f.filename and "SABRE" not in f.filename for f in seed)
+
+
+def test_export_manifest_counts_and_import_kind_come_from_the_files_themselves():
+    """X7.13 — §9's manifest is generated from the same objects that produced
+    the XML, so it cannot drift from what the organizer actually downloaded."""
+    regs = [
+        _reg(1, "Peczek", "Sandra", "F", 1990, ["EPEE"]),
+        _reg(2, "Kowalski", "Jan", "M", 1990, ["EPEE"]),
+    ]
+    seed = build_event_seed_files(
+        registrations=regs,
+        weapons=["EPEE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+    )
+    manifest = export_manifest(seed)
+    mixall = next(r for r in manifest if r["kind"] == "MIXALL")
+    assert mixall["count"] == 2
+    assert mixall["import_as"] == "COMPETITION"
+    assert mixall["title"].startswith("SPWS PPW1 2026/27 · SZPADA")
+    de = [r for r in manifest if r["kind"] == "DE"]
+    assert sorted(r["count"] for r in de) == [1, 1]
+
+
+# ---------------------------------------------------------------------------
+# The roster file — the organizer's pick-list (ADR-080 amendment (e))
+#
+# One per weapon, beside the competitions. Its population is a database
+# question, not a function of this event's entry list, so it arrives as rows
+# from fn_ftl_roster rather than being derived here. What this layer owns is
+# turning those rows into a file that cannot be mistaken for a competition.
+# ---------------------------------------------------------------------------
+def _roster_row(sur, first, gender, cat, order):
+    return {
+        "txt_surname": sur,
+        "txt_first_name": first,
+        "enum_gender": gender,
+        "enum_age_category": cat,
+        "int_order": order,
+    }
+
+
+def test_seed_files_add_one_roster_per_weapon_when_rows_are_supplied():
+    """X7.14 — 25 competition files become 28 for PPW1."""
+    regs = [_reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE", "SABRE"])]
+    rosters = {
+        "EPEE": [_roster_row("Aaa", "Adam", "M", "V2", 1)],
+        "SABRE": [_roster_row("Bbb", "Beata", "F", "V1", 1)],
+        # FOIL deliberately present in the roster data but absent from the entry
+        # list: no competition, so no roster either. A pick-list for a weapon
+        # nobody is fencing is one more file to import by mistake.
+        "FOIL": [_roster_row("Ccc", "Cezary", "M", "V0", 1)],
+    }
+    seed = build_event_seed_files(
+        registrations=regs,
+        weapons=["EPEE", "FOIL", "SABRE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+        rosters=rosters,
+    )
+    rosters_out = {f.filename for f in seed if f.kind == "ROSTER"}
+    assert rosters_out == {
+        "PPW1-2026-2027_EPEE_ROSTER_all-known-epee-fencers.xml",
+        "PPW1-2026-2027_SABRE_ROSTER_all-known-sabre-fencers.xml",
+    }
+
+
+def test_roster_file_says_in_its_own_title_not_to_import_it_as_a_competition():
+    """X7.15 — the one mistake on this surface that damages an event.
+
+    The filename carries the warning because that is what the organizer reads in
+    the file dialog; the title carries it because that is what Fencing Time
+    shows once the file is already open.
+    """
+    seed = build_event_seed_files(
+        registrations=[_reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"])],
+        weapons=["EPEE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+        rosters={"EPEE": [_roster_row("Aaa", "Adam", "M", "V2", 1)]},
+    )
+    roster = next(f for f in seed if f.kind == "ROSTER")
+    assert "ROSTER" in roster.filename
+    assert roster.title == "SPWS · BAZA ZAWODNIKÓW — szpada (nie importować jako zawody)"
+    assert roster.import_as == "PICKLIST"
+
+
+def test_roster_tireurs_keep_the_marker_and_the_roster_order():
+    """X7.16 — a roster entry is read back exactly like a seeded one.
+
+    The marker is not decoration on a pick-list: a fencer ticked in from here
+    reaches the results with the same "(N)" the pipeline reads, which is the
+    whole reason ticking beats typing.
+    """
+    seed = build_event_seed_files(
+        registrations=[_reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"])],
+        weapons=["EPEE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+        rosters={
+            "EPEE": [
+                _roster_row("nowak", "anna", "F", "V3", 1),
+                _roster_row("ZIELIŃSKI", "PIOTR", "M", "V0", 2),
+            ]
+        },
+    )
+    roster = next(f for f in seed if f.kind == "ROSTER")
+    root = ET.fromstring(roster.xml.split("\n", 2)[-1])
+    tireurs = root.findall(".//Tireur")
+    assert [t.get("Nom") for t in tireurs] == ["NOWAK (3)", "ZIELIŃSKI (0)"]
+    assert [t.get("Prenom") for t in tireurs] == ["Anna", "Piotr"]
+    assert [t.get("Sexe") for t in tireurs] == ["F", "M"]
+    assert roster.count == 2
+
+
+def test_seed_files_without_rosters_are_unchanged():
+    """X7.17 — the Telegram delivery path passes no rosters and must not break."""
+    seed = build_event_seed_files(
+        registrations=[_reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"])],
+        weapons=["EPEE"],
+        rankings_by_weapon={},
+        event_code="PPW1-2026-2027",
+        season_end_year=SEY,
+    )
+    assert [f.kind for f in seed] == ["MIXALL", "DE"]

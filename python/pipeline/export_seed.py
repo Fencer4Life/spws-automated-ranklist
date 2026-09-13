@@ -88,7 +88,7 @@ def discover_cols(ref: str, token: str, table: str) -> list[dict]:
         ref,
         token,
         f"""
-    SELECT column_name, data_type, column_default
+    SELECT column_name, data_type, column_default, udt_name
     FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = '{table}'
     ORDER BY ordinal_position
@@ -102,7 +102,12 @@ def discover_cols(ref: str, token: str, table: str) -> list[dict]:
         default = r.get("column_default") or ""
         if "nextval" in default:
             continue
-        cols.append({"name": name, "type": r["data_type"]})
+        # udt_name carries the concrete type behind data_type='USER-DEFINED'
+        # (e.g. enum_gender_type). A plain INSERT ... VALUES casts text to an
+        # enum implicitly in assignment context, but INSERT ... SELECT does
+        # not — the SELECT's output type is already text by then — so any
+        # SELECT-shaped emitter has to name the type itself.
+        cols.append({"name": name, "type": r["data_type"], "udt": r.get("udt_name") or ""})
     return cols
 
 
@@ -177,9 +182,23 @@ def export_monolithic(ref: str, token: str) -> str:
     col_names = [c["name"] for c in cols]
     rows = q(f"SELECT {select_expr(cols)} FROM tbl_organizer ORDER BY txt_code")
     lines.append(f"-- tbl_organizer ({len(rows)} rows)")
+    # Upsert on txt_code rather than a plain INSERT. A fresh bootstrap runs every
+    # migration BEFORE this seed (ADR-036 amendment 2026-07-14), and a migration
+    # is allowed to create an organizer the seed also carries — 20260903000001
+    # does exactly that for PZSz, idempotently on its own side. Two idempotent
+    # halves are still not idempotent together unless BOTH guard, and this one
+    # did not: the first PROD dump taken after PZSz reached PROD failed the
+    # whole seed on idx_organizer_code, which would have broken CI's fresh
+    # bootstrap as surely as it broke a local reset.
+    # The seed wins on conflict, because the dump IS the PROD truth: a migration
+    # seeding a placeholder row must not mask the real payee/IBAN behind it.
+    conflict_sets = ", ".join(f"{c} = EXCLUDED.{c}" for c in col_names if c != "txt_code")
     for r in rows:
         vals = ", ".join(sql_val(r.get(c["name"]), c["type"]) for c in cols)
-        lines.append(f"INSERT INTO tbl_organizer ({', '.join(col_names)}) VALUES ({vals});")
+        lines.append(
+            f"INSERT INTO tbl_organizer ({', '.join(col_names)}) VALUES ({vals}) "
+            f"ON CONFLICT (txt_code) DO UPDATE SET {conflict_sets};"
+        )
     lines.append("")
 
     # --- tbl_scoring_config (UPDATE after trigger-created defaults) ---
@@ -216,12 +235,56 @@ def export_monolithic(ref: str, token: str) -> str:
     col_names = [c["name"] for c in cols]
     rows = q(f"SELECT {select_expr(cols)} FROM tbl_fencer ORDER BY txt_surname, txt_first_name")
     lines.append(f"-- tbl_fencer ({len(rows)} rows)")
+    # Skip anyone a migration already created, on the identity triple. Same
+    # reasoning as tbl_organizer above and the same NOT EXISTS shape tbl_result
+    # already uses below, but this one is not hypothetical: on a fresh bootstrap
+    # the three data migrations that add fencers by hand (20260714000003's 15
+    # reconciled rows, plus KOSZYK and CISZEWSKA/SZUMIELEWICZ) all run BEFORE
+    # this seed, against an EMPTY table. Their own WHERE NOT EXISTS guards
+    # therefore pass, they insert, and the seed then inserted the same people a
+    # second time — 385 rows where PROD has 367, and 17 same-name pairs where
+    # PROD has 2. Those phantom pairs are not inert: they are exactly the input
+    # that makes identity resolution ambiguous, so every local test of
+    # duplicate-name behaviour was being run against data PROD does not have.
+    #
+    # IS NOT DISTINCT FROM, not =, because nine fencers have no birth year and
+    # `int_birth_year = NULL` is never true — those rows would duplicate on
+    # every reset.
+    type_map = {
+        "text": "TEXT",
+        "smallint": "SMALLINT",
+        "integer": "INTEGER",
+        "bigint": "BIGINT",
+        "boolean": "BOOLEAN",
+        "numeric": "NUMERIC",
+        "jsonb": "JSONB",
+        "ARRAY": "TEXT[]",
+    }
     vals_list = []
-    for r in rows:
-        vals = ", ".join(sql_val(r.get(c["name"]), c["type"]) for c in cols)
-        vals_list.append(f"  ({vals})")
-    lines.append(f"INSERT INTO tbl_fencer ({', '.join(col_names)}) VALUES")
-    lines.append(",\n".join(vals_list) + ";")
+    for i, r in enumerate(rows):
+        cells = []
+        for c in cols:
+            v = sql_val(r.get(c["name"]), c["type"])
+            # Postgres infers a VALUES column's type from the FIRST row, so a
+            # leading NULL would leave it "unknown" and abort. Cast row one.
+            if i == 0:
+                cells.append(f"CAST({v} AS {type_map.get(c['type'], 'TEXT')})")
+            else:
+                cells.append(v)
+        vals_list.append(f"  ({', '.join(cells)})")
+    select_cells = [
+        f"v.{c['name']}::{c['udt']}" if c["type"] == "USER-DEFINED" else f"v.{c['name']}"
+        for c in cols
+    ]
+    lines.append(f"INSERT INTO tbl_fencer ({', '.join(col_names)})")
+    lines.append(f"SELECT {', '.join(select_cells)} FROM (VALUES")
+    lines.append(",\n".join(vals_list))
+    lines.append(f") AS v({', '.join(col_names)})")
+    lines.append("WHERE NOT EXISTS (")
+    lines.append("  SELECT 1 FROM tbl_fencer f")
+    lines.append("   WHERE upper(btrim(f.txt_surname))    = upper(btrim(v.txt_surname))")
+    lines.append("     AND upper(btrim(f.txt_first_name)) = upper(btrim(v.txt_first_name))")
+    lines.append("     AND f.int_birth_year IS NOT DISTINCT FROM v.int_birth_year);")
     lines.append("")
 
     # --- tbl_event (per season) ---

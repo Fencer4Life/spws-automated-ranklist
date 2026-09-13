@@ -31,6 +31,8 @@ from dataclasses import dataclass
 
 from rapidfuzz import fuzz
 
+from python.pipeline.vcat_marker import strip_marker
+
 AUTO_MATCH_THRESHOLD = 95
 PENDING_THRESHOLD = 50
 
@@ -79,9 +81,9 @@ def strip_category_markers(name: str) -> str:
     The bare-digit form is bounded to 0-4 surrounded by whitespace so legitimate
     name tokens (and digits ≥5) are never touched.
     """
-    result = re.sub(r"\s*\((?:kat\s*)?V?\d+\)\s*", " ", name)
-    result = re.sub(r"\s+[0-4]\s+", " ", result)
-    return result.strip()
+    # One owner for the convention (ADR-080 §1). Keeping a private copy here is
+    # how the export and scrape sides drifted apart in the first place.
+    return strip_marker(name)
 
 
 def canonicalize_scraped_name(name: str) -> str:

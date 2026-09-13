@@ -301,6 +301,16 @@ class DbConnector:
         resp = self._sb.rpc("fn_enqueue_affected_events", {"p_id_fencer": id_fencer}).execute()
         return resp.data if isinstance(resp.data, int) else 0
 
+    def claim_identity_override_alerts(self) -> list[dict]:
+        """Claim the confirmed-birth-year overrides still owed an operator alert.
+
+        The RPC stamps ts_notified in the same statement that selects the rows
+        (FOR UPDATE SKIP LOCKED), so overlapping drains cannot both report the
+        same change and a crash after sending cannot replay it.
+        """
+        resp = self._sb.rpc("fn_claim_identity_override_alerts", {}).execute()
+        return list(resp.data or [])
+
     def recompute_watermark(self):
         """Return ts_last_master_change (the debounce watermark), or None."""
         resp = (

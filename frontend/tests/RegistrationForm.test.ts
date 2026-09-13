@@ -8,6 +8,8 @@ import { render, fireEvent, waitFor } from '@testing-library/svelte'
 vi.mock('../src/lib/api', () => ({
   fetchEventForRegistration: vi.fn(),
   matchRegistrationFencer: vi.fn(),
+  fetchIdentityCandidates: vi.fn(),
+  confirmRegistrationIdentity: vi.fn(),
   createRegistration: vi.fn(),
   updateRegistration: vi.fn(),
   fetchEntryList: vi.fn(),
@@ -15,6 +17,8 @@ vi.mock('../src/lib/api', () => ({
 import {
   fetchEventForRegistration,
   matchRegistrationFencer,
+  fetchIdentityCandidates,
+  confirmRegistrationIdentity,
   createRegistration,
   updateRegistration,
   fetchEntryList,
@@ -28,6 +32,8 @@ import type { RegistrationEventInfo } from '../src/lib/types'
 
 const mockFetchEvent = vi.mocked(fetchEventForRegistration)
 const mockMatch = vi.mocked(matchRegistrationFencer)
+const mockCandidates = vi.mocked(fetchIdentityCandidates)
+const mockConfirm = vi.mocked(confirmRegistrationIdentity)
 const mockCreate = vi.mocked(createRegistration)
 const mockEntryList = vi.mocked(fetchEntryList)
 const mockUpdate = vi.mocked(updateRegistration)
@@ -53,11 +59,32 @@ const BASE_EVENT: RegistrationEventInfo = {
   txt_payment_source: 'ORGANIZER',
 }
 
+// An unmatched entrant now stops on the rung-6 name check before RODO: that is
+// the path where we are about to mint a brand-new identity, so the canonical
+// form is echoed back and confirmed. Matched entrants never see this screen —
+// helpers that mock a hit deliberately do not call this.
+async function passNameCheck(container: HTMLElement) {
+  // Wait for whichever screen the ladder landed on — the name check for a
+  // newcomer, or RODO directly for anyone the exact lookup matched.
+  await waitFor(() => {
+    const onCheck = container.querySelector('button.reg-id-confirm')
+    const onRodo = container.querySelector('input.reg-rodo-checkbox')
+    if (!onCheck && !onRodo) throw new Error('identity resolution still pending')
+  })
+  const confirm = container.querySelector('button.reg-id-confirm') as HTMLButtonElement | null
+  if (confirm) await fireEvent.click(confirm)
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   // Default: nobody already on the roster, so the soft duplicate guard stays
   // quiet unless a test opts into it.
   mockEntryList.mockResolvedValue([])
+  // Default: the near-miss lookup finds nobody, so an unmatched entrant is a
+  // genuine newcomer and stops on the rung-6 name check. Tests that exercise
+  // a near miss override this.
+  mockCandidates.mockResolvedValue([])
+  mockConfirm.mockResolvedValue(1)
   mockNewToken.mockReturnValue('tok-generated-0123456789abcdef')
   Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
 })
@@ -171,6 +198,7 @@ describe('RegistrationForm — routing after identity (P2.4, ADR-079 §2)', () =
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     expect(mockMatch).toHaveBeenCalledWith('KOWALSKI', 'Jan', 1970)
   })
@@ -192,6 +220,7 @@ describe('RegistrationForm — routing after identity (P2.4, ADR-079 §2)', () =
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     await findByText(/nie znaleźliśmy cię/i)
   })
@@ -204,6 +233,7 @@ describe('RegistrationForm — routing after identity (P2.4, ADR-079 §2)', () =
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
@@ -226,6 +256,7 @@ describe('RegistrationForm — routing after identity (P2.4, ADR-079 §2)', () =
     await fillIdentity(container, { surname: '  kowalski  ', firstName: '  Jan  ' })
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
     await waitFor(() => expect(mockMatch).toHaveBeenCalledWith('KOWALSKI', 'Jan', 1970))
+    await passNameCheck(container)
     await findByText(/RODO/)
     await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
@@ -254,6 +285,7 @@ describe('RegistrationForm — routing after identity (P2.4, ADR-079 §2)', () =
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/jest już zawodnik/i)
   })
 
@@ -284,6 +316,7 @@ describe('RegistrationForm — RODO gate + payment (P2.5/P2.6)', () => {
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
   }
 
@@ -432,6 +465,7 @@ describe('RegistrationForm — payment deadline note', () => {
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
@@ -470,6 +504,7 @@ describe('RegistrationForm — write failure and back navigation', () => {
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
   }
 
@@ -544,6 +579,7 @@ describe('RegistrationForm — entry fee currency', () => {
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
@@ -612,6 +648,7 @@ describe('RegistrationForm — the payment account comes from the event', () => 
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
@@ -673,6 +710,7 @@ describe('RegistrationForm — correcting a submitted declaration', () => {
     await findByText('IV Puchar Polski Weteranów')
     await fillIdentity(container)
     await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
     await findByText(/RODO/)
     await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
     await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
@@ -780,5 +818,297 @@ describe('RegistrationForm — the consent notice names the right law', () => {
     // `rodo@spws.pl` is the association's real mailbox and stays as it is —
     // the word boundary above is what keeps the address out of this.
     expect(offenders).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The identity block (plan 2026-09-12 §4, §5, §7).
+//
+// fn_match_registration_fencer matches the exact tuple and nothing else. That
+// strictness can never merge two people, but it means a near miss — a birth
+// year off by one, two names in each other's boxes — is indistinguishable from
+// a newcomer, so the same fencer reaches the organizer's software twice. On
+// PROD, all seven of PPW1-2026-2027's unmatched registrations were near misses.
+//
+// The first test below is the one that matters most: the 36 that already match
+// must keep taking the existing fast path, with no extra lookup and no prompt.
+// ---------------------------------------------------------------------------
+describe('RegistrationForm — identity resolution ladder', () => {
+  // 6.30 — RUNG 1, THE REGRESSION THAT PROTECTS THE OTHER 36. A clean exact
+  // match must not consult the near-miss lookup at all, must show no prompt,
+  // and must write nothing to the fencer table.
+  it('a matching registration takes the fast path — no second lookup, no prompt', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(42)
+    mockCreate.mockResolvedValue(99)
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    expect(mockCandidates).not.toHaveBeenCalled()
+    expect(container.querySelector('.reg-idcheck')).toBeNull()
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ fencerId: 42 }))
+  })
+
+  // 6.31 — RUNG 3. The B prompt names the fencer we hold in canonical form,
+  // and echoes what was typed beside it. This is KRZYSZTOF Łęcki vs #168.
+  it('renders the swap alert in canonical form when the name fields are exchanged', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 168, surname: 'Łęcki', firstName: 'Krzysztof', birthYear: 1991, birthYearEstimated: false, kind: 'SWAPPED' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'Krzysztof', firstName: 'Łęcki', birthYear: '1991' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText('ŁĘCKI Krzysztof')
+    await findByText(/KRZYSZTOF Łęcki/)
+  })
+
+  // 6.32 — accepting the swap needs NO master-data write: rewriting the two
+  // fields is the entire fix, and the fencer matches cleanly ever after.
+  it('accepting the swap rewrites the fields and links the fencer without writing tbl_fencer', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 168, surname: 'Łęcki', firstName: 'Krzysztof', birthYear: 1991, birthYearEstimated: false, kind: 'SWAPPED' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'Krzysztof', firstName: 'Łęcki', birthYear: '1991' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('button.reg-id-accept')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-accept') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ surname: 'Łęcki', firstName: 'Krzysztof', fencerId: 168 }),
+    )
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
+  // 6.33 — "leave it as I typed it" is believed without argument.
+  it('declining the swap writes the declaration exactly as typed', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 168, surname: 'Łęcki', firstName: 'Krzysztof', birthYear: 1991, birthYearEstimated: false, kind: 'SWAPPED' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'Krzysztof', firstName: 'Łęcki', birthYear: '1991' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('button.reg-id-keep')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-keep') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ surname: 'KRZYSZTOF', firstName: 'Łęcki', fencerId: null }),
+    )
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
+  // 6.34 — RUNG 5, answer one: the declaration wins and the master row is
+  // corrected. This is BUJKO Paulina 1982 against #30's confirmed 1979.
+  it('"my year is right" corrects the master birth year via ADOPT_DECLARED', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 30, surname: 'BUJKO', firstName: 'Paulina', birthYear: 1979, birthYearEstimated: false, kind: 'BY_DIFFERS' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'BUJKO', firstName: 'Paulina', birthYear: '1982' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('button.reg-id-adopt')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-adopt') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockConfirm).toHaveBeenCalled())
+    // The declared year is what gets written, and the confirmation is replayed
+    // against the row that was just created — the edit token is the capability.
+    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ birthYear: 1982, fencerId: 30 }))
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ idRegistration: 101, idFencer: 30, action: 'ADOPT_DECLARED' }),
+    )
+  })
+
+  // 6.35 — RUNG 5, answer two: the declaration was the typo, so the
+  // REGISTRATION moves to the table's year and the fencer row is untouched.
+  it('"I mistyped" corrects the registration and leaves the fencer alone', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 280, surname: 'STAŃCZYK', firstName: 'Marcin', birthYear: 1980, birthYearEstimated: false, kind: 'BY_DIFFERS' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'STAŃCZYK', firstName: 'Marcin', birthYear: '1979' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('button.reg-id-fix')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-fix') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockConfirm).toHaveBeenCalled())
+    // The corrected year must reach the registration write too, or the form
+    // would go on submitting the year the fencer just disowned.
+    expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ birthYear: 1980, fencerId: 280 }))
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ idFencer: 280, action: 'FIX_REGISTRATION' }),
+    )
+  })
+
+  // 6.36 — RUNG 5, answer three: nothing is linked and nothing is written.
+  it('"someone else" links nothing and writes nothing', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 30, surname: 'BUJKO', firstName: 'Paulina', birthYear: 1979, birthYearEstimated: false, kind: 'BY_DIFFERS' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'BUJKO', firstName: 'Paulina', birthYear: '1982' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('button.reg-id-other')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-other') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ birthYear: 1982, fencerId: null }),
+    )
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
+  // 6.37 — THE MŁYNEK CASE. Two people share a name, 33 years apart, and one
+  // of them carries 19 results. Both must be offered: picking one in software
+  // is the unrecoverable mistake this whole design exists to refuse.
+  it('lists every candidate when two fencers share a name', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 197, surname: 'MŁYNEK', firstName: 'Janusz', birthYear: 1951, birthYearEstimated: false, kind: 'BY_DIFFERS' },
+      { idFencer: 356, surname: 'MŁYNEK', firstName: 'Janusz', birthYear: 1984, birthYearEstimated: false, kind: 'BY_DIFFERS' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'MŁYNEK', firstName: 'Janusz', birthYear: '1999' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelectorAll('.reg-idcheck').length).toBe(2))
+    await findByText(/1951/)
+    await findByText(/1984/)
+  })
+
+  // 6.38 — RUNG 4. We hold this person with no birth year at all, which the
+  // exact matcher structurally cannot reach. Nothing contradicts the
+  // declaration, so it is populated silently — no prompt, no question.
+  it('populates a null birth year silently, with no prompt', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 501, surname: 'KOWALSKI', firstName: 'Jan', birthYear: null, birthYearEstimated: false, kind: 'BY_NULL' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    expect(container.querySelector('.reg-idcheck')).toBeNull()
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    await waitFor(() => expect(mockConfirm).toHaveBeenCalled())
+    expect(mockConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ idFencer: 501, action: 'ADOPT_DECLARED' }),
+    )
+  })
+
+  // 6.39 — RUNG 6. Nobody at all, so we are about to mint a new identity. The
+  // canonical form is echoed back — this is the only path that can catch NAGY
+  // Orsolya, whom the swap retry cannot help because she is not in the table.
+  it('echoes the canonical form back to a genuinely new person', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCandidates.mockResolvedValue([])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'Orsolya', firstName: 'Nagy', birthYear: '1974' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText('ORSOLYA Nagy')
+    expect(container.querySelector('button.reg-id-swap')).not.toBeNull()
+  })
+
+  // 6.40 — and the swap button on that screen re-runs the whole ladder rather
+  // than assuming the exchanged pair is also a newcomer.
+  it('swapping on the new-person check re-runs the lookup', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValueOnce(null).mockResolvedValueOnce(777)
+    mockCandidates.mockResolvedValue([])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container, { surname: 'Orsolya', firstName: 'Nagy', birthYear: '1974' })
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await waitFor(() => expect(container.querySelector('button.reg-id-swap')).not.toBeNull())
+    await fireEvent.click(container.querySelector('button.reg-id-swap') as HTMLButtonElement)
+    await findByText(/RODO/)
+    // Uppercase on both: the surname box uppercases whatever is typed into it,
+    // so the given name's original casing is already gone by the time anyone
+    // can swap. That is not a defect to chase here — casing is a class-C
+    // anomaly that to_canonical_name() normalises on export.
+    expect(mockMatch).toHaveBeenLastCalledWith('NAGY', 'ORSOLYA', 1974)
+  })
+
+  // 6.41 — a failing near-miss lookup must never block an entry. Same posture
+  // as the exact lookup: the declaration is what matters.
+  it('treats a failed candidate lookup as "no candidates" rather than an error', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCandidates.mockRejectedValue(new Error('network'))
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await passNameCheck(container)
+    await findByText(/RODO/)
+  })
+
+  // 6.42 — and a failing CONFIRMATION must not fail the registration. The
+  // declaration is the thing that must not be lost; correcting the master row
+  // is an improvement on top of it, never a precondition for it.
+  it('keeps the registration when the identity confirmation fails', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockConfirm.mockRejectedValue(new Error('token rejected'))
+    mockCandidates.mockResolvedValue([
+      { idFencer: 501, surname: 'KOWALSKI', firstName: 'Jan', birthYear: null, birthYearEstimated: false, kind: 'BY_NULL' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    await findByText(/RODO/)
+    await fireEvent.click(container.querySelector('input.reg-rodo-checkbox') as HTMLInputElement)
+    await fireEvent.click(container.querySelector('button.reg-rodo-accept') as HTMLButtonElement)
+    // The fencer still reaches the payment screen: the entry stands.
+    await findByText('PPW4-2025-2026 JAN KOWALSKI SZPADA V2')
   })
 })

@@ -69,6 +69,12 @@ jobs:
           DEBOUNCE: ${{ github.event.inputs.debounce || '120' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
+          # The drain is also where confirmed-birth-year overrides are announced
+          # (fn_claim_identity_override_alerts). Without these the notifier is
+          # built as None and the alert is dropped in silence — which is the one
+          # outcome the whole mechanism exists to prevent.
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Notify failure
         if: failure()

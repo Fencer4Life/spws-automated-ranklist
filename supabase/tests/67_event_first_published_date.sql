@@ -71,15 +71,26 @@ SELECT results_eq(
 -- fixes) and the anchor correctly keeps the FIRST value. All of them are
 -- COMPLETED, so the pill never fires. What must be zero is the set the fencer
 -- would actually see.
-SELECT is(
-  (SELECT count(*)::INT FROM tbl_event
-    WHERE txt_code NOT LIKE '%-6700-6701'
-      AND enum_status = 'PLANNED'
-      AND dt_start > CURRENT_DATE
-      AND dt_start_first_published IS NOT NULL
-      AND dt_start IS DISTINCT FROM dt_start_first_published),
-  0,
-  '67.4 — no pre-existing event would show the moved-date pill'
+-- Restated 2026-09-12, when the seed caught up with current PROD. The original
+-- form asserted the count was ZERO, which was a fact about August's data rather
+-- than an invariant: EVF has since genuinely moved PEW14ef-2026-2027 from the
+-- 2027-04-24 it first published to 2027-04-10, and the pill firing for it is
+-- the feature working, not noise.
+--
+-- So the assertion becomes "nothing UNEXPECTED shows the pill". That keeps what
+-- 67.4 is actually for — a backfill that anchored rows wrongly would light up
+-- the calendar, and any such row fails this — while surviving two things a hard
+-- count cannot: a genuine mover appearing, and this one ageing out when
+-- 2027-04-10 passes and the set legitimately empties again.
+SELECT is_empty(
+  $$SELECT txt_code FROM tbl_event
+     WHERE txt_code NOT LIKE '%-6700-6701'
+       AND enum_status = 'PLANNED'
+       AND dt_start > CURRENT_DATE
+       AND dt_start_first_published IS NOT NULL
+       AND dt_start IS DISTINCT FROM dt_start_first_published
+       AND txt_code NOT IN ('PEW14ef-2026-2027')$$,
+  '67.4 — no unexpected event would show the moved-date pill'
 );
 
 -- 67.5 — an explicit value survives (the CERT→PROD mirror passes CERT''s anchor)

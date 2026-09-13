@@ -44,6 +44,19 @@ SELECT plan(9);
 -- ---------------------------------------------------------------------------
 SAVEPOINT s_init;
 
+-- Clear the dependants first. When this fixture was written SPWS-2026-2027 was
+-- a bare promoted skeleton, so deleting its events was safe; the season has
+-- since acquired real competitions with tournaments and results behind them,
+-- and tbl_tournament_id_event_fkey has no ON DELETE CASCADE — so the bare
+-- event delete now aborts the file. All inside the savepoint; the ROLLBACK
+-- at the end restores every row.
+DELETE FROM tbl_result WHERE id_tournament IN (
+  SELECT t.id_tournament FROM tbl_tournament t
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
+DELETE FROM tbl_tournament WHERE id_event IN (
+  SELECT id_event FROM tbl_event
+   WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';

@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="093-registration-as-birth-year-source.md">
+<meta name="adr-source-sha256" content="eb3eef8c1c5e899007261f8cb2b3e67627bee7bea17b8b07441695079e18ea80">
+<title>ADR-093 · Registration as an Authoritative Birth-Year Source</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 093</p><h1>Registration as an Authoritative Birth-Year Source</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-09-12; database and form implemented, operator alert implemented)</dd></div><div><dt>Date</dt><dd class="">2026-09-12</dd></div><div><dt>Source</dt><dd class=""><code>093-registration-as-birth-year-source.md</code></dd></div><div><dt>Length</dt><dd class="">320 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-09-12; database and form implemented, operator alert implemented)
+<strong>Date:</strong> 2026-09-12
+<strong>Supersedes:</strong> <a href="079-event-self-registration-identity.html">ADR-079</a> §1 (<em>Core invariant — registration is READ-ONLY on <code>tbl_fencer</code></em>), and the &quot;by construction&quot; security consequence stated there. §§2–5 stand, as do both of ADR-079's own amendments.
+<strong>Amends:</strong> <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> §2's restatement of the read-only invariant (&quot;the <strong>declared</strong> birth year (read-only invariant), not <code>tbl_fencer</code>'s&quot;). The seeding behaviour that sentence describes is unchanged — only its claim that nothing flows back.
+<strong>Relates to:</strong> <a href="078-gdpr-data-handling.html">ADR-078</a> (a new personal-data surface and its retention), <a href="083-server-enforced-authorization.html">ADR-083</a> (deny-by-default grants; its pgTAP 52.7 caught a defect in this work), <a href="072-cdc-recompute-debounce.html">ADR-072</a> and <a href="071-mdm-dedup-sweep.html">ADR-071</a> (the self-heal path this decision depends on), <a href="047-vcat-invariant-trigger-and-splitter-consolidation.html">ADR-047</a> (<code>trg_assert_result_vcat</code> does <strong>not</strong> fire on <code>tbl_fencer</code>, which is why the self-heal is load-bearing), <a href="056-vcat-from-birthyear.html">ADR-056</a> and <a href="010-age-category-by-birth-year.html">ADR-010</a> (what a birth year determines)
+<strong>Source:</strong> <code>doc/plans/ftl-xml-export-2026-09-12.html</code> §4/§5/§7; migrations <code>20260912000001</code>, <code>20260912000002</code>, <code>20260912000003</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-declaration-outranks-a-derived-value-and-may-write-back">1 · The declaration outranks a derived value, and may write back</a></li><li class="depth-3"><a href="#2-the-lookup-classifies-it-never-decides">2 · The lookup classifies; it never decides</a></li><li class="depth-3"><a href="#3-the-write-is-gated-on-a-capability-not-on-knowing-a-name">3 · The write is gated on a capability, not on knowing a name</a></li><li class="depth-3"><a href="#4-three-tiers-of-birth-year-and-the-third-is-loud">4 · Three tiers of birth year — and the third is loud</a></li><li class="depth-3"><a href="#5-the-ranking-heals-itself-and-must-not-be-prevented-from-doing-so">5 · The ranking heals itself, and must not be prevented from doing so</a></li><li class="depth-3"><a href="#6-where-the-decision-is-actually-made">6 · Where the decision is actually made</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#answering-adr-079-4-s-threat-model">Answering ADR-079 §4&#x27;s threat model</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>fn_match_registration_fencer</code> (<code>supabase/migrations/20260704000001_event_registration_schema.sql:201</code>)
+matches the exact tuple <code>(upper(surname), upper(first name), birth year)</code> and nothing
+else. That strictness is deliberate and correct: an exact-tuple matcher can never
+merge two different people. But it has no near-miss path at all, so a birth year off
+by one and a genuine newcomer are indistinguishable to it — both fall into the
+unmatched bucket, silently, and nobody is told.</p>
+<p>The consequence is not theoretical. Measured on PROD on 2026-09-12,
+PPW1-2026-2027 had 43 registrations, 36 matched, and <strong>all seven misses were near
+misses rather than newcomers</strong>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Declared</th>
+<th>In <code>tbl_fencer</code></th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUJKO Paulina 1982</td>
+<td>#30, 1979, confirmed</td>
+<td>birth year differs</td>
+</tr>
+<tr>
+<td>STAŃCZYK MARCIN 1979</td>
+<td>#280, 1980, confirmed</td>
+<td>birth year differs</td>
+</tr>
+<tr>
+<td>KRZYSZTOF Łęcki 1991</td>
+<td>#168 ŁĘCKI Krzysztof 1991</td>
+<td>name fields exchanged</td>
+</tr>
+<tr>
+<td>KANIECKI, PERKOWSKI, SIEJKOWSKI, ZANEUSKAYA</td>
+<td>absent</td>
+<td>genuinely new</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each near miss produces the same outcome: the fencer is created again at ingestion,
+and the same person reaches the organizer's software twice. PEW5efs-2026-2027 shows
+the same shape — 14 registrations, 8 matched, two birth-year disagreements (LEAHEY,
+MADDEN) and four newcomers.</p>
+<p>Two further facts constrain any fix:</p>
+<ul>
+<li><strong><code>tbl_fencer</code> has no uniqueness constraint on name + birth year</strong> — only the
+primary key and the non-unique <code>idx_fencer_name</code>. PROD carries two live same-name
+pairs: #197 MŁYNEK Janusz 1951 (19 results) beside #356 MŁYNEK Janusz 1984, and
+#354/#355 KRAWCZYK Paweł (1989/1954). A name-based rule that wrote to &quot;the&quot;
+matching row could write onto the wrong person, and that is unrecoverable.</li>
+<li><strong>Nine fencers have no birth year at all.</strong> <code>int_birth_year = p_birth_year</code> is never
+true for them, so the existing matcher cannot reach those rows by construction — not
+as an oversight, but as a property of equality with NULL.</li>
+</ul>
+<p>ADR-079 §1 made registration read-only on <code>tbl_fencer</code> and derived a security property
+from it: <em>&quot;a malicious registration can at most create a junk, ephemeral, deletable
+<code>tbl_registration</code> row — it cannot mutate an identity or a ranking, because that code
+path does not exist in the registration flow.&quot;</em> ADR-079 §4's threat model then leans on
+that: <em>&quot;The real defences: (a) the read-only invariant + confirmed-BY-sacrosanct rule →
+no data corruption.&quot;</em></p>
+<p>This decision deliberately reverses that invariant, so both statements need answering
+rather than quietly outliving their basis. The reason to reverse it: <strong>a registration
+is a first-hand declaration by a fencer about their own birth year, and that outranks
+anything we derived by scraping.</strong> Twenty PROD rows carry
+<code>bool_birth_year_estimated = true</code> — eighteen of them with results — and the person
+who can settle each one is filling in the form.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-the-declaration-outranks-a-derived-value-and-may-write-back">1 · The declaration outranks a derived value, and may write back</h3>
+<p>Registration may write <code>tbl_fencer.int_birth_year</code>. It still writes nothing else
+there, creates no fencers, and touches no results and no ranking — ADR-079 §1's other
+prohibitions stand. <code>fn_match_registration_fencer</code> and <code>fn_create_registration</code> are
+<strong>unchanged</strong>, so the 36 of 43 registrations that already resolve keep their existing
+path byte for byte; the new lookup is consulted only after that path misses.</p>
+<h3 id="2-the-lookup-classifies-it-never-decides">2 · The lookup classifies; it never decides</h3>
+<p><code>fn_registration_identity_candidates</code> (<code>20260912000001:89</code>) scans by <strong>name</strong>, not by
+tuple — which is also how it sees the nine NULL-birth-year rows — and labels every
+candidate <code>EXACT | SWAPPED | BY_NULL | BY_DIFFERS</code>. It returns <strong>all</strong> of them.</p>
+<p>Returning all of them is the safety property, not a convenience: where two people share
+a name, software choosing between them is the unrecoverable mistake. The caller applies
+a fixed six-rung order, and &quot;exactly one&quot; is the <em>order itself</em> rather than a condition
+repeated on each rule:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Rung</th>
+<th>Condition</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>exactly one <code>EXACT</code></td>
+<td>link and stop — today's behaviour, untouched</td>
+</tr>
+<tr>
+<td>2</td>
+<td>more than one <code>EXACT</code></td>
+<td>duplicate-fencer defect; surface to an administrator</td>
+</tr>
+<tr>
+<td>3</td>
+<td>exactly one <code>SWAPPED</code></td>
+<td>ask the fencer (the B prompt)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>exactly one <code>BY_NULL</code></td>
+<td>populate silently, mark confirmed</td>
+</tr>
+<tr>
+<td>5</td>
+<td>any <code>BY_DIFFERS</code></td>
+<td>ask, listing <strong>every</strong> candidate (the D prompt)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>nothing matched</td>
+<td>echo the canonical name back before minting a new identity</td>
+</tr>
+</tbody>
+</table></div>
+<p>MŁYNEK Janusz 1984 registering reaches rung 1, not rung 5 — there <em>is</em> an exact match,
+so the ambiguity with the 1951 Janusz never arises. Ambiguity bites only when no exact
+match exists, and rung 5 then shows both with their birth years and lets the person
+choose. The one human who knows the answer is already looking at the screen.</p>
+<h3 id="3-the-write-is-gated-on-a-capability-not-on-knowing-a-name">3 · The write is gated on a capability, not on knowing a name</h3>
+<p><code>fn_confirm_registration_identity</code> (<code>20260912000002:88</code>) is <code>SECURITY DEFINER</code> and
+anon-callable, because the fencer correcting their own entry <strong>is</strong> the anonymous
+visitor. Four guards make that acceptable:</p>
+<ol>
+<li><strong>The edit token.</strong> The caller must present <code>tbl_registration.uuid_edit_token</code>
+(ADR-079's 2026-08-28 amendment), so they must hold the handle for the row they
+just created — not merely know a name. <code>fn_create_registration</code> is not widened.</li>
+<li><strong>The candidate set, recomputed server-side</strong> from that registration's own stored
+declaration. Without this the function would be a rewrite-any-fencer's-birth-year
+primitive; with it the reachable set is the handful of people sharing the
+registrant's name.</li>
+<li><strong>A confirmed year cannot be changed by the public at all</strong> — it can only be
+<em>proposed</em>. This guard was wrong when first written and is recorded here as it was
+corrected, because the reasoning matters more than the conclusion. The original
+claim was that &quot;rung 5 requires an explicit human answer&quot;. That was true of the form
+and never of the server: <code>ADOPT_DECLARED</code> is a <strong>parameter, not a click</strong>, so the
+server cannot distinguish a fencer pressing the button from a crafted RPC call, and
+the edit token is no obstacle to a caller who mints it for a row they just created.
+Demonstrated rather than argued on a PROD-mirrored LOCAL on 2026-09-12 — an
+anonymous caller knowing only the name &quot;BUJKO Paulina&quot; moved a confirmed 1979 to
+1900 with no human involved. Migration <code>20260912000003</code> therefore removes the
+capability instead of narrowing it: the public call records a PENDING row and
+touches nothing, and <code>fn_apply_identity_override</code> is administrator-only. Re-run
+against the fix, the same attack leaves the master row at 1979, the queue empty and
+the audit log silent. See §4.</li>
+<li><strong>A plain <code>UPDATE</code></strong>, never a trigger-disabling path — see §5.</li>
+</ol>
+<p>The three answers map to the D prompt's three buttons: <code>ADOPT_DECLARED</code> corrects the
+master birth year; <code>FIX_REGISTRATION</code> corrects the registration and leaves the fencer
+untouched; <code>DIFFERENT_PERSON</code> writes nothing.</p>
+<h3 id="4-three-tiers-of-birth-year-and-the-third-is-loud">4 · Three tiers of birth year — and the third is loud</h3>
+<p>A NULL is a gap and an estimate is a guess; both are overwritten by policy and neither
+contradicts anything anyone checked. An <strong>already-confirmed</strong> year is different in
+kind: a member of the public is changing a value somebody had verified, which moves
+that fencer between V-categories and re-scores every event they have played.</p>
+<p>It is still <strong>askable</strong> — that is the point of the reversal — but the public cannot
+carry it out. <code>fn_confirm_registration_identity</code> records a PENDING row in
+<code>tbl_registration_identity_override</code> (<code>20260912000002:43</code>), raises a <code>WARNING</code>, and the
+recompute drain announces it over Telegram via <code>fn_claim_identity_override_alerts</code>. The
+master row moves only when an administrator calls <code>fn_apply_identity_override</code>, which is
+not granted to <code>anon</code>.</p>
+<p>The honest trade: the fencer's declaration is captured the instant they make it and is
+never lost, but it is not <em>applied</em> until somebody looks. Since the alert already meant a
+correction waited up to fifteen minutes, an honest fencer gives up very little; an
+attacker gives up the write entirely. Rejected as insufficient: a plausibility bound on
+the declared year, which stops <code>1900</code> and does nothing about <code>1979 -&gt; 1982</code> — the change
+an attacker would actually choose.</p>
+<p><code>trg_audit_fencer</code> already recorded every such change, and that is precisely why it is
+not sufficient: it records <em>every</em> fencer update identically, so this one is
+indistinguishable from an administrator fixing a typo unless somebody already knows to
+look. Evidence you have to know to go and find is not a signal.</p>
+<p>The override row denormalises the declared name because ADR-079 makes
+<code>tbl_registration</code> ephemeral — purged once results are ingested and reconciled. A plain
+foreign key would delete the evidence at exactly the moment somebody asks why a
+fencer's birth year changed.</p>
+<p>The two quiet tiers stay quiet deliberately. An alert that fires routinely is an alert
+nobody reads, and the one that matters would then arrive into a muted channel.</p>
+<h3 id="5-the-ranking-heals-itself-and-must-not-be-prevented-from-doing-so">5 · The ranking heals itself, and must not be prevented from doing so</h3>
+<p><code>trg_assert_result_vcat</code> fires only on <code>tbl_result</code> (ADR-047), so it does <strong>not</strong> guard
+a birth-year change on <code>tbl_fencer</code>: on its own, such a change would leave every old
+result in its old V-category with no error raised anywhere.</p>
+<p>What saves it is <code>trg_fencer_change_enqueue</code>, which fires <code>AFTER UPDATE ON tbl_fencer</code>
+and is column-aware — birth year or nationality enqueues, name or alias does not. It
+queues a recompute of every event that fencer played (ADR-071/ADR-072), and the PROD
+drain runs every fifteen minutes. Verified live on 2026-09-12 against BUJKO Paulina on
+a PROD-mirrored LOCAL: the correction re-queued the event she had actually played and
+<code>trg_audit_fencer</code> logged it.</p>
+<p>The write is therefore a plain <code>UPDATE</code>, guarded on <code>IS DISTINCT FROM</code> so a no-op
+confirmation does not re-queue every event for nothing. <strong>Any path that disables
+triggers leaves the ranking inconsistent with no error at all.</strong></p>
+<h3 id="6-where-the-decision-is-actually-made">6 · Where the decision is actually made</h3>
+<p>Removing the public's ability to write left the correction with nowhere to land.
+<code>fn_apply_identity_override</code> was administrator-only from the start, but nothing listed
+what was waiting: the Telegram alert carried a proposal id and the decision was a
+hand-made RPC call. <strong>A proposal nobody can see is a correction that never happens</strong> —
+and the population it fails is the honest one, since an attacker's proposal being
+ignored forever is the desired outcome.</p>
+<p><code>IdentityProposals.svelte</code> renders the pending list at the top of the existing
+birth-year review tab, which is where an administrator already goes to make exactly this
+kind of judgement. Three properties are deliberate:</p>
+<ul>
+<li><strong>Invisible when empty.</strong> The panel sits above a screen opened for other reasons, so
+an empty frame every day would train the reader to scroll past the one day it matters.</li>
+<li><strong>Both years on every row</strong>, because &quot;a birth year changed&quot; is not actionable and
+&quot;1979 → 1982&quot; is.</li>
+<li><strong>The declared name comes from the proposal</strong>, not from a join to the registration —
+ADR-079 purges that row after ingestion, so a join would lose the evidence exactly
+when somebody asks what happened.</li>
+</ul>
+<p>The database remains the real control. The panel is the second of two independent
+checks, not the only one: <code>fn_apply_identity_override</code> has no <code>anon</code> grant, and
+<code>tbl_registration_identity_override</code> is unreadable to <code>anon</code> at all — both verified
+against a running LOCAL, where an anonymous read returns <code>42501 permission denied</code> and
+an anonymous apply is refused by name.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Loosen <code>fn_match_registration_fencer</code> to match on name alone, or fuzzily.</strong>
+Rejected. Its exact-tuple strictness is the one property guaranteeing it can never
+merge two different people, and PROD has two same-name pairs to merge. The fix is to
+show the near miss to a human, not to make the matcher guess.</li>
+<li><strong>Keep the read-only invariant; let ingestion reconcile as today.</strong> Rejected — that
+<em>is</em> today, and today produces the duplicate. Ingestion reconciliation happens after
+the event, whereas the damage (the same person entered twice in the organizer's
+software) happens at the event.</li>
+<li><strong>Refuse every ambiguity and surface it to an administrator.</strong> Rejected for rung 5.
+Kept only for rung 2, where the ambiguity is a data defect rather than a question.
+The person who knows whether they were born in 1979 or 1982 is the one filling in the
+form; routing that to an administrator adds a hop and a delay to a question they
+cannot answer better.</li>
+<li><strong>Echo the canonical name back to every registrant for confirmation.</strong> Declined by
+the user as friction in front of everyone, and narrowed to rung 6 only — the path
+where a brand-new identity is about to be minted, which costs nothing for anyone who
+matched. This is also the only rung that can reach a first-time international
+entrant: the swap retry needs a fencer already in the table, so it catches
+KRZYSZTOF Łęcki (#168 exists) and stays silent for NAGY Orsolya (absent).</li>
+<li><strong>Record the override but do not alert.</strong> Rejected — see §4. A record nobody is told
+about is indistinguishable from no record for the period that matters.</li>
+<li><strong>Gate the write on a magic-link email instead of the edit token.</strong> Rejected: the
+email gate was designed in ADR-079 §2 and never built (Phases 4/5, blocked on the
+mail provider), and its own amendment removed it from the flow. Reusing the edit
+token reuses a capability that exists and is already the authorisation for
+<code>fn_update_registration</code>.</li>
+</ol>
+<h3 id="answering-adr-079-4-s-threat-model">Answering ADR-079 §4's threat model</h3>
+<p>ADR-079 §4 listed four defences, the first being <em>&quot;the read-only invariant +
+confirmed-BY-sacrosanct rule → no data corruption&quot;</em>. Half of that is now gone, so it is
+restated rather than left to decay:</p>
+<ul>
+<li>The <strong>read-only invariant</strong> is replaced by four narrower controls (§3). What an
+attacker gains is not &quot;mutate any identity&quot; but &quot;change the birth year of someone
+whose name they typed, having created a registration for them, on an event still
+open for entry, leaving a durable record that alerts an operator&quot;.</li>
+<li>The <strong>confirmed-BY-sacrosanct rule survives in full</strong>, and in the server rather than
+in the form. No public caller can change a confirmed birth year; it can only be
+proposed, and applying is administrator-only. This was not true of the first
+implementation and was fixed the same day (see §3 guard 3).</li>
+<li>Defences (b) venue-level check, (c) results-based ranking, and (d) the abuse log are
+unchanged.</li>
+<li>The residual exposure is vandalism of one <strong>estimated</strong> birth year, which is still
+applied immediately by design — the person correcting a guess is its subject. It is
+detectable through <code>trg_audit_fencer</code> and reversible, and the recompute queue repairs
+the ranking either way. For a veterans' ranking that is accepted knowingly.</li>
+<li>A bogus registration can still be created for anyone whose name is known. That is
+unchanged by this decision and is ADR-079 §4's existing residual, answered there by
+the venue check.</li>
+</ul>
+<p>The rate limit ADR-079 §4 promises and which was never built remains unbuilt, and this
+decision makes it slightly more valuable than before. It is tracked in
+<code>doc/plans/registration-impersonation-posture-2026-08-28.html</code>.</p>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New files</strong></p>
+<ul>
+<li><code>supabase/migrations/20260912000001_registration_identity_candidates.sql</code> — the
+lookup and the first version of the write.</li>
+<li><code>supabase/migrations/20260912000002_registration_identity_override_alert.sql</code> —
+<code>tbl_registration_identity_override</code>, the loud branch, and
+<code>fn_claim_identity_override_alerts</code>.</li>
+<li><code>supabase/tests/75_registration_identity_candidates.sql</code> — 31 assertions.</li>
+<li><code>scripts/mirror-prod-local.sh</code> — rebuilds LOCAL as a faithful PROD copy, which is how
+the ladder was verified against all 57 real registrations.</li>
+</ul>
+<p><strong>Changed</strong></p>
+<ul>
+<li><code>frontend/src/components/RegistrationForm.svelte</code> — the <code>identity_check</code> step and the
+resolution ladder (<code>resolveIdentity</code>, line 504). PL and EN keys added.</li>
+<li><code>frontend/src/lib/api.ts</code>, <code>types.ts</code> — two RPC wrappers and their types.</li>
+<li><code>python/pipeline/recompute/worker.py</code>, <code>db_connector.py</code> — the operator alert.</li>
+<li><code>frontend/src/components/IdentityProposals.svelte</code> — the administrator's list (§6),
+mounted above the birth-year review tab in <code>App.svelte</code>.</li>
+<li><code>.github/workflows/recompute-drain.yml</code>, <code>recompute-drain-prod.yml</code> — the drain step
+never received <code>TELEGRAM_BOT_TOKEN</code> / <code>TELEGRAM_CHAT_ID</code>, so the notifier would have
+been built as <code>None</code> and the alert dropped in silence.</li>
+</ul>
+<p><strong>Tests</strong> — pgTAP 75.1–75.16; vitest 9.212–9.218 for the administrator's list; 75.1 pins the untouched fast path and is the regression
+that protects the other 36. Vitest 6.30–6.42. Pytest N5.8–N5.11. <code>52_security_posture</code>
+gains both anon-callable functions to its allowlist.</p>
+<p><strong>A defect this work caused and ADR-083's test caught.</strong> Postgres grants <code>EXECUTE</code> on a
+new function to <code>PUBLIC</code> by default, so <code>fn_claim_identity_override_alerts</code> was
+anon-callable without any <code>GRANT</code> being written — an anonymous caller could have
+claimed every pending override and stamped it notified, silencing the alert through the
+same public surface that triggers it. Found by pgTAP 52.7's <strong>set-equality</strong> allowlist,
+which a deny-list of known-bad names would have missed entirely, and fixed with an
+explicit <code>REVOKE</code>. &quot;I did not write a <code>GRANT</code>&quot; is not the same as &quot;anon cannot call it&quot;.</p>
+<p><strong>Defects found and deliberately not fixed here</strong> — three pre-existing bootstrap defects
+surfaced while building the PROD mirror; they are fixed in the same change but belong to
+ADR-036, not to this decision, and are recorded in its amendment.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li>
+<p><strong>Rung 2 is not reachable from the form.</strong> Because the form calls the untouched exact
+matcher first, and that function ends in <code>LIMIT 1</code>, a double exact match returns
+early and never reaches the ladder. Making it reachable would mean calling the
+candidate lookup on <em>every</em> submission, changing the call pattern for the 36 that
+currently work — the opposite of this decision's central constraint. PROD has zero
+duplicate exact triples today, so this guards against a future defect.
+<em>Recommendation:</em> leave the form as built and detect the case in the reconciliation
+report (plan §10 step 4), whose audience is the administrator the rung names. The
+database function already classifies it correctly (pinned by 75.6). <strong>Awaiting the
+user's decision.</strong></p>
+</li>
+<li>
+<p><strong>The rate limit ADR-079 §4 promised and nobody built</strong> remains unbuilt. It bounds
+volume rather than a single targeted change, so it was not the answer to the exposure
+in §3, but it still has value against a flood of proposals. Tracked in
+<code>doc/plans/registration-impersonation-posture-2026-08-28.html</code>.</p>
+</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="092-scoring-table-annex-bilingual-static-page.html">← ADR-092: A Second Standalone Static Page — the Scoring-Table Annex, Published Bilingually</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>093-registration-as-birth-year-source.md</code> · source SHA-256 <code>eb3eef8c1c5e899007261f8cb2b3e67627bee7bea17b8b07441695079e18ea80</code></footer>
+</div></body></html>

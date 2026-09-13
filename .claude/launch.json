@@ -26,7 +26,15 @@
     {
       "name": "frontend-ce-dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--config", "vite.config.ce.ts", "--port", "5299", "--strictPort"],
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        "vite.config.ce.ts",
+        "--host",
+        "--port",
+        "5299",
+        "--strictPort"
+      ],
       "port": 5299,
       "cwd": "frontend",
       "autoPort": false
@@ -34,8 +42,33 @@
     {
       "name": "frontend-ce-preview",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "preview", "--config", "vite.config.ce.ts", "--port", "5298", "--strictPort"],
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--config",
+        "vite.config.ce.ts",
+        "--port",
+        "5298",
+        "--strictPort"
+      ],
       "port": 5298,
+      "cwd": "frontend",
+      "autoPort": false
+    },
+    {
+      "name": "frontend-lan",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
+      "port": 5199,
       "cwd": "frontend",
       "autoPort": false
     }
