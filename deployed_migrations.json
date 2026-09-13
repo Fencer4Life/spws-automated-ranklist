@@ -173,8 +173,8 @@
     "schema_fingerprint": "cd34f5a9ee9608af092eb894bb899302"
   },
   "prod": {
-    "last_updated": "2026-09-06T06:57:31Z",
-    "last_sha": "3c96d8691ba593b25ed1c8bd0dc8637d982ed395",
+    "last_updated": "2026-09-13T06:41:57Z",
+    "last_sha": "c4802b095efe358345c2a2e04203ac6b7ab5f9c3",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -336,8 +336,13 @@
       "20260904000001_event_weapons_from_code.sql",
       "20260904000002_calendar_organizer_code.sql",
       "20260905000001_entry_fee_currency_from_organizer.sql",
-      "20260906000001_no_evf_season_skeletons.sql"
+      "20260906000001_no_evf_season_skeletons.sql",
+      "20260912000001_registration_identity_candidates.sql",
+      "20260912000002_registration_identity_override_alert.sql",
+      "20260912000003_identity_override_requires_approval.sql",
+      "20260912000004_ftl_export_entries.sql",
+      "20260912000005_ftl_roster.sql"
     ],
-    "schema_fingerprint": "eec6e8a5989ce572b90b611b4dc80a14"
+    "schema_fingerprint": "cd34f5a9ee9608af092eb894bb899302"
   }
 }
