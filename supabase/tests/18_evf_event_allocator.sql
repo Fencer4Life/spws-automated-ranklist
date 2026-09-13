@@ -259,7 +259,9 @@ END $cleanup$;
 -- evf.37: fn_ingest_evf_calendar UPDATEs CREATED slot in place
 -- =========================================================================
 -- Salzburg again (matches PEW7-EVFP2-CURR which is CREATED).
--- After import: row should be PLANNED, name + dates filled, child tournaments exist.
+-- After import: row should be PLANNED, name + dates filled, ZERO child
+-- tournaments (ADR-096: calendar discovery never creates a bracket; a bracket
+-- is created only by results ingestion, via fn_find_or_create_tournament).
 DO $t37$
 DECLARE
   v_season INT;
@@ -283,8 +285,8 @@ SELECT row_eq(
             (SELECT COUNT(*)::INT FROM tbl_tournament t
                WHERE t.id_event = e.id_event)
        FROM tbl_event e WHERE txt_code = 'PEW7-EVFP2-CURR' $$,
-  ROW('PLANNED'::TEXT, 'EVF Circuit – Salzburg (AUT)'::TEXT, '2032-04-15'::TEXT, 2),
-  'evf.37: CREATED PEW7 slot updated → PLANNED, name+date filled, 2 tournaments (EPEE × M/F)'
+  ROW('PLANNED'::TEXT, 'EVF Circuit – Salzburg (AUT)'::TEXT, '2032-04-15'::TEXT, 0),
+  'evf.37: CREATED PEW7 slot updated → PLANNED, name+date filled, 0 tournaments — no calendar-time stub creation (ADR-096)'
 );
 
 

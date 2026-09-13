@@ -1,0 +1,506 @@
+<meta charset="utf-8">
+<title>Stop predicting brackets for events with no results</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  .toc{border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:24px 0;background:var(--surface)}
+  .toc .kicker{margin-bottom:8px}
+  .toc ol{margin:0;padding-left:1.2em}
+  .toc li{margin:5px 0}
+  .toc a{text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .adr-box{border:2px solid var(--accent);border-radius:12px;padding:24px 26px;margin:20px 0;background:var(--surface)}
+  .adr-box h3{margin-top:0}
+  .adr-box .status{display:inline-block;font-family:var(--mono);font-size:13px;font-weight:800;padding:4px 10px;border-radius:6px;background:var(--warn-soft);color:var(--warn);margin-bottom:14px}
+  .binary{white-space:pre-wrap;font-family:var(--mono);font-size:15px;line-height:1.7;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin:10px 0}
+  .success{border:1px solid var(--good);border-left-width:5px;background:var(--good-soft);border-radius:10px;padding:18px 22px;margin:20px 0}
+  .success strong{color:var(--good)}
+  .rev{font-family:var(--mono);font-size:14px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:0 0 24px}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">EVF calendar sync · tbl_tournament · Implementation Plan</p>
+  <h1>Stop predicting brackets for events with no results</h1>
+  <p class="dek">EVF Sync has failed since 2026-09-10 on a duplicate tournament code. The rows colliding are <b>fictional</b> — a "PLANNED" or "CREATED" event should carry event-level facts only. This plan deletes the one live function that still invents brackets, hardens the code rebuild it exposed, and repairs 154 stub rows on CERT / 82 on PROD.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Plan — not started</span>
+    <span class="pill danger"><span class="dot"></span>retires the stub loop in <code>fn_ingest_evf_calendar</code></span>
+    <span class="pill warn"><span class="dot"></span>repairs 154 CERT + 82 PROD rows</span>
+    <span class="pill">ADR-096 (amends ADR-028, ADR-046)</span>
+  </div>
+  <p class="rev">Revised twice on 2026-09-13 as concurrent sessions landed unrelated features. File numbers below (test/migration/ADR) were re-verified against the repo immediately before this plan was written — see the note at the end of the parity section for what to do if they have moved again.</p>
+
+  <div class="toc">
+    <p class="kicker">Read order</p>
+    <ol>
+      <li><a href="#why">Why — the failing run, traced to its cause</a></li>
+      <li><a href="#history">How the duplicates were produced — audit evidence</a></li>
+      <li><a href="#break">Break analysis — what changes, what doesn't</a></li>
+      <li><a href="#adr">ADR-096 draft — sign-off needed before disk</a></li>
+      <li><a href="#tests">Tests first — RED before GREEN</a></li>
+      <li><a href="#migration">The migration</a></li>
+      <li><a href="#docs">Documentation coherence gate</a></li>
+      <li><a href="#verify">Verification &amp; definition of done</a></li>
+      <li><a href="#appendix">Appendix — the 68 duplicate pairs on CERT</a></li>
+    </ol>
+  </div>
+
+  <hr class="rule">
+
+  <section id="why">
+    <p class="kicker">Why</p>
+    <h2>A future event should not hold a scoring bracket</h2>
+    <p>The <b>EVF Sync</b> GitHub Actions job has failed since 2026-09-10:</p>
+    <pre class="trace">ERROR: calendar sync failed: Management API error (400):
+  23505: duplicate key value violates unique constraint <b>"idx_tournament_code"</b>
+  DETAIL:  Key (txt_code)=(PEW13es-2026-2027-V2-M-EPEE) already exists.</pre>
+    <p>The scrape itself is healthy — 18 competitions found, <code>0 new, 18 already in CERT</code>. Two other log lines in the same run are benign and out of scope: the Critérium de Paris weapon hold-back is explicitly "not an error — awaiting EVF announcement," and <code>Found 0 events in EVF API</code> is the results-side discovery finding nothing scored yet this season.</p>
+    <p>It fired because EVF moved Athens (calendar id 3438) from 2027-05-22 to 2027-03-27. PEW numbers are chronological position, so three events shift:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>CERT today</th><th>Wanted</th></tr></thead>
+      <tbody>
+        <tr><td>Athens (cal 3438)</td><td><code>PEW15es-2026-2027</code></td><td><code>PEW13es-2026-2027</code></td></tr>
+        <tr><td>Liège (cal 890)</td><td><code>PEW13s-2026-2027</code></td><td><code>PEW14s-2026-2027</code></td></tr>
+        <tr><td>Salzburg (cal 4523)</td><td><code>PEW14ef-2026-2027</code></td><td><code>PEW15ef-2026-2027</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>Athens holds <b>8</b> child tournament rows where the current design expects 4 — four duplicate pairs. The rebuild tries to collapse each pair onto one code and collides with itself.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">✕</span> The decision this plan implements</p>
+      <p style="margin-bottom:0">A <code>CREATED</code> or <code>PLANNED</code> event carries event-level facts only. Child tournaments come into existence when results are scraped from results URLs — never when a calendar entry is merely discovered. <b>Decided 2026-09-12.</b> This makes the collision a symptom: the rows being fought over should never have been created.</p>
+    </div>
+  </section>
+
+  <section id="why-rows-exist">
+    <p class="kicker">Root cause</p>
+    <h2>Why the rows exist at all — and why every reason for them has expired</h2>
+    <p><code>fn_import_evf_events</code> (ADR-028, April 2026) inserted one stub tournament per weapon × gender at <em>calendar-import</em> time — hardcoded <code>enum_age_category = 'V2'</code>, <code>int_participant_count = 0</code>, <code>enum_import_status = 'PLANNED'</code>. That block was copied forward through nine rewrites of the calendar ingest. Querying every live <code>plpgsql</code> function's definition on CERT for the stub-code pattern found exactly <b>one</b> survivor: the 2-arg delegate <code>fn_ingest_evf_calendar(p_events jsonb, p_id_season integer)</code> in <code>20260711000001_prod_event_reconciler.sql</code>. Everything else that once minted <code>-M-</code>/<code>-F-</code> stubs is gone.</p>
+
+    <div class="op">
+      <span class="op-tag d">EXPIRED</span><span class="set">the dedup marker</span>
+      <p>ADR-028 §"tournament creation": the old dedup matcher was <code>BETWEEN ±3 days AND EXISTS(tournament)</code> — a child row was the only signal an event had been imported. That matcher is gone, replaced by Python's <code>_find_existing_match</code> id→slug→fuzzy ladder.</p>
+    </div>
+    <div class="op">
+      <span class="op-tag d">EXPIRED</span><span class="set">the only home for weapon/type facts</span>
+      <p><code>tbl_event</code> had no weapon or type column when the stub loop was written, so a child row was the only place the weapon set and PEW/MEW type could live. <code>arr_weapons</code> is now maintained for every family, derived from the event code (migration <code>20260904000001</code>, test 71), and the frontend calendar reads weapons from <code>arr_weapons</code>, never from children.</p>
+    </div>
+    <div class="op">
+      <span class="op-tag d">EXPIRED</span><span class="set">the international flag</span>
+      <p><code>vw_calendar.bool_has_international</code> is computed from children (<code>enum_type IN ('PEW','MEW','MSW','PSW')</code>), but the frontend's own <code>isInternationalEvent()</code> already falls back to the code prefix. The column becomes redundant, not broken.</p>
+    </div>
+
+    <p>And the predicted <em>shape</em> was always wrong, not merely premature. A real EVF weekend ends with 10–23 brackets spanning V1–V4 — PROD 2025-2026: <code>PEW6efs</code> 23 brackets, <code>PEW4efs</code> 10 brackets with 389 participants. The stub set is weapons × 2 genders at V2 only; when results land, <code>fn_find_or_create_tournament</code> reuses the V2 stub and mints V1/V3/V4 fresh regardless. This is the same defect class <b>ADR-091</b> ruled on eleven days ago one level up — <em>"a skeleton is a PREDICTION of a row that is going to arrive anyway"</em> — applied one layer down, to brackets instead of events.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">▸</span> The rule is already the norm everywhere else</p>
+      <p style="margin-bottom:0">On PROD, the only non-terminal events holding tournaments are EVF ones: 17 <code>PLANNED</code> PEW (66 rows), 2 <code>CANCELLED</code> PEW (10), 1 <code>PLANNED</code> DMEW (6). Every PPW, MPS, MPW and MSW planned event holds zero, and CERT agrees. Test 51 already asserts this for the PROD reconciler: <b>"51.1b: CREATE is childless — no tournament rows created."</b> EVF is the outlier, not the pattern.</p>
+    </div>
+  </section>
+
+  <section id="history">
+    <p class="kicker">Audit evidence</p>
+    <h2>How the duplicates were actually produced</h2>
+    <p><code>trg_audit_tournament</code> fires on UPDATE and DELETE but not INSERT, which separates the two halves of every pair in the log. <code>ts_updated</code> proves nothing here — the reflow rebuild never sets it. Athens, tournament row 1921, the exact bracket the failing run died on:</p>
+    <pre class="trace">07-14 05:41  INSERT  PEW79-2026-2027-M-EPEE            <b>&lt;- 2-arg delegate, stub</b>
+08-08 06:55  UPDATE  PEW79-2026-2027-M-EPEE      -&gt; __evfcal_1921
+08-08 06:55  UPDATE  __evfcal_1921               -&gt; PEW14es-2026-2027-V2-M-EPEE
+08-28 16:43  UPDATE  PEW14es-2026-2027-V2-M-EPEE -&gt; __evfcal_1921
+08-28 16:43  UPDATE  __evfcal_1921               -&gt; PEW15es-2026-2027-V2-M-EPEE
+08-28 16:43  (no audit rows)  id 2065 = PEW15es-2026-2027-M-EPEE   <b>&lt;- the duplicate</b></pre>
+    <ol class="steps">
+      <li>The reflow rebuild in <code>fn_ingest_evf_calendar_identity_v1</code> (migration <code>20260828000007</code>) writes <code>&lt;event-code-with-season&gt;-&lt;Vcat&gt;-&lt;gender&gt;-&lt;weapon&gt;</code> — a third dialect used nowhere else. Canonical is <code>&lt;base&gt;-&lt;Vcat&gt;-&lt;gender&gt;-&lt;weapon&gt;-&lt;season&gt;</code> (<code>fn_find_or_create_tournament</code>, <code>fn_pew_recompute_event_code</code>, ADR-046); the stub shape is <code>&lt;event-code-with-season&gt;-&lt;gender&gt;-&lt;weapon&gt;</code>.</li>
+      <li>The delegate guards its insert with <code>NOT EXISTS (txt_code = code || '-M-' || weapon)</code> — a <b>string</b> test. After step 1 that exact string is gone, so it inserts a second row for the same <code>(id_event, V2, gender, weapon)</code>, in the same transaction as the rename that caused the miss.</li>
+      <li>A manual cleanup deleted 62 such rows at <b>2026-08-28 15:50</b>; the 16:43 sync recreated 68. This is generation three. <b>A data-only repair does not hold</b> — the function that creates the collision is still live.</li>
+      <li>PROD is clean only because it never renumbers — the mirror copies event fields and never rebuilds child codes, so PROD still carries generation two under stale numbers (<code>PEW7efs-*</code> beneath event <code>PEW7es</code>). Noted, not fixed here.</li>
+    </ol>
+    <p>The three EVF events with <em>no</em> duplicate pair confirm the mechanism by absence: <code>PEW1f</code> and <code>PEW7es</code> have never been renumbered since their stubs were created, so the rebuild never ran on them; <code>PEW0efs</code> (Samorin) was renumbered but is <code>CANCELLED</code>, and the delegate only receives pre-terminal events, so nothing re-inserted behind it.</p>
+  </section>
+  <section id="break">
+    <p class="kicker">Break analysis</p>
+    <h2>What actually changes, and what I verified is harmless</h2>
+    <p>Every row below was checked against source or against a live query — none is inferred from the design's own stated intent.</p>
+
+    <h3>Breaks — must fix</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td><code>18_evf_event_allocator.sql</code> — <code>evf.37</code> asserts <em>"2 tournaments (EPEE × M/F)"</em> after a calendar ingest</td><td>The only pgTAP assertion pinning stub creation. Invert to <code>0</code> and restate the assertion text.</td></tr>
+        <tr><td>B2</td><td><code>DMEW-2025-2026</code> loses its international flag</td><td><code>bool_has_international</code> comes from children (<code>enum_type='MEW'</code>, 6 stub rows), and the frontend fallback <code>INTL_PREFIXES = /^(PEW|MEW|MSW|PSW|IMEW|IMSW)/</code> in <code>calendarMonths.ts</code> does not match <code>DMEW</code>. One-line regex fix + a vitest case.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Changes an operator route — documentation, not code</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>What</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>B3</td><td><code>populate-urls.yml</code> patches <code>url_results</code> onto an event's <em>existing</em> brackets; <code>scrape-tournament.yml</code> refuses a code that does not exist or has no <code>url_results</code>. Today an EVF event's stubs let both run before any ingest.</td><td>After the change, EVF follows the route domestic events already use, since domestic events have no stubs today: <code>ingest-event.yml</code> keyed on the event-level <code>url_event</code>, or <code>evf_sync --mode results</code>, which creates brackets through <code>fn_find_or_create_tournament</code>. This belongs in the operator runbook, not the code.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">▸</span> Verified harmless — checked against source or live data</p>
+      <ul style="margin-bottom:0">
+        <li><code>arr_weapons</code> derives from the event code, not children → calendar cards and the weapon filter unaffected.</li>
+        <li><code>fn_pew_recompute_event_code</code> already returns 0 with no children ("defensive: no children"); ADR-046's Step 1.5 "prune spurious empty slots" exists only to sweep up after these stubs.</li>
+        <li><code>evf_sync.py</code>'s self-heal date fallback and its <code>dt_tournament</code> sync both filter on <code>url_results ILIKE '%fencingtimelive%'</code>, which a stub never has — zero rows matched today already.</li>
+        <li><code>fn_validate_event_transition</code> and the lifecycle triggers never read <code>tbl_tournament</code>.</li>
+        <li>Registration and the entry list key on <code>id_event</code>, not tournaments.</li>
+        <li>The <code>num_tournaments</code> badge in <code>EventManager</code>/<code>EventImportModal</code> renders 0 — already true for all 13 domestic planned events.</li>
+        <li><code>fn_mirror_events_to_prod</code> deletes children then the event; zero children is fine.</li>
+        <li><code>fn_prune_unclaimed_evf_skeletons</code> requires <code>CREATED</code> <b>and</b> dateless, so removing <code>DMEW-2025-2026</code>'s children does not make that event disappear (it is <code>PLANNED</code>, dated).</li>
+        <li>Only <code>tbl_result</code> (no cascade — blocks a delete if results exist) and <code>tbl_tournament_ingest_history</code> (cascade) reference <code>tbl_tournament</code>.</li>
+        <li><b>New this week:</b> <code>fn_ftl_roster</code> (migration <code>20260912000005</code>) reads <code>tbl_tournament</code> only through a <code>tbl_result</code> join — invisible to a result-free stub. The only new reader either of this week's landed features added.</li>
+        <li><b>New this week:</b> test 74's fixture now deletes <code>SPWS-2026-2027</code> tournaments before its events, because the seeded season had acquired stubs. After the prune, those deletes match fewer rows and the file still passes — no edit needed.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">ADR draft — sign-off needed before disk (planning rule 6)</p>
+    <h2>ADR-096: a bracket is created by results ingestion, never by calendar discovery</h2>
+    <div class="adr-box">
+      <span class="status">Status: Proposed — awaiting sign-off</span>
+      <p><b>Amends:</b> ADR-028 §"tournament creation" (drops the weapon × gender stub loop from calendar import). <b>Relates to:</b> ADR-046 (canonical tournament code formula — now has exactly one implementation), ADR-091 (the same "a skeleton is a prediction" ruling, one layer up, for events instead of brackets), ADR-081 (the CERT→PROD reconciler, whose CREATE path is already childless and needs no change).</p>
+
+      <h3>Context</h3>
+      <p>The EVF calendar ingest has created one stub tournament per weapon × gender at calendar-import time since ADR-028 (April 2026), at a hardcoded <code>V2</code> age category. Every original justification has expired (dedup marker, weapon/type storage — see the root-cause section above), the predicted shape is provably wrong (a real event ends with 10–23 brackets across V1–V4, not 2–6 at V2 only), and the mechanism now actively produces duplicate-key failures in production sync: <code>idx_tournament_code</code> violations on 2026-09-10, traced to a code-rebuild dialect mismatch that only matters because these rows exist to be renumbered.</p>
+
+      <h3>Decision</h3>
+      <p>A <code>tbl_event</code> row in <code>CREATED</code> or <code>PLANNED</code> status carries event-level facts only (name, dates, location, weapons via <code>arr_weapons</code>, URLs). No <code>tbl_tournament</code> child is created by calendar discovery. A bracket comes into existence only when results are found for it — through <code>fn_find_or_create_tournament</code>, called from the results-ingest paths (<code>fn_ingest_tournament_results</code>, the commit pipeline). The calendar's two-arg <code>fn_ingest_evf_calendar</code> delegate loses its weapon-loop insert entirely. The canonical tournament-code formula (<code>&lt;base&gt;-&lt;Vcat&gt;-&lt;gender&gt;-&lt;weapon&gt;-&lt;season&gt;</code>, ADR-046) gains a single shared implementation, <code>fn_rebuild_tournament_codes</code>, used by both the admin rename path (<code>fn_update_event</code>) and the calendar reflow path (<code>fn_ingest_evf_calendar_identity_v1</code>), which previously duplicated the logic and had drifted into three dialects.</p>
+
+      <h3>Alternatives considered</h3>
+      <ul>
+        <li><b>Fix the collision only, keep the stubs.</b> Correct the rebuild's code format and the delegate's guard, add a uniqueness index, leave stub creation in place. Rejected: every future EVF event still acquires 4–6 fictional V2 rows, carrying forward a prediction that is provably the wrong shape and that ADR-091 already ruled against one layer up.</li>
+        <li><b>Canonicalize the placeholder dialect everywhere instead of removing it.</b> Rejected: PROD's entire current season is placeholder-shaped and every settled season is canonical; rewriting 82 live PROD rows to fix a bug in the rebuild formula is disproportionate, and the dual shape was itself only ever meant to be transitional.</li>
+      </ul>
+
+      <h3>Consequences</h3>
+      <ul>
+        <li><b>Positive:</b> the duplicate-key failure class cannot recur — there is nothing to duplicate before results exist. <code>populate-urls.yml</code> and <code>scrape-tournament.yml</code> become exactly what they already are for domestic events. One tournament-code formula instead of three.</li>
+        <li><b>Negative / accepted:</b> <code>vw_calendar.bool_has_international</code> loses its only remaining input for a childless event; the frontend fallback already covers it, plus the one-line <code>DMEW</code> fix this plan lands. An operator opening <code>EventManager</code> for a future EVF event now sees zero tournaments where they used to see 2–6 — expected, and consistent with every domestic event already shown there.</li>
+        <li><b>Repair required:</b> 154 CERT rows / 82 PROD rows are pruned as part of the same migration (idempotent, guarded — see the migration section).</li>
+      </ul>
+
+      <p style="margin-bottom:0"><b>Source (once accepted):</b> <code>doc/adr/096-no-bracket-stubs-before-results.md</code>, generated to HTML via <code>python scripts/render_adrs.py</code>, registered in spec Appendix C.</p>
+    </div>
+  </section>
+  <section id="tests">
+    <p class="kicker">Tests first · RED before GREEN (planning rule 5)</p>
+    <h2>New pgTAP file, plus one inverted assertion and one vitest case</h2>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">⚠</span> File numbers are computed at implementation time, not quoted here</p>
+      <p style="margin-bottom:0">This plan has already been revised twice in one day because a reserved test/migration number was taken by a concurrent session before use. The numbers below are what was free at the moment this plan was written (test 78 taken → next is <b>79</b>; migration <code>20260913000001</code> taken → next is <b>20260913000002</b>) — re-run the commands and use whatever is actually free at implementation time:</p>
+      <pre class="trace">ls supabase/tests/ | grep -oE '^[0-9]+' | sort -n | tail -1        # then +1
+ls supabase/migrations/ | grep -oE '^[0-9]{14}' | sort -n | tail -1 # then +1</pre>
+    </div>
+
+    <p>New file <code>supabase/tests/79_no_bracket_stubs.sql</code>, harness copied from <code>62_evf_reflow_occupied_code.sql</code>:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Assertion</th></tr></thead>
+      <tbody>
+        <tr><td>79.1</td><td>a calendar ingest of a new EVF event creates the event and <b>zero</b> tournaments</td></tr>
+        <tr><td>79.2</td><td>a calendar ingest of an event that already holds real brackets adds none and deletes none</td></tr>
+        <tr><td>79.3</td><td>two consecutive ingests that both renumber the tail still live (the run-34468447030 regression)</td></tr>
+        <tr><td>79.4</td><td>after any ingest, no event holds two rows for one <code>(cat, gender, weapon)</code> bracket</td></tr>
+        <tr><td>79.5</td><td><code>fn_rebuild_tournament_codes</code> reproduces <code>fn_pew_recompute_event_code</code>'s canonical string for a <code>-V\d-</code> child, and preserves the stub shape for a child without one</td></tr>
+        <tr><td>79.6</td><td><code>fn_prune_bracket_stubs()</code> deletes a childless-event stub and refuses one holding a result, a participant count, a <code>url_results</code>, or ingest history</td></tr>
+        <tr><td>79.7</td><td>the bracket uniqueness index exists and rejects a second row for the same bracket</td></tr>
+      </tbody>
+    </table></div>
+    <p>Assertion IDs are never renumbered once assigned (planning rule 9), so if the file number shifts before implementation, the IDs shift with it but keep this same 1–7 sequence.</p>
+
+    <h3>Existing tests touched</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Test</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>18_evf_event_allocator.sql</code> — <code>evf.37</code></td><td><span class="chip warn">invert</span> — was "2 tournaments (EPEE × M/F)", becomes "0 tournaments — no calendar-time stub creation"</td></tr>
+        <tr><td><code>frontend/tests/calendarMonths.test.ts</code></td><td><span class="chip fill">add case</span> — <code>DMEW-2025-2026</code>-shaped event flags international via the code-prefix fallback</td></tr>
+      </tbody>
+    </table></div>
+
+    <p>Confirm every new/changed assertion is RED before writing the implementation.</p>
+  </section>
+
+  <section id="migration">
+    <p class="kicker">Implementation</p>
+    <h2>One migration, five changes</h2>
+    <p><code>supabase/migrations/&lt;YYYYMMDD&gt;&lt;NNNNNN&gt;_no_bracket_stubs.sql</code> — numbered per the command above.</p>
+
+    <ol class="steps">
+      <li><b>Redefine the 2-arg <code>fn_ingest_evf_calendar</code></b> — carried forward verbatim from <code>20260711000001</code> — with the entire <code>FOR v_weapon … INSERT INTO tbl_tournament</code> loop removed. This is the whole behavioral change; it deletes the only live stub creator.</li>
+      <li><b><code>fn_rebuild_tournament_codes(p_id_event INT, p_new_event_code TEXT) RETURNS INT</code></b> — extracted from the shape-sniffing block in <code>fn_update_event</code> (migration <code>20260902000002</code>), with two hardenings: the sniff becomes <code>bool_or(txt_code ~ '-V\d-')</code> over <em>all</em> children instead of an unordered <code>LIMIT 1</code>, and codes are parked on <code>'__tcode_' || id_tournament</code> first so an A→B, B→C shuffle cannot self-collide. <code>REVOKE ALL … FROM PUBLIC, anon, authenticated</code> (ADR-083 deny-by-default, asserted exactly by 52.7) — <b>this function stays off the anon allowlist</b>, so neither <code>52_security_posture.sql</code> nor <code>scripts/check-security-posture.sh</code> needs an edit, and the new <code>check-anon-allowlist-sync.sh</code> gate stays green. Still needed after step 1: an event whose brackets exist (from results) but hold no results <em>yet</em> for a re-ingest can still be renumbered, and this rebuild is the only thing standing between that and a wrong code.</li>
+      <li><b>Redefine <code>fn_ingest_evf_calendar_identity_v1</code></b> — carried forward verbatim from <code>20260828000007</code> — replacing its inline park-and-rebuild block with <code>PERFORM fn_rebuild_tournament_codes(v_existing_id, v_desired_code)</code> after the event rename. Refactor <code>fn_update_event</code> onto the same helper so the admin and calendar paths agree by construction, not by coincidence.</li>
+      <li><b><code>fn_prune_bracket_stubs() RETURNS INTEGER</code></b> — idempotent, shaped like <code>fn_prune_unclaimed_evf_skeletons</code>. Deletes a tournament row only when its event is <code>CREATED/PLANNED/SCHEDULED/CHANGED/CANCELLED</code>, <code>enum_import_status = 'PLANNED'</code>, <code>COALESCE(int_participant_count,0) = 0</code>, <code>url_results IS NULL</code>, and no <code>tbl_result</code> or <code>tbl_tournament_ingest_history</code> row exists. Measured reach: <b>CERT 154 rows / 19 events, PROD 82 rows / 18 events</b> — zero rows anywhere fail only <em>one</em> of those guards, so the predicate is not accidentally narrow or wide. Called at the end of the migration <em>and</em> from <code>supabase/seed_post_backfill.sql</code>, because migrations run before the seed dump on a fresh bootstrap (ADR-036 amendment) and a migration-only delete would be reinstated by the dump.</li>
+        <li><b><code>CREATE UNIQUE INDEX idx_tournament_bracket ON tbl_tournament (id_event, enum_age_category, enum_gender, enum_weapon)</code></b>, after the prune, same transaction. PROD has zero violations across all 788 scored rows including all three joint-pool splits, and <code>fn_find_or_create_tournament</code> already treats this tuple as the key. Converts "silent duplicate now, unrelated explosion weeks later" into a failure at the offending insert. <b>Strike this step if a uniqueness constraint is not wanted</b>; steps 1–4 fix the collision without it.</li>
+    </ol>
+    <p>Run <code>postgrestools</code> against the migration file before moving on (mandatory for any SQL edit in this repo).</p>
+
+    <h3>Frontend — B2</h3>
+    <p>Extend <code>INTL_PREFIXES</code> in <code>calendarMonths.ts</code> to include <code>DMEW</code>, with the vitest case from the tests section. Run <code>npm run check</code>.</p>
+  </section>
+  <section id="docs">
+    <p class="kicker">Close-out · non-negotiable, in scope</p>
+    <h2>Documentation coherence gate</h2>
+    <ul>
+      <li><b>ADR-096</b> — draft above; on sign-off, write <code>doc/adr/096-no-bracket-stubs-before-results.md</code>, generate HTML via <code>python scripts/render_adrs.py</code>, add the spec Appendix C row.</li>
+      <li><b>Operator runbook</b> (<code>doc/handbook/operations/operator-runbooks.html</code>) and the <b>workflow catalog</b> (<code>doc/handbook/reference/workflow-catalog.html</code>): document B3's route — <code>populate-urls</code> and <code>scrape-tournament</code> act on brackets that already exist; an EVF event's first ingest goes through <code>ingest-event.yml</code> or <code>evf_sync --mode results</code>.</li>
+      <li><b>Spec Appendix D</b>: add this file's <code>plan(N)</code> to the documented <code>pgTAP total</code>, plus the per-suite Count row. <b>Read the current total out of the spec at that moment</b> — it moved 952 → 1002 → 1019 in two days, so any number quoted in this plan is stale by construction. <code>bash scripts/check-coherence.sh</code> prints the arithmetic and is a hard CI fail (Gate 3).</li>
+      <li><b>Handbook</b>: the EVF calendar subsystem page, updated in present tense, <code>last-verified</code> bumped.</li>
+      <li><code>python scripts/check_docs.py --changed-from main</code> and <code>bash scripts/check-coherence.sh</code>, both passing.</li>
+      <li><code>./scripts/refresh-graph.sh</code> before the commit.</li>
+    </ul>
+
+    <div class="success">
+      <strong>☐ Documentation coherence gate complete</strong>
+      <pre class="binary">Impact: architecture, operations
+Canonical docs affected: doc/handbook/operations/operator-runbooks.html,
+  doc/handbook/reference/workflow-catalog.html,
+  [EVF calendar subsystem page — name via documentation map at implementation time]
+ADR impact: new (ADR-096, amends ADR-028 & ADR-046, relates to ADR-091 & ADR-081)
+Operational impact: populate-urls.yml / scrape-tournament.yml usage note for EVF events
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from main [run at implementation time]
+Superseded prose archived rather than appended: not applicable — no prose superseded</pre>
+      <p style="margin-bottom:0">The box is binary: it cannot be checked until every field is resolved and the validator passes.</p>
+    </div>
+  </section>
+
+  <section id="verify">
+    <p class="kicker">Verification</p>
+    <h2>Definition of done is <code>scripts/preflight.sh</code> exits 0 — plus the live checks below</h2>
+    <div class="note accent">
+      <p class="lede"><span class="tick">▸</span> No gate list is copied into this plan</p>
+      <p style="margin-bottom:0"><code>scripts/preflight.sh</code>'s own header records why: on 2026-09-13 a plan copied a <em>subset</em> of the gates — it had pytest, vitest, pgTAP, svelte-check, postgrestools and <code>check_docs.py</code>, and omitted basedpyright, ruff, <code>check-coherence.sh</code> and <code>check-spec-sync.sh</code>. Every omission then failed, serially, discovered from a RED CI run on <code>main</code> — which auto-deploys PROD. This plan names no gate list of its own; it names the one command that runs all of them. Run <code>./scripts/reset-dev.sh</code> first so the pgTAP gate has a local stack; <code>--fast</code> skips pgTAP while iterating.</p>
+    </div>
+
+    <ol class="steps">
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>On LOCAL, replay the failing payload: Athens at 2027-03-27 shifting <code>PEW15es → PEW13es</code> with the duplicate children seeded, and assert the ingest lives.</li>
+      <li>Also on LOCAL: ingest a season snapshot into an empty season and assert every event lands childless; then ingest one event's results and assert its brackets appear with canonical codes.</li>
+      <li>Apply to CERT via CI, then with <code>scripts/cloud-sql.sh cert</code>: zero duplicate bracket groups, zero stub rows, 18 EVF events intact with their <code>arr_weapons</code>, and no scored tournament touched (788 canonical rows unchanged).</li>
+      <li>Re-run <b>EVF Sync</b>; expect completion with <code>created=0, slot_reused=18</code> and Athens at <code>PEW13es-2026-2027</code>. This change touches SQL and frontend, so the docs-only release skip (<code>scripts/release-gate.sh</code>) does <b>not</b> apply — the full build and deploy runs.</li>
+      <li>Confirm the CERT calendar page renders all 18 events with correct weapons and international styling, <code>DMEW-2025-2026</code> included.</li>
+      <li>Apply to PROD, verify the 82 stubs are gone and the public calendar is unchanged.</li>
+    </ol>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Definition of done</p>
+      <ul style="margin-bottom:0">
+        <li>EVF Sync completes green on schedule; Athens sits at <code>PEW13es-2026-2027</code>.</li>
+        <li>No <code>CREATED</code>/<code>PLANNED</code> event in either environment holds a child tournament.</li>
+        <li>Brackets appear only from results ingestion, with canonical codes.</li>
+        <li><code>idx_tournament_bracket</code> in place (unless struck).</li>
+        <li>ADR-096 landed and registered, runbook and workflow catalog updated, Appendix D total correct, graph refreshed.</li>
+        <li><code>scripts/preflight.sh</code> exits 0.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="appendix">
+    <p class="kicker">Appendix</p>
+    <h2>The 68 duplicate pairs on CERT</h2>
+    <p>Read 2026-09-12, re-verified twice on 2026-09-13 after each concurrent landing: CERT still 68 duplicate bracket groups and 154 stub rows, PROD still 0 and 82, and <b>zero</b> scored brackets in <code>SPWS-2026-2027</code> on either side. Nothing here has moved.</p>
+    <p>Every pair is one bracket holding two rows. "Kept" is the original stub, since rewritten into the <code>-V2-</code> dialect by the reflow rebuild; "extra" is the row the delegate re-inserted on 2026-08-28 16:43 because its string guard could no longer see the original. All 136 rows are <code>PLANNED</code>, <code>int_participant_count = 0</code>, with no <code>tbl_result</code> and no <code>tbl_tournament_ingest_history</code>. Season <code>SPWS-2026-2027</code>, age category V2 throughout. The prune deletes all 136 of these along with the other 18 stub rows on CERT.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Event</th><th>Bracket</th><th>Kept (id, code, born)</th><th>Extra (id, code, born)</th></tr></thead>
+      <tbody>
+          <tr><td>1</td><td><code>PEW10e-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1904</code> <code>PEW10e-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2048</code> <code>PEW10e-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>2</td><td><code>PEW10e-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1903</code> <code>PEW10e-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2047</code> <code>PEW10e-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>3</td><td><code>PEW11efs-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1906</code> <code>PEW11efs-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2050</code> <code>PEW11efs-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>4</td><td><code>PEW11efs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1908</code> <code>PEW11efs-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2052</code> <code>PEW11efs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>5</td><td><code>PEW11efs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1910</code> <code>PEW11efs-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2054</code> <code>PEW11efs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>6</td><td><code>PEW11efs-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1905</code> <code>PEW11efs-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2049</code> <code>PEW11efs-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>7</td><td><code>PEW11efs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1907</code> <code>PEW11efs-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2051</code> <code>PEW11efs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>8</td><td><code>PEW11efs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1909</code> <code>PEW11efs-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2053</code> <code>PEW11efs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>9</td><td><code>PEW12ef-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1912</code> <code>PEW12ef-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2056</code> <code>PEW12ef-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>10</td><td><code>PEW12ef-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1914</code> <code>PEW12ef-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2058</code> <code>PEW12ef-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>11</td><td><code>PEW12ef-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1911</code> <code>PEW12ef-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2055</code> <code>PEW12ef-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>12</td><td><code>PEW12ef-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1913</code> <code>PEW12ef-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2057</code> <code>PEW12ef-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>13</td><td><code>PEW13s-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1916</code> <code>PEW13s-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2060</code> <code>PEW13s-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>14</td><td><code>PEW13s-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1915</code> <code>PEW13s-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2059</code> <code>PEW13s-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>15</td><td><code>PEW14ef-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1918</code> <code>PEW14ef-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2062</code> <code>PEW14ef-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>16</td><td><code>PEW14ef-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1920</code> <code>PEW14ef-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2064</code> <code>PEW14ef-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>17</td><td><code>PEW14ef-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1917</code> <code>PEW14ef-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2061</code> <code>PEW14ef-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>18</td><td><code>PEW14ef-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1919</code> <code>PEW14ef-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2063</code> <code>PEW14ef-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>19</td><td><code>PEW15es-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1922</code> <code>PEW15es-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2066</code> <code>PEW15es-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>20</td><td><code>PEW15es-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1924</code> <code>PEW15es-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2068</code> <code>PEW15es-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>21</td><td><code>PEW15es-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1921</code> <code>PEW15es-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2065</code> <code>PEW15es-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>22</td><td><code>PEW15es-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1923</code> <code>PEW15es-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2067</code> <code>PEW15es-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>23</td><td><code>PEW16efs-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1926</code> <code>PEW16efs-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2070</code> <code>PEW16efs-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>24</td><td><code>PEW16efs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1928</code> <code>PEW16efs-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2072</code> <code>PEW16efs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>25</td><td><code>PEW16efs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1930</code> <code>PEW16efs-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2074</code> <code>PEW16efs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>26</td><td><code>PEW16efs-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1925</code> <code>PEW16efs-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2069</code> <code>PEW16efs-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>27</td><td><code>PEW16efs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1927</code> <code>PEW16efs-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2071</code> <code>PEW16efs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>28</td><td><code>PEW16efs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1929</code> <code>PEW16efs-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2073</code> <code>PEW16efs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>29</td><td><code>PEW17efs-2026-2027</code></td><td>V2 F-EPEE</td><td><code>2004</code> <code>PEW17efs-2026-2027-V2-F-EPEE</code> <span class="set">2026-08-08</span></td><td><code>2076</code> <code>PEW17efs-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>30</td><td><code>PEW17efs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>2006</code> <code>PEW17efs-2026-2027-V2-F-FOIL</code> <span class="set">2026-08-08</span></td><td><code>2078</code> <code>PEW17efs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>31</td><td><code>PEW17efs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>2008</code> <code>PEW17efs-2026-2027-V2-F-SABRE</code> <span class="set">2026-08-08</span></td><td><code>2080</code> <code>PEW17efs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>32</td><td><code>PEW17efs-2026-2027</code></td><td>V2 M-EPEE</td><td><code>2003</code> <code>PEW17efs-2026-2027-V2-M-EPEE</code> <span class="set">2026-08-08</span></td><td><code>2075</code> <code>PEW17efs-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>33</td><td><code>PEW17efs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>2005</code> <code>PEW17efs-2026-2027-V2-M-FOIL</code> <span class="set">2026-08-08</span></td><td><code>2077</code> <code>PEW17efs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>34</td><td><code>PEW17efs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>2007</code> <code>PEW17efs-2026-2027-V2-M-SABRE</code> <span class="set">2026-08-08</span></td><td><code>2079</code> <code>PEW17efs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>35</td><td><code>PEW2es-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1876</code> <code>PEW2es-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2010</code> <code>PEW2es-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>36</td><td><code>PEW2es-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1878</code> <code>PEW2es-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2012</code> <code>PEW2es-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>37</td><td><code>PEW2es-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1875</code> <code>PEW2es-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2009</code> <code>PEW2es-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>38</td><td><code>PEW2es-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1877</code> <code>PEW2es-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2011</code> <code>PEW2es-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>39</td><td><code>PEW3ef-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1880</code> <code>PEW3ef-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2014</code> <code>PEW3ef-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>40</td><td><code>PEW3ef-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1882</code> <code>PEW3ef-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2016</code> <code>PEW3ef-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>41</td><td><code>PEW3ef-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1879</code> <code>PEW3ef-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2013</code> <code>PEW3ef-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>42</td><td><code>PEW3ef-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1881</code> <code>PEW3ef-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2015</code> <code>PEW3ef-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>43</td><td><code>PEW4fs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1884</code> <code>PEW4fs-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2018</code> <code>PEW4fs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>44</td><td><code>PEW4fs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1886</code> <code>PEW4fs-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2020</code> <code>PEW4fs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>45</td><td><code>PEW4fs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1883</code> <code>PEW4fs-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2017</code> <code>PEW4fs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>46</td><td><code>PEW4fs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1885</code> <code>PEW4fs-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2019</code> <code>PEW4fs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>47</td><td><code>PEW5efs-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1888</code> <code>PEW5efs-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2022</code> <code>PEW5efs-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>48</td><td><code>PEW5efs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1890</code> <code>PEW5efs-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2024</code> <code>PEW5efs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>49</td><td><code>PEW5efs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1892</code> <code>PEW5efs-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2026</code> <code>PEW5efs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>50</td><td><code>PEW5efs-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1887</code> <code>PEW5efs-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2021</code> <code>PEW5efs-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>51</td><td><code>PEW5efs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1889</code> <code>PEW5efs-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2023</code> <code>PEW5efs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>52</td><td><code>PEW5efs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1891</code> <code>PEW5efs-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2025</code> <code>PEW5efs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>53</td><td><code>PEW6efs-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1894</code> <code>PEW6efs-2026-2027-V2-F-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2028</code> <code>PEW6efs-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>54</td><td><code>PEW6efs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1896</code> <code>PEW6efs-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2030</code> <code>PEW6efs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>55</td><td><code>PEW6efs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1898</code> <code>PEW6efs-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2032</code> <code>PEW6efs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>56</td><td><code>PEW6efs-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1893</code> <code>PEW6efs-2026-2027-V2-M-EPEE</code> <span class="set">2026-07-14</span></td><td><code>2027</code> <code>PEW6efs-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>57</td><td><code>PEW6efs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1895</code> <code>PEW6efs-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2029</code> <code>PEW6efs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>58</td><td><code>PEW6efs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1897</code> <code>PEW6efs-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2031</code> <code>PEW6efs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>59</td><td><code>PEW8efs-2026-2027</code></td><td>V2 F-EPEE</td><td><code>1966</code> <code>PEW8efs-2026-2027-V2-F-EPEE</code> <span class="set">2026-08-08</span></td><td><code>2038</code> <code>PEW8efs-2026-2027-F-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>60</td><td><code>PEW8efs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1968</code> <code>PEW8efs-2026-2027-V2-F-FOIL</code> <span class="set">2026-08-08</span></td><td><code>2040</code> <code>PEW8efs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>61</td><td><code>PEW8efs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1970</code> <code>PEW8efs-2026-2027-V2-F-SABRE</code> <span class="set">2026-08-08</span></td><td><code>2042</code> <code>PEW8efs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>62</td><td><code>PEW8efs-2026-2027</code></td><td>V2 M-EPEE</td><td><code>1965</code> <code>PEW8efs-2026-2027-V2-M-EPEE</code> <span class="set">2026-08-08</span></td><td><code>2037</code> <code>PEW8efs-2026-2027-M-EPEE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>63</td><td><code>PEW8efs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1967</code> <code>PEW8efs-2026-2027-V2-M-FOIL</code> <span class="set">2026-08-08</span></td><td><code>2039</code> <code>PEW8efs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>64</td><td><code>PEW8efs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1969</code> <code>PEW8efs-2026-2027-V2-M-SABRE</code> <span class="set">2026-08-08</span></td><td><code>2041</code> <code>PEW8efs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>65</td><td><code>PEW9fs-2026-2027</code></td><td>V2 F-FOIL</td><td><code>1900</code> <code>PEW9fs-2026-2027-V2-F-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2044</code> <code>PEW9fs-2026-2027-F-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>66</td><td><code>PEW9fs-2026-2027</code></td><td>V2 F-SABRE</td><td><code>1902</code> <code>PEW9fs-2026-2027-V2-F-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2046</code> <code>PEW9fs-2026-2027-F-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>67</td><td><code>PEW9fs-2026-2027</code></td><td>V2 M-FOIL</td><td><code>1899</code> <code>PEW9fs-2026-2027-V2-M-FOIL</code> <span class="set">2026-07-14</span></td><td><code>2043</code> <code>PEW9fs-2026-2027-M-FOIL</code> <span class="set">2026-08-28</span></td></tr>
+          <tr><td>68</td><td><code>PEW9fs-2026-2027</code></td><td>V2 M-SABRE</td><td><code>1901</code> <code>PEW9fs-2026-2027-V2-M-SABRE</code> <span class="set">2026-07-14</span></td><td><code>2045</code> <code>PEW9fs-2026-2027-M-SABRE</code> <span class="set">2026-08-28</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries — deliberately separate paths, not deferrals</p>
+    <h2>What this plan does not touch</h2>
+    <ul>
+      <li><b>PROD's stale generation-two rows</b> (<code>PEW7efs-*</code> beneath event <code>PEW7es</code>) — a separate consequence of the mirror never rebuilding child codes on renumber. Noted in the audit-evidence section; the mirror behavior is unchanged by this plan because PROD never renumbers, so it never collides. Worth its own look if PROD ever needs to renumber a code.</li>
+      <li><b>The FTL export, registration identity, and registration club work</b> landed by concurrent sessions this week — verified not to touch any function or table this plan changes, and left entirely alone.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · zazzy-jingling-lobster · EVF calendar sync — no bracket stubs before results</p>
+</div>
