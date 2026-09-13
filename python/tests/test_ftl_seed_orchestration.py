@@ -42,7 +42,7 @@ from python.pipeline.ftl_seed_export import (
 SEY = 2026
 
 
-def _reg(idf, sur, first, gender, by, weapons, ts="2026-01-01T00:00:00Z"):
+def _reg(idf, sur, first, gender, by, weapons, ts="2026-01-01T00:00:00Z", club=None):
     return {
         "id_fencer": idf,
         "txt_surname": sur,
@@ -51,6 +51,7 @@ def _reg(idf, sur, first, gender, by, weapons, ts="2026-01-01T00:00:00Z"):
         "int_birth_year": by,
         "arr_weapons": weapons,
         "ts_created": ts,
+        "txt_club": club,
     }
 
 
@@ -136,6 +137,7 @@ def test_mixall_tireurs_running_id_sexe_and_marker():
         "prenom": "Sandra",
         "sexe": "F",
         "classement": 1,
+        "club": None,
     }
     assert tireurs[1] == {
         "id": 2,
@@ -143,7 +145,18 @@ def test_mixall_tireurs_running_id_sexe_and_marker():
         "prenom": "Jan",
         "sexe": "M",
         "classement": 2,
+        "club": None,
     }
+
+
+def test_mixall_tireurs_carries_declared_club():
+    # ADR-080 amendment (f), 2026-09-13.
+    regs = [_reg(1, "Peczek", "Sandra", "F", 1990, ["EPEE"], club="AZS AWFiS Gdańsk")]
+    subr = assemble_mixall_subrankings(regs, "EPEE", {}, SEY)
+    from python.pipeline.ftl_seed_export import interleave_mixall
+
+    tireurs = mixall_tireurs(interleave_mixall(subr))
+    assert tireurs[0]["club"] == "AZS AWFiS Gdańsk"
 
 
 # ---------------------------------------------------------------------------

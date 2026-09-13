@@ -256,7 +256,10 @@
     IdentityAction,
   } from '../lib/types'
 
-  const CONSENT_VERSION = 'v1.0'
+  // v1.1 (2026-09-13, ADR-079 open item 2): the club field is now actually
+  // stored, which reverses what v1.0's RODO text told the fencer about it —
+  // a genuine text change, not a silent schema addition.
+  const CONSENT_VERSION = 'v1.1'
 
   let {
     eventCode = '',
@@ -686,6 +689,7 @@
         gender: gender as GenderType,
         birthYear: birthYear as number,
         weapons,
+        club: club.trim() || null,
       })
       step = 'payment'
     } catch {
@@ -722,6 +726,7 @@
         fencerId,
         consentVersion: CONSENT_VERSION,
         editToken: token,
+        club: club.trim() || null,
       })
       registrationId = id
       editToken = token

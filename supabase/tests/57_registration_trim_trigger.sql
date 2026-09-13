@@ -18,7 +18,7 @@
 
 BEGIN;
 
-SELECT plan(7);
+SELECT plan(9);
 
 -- 57.1 — trigger function exists
 SELECT has_function(
@@ -123,6 +123,34 @@ SELECT is(
   (SELECT count(*)::INT FROM tbl_registration WHERE txt_surname = 'PGTAP57_RPC'),
   1,
   '57.7 — padded resubmission upserts the same row, no duplicate entry'
+);
+
+-- 57.8 — txt_club (2026-09-13) is trimmed like the two name columns.
+INSERT INTO tbl_registration (
+  id_event, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons, txt_club
+)
+SELECT id_event, 'PGTAP57_CLUB', 'Ewa', 'F', 1980, ARRAY['EPEE']::enum_weapon_type[], '  AZS AWFiS Gdańsk  '
+FROM tbl_event WHERE txt_code = 'REG57EVT';
+
+SELECT is(
+  (SELECT txt_club FROM tbl_registration WHERE txt_surname = 'PGTAP57_CLUB'),
+  'AZS AWFiS Gdańsk',
+  '57.8 — whitespace around txt_club stripped on INSERT'
+);
+
+-- 57.9 — a blank (whitespace-only) club stores as NULL, not '', so "no club
+-- given" and "empty string typed" are the same row — matching how the
+-- exporters already treat an absent value (Club="").
+INSERT INTO tbl_registration (
+  id_event, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons, txt_club
+)
+SELECT id_event, 'PGTAP57_BLANKCLUB', 'Tomasz', 'M', 1980, ARRAY['EPEE']::enum_weapon_type[], '   '
+FROM tbl_event WHERE txt_code = 'REG57EVT';
+
+SELECT is(
+  (SELECT txt_club FROM tbl_registration WHERE txt_surname = 'PGTAP57_BLANKCLUB'),
+  NULL,
+  '57.9 — a blank txt_club is stored as NULL, not an empty string'
 );
 
 SELECT * FROM finish();

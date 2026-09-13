@@ -61,6 +61,8 @@ export interface ExportEntryRow {
   enum_weapon: string
   /** Resolved position inside this weapon × gender × category, 1-based. */
   int_order: number
+  /** Declared club (2026-09-13, ADR-080 amendment (f)); null when not given. */
+  txt_club: string | null
 }
 
 /** One row of fn_ftl_roster — the organizer's pick-list for one weapon. */
@@ -77,6 +79,8 @@ export interface SeedEntry {
   idx: number
   surname: string
   firstName: string
+  /** Declared club; '' when not given (roster entries always pass ''). */
+  club: string
 }
 
 export interface Tireur {
@@ -85,6 +89,7 @@ export interface Tireur {
   prenom: string
   sexe: string
   classement: number
+  club: string
 }
 
 export type SeedFileKind = 'MIXALL' | 'DE' | 'ROSTER'
@@ -183,6 +188,7 @@ export function mixallTireurs(seedOrder: Array<[SeedEntry, string]>): Tireur[] {
     prenom: entry.firstName,
     sexe: key[0],
     classement: i + 1,
+    club: entry.club,
   }))
 }
 
@@ -321,7 +327,7 @@ export function buildFieXml(input: FieXmlInput): string {
         ['Nom', t.nom],
         ['Prenom', t.prenom],
         ['Sexe', t.sexe],
-        ['Club', ''],
+        ['Club', t.club],
         ['Nation', 'POL'],
         ['Licence', ''],
         ['Statut', 'N'],
@@ -345,7 +351,7 @@ function subRankingsForWeapon(rows: ExportEntryRow[]): Record<string, SeedEntry[
   for (const r of rows) {
     const key = `${r.enum_gender}${r.enum_age_category}`
     const [surname, firstName] = toCanonicalName(r.txt_surname, r.txt_first_name)
-    ;(buckets[key] ??= []).push({ idx: r.int_order, surname, firstName })
+    ;(buckets[key] ??= []).push({ idx: r.int_order, surname, firstName, club: r.txt_club ?? '' })
   }
   for (const entries of Object.values(buckets)) entries.sort((a, b) => a.idx - b.idx)
   return buckets
@@ -458,7 +464,7 @@ export function buildEventSeedFiles(
           .map((r) => {
             const [surname, firstName] = toCanonicalName(r.txt_surname, r.txt_first_name)
             return [
-              { idx: r.int_order, surname, firstName },
+              { idx: r.int_order, surname, firstName, club: '' },
               `${r.enum_gender}${r.enum_age_category}`,
             ] as [SeedEntry, string]
           }),

@@ -9,7 +9,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(40);
+SELECT plan(41);
 
 -- 49.1 — tbl_registration exists
 SELECT has_table('tbl_registration', '49.1 tbl_registration exists');
@@ -19,6 +19,10 @@ SELECT has_column('tbl_registration', 'id_event', '49.2 id_event column exists')
 SELECT has_column('tbl_registration', 'id_fencer', '49.3 id_fencer column exists (nullable match)');
 SELECT has_column('tbl_registration', 'txt_ftl_name', '49.4 txt_ftl_name column exists (canonical seed name)');
 SELECT has_column('tbl_registration', 'txt_email_hash', '49.5 txt_email_hash column exists (salted, abuse log only)');
+
+-- 49.5b — declared club (2026-09-13, ADR-080 amendment (f)). Organizer-export
+-- only; 49.16 below keeps asserting the public view excludes it.
+SELECT has_column('tbl_registration', 'txt_club', '49.5b txt_club column exists (declared club, organizer-export only)');
 
 -- 49.6 — no payment-status tracking (corrected 2026-07-04): this system
 -- displays bank-transfer info but does not track whether it's paid — that's

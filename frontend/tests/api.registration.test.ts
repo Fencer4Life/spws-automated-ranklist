@@ -76,6 +76,8 @@ describe('createRegistration (FR-122, sole public write path)', () => {
       // the server then leaves any token already on the row alone — an older
       // cached bundle must not silently revoke a live edit capability.
       p_edit_token: null,
+      // Declared club (2026-09-13, ADR-080 amendment (f)). Optional.
+      p_club: null,
     })
     expect(id).toBe(7)
   })

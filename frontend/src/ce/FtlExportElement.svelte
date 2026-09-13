@@ -19,7 +19,7 @@
   // the capability token, the event list, which event is selected, and the
   // re-read that happens before every download.
   //
-  // ACCESS. The link is /pliki-startowe/?k=<uuid>. The token is read here and
+  // ACCESS. The link is /pliki-zasilajace-xml-ftl/?k=<uuid>. The token is read here and
   // passed to each RPC, but it is CHECKED in Postgres — the bundle is public, so
   // a check in this file would be decoration. No token means the functions
   // return nothing and the page renders its empty state; a stale link looks
