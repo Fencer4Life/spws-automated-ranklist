@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="a7e8706f2ad8fddd515567033cc0e55bd18aa8ccb555d0a804daedbee0f2fabf">
+<meta name="adr-source-sha256" content="f2f0d5a9d4eee0189c9e05486b2529b8e12e19c5b576147853004c9afcbb86e3">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">179 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>release.yml</code> runs on every completed <code>CI</code> run on <code>main</code> (<code>workflow_run</code>), and
 <code>build</code> had <code>if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'</code> — i.e. it ran whenever CI
@@ -63,10 +63,12 @@ needed none beyond <code>contents</code>, <code>pages</code>, <code>id-token</co
 <p>The script takes an event name and a base/head SHA pair (env-overridable,
 which is what makes it unit-testable without a GitHub Actions runner) and
 <code>git diff --name-only</code>s the range. A path is <strong>non-deployable</strong> only if it
-matches <code>^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$)</code> — this is a path-prefix
-test, not an extension test, so it catches both the Markdown source and the
-generated HTML twin (ADR-082) under <code>doc/</code>, without needing to enumerate
-extensions. Everything else — including <code>frontend/public/*.html</code>
+matches <code>^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)</code>
+— this is a path-prefix test, not an extension test, so it catches both the
+Markdown source and the generated HTML twin (ADR-082) under <code>doc/</code>, without
+needing to enumerate extensions. The two root-level JSON files are the
+Release workflow's own tracking bookkeeping (§2026-09-13 amendment below).
+Everything else — including <code>frontend/public/*.html</code>
 (<code>tabela-punktacji.html</code>, <code>kalkulator-punktow.html</code>; ADR-085, ADR-092), which
 <em>is</em> built into the Pages artifact — counts as deployable. <code>deploy=false</code> only
 when every changed path matches the non-deployable pattern; any single
@@ -116,9 +118,10 @@ without an extension list at all. Rejected.</li>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
 <ul>
 <li>New files: <code>scripts/release-gate.sh</code>,
-<code>python/tests/test_release_docs_only_gate.py</code> (12 cases: the classifier's
-doc-only/mixed/migration/published-static-page/workflow-file paths, five
-fail-open guarantees, and two assertions on the workflow's job wiring).</li>
+<code>python/tests/test_release_docs_only_gate.py</code> (13 cases: the classifier's
+doc-only/generated-twin/tracking-files-only/mixed/migration/
+published-static-page/workflow-file paths, five fail-open guarantees, and
+two assertions on the workflow's job wiring).</li>
 <li><code>release.yml</code> gains a <code>gate</code> job and the <code>actions: read</code> permission; <code>build</code>
 moves its trigger condition into <code>needs.gate.outputs.deploy == 'true'</code>.</li>
 <li>A documentation-only push now completes CI and stops — no frontend build,
@@ -138,6 +141,36 @@ risk of a false skip inside the one directory that actually builds the
 shipped artifact.</li>
 </ul>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow's own tracking files</h2>
+<p>Observed live the same day this ADR was drafted: a purely documentation
+follow-up commit (updating ADR-096 and a plan page to record a just-completed
+deploy) was gated as <strong>deployable</strong> — <code>release-gate: at least one deployable path changed</code>, naming <code>deployed_migrations.json</code> and <code>release-manifest.json</code>.
+Neither file was touched by that commit's own author; both were swept into
+the diff range because an unrelated Release run (a manually re-run EVF sync,
+minutes earlier) had committed its own tracking update in between, and the
+range this gate computes is &quot;everything since CI last completed on <code>main</code>,&quot;
+not &quot;only the paths this specific push introduced.&quot;</p>
+<p>Both files are written exclusively by <code>release.yml</code>'s own <code>build</code>
+(<code>release-manifest.json</code>) and <code>deploy-cert</code>/<code>deploy-prod</code>
+(<code>deployed_migrations.json</code>, conditionally) jobs, as pure post-deploy
+bookkeeping — nothing reads either expecting it to gate a future decision
+about code or schema. Because they live at the repo root rather than under
+<code>doc/</code>, the original pattern could never exempt them, which meant <em>any</em> two
+Release-triggering events landing close enough together — routine given
+<code>evf-sync.yml</code>/<code>pzsz-sync.yml</code>'s own promotion jobs, scheduled
+<code>recompute-drain*.yml</code> runs, and manual dispatches all sharing <code>main</code> —
+would silently defeat this ADR's entire purpose for the second push, with no
+error and no visible sign beyond a longer-than-expected Release run.</p>
+<p><strong>Decision:</strong> add both filenames as literal exact-match alternatives in
+<code>non_deployable_pattern</code>. <code>scripts/release-gate.sh</code> and the pattern quoted in
+§3 above are both updated; <code>python/tests/test_release_docs_only_gate.py</code>
+gains <code>test_release_tracking_files_only_range_skips_deployment</code>, pinning a
+range of <code>doc/handbook/index.html</code> + both tracking files as <code>deploy=false</code>.
+No other file in the classifier's scope changes shape or risk: both
+additions are exact filenames, not prefixes, so they cannot accidentally
+swallow a real deployable path the way a broader <code>^release-</code> or <code>.json$</code>
+pattern could.</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ul>
 <li>Whether the same gate should also suppress <code>evf-sync.yml</code>/<code>pzsz-sync.yml</code>'s
@@ -149,5 +182,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>a7e8706f2ad8fddd515567033cc0e55bd18aa8ccb555d0a804daedbee0f2fabf</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>f2f0d5a9d4eee0189c9e05486b2529b8e12e19c5b576147853004c9afcbb86e3</code></footer>
 </div></body></html>

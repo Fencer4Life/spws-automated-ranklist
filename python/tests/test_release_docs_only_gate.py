@@ -112,6 +112,25 @@ def test_generated_html_twin_only_range_skips_deployment(repo: Path, tmp_path: P
     assert deploy == "false", log
 
 
+def test_release_tracking_files_only_range_skips_deployment(repo: Path, tmp_path: Path) -> None:
+    """deployed_migrations.json and release-manifest.json are CI-generated
+    bookkeeping the Release workflow's own deploy-cert/deploy-prod/build jobs
+    commit after every run. They carry no code or schema effect, but they
+    live at the repo root, not under doc/ — so before this fix they always
+    forced a redeploy whenever they fell inside a later range, silently
+    defeating the docs-only skip for any push that followed a recent Release
+    run (observed 2026-09-13: a pure-documentation push was gated as
+    deployable solely because these two files were in the diff)."""
+    base = _git(repo, "rev-parse", "HEAD")
+    head = _commit(
+        repo,
+        ["doc/handbook/index.html", "deployed_migrations.json", "release-manifest.json"],
+        "docs plus release tracking bookkeeping",
+    )
+    deploy, log = _run_gate(repo, tmp_path, **_range_env(base, head))
+    assert deploy == "false", log
+
+
 def test_mixed_documentation_and_code_deploys(repo: Path, tmp_path: Path) -> None:
     """One deployable path in the range is enough to release."""
     base = _git(repo, "rev-parse", "HEAD")

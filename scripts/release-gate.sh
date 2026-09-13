@@ -53,10 +53,17 @@ if [ -z "$changed" ]; then
     exit 0
 fi
 
-# Documentation-only prefixes/files. Everything else — including the one
-# frontend path that IS published (frontend/public/*.html, e.g. the scoring
-# annex) — deploys.
-non_deployable_pattern='^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$)'
+# Documentation-only prefixes/files, plus the two root-level tracking files
+# the Release workflow's own build/deploy-cert/deploy-prod jobs commit after
+# every run (deployed_migrations.json, release-manifest.json). Both are pure
+# CI-generated bookkeeping with no code or schema effect, but they live at
+# the repo root rather than under doc/ — so before this exemption, any one
+# of them landing inside a later diff range (e.g. from an unrelated Release
+# run shortly before a genuinely docs-only push) silently defeated this
+# gate's whole purpose (observed 2026-09-13). Everything else — including
+# the one frontend path that IS published (frontend/public/*.html, e.g. the
+# scoring annex) — still deploys.
+non_deployable_pattern='^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)'
 
 deployable="$(grep -Ev "$non_deployable_pattern" <<<"$changed" || true)"
 
