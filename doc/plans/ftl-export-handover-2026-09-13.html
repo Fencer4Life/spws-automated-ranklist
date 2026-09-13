@@ -1,0 +1,297 @@
+<meta charset="utf-8">
+<title>Handover — FTL export shipped; the page has no key yet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Handover · 13 September 2026 · FTL export + identity block</p>
+  <h1>Shipped to PROD. The page works and nobody can open it.</h1>
+  <p class="dek">Five migrations are live on CERT <b>and</b> PROD, CI and Release are green, and the organizer download page is deployed. It is also <b>unreachable</b>: the capability table has no rows, so every link shows the empty state. That is the first thing to do next, and it is a five-minute job.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span><code>main</code> @ <code>c4802b09</code></span>
+    <span class="pill good"><span class="dot"></span>CERT + PROD fingerprint <code>cd34f5a9</code></span>
+    <span class="pill danger"><span class="dot"></span>0 rows in <code>tbl_ftl_export_token</code></span>
+    <span class="pill warn"><span class="dot"></span>PPW1 entries close 20 Sep</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Do this first</p>
+    <h2>Mint one export token on PROD</h2>
+    <p>The export page is gated by a capability link, <code>?k=&lt;uuid&gt;</code>, checked inside all three
+    RPCs. <code>tbl_ftl_export_token</code> is empty on PROD, so the functions correctly return no rows and
+    the page renders <em>"brak wydarzeń"</em>. Nothing is broken; nothing has been handed out yet either.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> This is a PROD write — get the go-ahead first</p>
+      <p>Per <code>cloud-db-ops</code>: never write to CERT or PROD until you have proven, in the same
+      session, that you can delete what you wrote. Prove the delete on CERT first, show the user the
+      <code>SELECT</code> before and the <code>RETURNING</code> after, and only then write PROD. Non-SELECT
+      statements need <code>CLOUD_SQL_CONFIRM=yes</code>; that gate is deliberate — read the echoed
+      statement before re-running it.</p>
+    </div>
+
+    <p>The row carries a label so a leaked link can be revoked by name rather than by guesswork:</p>
+    <pre class="trace">INSERT INTO tbl_ftl_export_token (txt_label)
+VALUES ('PPW1 Opole — organizer')
+RETURNING uuid_token, txt_label, ts_created;</pre>
+
+    <p>The organizer's link is then
+    <code>https://fencer4life.github.io/spws-automated-ranklist/register.html?view=export&amp;k=&lt;uuid&gt;</code>,
+    plus <code>&amp;lang=en</code> for an organizer who does not read Polish. Revoking is
+    <code>UPDATE … SET ts_revoked = now()</code> — the link then reads as empty rather than broken, which
+    is deliberate.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">?</span> Decide before handing the link out</p>
+      <p>One token for everything, or one per organizer? The table is <em>shaped</em> for per-organizer
+      scoping (it has a label) but the functions do not filter on it — any valid token sees every live
+      event. Per-organizer scoping was deliberately not built. If PPW1's organizer should not see
+      Łomianki's entry list, that is a change, not a configuration.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What is live</p>
+    <h2>Two features, five migrations, both tiers</h2>
+
+    <h3>The registration identity block (ADR-093)</h3>
+    <p>A fencer entering a name that nearly matches an existing record is no longer silently attached to
+    it or silently ignored. <code>fn_registration_identity_candidates</code> classifies every same-name
+    candidate and the form resolves a six-rung ladder; <code>fn_confirm_registration_identity</code>
+    records the answer against the row's <code>uuid_edit_token</code>.</p>
+    <p>A <strong>CONFIRMED</strong> birth year can no longer be overwritten from the public path at all.
+    It becomes a PENDING proposal an administrator applies or rejects in the birth-year review tab, and
+    the recompute drain announces each one over Telegram. The reason is in the ADR: <code>ADOPT_DECLARED</code>
+    was a <em>parameter</em>, not a click — the server could not tell a fencer pressing a button from a
+    crafted RPC call, so the capability was removed rather than narrowed.</p>
+
+    <h3>The FTL export page (ADR-080 amendment)</h3>
+    <p>An organizer downloads their own seed files from a public page instead of asking for them by
+    e-mail. Event cards for every live event, a per-weapon accordion, an eight-step import instruction in
+    Polish and English on the page <em>and</em> inside the archive, and a dependency-free stored-ZIP
+    writer because a browser will not start twenty-eight downloads.</p>
+    <p>Files are built <strong>when Download is pressed</strong>, not at page load — both paths re-read the
+    entry list first, and the page shows the moment its list was taken. <code>fn_ftl_roster</code> adds the
+    pick-list that stops an unannounced fencer being typed in as a duplicate identity.</p>
+
+    <div class="note accent">
+      <p class="lede">Design of record</p>
+      <p><code>doc/plans/ftl-export-page-2026-09-12.html</code> — the agreed design.<br>
+      <code>doc/mockups/ftl_export_organizer.html</code> — the interactive mock, real LOCAL data.<br>
+      Read both before changing the page; several decisions there were argued and settled.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What went wrong, and the fix that outlives it</p>
+    <h2>A copied gate list turned one push into four</h2>
+    <p>The plan's <em>Verification</em> section listed pytest, vitest, pgTAP, svelte-check, postgrestools
+    and <code>check_docs.py</code>. It omitted <code>basedpyright</code>, <code>ruff</code>,
+    <code>check-coherence.sh</code>, <code>check-spec-sync.sh</code>, and the deploy-time posture check.
+    Every one of the omissions failed — but <em>serially</em>, each discovered from a red run after a push,
+    and a push to <code>main</code> auto-deploys PROD.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The definition of done is now one command</p>
+      <p><code>scripts/preflight.sh</code> — fourteen gates, every CI check plus the AGENTS.md gates CI
+      does not run plus the <code>git diff --check</code> that blocks integration. It runs all of them to
+      completion <em>even after one fails</em> and prints a pass/fail line each, so a plan learns everything
+      wrong with it in one pass. <code>doc/claude/planning.md</code> rule 5a forbids a plan from
+      enumerating its own gate list.</p>
+    </div>
+
+    <p><code>scripts/check-anon-allowlist-sync.sh</code> closes the specific trap that broke the first
+    release: the anon-EXECUTE allowlist lives in <strong>two</strong> files — pgTAP 52.7 and
+    <code>check-security-posture.sh</code> — and pgTAP only ever reads one of them, so a drift stays green
+    through all of CI and fails at deploy. Add a function to 52.7 and you must add it to the other file in
+    the same change.</p>
+
+    <p>Two gates remain outside preflight because they are per-change, not global:
+    <code>postgrestools check &lt;path&gt;</code> for touched SQL, and <code>scripts/refresh-graph.sh</code>
+    before committing.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Deliberately not built</p>
+    <h2>Outstanding, by agreement</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Item</th><th>Where it stands</th></tr></thead>
+        <tbody>
+          <tr><td>Club harvesting on scrape into <code>tbl_fencer.txt_club</code></td><td><span class="chip warn">open</span> ADR-080 amendment (f). FR-136 records it as pending.</td></tr>
+          <tr><td>Standalone PL/EN manual + WordPress publish</td><td><span class="chip warn">open</span> Plan step 10. Until that page exists the surface is <code>register.html?view=export&amp;k=…</code>.</td></tr>
+          <tr><td>Reconciliation report</td><td><span class="chip warn">open</span> Plan step 4.</td></tr>
+          <tr><td>Per-organizer token scoping</td><td><span class="chip plain">shaped, not built</span> The table has a label; the functions ignore it.</td></tr>
+          <tr><td>Print stylesheet for the instruction</td><td><span class="chip plain">raised, undecided</span></td></tr>
+          <tr><td><code>ts_ftl_sent</code> on a self-service download</td><td><span class="chip never">decided: leave it</span> A download is not a delivery.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Ground rules that bit this session</p>
+    <h2>Read these before touching anything</h2>
+    <ol class="steps">
+      <li><strong>Never push <code>main</code> from this checkout.</strong> Commit on the task branch, push it, then integrate from <code>/Users/aleks/coding/SPWSranklist-integration</code> with <code>scripts/integrate-agent-branch.sh</code> and push <code>integration/main:main</code> — <em>not</em> the <code>HEAD:main</code> the hook's own error message suggests, which the pre-push hook rejects.</li>
+      <li><strong>The integration checkout must exactly equal <code>origin/main</code></strong> before integrating, and the task branch must have <code>origin/main</code> as an ancestor. Merge <code>origin/main</code> into the task branch first.</li>
+      <li><strong><code>scripts/preflight.sh</code> exits 0</strong> before staging and again before pushing. Quote its summary; do not assert "gates pass" from a subset.</li>
+      <li><strong>Real names are not placeholder data.</strong> The published example is the invented <code>PRZYKŁADOWSKA (1) Anna</code>. Kowalski / Kowalska / Nowak were rejected too — in an association of 367 people the stock placeholders are real members. Where a real name is <em>evidence</em> (ADR-080's worked example over real LOCAL data, the handover's live-FTL citation, the seed dumps) it stays.</li>
+      <li><strong>Ask one plain-text question at a time</strong>, with the question written into the HTML rather than the chat.</li>
+    </ol>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Entry points</p>
+    <h2>Where the code is</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Concern</th><th>File</th></tr></thead>
+        <tbody>
+          <tr><td>Export page UI</td><td><code>frontend/src/components/FtlExport.svelte</code></td></tr>
+          <tr><td>Token, event list, re-read on download</td><td><code>frontend/src/ce/FtlExportElement.svelte</code></td></tr>
+          <tr><td>XML generation (browser twin)</td><td><code>frontend/src/lib/ftlSeedExport.ts</code></td></tr>
+          <tr><td>XML generation (Python, e-mail path)</td><td><code>python/pipeline/ftl_seed_export.py</code></td></tr>
+          <tr><td>V-marker convention — <em>single owner</em></td><td><code>python/pipeline/vcat_marker.py</code></td></tr>
+          <tr><td>Export projection + token table</td><td><code>supabase/migrations/20260912000004_ftl_export_entries.sql</code></td></tr>
+          <tr><td>Roster / pick-list</td><td><code>supabase/migrations/20260912000005_ftl_roster.sql</code></td></tr>
+          <tr><td>Identity block</td><td><code>supabase/migrations/20260912000001…3</code></td></tr>
+          <tr><td>Anon surface allowlist (source of truth)</td><td><code>supabase/tests/52_security_posture.sql</code> 52.7</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">doc/plans/ftl-export-handover-2026-09-13.html · main @ c4802b09 · CERT + PROD schema cd34f5a9ee9608af092eb894bb899302</p>
+
+</div>
