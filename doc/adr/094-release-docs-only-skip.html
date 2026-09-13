@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="094-release-docs-only-skip.md">
+<meta name="adr-source-sha256" content="a7e8706f2ad8fddd515567033cc0e55bd18aa8ccb555d0a804daedbee0f2fabf">
+<title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
+<strong>Date:</strong> 2026-09-13
+<strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
+<strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (security posture checks stay inside <code>deploy-cert</code>/<code>deploy-prod</code>, unaffected by this gate, which runs strictly before <code>build</code>)
+<strong>Source:</strong> <code>.github/workflows/release.yml</code>, <code>scripts/release-gate.sh</code>, <code>python/tests/test_release_docs_only_gate.py</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>release.yml</code> runs on every completed <code>CI</code> run on <code>main</code> (<code>workflow_run</code>), and
+<code>build</code> had <code>if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'</code> — i.e. it ran whenever CI
+passed, with no regard for what the run actually changed. A commit touching
+only <code>doc/</code> (handbook prose, an ADR, its generated HTML twin) or root
+Markdown (<code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>README.md</code>) still walked the entire
+build → deploy-pages/deploy-cert/deploy-prod chain: a fresh frontend build,
+CERT/PROD fingerprint verification, Edge Function redeploys, and the
+security-posture check on both cloud environments — none of which differ
+from what is already live, since nothing deployable changed.</p>
+<p>This is pure cost with no corresponding benefit: extra CI minutes, extra
+Supabase CLI invocations against CERT/PROD credentials, and extra noise in
+<code>deployed_migrations.json</code>/<code>release-manifest.json</code> history for a change that
+altered no shipped artifact. It also matters for the association's WordPress
+embed (ADR-011's guarded <code>assets/main.ce.js</code>) and CERT/PROD fingerprint
+verification — both of which are unaffected by documentation changes but were
+run anyway.</p>
+<p><code>workflow_run</code>'s payload has no <code>before</code> SHA (unlike the <code>push</code> event
+<code>ci.yml</code> reads via <code>github.event.before</code> for <code>check_docs.py --changed-from</code>), so there was no existing commit range to classify a run
+against.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-a-gate-job-runs-before-build">1 · A <code>gate</code> job runs before <code>build</code></h3>
+<p><code>release.yml</code> gains a <code>gate</code> job with the same trigger condition <code>build</code> used
+to carry (<code>workflow_dispatch</code> or <code>github.event.workflow_run.conclusion == 'success'</code> — moved here, not duplicated). <code>build</code> now reads <code>needs: gate</code> and
+<code>if: needs.gate.outputs.deploy == 'true'</code>. Because <code>deploy-pages</code>,
+<code>deploy-cert</code>, and <code>deploy-prod</code> all depend (directly or transitively) on
+<code>build</code>, GitHub Actions skips the whole chain for free when <code>build</code> is
+skipped — no other job needed its own condition changed.</p>
+<h3 id="2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run's head</h3>
+<p><code>gate</code> resolves the diff range itself: <code>head</code> is
+<code>github.event.workflow_run.head_sha</code>; <code>base</code> is the <code>head_sha</code> of the most
+recent other <em>completed</em> run of <code>ci.yml</code> on <code>main</code>, fetched via
+<code>gh api repos/.../actions/workflows/ci.yml/runs?branch=main&amp;status=completed</code>.
+This reads as &quot;everything since CI last finished on <code>main</code>&quot;, which is correct
+whether the intervening push carried one commit or several, and requires the
+new <code>actions: read</code> permission on <code>release.yml</code> (the workflow previously
+needed none beyond <code>contents</code>, <code>pages</code>, <code>id-token</code>).</p>
+<h3 id="3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · <code>scripts/release-gate.sh</code> classifies the range and fails open</h3>
+<p>The script takes an event name and a base/head SHA pair (env-overridable,
+which is what makes it unit-testable without a GitHub Actions runner) and
+<code>git diff --name-only</code>s the range. A path is <strong>non-deployable</strong> only if it
+matches <code>^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$)</code> — this is a path-prefix
+test, not an extension test, so it catches both the Markdown source and the
+generated HTML twin (ADR-082) under <code>doc/</code>, without needing to enumerate
+extensions. Everything else — including <code>frontend/public/*.html</code>
+(<code>tabela-punktacji.html</code>, <code>kalkulator-punktow.html</code>; ADR-085, ADR-092), which
+<em>is</em> built into the Pages artifact — counts as deployable. <code>deploy=false</code> only
+when every changed path matches the non-deployable pattern; any single
+deployable path, or any of the following, deploys unconditionally:</p>
+<ul>
+<li><code>workflow_dispatch</code> (an operator asked for a release — never second-guess it)</li>
+<li>an empty, missing, or unresolvable base/head SHA</li>
+<li>base equal to head (no diff evidence)</li>
+<li>an empty diff</li>
+</ul>
+<p>This mirrors the fail-open posture the codebase already uses for FTL delivery
+guards and the CERT/PROD fingerprint checks: an unclassifiable input runs the
+expensive path rather than silently skipping a real change.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Filter on the <code>CI</code> job names that ran</strong> (skip if only <code>coherence</code>
+succeeded) — CI's four jobs (<code>test-db</code>, <code>test-python</code>, <code>test-frontend</code>,
+<code>coherence</code>) all run on every push regardless of what changed; the run's
+job list carries no information about which files moved. Rejected.</li>
+<li><strong>Path filters via <code>paths-ignore</code> on <code>push</code>, directly on <code>release.yml</code></strong> —
+<code>release.yml</code> is not triggered by <code>push</code>; it is triggered by
+<code>workflow_run</code> on <code>CI</code>'s completion, specifically so a single CI success
+gates all three environments' deploys together (ADR-011). <code>paths-ignore</code>
+only exists for <code>push</code>/<code>pull_request</code> triggers. Rejected.</li>
+<li><strong>Diff against <code>HEAD^</code> (the immediate parent commit)</strong> — correct only for
+a single-commit push; a multi-commit push would see just the last
+commit's diff and could wrongly classify an earlier code commit in the
+same push as covered. Rejected in favor of walking back to the last
+completed CI run, which is correct regardless of commit count per push.</li>
+<li><strong>Diff against <code>release-manifest.json</code>'s last deployed SHA</strong> — that field
+is only updated by <code>update-tracking.sh</code> when a migration was applied
+(<code>deploy-cert</code>/<code>deploy-prod</code>'s &quot;Update tracking files&quot; step is itself
+conditional on <code>has_new_migrations == 'true'</code>), so it can lag many
+already-deployed non-migration releases behind. Using it as the base would
+make the gate see a growing, stale range and default to <code>deploy=true</code>
+indefinitely after any migration-free release — defeating the feature.
+Rejected.</li>
+<li><strong>Classify by extension (<code>.md</code>/<code>.html</code>) instead of path prefix</strong> — would
+wrongly treat <code>frontend/public/tabela-punktacji.html</code> (a deployed static
+page) as documentation, and would need a second rule anyway to exclude
+<code>doc/</code>'s own non-<code>.md</code>/<code>.html</code> assets (CSS, images). A path-prefix test on
+<code>doc/</code> handles the Markdown-source/generated-HTML-twin split (ADR-082)
+without an extension list at all. Rejected.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>New files: <code>scripts/release-gate.sh</code>,
+<code>python/tests/test_release_docs_only_gate.py</code> (12 cases: the classifier's
+doc-only/mixed/migration/published-static-page/workflow-file paths, five
+fail-open guarantees, and two assertions on the workflow's job wiring).</li>
+<li><code>release.yml</code> gains a <code>gate</code> job and the <code>actions: read</code> permission; <code>build</code>
+moves its trigger condition into <code>needs.gate.outputs.deploy == 'true'</code>.</li>
+<li>A documentation-only push now completes CI and stops — no frontend build,
+no CERT/PROD fingerprint check, no Edge Function redeploy, no
+<code>deployed_migrations.json</code>/<code>release-manifest.json</code> churn, no security
+posture re-check on either cloud environment.</li>
+<li><code>deployed_migrations.json</code> and <code>release-manifest.json</code> no longer gain an
+entry for every green CI run — only for runs that actually deployed. This
+is a narrowing of an existing implicit assumption (every CI success ⇒ a
+release-manifest touch); nothing currently reads the manifest expecting one
+row per CI run rather than one per release.</li>
+<li>Known gap, deliberately not fixed here: the classifier is repo-root-only —
+a change under <code>frontend/</code> that happens to touch only comments or a
+<code>*.md</code> file inside <code>frontend/</code> still deploys, because <code>frontend/</code> is not in
+the non-deployable pattern. Narrowing further was judged not worth the
+risk of a false skip inside the one directory that actually builds the
+shipped artifact.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ul>
+<li>Whether the same gate should also suppress <code>evf-sync.yml</code>/<code>pzsz-sync.yml</code>'s
+calendar promotion jobs on a documentation-only CERT tracking commit is out
+of scope here — those workflows run on their own schedule, not on CI
+completion, and were not part of this request. Recommendation: leave as is
+unless a concrete cost is observed.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>a7e8706f2ad8fddd515567033cc0e55bd18aa8ccb555d0a804daedbee0f2fabf</code></footer>
+</div></body></html>
