@@ -529,7 +529,7 @@ import re as _re  # noqa: E402  (deliberate local import near use)
 # Some Polish FTL operators encode the per-fencer V-cat in the fencer name
 # string itself, between the surname and first name, in one of these formats:
 #   - "(N)"   parenthesized digit:   "PĘCZEK (0) Sandra"      → 0
-#   - " N "   bare digit:            "KAMIŃSKA  1 Gabriela"   → 1
+#   - " N "   bare digit:            "PRZYKŁADOWSKA  1 Anna"   → 1
 #   - " (N) " parens with whitespace: "WASILCZUK (2) Beata"    → 2
 # N is restricted to 0-4 (the valid V-cats; nothing else is meaningful).
 #
@@ -550,7 +550,7 @@ def _extract_vcat_marker(fencer_name: str) -> int | None:
 
     Examples:
       "PĘCZEK (0) Sandra"      → 0
-      "KAMIŃSKA   1 Gabriela"  → 1
+      "PRZYKŁADOWSKA   1 Anna"  → 1
       "MITSKEVICH Dziyana"     → None  (no marker)
     """
     if not fencer_name:

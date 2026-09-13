@@ -76,7 +76,7 @@ def strip_category_markers(name: str) -> str:
 
     Two conventions are emitted by the FTL eventSchedule source (ADR-065):
       - parenthesized: ``(0)``, ``(1)``, ``(kat 1)``, ``(V1)``
-      - bare digit 0-4 bounded by whitespace: ``"KAMIŃSKA   1 Gabriela"``
+      - bare digit 0-4 bounded by whitespace: ``"PRZYKŁADOWSKA   1 Anna"``
 
     The bare-digit form is bounded to 0-4 surrounded by whitespace so legitimate
     name tokens (and digits ≥5) are never touched.

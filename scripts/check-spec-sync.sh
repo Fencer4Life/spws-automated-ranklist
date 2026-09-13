@@ -80,7 +80,10 @@ if [ -f "$RTM" ]; then
   # 2026-09-02: +FR-134 (calendar dataset spans every season; a calendar failure is contained)
   #             +FR-133 (deny-by-default grants; anon surface is an allowlist) — ADR-083
   # 134 since 2026-09-03: FR-135 (PZSz as a fourth calendar organizer, ADR-087).
-  EXPECTED=134
+  # 135 since 2026-09-12: +FR-136 (public FTL export page, ADR-080 amendment (g)/(h)).
+  #   The identity-candidate/override work the same day amended FR-124 in place
+  #   rather than adding a row.
+  EXPECTED=135
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

@@ -8,10 +8,10 @@ the name itself. ADR-065 chose a single digit in parentheses.
 
 WHERE IT GOES, AND WHY THAT CHANGED. Between the surname and the given name:
 
-    Nom="KAMIŃSKA (1)"   Prenom="Gabriela"    ->   "KAMIŃSKA (1) Gabriela"
+    Nom="PRZYKŁADOWSKA (1)"   Prenom="Anna"    ->   "PRZYKŁADOWSKA (1) Anna"
 
 Until 2026-09-12 the exporter appended it to the GIVEN name instead
-(`Prenom="Gabriela (1)"`), producing "KAMIŃSKA Gabriela (1)" — which this
+(`Prenom="Anna (1)"`), producing "PRZYKŁADOWSKA Anna (1)" — which this
 module's own reader does not match, because it requires the digit in the
 middle. Our seed files therefore did not round-trip through our own scraper.
 Nothing had failed loudly because the files that did round-trip were the ones an
