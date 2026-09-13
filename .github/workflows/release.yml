@@ -11,15 +11,56 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: read   # ADR-094 gate job reads prior CI run history to find its diff base
 
 concurrency:
   group: "release"
   cancel-in-progress: false
 
 jobs:
+  # ─── Gate ─────────────────────────────────────────────────────────
+  # ADR-094: a CI completion that only touched documentation should not walk
+  # the whole build/deploy chain — nothing it produces differs from what is
+  # already on CERT/PROD. `workflow_run` carries no `before` SHA (unlike the
+  # `push` event ci.yml reads for check_docs.py), so this job derives one:
+  # the head_sha of the previous *completed* CI run on main, i.e. "everything
+  # since CI last finished". scripts/release-gate.sh does the classification
+  # and fails OPEN — any manual dispatch, or anything it cannot resolve with
+  # confidence, deploys.
+  gate:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve base commit (previous completed CI run on main)
+        id: base
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BASE_SHA=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=10" \
+            --jq '[.workflow_runs[] | select(.id != ${{ github.event.workflow_run.id }})] | sort_by(.run_started_at) | last | .head_sha // empty')
+          echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Run release gate
+        id: gate
+        env:
+          RELEASE_GATE_EVENT: ${{ github.event_name }}
+          RELEASE_GATE_BASE_SHA: ${{ steps.base.outputs.base_sha }}
+          RELEASE_GATE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/release-gate.sh
+
   # ─── Build ────────────────────────────────────────────────────────
   build:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    needs: gate
+    if: needs.gate.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     outputs:
       schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
