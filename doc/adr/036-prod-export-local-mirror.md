@@ -1,6 +1,6 @@
 # ADR-036: PROD Export & Local Mirror (Single Monolithic Dump)
 
-**Status:** Implemented (amended 2026-07-14 and 2026-09-12; see the amendments)  
+**Status:** Implemented (amended 2026-07-14 and 2026-09-12; see the amendments)
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
 
