@@ -1,6 +1,6 @@
 # ADR-096: A bracket is created by results ingestion, never by calendar discovery
 
-**Status:** Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented and verified on LOCAL; 154 CERT rows and 82 PROD rows measured for the prune, not yet applied there.
+**Status:** Accepted (proposed 2026-09-13, accepted 2026-09-13). Implemented, deployed and verified on LOCAL, CERT and PROD: the migration ran clean via the standard `main` release pipeline, a manually-dispatched **EVF Calendar + Results Sync** completed with zero errors (Athens synced at `PEW13es-2026-2027`, `0 new, 18 already in CERT`), and a direct query confirmed all 31 non-terminal events on both CERT and PROD hold zero child tournaments.
 **Date:** 2026-09-13
 **Amends:** [ADR-028](028-evf-calendar-results-import.md) §Calendar Scraping (the calendar RPC no longer creates a child `tbl_tournament` row for each weapon × gender; that sentence, dated April 2026, is superseded by the decision below), [ADR-046](046-pew-weapon-suffix.md) (the canonical tournament-code formula gains one shared implementation, `fn_rebuild_tournament_codes`, instead of two independently-drifting copies)
 **Relates to:** [ADR-091](091-no-season-skeletons-for-scraped-events.md) (the same "a skeleton is a PREDICTION of a row that is going to arrive anyway" ruling, one layer up, for events instead of brackets), [ADR-081](081-cert-prod-event-reconciler.md) (the CERT→PROD reconciler's CREATE path is already childless — test 51.1b — and needed no change here), [ADR-083](083-server-enforced-authorization.md) (the new functions stay off the anon-EXECUTEable allowlist)
@@ -220,10 +220,15 @@ seed files (pgTAP test files carry a pre-existing baseline of pgtap-extension
 typecheck noise unrelated to this change, reproduced identically on an
 untouched file).
 
-**Not yet done.** The prune has been measured against CERT and PROD
-(154 / 82 rows) but not yet run there — this ADR records the decision and the
-LOCAL implementation; the CERT and PROD runs are a deployment step, not a
-design question.
+**Deployed and verified (2026-09-13).** The migration ran on CERT and PROD
+through the standard `main` release pipeline (`integration/main` → `main`,
+CI green, `deploy-cert`/`deploy-prod` both green, security posture verified
+on both). A direct query against each confirms zero non-terminal event holds
+a child tournament: CERT 31/31 events (`PLANNED`/`CREATED`) at `n_children =
+0`, PROD the same 31/31. The manually-dispatched **EVF Calendar + Results
+Sync** workflow (`workflow_dispatch`, `mode=calendar`) completed with no
+`23505` and Athens correctly synced at `PEW13es-2026-2027` among `0 new, 18
+already in CERT` — the exact regression this ADR fixes, reproduced clean.
 
 **Noted, not fixed here.** PROD's mirror never rebuilds child tournament
 codes on a CERT→PROD sync (it copies event fields only), so PROD still carries
