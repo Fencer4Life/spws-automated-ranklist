@@ -60,10 +60,12 @@ needed none beyond `contents`, `pages`, `id-token`).
 The script takes an event name and a base/head SHA pair (env-overridable,
 which is what makes it unit-testable without a GitHub Actions runner) and
 `git diff --name-only`s the range. A path is **non-deployable** only if it
-matches `^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$)` — this is a path-prefix
-test, not an extension test, so it catches both the Markdown source and the
-generated HTML twin (ADR-082) under `doc/`, without needing to enumerate
-extensions. Everything else — including `frontend/public/*.html`
+matches `^(doc/|CLAUDE\.md$|AGENTS?\.md$|README\.md$|deployed_migrations\.json$|release-manifest\.json$)`
+— this is a path-prefix test, not an extension test, so it catches both the
+Markdown source and the generated HTML twin (ADR-082) under `doc/`, without
+needing to enumerate extensions. The two root-level JSON files are the
+Release workflow's own tracking bookkeeping (§2026-09-13 amendment below).
+Everything else — including `frontend/public/*.html`
 (`tabela-punktacji.html`, `kalkulator-punktow.html`; ADR-085, ADR-092), which
 *is* built into the Pages artifact — counts as deployable. `deploy=false` only
 when every changed path matches the non-deployable pattern; any single
@@ -112,9 +114,10 @@ expensive path rather than silently skipping a real change.
 ## Consequences
 
 - New files: `scripts/release-gate.sh`,
-  `python/tests/test_release_docs_only_gate.py` (12 cases: the classifier's
-  doc-only/mixed/migration/published-static-page/workflow-file paths, five
-  fail-open guarantees, and two assertions on the workflow's job wiring).
+  `python/tests/test_release_docs_only_gate.py` (13 cases: the classifier's
+  doc-only/generated-twin/tracking-files-only/mixed/migration/
+  published-static-page/workflow-file paths, five fail-open guarantees, and
+  two assertions on the workflow's job wiring).
 - `release.yml` gains a `gate` job and the `actions: read` permission; `build`
   moves its trigger condition into `needs.gate.outputs.deploy == 'true'`.
 - A documentation-only push now completes CI and stops — no frontend build,
@@ -132,6 +135,40 @@ expensive path rather than silently skipping a real change.
   the non-deployable pattern. Narrowing further was judged not worth the
   risk of a false skip inside the one directory that actually builds the
   shipped artifact.
+
+## Amendment (2026-09-13): exempt the Release workflow's own tracking files
+
+Observed live the same day this ADR was drafted: a purely documentation
+follow-up commit (updating ADR-096 and a plan page to record a just-completed
+deploy) was gated as **deployable** — `release-gate: at least one deployable
+path changed`, naming `deployed_migrations.json` and `release-manifest.json`.
+Neither file was touched by that commit's own author; both were swept into
+the diff range because an unrelated Release run (a manually re-run EVF sync,
+minutes earlier) had committed its own tracking update in between, and the
+range this gate computes is "everything since CI last completed on `main`,"
+not "only the paths this specific push introduced."
+
+Both files are written exclusively by `release.yml`'s own `build`
+(`release-manifest.json`) and `deploy-cert`/`deploy-prod`
+(`deployed_migrations.json`, conditionally) jobs, as pure post-deploy
+bookkeeping — nothing reads either expecting it to gate a future decision
+about code or schema. Because they live at the repo root rather than under
+`doc/`, the original pattern could never exempt them, which meant *any* two
+Release-triggering events landing close enough together — routine given
+`evf-sync.yml`/`pzsz-sync.yml`'s own promotion jobs, scheduled
+`recompute-drain*.yml` runs, and manual dispatches all sharing `main` —
+would silently defeat this ADR's entire purpose for the second push, with no
+error and no visible sign beyond a longer-than-expected Release run.
+
+**Decision:** add both filenames as literal exact-match alternatives in
+`non_deployable_pattern`. `scripts/release-gate.sh` and the pattern quoted in
+§3 above are both updated; `python/tests/test_release_docs_only_gate.py`
+gains `test_release_tracking_files_only_range_skips_deployment`, pinning a
+range of `doc/handbook/index.html` + both tracking files as `deploy=false`.
+No other file in the classifier's scope changes shape or risk: both
+additions are exact filenames, not prefixes, so they cannot accidentally
+swallow a real deployable path the way a broader `^release-` or `.json$`
+pattern could.
 
 ## Open items
 
