@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 from python.pipeline import run as run_module
 from python.pipeline.core.contract import Services
 from python.pipeline.engine.flows import Flow, FlowParams
-from python.pipeline.recompute.worker import drain_recompute_queue
+from python.pipeline.recompute.worker import drain_recompute_queue, report_identity_overrides
 
 
 def _queue_db(watermark, pending):
@@ -134,7 +134,15 @@ class TestWorkerCli:
         """N5.7 `python -m ...worker --drain` builds a connector and drains once."""
         from python.pipeline.recompute import worker
 
-        fake_db = object()
+        class _FakeDb:
+            """Stands in for the connector. Carries claim_identity_override_alerts
+            because main() reports overrides before draining — a bare object()
+            stopped modelling the interface the moment that was added."""
+
+            def claim_identity_override_alerts(self):
+                return []
+
+        fake_db = _FakeDb()
         monkeypatch.setattr(worker, "create_db_connector", lambda: fake_db, raising=False)
         seen = {}
 
@@ -148,3 +156,96 @@ class TestWorkerCli:
         assert rc == 0
         assert seen["db"] is fake_db
         assert seen["debounce"] == 0
+
+
+# ---------------------------------------------------------------------------
+# Confirmed-birth-year overrides are announced, not merely recorded
+# ---------------------------------------------------------------------------
+class TestIdentityOverrideAlerts:
+    """A member of the public changing a birth year somebody already CONFIRMED
+    is allowed — a fencer's own declaration outranks a scraped value — but it
+    must never pass unremarked. The database records it; this is the half that
+    actually tells someone. Plan IDs N5.8-N5.11.
+    """
+
+    def test_reports_each_override_to_the_operator(self):
+        """N5.8 every claimed override produces an alert naming both years."""
+        db = MagicMock()
+        db.claim_identity_override_alerts.return_value = [
+            {
+                "id_override": 1,
+                "id_fencer": 30,
+                "txt_surname": "BUJKO",
+                "txt_first_name": "Paulina",
+                "int_birth_year_before": 1979,
+                "int_birth_year_after": 1982,
+                "ts_created": "2026-09-12T10:00:00Z",
+            }
+        ]
+        notifier = MagicMock()
+        sent = report_identity_overrides(db, notifier=notifier)
+
+        assert sent == 1
+        notifier.warning.assert_called_once()
+        msg = notifier.warning.call_args[0][0]
+        # Both years must be in the text: "a birth year changed" is not
+        # actionable, "1979 -> 1982" is.
+        assert "1979" in msg and "1982" in msg
+        assert "BUJKO" in msg
+
+    def test_silent_when_there_is_nothing_to_report(self):
+        """N5.9 no overrides -> no message at all.
+
+        The value of this alert is that it is rare. A drain that says
+        "0 overrides" every fifteen minutes trains the reader to ignore it,
+        and the one that matters then arrives into a muted channel.
+        """
+        db = MagicMock()
+        db.claim_identity_override_alerts.return_value = []
+        notifier = MagicMock()
+
+        assert report_identity_overrides(db, notifier=notifier) == 0
+        notifier.warning.assert_not_called()
+
+    def test_claims_even_with_no_notifier_configured(self):
+        """N5.10 LOCAL has no Telegram token; the claim must not blow up."""
+        db = MagicMock()
+        db.claim_identity_override_alerts.return_value = [
+            {
+                "id_override": 1,
+                "id_fencer": 30,
+                "txt_surname": "BUJKO",
+                "txt_first_name": "Paulina",
+                "int_birth_year_before": 1979,
+                "int_birth_year_after": 1982,
+                "ts_created": "2026-09-12T10:00:00Z",
+            }
+        ]
+        # Nothing is SENT (there is nowhere to send it), but the rows must
+        # still be claimed — otherwise a developer's machine accumulates a
+        # backlog that PROD then re-reports as if it were new.
+        assert report_identity_overrides(db, notifier=None) == 0
+        db.claim_identity_override_alerts.assert_called_once()
+
+    def test_a_failed_send_never_breaks_the_drain(self):
+        """N5.11 the recompute is the load-bearing work; the alert is not.
+
+        Losing an alert is bad. Losing the self-heal that keeps the ranking
+        consistent, because Telegram happened to be down, is worse.
+        """
+        db = MagicMock()
+        db.claim_identity_override_alerts.return_value = [
+            {
+                "id_override": 1,
+                "id_fencer": 30,
+                "txt_surname": "BUJKO",
+                "txt_first_name": "Paulina",
+                "int_birth_year_before": 1979,
+                "int_birth_year_after": 1982,
+                "ts_created": "2026-09-12T10:00:00Z",
+            }
+        ]
+        notifier = MagicMock()
+        notifier.warning.side_effect = RuntimeError("telegram down")
+
+        assert report_identity_overrides(db, notifier=notifier) == 0
