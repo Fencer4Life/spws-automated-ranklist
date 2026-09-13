@@ -175,8 +175,8 @@
     "schema_fingerprint": "7024e97d10f36b4f3b84446d5d1c1e57"
   },
   "prod": {
-    "last_updated": "2026-09-13T15:53:31Z",
-    "last_sha": "868a6ce480b1b911f67004d4a5633478181272d1",
+    "last_updated": "2026-09-13T18:12:46Z",
+    "last_sha": "d54db72f25eee8d634acfec53df4581dd87ca9e3",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -344,8 +344,9 @@
       "20260912000003_identity_override_requires_approval.sql",
       "20260912000004_ftl_export_entries.sql",
       "20260912000005_ftl_roster.sql",
-      "20260913000001_registration_club.sql"
+      "20260913000001_registration_club.sql",
+      "20260913000002_no_bracket_stubs.sql"
     ],
-    "schema_fingerprint": "6af83f8e3dad053cd31b5bea36516384"
+    "schema_fingerprint": "7024e97d10f36b4f3b84446d5d1c1e57"
   }
 }
