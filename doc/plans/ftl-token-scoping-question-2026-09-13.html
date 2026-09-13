@@ -1,0 +1,240 @@
+<meta charset="utf-8">
+<title>Question — per-organizer token scoping, before minting</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62}
+  .wrap{max-width:52rem;margin:0 auto;padding:60px 30px 100px}
+  code{font-family:var(--mono);background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,44px);line-height:1.1;letter-spacing:-.015em;margin:0 0 20px;max-width:22ch}
+  .dek{font-size:22px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink)}
+  .rule{height:2px;background:var(--line);border:0;margin:44px 0}
+  section{margin-top:44px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:29px;line-height:1.16;margin:0 0 16px}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  strong{font-weight:700}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:18px;margin:0 0 8px}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .opt{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:18px 22px;margin:16px 0}
+  .opt.rec{border-color:var(--good);background:var(--good-soft)}
+  .opt h3{margin:0 0 8px;font-size:19px;font-weight:800}
+  .opt .tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;background:var(--good);color:#fff;margin-left:10px;vertical-align:middle}
+  .opt p{margin:0 0 8px}
+  .foot{margin-top:52px;padding-top:20px;border-top:2px solid var(--line);font-size:14px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Decision needed · 13 September 2026 · FTL export tokens</p>
+  <h1>Before minting: does the first token need to be scoped?</h1>
+  <p class="dek">The handover flagged this and asked for a call before handing any link out. Reading the actual functions settles what the choice really is — it is narrower than "scoped vs. not."</p>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What the code actually does today</p>
+    <h2>The label doesn't gate anything yet</h2>
+    <p><code>tbl_ftl_export_token</code> has <code>txt_label</code> for naming a token so it can be revoked
+    by who it was for. But all three RPCs — <code>fn_ftl_export_events</code>,
+    <code>fn_ftl_export_entries</code>, <code>fn_ftl_roster</code> — only call
+    <code>fn_ftl_export_token_valid(p_token)</code>. None of them join the token back to an event. <strong>Any
+    live token sees every live event's entry list</strong>, regardless of label.</p>
+    <p>The migration's own comment is explicit that this is deliberate for now: "Shaped so it can later carry
+    an organizer id and scope each link to its own events without the URL changing. Not built: what was asked
+    for is one aggregate page."</p>
+    <div class="note accent">
+      <p class="lede">The confidentiality angle is weaker than it sounds</p>
+      <p>Every field this surface returns — surname, first name, gender, weapon, age category — is already
+      public through <code>vw_registration_entry_list</code>. A token doesn't protect a secret; per the
+      migration comment, it "keeps an organizer-only tool from sitting in front of four hundred fencers" and
+      gives us something to revoke. Scoping would restrict which organizer can pull which event's <em>seed
+      files</em>, not which names anyone can already see.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The real choice</p>
+    <h2>Three options</h2>
+
+    <div class="opt rec">
+      <h3>A — Mint one token per organizer now, build no enforcement <span class="tag">Recommended</span></h3>
+      <p>Give PPW1's organizer a token labelled <code>PPW1 Opole — organizer</code> today. It will, honestly,
+      also list Łomianki and every other live event — same as a single shared token would. The label buys
+      nothing except a name to revoke by if a link leaks.</p>
+      <p>Ships today, no schema change, no new migration, no delay against the 20 Sep entry close. Revisit
+      only if an organizer actually objects to seeing another event's list, or the association sets a policy
+      that requires it.</p>
+    </div>
+
+    <div class="opt">
+      <h3>B — One shared token for every organizer</h3>
+      <p>Simplest possible thing: a single row, handed to whoever needs it. Same visibility as A. Loses the
+      ability to revoke one organizer's access without cutting off everyone else — the only real cost, since
+      the label in A is otherwise decorative until scoping exists.</p>
+    </div>
+
+    <div class="opt">
+      <h3>C — Build per-organizer scoping before minting anything</h3>
+      <p>Add an event↔token linking table (or an <code>id_event</code> array on the token row), filter all
+      three RPCs on it, extend pgTAP 76/77, update the anon allowlist docs if the function signatures change.
+      Real work — a migration, three function edits, new tests — not a five-minute job. Delays PPW1's
+      organizer past today; entries close 20 Sep, so this needs to land fast if chosen.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Why A over C</p>
+    <h2>Nothing secret is at stake yet</h2>
+    <p>C is the correct long-term shape and the table was already built to grow into it. But building it
+    speculatively — before any organizer has asked to be excluded from another event's list, and before the
+    data it would hide is anything other than already-public roster facts — is exactly the kind of
+    not-yet-needed abstraction worth avoiding. Option A ships the one thing that was actually asked for (an
+    organizer can download their own seed files) and leaves C as a scoped, well-motivated follow-up if a
+    concrete need shows up.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Once a choice is made</p>
+    <h2>What the link looks like, and how to hand it over</h2>
+    <p>Nothing has been minted yet — this is illustrative. A real row from the
+    <code>INSERT … RETURNING</code> in the handover would return something like:</p>
+    <div class="note">
+      <p class="lede">Example row (not real — illustrating the shape only)</p>
+      <p><code>uuid_token</code>: <code>3f0a9c2e-7b41-4d8a-9e3a-1c6f5d0b8a72</code><br>
+      <code>txt_label</code>: <code>PPW1 Opole — organizer</code><br>
+      <code>ts_created</code>: <code>2026-09-13 …</code></p>
+    </div>
+    <p>The link built from it is:</p>
+    <div class="note">
+      <p><code>https://fencer4life.github.io/spws-automated-ranklist/register.html?view=export&amp;k=3f0a9c2e-7b41-4d8a-9e3a-1c6f5d0b8a72</code><br>
+      add <code>&amp;lang=en</code> if the organizer doesn't read Polish.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Treat it like a shared bearer credential, not like public info</p>
+      <p>The <em>data</em> behind the link is already public, but the <em>link itself</em> is a capability —
+      whoever holds it can pull every live event's seed files and pick-lists, and there's no login to fall
+      back on if it circulates. So:</p>
+      <ul>
+        <li>Send it the way you'd send any organizer-specific link today — direct e-mail or Telegram DM to
+        that organizer, not a public channel, a shared doc, or a group chat with people outside that role.</li>
+        <li>Don't shorten it or repost it anywhere it could get indexed or archived.</li>
+        <li>If it leaks or the organizer no longer needs it, revoke by label: <code>UPDATE tbl_ftl_export_token
+        SET ts_revoked = now() WHERE txt_label = '…'</code> — the link then reads as empty, not broken.</li>
+      </ul>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Resolved · 13 September 2026</p>
+    <h2>Option A minted, on both tiers</h2>
+    <p>Delete-capability was proven on CERT first — throwaway row inserted, selected by label, deleted,
+    table re-confirmed empty — before either real row was written. Both tiers were empty (<code>count = 0</code>)
+    immediately before the real insert, so this is genuinely the first token issued on each.</p>
+    <div class="tablewrap">
+      <table style="border-collapse:collapse;width:100%;font-size:16px">
+        <thead><tr><th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)">Tier</th><th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)">Token</th></tr></thead>
+        <tbody>
+          <tr><td style="padding:8px 12px;border-bottom:1px solid var(--line)">CERT</td><td style="padding:8px 12px;border-bottom:1px solid var(--line)"><code>9c626dac-8edf-4b83-894b-d2f57454dbd8</code></td></tr>
+          <tr><td style="padding:8px 12px">PROD</td><td style="padding:8px 12px"><code>b3d75527-b5c4-4501-8128-693903957b07</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Both labelled <code>PPW1 Opole — organizer</code>. The PROD token was verified against the real
+    <code>fn_ftl_export_events</code> RPC — it resolves both live events (PPW1 Opole, 43 registrations; the
+    Łomianki EVF Circuit, 14), confirming the unscoped behaviour described above: this token sees everything
+    live, not just Opole.</p>
+    <p><strong>The organizer's link (PROD, hand this one out):</strong></p>
+    <div class="note good">
+      <p><code>https://fencer4life.github.io/spws-automated-ranklist/register.html?view=export&amp;k=b3d75527-b5c4-4501-8128-693903957b07</code></p>
+    </div>
+    <p>Send it directly (e-mail or Telegram DM to the organizer), not to a public or shared channel. Revoke
+    with <code>UPDATE tbl_ftl_export_token SET ts_revoked = now() WHERE txt_label = 'PPW1 Opole — organizer'</code>
+    if it needs to be cut off.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Superseded · 13 September 2026, later the same day</p>
+    <h2>The permanent surface is live — use this link instead</h2>
+    <p>Per ADR-080 amendment (f) and plan step 10, the WordPress page is now published at
+    <code>weteraniszermierki.pl</code>, mounting <code>&lt;spws-ftl-export&gt;</code> the same way
+    <code>&lt;spws-calendar&gt;</code> already does at <code>/znajdz-zawody/</code>. Slug is
+    <code>pliki-zasilajace-xml-ftl</code> (page id 13505), not added to any WP menu — capability-link-only,
+    same as the interim surface. The token is not written into the page markup; it travels via <code>?k=</code>
+    exactly as it did on <code>register.html</code>, so rotating the token later needs no page edit at all
+    (see <code>.claude/skills/ftl-token-rotate/SKILL.md</code>).</p>
+    <div class="note good">
+      <p class="lede">Organizer link — send this one now</p>
+      <p><code>https://weteraniszermierki.pl/pliki-zasilajace-xml-ftl/?k=b3d75527-b5c4-4501-8128-693903957b07</code><br>
+      add <code>&amp;lang=en</code> for a non-Polish organizer.</p>
+    </div>
+    <p>Verified live: both events resolve (PPW1 Opole, 43 registrations; the Łomianki EVF Circuit, 14) and the
+    per-weapon accordion renders real download counts. The <code>register.html</code> link above keeps working
+    unchanged — it was not retired, just superseded as the link to hand out going forward.</p>
+    <p>Built with <code>scripts/wp_publish_page.py</code> (new — a reviewed XML-RPC page publisher, sibling of
+    <code>scripts/cloud-sql.sh</code>). One host-specific gotcha surfaced while writing it: the stdlib's
+    <code>xmlrpc.client.ServerProxy</code> cannot be used directly against this host — its hardcoded
+    single-quoted <code>&lt;?xml version='1.0'?&gt;</code> declaration gets silently redirected back to itself
+    (HTTP 301). The script uses <code>xmlrpc.client</code>'s marshalling but posts the body itself with the
+    quote swapped to double.</p>
+  </section>
+
+  <p class="foot">doc/plans/ftl-token-scoping-question-2026-09-13.html · answers doc/plans/ftl-export-handover-2026-09-13.html's open question</p>
+</div>

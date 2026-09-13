@@ -226,6 +226,8 @@ def test_build_fie_xml_root_attributes():
 
 
 def test_build_fie_xml_tireur_attributes_canonical_and_empty_club_licence():
+    # No "club" key at all — matches a roster-derived Tireur dict, which never
+    # carries one. Club must still render "" rather than raise.
     xml_text = build_fie_xml(
         root_id="x",
         weapon_code="S",
@@ -237,13 +239,62 @@ def test_build_fie_xml_tireur_attributes_canonical_and_empty_club_licence():
     tireur = root.find(".//Tireur")
     assert tireur is not None
     assert tireur.get("Nom") == "NOWAK (1)"
-    assert tireur.get("Nom") == "NOWAK (1)"
     assert tireur.get("Prenom") == "Anna"
     assert tireur.get("Sexe") == "F"
     assert tireur.get("Classement") == "3"
     assert tireur.get("Club") == ""
     assert tireur.get("Licence") == ""
     assert tireur.get("Nation") == "POL"
+
+
+def test_build_fie_xml_tireur_emits_declared_club():
+    # ADR-080 amendment (f), 2026-09-13: a declared club is emitted verbatim.
+    xml_text = build_fie_xml(
+        root_id="x",
+        weapon_code="S",
+        gender_code="F",
+        title="Title",
+        tireurs=[
+            {
+                "id": 7,
+                "nom": "NOWAK (1)",
+                "prenom": "Anna",
+                "sexe": "F",
+                "classement": 3,
+                "club": "AZS AWFiS Gdańsk",
+            }
+        ],
+    )
+    root = ET.fromstring(xml_text.split("\n", 2)[-1] if xml_text.startswith("<?xml") else xml_text)
+    tireur = root.find(".//Tireur")
+    assert tireur is not None
+    assert tireur.get("Club") == "AZS AWFiS Gdańsk"
+
+
+def test_build_fie_xml_tireur_renders_none_club_as_empty_string():
+    # A FencerEntry with no declared club carries club=None (the dataclass
+    # default), and mixall_tireurs passes that straight into the dict — must
+    # not render the literal string "None".
+    xml_text = build_fie_xml(
+        root_id="x",
+        weapon_code="S",
+        gender_code="F",
+        title="Title",
+        tireurs=[
+            {
+                "id": 7,
+                "nom": "NOWAK (1)",
+                "prenom": "Anna",
+                "sexe": "F",
+                "classement": 3,
+                "club": None,
+            }
+        ],
+    )
+    root = ET.fromstring(xml_text.split("\n", 2)[-1] if xml_text.startswith("<?xml") else xml_text)
+    tireur = root.find(".//Tireur")
+    assert tireur is not None
+    assert tireur.get("Club") == ""
 
 
 def test_build_fie_xml_multiple_tireurs_preserve_order():

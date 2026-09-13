@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="095-ftl-export-token-lifecycle.md">
+<meta name="adr-source-sha256" content="73075ca6dbd45e9588f0a7373c4c50ef5765733127f2d6af57e3a417be1b1fe5">
+<title>ADR-095 · FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 095</p><h1>FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>095-ftl-export-token-lifecycle.md</code></dd></div><div><dt>Length</dt><dd class="">265 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
+<strong>Date:</strong> 2026-09-13
+<strong>Amends:</strong> <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> §(h) — corrects the slug it cites (<code>/pliki-startowe/?k=&lt;uuid&gt;</code> was drafted but never published) to the real path, and replaces its one-line &quot;gives us something to rotate when a link goes astray — one <code>UPDATE</code>&quot; with the full, worked procedure below.
+<strong>Relates to:</strong> <a href="090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> (the capability-link pattern this token follows, unchanged by this decision), <a href="083-server-enforced-authorization.html">ADR-083</a> (the <code>auth.role() = 'authenticated'</code> grant convention this reuses), <a href="093-registration-as-birth-year-source.html">ADR-093</a> (<code>IdentityProposals.svelte</code>, the UI precedent cited in §7)
+<strong>Source:</strong> <code>supabase/migrations/20260912000004_ftl_export_entries.sql</code>, <code>frontend/src/ce/FtlExportElement.svelte</code>, <code>scripts/cloud-sql.sh</code>, <code>scripts/wp_publish_page.py</code>, <code>.claude/skills/ftl-token-rotate/SKILL.md</code>, <code>.claude/skills/cloud-db-ops/SKILL.md</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-stay-manual-for-now-this-adr-is-the-canonical-reference">1 · Stay manual for now; this ADR is the canonical reference</a></li><li class="depth-3"><a href="#2-schema-and-the-validity-check">2 · Schema and the validity check</a></li><li class="depth-3"><a href="#3-the-two-live-urls-and-why-the-token-is-never-in-their-markup">3 · The two live URLs, and why the token is never in their markup</a></li><li class="depth-3"><a href="#4-finding-the-current-link">4 · Finding the current link</a></li><li class="depth-3"><a href="#5-creating-a-token-for-a-new-organizer">5 · Creating a token for a new organizer</a></li><li class="depth-3"><a href="#6-rotating-or-revoking-a-token">6 · Rotating or revoking a token</a></li><li class="depth-3"><a href="#7-who-can-actually-do-this-today">7 · Who can actually do this today</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-080(h) and ADR-090's 2026-09-12 amendment settled that the FTL organizer
+export page is protected by a capability link rather than a login, and that
+the token lives in <code>tbl_ftl_export_token</code>, revoked by stamping <code>ts_revoked</code>
+rather than deleted. Both decisions describe the mechanism and gesture at its
+operational cost in one line each — &quot;the capability... gives us something to
+rotate... one <code>UPDATE</code>&quot; (ADR-080 §(h)) — without saying what an administrator
+actually does, in what order, or where to look when a link is lost.</p>
+<p>That gap became concrete on 2026-09-13, the day the first tokens were minted.
+After publishing the permanent surface at <code>weteraniszermierki.pl</code>, the
+question was asked directly: <em>when I forget the link, how do I find it, and
+is there any documentation of the token's lifecycle?</em> Neither of these
+existed anywhere canonical:</p>
+<ul>
+<li>The only written record of that day's mint (CERT token
+<code>9c626dac-8edf-4b83-894b-d2f57454dbd8</code>, PROD token
+<code>b3d75527-b5c4-4501-8128-693903957b07</code>, both labelled <code>PPW1 Opole — organizer</code>) is <code>doc/plans/ftl-token-scoping-question-2026-09-13.html</code> and
+<code>doc/plans/ftl-export-handover-2026-09-13.html</code> — session handover pages
+under <code>doc/plans/</code>, which this repository treats as scratch, not as a
+canonical reference a future session or a human administrator would think
+to check.</li>
+<li>ADR-080(h) itself cites a slug, <code>/pliki-startowe/?k=&lt;uuid&gt;</code>, that was never
+published — the page that shipped the same day carries the corrected slug
+<code>pliki-zasilajace-xml-ftl</code> instead, confirmed with the association after a
+spelling correction to the working title. An ADR citing a path that does
+not exist is worse than citing none.</li>
+<li>There is no admin UI for this table at all. <code>tbl_ftl_export_token</code>'s own
+RLS policy (<code>FOR ALL USING (auth.role() = 'authenticated')</code>,
+<code>supabase/migrations/20260912000004_ftl_export_entries.sql:64-70</code>) already
+permits any signed-in administrator to read and write it directly from the
+client — the same grant shape ADR-083 established and
+<code>frontend/src/lib/api.ts:495-539</code>'s <code>fetchIdentityProposals</code> already relies
+on for <code>tbl_registration_identity_override</code> — but no screen exercises that
+permission for this table. The only way to act on it today is the
+Supabase Management API via <code>scripts/cloud-sql.sh</code>, which needs
+<code>SUPABASE_ACCESS_TOKEN</code> and <code>CLOUD_SQL_CONFIRM=yes</code> — a developer or Claude
+session, not a plain website-admin login.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-stay-manual-for-now-this-adr-is-the-canonical-reference">1 · Stay manual for now; this ADR is the canonical reference</h3>
+<p>Token creation, discovery, and rotation remain an admin-assisted procedure
+run via <code>scripts/cloud-sql.sh</code> under the <code>cloud-db-ops</code> skill, composed by
+<code>.claude/skills/ftl-token-rotate/SKILL.md</code> (already built 2026-09-13). This
+ADR is the single, self-contained technical reference for that procedure —
+not a pointer that sends the reader somewhere else for the actual steps.
+<code>doc/handbook/operations/operator-runbooks.html</code> carries a short new section
+that names this ADR, so a human administrator who would not think to browse
+<code>doc/adr/</code> still has a way in.</p>
+<h3 id="2-schema-and-the-validity-check">2 · Schema and the validity check</h3>
+<pre><code class="language-sql">CREATE TABLE tbl_ftl_export_token (
+  uuid_token UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  txt_label  TEXT NOT NULL,
+  ts_created TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ts_revoked TIMESTAMPTZ
+);
+</code></pre>
+<p>Revocation is <code>UPDATE ... SET ts_revoked = now()</code>, <strong>never</strong> <code>DELETE</code> — the
+migration's own comment states the reason: a dead link must stay
+identifiable by its label, so an administrator can tell which organizer's
+link just went bad rather than facing an anonymous gap in the table.</p>
+<p>Row access is the same grant shape ADR-083 established elsewhere — no
+finer-grained admin role exists anywhere in this codebase, &quot;authenticated&quot;
+and &quot;administrator&quot; are synonyms:</p>
+<pre><code class="language-sql">CREATE POLICY &quot;Admin manages FTL export tokens&quot; ON tbl_ftl_export_token
+  FOR ALL USING (auth.role() = 'authenticated');
+</code></pre>
+<p>with <code>REVOKE ALL ... FROM PUBLIC</code> and <code>GRANT SELECT, INSERT, UPDATE ... TO authenticated</code> alongside it
+(<code>supabase/migrations/20260912000004_ftl_export_entries.sql:64-70</code>). This is
+what makes the admin UI in Open items cheap if ever built: the table is
+already readable and writable by any signed-in administrator directly from
+the client, with no new RPC required for list or mint.</p>
+<p><code>fn_ftl_export_token_valid(p_token)</code> (<code>SECURITY DEFINER</code>, granted only to
+<code>service_role</code>) is composed into all three public projections —
+<code>fn_ftl_export_events</code>, <code>fn_ftl_export_entries</code>, <code>fn_ftl_roster</code>. An absent,
+unknown, or revoked token makes all three return <strong>zero rows, never an
+error</strong> — deliberate, per ADR-080(h): a stale link should look empty, not
+broken, and an error would confirm to a prober that they had found a real
+endpoint.</p>
+<h3 id="3-the-two-live-urls-and-why-the-token-is-never-in-their-markup">3 · The two live URLs, and why the token is never in their markup</h3>
+<p><code>FtlExportElement.svelte</code>'s access-token derivation
+(<code>frontend/src/ce/FtlExportElement.svelte:74-76</code>) is:</p>
+<pre><code class="language-ts">const accessToken = $derived(
+  token || (typeof location !== 'undefined'
+    ? new URLSearchParams(location.search).get('k')
+    : '') || '',
+)
+</code></pre>
+<p>The <code>token</code> attribute wins only if a host page explicitly sets one;
+otherwise the element reads <code>?k=</code> straight from its own URL. Neither live
+surface sets the attribute, so <strong>the token is carried entirely by the URL,
+never written into either page's static markup</strong>:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Interim, always available</td>
+<td><code>https://fencer4life.github.io/spws-automated-ranklist/register.html?view=export&amp;k=&lt;uuid&gt;[&amp;lang=en]</code></td>
+</tr>
+<tr>
+<td>Permanent, public</td>
+<td><code>https://weteraniszermierki.pl/pliki-zasilajace-xml-ftl/?k=&lt;uuid&gt;[&amp;lang=en]</code> (WordPress page id 13505, published 2026-09-13 by <code>scripts/wp_publish_page.py</code>; <strong>not</strong> added to any WP menu — capability-link-only, per ADR-080(f))</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>&amp;lang=en</code> sets the component's initial language; an absent parameter means
+Polish, the correct default for a Polish federation's own events. Because
+neither page embeds the token, <strong>rotating it never requires editing either
+page</strong> — the entire operation is confined to the database, which is the
+property that makes §6 below safe to run without a deploy.</p>
+<h3 id="4-finding-the-current-link">4 · Finding the current link</h3>
+<pre><code class="language-sql">SELECT uuid_token, txt_label, ts_created, ts_revoked
+  FROM tbl_ftl_export_token
+ WHERE ts_revoked IS NULL;
+</code></pre>
+<p>Run via <code>scripts/cloud-sql.sh &lt;cert|prod&gt; &quot;...&quot;</code>. Build either URL from §3
+by dropping the returned <code>uuid_token</code> in. The token table is the <strong>sole</strong>
+source of truth per tier — there is deliberately no other record of &quot;the
+current link,&quot; so a lost link is a lookup here, not an email search.</p>
+<h3 id="5-creating-a-token-for-a-new-organizer">5 · Creating a token for a new organizer</h3>
+<pre><code class="language-sql">INSERT INTO tbl_ftl_export_token (txt_label)
+VALUES ('&lt;event or organizer name&gt; — organizer')
+RETURNING uuid_token, txt_label, ts_created;
+</code></pre>
+<p>Run on CERT first, then PROD, exactly as the 2026-09-13 mint did (CERT
+<code>9c626dac-8edf-4b83-894b-d2f57454dbd8</code>, PROD
+<code>b3d75527-b5c4-4501-8128-693903957b07</code>, label <code>PPW1 Opole — organizer</code>).
+Confirm both tables were empty (or that no row with the intended label
+existed) immediately beforehand, so a genuinely new mint is not mistaken for
+a duplicate. That worked session is precedent, not the canonical record —
+this ADR is.</p>
+<h3 id="6-rotating-or-revoking-a-token">6 · Rotating or revoking a token</h3>
+<p>The full procedure, reproduced here rather than only pointed at, per
+<code>.claude/skills/ftl-token-rotate/SKILL.md</code>:</p>
+<ol>
+<li><strong>Identify the row.</strong> <code>SELECT uuid_token, txt_label, ts_created, ts_revoked FROM tbl_ftl_export_token WHERE txt_label = '&lt;label&gt;';</code> on
+CERT, then PROD. Live data may not match what a handover doc says it is.</li>
+<li><strong>Revoke, both tiers, never <code>DELETE</code>:</strong><pre><code class="language-sql">UPDATE tbl_ftl_export_token
+   SET ts_revoked = now()
+ WHERE txt_label = '&lt;label&gt;'
+   AND ts_revoked IS NULL
+RETURNING uuid_token, txt_label, ts_revoked;
+</code></pre>
+The <code>ts_revoked IS NULL</code> guard stops a second run from clobbering a
+timestamp already set.</li>
+<li><strong>Mint the replacement, same label, both tiers</strong> — the exact <code>INSERT</code>
+from §5.</li>
+<li><strong>Verify the new token positively:</strong><pre><code class="language-sql">SELECT * FROM fn_ftl_export_events('&lt;new-token&gt;');
+</code></pre>
+It must return the same live events the old token did. A row existing in
+the table proves nothing on its own; only the RPC does.</li>
+<li><strong>Verify the old token negatively</strong> — the same call with the revoked
+UUID must now return <strong>zero rows</strong>. If it still returns events, step 2
+did not land where intended (wrong tier, wrong label, or a silent
+no-op), and the rotation is not done regardless of what step 3 or 4
+showed.</li>
+<li><strong>Re-send the new link(s)</strong> (§3's two templates) to whoever held the
+old one, and say the old link now reads as an empty event list, not an
+error.</li>
+</ol>
+<p>No step here edits <code>FtlExportElement.svelte</code>, <code>register.html</code>, or the
+WordPress page — that is the payoff of §3.</p>
+<h3 id="7-who-can-actually-do-this-today">7 · Who can actually do this today</h3>
+<p>Every step above requires Supabase Management API access via
+<code>scripts/cloud-sql.sh</code> (<code>SUPABASE_ACCESS_TOKEN</code> + <code>CLOUD_SQL_CONFIRM=yes</code>) —
+a developer or a Claude session with repository and credential access, not a
+plain website-admin login, even though the RLS policy from §2
+(<code>auth.role() = 'authenticated'</code>) would already permit the latter directly.
+This is the actual gap against a self-service admin screen, and it is why
+this decision is explicitly not final — see Open items.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Build the admin UI now, before writing this ADR.</strong> Rejected for this
+change: only one token has ever been issued, the manual procedure above
+is fully documented and safe, and the UI itself is real, non-trivial
+scope — a new <code>AppView</code> value, a <code>Sidebar.svelte</code> entry, a new component,
+locale keys, tests — for an operation that has happened once. Deferred,
+not rejected outright; see Open items for what it would reuse.</li>
+<li><strong>Leave the procedure undocumented and rely on <code>doc/plans/</code> handover
+pages.</strong> Rejected: those pages are Claude's own session scratch space by
+this repository's own convention, not something a future session or a
+human administrator would think to open, which is the exact gap that
+prompted this ADR.</li>
+<li><strong>Fix ADR-080(h)'s stale slug in place, without a new ADR.</strong> Rejected:
+the slug correction is one sentence, but the missing lifecycle detail —
+finding, creating, rotating — is substantial enough to need its own
+record with its own sign-off, and folding it silently into ADR-080 would
+bury a new decision (stay manual for now) inside an unrelated one's prose.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>A lost or leaked link is a short Claude/dev-assisted lookup or rotation
+(§4/§6), not a self-service action, until or unless the deferred UI in
+Open items is built.</li>
+<li>ADR-080(h)'s stale slug is corrected by this ADR's own amendment note
+rather than by rewriting that section's original prose — matching this
+corpus's convention of appending amendments instead of rewriting history.</li>
+<li><code>doc/handbook/operations/operator-runbooks.html</code> gains a short pointer
+section, and its <code>source_globs</code> are extended to include
+<code>supabase/migrations/20260912000004_ftl_export_entries.sql</code> and
+<code>frontend/src/ce/FtlExportElement.svelte</code>, so a future change to either
+trips the documentation-ownership check instead of drifting silently — the
+exact failure mode this ADR was written in response to.</li>
+<li>No code changes and no test changes: this is a documentation-only ADR.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong>A dedicated admin UI for <code>tbl_ftl_export_token</code>.</strong> Not decided against —
+deferred pending real demand. If built, it needs no new RPC for list or
+mint: <code>tbl_ftl_export_token</code>'s RLS already lets any signed-in
+administrator <code>.from('tbl_ftl_export_token')</code> directly, exactly as
+<code>fetchIdentityProposals</code> does today for <code>tbl_registration_identity_override</code>
+(<code>frontend/src/lib/api.ts:495-539</code>). The UI precedent to copy is
+<code>frontend/src/components/IdentityProposals.svelte</code> +
+<code>frontend/src/components/BirthYearReview.svelte</code>, wired under
+<code>admin_fencers</code> in <code>frontend/src/App.svelte:167-215</code> — a small list
+component, an <code>isAdmin</code> prop, action callbacks, and a re-fetch after each
+decision rather than local splicing. A plausible shape: a table of
+label / created / live-or-revoked / masked link with a copy button /
+revoke button, plus a &quot;+ New token&quot; form that inserts a label and shows
+the resulting link once. <em>Recommendation:</em> build it once a second
+organizer token is needed, not speculatively now.</li>
+<li><strong>Per-organizer scoping</strong>, tracked separately in
+<code>doc/plans/ftl-token-scoping-question-2026-09-13.html</code> — the table's
+<code>txt_label</code> identifies a token for revocation but does not restrict which
+events it can see; any live token sees every live event. Unaffected by
+this ADR.</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="094-release-docs-only-skip.html">← ADR-094: Release Gate Skips Build/Deploy for Documentation-Only CI Runs</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>095-ftl-export-token-lifecycle.md</code> · source SHA-256 <code>73075ca6dbd45e9588f0a7373c4c50ef5765733127f2d6af57e3a417be1b1fe5</code></footer>
+</div></body></html>

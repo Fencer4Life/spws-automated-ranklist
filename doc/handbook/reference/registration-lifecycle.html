@@ -7,7 +7,7 @@
 <meta name="doc-status" content="current">
 <meta name="doc-type" content="reference">
 <meta name="doc-owner" content="Events and registration">
-<meta name="last-verified" content="2026-09-02">
+<meta name="last-verified" content="2026-09-13">
 <meta name="source-globs" content="frontend/src/components/Registration*; frontend/src/components/EntryList.svelte; frontend/src/ce/*Element.svelte; frontend/src/lib/editToken.ts; supabase/migrations/**registration*; python/pipeline/ftl_seed_export*.py">
 <meta name="review-triggers" content="Registration form steps, the public write or edit RPCs, the entry-list projection, the FTL seed population, or identity resolution of a registration at ingestion">
 <title>Registration lifecycle · SPWS Handbook</title>
@@ -19,7 +19,7 @@
 <p class="eyebrow">Reference · Walkthrough</p>
 <h1>Registration lifecycle</h1>
 <p class="dek">One registration, followed from the administrator enabling it to the row being purged after results are ingested — with the failure at each stage, because that is where the behaviour is least obvious.</p>
-<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 2 September 2026</span></div>
+<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 13 September 2026</span></div>
 </header>
 <main>
 
@@ -76,7 +76,7 @@
 
 <figure class="shot">
 <img src="../assets/registration/01-identity.png" alt="Step one of the registration form, filled in for KOWALSKI Jan, born 1970, épée and sabre, showing computed category V2 and a 200 PLN two-weapon fee.">
-<figcaption>Step 1. Category <b>V2</b> and the <b>200 PLN</b> two-weapon fee are derived, not entered. The club field is collected for the organizer's convenience and, as its label says, is not stored.</figcaption>
+<figcaption>Step 1. Category <b>V2</b> and the <b>200 PLN</b> two-weapon fee are derived, not entered. The club field, optional, is stored on the registration (2026-09-13) and reaches only the organizer's own downloads &mdash; it is never published on the public entry list.</figcaption>
 </figure>
 
 <div class="danger">
