@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
-<meta name="adr-source-sha256" content="63b6596bb1069df53b778dabe70627c4c2de52be7abd59e91e9a93da19469c15">
+<meta name="adr-source-sha256" content="d21764d216e094887a606806acc97796fb707809afca4641079063bcc09ae981">
 <title>ADR-080 · Clean-Roster FTL Seeding</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">472 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2.)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's <code>&lt;Tireur&gt;</code> element order is now alphabetical by surname under Polish collation in every generated file; <code>Classement</code> keeps the interleave seed.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">513 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's <code>&lt;Tireur&gt;</code> element order is now alphabetical by surname under Polish collation in every generated file; <code>Classement</code> keeps the interleave seed.)
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-2026-09-13-slug-correction-full-token-lifecycle-moved-to-adr-095">Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#amendment-2026-09-14-element-order-is-alphabetical-classement-is-the-seed">Amendment (2026-09-14) — element order is alphabetical; `Classement` is the seed</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-2026-09-13-slug-correction-full-token-lifecycle-moved-to-adr-095">Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>&quot;FTL&quot; is <strong>Fencing Time</strong> (results at fencingtimelive.com), the software the
 organizer runs. A domestic SPWS event is run as, per weapon, one <strong>mix-all pool
@@ -66,9 +66,10 @@ the authoritative declared BY (<code>age_split.py</code>), so it is not load-bea
 </ul>
 <h3 id="2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</h3>
 <p>The mix-all pool file lists every competitor of one weapon (both genders, all
-categories). The seeding order — written to <code>Classement</code> (1..N) and used as the
-<code>&lt;Tireur&gt;</code> element order — is a <strong>round-robin by rank position</strong> across the ten
-domestic sub-rankings, in this <strong>fixed</strong> order:</p>
+categories). The seeding order — written to <code>Classement</code> (1..N); <strong>no longer the
+<code>&lt;Tireur&gt;</code> element order</strong>, see the 2026-09-14 amendment below — is a
+<strong>round-robin by rank position</strong> across the ten domestic sub-rankings, in this
+<strong>fixed</strong> order:</p>
 <p><code>FV0, FV1, FV2, FV3, FV4, MV0, MV1, MV2, MV3, MV4</code></p>
 <p>Exact algorithm:</p>
 <pre><code>seed = 1
@@ -139,6 +140,39 @@ for the <strong>canonical name</strong> (§1) + birth year (birth year is used o
 </table></div>
 <p>Validated end-to-end on LOCAL: the EPEE mix-all resolves to <strong>119 fencers, 0 NULL
 birth years, FV3 (empty) correctly skipped</strong>.</p>
+<h4 id="amendment-2026-09-14-element-order-is-alphabetical-classement-is-the-seed">Amendment (2026-09-14) — element order is alphabetical; <code>Classement</code> is the seed</h4>
+<p>The seeding rule above is unchanged. What changes is the order the records are
+<strong>written</strong> in: every generated file — mix-all, DE and roster alike — now lists
+its <code>&lt;Tireur&gt;</code> elements alphabetically by surname, then given name, under Polish
+collation. <code>Classement</code> and <code>ID</code> keep the seed the interleave assigned, so in a
+sorted file the <code>Classement</code> values read out of sequence.</p>
+<p><strong>Why.</strong> The only check anyone performs on the raw XML is <em>&quot;is everyone here?&quot;</em>,
+and a seeded list cannot be scanned for a name. On 2026-09-13 that produced a
+false defect report against the PPW1 épée file — 53 of 53 entries were present
+and correct. The entry list on screen was given the same alphabetical order for
+the same reason (<code>EntryList.svelte</code>).</p>
+<p><strong>Why this is safe.</strong> In the FIE format the seed is the <code>Classement</code> attribute,
+not the element's position. Fencing Time's own exports demonstrate it:
+<code>doc/external_files/FTL_SRC/F-DzieciExport.xml</code> runs <code>Classement</code> 1, 5, 4, 29, 47
+down the document. The cost is stated plainly rather than hidden — a reader can
+no longer see the seeding by reading top to bottom, and must look at
+<code>Classement</code> or at Fencing Time after import, which displays it properly.</p>
+<p><strong>Collation.</strong> Polish alphabetical (<code>… l ł m n ń o ó …  z ź ż</code>), implemented as an
+explicit weight table in <strong>both</strong> exporters — <code>polishSortKey</code> in
+<code>frontend/src/lib/ftlSeedExport.ts</code> and <code>polish_sort_key</code> in
+<code>python/pipeline/ftl_seed_export.py</code>. Not <code>Intl.Collator</code>, which has no Python
+equivalent, and not a Postgres <code>COLLATE</code>, because the Python exporter reads
+<code>tbl_registration</code> directly and never calls <code>fn_ftl_export_entries</code>. The two
+implementations are asserted byte for byte against each other, so the ordering
+rule has to agree by construction rather than by two libraries happening to
+match. A plain code-point sort is rejected: it files Ł, Ń, Ó, Ś, Ź and Ż after Z.</p>
+<p>Non-letters weigh less than any letter (so <code>SPŁAWA-NEYMAN</code> precedes <code>SPŁAWACZ</code>)
+and an unrecognised letter sorts after the whole Polish alphabet. Both sorts are
+stable, so identical names keep seed order and the file stays reproducible
+between two downloads of the same entry list.</p>
+<p>Applies to <code>mixall_tireurs</code> / <code>mixallTireurs</code>, the single function every file
+kind passes through. No migration: <code>fn_ftl_export_entries</code> and <code>fn_ftl_roster</code>
+are untouched.</p>
 <h4 id="implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</h4>
 <p>The 119-fencer validation above used the <strong>full season ranking</strong> as the population
 (a pre-registration proof: registration data did not yet exist). In production the
@@ -477,5 +511,5 @@ new organizer, and rotating or revoking one; nothing here is superseded, only ex
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
-<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>63b6596bb1069df53b778dabe70627c4c2de52be7abd59e91e9a93da19469c15</code></footer>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>d21764d216e094887a606806acc97796fb707809afca4641079063bcc09ae981</code></footer>
 </div></body></html>
