@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2.)
+**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's `<Tireur>` element order is now alphabetical by surname under Polish collation in every generated file; `Classement` keeps the interleave seed.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -57,9 +57,10 @@ see ADR-079 §4) and deliver them to the organizer on demand.
 ### 2. Mix-all pool seeding — interleave ("snake by rank") across the 10 sub-rankings
 
 The mix-all pool file lists every competitor of one weapon (both genders, all
-categories). The seeding order — written to `Classement` (1..N) and used as the
-`<Tireur>` element order — is a **round-robin by rank position** across the ten
-domestic sub-rankings, in this **fixed** order:
+categories). The seeding order — written to `Classement` (1..N); **no longer the
+`<Tireur>` element order**, see the 2026-09-14 amendment below — is a
+**round-robin by rank position** across the ten domestic sub-rankings, in this
+**fixed** order:
 
 `FV0, FV1, FV2, FV3, FV4, MV0, MV1, MV2, MV3, MV4`
 
@@ -97,6 +98,46 @@ Worked example — EPEE, season 2025-2026, real LOCAL data, first seeds:
 
 Validated end-to-end on LOCAL: the EPEE mix-all resolves to **119 fencers, 0 NULL
 birth years, FV3 (empty) correctly skipped**.
+
+#### Amendment (2026-09-14) — element order is alphabetical; `Classement` is the seed
+
+The seeding rule above is unchanged. What changes is the order the records are
+**written** in: every generated file — mix-all, DE and roster alike — now lists
+its `<Tireur>` elements alphabetically by surname, then given name, under Polish
+collation. `Classement` and `ID` keep the seed the interleave assigned, so in a
+sorted file the `Classement` values read out of sequence.
+
+**Why.** The only check anyone performs on the raw XML is *"is everyone here?"*,
+and a seeded list cannot be scanned for a name. On 2026-09-13 that produced a
+false defect report against the PPW1 épée file — 53 of 53 entries were present
+and correct. The entry list on screen was given the same alphabetical order for
+the same reason (`EntryList.svelte`).
+
+**Why this is safe.** In the FIE format the seed is the `Classement` attribute,
+not the element's position. Fencing Time's own exports demonstrate it:
+`doc/external_files/FTL_SRC/F-DzieciExport.xml` runs `Classement` 1, 5, 4, 29, 47
+down the document. The cost is stated plainly rather than hidden — a reader can
+no longer see the seeding by reading top to bottom, and must look at
+`Classement` or at Fencing Time after import, which displays it properly.
+
+**Collation.** Polish alphabetical (`… l ł m n ń o ó …  z ź ż`), implemented as an
+explicit weight table in **both** exporters — `polishSortKey` in
+`frontend/src/lib/ftlSeedExport.ts` and `polish_sort_key` in
+`python/pipeline/ftl_seed_export.py`. Not `Intl.Collator`, which has no Python
+equivalent, and not a Postgres `COLLATE`, because the Python exporter reads
+`tbl_registration` directly and never calls `fn_ftl_export_entries`. The two
+implementations are asserted byte for byte against each other, so the ordering
+rule has to agree by construction rather than by two libraries happening to
+match. A plain code-point sort is rejected: it files Ł, Ń, Ó, Ś, Ź and Ż after Z.
+
+Non-letters weigh less than any letter (so `SPŁAWA-NEYMAN` precedes `SPŁAWACZ`)
+and an unrecognised letter sorts after the whole Polish alphabet. Both sorts are
+stable, so identical names keep seed order and the file stays reproducible
+between two downloads of the same entry list.
+
+Applies to `mixall_tireurs` / `mixallTireurs`, the single function every file
+kind passes through. No migration: `fn_ftl_export_entries` and `fn_ftl_roster`
+are untouched.
 
 #### Implementation note — population vs ordering (2026-07-05)
 

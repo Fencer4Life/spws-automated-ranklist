@@ -29,7 +29,9 @@ from python.pipeline.ftl_seed_export import (
     export_filename,
     format_nom_with_marker,
     interleave_mixall,
+    mixall_tireurs,
     mixall_title,
+    polish_sort_key,
     roster_title,
     to_canonical_name,
 )
@@ -110,6 +112,98 @@ def test_interleave_mixall_empty_input():
 
 def test_interleave_mixall_all_empty_sub_rankings():
     assert interleave_mixall({"FV0": [], "MV0": []}) == []
+
+
+# ---------------------------------------------------------------------------
+# Polish collation — the same assertions as the TypeScript twin's collation
+# block (frontend/tests/ftlSeedExport.test.ts, X8.30-X8.37).
+#
+# The browser has Intl.Collator and this module does not, so neither side may
+# use one: the alphabet is written out in both files and agrees by construction.
+# ---------------------------------------------------------------------------
+def _sorted_pl(names: list[str]) -> list[str]:
+    return sorted(names, key=polish_sort_key)
+
+
+def test_polish_sort_key_puts_l_stroke_between_l_and_m():
+    # A code-point sort returns Lis, Maj, Łuczak — the defect EntryList.svelte
+    # documents at :127-130 and works around with a collator.
+    assert _sorted_pl(["Maj", "Łuczak", "Lis"]) == ["Lis", "Łuczak", "Maj"]
+
+
+def test_polish_sort_key_puts_o_acute_between_o_and_p_and_z_dot_last():
+    assert _sorted_pl(["Paw", "Ósemka", "Olek"]) == ["Olek", "Ósemka", "Paw"]
+    assert _sorted_pl(["Żak", "Zych", "Źródło"]) == ["Zych", "Źródło", "Żak"]
+
+
+def test_polish_sort_key_orders_the_whole_alphabet():
+    letters = list("aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż")
+    assert _sorted_pl(list(reversed(letters))) == letters
+
+
+def test_polish_sort_key_is_case_insensitive():
+    # The seeded roster is upper-case but the registration form takes free text,
+    # so a lower-case surname must file with its peers rather than after them.
+    assert _sorted_pl(["kowalski", "KOWALCZYK"]) == ["KOWALCZYK", "kowalski"]
+
+
+def test_polish_sort_key_sorts_hyphen_and_apostrophe_before_any_letter():
+    assert _sorted_pl(["Spławacz", "Spława-Neyman"]) == ["Spława-Neyman", "Spławacz"]
+    assert _sorted_pl(["O'Neill", "Onacki"]) == ["O'Neill", "Onacki"]
+
+
+def test_polish_sort_key_sorts_an_unknown_letter_after_the_polish_alphabet():
+    # A foreign entrant's name must land somewhere deterministic rather than
+    # colliding with a Polish letter.
+    assert _sorted_pl(["Žukov", "Zych"]) == ["Zych", "Žukov"]
+
+
+# ---------------------------------------------------------------------------
+# mixall_tireurs — seed numbering, then alphabetical output
+# ---------------------------------------------------------------------------
+def _entry(surname: str, first_name: str) -> FencerEntry:
+    return FencerEntry(id_fencer=None, surname=surname, first_name=first_name)
+
+
+def test_mixall_tireurs_numbers_by_seed_then_writes_alphabetically():
+    tireurs = mixall_tireurs(
+        [
+            (_entry("ŻAK", "Adam"), "MV0"),
+            (_entry("LIS", "Ewa"), "FV1"),
+            (_entry("ŁUCZAK", "Jan"), "MV2"),
+        ]
+    )
+    assert [t["nom"] for t in tireurs] == ["LIS (1)", "ŁUCZAK (2)", "ŻAK (0)"]
+    # Seed 1 went to ŻAK and stays with ŻAK.
+    assert [t["classement"] for t in tireurs] == [2, 3, 1]
+    assert [t["id"] for t in tireurs] == [2, 3, 1]
+
+
+def test_mixall_tireurs_breaks_a_tie_on_given_name_then_on_seed_order():
+    tireurs = mixall_tireurs(
+        [
+            (_entry("NOWAK", "Piotr"), "MV0"),
+            (_entry("NOWAK", "Anna"), "FV0"),
+            # Same person twice by name: the stable sort keeps the earlier seed
+            # first, so two identical registrations still produce one
+            # deterministic file.
+            (_entry("NOWAK", "Anna"), "FV2"),
+        ]
+    )
+    assert [(t["nom"], t["classement"]) for t in tireurs] == [
+        ("NOWAK (0)", 2),
+        ("NOWAK (2)", 3),
+        ("NOWAK (0)", 1),
+    ]
+
+
+def test_mixall_tireurs_orders_on_the_surname_not_the_marked_nom():
+    # The (N) marker is appended after the key is taken; sorting on the
+    # formatted nom would interleave categories instead of names.
+    tireurs = mixall_tireurs(
+        [(_entry("NOWAKOWSKI", "Jan"), "MV0"), (_entry("NOWAK", "Jan"), "MV4")]
+    )
+    assert [t["nom"] for t in tireurs] == ["NOWAK (4)", "NOWAKOWSKI (0)"]
 
 
 # ---------------------------------------------------------------------------

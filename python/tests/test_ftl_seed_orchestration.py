@@ -130,21 +130,24 @@ def test_mixall_tireurs_running_id_sexe_and_marker():
     from python.pipeline.ftl_seed_export import interleave_mixall
 
     tireurs = mixall_tireurs(interleave_mixall(subr))
-    # FV0 comes before MV2 in the fixed order → Sandra seed 1, Jan seed 2.
+    # FV0 comes before MV2 in the fixed order → Sandra seed 1, Jan seed 2. The
+    # records are then written alphabetically, so Jan comes first on the page
+    # while keeping seed 2: element order is presentation, Classement is the
+    # seed (ADR-080 §2, amended 2026-09-14).
     assert tireurs[0] == {
-        "id": 1,
-        "nom": "PECZEK (0)",
-        "prenom": "Sandra",
-        "sexe": "F",
-        "classement": 1,
-        "club": None,
-    }
-    assert tireurs[1] == {
         "id": 2,
         "nom": "KOWALSKI (2)",
         "prenom": "Jan",
         "sexe": "M",
         "classement": 2,
+        "club": None,
+    }
+    assert tireurs[1] == {
+        "id": 1,
+        "nom": "PECZEK (0)",
+        "prenom": "Sandra",
+        "sexe": "F",
+        "classement": 1,
         "club": None,
     }
 
@@ -225,9 +228,11 @@ def test_build_event_mixall_files_interleave_and_marker_end_to_end():
     # The marker rides on Nom (ADR-080 §1 amended 2026-09-12): FTL renders
     # "Nom Prenom", so this reads back as "PECZEK (0) Sandra" — the form the
     # scraper matches. It used to sit on Prenom, which did not round-trip.
-    assert [t.get("Nom") for t in tireurs] == ["PECZEK (0)", "BORKOWSKA (4)", "KOWALSKI (0)"]
-    assert [t.get("Prenom") for t in tireurs] == ["Sandra", "Halina", "Jan"]
-    assert [t.get("Classement") for t in tireurs] == ["1", "2", "3"]
+    # Written alphabetically; the interleave seeds survive in Classement, out of
+    # document order (ADR-080 §2, amended 2026-09-14).
+    assert [t.get("Nom") for t in tireurs] == ["BORKOWSKA (4)", "KOWALSKI (0)", "PECZEK (0)"]
+    assert [t.get("Prenom") for t in tireurs] == ["Halina", "Jan", "Sandra"]
+    assert [t.get("Classement") for t in tireurs] == ["2", "3", "1"]
 
 
 # ---------------------------------------------------------------------------
@@ -335,8 +340,10 @@ def test_de_file_holds_only_its_own_gender_and_category_reseeded_from_one():
     assert root.get("Sexe") == "M"
     assert root.get("Arme") == "E"
     tireurs = root.findall(".//Tireur")
-    assert [t.get("Nom") for t in tireurs] == ["BBB (2)", "AAA (2)"]
-    assert [t.get("Classement") for t in tireurs] == ["1", "2"]
+    # Alphabetical on the page, seeded in Classement: BBB outranks AAA, so BBB
+    # is seed 1 even though AAA is written first.
+    assert [t.get("Nom") for t in tireurs] == ["AAA (2)", "BBB (2)"]
+    assert [t.get("Classement") for t in tireurs] == ["2", "1"]
     assert [t.get("Sexe") for t in tireurs] == ["M", "M"]
 
 

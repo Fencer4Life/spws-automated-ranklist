@@ -94,6 +94,45 @@ class SeedFile:
         return IMPORT_AS[self.kind]
 
 
+# The Polish alphabet, in its own order. Ł belongs between L and M, Ó between
+# O and P, and Ż is the last letter there is.
+_PL_ALPHABET = "aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż"
+_PL_WEIGHT = {c: i + 1 for i, c in enumerate(_PL_ALPHABET)}
+
+
+def polish_sort_key(value: str) -> list[int]:
+    """Sort key for one name, as a list of per-character weights.
+
+    An explicit alphabet rather than a collation library, deliberately. This
+    module and frontend/src/lib/ftlSeedExport.ts are asserted byte for byte
+    against each other; the browser has Intl.Collator and Python does not, and
+    asking two different collation implementations to agree on every name
+    forever is a bet, whereas the table below agrees by construction. It is also
+    why the rule is not computed in Postgres: this exporter never calls
+    fn_ftl_export_entries, it reads tbl_registration directly
+    (ftl_seed_export_db.fetch_registrations) and does the interleave itself.
+
+    A plain code-point sort would be worse than merely imprecise — it puts Ł, Ń,
+    Ó, Ś, Ź and Ż after Z, which is the exact defect EntryList.svelte already
+    documents and works around for the entry list on screen.
+
+    Weight 0 for anything that is not a letter, so a hyphen or an apostrophe
+    sorts before every letter and SPŁAWA-NEYMAN lands before SPŁAWACZ. An
+    unrecognised letter — a foreign entrant's name — sorts after the whole
+    Polish alphabet rather than silently colliding with a letter inside it.
+    """
+    out: list[int] = []
+    for ch in value.lower():
+        weight = _PL_WEIGHT.get(ch)
+        if weight is not None:
+            out.append(weight)
+        elif ch.isalpha():
+            out.append(len(_PL_ALPHABET) + 1 + ord(ch))
+        else:
+            out.append(0)
+    return out
+
+
 def to_canonical_name(surname: str, first_name: str) -> tuple[str, str]:
     """Canonical seed/entry-list/ranklist name form (ADR-080 Section 1):
     surname in UPPERCASE, given name in Title case. Fixes legacy all-caps
@@ -353,23 +392,39 @@ def mixall_tireurs(
     """Turn an interleave_mixall result into FIE <Tireur> dicts (ADR-080 §1/§2).
 
     Seed position (1..N) is both the Tireur `ID` and `Classement` (matches the
-    validated reference file, which uses a running id == seed). `Sexe` is the
-    sub-ranking key's F/M prefix; the `(N)` marker is its trailing V-cat digit —
-    both already encoded in the key that interleave_mixall pairs with each entry.
+    validated reference file, which uses a running id == seed) — but it is no
+    longer the order the records are written in: see the sort below. `Sexe` is
+    the sub-ranking key's F/M prefix; the `(N)` marker is its trailing V-cat
+    digit — both already encoded in the key that interleave_mixall pairs with
+    each entry.
+
+    Every file kind passes through here (mix-all, DE and roster alike), which is
+    why this one function is the only place the ordering rule has to live.
     """
-    tireurs: list[dict] = []
+    numbered: list[tuple[list[int], list[int], dict]] = []
     for seed, (entry, key) in enumerate(seed_order, start=1):
-        tireurs.append(
-            {
-                "id": seed,
-                "nom": format_nom_with_marker(entry.surname, key[-1]),
-                "prenom": entry.first_name,
-                "sexe": key[0],
-                "classement": seed,
-                "club": entry.club,
-            }
+        numbered.append(
+            (
+                # Keyed off the raw names, not the formatted nom: the "(N)"
+                # marker is appended below, and sorting on it would interleave
+                # categories instead of names.
+                polish_sort_key(entry.surname),
+                polish_sort_key(entry.first_name),
+                {
+                    "id": seed,
+                    "nom": format_nom_with_marker(entry.surname, key[-1]),
+                    "prenom": entry.first_name,
+                    "sexe": key[0],
+                    "classement": seed,
+                    "club": entry.club,
+                },
+            )
         )
-    return tireurs
+    # sorted() is stable, as is Array.prototype.sort in the twin, so two
+    # entrants with identical names keep seed order and the file stays
+    # deterministic between two downloads of the same entry list.
+    numbered.sort(key=lambda n: (n[0], n[1]))
+    return [n[2] for n in numbered]
 
 
 def season_pretty(season_code: str) -> str:
