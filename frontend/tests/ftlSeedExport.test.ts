@@ -21,7 +21,9 @@ import {
   exportManifest,
   formatNomWithMarker,
   interleaveMixall,
+  mixallTireurs,
   mixallTitle,
+  polishSortKey,
   rosterTitle,
   toCanonicalName,
   type ExportEntryRow,
@@ -119,6 +121,100 @@ describe('interleaveMixall', () => {
 
   it('X8.9 returns nothing for an empty entry list', () => {
     expect(interleaveMixall({})).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Polish collation — the same assertions as the Python test's collation block.
+//
+// This cannot be Intl.Collator: the Python twin has no equivalent, and the two
+// exporters are asserted byte for byte. The alphabet below is therefore the
+// shared contract, written out in both files and agreeing by construction.
+// Plan IDs X8.30-X8.34.
+// ---------------------------------------------------------------------------
+describe('polishSortKey', () => {
+  const sorted = (names: string[]): string[] =>
+    [...names].sort((a, b) => {
+      const ka = polishSortKey(a)
+      const kb = polishSortKey(b)
+      for (let i = 0; i < Math.min(ka.length, kb.length); i++) {
+        if (ka[i] !== kb[i]) return ka[i] - kb[i]
+      }
+      return ka.length - kb.length
+    })
+
+  it('X8.30 puts Ł between L and M, not after Z', () => {
+    // A code-point sort returns Lis, Maj, Łuczak — the defect EntryList.svelte
+    // documents at :127-130 and works around with a collator.
+    expect(sorted(['Maj', 'Łuczak', 'Lis'])).toEqual(['Lis', 'Łuczak', 'Maj'])
+  })
+
+  it('X8.31 puts Ó between O and P, and Ż last of all', () => {
+    expect(sorted(['Paw', 'Ósemka', 'Olek'])).toEqual(['Olek', 'Ósemka', 'Paw'])
+    expect(sorted(['Żak', 'Zych', 'Źródło'])).toEqual(['Zych', 'Źródło', 'Żak'])
+  })
+
+  it('X8.32 sorts the full Polish alphabet into its own order', () => {
+    const letters = [...'aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż']
+    expect(sorted([...letters].reverse())).toEqual(letters)
+  })
+
+  it('X8.33 is case-insensitive, so a lower-case self-registration files with its peers', () => {
+    expect(sorted(['kowalski', 'KOWALCZYK'])).toEqual(['KOWALCZYK', 'kowalski'])
+  })
+
+  it('X8.34 sorts a hyphen and an apostrophe before any letter', () => {
+    // "Spława-Neyman" lands before "Spławacz": at the seventh character a
+    // hyphen outranks a letter, which is what a reader scanning a column of
+    // surnames expects.
+    expect(sorted(['Spławacz', 'Spława-Neyman'])).toEqual(['Spława-Neyman', 'Spławacz'])
+    expect(sorted(["O'Neill", 'Onacki'])).toEqual(["O'Neill", 'Onacki'])
+  })
+})
+
+describe('mixallTireurs', () => {
+  const entry = (surname: string, firstName: string): SeedEntry => ({
+    idx: 1,
+    surname,
+    firstName,
+    club: '',
+  })
+
+  it('X8.35 numbers by seed first, then writes the records out alphabetically', () => {
+    const tireurs = mixallTireurs([
+      [entry('ŻAK', 'Adam'), 'MV0'],
+      [entry('LIS', 'Ewa'), 'FV1'],
+      [entry('ŁUCZAK', 'Jan'), 'MV2'],
+    ])
+    expect(tireurs.map((t) => t.nom)).toEqual(['LIS (1)', 'ŁUCZAK (2)', 'ŻAK (0)'])
+    // Seed 1 went to ŻAK and stays with ŻAK.
+    expect(tireurs.map((t) => t.classement)).toEqual([2, 3, 1])
+    expect(tireurs.map((t) => t.id)).toEqual([2, 3, 1])
+  })
+
+  it('X8.36 breaks a tie on the given name, then on seed order', () => {
+    const tireurs = mixallTireurs([
+      [entry('NOWAK', 'Piotr'), 'MV0'],
+      [entry('NOWAK', 'Anna'), 'FV0'],
+      // Same person twice by name: stable sort keeps the earlier seed first, so
+      // two identical registrations still produce one deterministic file.
+      [entry('NOWAK', 'Anna'), 'FV2'],
+    ])
+    expect(tireurs.map((t) => [t.nom, t.classement])).toEqual([
+      ['NOWAK (0)', 2],
+      ['NOWAK (2)', 3],
+      ['NOWAK (0)', 1],
+    ])
+  })
+
+  it('X8.37 ignores the (N) marker when ordering, so it sorts on the surname alone', () => {
+    // The marker is appended to Nom after the key is taken. Sorting on the
+    // formatted Nom would interleave categories instead of names.
+    const tireurs = mixallTireurs([
+      [entry('NOWAKOWSKI', 'Jan'), 'MV0'],
+      [entry('NOWAK', 'Jan'), 'MV4'],
+    ])
+    expect(tireurs.map((t) => t.nom)).toEqual(['NOWAK (4)', 'NOWAKOWSKI (0)'])
   })
 })
 
@@ -240,14 +336,22 @@ describe('buildEventSeedFiles', () => {
     )
   })
 
-  it('X8.17 seeds the mix-all by the interleave and carries the marker on Nom', () => {
+  it('X8.17 lists the mix-all alphabetically while Classement keeps the interleave seed', () => {
     const files = buildEventSeedFiles(rows, 'PPW1-2026-2027')
     const mixall = files.find((f) => f.kind === 'MIXALL')!
     const noms = [...mixall.xml.matchAll(/Nom="([^"]*)"/g)].map((m) => m[1])
-    // Fixed order FV0, MV0, MV2 for the rank-1 pass, then MV2's rank 2.
-    expect(noms).toEqual(['PECZEK (0)', 'KOWALSKI (0)', 'NOWAK (2)', 'AAA (2)'])
+    // Written A→Ż so the organizer can find a name, which is the only check
+    // anyone performs on the raw file.
+    expect(noms).toEqual(['AAA (2)', 'KOWALSKI (0)', 'NOWAK (2)', 'PECZEK (0)'])
+    // The seeding is untouched and simply no longer coincides with the order:
+    // the interleave laid down FV0, MV0, MV2 for the rank-1 pass then MV2's
+    // rank 2, i.e. PECZEK=1, KOWALSKI=2, NOWAK=3, AAA=4.
     const classements = [...mixall.xml.matchAll(/Classement="([^"]*)"/g)].map((m) => m[1])
-    expect(classements).toEqual(['1', '2', '3', '4'])
+    expect(classements).toEqual(['4', '2', '3', '1'])
+    // ID tracks the seed, not the row number — as it does in Fencing Time's own
+    // exports (doc/external_files/FTL_SRC/F-DzieciExport.xml).
+    const ids = [...mixall.xml.matchAll(/<Tireur ID="([^"]*)"/g)].map((m) => m[1])
+    expect(ids).toEqual(classements)
   })
 
   it('X8.18 restarts a DE file at seed 1 and stamps the real gender on its root', () => {
@@ -255,9 +359,10 @@ describe('buildEventSeedFiles', () => {
     const de = files.find((f) => f.filename.endsWith('_DE_MEN_V2.xml'))!
     expect(de.xml).toContain('Sexe="M" Domaine="N"')
     const noms = [...de.xml.matchAll(/Nom="([^"]*)"/g)].map((m) => m[1])
-    expect(noms).toEqual(['NOWAK (2)', 'AAA (2)'])
+    expect(noms).toEqual(['AAA (2)', 'NOWAK (2)'])
+    // Seeds still restart at 1 for the bracket; AAA is seeded second and says so.
     const classements = [...de.xml.matchAll(/Classement="([^"]*)"/g)].map((m) => m[1])
-    expect(classements).toEqual(['1', '2'])
+    expect(classements).toEqual(['2', '1'])
   })
 
   it('X8.19 builds the manifest from the files themselves', () => {
@@ -338,18 +443,21 @@ describe('roster files', () => {
     expect(roster.importAs).toBe('PICKLIST')
   })
 
-  it('X8.28 keeps the marker and the roster order, exactly as Python does', () => {
+  it('X8.28 keeps the marker and lists the pick-list alphabetically', () => {
     const files = buildEventSeedFiles(entries, 'PPW1-2026-2027', '', {
       EPEE: [
-        rosterRow('ZIELIŃSKI', 'PIOTR', 'M', 'V0', 2),
-        rosterRow('nowak', 'anna', 'F', 'V3', 1),
+        rosterRow('ZIELIŃSKI', 'PIOTR', 'M', 'V0', 1),
+        rosterRow('nowak', 'anna', 'F', 'V3', 2),
+        rosterRow('ŁUCZAK', 'Jan', 'M', 'V1', 3),
       ],
     })
     const roster = files.find((f) => f.kind === 'ROSTER')!
     const noms = [...roster.xml.matchAll(/Nom="([^"]*)"/g)].map((m) => m[1])
-    // int_order wins over the array order it arrived in.
-    expect(noms).toEqual(['NOWAK (3)', 'ZIELIŃSKI (0)'])
-    expect(roster.count).toBe(2)
+    // fn_ftl_roster already orders by surname, but under the database's
+    // collation; re-keying here is what puts Ł between L and Z rather than
+    // after it, and makes all three file kinds agree on one alphabet.
+    expect(noms).toEqual(['ŁUCZAK (1)', 'NOWAK (3)', 'ZIELIŃSKI (0)'])
+    expect(roster.count).toBe(3)
   })
 
   it('X8.29 omits rosters entirely when none are supplied', () => {

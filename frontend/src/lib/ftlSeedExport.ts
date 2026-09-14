@@ -118,6 +118,53 @@ export interface ManifestRow {
 // ---------------------------------------------------------------------------
 
 /**
+ * The Polish alphabet, in its own order. Ł belongs between L and M, Ó between
+ * O and P, and Ż is the last letter there is.
+ */
+const PL_ALPHABET = 'aąbcćdeęfghijklłmnńoópqrsśtuvwxyzźż'
+const PL_WEIGHT = new Map([...PL_ALPHABET].map((c, i) => [c, i + 1]))
+
+/**
+ * Sort key for one name, as a list of per-character weights.
+ *
+ * NOT Intl.Collator, deliberately. This file and python/pipeline/ftl_seed_export.py
+ * are asserted byte for byte against each other, and Python has no Intl; asking
+ * two different collation libraries to agree on every name forever is a bet,
+ * whereas an explicit alphabet written out in both files agrees by
+ * construction. It is also why the rule is not computed in Postgres: the Python
+ * exporter never calls fn_ftl_export_entries, it reads tbl_registration
+ * directly and does the interleave itself.
+ *
+ * A plain code-point sort would be worse than merely imprecise — it puts Ł, Ń,
+ * Ó, Ś, Ź and Ż after Z, which is the exact defect EntryList.svelte already
+ * documents and works around for the entry list on screen.
+ *
+ * Weight 0 for anything that is not a letter, so a hyphen or an apostrophe
+ * sorts before every letter and SPŁAWA-NEYMAN lands before SPŁAWACZ. An
+ * unrecognised letter — a foreign entrant's name — sorts after the whole Polish
+ * alphabet rather than silently colliding with a letter inside it.
+ */
+export function polishSortKey(value: string): number[] {
+  const out: number[] = []
+  for (const ch of value.toLowerCase()) {
+    const weight = PL_WEIGHT.get(ch)
+    if (weight !== undefined) out.push(weight)
+    else if (/\p{L}/u.test(ch)) out.push(PL_ALPHABET.length + 1 + (ch.codePointAt(0) ?? 0))
+    else out.push(0)
+  }
+  return out
+}
+
+/** Lexicographic, shorter prefix first — what Python's list comparison does. */
+function compareSortKeys(a: number[], b: number[]): number {
+  const shared = Math.min(a.length, b.length)
+  for (let i = 0; i < shared; i++) {
+    if (a[i] !== b[i]) return a[i] - b[i]
+  }
+  return a.length - b.length
+}
+
+/**
  * Python's str.title(), which is the rule the exporter has always used: every
  * letter that follows a non-letter starts a new word. That makes hyphens,
  * apostrophes and spaces all boundaries — "anna-maria" becomes "Anna-Maria"
@@ -179,17 +226,36 @@ export function interleaveMixall(
 
 /**
  * Seed order → FIE <Tireur> records. Seed position is both the ID and the
- * Classement, matching the validated reference file.
+ * Classement, matching the validated reference file — but it is no longer the
+ * order the records are written in: see the sort below.
+ *
+ * Every file kind passes through here (mix-all, DE and roster alike), which is
+ * why this one function is the only place the ordering rule has to live.
  */
 export function mixallTireurs(seedOrder: Array<[SeedEntry, string]>): Tireur[] {
-  return seedOrder.map(([entry, key], i) => ({
-    id: i + 1,
-    nom: formatNomWithMarker(entry.surname, key[key.length - 1]),
-    prenom: entry.firstName,
-    sexe: key[0],
-    classement: i + 1,
-    club: entry.club,
+  const numbered = seedOrder.map(([entry, key], i) => ({
+    tireur: {
+      id: i + 1,
+      nom: formatNomWithMarker(entry.surname, key[key.length - 1]),
+      prenom: entry.firstName,
+      sexe: key[0],
+      classement: i + 1,
+      club: entry.club,
+    },
+    // Keyed off the raw names, not the formatted Nom: the "(N)" marker is
+    // appended above, and sorting on it would interleave categories instead of
+    // names.
+    surnameKey: polishSortKey(entry.surname),
+    firstNameKey: polishSortKey(entry.firstName),
   }))
+  // Array.prototype.sort is stable, as is Python's sorted(), so two entrants
+  // with identical names keep seed order and the file stays deterministic.
+  numbered.sort(
+    (a, b) =>
+      compareSortKeys(a.surnameKey, b.surnameKey) ||
+      compareSortKeys(a.firstNameKey, b.firstNameKey),
+  )
+  return numbered.map((n) => n.tireur)
 }
 
 // ---------------------------------------------------------------------------
