@@ -608,6 +608,7 @@
   "ftl_contact_fallback": "Odpisz na wiadomość, w której dostałeś link do tej strony.",
   "ftl_lang_pl": "Polski",
   "ftl_lang_en": "English",
+  "ftl_close": "Zamknij",
   "ftl_archive_taken_at": "Lista startowa na",
   "ftl_pick": "Wybierz zawody — na liście są tylko te z otwartymi zapisami, które jeszcze się nie odbyły:",
   "ftl_pick_meta": "{n} zapisanych",

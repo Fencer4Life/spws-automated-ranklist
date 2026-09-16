@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="090-prod-surface-as-wordpress-menu-item.md">
-<meta name="adr-source-sha256" content="70fb7bde0deedd8c6340f80a51ffa6d03d19f7fabf4ebf332e8ec01a992ce2da">
+<meta name="adr-source-sha256" content="0069352f9f23579c549952cbc3f952aeb05bae02e8ab00228c425ad3082ace79">
 <title>ADR-090 · Publishing a PROD surface as a full-screen WordPress menu item</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 090</p><h1>Publishing a PROD surface as a full-screen WordPress menu item</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed.)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">351 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed.)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">359 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed.)
 <strong>Date:</strong> 2026-09-05
 <strong>Amends:</strong> <a href="007-shadow-dom-deferred.html">ADR-007</a> (the anticipated WordPress embed is now built, and the element gains a <code>view</code>/<code>chrome</code> interface), <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at <code>CERT</code>)
@@ -178,7 +178,15 @@ header would have stranded the organizer. The mark is now part of that
 header, with the same <code>a.embed-home</code> / <code>img.embed-logo</code> classes, the same
 <code>embed_home_label</code> key and the same target as the calendar's, and
 <code>frontend/tests/FtlExport.test.ts</code> guards it exactly as
-<code>CalendarEmbed.test.ts</code> guards the calendar's.</li>
+<code>CalendarEmbed.test.ts</code> guards the calendar's. A corner <strong>×</strong> sits beside the
+language toggle as well (2026-09-16), leaving for the same destination: the
+mark reads as branding, and a reader looking for a way out of a full-screen
+surface reaches for the ×, whose absence reads as a missing control rather
+than a considered omission — the same reasoning <code>RegistrationForm.svelte</code>
+already records for its own. The header is two rows, the mark and the
+controls above and the title beneath, because this page's title is roughly
+three times the width of the calendar's and cannot share a 375px line
+with them.</li>
 <li><strong><code>asset-base</code> was passed but discarded.</strong> Page 13505 has set the attribute
 since 2026-09-13, but <code>FtlExportElement.svelte</code> never declared it and never
 called <code>setAssetBase</code>. <code>assetBase.ts</code> is a module-level singleton that leaves
@@ -325,5 +333,5 @@ still belongs behind Supabase Auth on GitHub Pages, exactly as §3 requires.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="089-event-weapons-and-card-header.html">← ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="091-no-season-skeletons-for-scraped-events.html">→ ADR-091: A season is bootstrapped only with skeletons nobody discovers for us</a></nav>
-<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>70fb7bde0deedd8c6340f80a51ffa6d03d19f7fabf4ebf332e8ec01a992ce2da</code></footer>
+<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>0069352f9f23579c549952cbc3f952aeb05bae02e8ab00228c425ad3082ace79</code></footer>
 </div></body></html>
