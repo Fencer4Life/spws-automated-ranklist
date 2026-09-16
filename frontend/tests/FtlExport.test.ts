@@ -303,4 +303,33 @@ describe('FtlExport', () => {
     expect(container.querySelector('[data-field="ftl-no-events"]')).not.toBeNull()
     expect(getByText(/sprawdź, czy masz aktualny link/)).toBeTruthy()
   })
+
+  // X9.21-X9.23 — The SPWS mark. The WordPress page hides the theme's header,
+  // navigation and footer (ADR-090 §7), so this is the ONLY route back to
+  // weteraniszermierki.pl from the download page — required, not decorative,
+  // exactly as on the calendar embed. CalendarEmbed.test.ts guards the same
+  // thing for <spws-calendar>; the two assertions are deliberately parallel.
+  it('X9.21 links the SPWS mark to the association site', () => {
+    const { container } = render(FtlExport, { props: props() })
+    const home = container.querySelector('.ftl-top a.embed-home') as HTMLAnchorElement
+    expect(home).not.toBeNull()
+    expect(home.getAttribute('href')).toBe('https://weteraniszermierki.pl')
+    expect(home.querySelector('img.embed-logo')).not.toBeNull()
+  })
+
+  it('X9.22 labels the mark in the active language', () => {
+    const { container } = render(FtlExport, { props: props() })
+    const home = container.querySelector('.ftl-top a.embed-home') as HTMLAnchorElement
+    expect(home.getAttribute('aria-label')).toBe('Przejdź do strony SPWS')
+  })
+
+  it('X9.23 keeps the language toggle on the row beside the mark', () => {
+    // The mark is inserted as the row's first child; the toggle must not be
+    // displaced by it, or an organizer who does not read Polish loses the flags.
+    const { container } = render(FtlExport, { props: props() })
+    const top = container.querySelector('.ftl-top')!
+    expect(top.querySelector('a.embed-home')).not.toBeNull()
+    expect(top.querySelector('[data-field="ftl-lang-pl"]')).not.toBeNull()
+    expect(top.querySelector('[data-field="ftl-lang-en"]')).not.toBeNull()
+  })
 })

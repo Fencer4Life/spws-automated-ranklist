@@ -1,5 +1,18 @@
 <div class="ftl">
   <header class="ftl-top">
+    <!-- The SPWS mark, linked home. REQUIRED, not decorative: the WordPress
+         page hides the theme's header, navigation and footer (ADR-090 §7), so
+         this is the only route back to weteraniszermierki.pl from the download
+         page. Same classes, href and label key as the calendar embed's own
+         mark (App.svelte), so one CSS vocabulary covers both surfaces. -->
+    <a
+      class="embed-home"
+      href="https://weteraniszermierki.pl"
+      aria-label={t('embed_home_label')}
+      title={t('embed_home_label')}
+    >
+      <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="embed-logo" />
+    </a>
     <h2>{t('ftl_title')}</h2>
     <div class="ftl-lang">
       <button
@@ -173,6 +186,7 @@
   //
   // Design of record: doc/plans/ftl-export-page-2026-09-12.html.
   import { t, getLocale, setLocale } from '../lib/locale.svelte'
+  import { assetUrl } from '../lib/assetBase'
   import { downloadBytes, downloadText } from '../lib/download'
   import { buildZip } from '../lib/zip'
   import { buildArchiveEntries } from '../lib/exportArchive'
@@ -322,9 +336,23 @@
   .ftl-top {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 14px;
     flex-wrap: wrap;
+  }
+
+  /* The mark keeps its full height and never shrinks; the title takes the
+     slack beside it, exactly as on the calendar embed. */
+  .ftl-top .embed-home {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  .ftl-top .embed-logo {
+    height: 26px;
+    width: auto;
+    display: block;
   }
 
   .ftl-top h2 {
@@ -332,6 +360,25 @@
     font-size: 1.25rem;
     font-weight: 600;
     color: #fff;
+    /* Takes the slack so the flags sit hard right without justify-content
+       pushing the title away from the mark. */
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* A 430px phone has to fit the mark, the title and two flags on one row.
+     The mark holds its width — it is the way out of the page — so the title
+     gives way first, wrapping rather than being clipped. */
+  @media (max-width: 430px) {
+    .ftl-top {
+      gap: 8px;
+    }
+    .ftl-top .embed-logo {
+      height: 20px;
+    }
+    .ftl-top h2 {
+      font-size: 1.1rem;
+    }
   }
 
   .ftl-lang {
