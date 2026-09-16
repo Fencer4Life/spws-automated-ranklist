@@ -608,6 +608,7 @@
   "ftl_contact_fallback": "Reply to the message in which you received the link to this page.",
   "ftl_lang_pl": "Polski",
   "ftl_lang_en": "English",
+  "ftl_close": "Close",
   "ftl_archive_taken_at": "Entry list as at",
   "ftl_pick": "Choose an event — only those with entries that have not happened yet are listed:",
   "ftl_pick_meta": "{n} entered",

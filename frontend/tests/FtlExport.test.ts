@@ -12,6 +12,7 @@
 // whole bundle because a browser will not start twenty-eight downloads.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { tick } from 'svelte'
 import { render, fireEvent, waitFor } from '@testing-library/svelte'
 import FtlExport from '../src/components/FtlExport.svelte'
 import type { ExportEntryRow } from '../src/lib/ftlSeedExport'
@@ -331,5 +332,41 @@ describe('FtlExport', () => {
     expect(top.querySelector('a.embed-home')).not.toBeNull()
     expect(top.querySelector('[data-field="ftl-lang-pl"]')).not.toBeNull()
     expect(top.querySelector('[data-field="ftl-lang-en"]')).not.toBeNull()
+  })
+
+  // X9.24 — The title is long ("Pliki XML do pobrania w formacie
+  // FencingTimeLive", roughly three times the calendar's "Znajdź zawody"), so
+  // it cannot share a 375px row with the mark and the controls. It gets its own
+  // line beneath them instead of being shrunk or clipped.
+  it('X9.24 puts the mark and the controls on one row and the title beneath', () => {
+    const { container } = render(FtlExport, { props: props() })
+    const row = container.querySelector('.ftl-top .ftl-top-row')!
+    expect(row).not.toBeNull()
+    expect(row.querySelector('a.embed-home')).not.toBeNull()
+    expect(row.querySelector('[data-field="ftl-lang-pl"]')).not.toBeNull()
+    expect(row.querySelector('[data-field="ftl-close"]')).not.toBeNull()
+    // The heading is a sibling of that row, not inside it.
+    expect(row.querySelector('h2')).toBeNull()
+    expect(container.querySelector('.ftl-top > h2')).not.toBeNull()
+  })
+
+  // X9.25 — A way out of the page. The corner × is what people reach for, and
+  // its absence reads as a missing control rather than a considered omission
+  // (the same reasoning RegistrationForm records for its own ×). There is no
+  // parent to dismiss to here, so it leaves for the association's site.
+  it('X9.25 offers a close control that leaves for the association site', () => {
+    const { container } = render(FtlExport, { props: props() })
+    const close = container.querySelector('[data-field="ftl-close"]') as HTMLAnchorElement
+    expect(close).not.toBeNull()
+    expect(close.getAttribute('href')).toBe('https://weteraniszermierki.pl')
+    expect(close.getAttribute('aria-label')).toBe('Zamknij')
+  })
+
+  it('X9.26 labels the close control in English once the language is switched', async () => {
+    const { container } = render(FtlExport, { props: props() })
+    setLocale('en')
+    await tick()
+    const close = container.querySelector('[data-field="ftl-close"]')!
+    expect(close.getAttribute('aria-label')).toBe('Close')
   })
 })
