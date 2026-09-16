@@ -36,7 +36,7 @@ accepts on write but hides on read, so a menu item written this way cannot be
 verified. Build menu items in wp-admin, per ADR-090's open items.
 
 Usage:
-  scripts/wp_publish_page.py get --slug <slug>
+  scripts/wp_publish_page.py get --slug <slug> [--content-out <path>]
   WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py create --slug <slug> \\
       --title <title> --content-file <path> [--status draft|publish]
   WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id <id> \\
@@ -168,10 +168,22 @@ def cmd_get(args):
     if not match:
         print(f"No page with slug '{args.slug}' found on {wp_url}")
         return
+    content = match.get("post_content", "") or ""
     print(
         f"page_id={match['post_id']} status={match.get('post_status')} "
-        f"title={match.get('post_title', '')!r} link={match.get('link', '')}"
+        f"title={match.get('post_title', '')!r} link={match.get('link', '')} "
+        f"content_bytes={len(content.encode('utf-8'))}"
     )
+    # The stored body, on request. Without this there is no way to read a page
+    # back before editing it, so a change means retyping the body from the
+    # RENDERED page — which is not the same string: wpautop rewrites it on the
+    # way out, and a <style> block comes back with <p> tags interleaved. Writing
+    # to a file rather than stdout keeps the body out of the terminal and makes
+    # a read/modify/write round trip a diff.
+    if getattr(args, "content_out", None):
+        with open(args.content_out, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        print(f"content written to {args.content_out}")
 
 
 def cmd_create(args):
@@ -220,6 +232,10 @@ def main():
 
     p_get = sub.add_parser("get", help="Look up a page by slug (read-only)")
     p_get.add_argument("--slug", required=True)
+    p_get.add_argument(
+        "--content-out",
+        help="Write the page's stored body to this file (read/modify/write round trip)",
+    )
     p_get.set_defaults(func=cmd_get)
 
     p_create = sub.add_parser("create", help="Create a new page")
