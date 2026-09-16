@@ -11,6 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, waitFor } from '@testing-library/svelte'
 import FtlExportElement from '../src/ce/FtlExportElement.svelte'
 import { getLocale, setLocale } from '../src/lib/locale.svelte'
+import { getAssetBase, setAssetBase } from '../src/lib/assetBase'
 import * as api from '../src/lib/api'
 
 const EVENTS = [
@@ -55,6 +56,9 @@ describe('FtlExportElement', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     setLocale('pl')
+    // assetBase is a module-level singleton (see assetBase.ts on why), so a
+    // base set by one case would otherwise leak into the next.
+    setAssetBase('')
   })
 
   const base = {
@@ -121,5 +125,23 @@ describe('FtlExportElement', () => {
   it('ignores a language we do not carry, and defaults to Polish', async () => {
     render(FtlExportElement, { props: { ...base, demo: true, lang: 'hu' } })
     expect(getLocale()).toBe('pl')
+  })
+
+  // X9.21-X9.22 — asset-base. The WordPress page already passes this attribute,
+  // but the element never declared it, so the base stayed empty and the embed's
+  // SPWS mark resolved against weteraniszermierki.pl instead of the Pages
+  // origin — a 404 on the one link back to the site. Found 2026-09-16.
+  it('X9.21 resolves embed assets through asset-base when the host page sets one', async () => {
+    render(FtlExportElement, {
+      props: { ...base, demo: true, 'asset-base': 'https://spws.github.io/ranklist/' },
+    })
+    expect(getAssetBase()).toBe('https://spws.github.io/ranklist/')
+  })
+
+  it('X9.22 leaves bare asset names alone when no base is given', async () => {
+    // register.html serves the same element from the Pages origin root, where a
+    // bare name already resolves; setting a base there would be wrong.
+    render(FtlExportElement, { props: { ...base, demo: true } })
+    expect(getAssetBase()).toBe('')
   })
 })

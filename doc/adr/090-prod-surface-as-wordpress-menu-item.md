@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule.)
+**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed.)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -176,6 +176,45 @@ is a full-screen calendar, not a calendar inside a website page.
 (§5) is the only in-page route back to the rest of the site. That is why the mark
 is mandatory rather than decorative, and why removing it is a regression the
 tests now catch.
+
+#### Amendment (2026-09-16) — a second page takes the same treatment
+
+The FTL export page (`/pliki-zasilajace-xml-ftl/`, page 13505, ADR-080 (f) and
+ADR-095) now carries the identical `<style>` block, copied from page 13472
+rather than re-derived. It previously had only a partial one — `.entry-title`,
+`.entry-header` and the `.entry-content` margins — so the site header,
+navigation, page image, side tabs and footer all still wrapped the embed.
+
+Two things had to be true first, and neither was:
+
+1. **The embed had no mark.** §7's consequence below is not specific to the
+   calendar: once the theme's navigation is hidden, the in-page SPWS mark is the
+   only route back to the association's site. `FtlExport.svelte`'s header
+   carried a title and a language toggle and nothing else, so hiding the theme
+   header would have stranded the organizer. The mark is now part of that
+   header, with the same `a.embed-home` / `img.embed-logo` classes, the same
+   `embed_home_label` key and the same target as the calendar's, and
+   `frontend/tests/FtlExport.test.ts` guards it exactly as
+   `CalendarEmbed.test.ts` guards the calendar's.
+2. **`asset-base` was passed but discarded.** Page 13505 has set the attribute
+   since 2026-09-13, but `FtlExportElement.svelte` never declared it and never
+   called `setAssetBase`. `assetBase.ts` is a module-level singleton that leaves
+   `assetUrl` as the identity function while unset, so a bare `SPWS-logo.png`
+   would have resolved against `weteraniszermierki.pl` and 404'd — the one link
+   out of the page, broken. The element now declares the attribute and sets the
+   base at init, as `App.svelte` does.
+
+**Deployment order is load-bearing.** The bundle must ship before the page is
+republished. Reversing it leaves a live public page with the theme's navigation
+hidden and no mark yet in the embed.
+
+The published body is kept as a reference copy at
+`doc/wordpress/pliki-zasilajace-xml-ftl.html`, with the PROD anon
+key redacted on the same rule `frontend/register.html` follows. The CMS remains
+the source of truth; nothing syncs it. `scripts/wp_publish_page.py get` gained
+`--content-out` so a stored body can be read back at all — without it an edit
+meant retyping from the *rendered* page, which is a different string, since
+`wpautop` interleaves `<p>` tags into the `<style>` block on the way out.
 
 The page template is **not** the mechanism. `wp_page_template` cannot be set
 reliably over XML-RPC — the value does not stick and reads back as `None`, the

@@ -1,0 +1,42 @@
+<!-- Reference copy of WordPress page 13505, /pliki-zasilajace-xml-ftl/.
+     The CMS is the source of truth; this is a checked-in copy so the published
+     body is diffable and recoverable, not a deployable artifact and not synced.
+     Read the live one with:
+       scripts/wp_publish_page.py get --slug pliki-zasilajace-xml-ftl --content-out <path>
+     supabase-prod-key is redacted here on the same rule frontend/register.html
+     follows: the PROD anon key is not committed, it is injected at release. -->
+<style>
+/* Full-screen FTL export page: the theme's chrome is removed on THIS page only
+   (ADR-090 §7), the same treatment and the same selectors as /znajdz-zawody/.
+   Selectors read off the rendered page. .footer-bottom is a SIBLING of
+   </footer>, not a child, so hiding footer.footer alone leaves it behind. */
+header.header,
+section.page-image,
+.entry-header,
+.entry-title,
+#slideout,
+#facebook,
+.footer-image,
+footer.footer,
+.footer-bottom {
+  display: none !important;
+}
+
+html, body { margin: 0 !important; padding: 0 !important; }
+#content.site-content,
+#primary.content,
+#primary.content > .content-area,
+.entry-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+.spws-embed { margin: 0; padding: 0; }
+/* NOT font-size/line-height:0 here — those are INHERITED properties and
+   inheritance crosses the shadow boundary, which collapsed the embed's own
+   title to a zero-height box. Shadow DOM isolates selectors, not inheritance. */
+/* Guard: if wpautop ever reintroduces a <br> here, it costs no height. */
+.spws-embed br { display: none !important; }
+</style>
+<div class="spws-embed"><script src="https://fencer4life.github.io/spws-automated-ranklist/assets/main.ce.js" type="module"></script><spws-ftl-export supabase-prod-url="https://ywgymtgcyturldazcpmw.supabase.co" supabase-prod-key="@@SUPABASE_PROD_KEY@@" asset-base="https://fencer4life.github.io/spws-automated-ranklist/"></spws-ftl-export></div>

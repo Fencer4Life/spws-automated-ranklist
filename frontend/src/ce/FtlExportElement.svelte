@@ -36,6 +36,7 @@
     fetchFtlRoster,
   } from '../lib/api'
   import { setLocale, type Locale } from '../lib/locale.svelte'
+  import { setAssetBase } from '../lib/assetBase'
   import type { ExportEntryRow, RosterRow } from '../lib/ftlSeedExport'
   import type { FtlExportEvent } from '../lib/types'
 
@@ -48,6 +49,7 @@
     token = '',
     lang = '',
     contact = '',
+    'asset-base': assetBase = '',
     demo = false,
   }: {
     'supabase-cert-url'?: string
@@ -58,6 +60,7 @@
     token?: string
     lang?: string
     contact?: string
+    'asset-base'?: string
     demo?: boolean
   } = $props()
 
@@ -74,6 +77,19 @@
   const accessToken = $derived(
     token || (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('k') : '') || '',
   )
+
+  // Where the embed's own images live. The bundle is served from GitHub Pages
+  // but the element is mounted on a WordPress page at /pliki-zasilajace-xml-ftl/,
+  // so a bare 'SPWS-logo.png' resolves against weteraniszermierki.pl and 404s.
+  // The published page has passed this attribute since 2026-09-13; until
+  // 2026-09-16 the element did not declare it and the value was discarded,
+  // which is why the mark could not be added before now (ADR-090 §7).
+  //
+  // Set synchronously at module init for the same reason initClient is: the
+  // value arrives once as a static attribute. Empty leaves paths untouched,
+  // which is correct for register.html on the Pages origin root.
+  // svelte-ignore state_referenced_locally
+  setAssetBase(assetBase)
 
   // initClient runs synchronously at module init rather than in an $effect, for
   // the same reason RegistrationElement does it — see that file's comment.
