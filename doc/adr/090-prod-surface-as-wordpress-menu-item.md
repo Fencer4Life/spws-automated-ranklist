@@ -195,7 +195,15 @@ Two things had to be true first, and neither was:
    header, with the same `a.embed-home` / `img.embed-logo` classes, the same
    `embed_home_label` key and the same target as the calendar's, and
    `frontend/tests/FtlExport.test.ts` guards it exactly as
-   `CalendarEmbed.test.ts` guards the calendar's.
+   `CalendarEmbed.test.ts` guards the calendar's. A corner **×** sits beside the
+   language toggle as well (2026-09-16), leaving for the same destination: the
+   mark reads as branding, and a reader looking for a way out of a full-screen
+   surface reaches for the ×, whose absence reads as a missing control rather
+   than a considered omission — the same reasoning `RegistrationForm.svelte`
+   already records for its own. The header is two rows, the mark and the
+   controls above and the title beneath, because this page's title is roughly
+   three times the width of the calendar's and cannot share a 375px line
+   with them.
 2. **`asset-base` was passed but discarded.** Page 13505 has set the attribute
    since 2026-09-13, but `FtlExportElement.svelte` never declared it and never
    called `setAssetBase`. `assetBase.ts` is a module-level singleton that leaves
