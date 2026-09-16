@@ -5,33 +5,52 @@
          this is the only route back to weteraniszermierki.pl from the download
          page. Same classes, href and label key as the calendar embed's own
          mark (App.svelte), so one CSS vocabulary covers both surfaces. -->
-    <a
-      class="embed-home"
-      href="https://weteraniszermierki.pl"
-      aria-label={t('embed_home_label')}
-      title={t('embed_home_label')}
-    >
-      <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="embed-logo" />
-    </a>
-    <h2>{t('ftl_title')}</h2>
-    <div class="ftl-lang">
-      <button
-        type="button"
-        class:on={getLocale() === 'pl'}
-        data-field="ftl-lang-pl"
-        aria-label={t('ftl_lang_pl')}
-        title={t('ftl_lang_pl')}
-        onclick={() => setLocale('pl')}>🇵🇱</button
+    <div class="ftl-top-row">
+      <a
+        class="embed-home"
+        href="https://weteraniszermierki.pl"
+        aria-label={t('embed_home_label')}
+        title={t('embed_home_label')}
       >
-      <button
-        type="button"
-        class:on={getLocale() === 'en'}
-        data-field="ftl-lang-en"
-        aria-label={t('ftl_lang_en')}
-        title={t('ftl_lang_en')}
-        onclick={() => setLocale('en')}>🇬🇧</button
-      >
+        <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="embed-logo" />
+      </a>
+      <div class="ftl-top-actions">
+        <div class="ftl-lang">
+          <button
+            type="button"
+            class:on={getLocale() === 'pl'}
+            data-field="ftl-lang-pl"
+            aria-label={t('ftl_lang_pl')}
+            title={t('ftl_lang_pl')}
+            onclick={() => setLocale('pl')}>🇵🇱</button
+          >
+          <button
+            type="button"
+            class:on={getLocale() === 'en'}
+            data-field="ftl-lang-en"
+            aria-label={t('ftl_lang_en')}
+            title={t('ftl_lang_en')}
+            onclick={() => setLocale('en')}>🇬🇧</button
+          >
+        </div>
+        <!-- A way out. The corner × is what people reach for, and its absence
+             reads as a missing control rather than a considered omission — the
+             same reasoning RegistrationForm records for its own ×. There is no
+             parent to dismiss to on this surface, so it leaves for the
+             association's site: an <a>, because it navigates. -->
+        <a
+          class="ftl-close"
+          data-field="ftl-close"
+          href="https://weteraniszermierki.pl"
+          aria-label={t('ftl_close')}
+          title={t('ftl_close')}>&times;</a
+        >
+      </div>
     </div>
+    <!-- Beneath the row, not in it: this title is roughly three times the width
+         of the calendar's, and will not share a 375px line with the mark and
+         the controls without being clipped. -->
+    <h2>{t('ftl_title')}</h2>
   </header>
 
   {#if events.length > 1}
@@ -333,16 +352,33 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
+  /* Two rows at every width: the mark and the controls share the first, the
+     title has the second to itself. One row for all three is what the calendar
+     does, but its name is short; "Pliki XML do pobrania w formacie
+     FencingTimeLive" is roughly three times that and could not share a 375px
+     line without being clipped or shrunk to unreadability. */
   .ftl-top {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ftl-top-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
+    gap: 12px;
   }
 
-  /* The mark keeps its full height and never shrinks; the title takes the
-     slack beside it, exactly as on the calendar embed. */
+  .ftl-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+  }
+
+  /* The mark keeps its full height and never shrinks: it is a route out of a
+     page whose host chrome has been hidden. */
   .ftl-top .embed-home {
     display: inline-flex;
     align-items: center;
@@ -355,26 +391,34 @@
     display: block;
   }
 
+  /* Matches RegistrationForm's own × so the control reads the same on both
+     public surfaces. */
+  .ftl-close {
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #7fbadc;
+    padding: 0 2px;
+    text-decoration: none;
+  }
+
+  .ftl-close:hover {
+    color: #fff;
+  }
+
   .ftl-top h2 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
     color: #fff;
-    /* Takes the slack so the flags sit hard right without justify-content
-       pushing the title away from the mark. */
-    flex: 1 1 auto;
-    min-width: 0;
   }
 
-  /* A 430px phone has to fit the mark, the title and two flags on one row.
-     The mark holds its width — it is the way out of the page — so the title
-     gives way first, wrapping rather than being clipped. */
   @media (max-width: 430px) {
     .ftl-top {
       gap: 8px;
     }
     .ftl-top .embed-logo {
-      height: 20px;
+      height: 22px;
     }
     .ftl-top h2 {
       font-size: 1.1rem;
