@@ -1,0 +1,39 @@
+# Documentation search for the SPWS handbook, governance, ADRs and plans.
+#
+# Deliberately model-free: Meilisearch does lexical search with typo tolerance,
+# so there is no embedding model, no LLM, no API key and nothing that can be
+# metered. Claude reaches it through the first-party MCP server, which is
+# launched separately as a stdio subprocess and joins this compose network.
+#
+#   up:     docker compose -f tools/docs-search/docker-compose.yml up -d
+#   index:  python3 tools/docs-search/ingest.py
+#   down:   docker compose -f tools/docs-search/docker-compose.yml down -v
+#
+# The master key in .env is a local password generated with `openssl rand`, not
+# a purchased credential. .env is covered by the repository's root .gitignore.
+
+name: spws-docs-search
+
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.53.2
+    container_name: spws-meili
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?set MEILI_MASTER_KEY in tools/docs-search/.env}
+      MEILI_ENV: production
+      # No telemetry. This stack must make no outbound request of any kind.
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      # Loopback only — not reachable from the LAN.
+      - "127.0.0.1:7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    healthcheck:
+      test: ["CMD", "meilisearch", "--help"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  meili_data:
