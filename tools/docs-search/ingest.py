@@ -14,6 +14,13 @@ current-behaviour evidence, so `doc/archive/` is excluded exactly as
 their Markdown sources only — the HTML twins are generated duplicates, and
 indexing both would double every hit.
 
+The rebuild is authoritative in both directions. Chunks are upserted under an
+id derived from path and ordinal, and anything the index still holds that this
+run did not produce is deleted afterwards — so a shortened page loses its tail
+and a deleted or renamed one leaves nothing behind. Without that second half the
+index could only grow, and a superseded page would keep answering searches under
+a path that no longer exists on disk.
+
 Usage:
     python3 tools/docs-search/ingest.py            # index everything in scope
     python3 tools/docs-search/ingest.py --dry-run  # report what would be sent
@@ -30,6 +37,7 @@ import time
 import unicodedata
 import urllib.error
 import urllib.request
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -43,6 +51,9 @@ INDEX = "spws_docs"
 # section runs long, so a hit points at a readable passage rather than a page.
 MAX_CHARS = 2000
 BATCH = 300
+# Page size for reading the index back before pruning. Only `path` and `order`
+# are fetched, so a page is a few KB regardless of how long the documents are.
+READ_PAGE = 1000
 
 # (kind, directory, glob). Order only affects reporting.
 SOURCES: list[tuple[str, str, str]] = [
@@ -62,16 +73,98 @@ SOURCES: list[tuple[str, str, str]] = [
 # by its grammar rather than by its subject.
 STOP_WORDS = [
     # English
-    "a", "an", "and", "are", "as", "at", "be", "but", "by", "did", "do", "does",
-    "for", "from", "has", "have", "how", "i", "if", "in", "is", "it", "its",
-    "must", "no", "not", "of", "on", "or", "our", "should", "so", "than", "that",
-    "the", "then", "there", "they", "this", "to", "was", "we", "were", "what",
-    "when", "where", "which", "who", "why", "will", "with", "would", "you",
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "did",
+    "do",
+    "does",
+    "for",
+    "from",
+    "has",
+    "have",
+    "how",
+    "i",
+    "if",
+    "in",
+    "is",
+    "it",
+    "its",
+    "must",
+    "no",
+    "not",
+    "of",
+    "on",
+    "or",
+    "our",
+    "should",
+    "so",
+    "than",
+    "that",
+    "the",
+    "then",
+    "there",
+    "they",
+    "this",
+    "to",
+    "was",
+    "we",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "who",
+    "why",
+    "will",
+    "with",
+    "would",
+    "you",
     # Polish
-    "aby", "ale", "albo", "bez", "by", "czy", "dla", "do", "gdy", "gdzie", "i",
-    "ich", "ile", "jak", "jest", "już", "kiedy", "który", "która", "które",
-    "lub", "ma", "na", "nie", "o", "od", "po", "przez", "się", "tak", "te",
-    "tego", "to", "w", "we", "za", "ze", "że",
+    "aby",
+    "ale",
+    "albo",
+    "bez",
+    "by",
+    "czy",
+    "dla",
+    "do",
+    "gdy",
+    "gdzie",
+    "i",
+    "ich",
+    "ile",
+    "jak",
+    "jest",
+    "już",
+    "kiedy",
+    "który",
+    "która",
+    "które",
+    "lub",
+    "ma",
+    "na",
+    "nie",
+    "o",
+    "od",
+    "po",
+    "przez",
+    "się",
+    "tak",
+    "te",
+    "tego",
+    "to",
+    "w",
+    "we",
+    "za",
+    "ze",
+    "że",
 ]
 
 EXCLUDE_PARTS = {"archive"}
@@ -87,12 +180,28 @@ HEADING_TAGS = {"h1", "h2", "h3", "h4"}
 # for "Lomianki" misses "Łomianki" entirely. Verified 2026-09-16: 12 hits with
 # the diacritic, 0 without. Every chunk therefore also carries a folded copy of
 # its text, which is what makes an unaccented query work.
-_FOLD = str.maketrans({
-    "ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n",
-    "ó": "o", "ś": "s", "ź": "z", "ż": "z",
-    "Ą": "A", "Ć": "C", "Ę": "E", "Ł": "L", "Ń": "N",
-    "Ó": "O", "Ś": "S", "Ź": "Z", "Ż": "Z",
-})
+_FOLD = str.maketrans(
+    {
+        "ą": "a",
+        "ć": "c",
+        "ę": "e",
+        "ł": "l",
+        "ń": "n",
+        "ó": "o",
+        "ś": "s",
+        "ź": "z",
+        "ż": "z",
+        "Ą": "A",
+        "Ć": "C",
+        "Ę": "E",
+        "Ł": "L",
+        "Ń": "N",
+        "Ó": "O",
+        "Ś": "S",
+        "Ź": "Z",
+        "Ż": "Z",
+    }
+)
 
 
 def fold(text: str) -> str:
@@ -240,11 +349,33 @@ def md_segments(raw: str) -> tuple[str, list[tuple[str, str]]]:
     return title, segments
 
 
+def chunk_id(rel: str, order: int) -> str:
+    """The id a chunk gets from its position in the corpus.
+
+    Deterministic on purpose: re-indexing an edited page overwrites its chunks
+    rather than accumulating copies. The same determinism is what lets a later
+    run recompute the id of a chunk that should no longer exist.
+    """
+    return hashlib.sha1(f"{rel}:{order}".encode()).hexdigest()[:20]
+
+
+def stale_ids(indexed: Iterable[tuple[str, int]], live: set[tuple[str, int]]) -> list[str]:
+    """Ids held by the index that this run's corpus did not produce.
+
+    Posting is an upsert, so it can only ever add or overwrite. Everything that
+    has to disappear — the tail of a shortened page, every chunk of a deleted or
+    renamed one — is exactly what the index holds and the corpus does not.
+    """
+    return [chunk_id(path, order) for path, order in sorted(set(indexed) - live)]
+
+
+def stale_paths(indexed: Iterable[tuple[str, int]], live: set[tuple[str, int]]) -> list[str]:
+    """The documents those stale chunks belong to, for the run's report."""
+    return sorted({path for path, order in set(indexed) - live})
+
+
 def in_scope(path: Path) -> bool:
-    return (
-        not EXCLUDE_PARTS.intersection(path.parts)
-        and path.name not in EXCLUDE_NAMES
-    )
+    return not EXCLUDE_PARTS.intersection(path.parts) and path.name not in EXCLUDE_NAMES
 
 
 def collect() -> list[Chunk]:
@@ -259,9 +390,7 @@ def collect() -> list[Chunk]:
                 continue
             raw = file.read_text(encoding="utf-8", errors="replace")
             rel = str(file.relative_to(REPO))
-            title, segments = (
-                md_segments(raw) if file.suffix == ".md" else html_segments(raw)
-            )
+            title, segments = md_segments(raw) if file.suffix == ".md" else html_segments(raw)
             title = title or file.stem
             order = 0
             for heading, text in segments:
@@ -270,12 +399,9 @@ def collect() -> list[Chunk]:
                 for part in _split_long(text):
                     if len(part) < 40 and not heading:
                         continue
-                    digest = hashlib.sha1(
-                        f"{rel}:{order}".encode()
-                    ).hexdigest()[:20]
                     chunks.append(
                         Chunk(
-                            id=digest,
+                            id=chunk_id(rel, order),
                             path=rel,
                             kind=kind,
                             title=title,
@@ -329,6 +455,60 @@ def await_task(task_uid: int, key: str, label: str) -> None:
     raise SystemExit(f"{label} did not finish in time")
 
 
+def indexed_pairs(key: str) -> list[tuple[str, int]]:
+    """Every (path, order) the index currently holds.
+
+    `id` is deliberately absent from `displayedAttributes` — a search result has
+    no use for it — so it cannot be read back. It does not need to be: the id is
+    a function of the pair, and recomputing it here is the same arithmetic that
+    produced it.
+    """
+    pairs: list[tuple[str, int]] = []
+    offset = 0
+    while True:
+        page = request(
+            "GET",
+            f"/indexes/{INDEX}/documents?fields=path,order&limit={READ_PAGE}&offset={offset}",
+            key,
+        )
+        results = page.get("results", [])
+        pairs.extend((doc["path"], doc["order"]) for doc in results)
+        if len(results) < READ_PAGE:
+            return pairs
+        offset += READ_PAGE
+
+
+def prune(live: set[tuple[str, int]], key: str) -> None:
+    """Delete what the corpus no longer produces.
+
+    Runs after the upsert rather than before it, so the index is never briefly
+    empty: at every moment a search sees either the previous corpus or the new
+    one, never a gap. Dropping and rebuilding the index would be fewer lines and
+    would open exactly that gap.
+    """
+    indexed = indexed_pairs(key)
+    ids = stale_ids(indexed, live)
+    if not ids:
+        print("Nothing stale.")
+        return
+
+    paths = stale_paths(indexed, live)
+    for start in range(0, len(ids), BATCH):
+        task = request(
+            "POST",
+            f"/indexes/{INDEX}/documents/delete-batch",
+            key,
+            ids[start : start + BATCH],
+        )
+        await_task(task["taskUid"], key, f"prune at {start}")
+
+    print(f"Pruned {len(ids)} stale chunk(s) across {len(paths)} document(s):")
+    for path in paths[:20]:
+        print(f"    {path}")
+    if len(paths) > 20:
+        print(f"    … and {len(paths) - 20} more")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dry-run", action="store_true", help="report, send nothing")
@@ -355,33 +535,41 @@ def main() -> None:
 
     key = master_key()
     print("\nConfiguring index …")
-    task = request("PATCH", f"/indexes/{INDEX}/settings", key, {
-        # `folded` last: it only decides matches an accented query
-        # would have missed, and never outranks a real hit.
-        "searchableAttributes": ["title", "heading", "text", "folded"],
-        "filterableAttributes": ["kind", "path"],
-        "sortableAttributes": ["order"],
-        "displayedAttributes": ["path", "kind", "title", "heading", "text", "order"],
-        # One hit per document, not one per chunk. A long section splits into
-        # several chunks that share a heading, and without this the same page
-        # fills the whole result list.
-        "distinctAttribute": "path",
-        # Measured 2026-09-16: asked as a sentence, "when must I re-index the
-        # documentation search" ranked an unrelated handover at 0.86 and missed
-        # the page that defines the rule, while the keywords "re-index
-        # documentation" scored it 0.99. Meilisearch's first ranking rule counts
-        # matched query words, so "when", "must", "I" and "the" were deciding
-        # the outcome. Excluding them makes a question behave like its keywords.
-        "stopWords": STOP_WORDS,
-    })
+    task = request(
+        "PATCH",
+        f"/indexes/{INDEX}/settings",
+        key,
+        {
+            # `folded` last: it only decides matches an accented query
+            # would have missed, and never outranks a real hit.
+            "searchableAttributes": ["title", "heading", "text", "folded"],
+            "filterableAttributes": ["kind", "path"],
+            "sortableAttributes": ["order"],
+            "displayedAttributes": ["path", "kind", "title", "heading", "text", "order"],
+            # One hit per document, not one per chunk. A long section splits into
+            # several chunks that share a heading, and without this the same page
+            # fills the whole result list.
+            "distinctAttribute": "path",
+            # Measured 2026-09-16: asked as a sentence, "when must I re-index the
+            # documentation search" ranked an unrelated handover at 0.86 and missed
+            # the page that defines the rule, while the keywords "re-index
+            # documentation" scored it 0.99. Meilisearch's first ranking rule counts
+            # matched query words, so "when", "must", "I" and "the" were deciding
+            # the outcome. Excluding them makes a question behave like its keywords.
+            "stopWords": STOP_WORDS,
+        },
+    )
     await_task(task["taskUid"], key, "settings")
 
     print(f"Posting {len(chunks)} chunks …")
     for start in range(0, len(chunks), BATCH):
-        batch = [asdict(c) for c in chunks[start:start + BATCH]]
+        batch = [asdict(c) for c in chunks[start : start + BATCH]]
         task = request("PUT", f"/indexes/{INDEX}/documents", key, batch)
         await_task(task["taskUid"], key, f"batch at {start}")
         print(f"  {min(start + BATCH, len(chunks))}/{len(chunks)}")
+
+    print("\nPruning …")
+    prune({(c.path, c.order) for c in chunks}, key)
 
     stats = request("GET", f"/indexes/{INDEX}/stats", key)
     print(f"\nIndexed. {stats.get('numberOfDocuments')} documents in '{INDEX}'.")

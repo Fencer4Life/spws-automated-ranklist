@@ -63,6 +63,15 @@ It is a full rebuild by design: 202 files, ~2,760 chunks, a few seconds, zero
 tokens, no model, no network. There is no incremental path because at this size
 one is not worth the complexity.
 
+The rebuild is authoritative in both directions. Chunks are upserted under an id
+derived from path and ordinal, and anything the index still holds that the run
+did not produce is deleted afterwards, so a shortened page loses its tail and a
+deleted or renamed one leaves nothing behind. Pruning runs after the upsert
+rather than before it, which means a search always sees either the previous
+corpus or the new one and never a gap. The run reports what it removed; a
+rebuild that announces dropping documents nobody touched is reporting a root
+that went out of scope, not a tidy-up.
+
 Pair it with the graph refresh — the two go together at the same checkpoint:
 
 ```bash
