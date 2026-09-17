@@ -1,6 +1,6 @@
 ---
 name: docs-rag-add
-description: "MANDATORY when a document must become findable in the local documentation RAG for this repo (SPWS Automated Ranklist System) — the Meilisearch `spws_docs` index served over the `spws-docs` MCP server. Places the file under an indexed root (or extends the ingest source list when it cannot move), rebuilds with `python3 tools/docs-search/ingest.py`, and proves the document is retrievable by searching a phrase unique to it before calling it done. Triggers on: add this to the RAG, add a document to the index, index this plan, make this searchable, put the handover in the search index, why can't you find my page, this document isn't in the index, ingest this doc, register a new plan / ADR / handbook page for search, re-index after writing a document."
+description: "MANDATORY when a document must become findable in the local documentation RAG for this repo (SPWS Automated Ranklist System) — the Meilisearch `spws_docs` index served over the `spws-docs` MCP server. Places the file under an indexed root (or extends the ingest source list when it cannot move), rebuilds with `python3 tools/docs-search/ingest.py`, and proves the document is retrievable by searching a phrase unique to it before calling it done. Also covers removing one, because the rebuild is authoritative in both directions. Triggers on: add this to the RAG, add a document to the index, index this plan, make this searchable, put the handover in the search index, why can't you find my page, this document isn't in the index, ingest this doc, register a new plan / ADR / handbook page for search, re-index after writing a document, remove this page from the index, the search still returns a file I deleted."
 ---
 
 # Adding a document to the documentation RAG
@@ -111,21 +111,27 @@ success means the file was walked but produced no chunks — typically an HTML
 page whose text sits outside the elements the extractor reads, or sections under
 40 characters with no heading, which are dropped by design.
 
-## Known gap — the index does not shrink
+## Removing a document
 
-`ingest.py` upserts by `sha1(path:order)` and never clears the index, so:
+A rebuild is authoritative in both directions, so removal needs nothing special:
+delete or rename the file, run the ingest, and the chunks go with it. Chunks are
+upserted under an id derived from path and ordinal, and whatever the index still
+holds that the run did not produce is deleted afterwards. Shortening a page
+drops its tail; deleting or renaming one leaves nothing behind under the old
+path.
 
-- Editing a document in place is clean — its chunks are overwritten.
-- **Shortening** a document leaves its surplus tail chunks in the index with
-  stale text.
-- **Deleting or renaming** a document leaves every one of its chunks behind
-  permanently, under the old path.
+The run says what it removed:
 
-Same shape as the graphify refresh that refuses to shrink. So: **removing** a
-document from the RAG is not covered by a rebuild. Until `ingest.py` grows a
-clear-first path, a removal needs the index dropped and rebuilt from the master
-key, which is a deliberate act — not something to do in passing. If a search
-returns a path that no longer exists on disk, this is why; trust the disk.
+```
+Pruned 3 stale chunk(s) across 1 document(s):
+    doc/plans/superseded-handover.html
+```
+
+Read that line. Pruning is how a **wrongly excluded** directory announces itself
+— if a rebuild reports dropping documents you did not touch, a root is missing
+or a path moved out of scope, and the fix is to restore the scope rather than to
+accept the deletion. `! <directory> missing, skipped` on stderr in the same run
+is the confirming symptom.
 
 ## Commit checkpoint
 
