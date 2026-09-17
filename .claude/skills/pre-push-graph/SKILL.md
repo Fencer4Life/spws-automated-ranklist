@@ -1,6 +1,6 @@
 ---
 name: pre-push-graph
-description: "MANDATORY before any `git push` in this repo (SPWS Automated Ranklist System), and the ONLY correct way to refresh the graphify knowledge graph after ANY change including documentation. Brings graphify-out/ (gitignored) up to HEAD so later `graphify query/explain/affected/path` calls reflect reality instead of stale structure. Triggers on: preparing to push, `git push`, 'push to main', releasing, finishing a batch of commits, or any request to refresh/rebuild/update the knowledge graph after code, SQL or doc changes. It is one command — `./scripts/refresh-graph.sh` — which extracts code, SQL AND docs locally for zero tokens. Never dispatch `/graphify . --update` or extraction subagents for a routine refresh."
+description: "MANDATORY before any `git push` in this repo (SPWS Automated Ranklist System), and the ONLY correct way to refresh the graphify knowledge graph after ANY change including documentation. Brings graphify-out/ (gitignored) up to HEAD so later `graphify query/explain/affected/path` calls reflect reality instead of stale structure. Triggers on: preparing to push, `git push`, 'push to main', releasing, finishing a batch of commits, or any request to refresh/rebuild/update the knowledge graph after code, SQL or doc changes. It is two local commands — `./scripts/refresh-graph.sh` for the graph and `python3 tools/docs-search/ingest.py` for the Meilisearch documentation index — both free, both offline. Never dispatch `/graphify . --update` or extraction subagents for a routine refresh."
 ---
 
 # Pre-push graph refresh
@@ -70,9 +70,34 @@ exit, which is how a stale graph gets mistaken for a current one. The contract
 | `2` | Environment error (graphify interpreter missing, shrink guard). | Fix the environment; do not push a stale graph silently. |
 
 **Exit `0` is the only outcome you should normally see, and it needs nothing
-further.** Docs included. Stop here and push.
+further.** Docs included. Then do step 3 and push.
 
-### 3. Do NOT dispatch subagents for documentation
+### 3. Re-index the documentation search if `doc/` changed
+
+The graph and the Meilisearch documentation index are two separate local aids
+that go stale for the same reason, so they refresh at the same checkpoint. If
+anything under `doc/` changed in this batch:
+
+```bash
+python3 tools/docs-search/ingest.py
+```
+
+Full rebuild, a few seconds, zero tokens, no model, no network. It prints a
+document count — if the count did not move after you added a page, the file is
+either outside an indexed directory or inside the excluded `doc/archive/`.
+
+Both in one line, which is the habit worth keeping:
+
+```bash
+./scripts/refresh-graph.sh && python3 tools/docs-search/ingest.py
+```
+
+Contract and rationale: [doc/claude/docs-search.md](../../../doc/claude/docs-search.md).
+Skip it only when the batch touched no documentation. If Meilisearch is not
+running, `tools/docs-search/setup.sh` brings it back; do not push leaving the
+index stale without saying so.
+
+### 4. Do NOT dispatch subagents for documentation
 
 This is the trap this skill exists to close. A docs pass in this repo routinely
 touches 40+ files; `/graphify . --update` batches those into `general-purpose`
@@ -96,7 +121,7 @@ Images and papers are the same: reported and skipped, not blocking.
 If you catch yourself about to spawn an extraction subagent, stop. Run
 `./scripts/refresh-graph.sh` instead.
 
-### 4. Verify SQL actually landed, then push
+### 5. Verify SQL actually landed, then push
 
 ```bash
 python3 - <<'PY'
