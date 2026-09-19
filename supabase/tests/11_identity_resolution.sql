@@ -31,6 +31,16 @@ BEGIN
   -- Deactivate all seasons, create test season
   UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('IDENT-TEST', '2030-09-01', '2031-06-30');
+
+  -- A season must be assigned a scoring engine before anything in it can be
+  -- scored (2026-09-19, versioned season scoring). fn_create_season deliberately
+  -- does NOT assign one: nothing infers an engine, so an unassigned season fails
+  -- closed rather than scoring under a formula nobody chose. This is the step a
+  -- real operator takes in the Admin editor. Classic is chosen here because it is
+  -- the formula this file's expectations were derived under.
+  UPDATE tbl_season SET id_scoring_engine =
+         (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
+   WHERE id_season = v_season;
   UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
 
   INSERT INTO tbl_scoring_config (id_season)
