@@ -49,9 +49,23 @@ esac
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# One way to run SQL against whichever environment was named, so the capability
+# probe and the main query cannot reach different databases.
+run_sql() {
+  if [ "$TARGET" = "local" ]; then
+    printf '%s' "$1" | docker exec -i "${SUPABASE_DB_CONTAINER:-supabase_db_SPWSranklist}" \
+      psql -U postgres -d postgres -At -f - 2>&1
+  else
+    printf '%s' "$1" | "$REPO_ROOT/scripts/cloud-sql.sh" "$TARGET" 2>&1
+  fi
+}
+
 # The season the field-scaled engine is being introduced for. The migration must
 # not switch this season's engine if it already holds scored results.
 TARGET_SEASON="${SCORING_TARGET_SEASON:-SPWS-2026-2027}"
+# The engine that season is meant to end up on. SSP-06 treats scored results as
+# safe when they were produced by this engine, and only as a blocker otherwise.
+TARGET_ENGINE="${SCORING_TARGET_ENGINE:-SPWS_FIELD_SCALED_V1_2026_2027}"
 
 # -----------------------------------------------------------------------------
 # One query, one JSON array of probes. Kept as a single statement so it runs
@@ -61,6 +75,22 @@ TARGET_SEASON="${SCORING_TARGET_SEASON:-SPWS-2026-2027}"
 #
 # Each probe yields: code, verdict (PASS|FAIL|INFO), and a human detail string.
 # -----------------------------------------------------------------------------
+# THIS CHECK RUNS BEFORE THE MIGRATION IS DEPLOYED, so it must not name the
+# objects that migration creates. Postgres resolves relations at PARSE time, so
+# even a CASE guarded by to_regclass() fails on an environment where
+# tbl_scoring_engine does not exist yet — which is every environment this check
+# is most useful on. Probe first, then build SSP-06's engine lookup accordingly.
+if [ "$TARGET" = "local" ]; then
+  HAS_ENGINE=$(run_sql "SELECT to_regclass('public.tbl_scoring_engine') IS NOT NULL;")
+else
+  HAS_ENGINE=$(run_sql "SELECT to_regclass('public.tbl_scoring_engine') IS NOT NULL AS ok;" \
+    | jq -r '.[0].ok // false' 2>/dev/null)
+fi
+case "$HAS_ENGINE" in
+  t|true) ENGINE_LOOKUP="(SELECT e2.txt_code FROM tbl_season s2 LEFT JOIN tbl_scoring_engine e2 ON e2.id_engine = s2.id_scoring_engine WHERE s2.txt_code = '${TARGET_SEASON}')" ;;
+  *)      ENGINE_LOOKUP="NULL::TEXT" ;;
+esac
+
 read -r -d '' SQL <<SQLEOF
 WITH
 -- SSP-01 — §04: place > N blocks the CHECK constraint.
@@ -127,9 +157,17 @@ p05 AS (
     ) res
    WHERE t.int_participant_count IS NULL OR t.int_participant_count < 1
 ),
--- SSP-06 — §11 hard gate: never switch an already-scored season's engine.
+-- SSP-06 — §11 hard gate: never switch an ALREADY-SCORED season's engine.
+--
+-- The condition is not "no scored result" but "no scored result under a
+-- DIFFERENT engine". Once the season is already assigned the engine this
+-- migration intends, scoring against it is the expected steady state, not a
+-- blocker — and on LOCAL that is exactly what the PPW1 test fixture produces.
+-- This mirrors the guard inside fn_backfill_scoring_engines() so the preflight
+-- and the migration cannot disagree about what is safe.
 p06 AS (
-  SELECT count(*) AS n
+  SELECT count(*) AS n,
+         ${ENGINE_LOOKUP} AS assigned
     FROM tbl_tournament t
     JOIN tbl_event e  ON e.id_event  = t.id_event
     JOIN tbl_season s ON s.id_season = e.id_season
@@ -194,10 +232,14 @@ SELECT json_agg(x ORDER BY x.code) AS probes FROM (
          ' hold result rows — a blanket CHECK (int_participant_count >= 1) would abort against these'
     FROM p05
   UNION ALL
-  SELECT 'SSP-06', CASE WHEN p06.n = 0 THEN 'PASS' ELSE 'FAIL' END,
+  SELECT 'SSP-06',
+         CASE WHEN p06.n = 0 OR p06.assigned = '${TARGET_ENGINE}' THEN 'PASS' ELSE 'FAIL' END,
          CASE WHEN p06.n = 0
               THEN '${TARGET_SEASON} holds no scored result — its engine may still be assigned'
-              ELSE '${TARGET_SEASON} already holds ' || p06.n || ' scored result(s) — §11 forbids switching its engine; deployment must stop'
+              WHEN p06.assigned = '${TARGET_ENGINE}'
+              THEN '${TARGET_SEASON} holds ' || p06.n || ' scored result(s), already under ${TARGET_ENGINE} — expected steady state, not a blocker'
+              ELSE '${TARGET_SEASON} already holds ' || p06.n || ' scored result(s) under ' || coalesce(p06.assigned, 'NO ENGINE')
+                   || ' — §11 forbids switching its engine; deployment must stop'
          END FROM p06
   UNION ALL
   SELECT 'SSP-07', CASE WHEN p07.n = 0 THEN 'PASS' ELSE 'FAIL' END,
@@ -211,23 +253,23 @@ SELECT json_agg(x ORDER BY x.code) AS probes FROM (
 ) x;
 SQLEOF
 
+if [ "$TARGET" = "local" ] \
+   && ! docker ps --format '{{.Names}}' 2>/dev/null \
+        | grep -qx "${SUPABASE_DB_CONTAINER:-supabase_db_SPWSranklist}"; then
+  echo "ERROR: local database container is not running." >&2
+  echo "       Start the stack (supabase start) or set SUPABASE_DB_CONTAINER." >&2
+  exit 2
+fi
+
 echo "=== Versioned-scoring migration preflight — target: $(echo "$TARGET" | tr '[:lower:]' '[:upper:]') ==="
 echo "    introducing season: ${TARGET_SEASON}"
 echo ""
 
 if [ "$TARGET" = "local" ]; then
-  CONTAINER="${SUPABASE_DB_CONTAINER:-supabase_db_SPWSranklist}"
-  if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER"; then
-    echo "ERROR: local database container '$CONTAINER' is not running." >&2
-    echo "       Start the stack (supabase start) or set SUPABASE_DB_CONTAINER." >&2
-    exit 2
-  fi
-  PROBES=$(printf '%s' "$SQL" \
-    | docker exec -i "$CONTAINER" psql -U postgres -d postgres -At -f - 2>&1)
+  PROBES=$(run_sql "$SQL")
   STATUS=$?
 else
-  PROBES=$(printf '%s' "$SQL" | "$REPO_ROOT/scripts/cloud-sql.sh" "$TARGET" 2>&1 \
-    | jq -r '.[0].probes // empty' 2>/dev/null)
+  PROBES=$(run_sql "$SQL" | jq -r '.[0].probes // empty' 2>/dev/null)
   STATUS=$?
 fi
 
