@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(59);
+SELECT plan(73);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -1401,6 +1401,527 @@ $r8$;
 
 SELECT is(pg_temp.revision08_atomic_consistency(), 'OK',
   'SS26.REVISION.08 a successful call flips season pointer, revision activation and result stamps together');
+
+-- =============================================================================
+-- SS26.LOCK.13 / SS26.REVISION.09 -- default_ranking_mode joins both governed
+-- surfaces. doc/plans/ranking-schema-v2-2026-09-19.html §05/§09. RED until
+-- 20260919000007 lands (enum_ranking_mode, tbl_scoring_config.enum_default_
+-- ranking_mode do not exist yet).
+-- =============================================================================
+
+-- SS26.LOCK.13 -- editable before the first score (real, unlocked
+-- SPWS-2026-2027), rejected once locked (real, seed-scored SPWS-2023-2024).
+-- Same two seasons SS26.LOCK.01/02 already use.
+CREATE FUNCTION pg_temp.lock13_default_ranking_mode() RETURNS TEXT
+LANGUAGE plpgsql AS $l13$
+DECLARE
+  v_unlocked INT;
+  v_locked   INT;
+BEGIN
+  SELECT id_season INTO v_unlocked FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  SELECT id_season INTO v_locked   FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+
+  PERFORM fn_import_scoring_config(jsonb_build_object(
+    'id_season', v_unlocked, 'default_ranking_mode', 'PPW'));
+  IF (SELECT enum_default_ranking_mode FROM tbl_scoring_config WHERE id_season = v_unlocked) <> 'PPW' THEN
+    RETURN 'FAIL:unlocked write did not apply';
+  END IF;
+
+  BEGIN
+    PERFORM fn_import_scoring_config(jsonb_build_object(
+      'id_season', v_locked, 'default_ranking_mode', 'RANKING'));
+    RETURN 'FAIL:locked season accepted a default_ranking_mode change';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM NOT LIKE '%locked%' THEN RETURN 'FAIL:OTHER:' || SQLERRM; END IF;
+  END;
+
+  RETURN 'OK';
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $l13$;
+
+SELECT is(pg_temp.lock13_default_ranking_mode(), 'OK',
+  'SS26.LOCK.13 default_ranking_mode is editable before first score and rejected after');
+
+-- SS26.REVISION.09 -- the privileged revision path can change
+-- default_ranking_mode on its own, independent of any engine/multiplier
+-- change. Reuses the already-built, already-scored SS26-REV-OK fixture.
+CREATE FUNCTION pg_temp.revision09_default_ranking_mode() RETURNS TEXT
+LANGUAGE plpgsql AS $r9$
+DECLARE
+  v_season      INT;
+  v_mode_before TEXT;
+  v_mode_after  TEXT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK';
+  SELECT enum_default_ranking_mode::TEXT INTO v_mode_before FROM tbl_scoring_config WHERE id_season = v_season;
+
+  PERFORM fn_revise_and_rescore_season(
+    v_season,
+    jsonb_build_object('default_ranking_mode',
+      CASE WHEN v_mode_before = 'RANKING' THEN 'PPW' ELSE 'RANKING' END),
+    NULL, 'REVISION.09 probe', 'test-operator', NULL);
+
+  SELECT enum_default_ranking_mode::TEXT INTO v_mode_after FROM tbl_scoring_config WHERE id_season = v_season;
+
+  IF v_mode_after IS NOT DISTINCT FROM v_mode_before THEN RETURN 'FAIL:mode unchanged'; END IF;
+  RETURN 'OK';
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $r9$;
+
+SELECT is(pg_temp.revision09_default_ranking_mode(), 'OK',
+  'SS26.REVISION.09 the privileged revision path can change default_ranking_mode independent of engine/multiplier changes');
+
+-- =============================================================================
+-- SS26.RANK -- Season Scoring Rules v2: three sections, two display groups,
+-- fn_ranking_full. doc/plans/ranking-schema-v2-2026-09-19.html §06/§09.
+-- ADR-098 (drafted, sign-off obtained 19 Sep 2026, file pending). RED until
+-- 20260919000008 lands (fn_ranking_rules_canonical, fn_ranking_full and its
+-- two per-engine bodies do not exist yet).
+--
+-- RANK.01, 04-07 are pure canonicalization/validation -- literal JSONB in,
+-- no season/tournament fixture needed. RANK.02/03/08/09/10/11/12 need scored
+-- results, built below as small dedicated scratch seasons (never the shared
+-- active season -- same discipline SS26.REVISION already established).
+-- =============================================================================
+
+-- SS26.RANK.01 -- three Season Scoring Rules sections resolve to exactly two
+-- display groups.
+CREATE FUNCTION pg_temp.rank01_two_groups() RETURNS TEXT[]
+LANGUAGE plpgsql AS $rk1$
+BEGIN
+  RETURN (
+    SELECT array_agg(DISTINCT grp ORDER BY grp)
+      FROM fn_ranking_rules_canonical($j$
+        {
+          "schema_version": 2,
+          "season_scoring_rules": {
+            "spws":    {"group":"spws",     "types":["PPW","MPW"],             "buckets":[{"best":2,"types":["PPW"]},{"always":true,"types":["MPW"]}]},
+            "evf_fie": {"group":"evf_plus", "types":["PEW","MEW","MSW","PSW"], "buckets":[{"always":true,"types":["PEW","MEW","MSW","PSW"]}]},
+            "pzsz":    {"group":"evf_plus", "types":["PPS","MPS"],             "buckets":[{"always":true,"types":["PPS","MPS"]}]}
+          },
+          "display_groups": {"spws":{"sections":["spws"]}, "evf_plus":{"sections":["evf_fie","pzsz"]}},
+          "views": {"PPW":["spws"], "RANKING":["spws","evf_plus"]}
+        }
+      $j$::jsonb)
+  );
+EXCEPTION WHEN undefined_function THEN
+  RETURN NULL;
+END $rk1$;
+
+SELECT is(pg_temp.rank01_two_groups(), ARRAY['evf_plus','spws']::TEXT[],
+  'SS26.RANK.01 three Season Scoring Rules sections resolve to exactly two display groups');
+
+-- SS26.RANK.04 -- a bucket declaring neither best nor always is rejected.
+SELECT throws_like(
+  $$SELECT count(*) FROM fn_ranking_rules_canonical('
+    {"schema_version":2,
+     "season_scoring_rules":{"spws":{"group":"spws","types":["PPW"],"buckets":[{"types":["PPW"]}]}},
+     "display_groups":{"spws":{"sections":["spws"]}},
+     "views":{"PPW":["spws"]}}
+  '::jsonb)$$,
+  '%exactly one of best or always%',
+  'SS26.RANK.04 a bucket declaring neither best nor always is rejected'
+);
+
+-- SS26.RANK.05 -- a bucket type outside enum_tournament_type is rejected.
+SELECT throws_like(
+  $$SELECT count(*) FROM fn_ranking_rules_canonical('
+    {"schema_version":2,
+     "season_scoring_rules":{"spws":{"group":"spws","types":["ZZZ"],"buckets":[{"always":true,"types":["ZZZ"]}]}},
+     "display_groups":{"spws":{"sections":["spws"]}},
+     "views":{"PPW":["spws"]}}
+  '::jsonb)$$,
+  '%Unknown tournament type%',
+  'SS26.RANK.05 a bucket type outside enum_tournament_type is rejected'
+);
+
+-- SS26.RANK.06 -- a non-positive best is rejected.
+SELECT throws_like(
+  $$SELECT count(*) FROM fn_ranking_rules_canonical('
+    {"schema_version":2,
+     "season_scoring_rules":{"spws":{"group":"spws","types":["PPW"],"buckets":[{"best":0,"types":["PPW"]}]}},
+     "display_groups":{"spws":{"sections":["spws"]}},
+     "views":{"PPW":["spws"]}}
+  '::jsonb)$$,
+  '%must be positive%',
+  'SS26.RANK.06 a non-positive best is rejected'
+);
+
+-- SS26.RANK.07 -- the same tournament type declared in two sections that both
+-- feed one view is rejected (the double-count guard).
+SELECT throws_like(
+  $$SELECT count(*) FROM fn_ranking_rules_canonical('
+    {"schema_version":2,
+     "season_scoring_rules":{
+       "evf_fie":{"group":"evf_plus","types":["PSW"],"buckets":[{"always":true,"types":["PSW"]}]},
+       "pzsz":{"group":"evf_plus","types":["PSW"],"buckets":[{"always":true,"types":["PSW"]}]}
+     },
+     "display_groups":{"evf_plus":{"sections":["evf_fie","pzsz"]}},
+     "views":{"RANKING":["evf_plus"]}}
+  '::jsonb)$$,
+  '%double-counted%',
+  'SS26.RANK.07 the same tournament type declared in two sections feeding one view is rejected'
+);
+
+-- Shared fixture helper: one tournament (one event) plus one result, exact
+-- score set directly rather than computed by fn_calc_tournament_scores --
+-- these tests are about bucket AGGREGATION, not the scoring formula (already
+-- covered by SS26.NEW/SS26.HIST), so a literal num_final_score is deliberate.
+--
+-- enum_status = 'COMPLETED', not the column's own 'PLANNED' default: every
+-- scratch season fn_create_season builds defaults to enum_carryover_engine
+-- = EVENT_FK_MATCHING (ADR-045 flipped the season-level default after the
+-- column itself was added with 'EVENT_CODE_MATCHING' -- verified live, not
+-- assumed, after this fixture first returned zero rows through
+-- fn_ranking_full_event_fk_matching). That engine's eligibility comes from
+-- vw_eligible_event, whose branch 1 excludes CREATED/PLANNED/SCHEDULED/
+-- CHANGED/CANCELLED events -- a event left at its column default is
+-- invisible to it.
+CREATE FUNCTION pg_temp.rank_add_result(
+  p_season INT, p_org INT, p_code TEXT,
+  p_type TEXT, p_weapon TEXT, p_gender TEXT, p_cat TEXT,
+  p_fencer INT, p_score NUMERIC
+) RETURNS INT  -- the created id_event, so a caller can link a later season's
+               -- id_prior_event to it (SS26.RANK.12's FK carry-over fixture)
+LANGUAGE plpgsql AS $rar$
+DECLARE
+  v_event INT;
+  v_tourn INT;
+BEGIN
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES (p_code, p_code || ' event', p_season, p_org, 'COMPLETED')
+  RETURNING id_event INTO v_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+    enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_event, p_code || '-T', p_code || ' tournament', p_type::enum_tournament_type,
+    p_weapon::enum_weapon_type, p_gender::enum_gender_type, p_cat::enum_age_category,
+    CURRENT_DATE, 8, 'IMPORTED')
+  RETURNING id_tournament INTO v_tourn;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place, num_final_score)
+  VALUES (p_fencer, v_tourn, 1, p_score);
+
+  RETURN v_event;
+END $rar$;
+
+-- SS26.RANK.02/03 fixture -- one isolated season per property, so the
+-- best-N cap and the always-include lack-of-cap are proven independently
+-- rather than conflated in one combined total.
+CREATE FUNCTION pg_temp.rank_setup_best_always() RETURNS VOID
+LANGUAGE plpgsql AS $rksba$
+DECLARE
+  v_org INT;
+  v_season_best   INT;
+  v_season_always INT;
+  v_fencer_best   INT;
+  v_fencer_always INT;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  -- best:2 of three PPW scores {30,20,10} must sum to 50, dropping the 10.
+  v_season_best := fn_create_season('SS26-RANK-BEST', '2044-08-01', '2045-07-15');
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"schema_version":2,
+     "season_scoring_rules":{"spws":{"group":"spws","types":["PPW"],"buckets":[{"best":2,"types":["PPW"]}]}},
+     "display_groups":{"spws":{"sections":["spws"]}},
+     "views":{"PPW":["spws"],"RANKING":["spws"]}}
+  $j$::jsonb WHERE id_season = v_season_best;
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('RankBest', 'Tester', 'PL', 1990, 'M') RETURNING id_fencer INTO v_fencer_best;
+
+  PERFORM pg_temp.rank_add_result(v_season_best, v_org, 'RB1', 'PPW', 'EPEE', 'M', 'V2', v_fencer_best, 30);
+  PERFORM pg_temp.rank_add_result(v_season_best, v_org, 'RB2', 'PPW', 'EPEE', 'M', 'V2', v_fencer_best, 20);
+  PERFORM pg_temp.rank_add_result(v_season_best, v_org, 'RB3', 'PPW', 'EPEE', 'M', 'V2', v_fencer_best, 10);
+
+  -- always:true over two MPW scores {5,7} must sum to 12 -- both counted,
+  -- proving there is no implicit top-1 cap on an always-include bucket.
+  v_season_always := fn_create_season('SS26-RANK-ALWAYS', '2045-08-01', '2046-07-15');
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"schema_version":2,
+     "season_scoring_rules":{"spws":{"group":"spws","types":["MPW"],"buckets":[{"always":true,"types":["MPW"]}]}},
+     "display_groups":{"spws":{"sections":["spws"]}},
+     "views":{"PPW":["spws"],"RANKING":["spws"]}}
+  $j$::jsonb WHERE id_season = v_season_always;
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('RankAlways', 'Tester', 'PL', 1990, 'M') RETURNING id_fencer INTO v_fencer_always;
+
+  PERFORM pg_temp.rank_add_result(v_season_always, v_org, 'RA1', 'MPW', 'EPEE', 'M', 'V2', v_fencer_always, 5);
+  PERFORM pg_temp.rank_add_result(v_season_always, v_org, 'RA2', 'MPW', 'EPEE', 'M', 'V2', v_fencer_always, 7);
+END $rksba$;
+
+SELECT pg_temp.rank_setup_best_always();
+
+CREATE FUNCTION pg_temp.rank02_best_n_caps() RETURNS NUMERIC
+LANGUAGE plpgsql AS $rk2$
+BEGIN
+  RETURN (
+    SELECT spws_total FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-RANK-BEST'), FALSE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RankBest')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk2$;
+
+SELECT is(pg_temp.rank02_best_n_caps(), 50.00,
+  'SS26.RANK.02 a best:2 bucket sums only the top two of three scores, dropping the weakest');
+
+CREATE FUNCTION pg_temp.rank03_always_no_cap() RETURNS NUMERIC
+LANGUAGE plpgsql AS $rk3$
+BEGIN
+  RETURN (
+    SELECT spws_total FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-RANK-ALWAYS'), FALSE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RankAlways')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk3$;
+
+SELECT is(pg_temp.rank03_always_no_cap(), 12.00,
+  'SS26.RANK.03 an always:true bucket sums every eligible score unconditionally, with no cap');
+
+-- SS26.RANK.08/09/10 fixture -- all three sections populated for one fencer,
+-- plus a second, V0-category fencer with only an spws-group result.
+CREATE FUNCTION pg_temp.rank_setup_groups() RETURNS VOID
+LANGUAGE plpgsql AS $rksg$
+DECLARE
+  v_org INT;
+  v_season  INT;
+  v_fencer1 INT;
+  v_fencer_v0 INT;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  v_season := fn_create_season('SS26-RANK-GROUPS', '2046-08-01', '2047-07-15');
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"schema_version":2,
+     "season_scoring_rules":{
+       "spws":    {"group":"spws",     "types":["PPW"], "buckets":[{"always":true,"types":["PPW"]}]},
+       "evf_fie": {"group":"evf_plus", "types":["PEW"], "buckets":[{"always":true,"types":["PEW"]}]},
+       "pzsz":    {"group":"evf_plus", "types":["PPS"], "buckets":[{"always":true,"types":["PPS"]}]}
+     },
+     "display_groups":{"spws":{"sections":["spws"]}, "evf_plus":{"sections":["evf_fie","pzsz"]}},
+     "views":{"PPW":["spws"],"RANKING":["spws","evf_plus"]}}
+  $j$::jsonb WHERE id_season = v_season;
+
+  -- 2047 - 1992 = 55 -> V2.
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('RankGroupsV2', 'Tester', 'PL', 1992, 'M') RETURNING id_fencer INTO v_fencer1;
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-PPW', 'PPW', 'EPEE', 'M', 'V2', v_fencer1, 10);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-PEW', 'PEW', 'EPEE', 'M', 'V2', v_fencer1, 15);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-PPS', 'PPS', 'EPEE', 'M', 'V2', v_fencer1, 8);
+
+  -- 2047 - 2012 = 35 -> V0. Only an spws-group result; no PEW/PPS at all --
+  -- V0 has no EVF equivalent, exactly as design §06 describes.
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('RankGroupsV0', 'Tester', 'PL', 2012, 'M') RETURNING id_fencer INTO v_fencer_v0;
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-V0-PPW', 'PPW', 'EPEE', 'M', 'V0', v_fencer_v0, 12);
+END $rksg$;
+
+SELECT pg_temp.rank_setup_groups();
+
+CREATE FUNCTION pg_temp.rank08_combined_evf_plus() RETURNS NUMERIC
+LANGUAGE plpgsql AS $rk8$
+BEGIN
+  RETURN (
+    SELECT evf_plus_total FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-RANK-GROUPS'), FALSE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RankGroupsV2')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk8$;
+
+-- evf_fie's PEW (15) and pzsz's PPS (8) combine into one evf_plus_total (23).
+-- The return row has exactly rank/id_fencer/fencer_name/spws_total/
+-- evf_plus_total/total_score/bool_has_carryover -- no third, per-section
+-- subtotal column exists for this value to come from, by the function's own
+-- fixed RETURNS TABLE signature.
+SELECT is(pg_temp.rank08_combined_evf_plus(), 23.00,
+  'SS26.RANK.08 evf_fie and pzsz scores combine into one evf_plus_total');
+
+CREATE FUNCTION pg_temp.rank09_total_is_sum() RETURNS BOOLEAN
+LANGUAGE plpgsql AS $rk9$
+DECLARE
+  v_spws NUMERIC; v_evf NUMERIC; v_total NUMERIC;
+BEGIN
+  SELECT spws_total, evf_plus_total, total_score
+    INTO v_spws, v_evf, v_total
+    FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-RANK-GROUPS'), FALSE)
+   WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RankGroupsV2');
+  RETURN v_total = (v_spws + v_evf);
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk9$;
+
+SELECT is(pg_temp.rank09_total_is_sum(), TRUE,
+  'SS26.RANK.09 total_score always equals spws_total plus evf_plus_total');
+
+CREATE FUNCTION pg_temp.rank10_v0_not_shortcircuited() RETURNS TEXT
+LANGUAGE plpgsql AS $rk10$
+DECLARE
+  v_spws NUMERIC; v_evf NUMERIC;
+BEGIN
+  SELECT spws_total, evf_plus_total
+    INTO v_spws, v_evf
+    FROM fn_ranking_full('EPEE', 'M', 'V0',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-RANK-GROUPS'), FALSE)
+   WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RankGroupsV0');
+  IF v_spws IS NULL THEN RETURN 'FAIL:no row -- V0 was short-circuited'; END IF;
+  IF v_spws <> 12.00 THEN RETURN 'FAIL:spws_total=' || v_spws; END IF;
+  IF COALESCE(v_evf, 0) <> 0 THEN RETURN 'FAIL:evf_plus_total=' || v_evf; END IF;
+  RETURN 'OK';
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk10$;
+
+SELECT is(pg_temp.rank10_v0_not_shortcircuited(), 'OK',
+  'SS26.RANK.10 V0 is not short-circuited: spws/pzsz can still contribute while evf_fie is naturally empty');
+
+-- SS26.RANK.11 fixture -- a schema-v1 (legacy) season, built the way the real
+-- system actually stores it: "international" DUPLICATES "domestic"'s own
+-- PPW/MPW buckets verbatim alongside the genuinely-international one (verified
+-- against the real stored SPWS-2024/2025-2026/2027 rows -- fn_ranking_kadra's
+-- JSONB path reads "international" ALONE and splits ppw_total/pew_total
+-- afterward by ARRAY['PEW','MEW','MSW','PSW'] membership, which only works
+-- because "international" already contains the domestic buckets too). The
+-- canonicalization adapter must therefore drop an "international" bucket
+-- whose types are already wholly covered by "domestic", or evf_plus_total
+-- would double-count PPW/MPW.
+CREATE FUNCTION pg_temp.rank_setup_legacy() RETURNS INT
+LANGUAGE plpgsql AS $rksl$
+DECLARE
+  v_org INT;
+  v_season INT;
+  v_fencer INT;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  v_season := fn_create_season('SS26-RANK-LEGACY', '2048-08-01', '2049-07-15');
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"domestic":[{"best":2,"types":["PPW"]},{"types":["MPW"],"always":true}],
+     "international":[{"best":2,"types":["PPW"]},{"types":["MPW"],"always":true},{"best":2,"types":["PEW"]}]}
+  $j$::jsonb WHERE id_season = v_season;
+
+  -- 2049 - 1994 = 55 -> V2.
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('RankLegacy', 'Tester', 'PL', 1994, 'M') RETURNING id_fencer INTO v_fencer;
+
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PPW1', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 40);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PPW2', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 30);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PPW3', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 20);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-MPW', 'MPW', 'EPEE', 'M', 'V2', v_fencer, 6);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PEW1', 'PEW', 'EPEE', 'M', 'V2', v_fencer, 25);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PEW2', 'PEW', 'EPEE', 'M', 'V2', v_fencer, 18);
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'RL-PEW3', 'PEW', 'EPEE', 'M', 'V2', v_fencer, 9);
+
+  RETURN v_season;
+END $rksl$;
+
+SELECT pg_temp.rank_setup_legacy();
+
+CREATE FUNCTION pg_temp.rank11_legacy_parity() RETURNS TEXT
+LANGUAGE plpgsql AS $rk11$
+DECLARE
+  v_season INT;
+  v_fencer INT;
+  v_full_spws NUMERIC; v_full_evf NUMERIC;
+  v_ppw_total NUMERIC;
+  v_kadra_pew NUMERIC;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-RANK-LEGACY';
+  SELECT id_fencer INTO v_fencer FROM tbl_fencer WHERE txt_surname = 'RankLegacy';
+
+  SELECT spws_total, evf_plus_total INTO v_full_spws, v_full_evf
+    FROM fn_ranking_full('EPEE', 'M', 'V2', v_season, FALSE) WHERE id_fencer = v_fencer;
+
+  SELECT total_score INTO v_ppw_total
+    FROM fn_ranking_ppw('EPEE', 'M', 'V2', v_season, FALSE) WHERE id_fencer = v_fencer;
+
+  SELECT pew_total INTO v_kadra_pew
+    FROM fn_ranking_kadra('EPEE', 'M', 'V2', v_season, FALSE) WHERE id_fencer = v_fencer;
+
+  IF v_full_spws IS DISTINCT FROM v_ppw_total THEN
+    RETURN 'FAIL:spws_total=' || v_full_spws || ' fn_ranking_ppw.total_score=' || v_ppw_total;
+  END IF;
+  IF v_full_evf IS DISTINCT FROM v_kadra_pew THEN
+    RETURN 'FAIL:evf_plus_total=' || v_full_evf || ' fn_ranking_kadra.pew_total=' || v_kadra_pew;
+  END IF;
+  RETURN 'OK';
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk11$;
+
+SELECT is(pg_temp.rank11_legacy_parity(), 'OK',
+  'SS26.RANK.11 legacy (schema-v1) adapter parity: fn_ranking_full matches fn_ranking_ppw/fn_ranking_kadra exactly');
+
+-- SS26.RANK.12 fixture -- a prior season with a scored PPS result, and a
+-- current (rolling) season whose pzsz section declares PPS, linked to the
+-- prior event via id_prior_event (the season default carry-over engine is
+-- EVENT_FK_MATCHING -- ADR-045 -- so vw_eligible_event's branch 2, not
+-- event-code prefix matching, is what must be proven not to carry PPS).
+-- The current event is left at its 'PLANNED' default status (NOT
+-- SCORED/COMPLETED), which is exactly what marks a slot as "not yet
+-- resulted" to vw_eligible_event, and carries no tournament/result of its
+-- own. Design §07: "future PPS/MPS carry-over... begins disabled" -- proven
+-- here as a behavior, not left to be true by accident.
+CREATE FUNCTION pg_temp.rank_setup_pzsz_carry() RETURNS INT
+LANGUAGE plpgsql AS $rkspc$
+DECLARE
+  v_org INT;
+  v_prev INT;
+  v_curr INT;
+  v_fencer INT;
+  v_prev_event INT;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  v_prev := fn_create_season('SS26-RANK-CARRYPREV', '2050-08-01', '2051-07-15');
+  v_curr := fn_create_season('SS26-RANK-CARRYCURR', '2051-08-01', '2052-07-15');
+
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"schema_version":2,
+     "season_scoring_rules":{"pzsz":{"group":"evf_plus","types":["PPS"],"buckets":[{"always":true,"types":["PPS"]}]}},
+     "display_groups":{"evf_plus":{"sections":["pzsz"]}},
+     "views":{"RANKING":["evf_plus"]}}
+  $j$::jsonb WHERE id_season = v_curr;
+
+  -- 2052 - 1997 = 55 -> V2 (category resolved against the CURRENT/carrying
+  -- season's end year, per the existing rolling convention).
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('RankPzszCarry', 'Tester', 'PL', 1997, 'M') RETURNING id_fencer INTO v_fencer;
+
+  v_prev_event := pg_temp.rank_add_result(v_prev, v_org, 'CARRYPOS-PREV', 'PPS', 'EPEE', 'M', 'V2', v_fencer, 20);
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, id_prior_event)
+  VALUES ('CARRYPOS-CURR', 'CARRYPOS-CURR event', v_curr, v_org, v_prev_event);
+
+  RETURN v_curr;
+END $rkspc$;
+
+SELECT pg_temp.rank_setup_pzsz_carry();
+
+CREATE FUNCTION pg_temp.rank12_pzsz_carry_disabled() RETURNS INT
+LANGUAGE plpgsql AS $rk12$
+BEGIN
+  RETURN (
+    SELECT count(*)::INT FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-RANK-CARRYCURR'), TRUE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'RankPzszCarry')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $rk12$;
+
+SELECT is(pg_temp.rank12_pzsz_carry_disabled(), 0,
+  'SS26.RANK.12 PPS/MPS carry-over is disabled by default, even with rolling=true and the type declared in the current section');
 
 SELECT * FROM finish();
 ROLLBACK;
