@@ -1,0 +1,295 @@
+<meta charset="utf-8">
+<title>Searchable documentation over MCP — shortlist and plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62}
+  .wrap{max-width:52rem;margin:0 auto;padding:60px 30px 100px}
+  code{font-family:var(--mono);background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  pre{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:18px 0}
+  pre code{background:none;border:0;padding:0;font-size:15px;font-weight:500;line-height:1.7}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,44px);line-height:1.1;letter-spacing:-.015em;margin:0 0 20px;max-width:24ch}
+  .dek{font-size:22px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink)}
+  .rule{height:2px;background:var(--line);border:0;margin:44px 0}
+  section{margin-top:44px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:29px;line-height:1.16;margin:0 0 16px}
+  h3{margin:28px 0 10px;font-size:20px;font-weight:800}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  strong{font-weight:700}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:18px;margin:0 0 8px}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .opt{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:18px 22px;margin:16px 0}
+  .opt.rec{border-color:var(--good);background:var(--good-soft)}
+  .opt.out{border-color:var(--danger)}
+  .opt h3{margin:0 0 8px;font-size:19px;font-weight:800}
+  .opt .tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;background:var(--good);color:#fff;margin-left:10px;vertical-align:middle}
+  .opt .tag.no{background:var(--danger)}
+  .opt p{margin:0 0 8px}
+  table{border-collapse:collapse;width:100%;margin:20px 0;font-size:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--surface-2);font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  tr:last-child td{border-bottom:0}
+  .src{font-size:15px;color:var(--faint)}
+  .src a{color:var(--accent)}
+  .foot{margin-top:52px;padding-top:20px;border-top:2px solid var(--line);font-size:14px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Plan · 16 September 2026 · documentation search</p>
+  <h1>All documentation searchable from Claude, with nothing that can ever bill you</h1>
+  <p class="dek">Four candidates researched on GitHub. One is disqualified by exactly the trap we just walked out of. My recommendation needs <b>no model, no API key, no account</b> — and a second section answers what uv is and why 6 of its 7.6 GB is my mess from today.</p>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">First, the uv question</p>
+    <h2>uv is load-bearing here. The 7.6 GB mostly is not.</h2>
+    <p><strong>Why it exists on this machine:</strong> two tools this project depends on are installed through
+    it, and nothing else provides them —</p>
+    <table>
+      <tr><th>Tool</th><th>Size</th><th>What needs it</th></tr>
+      <tr><td><code>basedpyright</code> 1.39.9</td><td>271 MB</td><td>The Python type-checker this project mandates after every Python edit, and the LSP behind the analysis rule.</td></tr>
+      <tr><td><code>graphifyy</code> 0.8.47 (<code>graphify</code>, <code>graphify-mcp</code>)</td><td>126 MB</td><td>The knowledge graph — <code>graphify query/explain/affected/path</code> and <code>scripts/refresh-graph.sh</code>.</td></tr>
+    </table>
+    <p>So uv is not optional bloat; removing it breaks the type-checker and the graph. <strong>The 7.6 GB cache
+    is a different matter.</strong> I looked at what is actually in it, by creation time:</p>
+    <table>
+      <tr><th>Cached environment</th><th>Size</th><th>Created</th><th>Whose</th></tr>
+      <tr><td>Hindsight env (torch, transformers, FlashRank…)</td><td>1.8 GB</td><td>today 14:48</td><td>mine</td></tr>
+      <tr><td>Hindsight env — second server start</td><td>1.8 GB</td><td>today 15:34</td><td>mine</td></tr>
+      <tr><td>Hindsight env — third start, after the <code>anthropic&lt;1</code> pin</td><td>1.8 GB</td><td>today 15:39</td><td>mine</td></tr>
+      <tr><td><code>torch</code></td><td>533 MB</td><td>today 14:48</td><td>mine</td></tr>
+      <tr><td><code>claude_agent_sdk</code> (the bundled 212 MB CLI)</td><td>209 MB</td><td>today 14:48</td><td>mine</td></tr>
+      <tr><td><code>mlx-metal</code></td><td>203 MB</td><td>today 14:48</td><td>mine</td></tr>
+      <tr><td><code>nodejs_wheel</code></td><td>199 MB</td><td><strong>2 July</strong></td><td>basedpyright's — keep</td></tr>
+    </table>
+    <div class="note warn">
+      <p class="lede">Roughly 6.3 of the 7.6 GB is today's Hindsight residue</p>
+      <p>Each restart of that server built a whole new 1.8 GB environment, and I restarted it three times. Those
+      environments are ephemeral and now unreferenced — nothing points at them any more.
+      <code>uv cache prune</code> is the command designed for exactly this: it deletes cache entries nothing
+      references and leaves the two tool installations alone. It cannot break <code>basedpyright</code> or
+      <code>graphify</code>, because both live outside the cache in
+      <code>~/.local/share/uv/tools/</code>.</p>
+      <p>I have not run it. Say the word and it reclaims about 6 GB; leave it and the space is merely
+      wasted, not harmful.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The requirement, stated bluntly</p>
+    <h2>What today taught us to demand</h2>
+    <p>Anything that gets installed now must satisfy all four, or it does not go on the shortlist:</p>
+    <ol>
+      <li><strong>No API key, no account, no metered call — ever.</strong> Not "optional", not "you can
+      configure a local model instead." Nothing in the stack may be capable of billing.</li>
+      <li><strong>Docker, one command up, one command gone.</strong></li>
+      <li><strong>Runs on this Mac Mini without a fight</strong> — it has 20 GB of RAM and 83 GB free, and the
+      rest of your work needs most of that.</li>
+      <li><strong>First-party MCP server</strong>, not a hobby wrapper that stops being maintained.</li>
+    </ol>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Researched on GitHub</p>
+    <h2>Four candidates</h2>
+
+    <div class="opt out">
+      <h3>RAGFlow — <code>infiniflow/ragflow</code>, 90.8k ★, Apache-2.0 <span class="tag no">Disqualified</span></h3>
+      <p>The most popular self-hosted RAG on GitHub by a wide margin, with real document parsing (MinerU,
+      Docling) and an MCP server since August 2025. Two facts end it for us. Its own README states the
+      requirement as <strong>&ldquo;CPU &gt;= 4 cores, RAM &gt;= 16 GB, Disk &gt;= 50 GB&rdquo;</strong> —
+      that is your whole machine, for five megabytes of documents. And setup requires selecting an LLM factory
+      and filling in an <code>API_KEY</code> field: <strong>an LLM key is mandatory</strong>, not optional.
+      The compose stack also brings up Elasticsearch, MySQL, Redis and MinIO.</p>
+      <p>Popularity is not fitness. This is the same shape of trap as this morning, with more moving parts.</p>
+    </div>
+
+    <div class="opt">
+      <h3>Onyx — <code>onyx-dot-app/onyx</code>, 32.1k ★, MIT core</h3>
+      <p>A polished product: 50+ connectors, hybrid search over OpenSearch, a web UI, and it genuinely does
+      support fully local inference through Ollama for both the LLM and the embeddings. Two reservations.
+      It is <strong>open-core</strong> — the Community Edition is MIT, with an Enterprise Edition held back —
+      and it describes itself as &ldquo;the application layer for LLMs&rdquo;: an LLM is central to how you
+      use it, so a no-LLM deployment means fighting the product's grain. A "Lite" mode under 1 GB exists.</p>
+      <p>The right answer if you later want a searchable company knowledge base with a UI and Slack/Drive
+      connectors. Considerable overkill for indexing one <code>doc/</code> folder.</p>
+    </div>
+
+    <div class="opt">
+      <h3>Qdrant + <code>qdrant/mcp-server-qdrant</code> — 1.5k ★, Apache-2.0, official</h3>
+      <p>The semantic option that cannot bill you: the MCP server's default embedding provider is
+      <strong>FastEmbed</strong> with <code>sentence-transformers/all-MiniLM-L6-v2</code>, running in-process,
+      and credentials are needed only if you point it at Qdrant's cloud instead of a local one.</p>
+      <p>The catch is what it actually is: a <strong>memory store</strong>, exposing two tools —
+      <code>qdrant-store</code> and <code>qdrant-find</code>. No file ingestion, no chunking, no HTML
+      handling. Indexing <code>doc/</code> means writing that part myself. Also worth knowing before adopting:
+      28 open issues and 52 open pull requests.</p>
+    </div>
+
+    <div class="opt rec">
+      <h3>Meilisearch + <code>meilisearch/meilisearch-mcp</code> <span class="tag">Recommended</span></h3>
+      <p>Meilisearch is MIT, a single Go-fast search engine in one container, and the MCP server is
+      <strong>first-party</strong> — published by Meilisearch themselves as
+      <code>getmeili/meilisearch-mcp</code> on Docker Hub, with 25+ tools for index, document, search and
+      settings management. Typo-tolerant full-text search with intelligent ranking, and
+      <strong>no model of any kind</strong>: nothing to download, nothing to warm up, nothing that can be
+      metered. The &ldquo;master key&rdquo; in its config is a password you invent, not a key you buy.</p>
+      <p><strong>Why this beats the semantic option for our corpus specifically.</strong> Our documentation is
+      made of exact tokens: <code>ADR-084</code>, <code>fn_commit_event_draft</code>, <code>arr_weapons</code>,
+      <code>vw_calendar</code>, Polish names with diacritics, dates that decide which of two facts is current.
+      Exact-token lookup is where lexical search beats embeddings outright — an embedding model is most useful
+      for paraphrase, and least useful for identifiers. Add typo tolerance and 5.2 MB of text, and this is not
+      a compromise; it is the better tool.</p>
+      <p>Footprint: one container, one volume, on the order of 100 MB of RAM. And if semantic recall does turn
+      out to be missing, Meilisearch supports vector search with a local embedder later — additive, not a
+      rewrite.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What I have to build either way</p>
+    <h2>The ingest script — about a hundred lines, standard library only</h2>
+    <p>No off-the-shelf option handles our HTML correctly, because our HTML is unusual: every hand-written
+    page carries its full stylesheet inline. I measured it earlier — the 81 files in <code>doc/plans</code>
+    hold roughly <strong>330 KB of pure CSS</strong>. Indexing the raw markup would put
+    <code>--surface-2</code> and <code>prefers-color-scheme</code> into the search index and poison every
+    result.</p>
+    <p>So: walk the corpus, strip <code>&lt;style&gt;</code> and tags, split on headings, post each chunk with
+    its file path, page title and heading as fields. Concretely —</p>
+    <ul>
+      <li><strong>In scope:</strong> <code>doc/handbook</code> (27 files), <code>doc/governance</code> (2),
+      <code>doc/adr</code> (Markdown sources only — the HTML twins are generated duplicates, so indexing both
+      would double every hit), <code>doc/plans</code> (81), <code>doc/evidence</code>.</li>
+      <li><strong>Excluded:</strong> <code>doc/archive/</code> — never current-behaviour evidence, and already
+      excluded from graphify via <code>.graphifyignore</code>. Same rule, same reason.</li>
+      <li>Re-run on demand; an incremental pass keyed on file modification time is a later refinement, not
+      needed at this size.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">What this is not</p>
+      <p>It does not touch graphify, which stays the answer for code structure, call edges and blast radius —
+      lexical search over prose cannot answer <code>affected fn_commit_event_draft</code>. It does not change
+      what is canonical: the handbook, governance and ADRs remain the record, and this is an index over them,
+      not a replacement for them. And nothing about the ranking system changes.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Verification</p>
+    <h2>How we know it works, and that it cannot phone home</h2>
+    <ol>
+      <li><strong>Exact-identifier queries</strong> — <code>ADR-084</code>, <code>fn_commit_event_draft</code>,
+      <code>arr_weapons</code>, <code>vw_calendar</code>: the owning document must come back in the top three.
+      This is the class of query the whole choice rests on, so it is graded first.</li>
+      <li><strong>Prose queries with known answers</strong> — the ten questions already written for the earlier
+      pilot (carryover rules, the two denominators, the CERT calendar defects, which Tbilisi handover is
+      current). Same scoring: 2 correct and sourced, 1 partial, 0 wrong or missing.</li>
+      <li><strong>Polish and diacritics</strong> — a query for a fencer surname with and without diacritics
+      must find the same document.</li>
+      <li><strong>No egress.</strong> Run the container with networking restricted to loopback and confirm the
+      full index-and-search cycle still works. A stack that cannot reach the internet cannot bill you, and
+      after today that gets verified rather than assumed.</li>
+      <li><strong>Clean removal, rehearsed before we rely on it:</strong> <code>docker compose down -v</code>,
+      remove the MCP entry, delete the compose file. Proven on day one, not discovered later.</li>
+    </ol>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>How wide should the index be?</h2>
+    <p>The plan above indexes <code>doc/</code> only. Two other scopes are possible, and it is cheap to decide
+    now and expensive to re-chunk later:</p>
+    <div class="opt rec">
+      <h3>A — <code>doc/</code> only, minus <code>archive/</code> <span class="tag">Recommended</span></h3>
+      <p>Handbook, governance, ADR sources, plans, evidence. This is what you asked for — "all our
+      documentation" — and it is the part with no index today beyond filenames and the registry.</p>
+    </div>
+    <div class="opt">
+      <h3>B — <code>doc/</code> plus the 132 memory notes</h3>
+      <p>Adds the narrative layer that the abandoned pilot was aimed at. Cheap to add, and it would finally
+      make those notes searchable by content rather than by filename. The cost is that finished and superseded
+      notes would rank alongside current ones — the same staleness problem, now in a search box.</p>
+    </div>
+    <div class="opt">
+      <h3>C — everything, including <code>python/</code>, SQL migrations and the frontend</h3>
+      <p>Tempting, and wrong: graphify already indexes code structure deterministically, and full-text over
+      source would compete with it while answering worse. If a code question needs answering, the graph is
+      the tool.</p>
+    </div>
+    <p><strong>Recommendation: A</strong>, with B as a second index later if the first one proves useful. One
+    container, one volume, no models, nothing that can charge you — and if it disappoints, it comes off the
+    machine in one command with nothing to reclaim but disk.</p>
+    <p class="src">Sources:
+      <a href="https://github.com/meilisearch/meilisearch-mcp">meilisearch/meilisearch-mcp</a> ·
+      <a href="https://github.com/qdrant/mcp-server-qdrant">qdrant/mcp-server-qdrant</a> ·
+      <a href="https://github.com/onyx-dot-app/onyx">onyx-dot-app/onyx</a> ·
+      <a href="https://github.com/infiniflow/ragflow">infiniflow/ragflow</a>
+    </p>
+  </section>
+
+  <p class="foot">doc/plans/docs-search-rag-2026-09-16.html · nothing installed, nothing started</p>
+</div>
