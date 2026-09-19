@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(39);
+SELECT plan(50);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -770,6 +770,313 @@ END $pps_d$;
 SELECT is(pg_temp.auto_multiplier_psw_pps(), 'BOTH_NON_NULL',
   'SS26.TYPE.06d fn_auto_populate_multiplier caches a non-NULL multiplier for PSW and PPS'
 );
+
+-- =============================================================================
+-- SS26.LOCK — the governance lock (design step 3b, first half).
+-- doc/plans/scoring-governance-lock-2026-09-19.html
+--
+-- SS26.LOCK.01/02 aggregate one pgTAP assertion each over every governed
+-- field, following this file's own type_cfg_mismatches()/threshold_mismatches()
+-- convention: the per-field check happens inside the pg_temp helper so a
+-- future field addition needs one array entry, not a new top-level test.
+-- SS26.LOCK.11/12 are Vitest (frontend/tests/ScoringConfigEditor.test.ts,
+-- SeasonManager.test.ts) and are not in this file.
+-- =============================================================================
+
+-- Attempt one field change via fn_import_scoring_config and classify the
+-- result. Shared by SS26.LOCK.01 (expects OK) and .02 (expects REJECTED).
+CREATE FUNCTION pg_temp.lock_try_field(p_season INT, p_key TEXT, p_new_value NUMERIC)
+RETURNS TEXT
+LANGUAGE plpgsql AS $ltf$
+BEGIN
+  PERFORM fn_import_scoring_config(
+    jsonb_build_object('id_season', p_season, p_key, p_new_value));
+  RETURN 'OK';
+EXCEPTION WHEN OTHERS THEN
+  RETURN 'REJECTED:' || SQLERRM;
+END $ltf$;
+
+-- SS26.LOCK.01 — every governed field is writable before the season's first
+-- scored result. SPWS-2026-2027 carries zero scores in the base seed
+-- (confirmed by scripts/check-scoring-migration-preflight.sh's SSP-06).
+CREATE FUNCTION pg_temp.lock01_all_editable_unlocked()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l01$
+DECLARE
+  v_season INT;
+  v_field  TEXT;
+  v_fields TEXT[] := ARRAY['mp_value','podium_gold','podium_silver','podium_bronze',
+    'ppw_multiplier','mpw_multiplier','pew_multiplier','mew_multiplier',
+    'msw_multiplier','psw_multiplier','pps_multiplier','mps_multiplier',
+    'min_participants_evf','min_participants_ppw'];
+  v_result   TEXT;
+  v_failures TEXT := '';
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  FOREACH v_field IN ARRAY v_fields LOOP
+    v_result := pg_temp.lock_try_field(v_season, v_field, 9);
+    IF v_result <> 'OK' THEN
+      v_failures := v_failures || v_field || '=' || v_result || '; ';
+    END IF;
+  END LOOP;
+
+  BEGIN
+    PERFORM fn_import_scoring_config(jsonb_build_object(
+      'id_season', v_season, 'engine_code', 'EVF_CLASSIC_V1_2025_2026'));
+  EXCEPTION WHEN OTHERS THEN v_failures := v_failures || 'engine_code=REJECTED:' || SQLERRM || '; ';
+  END;
+  BEGIN
+    PERFORM fn_import_scoring_config(jsonb_build_object(
+      'id_season', v_season, 'ranking_rules', '{"domestic":[],"international":[]}'::jsonb));
+  EXCEPTION WHEN OTHERS THEN v_failures := v_failures || 'ranking_rules=REJECTED:' || SQLERRM || '; ';
+  END;
+
+  IF v_failures = '' THEN RETURN 'ALL_OK'; ELSE RETURN v_failures; END IF;
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $l01$;
+
+SELECT is(pg_temp.lock01_all_editable_unlocked(), 'ALL_OK',
+  'SS26.LOCK.01 every governed field is writable before the season''s first scored result');
+
+-- SS26.LOCK.02 — the same fields, rejected individually once a score exists.
+-- SPWS-2023-2024 is real seed data, already scored -- locked as soon as the
+-- backfill in 20260919000005 runs. 777 is chosen to differ from every real
+-- stored value (all small round numbers: 50, 3, 2, 1, 1.0, 1.2, 2.0, 5) and
+-- to be a whole number so it casts cleanly to both INT and NUMERIC columns.
+CREATE FUNCTION pg_temp.lock02_all_rejected_locked()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l02$
+DECLARE
+  v_season INT;
+  v_field  TEXT;
+  v_fields TEXT[] := ARRAY['mp_value','podium_gold','podium_silver','podium_bronze',
+    'ppw_multiplier','mpw_multiplier','pew_multiplier','mew_multiplier',
+    'msw_multiplier','psw_multiplier','pps_multiplier','mps_multiplier',
+    'min_participants_evf','min_participants_ppw'];
+  v_result   TEXT;
+  v_failures TEXT := '';
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  FOREACH v_field IN ARRAY v_fields LOOP
+    v_result := pg_temp.lock_try_field(v_season, v_field, 777);
+    IF v_result NOT LIKE 'REJECTED:%locked%' THEN
+      v_failures := v_failures || v_field || '=' || v_result || '; ';
+    END IF;
+  END LOOP;
+
+  BEGIN
+    PERFORM fn_import_scoring_config(jsonb_build_object(
+      'id_season', v_season, 'engine_code', 'SPWS_FIELD_SCALED_V1_2026_2027'));
+    v_failures := v_failures || 'engine_code=NOT_REJECTED; ';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM NOT LIKE '%locked%' THEN v_failures := v_failures || 'engine_code=OTHER:' || SQLERRM || '; '; END IF;
+  END;
+  BEGIN
+    PERFORM fn_import_scoring_config(jsonb_build_object(
+      'id_season', v_season, 'ranking_rules', '{"domestic":[],"international":[]}'::jsonb));
+    v_failures := v_failures || 'ranking_rules=NOT_REJECTED; ';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM NOT LIKE '%locked%' THEN v_failures := v_failures || 'ranking_rules=OTHER:' || SQLERRM || '; '; END IF;
+  END;
+
+  IF v_failures = '' THEN RETURN 'ALL_REJECTED'; ELSE RETURN v_failures; END IF;
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $l02$;
+
+SELECT is(pg_temp.lock02_all_rejected_locked(), 'ALL_REJECTED',
+  'SS26.LOCK.02 every governed field is rejected once the season has a scored result');
+
+-- SS26.LOCK.03 — the trigger is the first scored RESULT, not dt_end. A
+-- past-dated, unscored season stays editable; a future-dated, scored one locks.
+CREATE FUNCTION pg_temp.lock03_date_independent()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l03$
+DECLARE
+  v_org INT; v_engine INT;
+  v_past INT; v_future INT;
+  v_event INT; v_t INT; v_f INT;
+  v_locked_past BOOLEAN; v_locked_future BOOLEAN;
+BEGIN
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  SELECT id_engine INTO v_engine FROM tbl_scoring_engine
+   WHERE bool_active ORDER BY ts_created DESC, id_engine DESC LIMIT 1;
+
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, id_scoring_engine)
+    VALUES ('SS26-LOCK03-PAST', '2010-01-01', '2010-12-31', v_engine)
+    RETURNING id_season INTO v_past;
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, id_scoring_engine)
+    VALUES ('SS26-LOCK03-FUTURE', '2099-01-01', '2099-12-31', v_engine)
+    RETURNING id_season INTO v_future;
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+    VALUES ('SS26-LOCK03-EVT', 'lock03 fixture', v_future, v_org, 'PLANNED')
+    RETURNING id_event INTO v_event;
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+    enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+    VALUES (v_event, 'SS26-LOCK03-T', 'lock03', 'PPW', 'EPEE', 'M', 'V2', '2099-06-01', 10, 'IMPORTED')
+    RETURNING id_tournament INTO v_t;
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
+    VALUES ('SS26-LOCK03', 'Test', 1970) RETURNING id_fencer INTO v_f;
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t, 1);
+  PERFORM fn_calc_tournament_scores(v_t);
+
+  SELECT (ts_scoring_locked_at IS NOT NULL) INTO v_locked_past   FROM tbl_season WHERE id_season = v_past;
+  SELECT (ts_scoring_locked_at IS NOT NULL) INTO v_locked_future FROM tbl_season WHERE id_season = v_future;
+
+  IF v_locked_past = FALSE AND v_locked_future = TRUE THEN
+    RETURN 'OK';
+  END IF;
+  RETURN format('past_unscored_locked=%s future_scored_locked=%s', v_locked_past, v_locked_future);
+EXCEPTION WHEN undefined_column THEN
+  RETURN NULL;
+END $l03$;
+
+SELECT is(pg_temp.lock03_date_independent(), 'OK',
+  'SS26.LOCK.03 the lock trigger is the first scored result, not dt_start/dt_end');
+
+-- SS26.LOCK.04 — direct UPDATE on tbl_scoring_config bypassing the RPC is
+-- rejected post-lock by the trigger guard (defense in depth). pgTAP itself
+-- runs as postgres, which the guard always lets through by design (see the
+-- migration's own header) -- authenticated is genuinely reachable here
+-- (it holds table-level UPDATE on tbl_scoring_config, unlike LOCK.05's
+-- table below), so this simulates it exactly as 1.11 in
+-- 01_database_foundation.sql already does: both the PG role (what the
+-- trigger checks) and the JWT claim (what RLS's auth.role() checks).
+CREATE FUNCTION pg_temp.lock04_direct_update_rejected()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l04$
+DECLARE v_season INT; v_result TEXT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+
+  SET LOCAL ROLE authenticated;
+  PERFORM set_config('request.jwt.claim.role', 'authenticated', TRUE);
+  PERFORM set_config('request.jwt.claims', '{"role":"authenticated","sub":"test-user"}', TRUE);
+  BEGIN
+    UPDATE tbl_scoring_config SET num_ppw_multiplier = 7.7777 WHERE id_season = v_season;
+    v_result := 'NOT_REJECTED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM LIKE '%locked%' THEN v_result := 'REJECTED'; ELSE v_result := 'OTHER:' || SQLERRM; END IF;
+  END;
+  RESET ROLE;
+  RETURN v_result;
+END $l04$;
+
+SELECT is(pg_temp.lock04_direct_update_rejected(), 'REJECTED',
+  'SS26.LOCK.04 a direct UPDATE on tbl_scoring_config is rejected on a locked season');
+
+-- SS26.LOCK.05 — tbl_scoring_type_config was never a direct write surface
+-- (trigger-owned since 20260919000002). Two independent layers close it:
+-- authenticated holds no table-level UPDATE grant at all (checked directly,
+-- matching 52_security_posture.sql's own convention, rather than simulating
+-- a write that grants would refuse before the trigger is ever reached), and
+-- the trigger itself exists as a second, redundant-by-design layer in case
+-- a future migration ever adds that grant without realizing the implication.
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'tbl_scoring_type_config', 'UPDATE'),
+  'SS26.LOCK.05a authenticated holds no UPDATE grant on tbl_scoring_type_config'
+);
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_trigger
+     WHERE tgrelid = 'tbl_scoring_type_config'::regclass
+       AND tgname = 'trg_guard_type_config_direct_write'
+  ),
+  'SS26.LOCK.05b the direct-write guard trigger exists as a second, defense-in-depth layer'
+);
+
+-- SS26.LOCK.06 — ts_scoring_locked_at is set once and never moves, including
+-- across a same-revision rescore of an already-locked season.
+CREATE FUNCTION pg_temp.lock06_timestamp_stable()
+RETURNS BOOLEAN
+LANGUAGE plpgsql AS $l06$
+DECLARE v_season INT; v_t INT; v_before TIMESTAMPTZ; v_after TIMESTAMPTZ;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  SELECT ts_scoring_locked_at INTO v_before FROM tbl_season WHERE id_season = v_season;
+  SELECT t.id_tournament INTO v_t
+    FROM tbl_tournament t JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = v_season AND t.enum_import_status = 'SCORED' LIMIT 1;
+  PERFORM fn_calc_tournament_scores(v_t);
+  SELECT ts_scoring_locked_at INTO v_after FROM tbl_season WHERE id_season = v_season;
+  RETURN v_before IS NOT NULL AND v_before = v_after;
+EXCEPTION WHEN undefined_column THEN
+  RETURN NULL;
+END $l06$;
+
+SELECT is(pg_temp.lock06_timestamp_stable(), TRUE,
+  'SS26.LOCK.06 ts_scoring_locked_at is stable across a same-revision rescore');
+
+-- SS26.LOCK.07 — the regression test for field-level (not whole-function)
+-- authorization: handleUpdateSeason (App.svelte:1169-1197) resends the
+-- FULL config with only show_evf_toggle changed. That must keep working on
+-- a locked season.
+CREATE FUNCTION pg_temp.lock07_toggle_only_succeeds()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l07$
+DECLARE v_season INT; v_cfg JSONB;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  v_cfg := fn_export_scoring_config(v_season);
+  PERFORM fn_import_scoring_config(
+    v_cfg || jsonb_build_object('show_evf_toggle', NOT COALESCE((v_cfg->>'show_evf_toggle')::BOOLEAN, FALSE)));
+  RETURN 'OK';
+EXCEPTION WHEN OTHERS THEN
+  RETURN 'REJECTED:' || SQLERRM;
+END $l07$;
+
+SELECT is(pg_temp.lock07_toggle_only_succeeds(), 'OK',
+  'SS26.LOCK.07 a toggle-only resave (full payload, only show_evf_toggle changed) succeeds on a locked season');
+
+-- SS26.LOCK.08 — the carry-over engine write path (a separate PATCH on
+-- tbl_season, not part of fn_import_scoring_config) is untouched by this lock.
+CREATE FUNCTION pg_temp.lock08_carryover_unaffected()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l08$
+DECLARE v_season INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  UPDATE tbl_season SET enum_carryover_engine = enum_carryover_engine WHERE id_season = v_season;
+  RETURN 'OK';
+EXCEPTION WHEN OTHERS THEN
+  RETURN 'REJECTED:' || SQLERRM;
+END $l08$;
+
+SELECT is(pg_temp.lock08_carryover_unaffected(), 'OK',
+  'SS26.LOCK.08 the carry-over engine write path stays available regardless of lock state');
+
+-- SS26.LOCK.09 — repair (same-revision rescore) remains available: scoring
+-- itself never touches tbl_scoring_config, so it is untouched by construction.
+SELECT lives_ok(
+  $$SELECT fn_calc_tournament_scores(
+      (SELECT t.id_tournament FROM tbl_tournament t
+         JOIN tbl_event e ON e.id_event = t.id_event
+         JOIN tbl_season s ON s.id_season = e.id_season
+        WHERE s.txt_code = 'SPWS-2023-2024' AND t.enum_import_status = 'SCORED' LIMIT 1))$$,
+  'SS26.LOCK.09 same-revision rescore remains available on a locked season'
+);
+
+-- SS26.LOCK.10 — the partial unique index is the concurrency safety net: two
+-- racing writers cannot both leave an active revision for the same season.
+CREATE FUNCTION pg_temp.lock10_unique_active_revision()
+RETURNS TEXT
+LANGUAGE plpgsql AS $l10$
+DECLARE v_season INT; v_engine INT;
+BEGIN
+  SELECT id_season, id_scoring_engine INTO v_season, v_engine
+    FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  INSERT INTO tbl_scoring_config_revision
+    (id_season, id_engine, json_snapshot, txt_actor, txt_reason, bool_active)
+  VALUES (v_season, v_engine, '{}'::jsonb, 'pgtap', 'lock10 duplicate probe', TRUE);
+  RETURN 'NOT_REJECTED';
+EXCEPTION WHEN unique_violation THEN RETURN 'REJECTED';
+WHEN undefined_table THEN RETURN NULL;
+END $l10$;
+
+SELECT is(pg_temp.lock10_unique_active_revision(), 'REJECTED',
+  'SS26.LOCK.10 the partial unique index rejects a second active revision for one season');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -313,6 +313,76 @@ describe('SeasonManager (T9.2)', () => {
     expect(container.querySelector('[data-field="scoring-btn"]')).not.toBeNull()
   })
 
+  // SS26.LOCK.12 (governance lock, 2026-09-19): readonly must derive from
+  // scoringConfig.scoring_admin_locked, never from a season date. Two seasons
+  // engineered to disagree with isSeasonPast in both directions.
+  const BASE_SCORING_CONFIG = {
+    season_code: 'X',
+    mp_value: 50,
+    podium_gold: 3,
+    podium_silver: 2,
+    podium_bronze: 1,
+    ppw_multiplier: 1.0,
+    ppw_best_count: 4,
+    ppw_total_rounds: 5,
+    mpw_multiplier: 1.2,
+    mpw_droppable: false,
+    pew_multiplier: 1.0,
+    pew_best_count: 3,
+    mew_multiplier: 1.2,
+    mew_droppable: false,
+    msw_multiplier: 2.0,
+    psw_multiplier: 2.0,
+    min_participants_evf: 5,
+    min_participants_ppw: 1,
+    show_evf_toggle: false,
+    ranking_rules: null,
+  }
+
+  it('SS26.LOCK.12: past season with scoring_admin_locked false stays editable', async () => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const pastSeason: Season = {
+      id_season: 99, txt_code: 'SPWS-PAST', dt_start: '2020-01-01', dt_end: yesterday, bool_active: false,
+    }
+    const { container } = render(SeasonManager, {
+      props: {
+        ...defaultProps,
+        seasons: [pastSeason],
+        scoringConfig: { ...BASE_SCORING_CONFIG, scoring_admin_locked: false },
+        scoringSeasonId: 99,
+      },
+    })
+    const editBtn = container.querySelector('[data-field="edit-btn"]') as HTMLButtonElement
+    await fireEvent.click(editBtn)
+    await vi.waitFor(() => {
+      const mpInput = container.querySelector('input[data-field="mp_value"]') as HTMLInputElement
+      expect(mpInput).not.toBeNull()
+      expect(mpInput.disabled).toBe(false)
+    })
+  })
+
+  it('SS26.LOCK.12: future season with scoring_admin_locked true is locked', async () => {
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const futureSeason: Season = {
+      id_season: 100, txt_code: 'SPWS-FUTURE', dt_start: '2099-01-01', dt_end: future, bool_active: false,
+    }
+    const { container } = render(SeasonManager, {
+      props: {
+        ...defaultProps,
+        seasons: [futureSeason],
+        scoringConfig: { ...BASE_SCORING_CONFIG, scoring_admin_locked: true },
+        scoringSeasonId: 100,
+      },
+    })
+    const editBtn = container.querySelector('[data-field="edit-btn"]') as HTMLButtonElement
+    await fireEvent.click(editBtn)
+    await vi.waitFor(() => {
+      const mpInput = container.querySelector('input[data-field="mp_value"]') as HTMLInputElement
+      expect(mpInput).not.toBeNull()
+      expect(mpInput.disabled).toBe(true)
+    })
+  })
+
   // ===========================================================================
   // ADR-077 §7 — CERT→PROD season-skeleton promotion button (state-derived)
   // ===========================================================================

@@ -270,4 +270,65 @@ describe('ScoringConfigEditor (T8.8)', () => {
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_FK_MATCHING')
   })
+
+  // ==========================================================================
+  // SS26.LOCK.11 — governance lock (2026-09-19): server-authoritative
+  // scoring_admin_locked, not a season date, disables every field; the save
+  // button stays visible and clickable but shows the Polish explanation
+  // instead of calling onsave.
+  // ==========================================================================
+
+  const LOCKED_CONFIG: ScoringConfig = { ...MOCK_CONFIG, scoring_admin_locked: true }
+
+  it('SS26.LOCK.11: renders every field disabled when scoring_admin_locked', () => {
+    const { container } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, config: LOCKED_CONFIG, readonly: true },
+    })
+    const fields = [
+      'mp_value', 'ppw_total_rounds', 'podium_gold', 'podium_silver', 'podium_bronze',
+      'ppw_multiplier', 'mpw_multiplier', 'pew_multiplier', 'mew_multiplier',
+      'msw_multiplier', 'psw_multiplier', 'pps_multiplier', 'mps_multiplier',
+      'min_participants_ppw', 'min_participants_evf', 'engine-select', 'scoring-engine-select',
+    ]
+    for (const f of fields) {
+      const el = container.querySelector(`[data-field="${f}"]`) as HTMLInputElement | HTMLSelectElement
+      expect(el, `field ${f} should exist`).not.toBeNull()
+      expect(el.disabled, `field ${f} should be disabled`).toBe(true)
+    }
+  })
+
+  it('SS26.LOCK.11: save button stays visible when locked', () => {
+    const { container } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, config: LOCKED_CONFIG, readonly: true },
+    })
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    expect(saveBtn).not.toBeNull()
+    expect(saveBtn.disabled).toBe(false)
+  })
+
+  it('SS26.LOCK.11: clicking save while locked shows the exact Polish explanation and calls no RPC', async () => {
+    const onsave = vi.fn()
+    const { container, getByText } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, config: LOCKED_CONFIG, readonly: true, onsave },
+    })
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    await fireEvent.click(saveBtn)
+    expect(onsave).not.toHaveBeenCalled()
+    expect(
+      getByText(
+        'Konfiguracja punktacji jest zablokowana, ponieważ sezon zawiera już obliczone wyniki. Zmiana wymaga zatwierdzonej aktualizacji konfiguracji i ponownego przeliczenia całego sezonu poza panelem administracyjnym.',
+      ),
+    ).not.toBeNull()
+  })
+
+  it('SS26.LOCK.11: no locked notice and normal save when unlocked', async () => {
+    const onsave = vi.fn()
+    const { container, queryByText } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, onsave },
+    })
+    expect(queryByText('Konfiguracja punktacji zablokowana')).toBeNull()
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    await fireEvent.click(saveBtn)
+    expect(onsave).toHaveBeenCalled()
+  })
 })
