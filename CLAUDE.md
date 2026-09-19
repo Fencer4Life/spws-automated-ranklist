@@ -20,3 +20,4 @@ SPWS Automated Ranklist System — automated ranking for the Polish Veterans Fen
 - [doc/claude/conventions.md](doc/claude/conventions.md) — data-integrity hard rules, working style.
 - [doc/claude/key-references.md](doc/claude/key-references.md) — authority-based index of current docs, governance, decisions, evidence and operational tools.
 - [doc/claude/graph-analysis.md](doc/claude/graph-analysis.md) — graphify knowledge graph: consult it first for codebase analysis (`graphify query/explain/affected/path`), and run `scripts/refresh-graph.sh` before every commit.
+- [doc/claude/docs-search.md](doc/claude/docs-search.md) — Meilisearch documentation index over the `spws-docs` MCP server: search it first for any documentation question instead of grepping `doc/`, and run `python3 tools/docs-search/ingest.py` after any change under `doc/`, before every commit.
