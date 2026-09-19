@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Versioned season scoring and PZSz ranking · Approved design</title>
+  <style>
+    :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd;--serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+    @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}}
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:60rem;margin:auto;padding:58px 30px 110px}code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}code{background:var(--surface-2);padding:.08em .36em;border:1px solid var(--line);border-radius:5px;font-size:.84em;font-weight:600}a{color:var(--accent)}.eyebrow,.kicker{font:700 14px/1.3 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);text-wrap:balance}h1{font-size:clamp(38px,6vw,57px);line-height:1.05;max-width:19ch;margin:14px 0 18px}h2{font-size:33px;line-height:1.15;margin:0 0 18px}h3{font-size:20px;margin:28px 0 10px}.dek{font-size:23px;line-height:1.48;color:var(--muted);max-width:58ch}.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--strong);border-radius:7px;background:var(--surface);color:var(--muted);font:600 14px var(--mono)}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}.pill.good .dot{background:var(--good)}.pill.warn .dot{background:var(--warn)}.rule{height:2px;border:0;background:var(--line);margin:48px 0}section{margin-top:54px}p,ul,ol{max-width:69ch}ul,ol{padding-left:1.4em}li{margin:8px 0}li::marker{color:var(--accent)}.toc{columns:2;column-gap:38px}@media(max-width:700px){.toc{columns:1}.wrap{padding:36px 20px 80px}body{font-size:17px}}
+    .note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}.note>:last-child{margin-bottom:0}.note.accent{border-left-color:var(--accent);background:var(--accent-soft)}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.note.pzs{border-left-color:var(--pzs);background:var(--pzs-soft)}.lede{font-weight:800;margin:0 0 7px}.tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}table{border-collapse:collapse;width:100%;font-size:16px;min-width:620px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.chip{display:inline-block;padding:3px 8px;border-radius:6px;font:800 12px var(--mono);white-space:nowrap}.chip.lock{background:var(--danger-soft);color:var(--danger)}.chip.edit{background:var(--good-soft);color:var(--good)}.chip.future{background:var(--warn-soft);color:var(--warn)}pre{overflow:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:17px 20px;font:15px/1.7 var(--mono);color:var(--ink)}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:stretch;margin:24px 0}.node{background:var(--surface);border:1px solid var(--strong);border-radius:9px;padding:13px;font-size:15px}.node strong{display:block;color:var(--accent);margin-bottom:5px}.arrow{text-align:center;color:var(--faint);font-family:var(--mono);display:none}@media(max-width:850px){.flow{grid-template-columns:1fr}.node:not(:last-child)::after{content:"↓";display:block;text-align:center;color:var(--faint);margin:12px 0 -25px}}.formula{font:600 16px/1.8 var(--mono);background:var(--surface);padding:18px 22px;border:1px solid var(--line);border-radius:10px;overflow:auto}.checklist{font-family:var(--mono);font-size:15px;white-space:pre-wrap}.foot{margin-top:62px;padding-top:24px;border-top:2px solid var(--line);font:14px/1.6 var(--mono);color:var(--faint)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Scoring · ranking · PZSz · calculator · approved design</p>
+  <h1>Give every season its own immutable scoring engine</h1>
+  <p class="dek">Freeze the rules that produced 2025/2026, make the published field-scaled formula authoritative for 2026/2027, add PPS and MPS without inventing historical results, and leave a clean extension point for 2027/2028.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Design approved 5 September 2026</span>
+    <span class="pill good"><span class="dot"></span>Revised 19 September 2026 — five reversals</span>
+    <span class="pill"><span class="dot"></span>Implementation not started</span>
+    <span class="pill warn"><span class="dot"></span>PPS/MPS bucket values still to be configured</span>
+  </div>
+
+  <div class="note warn">
+    <p class="lede">What the 19 September revision changed</p>
+    <p>This document was re-validated line by line against <code>origin/main a108de4d</code>. Five positions were <strong>reversed</strong>, and a reader of the earlier version should not assume any of them still hold: engine constants are <em>not</em> frozen (§04); the Admin lock is <em>total</em>, not partial (§05); the calculator keeps its rank-coefficient control and EVF/SPWS toggle (§08); the scoring-table annex is a third live implementation of the formula, not a printed page (§08); and the copied regression-gate list is replaced by <code>scripts/preflight.sh</code> (§10).</p>
+  </div>
+
+  <hr class="rule">
+
+  <section id="read-order">
+    <p class="kicker">Read order</p>
+    <h2>What this document settles</h2>
+    <ol class="toc">
+      <li><a href="#outcome">Outcome and boundaries</a></li>
+      <li><a href="#current">Verified current state</a></li>
+      <li><a href="#engines">Engine architecture</a></li>
+      <li><a href="#formula">Formula contracts</a></li>
+      <li><a href="#data">Data model and locking</a></li>
+      <li><a href="#ranking">Ranking groups, Season Scoring Rules and UI</a></li>
+      <li><a href="#pzsz">PPS/MPS ingestion</a></li>
+      <li><a href="#calculator">Calculator contract</a></li>
+      <li><a href="#scenarios">Scenario walkthroughs</a></li>
+      <li><a href="#tests">Acceptance tests and TDD</a></li>
+      <li><a href="#delivery">Delivery sequence</a></li>
+      <li><a href="#adrs">Proposed ADR drafts</a></li>
+      <li><a href="#docs">Documentation coherence</a></li>
+      <li><a href="#done">Definition of done</a></li>
+    </ol>
+  </section>
+
+  <section id="outcome">
+    <p class="kicker">01 · Outcome</p>
+    <h2>Historical scores stay explainable; new rules stop rewriting old seasons</h2>
+    <ul>
+      <li>The current algorithm becomes the frozen <code>EVF_CLASSIC_V1_2025_2026</code> engine.</li>
+      <li>The published calculator formula becomes <code>SPWS_FIELD_SCALED_V1_2026_2027</code>.</li>
+      <li>A season is <strong>assigned</strong> an engine; nothing chooses an algorithm at calculation time. An engine name is descriptive, versioned, and suffixed with its introduction/reference season; a later season reuses it by pointing at it, which is a season-row update and no code change at all.</li>
+      <li>Real scoring and read-only preview use one dispatcher and the same immutable strategy.</li>
+      <li>Once the first result in a season is scored, <strong>the entire Admin scoring editor becomes read-only</strong> — including ranking buckets. A board-authorized, audited database operation may still replace the active configuration revision and rescore the whole season.</li>
+      <li>The published calculator and scoring table stop carrying their own copies of the formula. One season-agnostic shared module serves both — the calculator bound to the active season, the annex pinned to 2026/2027 — so a pre-lock Admin edit is reflected in all three surfaces and the lock freezes all three at once.</li>
+      <li>PPS and MPS become distinct first-class tournament types beginning with 2026/2027.</li>
+      <li>The full Ranking exposes only two totals: SPWS and EVF+. EVF+ combines EVF/FIE and PZSz scores governed by independent Season Scoring Rules.</li>
+      <li>The official full Ranking begins permanently with 2026/2027; the three earlier spreadsheet-derived seasons remain public in PPW mode only.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Deliberately out of scope</p>
+      <p>No Admin whole-season rescore workflow; no calculator restyle; no PZSz results before 2026/2027; no guessed PPS/MPS multipliers or result-counting buckets; no automatic creation of fencers from senior results.</p>
+    </div>
+  </section>
+
+  <section id="current">
+    <p class="kicker">02 · Verified baseline at origin/main a108de4d (re-verified 19 September 2026)</p>
+    <h2>The seams exist, but their present names hide two different engines</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Current contract</th><th>Source evidence</th><th>Design consequence</th></tr></thead>
+      <tbody>
+        <tr><td>One <code>fn_calc_tournament_scores</code> reads formula fields and a six-way multiplier <code>CASE</code> over PPW/MPW/PEW/MEW/MSW/PSW.</td><td><code>supabase/migrations/20250305000002_jsonb_ranking_rules.sql:38–147</code> — still the newest body; <code>20260327000001</code> only re-grants it.</td><td>Preserve the writer name; extract calculation into immutable per-engine strategies behind a dispatcher.</td></tr>
+        <tr><td>An unlisted tournament type makes that <code>CASE</code> return NULL, so <code>num_final_score</code> is written NULL with <strong>no exception</strong>.</td><td>same function, step 2</td><td>Adding PPS/MPS to the enum before their settings exist would silently write NULL scores. The dispatcher must fail closed on a missing type multiplier, not only on a missing engine.</td></tr>
+        <tr><td><code>int_mp_value</code> (default 50) and <code>int_podium_gold/silver/bronze</code> (3/2/1) are <strong>season configuration columns</strong>, not literals. Only the DE round's <code>* 10</code> is hardcoded.</td><td><code>supabase/migrations/20250301000001_enums_tables_indexes.sql:39–40</code>; read as <code>v_mp</code>/<code>v_gold</code> in the scorer</td><td>They stay season configuration (see §04). The engine owns the <em>shape</em> of the base, which is not expressible as a number.</td></tr>
+        <tr><td><code>int_min_participants_evf</code> (5) and <code>int_min_participants_ppw</code> (1) are the only thresholds, and the routing is not what the labels suggest: <code>PSW</code> gates on the <em>ppw</em> column.</td><td><code>python/pipeline/db_connector.py:590–594</code>; ADR-066</td><td>Normalizing to per-type rows must preserve <code>{PPW, MPW, PSW} → ppw</code> and <code>{PEW, MEW, MSW} → evf</code> exactly, and it also fixes a screen that today labels a field "PPW" while it silently governs PSW.</td></tr>
+        <tr><td>Ranking JSON and TypeScript expose only <code>domestic</code> and <code>international</code>; mode is <code>PPW | KADRA</code>.</td><td><code>frontend/src/lib/types.ts</code>; <code>frontend/src/App.svelte</code></td><td>Add a versioned Season Scoring Rules/display contract and rename the public full mode to <code>RANKING</code>.</td></tr>
+        <tr><td><code>ScoringConfig.engine</code> is a frontend alias for the event carry-over matcher, not the point-calculation formula. The database column is already <code>tbl_season.enum_carryover_engine</code>.</td><td><code>frontend/src/lib/types.ts:85,297</code>; <code>frontend/src/lib/api.ts:275–286</code>; <code>ScoringConfigEditor.svelte:126–163</code> (section 4b, ADR-045)</td><td>Only the frontend alias is ambiguous. Rename it to <code>carryover_engine</code>, introduce a distinct <code>scoring_engine_code</code>, and never overload either. Section 4b's select-plus-hint pattern is the model for the new selector; the two must stay visually distinct.</td></tr>
+        <tr><td>A per-season engine dispatcher <strong>already exists</strong>: <code>enum_event_carryover_engine</code> on the season, resolved by a static <code>CASE</code> with an <code>ELSE RAISE EXCEPTION 'Unknown carryover engine'</code>.</td><td><code>supabase/migrations/20260425000003</code>–<code>20260425000009</code>; ADR-042, ADR-045</td><td>Adopt this precedent for scoring rather than inventing a second mechanism. Its <code>ELSE RAISE</code> is already the fail-closed behavior §10 asks for.</td></tr>
+        <tr><td>Admin has one multiplier field per type and formula constants as editable inputs.</td><td><code>frontend/src/components/ScoringConfigEditor.svelte:13–102</code></td><td>Render engine constants read-only; render normalized type settings from data.</td></tr>
+        <tr><td>Saving configuration performs <strong>two</strong> writes and invokes no scoring: the <code>fn_import_scoring_config</code> RPC, then <code>updateSeasonCarryoverEngine</code>, which is a <strong>direct PostgREST PATCH on <code>tbl_season</code></strong>.</td><td><code>frontend/src/lib/api.ts:289–294</code> and <code>297–300</code>; <code>frontend/src/App.svelte:1408</code> and <code>1413</code> (second call site at <code>1182</code>)</td><td>Keep config-only save semantics and correct the label to <em>Zapisz konfigurację</em>. §05's table guards must not break the carry-over PATCH, which is deliberately outside the scoring lock.</td></tr>
+        <tr><td><code>fn_import_scoring_config</code> is a single flat-JSONB upsert covering every field at once, redefined four times since 2025.</td><td>current definition is <code>supabase/migrations/20260627000002_show_evf_calendar.sql</code>, not the 2025 migrations</td><td>The lock must be <strong>field-level authorization inside that one function</strong>, not a whole-function guard.</td></tr>
+        <tr><td>A <code>readonly</code> prop already exists on the editor, sourced from a client-side date guess, and it <em>hides</em> the save button.</td><td><code>SeasonManager.svelte:149</code> <code>readonly={isSeasonPast(season)}</code>; <code>ScoringConfigEditor.svelte:273</code>; third mount at <code>SeasonManagerWizard.svelte:104</code></td><td>Re-source the same boolean from server authority; stop hiding the save affordance. There are three mount points, not two.</td></tr>
+        <tr><td>Ranklist, export and drilldown hardcode PPW/PEW totals; FilterBar, App and drilldown also disable full mode for V0.</td><td><code>frontend/src/components/RanklistTable.svelte</code>; <code>frontend/src/components/DrilldownModal.svelte</code>; <code>frontend/src/components/FilterBar.svelte</code>; <code>frontend/src/lib/export.ts</code></td><td>Expose only SPWS, EVF+ and Razem at the top level; use orange EVF/FIE bars and red PZSz bars within one EVF+ total; remove every V0 coercion.</td></tr>
+        <tr><td><code>show_evf_toggle</code> controls ranklist visibility, while <code>show_evf_toggle_calendar</code> is independent.</td><td><code>frontend/src/App.svelte</code>; <code>frontend/src/lib/types.ts</code></td><td>Replace the ranklist flag with publication capability plus default mode; retain the calendar flag unchanged.</td></tr>
+        <tr><td>The formula exists in <strong>three</strong> independent browser-JavaScript implementations, not one, and they already disagree at the edges.</td><td><code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code> (<code>fN</code>/<code>rundy</code>/<code>parts</code>/<code>total</code>); its byte-identical WP copy; <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> (<code>firstPlaceBase</code>/<code>wonRounds</code>/<code>scoreParts</code>/<code>totalScore</code>). Pinned together by <code>frontend/tests/assets.test.ts:11–15</code>. ADR-085, ADR-092.</td><td>The scoring table is a <em>live</em> 300×300 grid, not a printed page. Collapse all three into one shared module. Note the existing divergence: the table floors at <code>MIN_PARTICIPANTS = 4</code>, the calculator accepts N = 1.</td></tr>
+        <tr><td>Both pages ship from <code>frontend/public/</code> to <strong>GitHub Pages</strong> via <code>release.yml</code>; Vite copies <code>public/</code> verbatim.</td><td><code>frontend/public/kalkulator-punktow.html</code>, <code>frontend/public/tabela-punktacji.html</code>; ADR-085 §40</td><td>The cutover's target is a static Pages origin calling Supabase, not an app route. That origin drives the anon-allowlist work in §08.</td></tr>
+        <tr><td>PZSz calendar import is deliberately childless and excludes scoring.</td><td><code>python/scrapers/pzsz_calendar.py:1–21</code>; ADR-087 §6</td><td>Extend the existing result lane separately; do not alter calendar identity.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="engines">
+    <p class="kicker">03 · Architecture</p>
+    <h2>Stable orchestration, immutable strategies, one component contract</h2>
+    <div class="flow" role="img" aria-label="A caller reaches a stable dispatcher, which selects the season engine and invokes an immutable strategy; the bulk scorer persists while preview returns only">
+      <div class="node"><strong>Bulk or preview caller</strong>Tournament writer or public calculator</div>
+      <div class="node"><strong>Stable dispatcher</strong>Resolves explicit season engine</div>
+      <div class="node"><strong>Static CASE</strong>One branch per released formula</div>
+      <div class="node"><strong>Immutable strategy</strong>Returns the common score components</div>
+      <div class="node"><strong>Boundary</strong>Bulk persists; preview only returns</div>
+    </div>
+    <p><code>fn_calc_tournament_scores(p_tournament_id)</code> remains the stable transactional writer. It validates the tournament and season, resolves the authoritative multiplier, dispatches each result through the selected strategy, writes all four score columns, stamps <code>ts_points_calc</code>, marks the tournament <code>SCORED</code>, and records the ordinary Admin configuration-lock boundary in the same transaction.</p>
+    <p><code>fn_preview_tournament_score(...)</code> is a public, read-only facade over the same dispatcher. It returns the engine label, base, place points, DE bonus, podium bonus, coefficient and final score. It cannot update a tournament or result.</p>
+    <div class="note good">
+      <p class="lede">Follow the dispatcher this repository already has</p>
+      <p>ADR-042 and ADR-045 established per-season engine selection here: <code>tbl_season</code> names the engine and a static <code>CASE</code> resolves it to a separate function, closing with <code>ELSE RAISE EXCEPTION 'Unknown … engine'</code>. Scoring adopts that pattern rather than a second mechanism. <code>tbl_season.id_scoring_engine</code> names the engine; the dispatcher's <code>CASE</code> resolves it; <code>tbl_scoring_engine</code> survives as a <strong>metadata</strong> table only — display label, immutable-constants documentation, active/retired — so the Admin dropdown and the published pages can show a human label instead of a raw code.</p>
+      <p>The rejected “growing IF tree” is today's situation, where one function holds all the arithmetic inline. A thin dispatcher calling separate immutable functions is the opposite of that, and it satisfies the property that actually matters: <strong>adding a branch edits the dispatcher, never a strategy.</strong></p>
+      <p>Dispatching on a function reference stored in a table was considered and rejected. It requires dynamic <code>EXECUTE</code> inside a <code>SECURITY DEFINER</code> function, so a writable registry row becomes an execution path; Postgres tracks no dependency, meaning <code>DROP FUNCTION</code> on a live strategy would succeed and break a closed season at runtime instead of at migration time; and <code>postgrestools</code> and the knowledge graph cannot see the call edge.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Engines are assigned, never branched to</p>
+      <p>Nothing chooses an algorithm at calculation time. A season is <strong>assigned</strong> exactly one engine, and once any result in that season is scored the assignment cannot change. Reuse is free and costs no code: a later season that wants an existing formula points at it, which is a season-row update. <strong>The dispatcher grows one branch per distinct formula ever released, never one per season</strong> — three seasons sharing a formula is one branch. This is already how ADR-042's two carry-over engines serve every season in the system.</p>
+      <p>The public calculator's EVF/SPWS toggle is a <em>human comparison control on a page</em> and is not this mechanism. Both hold at once.</p>
+    </div>
+    <h3>Naming convention</h3>
+    <pre>DESCRIPTIVE_FAMILY_V&lt;contract-version&gt;_&lt;reference-season&gt;
+
+EVF_CLASSIC_V1_2025_2026
+SPWS_FIELD_SCALED_V1_2026_2027
+SPWS_FIELD_SCALED_V2_2027_2028</pre>
+  </section>
+
+  <section id="formula">
+    <p class="kicker">04 · Formula</p>
+    <h2>The calculator is the 2026/2027 contract</h2>
+    <div class="formula">B(N) = min(mpValue, baseSlope × log₂(max(2, N)))   ← the field-scaled engine<br>
+B(N) = mpValue                                    ← the classic engine<br>
+<br>
+place = B(N), when N = 1<br>
+place = B(N) − (B(N) − 1) × ln(place) / ln(N), otherwise<br>
+DE = deRound × max(0, floor(log₂N) − ceil(log₂place) + powerOfTwoAdjustment)<br>
+podium = coefficient × 3 × ∛N, where coefficient is podiumGold / Silver / Bronze for places 1 / 2 / 3<br>
+final = round((place + DE + podium) × tournamentMultiplier, 2)<br>
+<br>
+place &gt; N, place &lt; 1 or N &lt; 1 is invalid input and is rejected, not scored.</div>
+    <p><code>powerOfTwoAdjustment</code> is <strong>+1 when N is not an exact power of two, and 0 when it is</strong>. The plan previously left the term undefined.</p>
+    <div class="note warn">
+      <p class="lede">Reversed — the numbers are season configuration, not engine constants</p>
+      <p>An earlier version of this document stated that <code>10</code>, <code>50</code> and the podium coefficients <code>3/2/1</code> are engine constants rather than season knobs. <strong>That is no longer true.</strong> <code>mpValue</code> and the podium coefficients remain the existing <code>tbl_scoring_config</code> columns <code>int_mp_value</code> and <code>int_podium_gold/silver/bronze</code>, editable in Admin until the season's first result is scored — which is what makes a pre-lock edit visible in the calculator and the scoring table.</p>
+      <p>The engine owns only what cannot be expressed as a number: <strong>the shape of the base</strong> — flat <code>mpValue</code> for <code>EVF_CLASSIC_V1_2025_2026</code> against <code>min(mpValue, baseSlope × log₂(max(2, N)))</code> for <code>SPWS_FIELD_SCALED_V1_2026_2027</code>. That difference is what distinguishes the two engines and it is the only thing frozen by the engine version.</p>
+      <p><strong>Two unrelated tens.</strong> <code>baseSlope</code> is base points per bracket round and appears only in the field-scaled engine; <code>deRound</code> is points per DE round won and appears in both. They coincide at 10 today and are not the same quantity. They must carry separate names in schema, code and tests.</p>
+    </div>
+    <p>At <code>N ≥ 32</code> the field-scaled base reaches <code>mpValue</code> and the result is identical to the classic engine for the same placement and multiplier, because <code>10 × log₂(32) = 50</code>. The entire difference between the two engines is confined to fields smaller than 32.</p>
+    <div class="note danger">
+      <p class="lede">N = 1 re-prices walkovers, deliberately</p>
+      <p>The <code>max(2, N)</code> guard exists to stop <code>log₂(1) = 0</code> producing a base of zero, so a one-competitor bracket inherits the N = 2 base of 10. Against the classic engine's base of 50 this moves a walkover from <strong>59 points to 19</strong> before the type multiplier: 50 + 0 + 9 becomes 10 + 0 + 9.</p>
+      <p>This is a live case, not a hypothetical. ADR-066 records that in <code>PPW2-2025-2026</code> six of seven FOIL brackets had a single competitor, and that an operator confirmed on 2026-05-10 that the lone competitor in such a bracket <em>does</em> earn ranklist points by walkover. The reduction is accepted as a deliberate consequence of a curve whose stated purpose is that small fields are worth less — a walkover outscoring a fought four-person bracket would be the stranger outcome. It is recorded here rather than left to fall out of a division-by-zero guard, and <code>SS26.NEW</code> pins N = 1 explicitly.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede">A place greater than the field is invalid data, not a zero</p>
+      <p>The two present implementations disagree. <code>fn_calc_tournament_scores</code> scores it — <code>WHEN r.int_place &gt; v_n THEN 0</code> — while the calculator refuses it, returning <code>null</code> from <code>parts()</code>. Byte-equivalent preview and persistence is unachievable until one wins.</p>
+      <p><strong>Rejection wins.</strong> A place greater than the field size is corrupt data, and zero is the one value that hides it: it sorts to the bottom and reads as an ordinary weak result. Scoring raises, ingestion validates, and the calculator's existing <code>null</code> surfaces through the in-page validation error §08 already requires. A <code>CHECK</code> constraint lands only after a preflight proves no existing <code>tbl_result</code> row violates it.</p>
+      <p>This also closes a live leak: <code>num_podium_bonus</code> carries <em>no</em> <code>place &gt; N</code> guard, only <code>WHEN r.int_place = 1/2/3</code>, so N = 2 with place = 3 awards a bronze podium bonus for a place that does not exist in the bracket while its place points correctly collapse to zero.</p>
+    </div>
+    <p>The historical engine reproduces the classic flat base. Every pre-2026/2027 season is assigned it only after a preflight proves its scored configuration used the values it actually used; because those values are season configuration, the preflight reads them per season rather than assuming 50 and 3/2/1. Any deviation aborts migration and requires its own frozen engine rather than silent coercion.</p>
+  </section>
+
+  <section id="data">
+    <p class="kicker">05 · Data and lock</p>
+    <h2>Normalize type policy; close ordinary editing without closing governance</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Object</th><th>Purpose</th><th>Authority</th></tr></thead>
+      <tbody>
+        <tr><td><code>tbl_scoring_engine</code></td><td><strong>Metadata only</strong>: code, display label, documentation of the base's shape, active/retired state. It holds no function reference and performs no dispatch.</td><td>Migration/service only; never browser writable.</td></tr>
+        <tr><td><code>tbl_season.id_scoring_engine</code></td><td>Explicit season → active engine selection.</td><td>Admin before the first score; afterward changeable only by the privileged whole-season revision procedure.</td></tr>
+        <tr><td><code>tbl_season.ts_scoring_locked_at</code></td><td>Evidence that ordinary Admin editing has crossed its boundary.</td><td>Set transactionally by first successful scoring; remains set across repairs, reimports, rescoring and authorized revisions.</td></tr>
+        <tr><td>Scoring configuration revision</td><td>Audit snapshot of engine selection, multipliers and thresholds, with effective time, actor, reason and board-decision reference.</td><td>Append-only service/operator history; the season identifies exactly one active revision.</td></tr>
+        <tr><td>Persisted score provenance</td><td>Identifies the configuration revision that produced each stored score.</td><td>Written only by scoring; a successful whole-season revision leaves every applicable score on the newly active revision.</td></tr>
+        <tr><td><code>tbl_scoring_type_config</code></td><td>Authoritative multiplier and minimum-participant threshold per configuration revision and tournament type.</td><td>Admin before the first score; afterward replaced only as part of a privileged whole-season revision.</td></tr>
+        <tr><td><code>tbl_scoring_config.int_mp_value</code>, <code>int_podium_gold/silver/bronze</code></td><td>The base value and podium coefficients the engine's shape is applied to.</td><td>Admin before the first score; afterward replaced only as part of a privileged whole-season revision. <strong>Not</strong> engine constants — see §04.</td></tr>
+        <tr><td><code>tbl_scoring_config.json_ranking_rules</code></td><td>Versioned Season Scoring Rules, display-group mappings and buckets.</td><td><strong>Reversed:</strong> locked after the first score like everything else. A bucket edit reorders the published ranklist instantly, with no rescore and no audit trail, which makes it a more visible mid-season rule change than a multiplier, not a lesser one.</td></tr>
+        <tr><td>Season default ranking mode</td><td>Which view a <code>FULL</code> season lands on. Changes no number and reorders nothing.</td><td>Locked with the rest of the editor; 2026/2027 defaults to <code>RANKING</code>. It cannot expand publication capability.</td></tr>
+        <tr><td><code>tbl_season.enum_ranking_publication</code></td><td>Immutable publication capability: <code>PPW_ONLY</code> or <code>FULL</code>.</td><td>Migration/season-creation policy only; never an Admin display toggle.</td></tr>
+        <tr><td>Carry-over settings</td><td><code>carryover_engine</code> and related prior-event matching policy.</td><td>Existing independent behavior; not a scoring-formula engine and not governed by the score-configuration lock.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Setting</th><th>Before first score</th><th>Admin UI after first score</th><th>Authorized DB revision</th></tr></thead>
+      <tbody>
+        <tr><td>Scoring engine</td><td><span class="chip edit">editable</span></td><td><span class="chip lock">read-only</span></td><td><span class="chip future">new revision + full rescore</span></td></tr>
+        <tr><td>Type multiplier</td><td><span class="chip edit">editable</span></td><td><span class="chip lock">read-only</span></td><td><span class="chip future">new revision + full rescore</span></td></tr>
+        <tr><td>Minimum-participant threshold</td><td><span class="chip edit">editable</span></td><td><span class="chip lock">read-only</span></td><td><span class="chip future">new revision + full rescore</span></td></tr>
+        <tr><td>Base value <code>mp_value</code> and podium coefficients</td><td><span class="chip edit">editable</span></td><td><span class="chip lock">read-only</span></td><td><span class="chip future">new revision + full rescore</span></td></tr>
+        <tr><td>Released strategy body (the base's shape)</td><td><span class="chip lock">immutable version</span></td><td><span class="chip lock">immutable version</span></td><td><span class="chip future">create a new engine version</span></td></tr>
+        <tr><td>Ranking buckets</td><td><span class="chip edit">editable</span></td><td><span class="chip lock">read-only</span></td><td><span class="chip future">new revision</span></td></tr>
+        <tr><td>Default ranking mode</td><td><span class="chip edit">editable within capability</span></td><td><span class="chip lock">read-only</span></td><td><span class="chip future">new revision</span></td></tr>
+        <tr><td>Carry-over engine (<code>enum_carryover_engine</code>)</td><td><span class="chip edit">editable</span></td><td><span class="chip edit">editable</span></td><td>Not required — outside the scoring lock</td></tr>
+      </tbody>
+    </table></div>
+    <p>Ordinary configuration writes go through one server-side RPC, <code>fn_import_scoring_config</code>. Because that function is a <strong>single flat-JSONB upsert covering every field at once</strong>, the lock must be implemented as <strong>field-level authorization inside it</strong> rather than as a guard on the whole function. Trigger guards cover direct browser/Admin table writes as defense in depth, including INSERT, UPDATE and DELETE on normalized type settings. One existing write path must be deliberately exempted: saving configuration also issues <code>updateSeasonCarryoverEngine</code>, a direct PostgREST PATCH on <code>tbl_season.enum_carryover_engine</code>, which is carry-over policy and not governed by the scoring lock. A browser-side disabled state is presentation, never enforcement. Existing scored or published seasons are backfilled as administratively locked; where available, the earliest surviving <code>ts_points_calc</code> supplies the initial lock timestamp. That timestamp is audit evidence, not a prohibition on repair and not the sole proof that a historical season was scored.</p>
+    <div class="note good">
+      <p class="lede">Repairable results; revisable rules</p>
+      <p>The lock applies only to ordinary Admin editing of scoring configuration. Tournament source URLs and imported results remain correctable: an operator may fix an FTL URL, replace an invalid import and rescore that tournament under the same active revision. Separately, a board-authorized rule change uses a privileged database procedure outside the Admin UI. It appends an audited configuration revision, creates a new immutable engine version when the formula itself changes, recalculates every applicable result in the season, verifies that no mixed revision remains, and activates the revision only if the complete operation succeeds. Failure leaves the previous configuration and scores authoritative.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede">Admin behavior after locking</p>
+      <p>The action still reads <strong>Zapisz konfigurację</strong>, but every section and the save affordance are visibly and accessibly guarded. Activation explains: “Konfiguracja punktacji jest zablokowana, ponieważ sezon zawiera już obliczone wyniki. Zmiana wymaga zatwierdzonej aktualizacji konfiguracji i ponownego przeliczenia całego sezonu poza panelem administracyjnym.” A native disabled button alone is insufficient because it cannot communicate on click.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Reversed — the lock is total, not partial</p>
+      <p>An earlier version of this document kept ranking buckets and the default ranking mode editable after the first score. <strong>They lock with everything else.</strong> The whole Admin scoring editor goes read-only on the season's first scored result, and the trigger is that result — not the season's start or end date.</p>
+      <p>This keeps <code>readonly</code> a <strong>single boolean</strong>, re-sourced from the server rather than split into per-section flags: the change is replacing today's client-side <code>readonly={isSeasonPast(season)}</code> with the server's <code>scoring_admin_locked</code>. There is no partial-lock UI to design.</p>
+    </div>
+    <p>The season/config API returns explicit server authority fields such as <code>scoring_admin_locked</code> and <code>scoring_locked_at</code>. <strong>All three</strong> editor mount points — <code>SeasonManager.svelte:146</code>, <code>SeasonManagerWizard.svelte:104</code> and <code>ScoringConfigEditor</code> itself — use those fields, not season dates, client-side result counts or inference. <code>fn_copy_prior_scoring_config</code>, which the wizard's step 2 calls to pre-fill a new season, must not silently carry a prior season's engine assignment forward: assigning an engine is a deliberate act. The guarded <strong>Zapisz konfigurację</strong> action remains visible and keyboard-reachable through an explanatory affordance; the current implementation’s practice of hiding the save action when <code>readonly</code> must be replaced.</p>
+  </section>
+
+  <section id="ranking">
+    <p class="kicker">06 · Ranking</p>
+    <h2>Two displayed groups, three independent Season Scoring Rules</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season Scoring Rules</th><th>Types</th><th>Displayed group</th><th>Drilldown identity</th></tr></thead>
+      <tbody>
+        <tr><td>SPWS</td><td>PPW, MPW</td><td>SPWS</td><td>Blue</td></tr>
+        <tr><td>EVF/FIE</td><td>PEW, MEW, MSW, PSW</td><td>EVF+</td><td>Orange result bars</td></tr>
+        <tr><td>PZSz</td><td>PPS, MPS</td><td>EVF+</td><td>Red result bars: voluntary senior bonus scores</td></tr>
+      </tbody>
+    </table></div>
+    <p>Season Scoring Rules are configured independently for SPWS, EVF/FIE and PZSz tournament types. The public UI shows only SPWS and EVF+ totals. Results counted under the EVF/FIE and PZSz rules contribute directly to the single EVF+ total; no component subtotals are shown. Each bucket retains the general <code>best: N</code> or <code>always: true</code> contract. Validation rejects unknown types, non-positive <code>best</code>, both/neither selectors, a rules section assigned to multiple groups, or duplicate counting inside a view.</p>
+    <pre>{
+  "schema_version": 2,
+  "season_scoring_rules": {
+    "spws":    { "group": "spws", "types": ["PPW", "MPW"], "buckets": [/* rules */] },
+    "evf_fie": { "group": "evf_plus", "types": ["PEW", "MEW", "MSW", "PSW"], "buckets": [/* rules */] },
+    "pzsz":    { "group": "evf_plus", "types": ["PPS", "MPS"], "buckets": [/* rules */] }
+  },
+  "display_groups": {
+    "spws":     { "sections": ["spws"] },
+    "evf_plus": { "sections": ["evf_fie", "pzsz"] }
+  },
+  "views": {
+    "PPW":     ["spws"],
+    "RANKING": ["spws", "evf_plus"]
+  }
+}</pre>
+    <p>Older <code>domestic/international</code> JSON remains interpreted by a frozen compatibility adapter, preserving historical ranking calculation. The generalized ranking RPC becomes the primary full-view API and returns <code>spws_total</code>, <code>evf_plus_total</code> and <code>total_score</code>. The old <code>fn_ranking_kadra</code> remains a compatibility wrapper until consumers are migrated; any temporary legacy <code>ppw_total</code>/<code>pew_total</code> aliases are not the new public contract.</p>
+    <div class="note accent">
+      <p class="lede">Minimal public presentation</p>
+      <p>The ranking table and export show exactly <strong>Zawodnik | SPWS | EVF+ | Razem</strong>. The drilldown summary remains compact as <strong>PPW total | EVF+ total | Total</strong> and has exactly two top-level sections: blue SPWS and EVF+. EVF+ exposes one subtotal only. Inside its single bar chart, ordinary EVF/FIE result bars are orange and PZSz result bars are red to identify them as voluntary senior bonus scores. Color communicates provenance only; it does not create separate orange or red subtotals. The UI does not add a third top-level column, section or subtotal.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Historical ranking publication boundary</p>
+      <p>The 2023/2024, 2024/2025 and 2025/2026 pages reproduce what was available in the association’s Excel spreadsheets. They did not publish the new official combined Ranking and must therefore remain <code>PPW_ONLY</code>. The official full Ranking begins with 2026/2027. This is a permanent introduction boundary, not a comparison with whichever season happens to be active: when 2027/2028 becomes active, 2026/2027 still retains Ranking / PPW forever.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Publication</th><th>Initial mode</th><th>Public control</th></tr></thead>
+      <tbody>
+        <tr><td>2023/2024</td><td><code>PPW_ONLY</code></td><td>PPW</td><td>Hidden</td></tr>
+        <tr><td>2024/2025</td><td><code>PPW_ONLY</code></td><td>PPW</td><td>Hidden</td></tr>
+        <tr><td>2025/2026</td><td><code>PPW_ONLY</code></td><td>PPW</td><td>Hidden</td></tr>
+        <tr><td>2026/2027</td><td><code>FULL</code></td><td>Ranking</td><td>Ranking / PPW</td></tr>
+        <tr><td>Later seasons</td><td><code>FULL</code> by season-creation policy</td><td>Configured display default</td><td>Ranking / PPW</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li>The user-visible switch is <strong>Ranking / PPW</strong>, not PPW / +EVF or Kadra.</li>
+      <li><strong>Ranking</strong> is the default for 2026/2027. The three earlier seasons force PPW and render no switch.</li>
+      <li>V0 can use Ranking. Its EVF/FIE subsection is naturally empty, while SPWS and PZSz can contribute; existing V0 coercion/disable logic is removed from FilterBar, App and drilldown.</li>
+      <li>Drilldown renders the two display groups and the EVF+ bar provenance from Season Scoring Rules metadata; no third top-level branch is introduced.</li>
+      <li>A <code>PPW_ONLY</code> season is enforced at every boundary: season selection normalizes state before loading; the main view, drilldown and export accept only PPW; stale or URL-restored <code>RANKING</code> state is discarded; and the full-ranking RPC rejects the request.</li>
+      <li>Historical EVF/FIE result rows remain stored for audit and authorized carry-over into 2026/2027. Publication policy hides an unofficial aggregate; it never deletes source data.</li>
+      <li>The calendar is unaffected. Its independent visibility controls and red PZSz identity continue across seasons.</li>
+    </ul>
+    <p>Mode becomes a coherent controlled state across FilterBar, App, drilldown and export. Season, mode, filters and drilldown loads carry a request-generation identity so an older asynchronous response cannot overwrite the newly selected state. Ranklist <code>show_evf_toggle</code> is migrated away as an authority; <code>show_evf_toggle_calendar</code> remains independent and unchanged.</p>
+  </section>
+
+  <section id="pzsz">
+    <p class="kicker">07 · PPS and MPS</p>
+    <h2>One senior field, only known veterans, original place and original N</h2>
+    <p><code>PPS</code> and <code>MPS</code> are added to <code>enum_tournament_type</code>. A tournament-level <code>SENIOR</code> category represents the source bracket. Result rows continue to hold the fencer’s season-derived V0–V4 category; a constraint prevents <code>SENIOR</code> from becoming a published veteran category.</p>
+    <div class="note pzs">
+      <p class="lede">The 34-of-107 invariant</p>
+      <p>If a source field contains 107 competitors and a known veteran finishes 34th, the stored tournament count is 107 and the stored place is 34. The importer does not shrink the field to known veterans and does not rerank their placements.</p>
+    </div>
+    <ol>
+      <li>Reuse the existing FTL parser and orchestration contracts; add a PZSz senior flow/policy, not a second FTL parser.</li>
+      <li>Validate the result URL against the event’s date, identity, weapon, gender and senior category before writing.</li>
+      <li>Create one <code>SENIOR</code> tournament per actual weapon/gender bracket, with full source participant count. Its minimum-participant gate compares against that full field size, not the count of matched veterans.</li>
+      <li>Auto-match only an existing canonical fencer or an approved exact alias. Uncertain matches enter Admin review.</li>
+      <li>Skip unmatched competitors and never auto-create a fencer from PPS/MPS.</li>
+      <li>Assign each imported veteran’s V0–V4 result category from birth year and the SPWS season end year.</li>
+      <li>Score the imported rows through the season dispatcher using the PPS or MPS multiplier.</li>
+    </ol>
+    <p>No scoring type configuration is created for PPS/MPS in 2025/2026 or earlier. <strong>That absence does not fail closed today and the gate must be built.</strong> <code>get_min_participants</code> (<code>python/pipeline/db_connector.py:597–620</code>) returns a threshold of <code>1</code> for any unrecognised tournament type, and <code>derive_tourn_type_from_event_code</code> returns <code>None</code> for an unmatched event code, which lands on the same fallback — so a missing configuration currently lets everything through rather than stopping it. Ingestion must raise on a tournament type with no configured settings, and <code>SS26.PZSZ</code> pins that explicitly. Calendar rows may exist historically, but no PZSz tournament/result backfill is performed. Future PPS/MPS carry-over is supported only through explicit prior-event links and begins disabled.</p>
+  </section>
+
+  <section id="calculator">
+    <p class="kicker">08 · Public calculator</p>
+    <h2>Two published pages, three copies of the formula, one module</h2>
+    <div class="note danger">
+      <p class="lede">Reversed — there are three implementations, and the table is not a printed page</p>
+      <p>An earlier version of this document treated the calculator as the only duplicate. The formula is in fact written three times in browser JavaScript: <code>kalkulator-punktow-za-wynik-spws.v2.html</code> as <code>fN</code>/<code>rundy</code>/<code>parts</code>/<code>total</code>; its byte-identical WordPress copy; and <code>Tabela-punktacji-SPWS_2026-2027.html</code> as <code>firstPlaceBase</code>/<code>wonRounds</code>/<code>scoreParts</code>/<code>totalScore</code>. The scoring-table annex computes a live 300 × 300 grid in the browser with its own constants and a CSV export — it is a calculator, not a printed table. The three already disagree: the annex floors at <code>MIN_PARTICIPANTS = 4</code> while the calculator accepts N = 1.</p>
+    </div>
+    <ul>
+      <li>Preserve both published URLs — <code>/kalkulator-punktow.html</code> and <code>/tabela-punktacji.html</code> — and their present visual design. Both ship from <code>frontend/public/</code> to GitHub Pages via <code>release.yml</code>.</li>
+      <li>Collapse all three JavaScript implementations into <strong>one shared TypeScript module</strong>, built by Vite into both pages. Neither page keeps local arithmetic.</li>
+      <li>The module takes a season's configuration values — base, podium coefficients, and the assigned engine's base shape — through one anon-executable RPC, then computes locally. It is season-agnostic; each page names the season it wants, the calculator the active one and the annex its pinned <code>SPWS-2026-2027</code>. A pre-lock Admin edit is therefore reflected in the engine, the calculator and the table alike, and the database lock freezes all three at once. <strong>The DB lock is the only lock</strong>; neither page needs a freezing mechanism of its own.</li>
+      <li>Render validation and network errors in the page. Never fall back to stale JavaScript arithmetic or require DevTools.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Reversed — scope reduced; the pages keep their controls</p>
+      <p>An earlier version removed the competition-rank coefficient control and added season and tournament-type selectors. <strong>None of that happens.</strong> The rank coefficient stays a free input. There is <strong>no tournament-type selector</strong>, so neither page reads per-type multipliers. There is <strong>no season selector</strong> on either page; each binds to one season by construction — the calculator to the active season, the annex to its pinned <code>SPWS-2026-2027</code>. The <strong>EVF/SPWS toggle stays</strong> — it is a human comparison control on a public page, which is a different thing from the system assigning exactly one engine per season, and both hold at once.</p>
+      <p>The only change to these pages is the collapse to one shared module. Their controls, layout and output are otherwise untouched.</p>
+    </div>
+    <p>Two reconciliations fall out of one module serving both pages. The annex's <code>MIN_PARTICIPANTS = 4</code> and the calculator's N ≥ 1 cannot both stand once they share code, and with N = 1 now a pinned case (§04) the floor of 4 needs a stated reason or must go. And <code>total()</code> returns an <strong>unrounded</strong> value today while <code>fn_calc_tournament_scores</code> applies <code>ROUND(…, 2)</code>: the formula comes from the page, the two-decimal rounding stays the database's, and the published pages will show rounded values where they previously did not.</p>
+    <p>Where a server round trip is used, the RPC is <code>STABLE</code>, has a fixed <code>search_path</code>, validates <code>N ≥ 1</code> and <code>1 ≤ place ≤ N</code>, performs no write, and exposes no mutable engine metadata. Per-cell or whole-grid RPCs were rejected for the annex: a 300 × 300 grid refetched on every coefficient change is not viable, which is why the shared module computes client-side from server-supplied parameters. The formula consequently lives in exactly two places — the TypeScript module and the SQL strategy — pinned to each other by <code>SS26.PARITY</code> over fixtures, which is a smaller surface than three unpinned copies drifting.</p>
+    <div class="note danger">
+      <p class="lede">The anon grant is a two-file gate that blocks the PROD deploy job</p>
+      <p>Granting <code>anon</code> execution is not one edit. The allowlist is asserted as a <strong>set equality</strong> in <code>supabase/tests/52_security_posture.sql</code> (52.7) and duplicated in <code>scripts/check-security-posture.sh</code>, which the deploy job runs against the real CERT/PROD database. <code>scripts/check-anon-allowlist-sync.sh</code> exists because the two drifted on 2026-09-12: pgTAP stayed green through the whole of CI and the disagreement surfaced at deploy, failing CERT's posture check and blocking PROD. Both files must be updated together. One function serves both published pages from the GitHub Pages origin.</p>
+    </div>
+    <p><code>doc/tools/WP-kalkulator-punktow-za-wynik-spws.html</code> and <code>WP-instrukcja-wgrania.txt</code> are <strong>retained unchanged</strong>, and <code>frontend/tests/assets.test.ts</code> keeps its three-way byte-identity assertion. ADR-085's exit clause — recorded in that test's header as “the page and this test are removed once the formula becomes the live SPWS scoring” — is triggered by this cutover, but the page is <em>kept</em>: §12 supersedes ADR-085 by making the temporary page permanent rather than removing it.</p>
+    <div class="note accent">
+      <p class="lede">The two pages bind to different seasons, deliberately</p>
+      <p>The calculator follows the <strong>active</strong> season. The scoring-table annex is <strong>pinned to 2026/2027</strong> and stays pinned. ADR-092 defines it as <em>Załącznik nr 1</em> to that season's regulation, its source filename encodes that, and a regulation annex that silently re-rendered itself when the season rolled over would no longer be the document it claims to be. ADR-092's season identity therefore stands unchanged; only the source of its numbers changes.</p>
+      <p>The pin is expressed as an explicit season <em>code</em> — the annex asks for <code>SPWS-2026-2027</code> — never as “the active season” and never as hardcoded numbers copied into the page. Before that season's first result is scored the annex still tracks Admin edits, because it is asking the live configuration for that season. Once the season locks, its parameters stop moving and the annex is frozen for good, while remaining provably derived from the engine rather than hand-maintained.</p>
+      <p>This costs nothing architecturally: the shared module is season-agnostic and takes parameters as input, so each page simply supplies a different season. A future season wanting its own annex gets its own file pinned to its own season code.</p>
+    </div>
+  </section>
+
+  <section id="scenarios">
+    <p class="kicker">09 · Walkthroughs</p>
+    <h2>Concrete behavior at the boundaries</h2>
+    <h3>A. First 2026/2027 PPW result</h3>
+    <ol><li>Admin selects <code>SPWS_FIELD_SCALED_V1_2026_2027</code>, completes all normalized type settings, and saves.</li><li>Ingestion commits placements and invokes <code>fn_calc_tournament_scores</code>.</li><li>The dispatcher resolves the selected engine and PPW multiplier; the strategy returns components.</li><li>The writer stores components, marks the tournament scored and sets the Admin configuration-lock timestamp atomically.</li><li>Later Admin attempts to change <em>anything</em> in the scoring editor — engine, base, podium, multiplier, threshold or ranking bucket — are rejected by the ordinary database API and explained in the UI. Controlled result repair remains available.</li></ol>
+    <h3>A2. A pre-lock edit reaches all three surfaces</h3>
+    <ol><li>Before any 2026/2027 result is scored, an admin lowers the base value in the Admin editor and saves.</li><li>The next scoring run uses the new base, because <code>fn_calc_tournament_scores</code> reads it from the season's configuration.</li><li>The public calculator and the scoring-table annex both show the new base on their next load, because the shared module reads the same season configuration.</li><li>The season's first result is then scored. The configuration locks, and all three surfaces are frozen together by that one lock.</li></ol>
+    <h3>A3. A one-competitor bracket</h3>
+    <ol><li>A PPW bracket is ingested with a single competitor, which ADR-066 admits deliberately.</li><li>Under 2025/2026's classic engine the lone entrant scored base 50 + 0 + podium 9 = 59 before the multiplier.</li><li>Under 2026/2027's field-scaled engine the <code>max(2, N)</code> guard gives base 10, so the same walkover scores 10 + 0 + 9 = 19.</li><li>This is the intended shape of the curve, it is stated in §04, and <code>SS26.NEW</code> asserts it so it cannot regress silently.</li></ol>
+    <h3>A4. A place larger than the field</h3>
+    <ol><li>An import proposes place 120 in a field of 107 — a parse slip, not a result.</li><li>Ingestion validation rejects the row rather than storing it.</li><li>Had it reached scoring, the dispatcher raises instead of writing the silent zero the present function would produce.</li><li>The same input in the published calculator renders the in-page validation error rather than a number.</li></ol>
+    <h3>B. PZSz veteran finishes 34th of 107</h3>
+    <ol><li>The PZSz calendar event already exists childless.</li><li>FTL ingestion validates the source and creates the appropriate PPS/MPS <code>SENIOR</code> tournament with <code>N=107</code>.</li><li>The existing veteran is matched; the other 106 source competitors need not exist in <code>tbl_fencer</code>.</li><li>The result stores place 34, full N remains 107, and the fencer receives their season V-category.</li><li>The 2026/2027 engine scores 34/107; the PZSz Season Scoring Rules determine whether it counts toward the one EVF+ total, while PPW excludes it. Its drilldown bar is red to mark its voluntary senior-bonus provenance.</li></ol>
+    <h3>C. New 2027/2028 rules</h3>
+    <ol><li>A developer adds a new immutable strategy and registry entry with a new descriptive season-suffixed code.</li><li>The new season selects it before any result is scored.</li><li>No 2025/2026 or 2026/2027 strategy is edited; golden tests continue to pin both.</li></ol>
+    <h3>D. Partial failure or concurrent Admin edit</h3>
+    <p>Scoring, score writes, tournament status and first Admin-lock timestamp share one database transaction. Row locking serializes ordinary configuration save against first scoring. Either the pre-score configuration write wins completely, or scoring closes ordinary Admin editing and the configuration write fails completely—never a tournament scored under half of each configuration. The separate privileged revision procedure has its own whole-season atomicity and audit contract.</p>
+    <h3>E. Moving between official and spreadsheet-derived seasons</h3>
+    <ol><li>A visitor views 2026/2027 in Ranking mode and selects 2025/2026.</li><li>The season policy is read before a ranking request is issued; client state is normalized to PPW immediately.</li><li>The Ranking / PPW switch disappears, the PPW RPC loads, and the drilldown/export inherit PPW.</li><li>A late response from the abandoned 2026/2027 Ranking request is ignored because it no longer matches the selected season/request generation.</li><li>When the visitor returns to 2026/2027—even years later—the permanent <code>FULL</code> capability restores Ranking / PPW and applies that season’s configured default.</li></ol>
+    <h3>F. Correcting an invalid FTL source</h3>
+    <ol><li>An operator discovers that a tournament was scored from an incorrect FTL URL.</li><li>The URL is corrected and the invalid imported result set is replaced through the normal repair/reimport path.</li><li>The tournament is scored again using the unchanged active season configuration revision.</li><li>The season remains administratively locked, but the repaired scores replace the invalid scores; no configuration unlock is needed.</li></ol>
+    <h3>G. Board-authorized scoring-rule change</h3>
+    <ol><li>The board authorizes a change and supplies a durable decision reference and reason.</li><li>An operator invokes the privileged database procedure outside the Admin UI. A formula change selects a newly named immutable engine version; a multiplier or threshold change creates a new configuration revision without rewriting the engine.</li><li>The operation retains the old revision, recalculates the whole season and checks that every applicable stored score uses the candidate revision.</li><li>Only a complete successful rescore makes the candidate active. Any error rolls back to the previously authoritative revision and scores.</li></ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">10 · Tests first</p>
+    <h2>Acceptance IDs are written before implementation</h2>
+    <p>Every implementation test carries its stable <code>SS26.*</code> identifier and is added to the RTM before production code. Each group must be observed RED for the intended reason, then flipped GREEN by the smallest implementation.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Acceptance contract</th><th>Primary layer</th></tr></thead>
+      <tbody>
+        <tr><td><code>SS26.DB.01–05</code></td><td>Engine metadata table, explicit season engine assignment, exact strategy signature, unknown/missing engine fails closed, <strong>and a tournament type with no configured multiplier raises instead of writing a NULL score</strong>.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.HIST.01–06</code></td><td>Golden 2025/2026 fixtures preserve every component and final score; historical multiplier values migrate exactly.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.NEW.01–15</code></td><td>New formula at <strong>N=1</strong>, 2, 16, 31, 32, 107, 1000; podium, DE, last place, 34/107, rounding, monotonicity and cap; <strong>N=1 scores 19 where the classic engine scores 59</strong>; <strong>place &gt; N, place &lt; 1 and N &lt; 1 are rejected, not scored</strong>; no podium bonus survives an out-of-range place.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.PARITY.01–04</code></td><td>Preview and persisted scoring return byte/numeric-equivalent components for both engines and multiple multipliers.</td><td>pgTAP + frontend</td></tr>
+        <tr><td><code>SS26.LOCK.01–12</code></td><td>Every editor field — engine, base, podium, multipliers, thresholds <strong>and ranking buckets and default mode</strong> — is editable before the first score and rejected after it; the trigger is the first scored result, not a season date; direct browser INSERT/UPDATE/DELETE rejected after; lock timestamp persists; <strong>the carry-over engine PATCH remains permitted</strong>; result deletion, URL correction, reimport and same-revision tournament rescore remain allowed; concurrent Admin write is atomic.</td><td>pgTAP + integration</td></tr>
+        <tr><td><code>SS26.REVISION.01–08</code></td><td>Privileged access only; decision metadata required; old revision retained; formula change requires a new engine version; multiplier/threshold revision allowed; whole-season rescore leaves no mixed revision; success activates atomically; failure preserves the prior active revision and scores.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.TYPE.01–06</code></td><td>PPS/MPS enum and normalized settings; SENIOR tournament accepted; SENIOR result category rejected; old type config migration exact.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.PZSZ.01–10</code></td><td>FTL reuse, full N, original place, exact/alias match, uncertain review, unmatched skip, no auto-create, season V-category, no historical scoring, URL/data rejection.</td><td>pytest + pgTAP</td></tr>
+        <tr><td><code>SS26.RANK.01–12</code></td><td>Three independent Season Scoring Rules feed exactly two display groups; best/always semantics; no double count; all qualifying EVF/FIE and PZSz scores feed one EVF+ accumulator; Ranking/PPW membership; V0; legacy adapter parity; optional prior links; no PZSz carry-over by default.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.PUBLISH.01–10</code></td><td>Three historical seasons are PPW_ONLY; 2026/2027 and new seasons are permanently FULL; full RPC rejects PPW_ONLY; historical EVF/FIE data remains; calendar scope is unchanged.</td><td>pgTAP</td></tr>
+        <tr><td><code>SS26.UI.01–14</code></td><td>Ranking/PPW labels and 2026/2027 default; table/export columns are Zawodnik, SPWS, EVF+, Razem; drilldown has two top-level sections and one EVF+ subtotal; EVF/FIE bars are orange and voluntary senior PZSz bonus bars are red; no color-specific subtotals render; V0 Ranking enabled; Admin read-only constants, dynamic type settings, server-authoritative lock message, visible guarded save action and correct save label.</td><td>Vitest</td></tr>
+        <tr><td><code>SS26.UIHIST.01–10</code></td><td>Selecting a historical season forces PPW before fetch, hides the switch, constrains drilldown/export/deep links, ignores stale responses across season/mode/filter/drilldown changes, and never strips FULL when 2026/2027 later becomes historical.</td><td>Vitest + Playwright</td></tr>
+        <tr><td><code>SS26.CARRY.01–04</code></td><td>The existing event carry-over matcher retains its values and behavior under the explicit <code>carryover_engine</code> name; scoring-engine selection is independent and cannot mutate carry-over policy.</td><td>Vitest + pgTAP</td></tr>
+        <tr><td><code>SS26.CALC.01–12</code></td><td>Both published URLs unchanged; the calculator renders the active season's values while the annex renders <code>SPWS-2026-2027</code>'s and does not follow a season change; no local formula remains in either; the shared module is the only implementation; rank-coefficient control and EVF/SPWS toggle still present; no season or tournament-type selector added; rounding matches the database; a pre-lock configuration edit changes both pages; a locked season's values stop moving; error rendering; no writes; unchanged visual structure; <code>assets.test.ts</code> three-way byte identity still holds.</td><td>Vitest + Playwright</td></tr>
+        <tr><td><code>SS26.ANON.01–02</code></td><td>The preview RPC appears in <strong>both</strong> copies of the anon allowlist, and <code>scripts/check-anon-allowlist-sync.sh</code> passes.</td><td>pgTAP + shell</td></tr>
+      </tbody>
+    </table></div>
+    <p>The frontend RED phase explicitly updates, all under <code>frontend/tests/</code>: <code>FilterBar.test.ts</code>, <code>RanklistTable.test.ts</code>, <code>DrilldownModal.test.ts</code>, <code>ScoringConfigEditor.test.ts</code>, <code>SeasonManager.test.ts</code>, <code>SeasonManagerWizard.test.ts</code>, <code>AppShell.test.ts</code>, <code>CalendarBoundary.test.ts</code>, <code>api.test.ts</code>, <code>export.test.ts</code>, <strong><code>assets.test.ts</code></strong> (the three-way calculator identity and the annex pair) and <strong><code>locale-parity.test.ts</code></strong>, plus affected mock fixtures. Every new user-visible string — Ranking / PPW, SPWS, EVF+, Razem, and the Polish lock explanation quoted in §05 — is a key added to <strong>both</strong> <code>frontend/src/lib/locales/pl.json</code> and <code>en.json</code>; adding one without the other fails locale parity. Old assertions for <code>+EVF</code>, PPW-by-default, V0-disabled, PPW/PEW columns, hardcoded domestic/international branches and ranklist <code>show_evf_toggle</code> must fail before the new behavior is implemented. Carry-over <code>engine</code> fixtures are migrated by name, not deleted or silently reinterpreted.</p>
+    <h3>Regression gates</h3>
+    <div class="note danger">
+      <p class="lede">Reversed — do not copy the gate list into this plan</p>
+      <p>An earlier version of this document listed the gates by hand. <strong>That list is deleted.</strong> <code>scripts/preflight.sh</code> is the single place the list is written down, and its own header records why: on 2026-09-13 a plan copied a subset, omitting <code>basedpyright</code>, <code>ruff</code>, <code>check-coherence.sh</code> and <code>check-spec-sync.sh</code>. Every omission then failed serially, discovered from a RED run on <code>main</code> rather than locally in one pass — and a push to <code>main</code> auto-deploys PROD.</p>
+      <p>The copied list here was itself wrong in both directions. It omitted <code>check-anon-allowlist-sync.sh</code> — the gate this very change needs, per §08 — and <code>git diff --check origin/main...HEAD</code>, which blocks branch integration. Its <code>ruff</code> and <code>basedpyright</code> lines covered only <code>python/</code>, where preflight also covers <code>scripts/render_adrs.py</code>, <code>render_docs.py</code>, <code>check_docs.py</code> and <code>build_doc_inventory.py</code>.</p>
+    </div>
+    <pre>scripts/preflight.sh          # the definition of done: exit 0</pre>
+    <p>Three things preflight deliberately does not cover, because they are per-change rather than global, and this work owes all three: <code>scripts/refresh-graph.sh</code> before any commit; <code>postgrestools check &lt;file&gt;</code> for every <code>.sql</code> touched; and <code>python3 tools/docs-search/ingest.py</code> after the documentation changes in §13. <code>cd frontend &amp;&amp; npm run test:e2e</code> is also outside preflight and is required by the Playwright rows above.</p>
+  </section>
+
+  <section id="delivery">
+    <p class="kicker">11 · Delivery</p>
+    <h2>Land foundations before exposing a score</h2>
+    <ol>
+      <li><strong>Contract tests and preflight.</strong> Add acceptance IDs, golden fixtures and migration checks for current constants/data.</li>
+      <li><strong>Engine foundation.</strong> Add registry, explicit season selection, immutable classic/new strategies, dispatcher, bulk writer and preview facade.</li>
+      <li><strong>Normalized type policy and governance lock.</strong> Migrate all existing values, update export/import and threshold readers, remove legacy multiplier authority, close ordinary Admin editing after first scoring, and add the audited privileged revision/full-rescore path.</li>
+      <li><strong>Ranking schema v2.</strong> Add Season Scoring Rules and display-group aggregation, the SPWS/EVF+/Razem row contract, and compatibility wrappers before changing frontend consumers.</li>
+      <li><strong>Publication boundary.</strong> Backfill the three historical seasons to <code>PPW_ONLY</code>, set 2026/2027 to <code>FULL</code>, default new seasons to <code>FULL</code>, and enforce it in the RPC and all presentation surfaces.</li>
+      <li><strong>PPS/MPS result flow.</strong> Add tournament types across <strong>two</strong> migrations, SENIOR source bracket, matching policy and the fail-closed gate §07 now requires.</li>
+      <li><strong>Admin and public ranking UI.</strong> Dynamic tournament-type and Season Scoring Rules rendering; the minimal two-group ranklist, export and drilldown; Ranking/PPW behavior; server-authoritative lock state and explanation.</li>
+      <li><strong>Published-page cutover.</strong> Deploy the preview RPC and both allowlist copies first; then replace local arithmetic in the calculator <em>and</em> the scoring-table annex with the shared module, at unchanged URLs.</li>
+      <li><strong>Documentation and release verification.</strong> Render, validate and review CERT before PROD.</li>
+    </ol>
+    <div class="note danger">
+      <p class="lede">Adding the PPS/MPS enum values needs two migrations</p>
+      <p>A new enum value cannot be <em>used</em> in the transaction that adds it. The existing precedent is misleading: <code>ALTER TYPE enum_tournament_type ADD VALUE IF NOT EXISTS 'PSW'</code> in <code>20250305000002</code> appears to use <code>'PSW'</code> immediately, but only inside a function body, which Postgres parses at runtime and never evaluates during that transaction. A migration that adds <code>'PPS'</code> and <code>'MPS'</code> and then <strong>inserts normalized type-configuration rows for them</strong> will fail. Split it: one migration adds the enum values, a later one populates their settings.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede">Deployment preflight is a hard gate</p>
+      <p>If 2026/2027 already contains a scored tournament when the migration reaches an environment, deployment must stop unless that season already points at the intended new engine and its type settings are complete. The migration must never silently switch an already-scored season.</p>
+    </div>
+    <h3>LOCAL / CERT / PROD parity</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Environment</th><th>Behavior</th><th>Promotion rule</th></tr></thead>
+      <tbody>
+        <tr><td>LOCAL</td><td>Same schema, engines, lock and preview; fixtures provide deterministic seasons and results.</td><td>No network dependency for formula tests.</td></tr>
+        <tr><td>CERT</td><td>Full ingestion, scoring, ranking, Admin and calculator acceptance; configure unresolved PPS/MPS values here first.</td><td>Evidence reviewed before PROD.</td></tr>
+        <tr><td>PROD</td><td>Identical engine codes and settings; ordinary Admin locking plus an explicitly authorized, audited maintenance path for whole-season revisions.</td><td>Preflight, backup/release safeguards, complete rescore verification, then post-deploy parity queries.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="adrs">
+    <p class="kicker">12 · Proposed decisions</p>
+    <h2>ADR drafts for explicit sign-off before ADR files are created</h2>
+    <div class="note">
+      <p class="lede">Proposed ADR A — Versioned season scoring strategies and governed configuration revision</p>
+      <p><strong>Context:</strong> one mutable function cannot preserve old seasons while introducing new formulas, while the board must retain authority to correct a season’s rules and rescore it coherently. <strong>Decision:</strong> the season is <em>assigned</em> an engine and a static <code>CASE</code> dispatcher resolves it, extending the pattern ADR-042 and ADR-045 already established for carry-over; immutable released strategies behind that dispatcher; <code>tbl_scoring_engine</code> as metadata only; shared preview/persistence contract; normalized revisioned type policy; base value and podium coefficients remaining season configuration rather than engine constants; database-enforced closure of <em>the whole</em> Admin scoring editor after first scoring; unrestricted source/result repair under the active revision; and a privileged audited whole-season revision/rescore procedure. <strong>Alternatives rejected:</strong> one growing IF tree holding the arithmetic inline; <em>dispatch through a function reference stored in a table</em>, which needs dynamic <code>EXECUTE</code> inside <code>SECURITY DEFINER</code>, defeats Postgres dependency tracking and hides the call edge from static analysis; a partial lock that leaves ranking buckets editable while they silently reorder the published ranklist; wholesale copies of the bulk writer; season-code inference; UI-only enforcement; permanently forbidding authorized corrections; overwriting released engine bodies or configuration history. <strong>Consequences:</strong> historical golden tests and configuration audit history become mandatory; formula changes create a new engine version; exceptional revision remains an operator procedure outside Admin and cannot publish a partially rescored season.</p>
+    </div>
+    <div class="note pzs">
+      <p class="lede">Proposed ADR B — PZSz senior results as full-field PPS/MPS tournaments</p>
+      <p><strong>Context:</strong> ADR-087 intentionally stopped at the calendar. <strong>Decision:</strong> distinct PPS/MPS types, one SENIOR source tournament per weapon/gender field, full N and original placement, existing-veteran-only matching, V0–V4 result categorization, and no pre-2026/2027 scoring. <strong>Alternatives rejected:</strong> five duplicated V-category tournaments; shrinking N to imported veterans; automatic fencer creation; historical backfill. <strong>Consequences:</strong> ranking rules can treat PPS and MPS independently while source truth remains intact.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Proposed ADR C — Official full-Ranking publication begins with 2026/2027</p>
+      <p><strong>Context:</strong> the three earlier seasons reproduce spreadsheet-era PPW material and never represented an official combined ranking. <strong>Decision:</strong> store immutable <code>PPW_ONLY</code>/<code>FULL</code> publication policy per season; permanently mark only the first three seasons PPW_ONLY; make 2026/2027 and later FULL; enforce the restriction in database and UI while retaining source results. <strong>Alternatives rejected:</strong> “older than active season” logic, a duplicated hardcoded date cutoff, scoring-engine inference, and hiding only the toggle. <strong>Consequences:</strong> 2026/2027 keeps full Ranking after becoming historical; old EVF/FIE data remains usable for audit/carry-over but cannot be presented as an official historical Ranking.</p>
+    </div>
+    <p>ADR-085 is superseded when the published-page cutover lands — by making its “temporary” page permanent rather than removing it, against the exit clause recorded in <code>assets.test.ts</code>. <strong>ADR-042 and ADR-045</strong> are the decisions Proposed ADR A most directly extends and must carry relationship notes; an earlier version of this document omitted both. <strong>ADR-092</strong> is amended only in that the annex stops carrying its own copy of the formula; <strong>its season identity is unchanged</strong> — the annex stays pinned to 2026/2027, as §08 records. ADR-001, ADR-002, ADR-006, ADR-017, ADR-018, ADR-066 and ADR-087 require amendments or relationship notes; ADR-066 in particular is amended by the N = 1 re-pricing in §04 and the fail-closed gate in §07. Proposed ADR C directly supersedes ADR-017’s historical PPW/+EVF presentation rule. The highest ADR on <code>origin/main a108de4d</code> is <strong>096</strong>, so the next free numbers are <strong>097–099</strong>; confirm with a fresh collision scan before the files are created.</p>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">13 · Documentation</p>
+    <h2>Current truth, governance and decisions move together</h2>
+    <ul>
+      <li><code>doc/handbook/domain/competition-and-ranking.html</code> — scoring versus carry-over engines, Season Scoring Rules, two display groups, modes, V0 and PZSz.</li>
+      <li><code>doc/handbook/domain/glossary.html</code> — scoring engine, SENIOR tournament category, Ranking/PPW meanings.</li>
+      <li><code>doc/handbook/product/product-surfaces.html</code> — Admin governance lock, its exact limitation to the UI/ordinary API, and calculator/ranking behavior.</li>
+      <li><code>doc/handbook/subsystems/scoring-and-ranking.html</code> — dispatcher, strategy registry, configuration revision history, repair/reimport boundary, privileged whole-season rescore, normalized settings, aggregation from Season Scoring Rules into display groups, and tests.</li>
+      <li><code>doc/handbook/subsystems/ingestion.html</code> and <code>events-and-registration.html</code> — PPS/MPS result lane and childless-calendar boundary.</li>
+      <li><code>doc/Project Specification. SPWS Automated Ranklist System.md/.html</code> — use cases, schema, formulas, UI, workflow, ADR registry and test totals.</li>
+      <li><code>doc/requirements-traceability-matrix.md/.html</code> — modify FR-11–19, FR-28, FR-34–38, FR-59, FR-61, FR-64–68 and FR-111; add requirements for explicit engines/locks and PZSz scoring.</li>
+      <li><code>doc/rules/</code> — formula, eligibility, full-field participant count, matching, Admin-lock invariants and authorized revision/full-rescore invariants.</li>
+      <li><code>frontend/src/lib/locales/pl.json</code> and <code>en.json</code> — every new user-visible string in both files, or <code>locale-parity.test.ts</code> fails.</li>
+      <li>After every change under <code>doc/</code>: <code>python3 tools/docs-search/ingest.py</code>, so the Meilisearch index stops answering with superseded text.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">Required findability: “Historical ranking publication boundary”</p>
+      <p>The implementation documentation must use this exact phrase consistently so a future repository search answers the question quickly. The dedicated ADR owns <em>why</em>: the first three seasons are spreadsheet-derived PPW records, while the official combined Ranking starts in 2026/2027 and stays available thereafter. <code>doc/handbook/domain/competition-and-ranking.html</code> owns the present-tense season matrix and user behavior. <code>doc/handbook/product/product-surfaces.html</code> owns the switch, drilldown, export and restored-state behavior. <code>doc/handbook/subsystems/scoring-and-ranking.html</code> owns database enforcement and retained historical result data. The glossary defines <code>PPW_ONLY</code> and <code>FULL</code>; the specification and RTM make the obligation testable; source comments at the season-policy guard cite the final ADR.</p>
+    </div>
+    <p>These canonical current-system pages are updated in the implementation change, not in this design-only commit. Until the behavior ships, this plan is the approved future-state source and the existing handbook remains truthful about the deployed system.</p>
+    <div class="note good">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="checklist">Impact: [domain | product | architecture | operations | configuration | reference | none]
+Canonical docs affected: [exact .html paths, or justified “none”]
+ADR impact: [new | amend | supersede | none]
+Operational impact: [exact runbooks/catalogs, or none]
+Source-map / last-verified updated: [yes | not applicable]
+Validation: python scripts/check_docs.py --changed-from &lt;base&gt; [PASS]
+Superseded prose archived rather than appended: [yes | not applicable]</pre>
+    </div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">14 · Binary finish line</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>All <code>SS26.*</code> acceptance tests were observed RED, then pass GREEN; no new skips.</li>
+      <li>Stored 2025/2026 results and rankings match golden snapshots exactly.</li>
+      <li>2026/2027 uses the field-scaled engine and the calculator returns the same components.</li>
+      <li><code>scripts/preflight.sh</code> exits 0. No hand-copied gate list is reintroduced anywhere.</li>
+      <li>Every Admin/browser/API write to the scoring editor — engine, base, podium, multiplier, threshold, bucket and default mode — is database-rejected after first scoring, while the carry-over engine PATCH still succeeds and the privileged audited whole-season revision remains available.</li>
+      <li>A configuration edit made before the first score is visible in the engine, the calculator and the scoring-table annex; after the lock, none of the three moves.</li>
+      <li>Neither published page contains its own copy of the formula, and <code>assets.test.ts</code> still passes with both WordPress files retained.</li>
+      <li>The preview RPC is present in both copies of the anon allowlist and <code>scripts/check-anon-allowlist-sync.sh</code> passes.</li>
+      <li>PPS/MPS score only from 2026/2027, preserve full N/place, and import no unknown fencer.</li>
+      <li>Ranking/PPW and V0 pass frontend/browser tests; ranklist/export show SPWS, EVF+ and Razem; drilldown has blue SPWS plus one EVF+ section and one EVF+ subtotal, with orange EVF/FIE bars and red voluntary senior PZSz bonus bars but no color-specific subtotals.</li>
+      <li><code>carryover_engine</code> and <code>scoring_engine_code</code> remain distinct in types, API, Admin UI, migrations and tests.</li>
+      <li>The three spreadsheet-era seasons expose only PPW at every public boundary; 2026/2027 remains FULL after it becomes historical.</li>
+      <li>The dedicated publication-boundary ADR, handbook season matrix, glossary, governance, RTM and source links all use the searchable phrase “Historical ranking publication boundary.”</li>
+      <li>Both published URLs are unchanged, local arithmetic is absent from both, the rank-coefficient control and EVF/SPWS toggle are still there, no season or tournament-type selector was added, and no style redesign was introduced.</li>
+      <li>PPS/MPS multipliers, thresholds and ranking buckets have been explicitly configured and reviewed before the first PZSz result is scored.</li>
+      <li>ADRs, governance, handbook, rules and test totals are coherent and all applicable validation commands pass.</li>
+      <li>CERT evidence is reviewed before any PROD release.</li>
+    </ul>
+  </section>
+
+  <footer class="foot">Design source: user-approved brainstorming decisions · originally verified against origin/main 132b589 · <strong>re-verified claim by claim against origin/main a108de4d on 19 September 2026</strong>, 82 commits later, when every source citation was re-checked and five positions reversed · branches codex/season-scoring-design and claude/season-scoring-plan-review · implementation intentionally deferred pending document review.</footer>
+</div>
+</body>
+</html>
