@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(35);
+SELECT plan(39);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -260,13 +260,17 @@ SELECT throws_like(
 
 -- SS26.DB.05 — the fail-closed type gate. Today the six-way multiplier CASE has
 -- no ELSE, so a tournament type it does not list writes num_final_score = NULL
--- with no exception raised (§02). PSW is the honest probe: it is declared in
--- enum_tournament_type and carries a multiplier, so this test uses a type that
--- is in the enum but has no configured settings once the normalized type policy
--- lands. Until then it fails because fn_assert_type_configured does not exist.
+-- with no exception raised (§02). This used PPS as the honest probe -- a type
+-- that was in the enum but genuinely unconfigured, before the normalized type
+-- policy landed. It cannot any more: 20260919000004 (PPS/MPS multipliers,
+-- pulled forward from delivery step 6) backfills PPS into every season's
+-- configuration, so probing it here would test the wrong thing. p_type is
+-- TEXT specifically so a value that is not a tournament type at all can be
+-- probed without an enum cast error; SS26.TYPE.03 uses the same string for
+-- fn_get_min_participants's equivalent fail-closed gate.
 SELECT throws_like(
   $$SELECT fn_assert_type_configured(
-      (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'), 'PPS')$$,
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'), 'NOT_A_TYPE')$$,
   '%No scoring configuration for tournament type%',
   'SS26.DB.05 a tournament type with no configured settings raises instead of writing NULL'
 );
@@ -501,7 +505,8 @@ BEGIN
     CROSS JOIN LATERAL (VALUES
         ('PPW', c.num_ppw_multiplier), ('MPW', c.num_mpw_multiplier),
         ('PEW', c.num_pew_multiplier), ('MEW', c.num_mew_multiplier),
-        ('MSW', c.num_msw_multiplier), ('PSW', c.num_psw_multiplier)
+        ('MSW', c.num_msw_multiplier), ('PSW', c.num_psw_multiplier),
+        ('PPS', c.num_pps_multiplier), ('MPS', c.num_mps_multiplier)
       ) AS legacy(ttype, mult)
     LEFT JOIN tbl_scoring_type_config tc
            ON tc.id_config = c.id_config AND tc.enum_type::TEXT = legacy.ttype
@@ -530,7 +535,10 @@ BEGIN
     CROSS JOIN LATERAL (VALUES
         ('PPW', c.int_min_participants_ppw), ('MPW', c.int_min_participants_ppw),
         ('PSW', c.int_min_participants_ppw), ('PEW', c.int_min_participants_evf),
-        ('MEW', c.int_min_participants_evf), ('MSW', c.int_min_participants_evf)
+        ('MEW', c.int_min_participants_evf), ('MSW', c.int_min_participants_evf),
+        -- PPS/MPS threshold is hardcoded to 1, not routed from any legacy
+        -- column (§07: no Admin field, no result-counting buckets).
+        ('PPS', 1), ('MPS', 1)
       ) AS legacy(ttype, threshold)
     LEFT JOIN tbl_scoring_type_config tc
            ON tc.id_config = c.id_config AND tc.enum_type::TEXT = legacy.ttype
@@ -624,6 +632,143 @@ END $sw$;
 -- 239.32 proves scoring read the normalized table.
 SELECT is(pg_temp.scored_with_normalized(), 239.32::NUMERIC,
   'SS26.TYPE.05 scoring reads its multiplier from the normalized table, not the legacy column'
+);
+
+-- =============================================================================
+-- SS26.TYPE.06 — PPS/MPS enum and normalized settings.
+--
+-- Pulled forward per doc/plans/did-you-plan-to-optimized-penguin.md: the
+-- design's §11 delivery sequence puts PPS/MPS in step 6, but the Admin UI has
+-- no way to enter their multipliers, and steps 2-3a already removed the
+-- hardcoded six-way CASE blocks that made a new type expensive. SENIOR
+-- tournament/result-category acceptance (the rest of this ID's design-table
+-- row) is PZSz ingestion, step 6, and stays out of scope here -- it gets its
+-- own IDs when that flow is built.
+-- =============================================================================
+
+-- SS26.TYPE.06a — a PPS multiplier set through the ordinary write surface
+-- (tbl_scoring_config) reaches the normalized type table via the existing
+-- projection trigger, exactly as the six legacy types already do.
+CREATE FUNCTION pg_temp.pps_reaches_type_config()
+RETURNS NUMERIC
+LANGUAGE plpgsql AS $pps_a$
+DECLARE v_season INT; v_out NUMERIC;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  UPDATE tbl_scoring_config SET num_pps_multiplier = 1.55 WHERE id_season = v_season;
+  SELECT tc.num_multiplier INTO v_out
+    FROM tbl_scoring_type_config tc
+    JOIN tbl_scoring_config c ON c.id_config = tc.id_config
+   WHERE c.id_season = v_season AND tc.enum_type = 'PPS';
+  RETURN v_out;
+EXCEPTION WHEN undefined_table OR undefined_column OR invalid_text_representation THEN
+  RETURN NULL;
+END $pps_a$;
+
+SELECT is(pg_temp.pps_reaches_type_config(), 1.55::NUMERIC,
+  'SS26.TYPE.06a a PPS multiplier set in config reaches the normalized type table');
+
+-- SS26.TYPE.06b — fn_assert_type_configured resolves the same value for PPS
+-- that 06a just wrote, reusing this transaction's state as SS26.TYPE.04/05 do.
+CREATE FUNCTION pg_temp.pps_assert_type_configured()
+RETURNS NUMERIC
+LANGUAGE plpgsql AS $pps_b$
+DECLARE v_season INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  RETURN fn_assert_type_configured(v_season, 'PPS');
+EXCEPTION WHEN undefined_function THEN
+  RETURN NULL;
+END $pps_b$;
+
+SELECT is(pg_temp.pps_assert_type_configured(), 1.55::NUMERIC,
+  'SS26.TYPE.06b fn_assert_type_configured resolves the PPS multiplier set above');
+
+-- SS26.TYPE.06c — a PPS tournament scores end to end with its configured
+-- multiplier. Classic engine (SPWS-2023-2024), N=24 place 1: raw components
+-- sum to 125.9604965 (same base fixture as SS26.TYPE.05). The multiplier is
+-- applied to the summed RAW components (SS26.HIST.06), so
+-- round(125.9604965 * 1.55, 2) = 195.24.
+CREATE FUNCTION pg_temp.pps_scored_end_to_end()
+RETURNS NUMERIC
+LANGUAGE plpgsql AS $pps_c$
+DECLARE v_season INT; v_org INT; v_event INT; v_t INT; v_f INT; v_out NUMERIC;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  UPDATE tbl_scoring_config SET num_pps_multiplier = 1.55 WHERE id_season = v_season;
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES ('SS26-TYPE-PPS-EVT', 'SS26 PPS authority fixture', v_season, v_org, 'PLANNED')
+  RETURNING id_event INTO v_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+    enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_event, 'SS26-TYPE-PPS-N24', 'SS26 PPS N=24', 'PPS', 'EPEE', 'M', 'V2',
+          '2023-10-01', 24, 'IMPORTED')
+  RETURNING id_tournament INTO v_t;
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
+  VALUES ('SS26-TYPE-PPS', 'Test', 1970) RETURNING id_fencer INTO v_f;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t, 1);
+
+  PERFORM fn_calc_tournament_scores(v_t);
+
+  SELECT r.num_final_score INTO v_out FROM tbl_result r WHERE r.id_tournament = v_t;
+  RETURN v_out;
+EXCEPTION WHEN undefined_table OR undefined_column OR undefined_function OR invalid_text_representation THEN
+  RETURN NULL;
+END $pps_c$;
+
+SELECT is(pg_temp.pps_scored_end_to_end(), 195.24::NUMERIC,
+  'SS26.TYPE.06c a PPS tournament scores end-to-end with its configured multiplier'
+);
+
+-- SS26.TYPE.06d — the fixed fn_auto_populate_multiplier (live defect 1 in
+-- doc/plans/did-you-plan-to-optimized-penguin.md) caches a non-NULL
+-- multiplier for both PSW (previously missing, latent at 0 PSW tournaments)
+-- and PPS (would otherwise hit the same gap immediately). A regression back
+-- to no ELSE branch would RAISE inside the INSERT rather than return NULL, so
+-- this catches WHEN OTHERS too, matching the file's "one clean failure"
+-- convention for the RED-safety guards elsewhere in this file.
+CREATE FUNCTION pg_temp.auto_multiplier_psw_pps()
+RETURNS TEXT
+LANGUAGE plpgsql AS $pps_d$
+DECLARE v_season INT; v_org INT; v_event INT; v_psw NUMERIC; v_pps NUMERIC;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES ('SS26-TYPE-CACHE-EVT', 'SS26 multiplier cache fixture', v_season, v_org, 'PLANNED')
+  RETURNING id_event INTO v_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+    enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_event, 'SS26-TYPE-CACHE-PSW', 'SS26 cache PSW', 'PSW', 'EPEE', 'M', 'V2',
+          '2023-10-01', 8, 'IMPORTED')
+  RETURNING num_multiplier INTO v_psw;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+    enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_event, 'SS26-TYPE-CACHE-PPS', 'SS26 cache PPS', 'PPS', 'EPEE', 'M', 'V2',
+          '2023-10-01', 30, 'IMPORTED')
+  RETURNING num_multiplier INTO v_pps;
+
+  IF v_psw IS NULL OR v_pps IS NULL THEN
+    RETURN 'NULL_FOUND';
+  END IF;
+  RETURN 'BOTH_NON_NULL';
+EXCEPTION WHEN undefined_table OR undefined_column THEN
+  RETURN NULL;
+WHEN OTHERS THEN
+  RETURN 'ERROR: ' || SQLERRM;
+END $pps_d$;
+
+SELECT is(pg_temp.auto_multiplier_psw_pps(), 'BOTH_NON_NULL',
+  'SS26.TYPE.06d fn_auto_populate_multiplier caches a non-NULL multiplier for PSW and PPS'
 );
 
 SELECT * FROM finish();

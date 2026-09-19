@@ -142,6 +142,8 @@ p04 AS (
            WHEN 'MEW' THEN c.num_mew_multiplier
            WHEN 'MSW' THEN c.num_msw_multiplier
            WHEN 'PSW' THEN c.num_psw_multiplier
+           WHEN 'PPS' THEN c.num_pps_multiplier
+           WHEN 'MPS' THEN c.num_mps_multiplier
          END IS NULL
 ),
 -- SSP-05 — INFO. Empty brackets carry N = 0 and no result rows. Recorded so

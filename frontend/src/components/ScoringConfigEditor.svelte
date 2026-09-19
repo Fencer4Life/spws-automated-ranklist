@@ -96,6 +96,16 @@
             <input type="number" step="0.0001" data-field="psw_multiplier" bind:value={draft.psw_multiplier} />
             <div class="card-label">{t('sc_psw_label')}</div>
           </div>
+          <div class="mult-card">
+            <div><span class="type-badge pzs">PPS</span></div>
+            <input type="number" step="0.0001" data-field="pps_multiplier" bind:value={draft.pps_multiplier} />
+            <div class="card-label">{t('sc_pps_label')}</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge pzs">MPS</span></div>
+            <input type="number" step="0.0001" data-field="mps_multiplier" bind:value={draft.mps_multiplier} />
+            <div class="card-label">{t('sc_mps_label')}</div>
+          </div>
         </div>
       </div>
     {/if}
@@ -610,6 +620,14 @@
   .type-badge.international {
     background: #fff8e1;
     color: #b8860b;
+  }
+  /* PZSz senior events (PPS/MPS). Same desaturated PZSz red as the calendar
+     drum's own .p.pzs panel (CalendarBarrel.svelte) — the brand red #c72626
+     toned down to sit beside domestic green / international gold rather than
+     shout over them. */
+  .type-badge.pzs {
+    background: #fdf0f0;
+    color: #a92020;
   }
   .mult-card input {
     width: 80px;
