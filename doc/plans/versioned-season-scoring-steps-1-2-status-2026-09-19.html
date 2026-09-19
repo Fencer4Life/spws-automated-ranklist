@@ -1,0 +1,310 @@
+<meta charset="utf-8">
+<title>Versioned season scoring — steps 1 and 2 delivered</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Scoring · engine foundation · delivery status · decision needed</p>
+  <h1>The engine dispatcher is in, and history did not move</h1>
+  <p class="dek">Steps 1 and 2 of the approved design are built and verified. Every historical score rescored through the new dispatcher matches <b>PROD to the cent</b>. One assertion is still RED on purpose — it names step 3 — so the branch is <b>not yet pushable</b>, and the next move is yours.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>steps 1–2 of 9 complete</span>
+    <span class="pill">branch <code>claude/season-scoring-contracts</code></span>
+    <span class="pill">migration <code>20260919000001</code></span>
+    <span class="pill warn"><span class="dot"></span>1 assertion RED by design</span>
+    <span class="pill danger"><span class="dot"></span>not pushed</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decision</p>
+    <h2>Do I continue into step 3, or stop here?</h2>
+    <p>The branch holds two commits and is one assertion short of green. That assertion, <code>SS26.HIST.07</code>, names <code>tbl_scoring_type_config</code> — the normalized per-type multiplier store that belongs to <b>step 3, "Normalized type policy and governance lock"</b>. Until it exists, <code>scripts/preflight.sh</code> cannot exit 0, and your rule is that preflight exiting 0 <em>is</em> the definition of done.</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">→</span> Recommendation: option A — continue into step 3, but only its first half</p>
+      <p>Step 3 bundles two separable things: the <b>normalized type policy</b> (the table, migrating each season's own multipliers and thresholds into it, and pointing the readers at it) and the <b>governance lock</b> (closing the Admin editor on first score, plus the audited privileged revision and full-rescore procedure). The first half closes <code>SS26.HIST.07</code> and makes the branch pushable. The second half is a much larger piece with its own acceptance group, <code>SS26.LOCK.01–12</code>, whose tests are not written yet.</p>
+    </div>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What I do next</th><th>Ends with</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>A — type policy only</b> <span class="chip fill">recommended</span></td>
+          <td>Build <code>tbl_scoring_type_config</code>, migrate every season's stored multipliers and thresholds into it exactly, make it the authority scoring reads, and update the threshold readers including the Python <code>get_min_participants</code> fail-open defect.</td>
+          <td>Preflight exits 0. Branch pushable. Lock deferred.</td>
+        </tr>
+        <tr>
+          <td><b>B — all of step 3</b></td>
+          <td>Option A, plus writing <code>SS26.LOCK.01–12</code> RED and then implementing the total Admin lock, the field-level authorization inside <code>fn_import_scoring_config</code>, and the audited revision/rescore procedure.</td>
+          <td>Preflight exits 0, much later. Largest single step in the design.</td>
+        </tr>
+        <tr>
+          <td><b>C — stop here</b></td>
+          <td>Nothing further. I hand over at this point.</td>
+          <td>Branch stays RED on one assertion and unpushable until someone resumes.</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <p>I recommend <b>A</b> because it is the smallest change that restores a green gate, and because the design explicitly separates the two halves: §05 gives the normalized table its own authority row, while the lock has its own acceptance group and its own reversal note. Doing the lock in the same pass would mean writing twelve new acceptance assertions and touching the Admin UI before the data model underneath them has settled.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> One thing that decays with time</p>
+      <p><code>SSP-06</code> passes today because <b>SPWS-2026-2027 holds no scored result</b> in LOCAL, CERT or PROD. §11 forbids switching an already-scored season's engine, and the migration enforces that with a hard <code>RAISE</code>. The moment the first 2026/2027 result is scored on an environment, this migration can no longer be promoted there without a board-authorized revision. That is a schedule constraint, not a bug.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Evidence</p>
+    <h2>History did not move, and that is measured</h2>
+    <p>The strongest claim in §01 is that historical scores stay explainable. Rather than assert it, I reset LOCAL, let the seed rescore all 777 tournaments through the new dispatcher, and compared the result against <b>PROD</b>, whose stored scores were written by the old inline function.</p>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Rows</th><th>Σ final</th><th>Σ place</th><th>Σ DE</th><th>Σ podium</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>SPWS-2023-2024</td><td>1084</td><td>44950.18</td><td>23651.74</td><td>12030.00</td><td>6343.58</td><td><span class="chip never">identical</span></td></tr>
+        <tr><td>SPWS-2024-2025</td><td>843</td><td>34783.18</td><td>19322.85</td><td>9260.00</td><td>5101.59</td><td><span class="chip never">identical</span></td></tr>
+        <tr><td>SPWS-2025-2026</td><td>884</td><td>37520.87</td><td>20515.95</td><td>10230.00</td><td>5642.01</td><td><span class="chip never">identical</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <p>2811 scored rows, every component sum equal to the cent. Two choices made that true. The classic strategy is the <b>previous expression moved</b>, not rewritten. And the strategies return <b>unrounded</b> components, so the final score is still rounded exactly once from the raw terms — had I rounded inside the strategy, a cent could have drifted on any row where the podium term's third decimal mattered.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Step 1</p>
+    <h2>What the preflight found before a line of production code</h2>
+    <p><code>scripts/check-scoring-migration-preflight.sh &lt;local|cert|prod&gt;</code> asserts the data preconditions the migration depends on but does not write. It is read-only and was run against <b>all three environments</b>, which returned identical results. LOCAL passing proves nothing about CERT or PROD — that is the same failure shape <code>check-anon-allowlist-sync.sh</code> exists to prevent.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The <code>place &gt; N</code> CHECK is safe to add</p>
+      <p>Zero violating rows in LOCAL, CERT and PROD. That is what let me apply rejection to the <em>classic</em> engine too, not just the new one — a decision I would not have made on assumption.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Assigning the classic engine to history is truthful</p>
+      <p>All three historical seasons store <code>mp=50, podium 3/2/1</code>, read per season rather than assumed. Because these are season configuration and not engine constants, a deviation would have meant a season needing its own frozen engine; the migration <code>RAISE</code>s rather than coercing.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> 18 tournaments carry a participant count of 0</p>
+      <p>Identical in all three environments, all with <b>zero result rows</b>, nine of them marked <code>SCORED</code>. A blanket <code>CHECK (int_participant_count &gt;= 1)</code> would abort against live rows; the <code>place &lt;= N</code> constraint is unaffected because these hold no results. Worth knowing before anyone proposes the former.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Per-season multipliers genuinely differ</p>
+      <p><code>SPWS-2023-2024</code> has <code>MEW 2.0</code>; <code>SPWS-2024-2025</code> has <code>MEW 1.2</code>. <code>MSW</code> moves 2.0 → 1.2 as well. A step-3 migration that wrote column defaults instead of stored values would silently rescore history. <code>SS26.HIST.07</code> — the one RED assertion — pins exactly that, which is why it is worth keeping RED rather than deleting.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Step 2</p>
+    <h2>Three things the existing gates caught that I would have shipped</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1</span> The anon allowlist, three times</p>
+      <p>Postgres grants <code>EXECUTE</code> to <code>PUBLIC</code> by default, so all nine new functions silently widened the anon surface, and <code>tbl_scoring_engine</code> needed RLS under ADR-083. <code>52_security_posture.sql</code> asserts the anon set as a <b>set equality</b> and failed locally each time — including once more after I added <code>fn_backfill_scoring_engines</code> below the revoke block. This is precisely the §08 trap, caught on my machine instead of in the deploy job.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">2</span> Fresh bootstrap scored nothing at all</p>
+      <p><code>supabase db reset</code> applies migrations <b>before</b> loading the seed dump, so the backfill ran against an empty <code>tbl_season</code>, assigned nothing, and all 777 subsequent scoring calls failed closed. This is the ADR-036 amendment hazard exactly. The backfill is now an idempotent <code>fn_backfill_scoring_engines()</code> called again from <code>seed_post_backfill.sql</code> — the same pattern the Phase 2 slug sweep already uses. It now bootstraps with <b>0 errors</b>.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">3</span> A fixture with places 5 and 7 in a field of 1</p>
+      <p><code>36_alias_rpcs_return_tournaments.sql</code> carried incoherent placeholder data that the old engine scored silently as zero. Rejection surfaced it. The numbers are arbitrary to what that file asserts, so I made them coherent rather than weakening the rule.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Consequences you should know about</p>
+    <h2>Three behaviours changed for real users</h2>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Change</th><th>Before</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A one-competitor walkover in 2026/2027</td>
+          <td><code>50 + 0 + 9 = 59</code></td>
+          <td><code>10 + 0 + 9 = 19</code> — the <code>max(2,N)</code> guard, deliberate per §04 and pinned by <code>SS26.NEW.01</code></td>
+        </tr>
+        <tr>
+          <td>A place larger than the field</td>
+          <td>Scored <code>0</code>, and still collected a podium bonus</td>
+          <td>Raises. Ingestion, scoring and the calculator will all refuse it</td>
+        </tr>
+        <tr>
+          <td>A newly created season</td>
+          <td>Scored immediately</td>
+          <td><b>Cannot score until an engine is assigned.</b> Nothing infers one, per §05, which also forbids the wizard carrying one forward. The Admin selector is step 7 — until then this is a deliberate <code>RAISE</code> with a clear message</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <p>The third is worth flagging explicitly: <code>fn_create_season</code> now produces a season that fails closed on scoring. That is the design's intent, not an oversight, but it is operator-visible and arrives six steps before the UI that resolves it.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">State</p>
+    <h2>Where the gates stand</h2>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Gate</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>ruff, ruff format, basedpyright, pytest</td><td><span class="chip never">pass</span></td></tr>
+        <tr><td>vitest, svelte-check</td><td><span class="chip never">pass</span></td></tr>
+        <tr><td>render_adrs, render_docs, check_docs, check-coherence, check-spec-sync</td><td><span class="chip never">pass</span></td></tr>
+        <tr><td>anon allowlist in sync (deploy gate)</td><td><span class="chip never">pass</span></td></tr>
+        <tr><td><code>git diff --check</code> (integration gate)</td><td><span class="chip never">pass</span></td></tr>
+        <tr><td><code>supabase test db</code> — 1057 assertions, 81 files</td><td><span class="chip warn">1 failure: SS26.HIST.07</span></td></tr>
+        <tr><td>postgrestools on the migration</td><td><span class="chip never">0 errors</span>, 20 lock-duration warnings, in line with the previous migration's 19</td></tr>
+        <tr><td>Graph refreshed, docs re-indexed</td><td><span class="chip never">done</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <p>Two commits on <code>claude/season-scoring-contracts</code>, nothing pushed. I did not push because CI on a branch whose tests are RED by design would go red for no useful reason.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Not touched</p>
+    <h2>Still open, exactly as the design left them</h2>
+    <ul>
+      <li><b>PPS/MPS multipliers, thresholds and ranking buckets</b> remain unconfigured. They must be set on CERT and reviewed before any PZSz result is scored.</li>
+      <li><b>ADR numbers 097–099</b> are still free and still unclaimed. No ADR was written: the design asks for sign-off on the drafts first, and nothing I built changes the drafts.</li>
+      <li><b>The handbook, governance and RTM FR rows</b> are deliberately untouched beyond registering the SS26 acceptance IDs and the two test-total baselines. §13 places those in the implementation change, and the behaviour has not shipped — the handbook stays truthful about what is deployed.</li>
+      <li><b>The Python <code>get_min_participants</code> fail-open defect</b> is unfixed. The SQL side now fails closed; the Python side still returns a threshold of 1 for an unrecognised type. Option A above closes it.</li>
+    </ul>
+  </section>
+
+  <p class="foot">claude/season-scoring-contracts · 42f3dbcd (step 1, RED) · 104316dd (step 2) · preflight green except one intended failure · 19 September 2026</p>
+
+</div>
