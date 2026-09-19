@@ -1,0 +1,233 @@
+<meta charset="utf-8">
+<title>PPW1 under the field-scaled engine</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Scoring · engine impact · LOCAL test fixture</p>
+  <h1>What the new engine does to a real PPW1</h1>
+  <p class="dek">Last season's 23 PPW1 brackets, rescored under <code>SPWS_FIELD_SCALED_V1_2026_2027</code>. Every winner's score falls, by <b>14% in the largest bracket and 68% in a walkover</b>. The event total drops <b>32.9%</b>. This is the curve working as designed — but the size of it is worth seeing before the real results land.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>LOCAL fixture only</span>
+    <span class="pill">23 brackets · 85 placements</span>
+    <span class="pill warn"><span class="dot"></span>8 walkovers</span>
+    <span class="pill">real results ≈ 29 Sep 2026</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Why PPW1 is the sharpest probe</p>
+    <h2>Every one of its fields is below the crossover</h2>
+    <p>The two engines differ only below <b>N = 32</b>, where <code>10 × log₂(32) = 50</code> makes the field-scaled base reach <code>mpValue</code> and the curves meet. PPW1's fields run from <b>1 to 11</b>. Not one bracket reaches the crossover, so every single one moves — which makes this event a worst case rather than a typical one.</p>
+    <p>An EVF event with a field of 60 would show <b>no change at all</b>. The reduction below is specific to small domestic fields, which is exactly the population the curve was designed to re-price.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The numbers</p>
+    <h2>Winner's score, classic against field-scaled</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Bracket</th><th>N</th><th>Classic</th><th>Field-scaled</th><th>Δ</th><th></th></tr></thead>
+      <tbody>
+          <tr><td><code>PPW1-V0-F-SABRE</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V0-M-FOIL</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V1-F-SABRE</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V2-F-FOIL</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V2-F-SABRE</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V3-F-FOIL</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V3-F-SABRE</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V4-M-FOIL</code></td><td>1</td><td>59.00</td><td>19.00</td><td>-40.00</td><td><span class="chip over">-67.8%</span></td></tr>
+          <tr><td><code>PPW1-V0-F-EPEE</code></td><td>2</td><td>71.34</td><td>31.34</td><td>-40.00</td><td><span class="chip over">-56.1%</span></td></tr>
+          <tr><td><code>PPW1-V1-F-EPEE</code></td><td>2</td><td>71.34</td><td>31.34</td><td>-40.00</td><td><span class="chip over">-56.1%</span></td></tr>
+          <tr><td><code>PPW1-V3-M-FOIL</code></td><td>2</td><td>71.34</td><td>31.34</td><td>-40.00</td><td><span class="chip over">-56.1%</span></td></tr>
+          <tr><td><code>PPW1-V0-M-SABRE</code></td><td>3</td><td>82.98</td><td>48.83</td><td>-34.15</td><td><span class="chip warn">-41.2%</span></td></tr>
+          <tr><td><code>PPW1-V1-M-FOIL</code></td><td>3</td><td>82.98</td><td>48.83</td><td>-34.15</td><td><span class="chip warn">-41.2%</span></td></tr>
+          <tr><td><code>PPW1-V1-M-SABRE</code></td><td>4</td><td>84.29</td><td>54.29</td><td>-30.00</td><td><span class="chip warn">-35.6%</span></td></tr>
+          <tr><td><code>PPW1-V2-F-EPEE</code></td><td>4</td><td>84.29</td><td>54.29</td><td>-30.00</td><td><span class="chip warn">-35.6%</span></td></tr>
+          <tr><td><code>PPW1-V3-M-SABRE</code></td><td>4</td><td>84.29</td><td>54.29</td><td>-30.00</td><td><span class="chip warn">-35.6%</span></td></tr>
+          <tr><td><code>PPW1-V0-M-EPEE</code></td><td>5</td><td>95.39</td><td>68.61</td><td>-26.78</td><td><span class="chip plain">-28.1%</span></td></tr>
+          <tr><td><code>PPW1-V4-M-SABRE</code></td><td>5</td><td>95.39</td><td>68.61</td><td>-26.78</td><td><span class="chip plain">-28.1%</span></td></tr>
+          <tr><td><code>PPW1-V3-M-EPEE</code></td><td>7</td><td>97.22</td><td>75.29</td><td>-21.93</td><td><span class="chip plain">-22.6%</span></td></tr>
+          <tr><td><code>PPW1-V2-M-EPEE</code></td><td>8</td><td>98.00</td><td>78.00</td><td>-20.00</td><td><span class="chip plain">-20.4%</span></td></tr>
+          <tr><td><code>PPW1-V4-M-EPEE</code></td><td>8</td><td>98.00</td><td>78.00</td><td>-20.00</td><td><span class="chip plain">-20.4%</span></td></tr>
+          <tr><td><code>PPW1-V1-M-EPEE</code></td><td>9</td><td>108.72</td><td>90.42</td><td>-18.30</td><td><span class="chip plain">-16.8%</span></td></tr>
+          <tr><td><code>PPW1-V2-M-SABRE</code></td><td>11</td><td>110.02</td><td>94.61</td><td>-15.41</td><td><span class="chip plain">-14.0%</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Across all 85 placements, not just the winners: <b>3298.88 → 2214.68</b>, a fall of <b>32.9%</b>.</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">→</span> The loss is a flat 40 points wherever the base is capped by the field</p>
+      <p>At N = 1 and N = 2 the base falls from 50 to 10, and the other two terms are untouched, so the whole difference is exactly <code>−40.00</code>. As the field grows the gap narrows — <code>−15.41</code> at N = 11 — and closes completely at N = 32. The DE bonus and the podium bonus are identical under both engines; only the base changed.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">What this does NOT show</p>
+    <h2>Rank order is untouched here, and that is not the whole story</h2>
+    <p>Within a single event the ranking order cannot change. Both engines are strictly decreasing in place for a fixed field, so every fencer in a bracket moves down together. I checked, and the order is identical.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The order effect needs a second event, and it will come</p>
+      <p>The engine changes <em>relative</em> standing only when a fencer's counted results span fields of <b>different sizes</b>. A fencer whose best-4 came from small brackets loses more than one who fought large ones, so the two can swap. With PPW1 alone in the season there is nothing to swap against. Expect this to appear once the season holds two or more events, and do not read the unchanged order below as evidence it will not.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> Do not compare this season's totals against last season's ranklist</p>
+      <p>It is tempting and it is wrong. The 2025/2026 ranking sums a <b>whole season's best-4</b>; 2026/2027 currently holds <b>one event</b>. A fencer's number will look far smaller for that reason alone, which has nothing to do with the engine. Only the per-bracket comparison above isolates the engine.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Using it</p>
+    <h2>The fixture</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Command</th><th>Does</th></tr></thead>
+      <tbody>
+        <tr><td><code>scripts/local-fixture-ppw1-2026-2027.sh</code></td><td>Create and score it. Idempotent — clears its own previous run first.</td></tr>
+        <tr><td><code>… --report</code></td><td>Reprint the comparison above from live data.</td></tr>
+        <tr><td><code>… --remove</code></td><td>Delete exactly what it created and walk the calendar row back to <code>PLANNED</code>.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> Before the real results are ingested on LOCAL</p>
+      <p>The real PPW1 2026/2027 results arrive on CERT in around ten days and will use these <b>same canonical tournament codes</b>. Run <code>--remove</code>, or reset LOCAL, before ingesting them there, so a test copy can never be mistaken for the real thing. Nothing carries this to CERT or PROD: it is not a migration, it is in no seed file, and the script has no remote mode.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Two things the fixture exposed</p>
+    <h2>Neither is a scoring defect, both are worth knowing</h2>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">1</span> A <code>PLANNED</code> event contributes nothing, however well scored</p>
+      <p><code>vw_eligible_event</code> excludes <code>CREATED</code>, <code>PLANNED</code>, <code>SCHEDULED</code>, <code>CHANGED</code> and <code>CANCELLED</code>. My first run scored all 85 placements correctly and the ranklist was still empty, because the calendar row was still <code>PLANNED</code>. Real ingestion advances the status; the fixture now does the same, one step at a time because the transition trigger refuses a jump.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">2</span> Copying results across a season boundary needs the source bracket label</p>
+      <p>Without <code>enum_source_age_category</code>, <code>trg_assert_result_vcat</code> re-derives each fencer's category from birth year against the <b>new</b> season's end year, and anyone who aged up between the two seasons is rejected. That is the cross-season conflict ADR-056's "bracket-label wins" revision exists to prevent, and it is the same reason real ingestion writes that column.</p>
+    </div>
+  </section>
+
+  <p class="foot">LOCAL fixture · classic 3298.88 → field-scaled 2214.68 (−32.9%) over 85 placements · 19 September 2026</p>
+
+</div>
