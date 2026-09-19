@@ -5,10 +5,15 @@
 -- =============================================================================
 
 -- tbl_season (4 rows)
-INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type) VALUES ('SPWS-2023-2024', '2023-01-01', '2024-07-15', FALSE, 'EVENT_CODE_MATCHING', 366, 'IMEW');
-INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type) VALUES ('SPWS-2024-2025', '2024-08-15', '2025-07-15', FALSE, 'EVENT_CODE_MATCHING', 366, 'IMEW');
-INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type) VALUES ('SPWS-2025-2026', '2025-08-01', '2026-07-11', FALSE, 'EVENT_CODE_MATCHING', 366, 'DMEW');
-INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type) VALUES ('SPWS-2026-2027', '2026-07-13', '2027-07-15', TRUE, 'EVENT_FK_MATCHING', 366, 'IMEW');
+-- enum_ranking_publication set inline below: this dump predates migration
+-- 20260919000009, which makes the column's trigger reject any later
+-- UPDATE, so the value must be baked into the INSERT itself rather than
+-- backfilled afterward (same "migrations run before the seed dump" shape
+-- as ADR-036/086/089/091/096).
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type, enum_ranking_publication) VALUES ('SPWS-2023-2024', '2023-01-01', '2024-07-15', FALSE, 'EVENT_CODE_MATCHING', 366, 'IMEW', 'PPW_ONLY');
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type, enum_ranking_publication) VALUES ('SPWS-2024-2025', '2024-08-15', '2025-07-15', FALSE, 'EVENT_CODE_MATCHING', 366, 'IMEW', 'PPW_ONLY');
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type, enum_ranking_publication) VALUES ('SPWS-2025-2026', '2025-08-01', '2026-07-11', FALSE, 'EVENT_CODE_MATCHING', 366, 'DMEW', 'PPW_ONLY');
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine, int_carryover_days, enum_european_event_type, enum_ranking_publication) VALUES ('SPWS-2026-2027', '2026-07-13', '2027-07-15', TRUE, 'EVENT_FK_MATCHING', 366, 'IMEW', 'FULL');
 
 -- tbl_organizer (4 rows)
 INSERT INTO tbl_organizer (txt_code, txt_name, txt_payee, txt_iban) VALUES ('EVF', 'European Veterans Fencing', NULL, NULL) ON CONFLICT (txt_code) DO UPDATE SET txt_name = EXCLUDED.txt_name, txt_payee = EXCLUDED.txt_payee, txt_iban = EXCLUDED.txt_iban;

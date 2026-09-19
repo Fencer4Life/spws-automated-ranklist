@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(73);
+SELECT plan(83);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -1922,6 +1922,269 @@ END $rk12$;
 
 SELECT is(pg_temp.rank12_pzsz_carry_disabled(), 0,
   'SS26.RANK.12 PPS/MPS carry-over is disabled by default, even with rolling=true and the type declared in the current section');
+
+-- =============================================================================
+-- SS26.PUBLISH -- the immutable per-season publication boundary.
+-- doc/plans/publication-boundary-2026-09-19.html §04/§05/§07. ADR-099
+-- (drafted, sign-off obtained 19 Sep 2026, file pending). RED until
+-- 20260919000009 lands (enum_ranking_publication does not exist yet).
+-- =============================================================================
+
+-- SS26.PUBLISH.01 -- all four real seasons carry the correct publication
+-- capability after backfill.
+CREATE FUNCTION pg_temp.publish01_real_seasons() RETURNS TEXT
+LANGUAGE plpgsql AS $p1$
+DECLARE
+  v_failures TEXT := '';
+  v_val TEXT;
+  v_code TEXT;
+  v_expected TEXT;
+BEGIN
+  FOR v_code, v_expected IN
+    SELECT * FROM (VALUES
+      ('SPWS-2023-2024', 'PPW_ONLY'),
+      ('SPWS-2024-2025', 'PPW_ONLY'),
+      ('SPWS-2025-2026', 'PPW_ONLY'),
+      ('SPWS-2026-2027', 'FULL')
+    ) AS t(code, expected)
+  LOOP
+    SELECT enum_ranking_publication::TEXT INTO v_val FROM tbl_season WHERE txt_code = v_code;
+    IF v_val IS DISTINCT FROM v_expected THEN
+      v_failures := v_failures || v_code || '=' || COALESCE(v_val, 'NULL') || ' (want ' || v_expected || '); ';
+    END IF;
+  END LOOP;
+  IF v_failures = '' THEN RETURN 'ALL_OK'; ELSE RETURN v_failures; END IF;
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p1$;
+
+SELECT is(pg_temp.publish01_real_seasons(), 'ALL_OK',
+  'SS26.PUBLISH.01 the three spreadsheet-derived seasons are PPW_ONLY and SPWS-2026-2027 is FULL');
+
+-- SS26.PUBLISH.02 -- a freshly created season defaults to FULL, no code
+-- needed beyond the column default (same pattern as enum_carryover_engine
+-- and enum_default_ranking_mode).
+CREATE FUNCTION pg_temp.publish02_default_full() RETURNS TEXT
+LANGUAGE plpgsql AS $p2$
+DECLARE
+  v_season INT;
+  v_val TEXT;
+BEGIN
+  v_season := fn_create_season('SS26-PUBLISH-DEFAULT', '2053-08-01', '2054-07-15');
+  SELECT enum_ranking_publication::TEXT INTO v_val FROM tbl_season WHERE id_season = v_season;
+  RETURN v_val;
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p2$;
+
+SELECT is(pg_temp.publish02_default_full(), 'FULL',
+  'SS26.PUBLISH.02 a freshly created season defaults to FULL via the column default alone');
+
+-- Fixture: a PPW_ONLY scratch season with real scored results. Direct
+-- INSERT, not fn_create_season + UPDATE -- the immutability trigger (once
+-- created) rejects ANY UPDATE to this column, including on a row created
+-- moments ago, by design (§04 of the plan: no age exemption, no role
+-- exemption).
+CREATE FUNCTION pg_temp.publish_build_ppw_only_season() RETURNS INT
+LANGUAGE plpgsql AS $pbpo$
+DECLARE
+  v_season INT;
+  v_org INT;
+  v_fencer INT;
+BEGIN
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_ranking_publication)
+  VALUES ('SS26-PUBLISH-PPWONLY', '2055-08-01', '2056-07-15', 'PPW_ONLY')
+  RETURNING id_season INTO v_season;
+
+  -- Legacy (schema v1) shape -- deliberately, not schema v2: PUBLISH.07/08
+  -- exercise the pre-existing fn_ranking_kadra/fn_ranking_ppw, which only
+  -- read the "domestic"/"international" JSON shape (a real PPW_ONLY season
+  -- like SPWS-2025-2026 is on this shape today). fn_ranking_full itself
+  -- (PUBLISH.03) reads either shape via fn_ranking_rules_canonical, so this
+  -- choice does not weaken that assertion.
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"domestic":[{"types":["PPW"],"always":true}],
+     "international":[{"types":["PPW"],"always":true}]}
+  $j$::jsonb WHERE id_season = v_season;
+
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  -- 2056 - 2000 = 56 -> V2.
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('PublishPpwOnly', 'Tester', 'PL', 2000, 'M') RETURNING id_fencer INTO v_fencer;
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'PUB-PPWONLY', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 40);
+
+  RETURN v_season;
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $pbpo$;
+
+SELECT pg_temp.publish_build_ppw_only_season();
+
+-- SS26.PUBLISH.03 -- fn_ranking_full raises for a PPW_ONLY season, naming
+-- the searchable phrase design §13 requires.
+SELECT throws_like(
+  $$SELECT count(*) FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-PUBLISH-PPWONLY'), FALSE)$$,
+  '%historical ranking publication boundary%',
+  'SS26.PUBLISH.03 fn_ranking_full raises for a PPW_ONLY season'
+);
+
+-- Fixture: a FULL scratch season with real scored results, for the
+-- regression check (PUBLISH.04) that this step did not also break the
+-- FULL path fn_ranking_full already had.
+CREATE FUNCTION pg_temp.publish_build_full_season() RETURNS INT
+LANGUAGE plpgsql AS $pbf$
+DECLARE
+  v_season INT;
+  v_org INT;
+  v_fencer INT;
+BEGIN
+  v_season := fn_create_season('SS26-PUBLISH-FULL', '2057-08-01', '2058-07-15');
+
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"schema_version":2,
+     "season_scoring_rules":{"spws":{"group":"spws","types":["PPW"],"buckets":[{"always":true,"types":["PPW"]}]}},
+     "display_groups":{"spws":{"sections":["spws"]}},
+     "views":{"PPW":["spws"],"RANKING":["spws"]}}
+  $j$::jsonb WHERE id_season = v_season;
+
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  -- 2058 - 2000 = 58 -> V2.
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('PublishFull', 'Tester', 'PL', 2000, 'M') RETURNING id_fencer INTO v_fencer;
+  PERFORM pg_temp.rank_add_result(v_season, v_org, 'PUB-FULL', 'PPW', 'EPEE', 'M', 'V2', v_fencer, 33);
+
+  RETURN v_season;
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $pbf$;
+
+SELECT pg_temp.publish_build_full_season();
+
+CREATE FUNCTION pg_temp.publish04_full_still_works() RETURNS NUMERIC
+LANGUAGE plpgsql AS $p4$
+BEGIN
+  RETURN (
+    SELECT spws_total FROM fn_ranking_full('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-PUBLISH-FULL'), FALSE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PublishFull')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p4$;
+
+SELECT is(pg_temp.publish04_full_still_works(), 33.00,
+  'SS26.PUBLISH.04 fn_ranking_full still succeeds normally for a FULL season');
+
+-- SS26.PUBLISH.05 -- the publication column is immutable: a direct UPDATE
+-- raises, run as postgres (no role exemption, unlike the scoring lock).
+SELECT throws_like(
+  $$UPDATE tbl_season SET enum_ranking_publication = 'PPW_ONLY'
+      WHERE txt_code = 'SS26-PUBLISH-FULL'$$,
+  '%immutable%',
+  'SS26.PUBLISH.05 a direct UPDATE to enum_ranking_publication raises'
+);
+
+-- SS26.PUBLISH.06 -- the same trigger does not block an unrelated UPDATE to
+-- tbl_season -- the guard is scoped to one column, not the row.
+CREATE FUNCTION pg_temp.publish06_unrelated_update_ok() RETURNS TEXT
+LANGUAGE plpgsql AS $p6$
+BEGIN
+  UPDATE tbl_season SET bool_active = bool_active
+   WHERE txt_code = 'SS26-PUBLISH-FULL';
+  RETURN 'OK';
+EXCEPTION WHEN OTHERS THEN
+  RETURN 'FAIL:' || SQLERRM;
+END $p6$;
+
+SELECT is(pg_temp.publish06_unrelated_update_ok(), 'OK',
+  'SS26.PUBLISH.06 an unrelated UPDATE to tbl_season is not blocked by the publication guard');
+
+-- SS26.PUBLISH.07 -- historical EVF/FIE data remains fully queryable
+-- through fn_ranking_kadra for a PPW_ONLY season -- restricting
+-- fn_ranking_full touches no other read path and deletes nothing.
+CREATE FUNCTION pg_temp.publish07_kadra_still_reads() RETURNS INT
+LANGUAGE plpgsql AS $p7$
+BEGIN
+  RETURN (
+    SELECT count(*)::INT FROM fn_ranking_kadra('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-PUBLISH-PPWONLY'), FALSE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PublishPpwOnly')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p7$;
+
+SELECT is(pg_temp.publish07_kadra_still_reads(), 1,
+  'SS26.PUBLISH.07 fn_ranking_kadra still reads a PPW_ONLY season''s data -- nothing is deleted or hidden elsewhere');
+
+-- SS26.PUBLISH.08 -- fn_ranking_ppw succeeds normally for a PPW_ONLY
+-- season -- the restriction is specific to the combined view.
+CREATE FUNCTION pg_temp.publish08_ppw_still_works() RETURNS NUMERIC
+LANGUAGE plpgsql AS $p8$
+BEGIN
+  RETURN (
+    SELECT total_score FROM fn_ranking_ppw('EPEE', 'M', 'V2',
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-PUBLISH-PPWONLY'), FALSE)
+     WHERE id_fencer = (SELECT id_fencer FROM tbl_fencer WHERE txt_surname = 'PublishPpwOnly')
+  );
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p8$;
+
+SELECT is(pg_temp.publish08_ppw_still_works(), 40.00,
+  'SS26.PUBLISH.08 fn_ranking_ppw succeeds normally for a PPW_ONLY season -- only the combined view is restricted');
+
+-- SS26.PUBLISH.09 -- enum_ranking_publication lives on tbl_season, not
+-- tbl_scoring_config, and is not a governed field of the scoring lock --
+-- fn_export_scoring_config's JSON is unchanged by this step.
+CREATE FUNCTION pg_temp.publish09_config_json_unchanged() RETURNS TEXT
+LANGUAGE plpgsql AS $p9$
+DECLARE
+  v_season INT;
+  v_config JSONB;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-PUBLISH-FULL';
+  v_config := fn_export_scoring_config(v_season);
+  IF v_config ? 'ranking_publication' OR v_config ? 'enum_ranking_publication' THEN
+    RETURN 'FAIL:unexpected key present';
+  END IF;
+  RETURN 'OK';
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p9$;
+
+SELECT is(pg_temp.publish09_config_json_unchanged(), 'OK',
+  'SS26.PUBLISH.09 fn_export_scoring_config carries no publication key -- it is not a governed scoring-lock field');
+
+-- SS26.PUBLISH.10 -- the calendar's own EVF toggle and publication
+-- capability are independent (design §06: "calendar scope is unchanged").
+CREATE FUNCTION pg_temp.publish10_calendar_independent() RETURNS TEXT
+LANGUAGE plpgsql AS $p10$
+DECLARE
+  v_season INT;
+  v_pub_before TEXT;
+  v_pub_after TEXT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-PUBLISH-FULL';
+  SELECT enum_ranking_publication::TEXT INTO v_pub_before FROM tbl_season WHERE id_season = v_season;
+
+  PERFORM fn_import_scoring_config(jsonb_build_object(
+    'id_season', v_season, 'show_evf_toggle_calendar', NOT (
+      SELECT bool_show_evf_toggle_calendar FROM tbl_scoring_config WHERE id_season = v_season
+    )));
+
+  SELECT enum_ranking_publication::TEXT INTO v_pub_after FROM tbl_season WHERE id_season = v_season;
+  IF v_pub_after IS DISTINCT FROM v_pub_before THEN
+    RETURN 'FAIL:publication changed from ' || v_pub_before || ' to ' || v_pub_after;
+  END IF;
+  RETURN 'OK';
+EXCEPTION WHEN undefined_function OR undefined_column THEN
+  RETURN NULL;
+END $p10$;
+
+SELECT is(pg_temp.publish10_calendar_independent(), 'OK',
+  'SS26.PUBLISH.10 the calendar EVF toggle and publication capability are independent');
 
 SELECT * FROM finish();
 ROLLBACK;
