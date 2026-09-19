@@ -56,6 +56,15 @@ INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_
   ('TST-CURR', '2091-09-01', '2092-08-31', FALSE, 'EVENT_CODE_MATCHING'),
   ('TST-ROOT', '1850-09-01', '1851-08-31', FALSE, 'EVENT_CODE_MATCHING');
 
+-- A season must be assigned a scoring engine before anything in it can be
+-- scored (2026-09-19, versioned season scoring). This is deliberate: nothing
+-- infers an engine, so a season that was never assigned one fails closed rather
+-- than scoring under a formula nobody chose. These fixtures assign the classic
+-- engine, which is the formula their expectations below were derived under.
+UPDATE tbl_season SET id_scoring_engine =
+       (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
+ WHERE txt_code IN ('TST-PREV', 'TST-CURR', 'TST-ROOT') AND id_scoring_engine IS NULL;
+
 -- Clone a real season's full scoring config (real place-point formula + real
 -- json_ranking_rules with domestic PPW/MPW + international PEW/MEW) into each
 -- synthetic season → engine-real scores, our inputs.

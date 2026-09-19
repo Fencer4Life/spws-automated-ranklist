@@ -42,7 +42,7 @@ BEGIN;
 -- guard. Targeted (not session_replication_role) so audit + status-
 -- transition triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
-SELECT plan(29);
+SELECT plan(30);
 
 -- ===== SETUP: Create test data for scoring tests =====
 -- We use the ACTIVE season and its scoring config (see header).
@@ -201,19 +201,28 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 -- If this test fails, an admin has changed the active season's scoring rules.
 -- That is not necessarily a bug — but every expectation in this file must then
 -- be recomputed deliberately, and the governance rule set re-checked.
+-- Extended 2026-09-19: the active season's ASSIGNED SCORING ENGINE is now one
+-- of the values this file's arithmetic depends on, so it belongs in the config
+-- contract rather than being left implicit. The base is no longer a fixed 50:
+-- under SPWS_FIELD_SCALED_V1_2026_2027 it is min(mpValue, baseSlope*log2(max(2,N))),
+-- so expectations below are derived per field size. If this assertion fails
+-- because the active season was moved to a different engine, every base-dependent
+-- expectation in this file must be recomputed deliberately — which is exactly
+-- what the contract is for.
 SELECT results_eq(
   $$SELECT int_mp_value, int_podium_gold, int_podium_silver, int_podium_bronze,
            num_ppw_multiplier::NUMERIC(10,4), num_mpw_multiplier::NUMERIC(10,4),
            num_psw_multiplier::NUMERIC(10,4), num_msw_multiplier::NUMERIC(10,4),
-           int_ppw_total_rounds
+           int_ppw_total_rounds, e.txt_code
       FROM tbl_scoring_config c
       JOIN tbl_season s ON s.id_season = c.id_season
+      JOIN tbl_scoring_engine e ON e.id_engine = s.id_scoring_engine
      WHERE s.bool_active$$,
   $$VALUES (50, 3, 2, 1,
             1.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
             2.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
-            5)$$,
-  '2.0 Config contract: active season scoring config matches this file''s assumptions'
+            5, 'SPWS_FIELD_SCALED_V1_2026_2027')$$,
+  '2.0 Config contract: active season scoring config and engine match this file''s assumptions'
 );
 
 -- ---------------------------------------------------------------------------
@@ -238,15 +247,18 @@ SELECT ok(
   '2.1 All four point columns populated for scored PPW N=24 tournament'
 );
 
--- Verify 1st place gets MP (50) for place points
+-- 1st place receives the full BASE, which under the active season's
+-- field-scaled engine depends on the field: B(24) = min(50, 10*log2(24)) = 45.85.
+-- It was a flat 50 under the classic engine, and is 50 again for any field of
+-- 32 or more, where the curve reaches the cap.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  50.00::NUMERIC,
-  '2.1b 1st place gets MP (50) place points for N=24'
+  45.85::NUMERIC,
+  '2.1b 1st place gets the field-scaled base B(24) = 45.85 place points'
 );
 
 -- Verify last place (24th of 24) gets 0 place points (ln(24)/ln(24) = 1, so 50 - 49*1 = 1)
@@ -262,15 +274,22 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- 2.2  Edge case: N=1 → single fencer receives MP (50)
+-- 2.2  Edge case: N=1 → the walkover, re-priced by the field-scaled engine
 -- ---------------------------------------------------------------------------
+-- The max(2, N) guard stops log2(1) = 0 producing a base of zero, so a
+-- one-competitor bracket inherits the N=2 base of 10 rather than the classic
+-- flat 50. The whole result moves from 50+0+9 = 59 to 10+0+9 = 19. This is a
+-- live case, not a hypothetical: ADR-066 records that six of seven FOIL brackets
+-- in PPW2-2025-2026 had a single competitor and that the lone entrant does earn
+-- points by walkover. The reduction is the intended shape of a curve whose
+-- purpose is that small fields are worth less.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    WHERE t.txt_code = 'SCORE-PPW-N1'),
-  50.00::NUMERIC,
-  '2.2a N=1: single fencer receives MP (50) place points'
+  10.00::NUMERIC,
+  '2.2a N=1: the walkover receives the N=2 base of 10, not the classic 50'
 );
 
 SELECT is(
@@ -283,15 +302,24 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- 2.3  Edge case: place > N → fencer gets 0 place points
+-- 2.3  Edge case: place > N → scoring is REJECTED, not scored as zero
 -- ---------------------------------------------------------------------------
--- We test this by inserting a result with place=25 in the N=24 tournament
+-- REVERSED 2026-09-19. This test previously asserted that place 25 in a field
+-- of 24 scores 0 place points. A place larger than the field is corrupt data,
+-- and zero is the one value that hides it: it sorts to the bottom and reads as
+-- an ordinary weak result. Worse, num_podium_bonus was guarded only by
+-- WHEN place = 1/2/3 with no place > N check at all, so N=2 with place=3
+-- collected a bronze bonus for a place that does not exist in the bracket while
+-- its place points correctly collapsed to zero.
+--
+-- Scoring now raises. Safe to enforce because it was proven so rather than
+-- assumed: scripts/check-scoring-migration-preflight.sh found zero violating
+-- rows in LOCAL, CERT and PROD on 2026-09-19.
 DO $test_place_gt_n$
 DECLARE
   v_fencer INT;
   v_tourn INT;
 BEGIN
-  -- Create a temporary extra fencer for this test
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality)
   VALUES ('TESTOWY', 'Extra', 'PL') RETURNING id_fencer INTO v_fencer;
 
@@ -302,18 +330,30 @@ BEGIN
 END;
 $test_place_gt_n$;
 
--- Re-score to include the new result
-SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
+SELECT throws_like(
+  $$SELECT fn_calc_tournament_scores(id_tournament)
+      FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24'$$,
+  '%Invalid scoring input%',
+  '2.3 place > N: scoring raises instead of writing a silent zero'
+);
 
+-- The raise aborts the whole UPDATE, so no row is left half-scored: 1st place
+-- still holds the value the earlier successful run wrote.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
-   JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'TESTOWY'),
-  0.00::NUMERIC,
-  '2.3 place > N: fencer gets 0 place points'
+   JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+  45.85::NUMERIC,
+  '2.3b a rejected rescore leaves the previously scored rows untouched'
 );
+
+-- Remove the corrupt row so the rest of this file scores a valid tournament;
+-- 2.10 re-scores SCORE-PPW-N24 and would otherwise inherit the rejection.
+DELETE FROM tbl_result r
+ USING tbl_fencer f
+ WHERE f.id_fencer = r.id_fencer AND f.txt_surname = 'TESTOWY';
 
 -- ---------------------------------------------------------------------------
 -- 2.4  Power-of-2 N (N=16): DE bonus correction factor c=0

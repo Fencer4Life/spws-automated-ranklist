@@ -125,6 +125,16 @@ BEGIN
 END;
 $fix_guildford$;
 
+-- Versioned season scoring (2026-09-19): assign each seeded season its scoring
+-- engine. `supabase db reset` applies migrations BEFORE loading the seed dump,
+-- so on LOCAL the migration's own call ran against an empty tbl_season and
+-- assigned nothing. Every scoring call below — and the 777-tournament rescore
+-- at the end of this file — fails closed without it, because nothing infers an
+-- engine. Same reason the Phase 2 slug sweep and fn_split_pew_by_weapon are
+-- repeated here. CERT and PROD hold their data when the migration applies and
+-- are served by the call inside it. Idempotent.
+SELECT fn_backfill_scoring_engines();
+
 -- Tournament 380 (PEW3-V2-M-SABRE-2025-2026, Munich Dec 6 2025): the v2 ingest
 -- recorded int_participant_count=2 (POL-only count) instead of the true field
 -- size of 25 (verified against fencingworldwide.com/en/912306-2025/results/).

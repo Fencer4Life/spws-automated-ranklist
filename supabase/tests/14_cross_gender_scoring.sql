@@ -47,6 +47,15 @@ INSERT INTO tbl_organizer (txt_code, txt_name) VALUES ('TST-ORG', 'Test Organize
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine)
 VALUES ('TST-CG', '2091-09-01', '2092-08-31', FALSE, 'EVENT_CODE_MATCHING');
 
+-- A season must be assigned a scoring engine before anything in it can be
+-- scored (2026-09-19, versioned season scoring). This is deliberate: nothing
+-- infers an engine, so a season that was never assigned one fails closed rather
+-- than scoring under a formula nobody chose. These fixtures assign the classic
+-- engine, which is the formula their expectations below were derived under.
+UPDATE tbl_season SET id_scoring_engine =
+       (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
+ WHERE txt_code IN ('TST-CG') AND id_scoring_engine IS NULL;
+
 UPDATE tbl_scoring_config dst SET
   int_mp_value             = src.int_mp_value,
   int_podium_gold          = src.int_podium_gold,
