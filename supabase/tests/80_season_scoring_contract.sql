@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(50);
+SELECT plan(59);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -1077,6 +1077,330 @@ END $l10$;
 
 SELECT is(pg_temp.lock10_unique_active_revision(), 'REJECTED',
   'SS26.LOCK.10 the partial unique index rejects a second active revision for one season');
+
+-- =============================================================================
+-- SS26.REVISION — the privileged audited whole-season revision/rescore path.
+-- fn_revise_and_rescore_season does not exist yet -- RED until the second
+-- migration (20260919000006_scoring_privileged_revision.sql) lands. Design
+-- doc/plans/scoring-governance-lock-2026-09-19.html §07/§09.
+-- =============================================================================
+
+-- Fixture builder: a fresh scratch season with one scored tournament, two
+-- results (place 1 and 2) -- establishes an initial revision via the
+-- ORDINARY lock path (fn_ensure_active_scoring_revision, called from
+-- fn_calc_tournament_scores), exactly like a real season's first score.
+-- Plain fn_create_season (unlike fn_create_season_with_skeletons) never
+-- assigns id_scoring_engine -- LIVE DEFECT 2 in 20260919000004 fixed that
+-- gap only for the wizard's own creation path -- so this helper assigns the
+-- same newest-active-engine default by hand, or fn_calc_tournament_scores
+-- would raise "Unknown scoring engine" before the fixture even exists.
+CREATE FUNCTION pg_temp.revision_build_season(
+  p_code TEXT, p_dt_start DATE, p_dt_end DATE, p_tourn_type TEXT
+) RETURNS INT
+LANGUAGE plpgsql AS $rbs$
+DECLARE
+  v_season INT;
+  v_org    INT;
+  v_event  INT;
+  v_tourn  INT;
+  v_fencer1 INT;
+  v_fencer2 INT;
+BEGIN
+  v_season := fn_create_season(p_code, p_dt_start, p_dt_end);
+
+  UPDATE tbl_season SET id_scoring_engine = (
+    SELECT se.id_engine FROM tbl_scoring_engine se
+     WHERE se.bool_active
+     ORDER BY se.ts_created DESC, se.id_engine DESC LIMIT 1
+  ) WHERE id_season = v_season;
+
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES (p_code || '-EVT', p_code || ' event', v_season, v_org, 'PLANNED')
+  RETURNING id_event INTO v_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
+    enum_import_status)
+  VALUES (v_event, p_code || '-T1', p_code || ' tournament', p_tourn_type::enum_tournament_type,
+    'EPEE', 'M', 'V2', p_dt_start + 30, 8, 'IMPORTED')
+  RETURNING id_tournament INTO v_tourn;
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES (p_code || '-F1', 'Tester', 'PL', EXTRACT(YEAR FROM p_dt_end)::INT - 55, 'M')
+  RETURNING id_fencer INTO v_fencer1;
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES (p_code || '-F2', 'Tester', 'PL', EXTRACT(YEAR FROM p_dt_end)::INT - 55, 'M')
+  RETURNING id_fencer INTO v_fencer2;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
+    (v_fencer1, v_tourn, 1),
+    (v_fencer2, v_tourn, 2);
+
+  PERFORM fn_calc_tournament_scores(v_tourn);
+
+  RETURN v_season;
+END;
+$rbs$;
+
+SELECT pg_temp.revision_build_season('SS26-REV-OK', '2040-08-01', '2041-07-15', 'PPW');
+SELECT pg_temp.revision_build_season('SS26-REV-FAIL', '2042-08-01', '2043-07-15', 'MSW');
+
+-- REV-FAIL's tournament scored fine at fixture-build time. The plan's own
+-- prose (§09) illustrates REVISION.07 with "a tournament with a deliberately
+-- unconfigured type" -- tried first as a DELETEd tbl_scoring_type_config row,
+-- but fn_apply_scoring_config_write's own UPDATE on tbl_scoring_config
+-- re-fires the sync trigger (fn_sync_scoring_type_config) before the rescore
+-- loop ever runs, which resurrects every type row -- including the deleted
+-- one -- from the still-present scalar column. Every revision necessarily
+-- re-syncs first, so a config-level injection can never survive to the loop.
+-- A data-level corruption survives it instead: fn_resolve_scoring_params's
+-- own guard ("Tournament % has no participant count") fires unconditionally,
+-- independent of type configuration, and is exactly as valid an injected
+-- mid-rescore failure for what REVISION.07 actually tests -- atomic rollback
+-- of the whole call when ANY exception reaches the loop, not specifically a
+-- type-config gap.
+UPDATE tbl_tournament
+   SET int_participant_count = NULL
+ WHERE id_event = (SELECT id_event FROM tbl_event
+                     WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-REV-FAIL'));
+
+-- SS26.REVISION.01 — the one function in this codebase revoked from
+-- `authenticated` too, not just PUBLIC/anon: reachable only as postgres/
+-- service_role outside the web session entirely (§07).
+SELECT ok(
+  NOT has_function_privilege('authenticated',
+    'fn_revise_and_rescore_season(integer, jsonb, text, text, text, text)', 'EXECUTE'),
+  'SS26.REVISION.01 authenticated cannot execute fn_revise_and_rescore_season'
+);
+
+-- SS26.REVISION.02 — empty p_reason/p_actor raise before anything is written.
+SELECT throws_like(
+  $$SELECT fn_revise_and_rescore_season(
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK'),
+      '{}'::jsonb, NULL, '', 'test-operator', NULL)$$,
+  '%reason%',
+  'SS26.REVISION.02a empty p_reason raises before anything is written'
+);
+SELECT throws_like(
+  $$SELECT fn_revise_and_rescore_season(
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK'),
+      '{}'::jsonb, NULL, 'Board correction', '', NULL)$$,
+  '%actor%',
+  'SS26.REVISION.02b empty p_actor raises before anything is written'
+);
+
+-- SS26.REVISION.03 — the prior active revision survives, deactivated,
+-- snapshot untouched -- append-only, never deleted or overwritten.
+CREATE FUNCTION pg_temp.revision03_prior_survives() RETURNS TEXT
+LANGUAGE plpgsql AS $r3$
+DECLARE
+  v_season INT; v_old_revision INT; v_old_snapshot JSONB; v_new_revision INT;
+  v_check_active BOOLEAN; v_check_snapshot JSONB;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK';
+  SELECT id_revision, json_snapshot INTO v_old_revision, v_old_snapshot
+    FROM tbl_scoring_config_revision WHERE id_season = v_season AND bool_active;
+
+  SELECT id_revision INTO v_new_revision FROM fn_revise_and_rescore_season(
+    v_season, jsonb_build_object('mp_value', 111), NULL,
+    'REVISION.03 probe', 'test-operator', 'BOARD-03');
+
+  SELECT bool_active, json_snapshot INTO v_check_active, v_check_snapshot
+    FROM tbl_scoring_config_revision WHERE id_revision = v_old_revision;
+
+  IF v_check_active IS DISTINCT FROM FALSE THEN RETURN 'FAIL:old still active'; END IF;
+  IF v_check_snapshot IS DISTINCT FROM v_old_snapshot THEN RETURN 'FAIL:old snapshot mutated'; END IF;
+  IF v_new_revision = v_old_revision THEN RETURN 'FAIL:no new revision created'; END IF;
+  RETURN 'OK';
+END;
+$r3$;
+
+SELECT is(pg_temp.revision03_prior_survives(), 'OK',
+  'SS26.REVISION.03 the prior active revision survives, deactivated, snapshot intact');
+
+-- SS26.REVISION.04 — an engine code identical to the current one is a
+-- data-only revision: the existing engine row is reused, never re-created.
+CREATE FUNCTION pg_temp.revision04_same_engine_no_new_row() RETURNS TEXT
+LANGUAGE plpgsql AS $r4$
+DECLARE
+  v_season INT; v_engine_code TEXT; v_count_before INT; v_count_after INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK';
+  SELECT se.txt_code INTO v_engine_code
+    FROM tbl_season s JOIN tbl_scoring_engine se ON se.id_engine = s.id_scoring_engine
+   WHERE s.id_season = v_season;
+
+  SELECT COUNT(*) INTO v_count_before FROM tbl_scoring_engine;
+
+  PERFORM fn_revise_and_rescore_season(
+    v_season, '{}'::jsonb, v_engine_code,
+    'REVISION.04 probe', 'test-operator', NULL);
+
+  SELECT COUNT(*) INTO v_count_after FROM tbl_scoring_engine;
+
+  IF v_count_after <> v_count_before THEN RETURN 'FAIL:new engine row created'; END IF;
+  RETURN 'OK';
+END;
+$r4$;
+
+SELECT is(pg_temp.revision04_same_engine_no_new_row(), 'OK',
+  'SS26.REVISION.04 passing the current engine code is a data-only revision, no new engine row');
+
+-- SS26.REVISION.05 — a multiplier/threshold-only revision (no engine
+-- change) is permitted and rescoring actually reflects it.
+CREATE FUNCTION pg_temp.revision05_rescore_reflects_change() RETURNS TEXT
+LANGUAGE plpgsql AS $r5$
+DECLARE
+  v_season INT; v_tourn INT;
+  v_score_before NUMERIC; v_score_after NUMERIC;
+  v_engine_before INT; v_engine_after INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK';
+  SELECT id_scoring_engine INTO v_engine_before FROM tbl_season WHERE id_season = v_season;
+  SELECT t.id_tournament INTO v_tourn
+    FROM tbl_tournament t JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = v_season;
+  SELECT num_final_score INTO v_score_before
+    FROM tbl_result WHERE id_tournament = v_tourn AND int_place = 1;
+
+  PERFORM fn_revise_and_rescore_season(
+    v_season, jsonb_build_object('podium_gold', 999), NULL,
+    'REVISION.05 probe', 'test-operator', NULL);
+
+  SELECT id_scoring_engine INTO v_engine_after FROM tbl_season WHERE id_season = v_season;
+  SELECT num_final_score INTO v_score_after
+    FROM tbl_result WHERE id_tournament = v_tourn AND int_place = 1;
+
+  IF v_engine_after IS DISTINCT FROM v_engine_before THEN RETURN 'FAIL:engine changed unexpectedly'; END IF;
+  IF v_score_after IS NOT DISTINCT FROM v_score_before THEN RETURN 'FAIL:score unchanged after revision'; END IF;
+  RETURN 'OK';
+END;
+$r5$;
+
+SELECT is(pg_temp.revision05_rescore_reflects_change(), 'OK',
+  'SS26.REVISION.05 multiplier/threshold-only revision is permitted and rescoring reflects it');
+
+-- SS26.REVISION.06 — after a successful call, every result in the season
+-- references the new revision id; zero rows reference the old one.
+CREATE FUNCTION pg_temp.revision06_all_results_stamped() RETURNS TEXT
+LANGUAGE plpgsql AS $r6$
+DECLARE
+  v_season INT; v_new_revision INT; v_bad_count INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK';
+
+  SELECT id_revision INTO v_new_revision FROM fn_revise_and_rescore_season(
+    v_season, jsonb_build_object('mp_value', 222), NULL,
+    'REVISION.06 probe', 'test-operator', NULL);
+
+  SELECT COUNT(*) INTO v_bad_count
+    FROM tbl_result r
+    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = v_season
+     AND r.id_scoring_revision IS NOT NULL
+     AND r.id_scoring_revision <> v_new_revision;
+
+  IF v_new_revision IS NULL THEN RETURN 'FAIL:no revision returned'; END IF;
+  IF v_bad_count > 0 THEN RETURN 'FAIL:' || v_bad_count || ' stale-revision result(s)'; END IF;
+  RETURN 'OK';
+END;
+$r6$;
+
+SELECT is(pg_temp.revision06_all_results_stamped(), 'OK',
+  'SS26.REVISION.06 after a successful call every result references the new revision id');
+
+-- SS26.REVISION.07 — an injected mid-rescore failure (SS26-REV-FAIL's
+-- tournament, its participant count corrupted to NULL above) leaves the
+-- prior revision active and every score at its pre-revision value: the
+-- whole transaction, including the new revision row's own INSERT, rolls
+-- back. The inner
+-- BEGIN/EXCEPTION block is a PL/pgSQL implicit SAVEPOINT -- it undoes only
+-- the failed call's effects, not this probe function's own SELECTs before
+-- and after, which is what lets one function assert both sides.
+CREATE FUNCTION pg_temp.revision07_mid_rescore_rollback() RETURNS TEXT
+LANGUAGE plpgsql AS $r7$
+DECLARE
+  v_season INT;
+  v_revision_before INT; v_score_before NUMERIC;
+  v_revision_after INT; v_score_after NUMERIC;
+  v_revision_count_after INT;
+  v_raised BOOLEAN := FALSE;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-FAIL';
+  SELECT id_active_scoring_revision INTO v_revision_before FROM tbl_season WHERE id_season = v_season;
+  SELECT r.num_final_score INTO v_score_before
+    FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = v_season AND r.int_place = 1;
+
+  BEGIN
+    PERFORM fn_revise_and_rescore_season(
+      v_season, jsonb_build_object('mp_value', 333), NULL,
+      'REVISION.07 probe (expected to fail)', 'test-operator', NULL);
+  EXCEPTION WHEN OTHERS THEN
+    v_raised := TRUE;
+  END;
+
+  IF NOT v_raised THEN RETURN 'FAIL:did not raise'; END IF;
+
+  SELECT id_active_scoring_revision INTO v_revision_after FROM tbl_season WHERE id_season = v_season;
+  SELECT r.num_final_score INTO v_score_after
+    FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = v_season AND r.int_place = 1;
+  SELECT COUNT(*) INTO v_revision_count_after
+    FROM tbl_scoring_config_revision WHERE id_season = v_season;
+
+  IF v_revision_after IS DISTINCT FROM v_revision_before THEN RETURN 'FAIL:active revision changed'; END IF;
+  IF v_score_after IS DISTINCT FROM v_score_before THEN RETURN 'FAIL:score changed despite rollback'; END IF;
+  IF v_revision_count_after <> 1 THEN RETURN 'FAIL:revision row count is ' || v_revision_count_after; END IF;
+  RETURN 'OK';
+END;
+$r7$;
+
+SELECT is(pg_temp.revision07_mid_rescore_rollback(), 'OK',
+  'SS26.REVISION.07 a mid-rescore failure rolls back the whole transaction, prior revision and scores intact');
+
+-- SS26.REVISION.08 — a successful call is atomic end to end: season
+-- pointer, revision activation and every rescored result's stamp all agree
+-- in one post-call snapshot (the single-transaction-assertion alternative
+-- §11 names, matching evf_historical_event_fragment_repair.sql's pattern
+-- for a comparable all-or-nothing migration).
+CREATE FUNCTION pg_temp.revision08_atomic_consistency() RETURNS TEXT
+LANGUAGE plpgsql AS $r8$
+DECLARE
+  v_season INT; v_new_revision INT;
+  v_season_active INT; v_revision_flag BOOLEAN;
+  v_old_flag_count INT; v_mismatched_results INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SS26-REV-OK';
+
+  SELECT id_revision INTO v_new_revision FROM fn_revise_and_rescore_season(
+    v_season, jsonb_build_object('mp_value', 444), NULL,
+    'REVISION.08 probe', 'test-operator', NULL);
+
+  SELECT id_active_scoring_revision INTO v_season_active FROM tbl_season WHERE id_season = v_season;
+  SELECT bool_active INTO v_revision_flag FROM tbl_scoring_config_revision WHERE id_revision = v_new_revision;
+  SELECT COUNT(*) INTO v_old_flag_count FROM tbl_scoring_config_revision
+   WHERE id_season = v_season AND bool_active AND id_revision <> v_new_revision;
+  SELECT COUNT(*) INTO v_mismatched_results
+    FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = v_season AND r.id_scoring_revision IS DISTINCT FROM v_new_revision;
+
+  IF v_season_active IS DISTINCT FROM v_new_revision THEN RETURN 'FAIL:season not pointing at new revision'; END IF;
+  IF v_revision_flag IS NOT TRUE THEN RETURN 'FAIL:new revision not active'; END IF;
+  IF v_old_flag_count <> 0 THEN RETURN 'FAIL:more than one active revision'; END IF;
+  IF v_mismatched_results <> 0 THEN RETURN 'FAIL:result stamps disagree with active revision'; END IF;
+  RETURN 'OK';
+END;
+$r8$;
+
+SELECT is(pg_temp.revision08_atomic_consistency(), 'OK',
+  'SS26.REVISION.08 a successful call flips season pointer, revision activation and result stamps together');
 
 SELECT * FROM finish();
 ROLLBACK;
