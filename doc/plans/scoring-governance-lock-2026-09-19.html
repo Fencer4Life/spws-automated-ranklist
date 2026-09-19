@@ -22,17 +22,12 @@
   <span class="pill good"><span class="dot"></span>steps 1, 2, 3a landed — 3919ac46</span>
   <span class="pill good"><span class="dot"></span>PPS/MPS pulled forward — bb5596b7</span>
   <span class="pill good"><span class="dot"></span>SS26.LOCK.01–12 landed — f5933171</span>
-  <span class="pill warn"><span class="dot"></span>SS26.REVISION.01–08 blocked — ADR-097 drafted, awaiting sign-off</span>
+  <span class="pill good"><span class="dot"></span>ADR-097 signed off and written — doc/adr/097-scoring-governance-lock-and-privileged-revision.md</span>
+  <span class="pill good"><span class="dot"></span>SS26.REVISION.01–08 landed — 1086 pgTAP assertions, LOCAL-verified</span>
 </div>
-<div class="note warn">
-<p class="lede">Decision needed to continue</p>
-<p>SS26.LOCK.01–12 (§05–06, the ordinary lock) is done, tested and committed (<code>f5933171</code>). The remaining piece — SS26.REVISION.01–08, the privileged audited revision/rescore procedure (§07) — needs <code>doc/adr/097-…</code> written to disk first, per <code>doc/claude/planning.md</code> rule 6: the ADR must be drafted in the plan (§04, above) and signed off <strong>before</strong> the file is created. Nothing about the ADR's content has changed since it was drafted.</p>
-<p><strong>Recommendation:</strong> sign off on ADR-097 as drafted in §04 so work can continue directly into the revision procedure — its content was already implied by the (already-approved) parent design's §12 Proposed ADR A; this just narrows it to the piece this step builds.</p>
-<ul>
-<li><strong>Sign off</strong> — approve ADR-097 as drafted; <code>doc/adr/097-…</code> is written and SS26.REVISION.01–08 starts.</li>
-<li><strong>Request changes</strong> — say what should change in the draft before it's written.</li>
-<li><strong>Hold</strong> — stop here; SS26.LOCK.01–12 stands alone as a complete, shippable unit.</li>
-</ul>
+<div class="note good">
+<p class="lede">Done</p>
+<p>Both halves of design step 3b are landed. SS26.LOCK.01–12 (§05–06) and SS26.REVISION.01–08 (§07) are implemented, tested (pgTAP 1086 assertions + the full frontend suite), documented (handbook, RTM, spec Appendix C/D, ADR-097) and manually verified against LOCAL fixtures, including a real privileged-revision run that moved a stored score and a separate run that rolled back cleanly off a genuine pre-existing data defect. Not yet run against CERT or PROD.</p>
 </div>
 
 <nav class="toc">
