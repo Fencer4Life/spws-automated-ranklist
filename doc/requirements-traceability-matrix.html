@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="477a8f72f17b56199a74f0cffcbf8bb2898bd235f792ca11ef0d58bb8ed6f2c2">
+<meta name="doc-source-sha256" content="d8beea94834598c3cd4709520236feea7dcbf9278bb47c33bb8f094ae5f8cc49">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>202 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>247 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -1160,6 +1160,195 @@
 <p>ADR-051 (reserved-but-empty), ADR-052, and ADR-053 are catalogued in the spec's Appendix C — Architecture Decision Registry, not duplicated here.</p>
 <p>The cross-language enum-sync invariant (Python <code>SourceKind</code> ↔ Postgres <code>enum_parser_kind</code>) is enforced at runtime by <code>test_ir.py::test_source_kind_matches_postgres_enum</code> — drift detector for any future source addition.</p>
 </section>
+<section class="section-card detail"><h2 id="versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</h2>
+<p>Acceptance IDs for <a href="plans/versioned-season-scoring-and-pzsz-ranking-design.html">doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html</a>. Registered here <strong>before</strong> production code, as §10 of that design requires: every implementation test carries a stable <code>SS26.*</code> identifier and is traceable from the moment it is written, not once it passes.</p>
+<p>These do not yet map to user-facing FR rows. The design's §13 places FR changes (FR-11–19, FR-28, FR-34–38, FR-59, FR-61, FR-64–68, FR-111, plus new requirements for explicit engines, the governance lock and PZSz scoring) in the <strong>implementation</strong> change, not in the design or contract-test commits. Until the behaviour ships, the handbook remains truthful about the deployed system and this table carries the traceability.</p>
+<p>Status vocabulary here is narrower than the FR table's: <strong>Landed</strong> means the assertions exist and pass; <strong>RED (intended)</strong> means they exist and fail because the objects they name are not built yet — the TDD precondition, not a defect; <strong>Planned</strong> means the IDs are reserved and the assertions are not written.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SS26.HIST.01–06</td>
+<td>Golden 2025/2026 fixtures: the classic engine's components and final scores are pinned exactly, so the refactor into dispatcher + immutable strategies cannot silently rescore history. Pinned to <code>SPWS-2025-2026</code> rather than following the active season — a golden fixture that moves when the season rolls over is not a golden fixture.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
+</tr>
+<tr>
+<td>SS26.HIST.07</td>
+<td>Normalized type config migrates each season's <strong>own</strong> multipliers, not column defaults. The migration preflight proved these differ between seasons (<code>SPWS-2023-2024</code> MEW 2.0 vs <code>SPWS-2024-2025</code> MEW 1.2), so a defaults-based migration would rescore history.</td>
+<td>pgTAP</td>
+<td>same</td>
+<td>RED (intended)</td>
+</tr>
+<tr>
+<td>SS26.DB.01–05</td>
+<td>Engine metadata table (and the guard that it names <strong>no</strong> function, since §03 rejected dispatch through a stored reference); explicit <code>tbl_season.id_scoring_engine</code>; the uniform strategy signature both engines share; unknown/missing engine fails closed; a tournament type with no configured settings raises instead of writing a NULL score.</td>
+<td>pgTAP</td>
+<td>same</td>
+<td>RED (intended)</td>
+</tr>
+<tr>
+<td>SS26.NEW.01–12</td>
+<td>The field-scaled engine: N=1 scores 19 where the classic engine scores 59; N=32 is the exact crossover where the two engines agree; the base caps at <code>mpValue</code>; 34th of 107 scores on the full field; <code>place &gt; N</code>, <code>place &lt; 1</code> and <code>N &lt; 1</code> are rejected rather than scored; no podium bonus survives an out-of-range place; monotonicity in both place and field size.</td>
+<td>pgTAP</td>
+<td>same</td>
+<td>RED (intended)</td>
+</tr>
+<tr>
+<td>SS26.PARITY.01–04</td>
+<td><code>fn_preview_tournament_score</code> exists, is <code>STABLE</code> (so Postgres enforces &quot;cannot write&quot; rather than the body promising it), pins its <code>search_path</code>, and returns components equal to those the writer persisted.</td>
+<td>pgTAP</td>
+<td>same</td>
+<td>RED (intended)</td>
+</tr>
+<tr>
+<td>SS26.LOCK.01–12</td>
+<td>The Admin scoring editor closes totally on the season's first scored result — engine, base, podium, multipliers, thresholds, ranking buckets and default mode — while the carry-over engine PATCH stays permitted and result repair, URL correction, reimport and same-revision rescore remain available.</td>
+<td>pgTAP + integration</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.REVISION.01–08</td>
+<td>The privileged audited whole-season revision and rescore path: privileged access only, decision metadata required, old revision retained, no mixed revision survives, success activates atomically, failure preserves the prior active revision and scores.</td>
+<td>pgTAP</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.TYPE.01–06</td>
+<td>PPS/MPS enum values and normalized settings; SENIOR source tournament accepted; a SENIOR <strong>result</strong> category rejected; old type config migrated exactly.</td>
+<td>pgTAP</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.PZSZ.01–10</td>
+<td>PZSz senior ingestion: FTL reuse, full N, original place, exact/alias match only, uncertain matches to review, unmatched skipped, no auto-created fencer, season V-category, no historical scoring, URL/data rejection.</td>
+<td>pytest + pgTAP</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.RANK.01–12</td>
+<td>Three independent Season Scoring Rules feed exactly two display groups; best/always semantics; no double counting; EVF/FIE and PZSz both feed one EVF+ accumulator; Ranking/PPW membership; V0; legacy adapter parity.</td>
+<td>pgTAP</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.PUBLISH.01–10</td>
+<td>Historical ranking publication boundary: the three spreadsheet-derived seasons are permanently <code>PPW_ONLY</code>, 2026/2027 and later are permanently <code>FULL</code>, the full RPC rejects <code>PPW_ONLY</code>, historical EVF/FIE data is retained, calendar scope unchanged.</td>
+<td>pgTAP</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.UI.01–14</td>
+<td>Ranking/PPW labels and the 2026/2027 default; <code>Zawodnik / SPWS / EVF+ / Razem</code> columns; two top-level drilldown sections and one EVF+ subtotal; orange EVF/FIE and red voluntary-senior PZSz bars with no colour-specific subtotals; V0 enabled; server-authoritative lock state with a visible guarded save action.</td>
+<td>Vitest</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.UIHIST.01–10</td>
+<td>A historical season forces PPW before fetch, hides the switch, constrains drilldown/export/deep links, ignores stale responses across season/mode/filter/drilldown changes, and never strips FULL from 2026/2027 once it becomes historical.</td>
+<td>Vitest + Playwright</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.CARRY.01–04</td>
+<td>The ADR-042/ADR-045 event carry-over matcher keeps its values and behaviour under the explicit <code>carryover_engine</code> name; scoring-engine selection is independent and cannot mutate carry-over policy.</td>
+<td>Vitest + pgTAP</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.CALC.01–12</td>
+<td>Both published URLs unchanged; the calculator renders the active season and the annex stays pinned to <code>SPWS-2026-2027</code>; no local formula remains in either page; the rank-coefficient control and EVF/SPWS toggle survive; no season or tournament-type selector is added; rounding matches the database; <code>assets.test.ts</code> three-way byte identity still holds.</td>
+<td>Vitest + Playwright</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>SS26.ANON.01–02</td>
+<td>The preview RPC appears in <strong>both</strong> copies of the anon allowlist — <code>supabase/tests/52_security_posture.sql</code> (52.7 is a set equality) and <code>scripts/check-security-posture.sh</code> — and <code>scripts/check-anon-allowlist-sync.sh</code> passes. Updating only one leaves CI green and blocks the PROD deploy job.</td>
+<td>pgTAP + shell</td>
+<td>—</td>
+<td>Planned</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</h3>
+<p><code>scripts/check-scoring-migration-preflight.sh &lt;local|cert|prod&gt;</code> asserts the data preconditions the migration depends on but does not write. It is read-only and must be run per environment: LOCAL passing is not evidence about CERT or PROD, which is the same failure shape <code>scripts/check-anon-allowlist-sync.sh</code> exists to prevent.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Precondition</th>
+<th>Why the migration needs it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSP-01</td>
+<td>No <code>tbl_result</code> row has <code>int_place</code> greater than its tournament's participant count</td>
+<td>The §04 CHECK constraint aborts mid-deploy against a single violating row</td>
+</tr>
+<tr>
+<td>SSP-02</td>
+<td>No <code>tbl_result</code> row has <code>int_place &lt; 1</code></td>
+<td>Same constraint</td>
+</tr>
+<tr>
+<td>SSP-03</td>
+<td>Every pre-2026/2027 season stores the flat base and podium coefficients the classic engine reproduces</td>
+<td>Assigning <code>EVF_CLASSIC_V1_2025_2026</code> is only truthful if read per season; these are season configuration, not engine constants</td>
+</tr>
+<tr>
+<td>SSP-04</td>
+<td>Every tournament type in use resolves to a non-NULL multiplier in its own season</td>
+<td>The six-way multiplier CASE has no ELSE, so an unlisted type writes a NULL score with no exception</td>
+</tr>
+<tr>
+<td>SSP-05</td>
+<td>(INFO) Count of tournaments with a participant count below 1</td>
+<td>18 such rows exist in every environment, all with zero results — a blanket <code>CHECK (int_participant_count &gt;= 1)</code> would abort, while a <code>place &lt;= N</code> constraint is unaffected</td>
+</tr>
+<tr>
+<td>SSP-06</td>
+<td>The season receiving the new engine holds no scored result</td>
+<td>§11 forbids silently switching an already-scored season; deployment must stop</td>
+</tr>
+<tr>
+<td>SSP-07</td>
+<td>No result in a SCORED tournament carries a NULL final score</td>
+<td>The signature of the multiplier CASE falling through</td>
+</tr>
+<tr>
+<td>SSP-08</td>
+<td>No out-of-range place currently holds a non-zero podium bonus</td>
+<td><code>num_podium_bonus</code> has no <code>place &gt; N</code> guard, only <code>WHEN place = 1/2/3</code></td>
+</tr>
+<tr>
+<td>SSP-09</td>
+<td>(INFO) The exact per-season multiplier and threshold values</td>
+<td>What the normalized type policy must migrate; defaults would be wrong</td>
+</tr>
+</tbody>
+</table></div>
+<p>Verified clean against LOCAL, CERT and PROD on 2026-09-19, with identical results in all three.</p>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -1170,5 +1359,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>477a8f72f17b56199a74f0cffcbf8bb2898bd235f792ca11ef0d58bb8ed6f2c2</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>d8beea94834598c3cd4709520236feea7dcbf9278bb47c33bb8f094ae5f8cc49</code></footer>
 </div></body></html>

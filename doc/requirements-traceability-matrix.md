@@ -194,6 +194,51 @@ ADR-051 (reserved-but-empty), ADR-052, and ADR-053 are catalogued in the spec's 
 
 The cross-language enum-sync invariant (Python `SourceKind` ↔ Postgres `enum_parser_kind`) is enforced at runtime by `test_ir.py::test_source_kind_matches_postgres_enum` — drift detector for any future source addition.
 
+## Versioned season scoring and PZSz ranking (SS26.*)
+
+Acceptance IDs for [doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html](plans/versioned-season-scoring-and-pzsz-ranking-design.html). Registered here **before** production code, as §10 of that design requires: every implementation test carries a stable `SS26.*` identifier and is traceable from the moment it is written, not once it passes.
+
+These do not yet map to user-facing FR rows. The design's §13 places FR changes (FR-11–19, FR-28, FR-34–38, FR-59, FR-61, FR-64–68, FR-111, plus new requirements for explicit engines, the governance lock and PZSz scoring) in the **implementation** change, not in the design or contract-test commits. Until the behaviour ships, the handbook remains truthful about the deployed system and this table carries the traceability.
+
+Status vocabulary here is narrower than the FR table's: **Landed** means the assertions exist and pass; **RED (intended)** means they exist and fail because the objects they name are not built yet — the TDD precondition, not a defect; **Planned** means the IDs are reserved and the assertions are not written.
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| SS26.HIST.01–06 | Golden 2025/2026 fixtures: the classic engine's components and final scores are pinned exactly, so the refactor into dispatcher + immutable strategies cannot silently rescore history. Pinned to `SPWS-2025-2026` rather than following the active season — a golden fixture that moves when the season rolls over is not a golden fixture. | pgTAP | `supabase/tests/80_season_scoring_contract.sql` | **Landed** (2026-09-19) |
+| SS26.HIST.07 | Normalized type config migrates each season's **own** multipliers, not column defaults. The migration preflight proved these differ between seasons (`SPWS-2023-2024` MEW 2.0 vs `SPWS-2024-2025` MEW 1.2), so a defaults-based migration would rescore history. | pgTAP | same | RED (intended) |
+| SS26.DB.01–05 | Engine metadata table (and the guard that it names **no** function, since §03 rejected dispatch through a stored reference); explicit `tbl_season.id_scoring_engine`; the uniform strategy signature both engines share; unknown/missing engine fails closed; a tournament type with no configured settings raises instead of writing a NULL score. | pgTAP | same | RED (intended) |
+| SS26.NEW.01–12 | The field-scaled engine: N=1 scores 19 where the classic engine scores 59; N=32 is the exact crossover where the two engines agree; the base caps at `mpValue`; 34th of 107 scores on the full field; `place > N`, `place < 1` and `N < 1` are rejected rather than scored; no podium bonus survives an out-of-range place; monotonicity in both place and field size. | pgTAP | same | RED (intended) |
+| SS26.PARITY.01–04 | `fn_preview_tournament_score` exists, is `STABLE` (so Postgres enforces "cannot write" rather than the body promising it), pins its `search_path`, and returns components equal to those the writer persisted. | pgTAP | same | RED (intended) |
+| SS26.LOCK.01–12 | The Admin scoring editor closes totally on the season's first scored result — engine, base, podium, multipliers, thresholds, ranking buckets and default mode — while the carry-over engine PATCH stays permitted and result repair, URL correction, reimport and same-revision rescore remain available. | pgTAP + integration | — | Planned |
+| SS26.REVISION.01–08 | The privileged audited whole-season revision and rescore path: privileged access only, decision metadata required, old revision retained, no mixed revision survives, success activates atomically, failure preserves the prior active revision and scores. | pgTAP | — | Planned |
+| SS26.TYPE.01–06 | PPS/MPS enum values and normalized settings; SENIOR source tournament accepted; a SENIOR **result** category rejected; old type config migrated exactly. | pgTAP | — | Planned |
+| SS26.PZSZ.01–10 | PZSz senior ingestion: FTL reuse, full N, original place, exact/alias match only, uncertain matches to review, unmatched skipped, no auto-created fencer, season V-category, no historical scoring, URL/data rejection. | pytest + pgTAP | — | Planned |
+| SS26.RANK.01–12 | Three independent Season Scoring Rules feed exactly two display groups; best/always semantics; no double counting; EVF/FIE and PZSz both feed one EVF+ accumulator; Ranking/PPW membership; V0; legacy adapter parity. | pgTAP | — | Planned |
+| SS26.PUBLISH.01–10 | Historical ranking publication boundary: the three spreadsheet-derived seasons are permanently `PPW_ONLY`, 2026/2027 and later are permanently `FULL`, the full RPC rejects `PPW_ONLY`, historical EVF/FIE data is retained, calendar scope unchanged. | pgTAP | — | Planned |
+| SS26.UI.01–14 | Ranking/PPW labels and the 2026/2027 default; `Zawodnik / SPWS / EVF+ / Razem` columns; two top-level drilldown sections and one EVF+ subtotal; orange EVF/FIE and red voluntary-senior PZSz bars with no colour-specific subtotals; V0 enabled; server-authoritative lock state with a visible guarded save action. | Vitest | — | Planned |
+| SS26.UIHIST.01–10 | A historical season forces PPW before fetch, hides the switch, constrains drilldown/export/deep links, ignores stale responses across season/mode/filter/drilldown changes, and never strips FULL from 2026/2027 once it becomes historical. | Vitest + Playwright | — | Planned |
+| SS26.CARRY.01–04 | The ADR-042/ADR-045 event carry-over matcher keeps its values and behaviour under the explicit `carryover_engine` name; scoring-engine selection is independent and cannot mutate carry-over policy. | Vitest + pgTAP | — | Planned |
+| SS26.CALC.01–12 | Both published URLs unchanged; the calculator renders the active season and the annex stays pinned to `SPWS-2026-2027`; no local formula remains in either page; the rank-coefficient control and EVF/SPWS toggle survive; no season or tournament-type selector is added; rounding matches the database; `assets.test.ts` three-way byte identity still holds. | Vitest + Playwright | — | Planned |
+| SS26.ANON.01–02 | The preview RPC appears in **both** copies of the anon allowlist — `supabase/tests/52_security_posture.sql` (52.7 is a set equality) and `scripts/check-security-posture.sh` — and `scripts/check-anon-allowlist-sync.sh` passes. Updating only one leaves CI green and blocks the PROD deploy job. | pgTAP + shell | — | Planned |
+
+### Migration preflight over existing constants and data
+
+`scripts/check-scoring-migration-preflight.sh <local|cert|prod>` asserts the data preconditions the migration depends on but does not write. It is read-only and must be run per environment: LOCAL passing is not evidence about CERT or PROD, which is the same failure shape `scripts/check-anon-allowlist-sync.sh` exists to prevent.
+
+| Probe | Precondition | Why the migration needs it |
+|-------|--------------|----------------------------|
+| SSP-01 | No `tbl_result` row has `int_place` greater than its tournament's participant count | The §04 CHECK constraint aborts mid-deploy against a single violating row |
+| SSP-02 | No `tbl_result` row has `int_place < 1` | Same constraint |
+| SSP-03 | Every pre-2026/2027 season stores the flat base and podium coefficients the classic engine reproduces | Assigning `EVF_CLASSIC_V1_2025_2026` is only truthful if read per season; these are season configuration, not engine constants |
+| SSP-04 | Every tournament type in use resolves to a non-NULL multiplier in its own season | The six-way multiplier CASE has no ELSE, so an unlisted type writes a NULL score with no exception |
+| SSP-05 | (INFO) Count of tournaments with a participant count below 1 | 18 such rows exist in every environment, all with zero results — a blanket `CHECK (int_participant_count >= 1)` would abort, while a `place <= N` constraint is unaffected |
+| SSP-06 | The season receiving the new engine holds no scored result | §11 forbids silently switching an already-scored season; deployment must stop |
+| SSP-07 | No result in a SCORED tournament carries a NULL final score | The signature of the multiplier CASE falling through |
+| SSP-08 | No out-of-range place currently holds a non-zero podium bonus | `num_podium_bonus` has no `place > N` guard, only `WHEN place = 1/2/3` |
+| SSP-09 | (INFO) The exact per-season multiplier and threshold values | What the normalized type policy must migrate; defaults would be wrong |
+
+Verified clean against LOCAL, CERT and PROD on 2026-09-19, with identical results in all three.
+
 ## Cross-references
 
 - ADR registry: Project Specification Appendix C — Architecture Decisions
