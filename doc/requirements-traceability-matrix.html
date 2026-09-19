@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="f2a4ff4d225d91e5eaf99a7ad0a63b88d146578fd46d3a884465ab277aa22e3f">
+<meta name="doc-source-sha256" content="6ac2f0e69ad17867497a9ce90051fb96f986c0d285d2f779418d5ad24b7e5277">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>249 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>251 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -161,8 +161,8 @@
 <td>FR-19</td>
 <td>JSONB bucket-based ranking rules</td>
 <td>§8.6.6</td>
-<td>5.4–5.7, 5.20–5.22</td>
-<td>Covered</td>
+<td>5.4–5.7, 5.20–5.22, SS26.RANK.01–12</td>
+<td>Covered (M6; <strong>amended 2026-09-19, ADR-098:</strong> <code>schema_version: 2</code> adds three independently-configured sections (SPWS/EVF-FIE/PZSz) aggregating into two display groups, read by <code>fn_ranking_rules_canonical</code> alongside the original <code>domestic</code>/<code>international</code> shape via a frozen legacy adapter; the original shape is unchanged and <code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code> are untouched)</td>
 </tr>
 <tr>
 <td>FR-20</td>
@@ -1212,14 +1212,28 @@
 </tr>
 <tr>
 <td>SS26.LOCK.01–12</td>
-<td>The Admin scoring editor closes totally on the season's first scored result — engine, base, podium, multipliers, thresholds, ranking buckets and default mode — while the carry-over engine PATCH stays permitted and result repair, URL correction, reimport and same-revision rescore remain available.</td>
+<td>The Admin scoring editor closes totally on the season's first scored result — engine, base, podium, multipliers, thresholds and ranking buckets — while the carry-over engine PATCH stays permitted and result repair, URL correction, reimport and same-revision rescore remain available.</td>
 <td>pgTAP + Vitest</td>
 <td><code>supabase/tests/80_season_scoring_contract.sql</code>, <code>frontend/tests/ScoringConfigEditor.test.ts</code>, <code>frontend/tests/SeasonManager.test.ts</code>, <code>frontend/tests/SeasonManagerWizard.test.ts</code></td>
 <td><strong>Landed</strong> (2026-09-19)</td>
 </tr>
 <tr>
+<td>SS26.LOCK.13</td>
+<td><code>default_ranking_mode</code> (<code>tbl_scoring_config.enum_default_ranking_mode</code>, design step 4) joins the same governed-field list: editable before the first score, rejected after. Split from SS26.LOCK.01–12 because the column did not exist until design step 4 landed it.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
+</tr>
+<tr>
 <td>SS26.REVISION.01–08</td>
 <td>The privileged audited whole-season revision and rescore path: privileged access only, decision metadata required, old revision retained, no mixed revision survives, success activates atomically, failure preserves the prior active revision and scores.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
+</tr>
+<tr>
+<td>SS26.REVISION.09</td>
+<td>The privileged revision path can change <code>default_ranking_mode</code> on its own, independent of any engine or multiplier change.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
 <td><strong>Landed</strong> (2026-09-19)</td>
@@ -1254,10 +1268,10 @@
 </tr>
 <tr>
 <td>SS26.RANK.01–12</td>
-<td>Three independent Season Scoring Rules feed exactly two display groups; best/always semantics; no double counting; EVF/FIE and PZSz both feed one EVF+ accumulator; Ranking/PPW membership; V0; legacy adapter parity.</td>
+<td>Three independent Season Scoring Rules feed exactly two display groups; best/always semantics; no double counting; EVF/FIE and PZSz both feed one EVF+ accumulator; V0 not short-circuited; legacy (schema v1) adapter parity against <code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code>; PZSz carry-over disabled by default. Delivered as <code>fn_ranking_full</code> (ADR-098) — a new RPC, not yet wired into the frontend (design step 7); the real <code>SPWS-2026-2027</code> season is not cut over to schema v2 yet.</td>
 <td>pgTAP</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
 </tr>
 <tr>
 <td>SS26.PUBLISH.01–10</td>
@@ -1373,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>f2a4ff4d225d91e5eaf99a7ad0a63b88d146578fd46d3a884465ab277aa22e3f</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>6ac2f0e69ad17867497a9ce90051fb96f986c0d285d2f779418d5ad24b7e5277</code></footer>
 </div></body></html>
