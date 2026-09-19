@@ -588,37 +588,67 @@ class DbConnector:
         self.annotate_parity_fail(id_event, notes)
 
 
-# Tournament type → tbl_scoring_config column.
-# ADR-066: PPW/MPW/PSW (domestic SPWS) gate on int_min_participants_ppw;
-# PEW/MEW/MSW (international classification) gate on int_min_participants_evf.
-_PPW_TYPES = frozenset({"PPW", "MPW", "PSW"})
-_EVF_TYPES = frozenset({"PEW", "MEW", "MSW"})
+class UnconfiguredTournamentType(RuntimeError):
+    """A season has no configured settings for the tournament type in hand.
+
+    Raised instead of admitting the bracket. See `get_min_participants`.
+    """
+
+
+# The phrase `fn_get_min_participants` raises. Matched so that a genuine
+# transport failure is re-raised untouched rather than being reported as a
+# configuration problem.
+_UNCONFIGURED_MARKER = "No scoring configuration for tournament type"
 
 
 def get_min_participants(db: DbConnector, id_season: int, tourn_type: str | None) -> int:
-    """Return the per-season minimum-participants threshold for a
-    tournament type.
+    """Return the per-season, per-type minimum-participants threshold.
 
-    ADR-066: tournaments with `n_competitors < threshold` are skipped at
-    ingestion (no tbl_tournament row, no points awarded). Read from
-    `tbl_scoring_config.int_min_participants_{ppw,evf}` keyed by
-    `id_season`. Default 1 (include everything) when:
-      - the season has no scoring_config row, OR
-      - the tournament type is unrecognised.
+    ADR-066: a bracket with `n_competitors < threshold` is skipped at ingestion
+    (no tbl_tournament row, no points awarded).
+
+    REWRITTEN 2026-09-19 (versioned season scoring, design §07). Two changes.
+
+    It now resolves through the `fn_get_min_participants` RPC over
+    `tbl_scoring_type_config` instead of reading
+    `tbl_scoring_config.int_min_participants_{ppw,evf}` directly. The
+    type-to-threshold routing is deliberately NOT duplicated here any more: it
+    is not what the column names suggest — PSW is domestic and takes the _ppw
+    threshold — so it is written down once, in SQL, and asserted there by
+    SS26.TYPE.02.
+
+    And it FAILS CLOSED. It used to return 1, meaning include everything, for an
+    unrecognised type and for a season with no config row at all. That is the
+    opposite of caution: `derive_tourn_type_from_event_code` returns None for an
+    unmatched event code and landed on the same fallback, so a missing
+    configuration admitted every bracket ungated rather than stopping it. PPS
+    and MPS are unconfigured until their own migration lands, which is precisely
+    when that mattered.
     """
-    if tourn_type in _PPW_TYPES:
-        column = "int_min_participants_ppw"
-    elif tourn_type in _EVF_TYPES:
-        column = "int_min_participants_evf"
-    else:
-        return 1
-    rows = (
-        db._sb.table("tbl_scoring_config").select(column).eq("id_season", id_season).execute().data
-    ) or []
-    if not rows:
-        return 1
-    val = rows[0].get(column)
-    return int(val) if val is not None else 1
+    if tourn_type is None:
+        raise UnconfiguredTournamentType(
+            f"No scoring configuration for tournament type None in season {id_season}: "
+            "the event code did not resolve to a tournament type. Refusing to admit "
+            "a bracket ungated."
+        )
+
+    try:
+        resp = db._sb.rpc(
+            "fn_get_min_participants",
+            {"p_id_season": id_season, "p_type": tourn_type},
+        ).execute()
+    except Exception as exc:  # noqa: BLE001 — narrowed immediately below
+        if _UNCONFIGURED_MARKER in str(exc):
+            raise UnconfiguredTournamentType(str(exc)) from exc
+        raise
+
+    value = getattr(resp, "data", None)
+    if value is None:
+        raise UnconfiguredTournamentType(
+            f"No scoring configuration for tournament type {tourn_type} in season "
+            f"{id_season}. Refusing to admit a bracket ungated."
+        )
+    return int(value)
 
 
 def derive_tourn_type_from_event_code(event_code: str) -> str | None:
