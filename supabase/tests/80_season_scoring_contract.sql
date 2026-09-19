@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(30);
+SELECT plan(35);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -477,6 +477,153 @@ SELECT results_eq(
            ('SPWS-2024-2025', 'MEW', 1.2000::NUMERIC(10,4)),
            ('SPWS-2024-2025', 'MSW', 2.0000::NUMERIC(10,4))$$,
   'SS26.HIST.07 normalized type config preserves each season''s own multipliers, not column defaults'
+);
+
+-- =============================================================================
+-- SS26.TYPE — normalized per-type policy (§11 step 3, first half).
+--
+-- The migration preflight proved that per-season multipliers genuinely differ
+-- (SPWS-2023-2024 MEW 2.0 against SPWS-2024-2025 MEW 1.2; MSW moves 2.0 -> 1.2),
+-- so a migration writing column DEFAULTS instead of STORED values would silently
+-- rescore history. SS26.HIST.07 above pins two of those values by name; these
+-- assert the property over every season and every type at once.
+-- =============================================================================
+
+-- Mismatch counter, guarded the same way as the other RED helpers so a missing
+-- table produces one clean failure rather than aborting the file.
+CREATE FUNCTION pg_temp.type_cfg_mismatches()
+RETURNS BIGINT
+LANGUAGE plpgsql AS $mm$
+DECLARE v BIGINT;
+BEGIN
+  SELECT count(*) INTO v
+    FROM tbl_scoring_config c
+    CROSS JOIN LATERAL (VALUES
+        ('PPW', c.num_ppw_multiplier), ('MPW', c.num_mpw_multiplier),
+        ('PEW', c.num_pew_multiplier), ('MEW', c.num_mew_multiplier),
+        ('MSW', c.num_msw_multiplier), ('PSW', c.num_psw_multiplier)
+      ) AS legacy(ttype, mult)
+    LEFT JOIN tbl_scoring_type_config tc
+           ON tc.id_config = c.id_config AND tc.enum_type::TEXT = legacy.ttype
+   WHERE tc.id_type_config IS NULL OR tc.num_multiplier <> legacy.mult;
+  RETURN v;
+EXCEPTION WHEN undefined_table OR undefined_column THEN
+  RETURN NULL;
+END $mm$;
+
+-- SS26.TYPE.01 — every season/type pair is present and carries that season's
+-- OWN stored multiplier.
+SELECT is(pg_temp.type_cfg_mismatches(), 0::BIGINT,
+  'SS26.TYPE.01 every season/type pair migrated with its own stored multiplier, none defaulted');
+
+-- SS26.TYPE.02 — the threshold routing is NOT what the column labels suggest,
+-- and normalizing must preserve it exactly. PSW is domestic and gates on the
+-- _ppw column (ADR-066, python/pipeline/db_connector.py:590-594), so a
+-- normalization that routed by name would silently retighten PSW from 1 to 5.
+CREATE FUNCTION pg_temp.threshold_mismatches()
+RETURNS BIGINT
+LANGUAGE plpgsql AS $th$
+DECLARE v BIGINT;
+BEGIN
+  SELECT count(*) INTO v
+    FROM tbl_scoring_config c
+    CROSS JOIN LATERAL (VALUES
+        ('PPW', c.int_min_participants_ppw), ('MPW', c.int_min_participants_ppw),
+        ('PSW', c.int_min_participants_ppw), ('PEW', c.int_min_participants_evf),
+        ('MEW', c.int_min_participants_evf), ('MSW', c.int_min_participants_evf)
+      ) AS legacy(ttype, threshold)
+    LEFT JOIN tbl_scoring_type_config tc
+           ON tc.id_config = c.id_config AND tc.enum_type::TEXT = legacy.ttype
+   WHERE tc.id_type_config IS NULL OR tc.int_min_participants <> legacy.threshold;
+  RETURN v;
+EXCEPTION WHEN undefined_table OR undefined_column THEN
+  RETURN NULL;
+END $th$;
+
+SELECT is(pg_temp.threshold_mismatches(), 0::BIGINT,
+  'SS26.TYPE.02 threshold routing preserved: {PPW,MPW,PSW}->ppw and {PEW,MEW,MSW}->evf');
+
+-- SS26.TYPE.03 — the fail-closed gate §07 requires. get_min_participants
+-- currently returns 1 for an unrecognised type and for a season with no config
+-- at all, so a missing configuration lets everything through rather than
+-- stopping it. The SQL reader must raise.
+SELECT throws_like(
+  $$SELECT fn_get_min_participants(
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026'), 'NOT_A_TYPE')$$,
+  '%No scoring configuration for tournament type%',
+  'SS26.TYPE.03 an unrecognised tournament type raises instead of defaulting to 1'
+);
+
+-- SS26.TYPE.04 — the normalized rows track ordinary configuration edits, so a
+-- pre-lock Admin change still reaches scoring through one path rather than two
+-- that agree only by luck.
+CREATE FUNCTION pg_temp.type_cfg_tracks_edit()
+RETURNS NUMERIC
+LANGUAGE plpgsql AS $tr$
+DECLARE v_season INT; v_out NUMERIC;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  UPDATE tbl_scoring_config SET num_mpw_multiplier = 1.7 WHERE id_season = v_season;
+  SELECT tc.num_multiplier INTO v_out
+    FROM tbl_scoring_type_config tc
+    JOIN tbl_scoring_config c ON c.id_config = tc.id_config
+   WHERE c.id_season = v_season AND tc.enum_type = 'MPW';
+  RETURN v_out;
+EXCEPTION WHEN undefined_table OR undefined_column THEN
+  RETURN NULL;
+END $tr$;
+
+SELECT is(pg_temp.type_cfg_tracks_edit(), 1.7::NUMERIC,
+  'SS26.TYPE.04 a configuration edit propagates to the normalized type rows');
+
+-- SS26.TYPE.05 — the normalized table is what SCORING actually reads. Without
+-- this, the table could be a decorative copy that happens to agree. The edit
+-- above left SPWS-2023-2024 MPW at 1.7; scoring an MPW tournament in that
+-- season must now use it.
+CREATE FUNCTION pg_temp.scored_with_normalized()
+RETURNS NUMERIC
+LANGUAGE plpgsql AS $sw$
+DECLARE v_season INT; v_org INT; v_event INT; v_t INT; v_f INT; v_out NUMERIC;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+
+  -- Move the NORMALIZED row away from the legacy column's value. SS26.TYPE.04
+  -- left both at 1.7; if this test scored at 1.7 it would pass whichever source
+  -- scoring read, and prove nothing. At 1.9 only the normalized table gives the
+  -- expected answer, so this discriminates rather than merely agreeing.
+  UPDATE tbl_scoring_type_config tc SET num_multiplier = 1.9
+    FROM tbl_scoring_config c
+   WHERE c.id_config = tc.id_config AND c.id_season = v_season AND tc.enum_type = 'MPW';
+
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+  VALUES ('SS26-TYPE-EVT', 'SS26 type authority fixture', v_season, v_org, 'PLANNED')
+  RETURNING id_event INTO v_event;
+
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon,
+    enum_gender, enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_event, 'SS26-TYPE-MPW-N24', 'SS26 MPW N=24', 'MPW', 'EPEE', 'M', 'V2',
+          '2023-10-01', 24, 'IMPORTED')
+  RETURNING id_tournament INTO v_t;
+
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
+  VALUES ('SS26-TYPE-1', 'Test', 1970) RETURNING id_fencer INTO v_f;
+
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t, 1);
+
+  PERFORM fn_calc_tournament_scores(v_t);
+
+  SELECT r.num_final_score INTO v_out FROM tbl_result r WHERE r.id_tournament = v_t;
+  RETURN v_out;
+EXCEPTION WHEN undefined_table OR undefined_column OR undefined_function THEN
+  RETURN NULL;
+END $sw$;
+
+-- Classic engine, N=24 place 1: components 50 + 50 + 25.9604965 = 125.9604965.
+-- The legacy column says 1.7 (-> 214.13); the normalized row says 1.9. Only
+-- 239.32 proves scoring read the normalized table.
+SELECT is(pg_temp.scored_with_normalized(), 239.32::NUMERIC,
+  'SS26.TYPE.05 scoring reads its multiplier from the normalized table, not the legacy column'
 );
 
 SELECT * FROM finish();
