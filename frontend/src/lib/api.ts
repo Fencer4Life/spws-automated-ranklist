@@ -286,6 +286,24 @@ export async function fetchScoringConfig(seasonId: number): Promise<ScoringConfi
   return { ...(data as ScoringConfig), engine: engine as ScoringConfig['engine'] }
 }
 
+// SS26.LOCK.01/§05: released scoring-engine codes for ScoringConfigEditor's
+// engine selector. Fetched once (called from App.svelte at admin-view mount),
+// never hardcoded — a third released engine then needs no frontend redeploy.
+// tbl_scoring_engine has a plain "Public read" RLS policy (20260919000005),
+// matching every other reference/lookup table in this codebase.
+export async function fetchScoringEngines(): Promise<{ code: string, label: string }[]> {
+  const { data, error } = await getClient()
+    .from('tbl_scoring_engine')
+    .select('txt_code, txt_label')
+    .eq('bool_active', true)
+    .order('id_engine')
+  if (error || !data) return []
+  return (data as { txt_code: string, txt_label: string }[]).map((row) => ({
+    code: row.txt_code,
+    label: row.txt_label,
+  }))
+}
+
 export async function saveScoringConfig(config: Record<string, unknown>): Promise<void> {
   const { error } = await getClient().rpc('fn_import_scoring_config', {
     p_config: config,

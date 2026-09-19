@@ -586,6 +586,12 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 -- 2.14  fn_import_scoring_config: upserts all columns, sets ts_updated
 -- ---------------------------------------------------------------------------
+-- Uses a fresh scratch season, not `bool_active = TRUE`: by this point in the
+-- file, 2.1-2.13 have already scored fixture tournaments in the active
+-- season, which now locks its configuration (2026-09-19, governance lock).
+-- This test's own subject is fn_import_scoring_config's generic upsert
+-- mechanics, orthogonal to the lock -- a scratch season with zero results
+-- tests exactly that without colliding with it.
 SELECT lives_ok(
   $test214$DO $body$
   DECLARE
@@ -593,11 +599,19 @@ SELECT lives_ok(
     v_ts_before TIMESTAMPTZ;
     v_ts_after TIMESTAMPTZ;
   BEGIN
-    SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
+    v_season := fn_create_season('SCORE-2-14', '2036-08-01', '2037-07-15');
+    -- Explicitly backdate rather than pg_sleep + compare: pgTAP runs the
+    -- whole file in one transaction, and NOW() is frozen for its entire
+    -- duration, so a scratch season created in THIS transaction has
+    -- ts_updated = NOW() already -- the same frozen value
+    -- fn_import_scoring_config's own `ts_updated = NOW()` would produce a
+    -- moment later, making "after > before" trivially false regardless of
+    -- any pg_sleep. The original test never hit this: it used the seed-
+    -- loaded active season, whose ts_updated came from the SEPARATE, earlier-
+    -- committed seed transaction. A scratch season needs the same real gap,
+    -- forced explicitly since transaction-frozen NOW() cannot provide one.
+    UPDATE tbl_scoring_config SET ts_updated = NOW() - INTERVAL '1 hour' WHERE id_season = v_season;
     SELECT ts_updated INTO v_ts_before FROM tbl_scoring_config WHERE id_season = v_season;
-
-    -- Wait a tiny bit to ensure timestamp differs
-    PERFORM pg_sleep(0.01);
 
     PERFORM fn_import_scoring_config(jsonb_build_object(
       'id_season', v_season,
@@ -633,6 +647,7 @@ SELECT lives_ok(
 -- ---------------------------------------------------------------------------
 -- 2.15  Partial import: only mp_value → preserves other values
 -- ---------------------------------------------------------------------------
+-- Same fresh-season reasoning as 2.14 above.
 SELECT lives_ok(
   $test215$DO $body$
   DECLARE
@@ -640,7 +655,7 @@ SELECT lives_ok(
     v_gold_before INT;
     v_gold_after INT;
   BEGIN
-    SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
+    v_season := fn_create_season('SCORE-2-15', '2037-08-01', '2038-07-15');
 
     SELECT int_podium_gold INTO v_gold_before
     FROM tbl_scoring_config WHERE id_season = v_season;

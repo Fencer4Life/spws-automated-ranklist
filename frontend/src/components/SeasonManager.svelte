@@ -10,6 +10,7 @@
     <SeasonManagerWizard
       open={wizardOpen}
       {seasons}
+      {scoringEngines}
       onclose={() => { wizardOpen = false }}
       onloadpriorconfig={onwizardloadprior}
       oncommit={onwizardcommit}
@@ -21,8 +22,11 @@
           {#if showForm && editingId === season.id_season}
             <div data-field="season-form" class="season-form">
               <!-- 🎯 Konfiguracja punktacji button — visible only for future + active seasons.
-                   Past-complete seasons (dt_end < today) hide it (ADR-045). The existing
-                   `readonly` prop on ScoringConfigEditor stays as defense-in-depth. -->
+                   Past-complete seasons (dt_end < today) hide it (ADR-045). Unrelated to
+                   ScoringConfigEditor's own `readonly` prop below, which is now
+                   server-authoritative (scoring_admin_locked, governance lock 2026-09-19) —
+                   showing the button at all is a date rule; whether its contents are
+                   editable is a scoring-state rule. -->
               {#if !isSeasonPast(season)}
                 <div class="form-top-row">
                   <span class="tooltip-wrapper">
@@ -146,7 +150,8 @@
               <ScoringConfigEditor
                 config={scoringConfig}
                 seasonCode={season.txt_code}
-                readonly={isSeasonPast(season)}
+                readonly={scoringConfig?.scoring_admin_locked ?? false}
+                {scoringEngines}
                 onsave={onsavescoring}
                 oncancel={onclosescoring}
               />
@@ -213,6 +218,7 @@
     onfetchevf = (_id: number): Promise<{ ranklist: boolean, calendar: boolean }> => Promise.resolve({ ranklist: false, calendar: true }),
     onscoringconfig = (_id: number) => {},
     scoringConfig = null as ScoringConfig | null,
+    scoringEngines = [] as { code: string, label: string }[],
     scoringSeasonId = null as number | null,
     onsavescoring = (_c: ScoringConfig) => {},
     onclosescoring = () => {},
@@ -232,6 +238,7 @@
     onfetchevf?: (id: number) => Promise<{ ranklist: boolean, calendar: boolean }>
     onscoringconfig?: (id: number) => void
     scoringConfig?: ScoringConfig | null
+    scoringEngines?: { code: string, label: string }[]
     scoringSeasonId?: number | null
     onsavescoring?: (config: ScoringConfig) => void
     onclosescoring?: () => void

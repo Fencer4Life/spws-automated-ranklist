@@ -129,6 +129,7 @@
       onfetchevf={handleFetchEvfToggle}
       onscoringconfig={handleOpenScoringConfig}
       {scoringConfig}
+      {scoringEngines}
       scoringSeasonId={editingScoringSeasonId}
       onsavescoring={handleSaveScoringConfig}
       onclosescoring={() => { editingScoringSeasonId = null }}
@@ -311,6 +312,7 @@
     updateEventStatus,
     deleteEventCascade,
     fetchScoringConfig,
+    fetchScoringEngines,
     saveScoringConfig,
     updateSeasonCarryoverEngine,
     updateSeasonCarryoverFields,
@@ -507,6 +509,11 @@
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
   let editingScoringSeasonId: number | null = $state(null)
+  // SS26.LOCK.01/§05: released scoring-engine codes, fetched once at app init
+  // (public read, tbl_scoring_engine) and passed down to every
+  // ScoringConfigEditor mount (SeasonManager's standalone editor + the
+  // SeasonManagerWizard step-2 editor) rather than hardcoded.
+  let scoringEngines: { code: string, label: string }[] = $state([])
   // Part 1 (ADR-044 amend): two independent +EVF flags. Ranklist defaults OFF
   // (SPWS lost the national-team appointment); Calendar defaults ON (richer view).
   let showEvfToggleRanklist = $state(false)
@@ -563,6 +570,7 @@
     try {
       await refreshActiveSeason().catch(() => {}) // best-effort: may fail for anon
       seasons = await fetchSeasons()
+      scoringEngines = await fetchScoringEngines().catch(() => [])
       const active = seasons.find((s) => s.bool_active)
       if (active) {
         selectedSeasonId = active.id_season

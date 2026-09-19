@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="586e76279c7e1e240d08505549da01bdb06b880328156f1c77777a13abae6136">
+<meta name="doc-source-sha256" content="0ab71cf9b046075aa6f343f1359ab24cf85cbabbf58879e5d21f373928bad9e4">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1213,9 +1213,9 @@
 <tr>
 <td>SS26.LOCK.01–12</td>
 <td>The Admin scoring editor closes totally on the season's first scored result — engine, base, podium, multipliers, thresholds, ranking buckets and default mode — while the carry-over engine PATCH stays permitted and result repair, URL correction, reimport and same-revision rescore remain available.</td>
-<td>pgTAP + integration</td>
-<td>—</td>
-<td>Planned</td>
+<td>pgTAP + Vitest</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code>, <code>frontend/tests/ScoringConfigEditor.test.ts</code>, <code>frontend/tests/SeasonManager.test.ts</code>, <code>frontend/tests/SeasonManagerWizard.test.ts</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
 </tr>
 <tr>
 <td>SS26.REVISION.01–08</td>
@@ -1373,5 +1373,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>586e76279c7e1e240d08505549da01bdb06b880328156f1c77777a13abae6136</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>0ab71cf9b046075aa6f343f1359ab24cf85cbabbf58879e5d21f373928bad9e4</code></footer>
 </div></body></html>

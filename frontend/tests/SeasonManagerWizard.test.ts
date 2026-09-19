@@ -152,6 +152,37 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     expect(onloadpriorconfig).toHaveBeenCalledWith('2026-09-01')
   })
 
+  // SS26.LOCK.12 (governance lock, 2026-09-19): step 2's ScoringConfigEditor
+  // must derive readonly from scoringConfig.scoring_admin_locked (whatever
+  // the loaded prior config says), never hardcode it false just because this
+  // is a brand-new season being created.
+  it('SS26.LOCK.12: step 2 editor is locked when the loaded prior config is locked', async () => {
+    const onloadpriorconfig = vi.fn().mockResolvedValue({
+      priorConfig: { ...PRIOR_CONFIG, scoring_admin_locked: true },
+      priorCode: 'SPWS-2025-2026',
+      priorBreakdown: PRIOR_BREAKDOWN,
+    })
+    const { container } = render(SeasonManagerWizard, { props: defaultProps({ onloadpriorconfig }) })
+    await fillStep1(container)
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => {
+      const mpInput = container.querySelector('input[data-field="mp_value"]') as HTMLInputElement
+      expect(mpInput).not.toBeNull()
+      expect(mpInput.disabled).toBe(true)
+    })
+  })
+
+  it('SS26.LOCK.12: step 2 editor stays editable when the loaded prior config is unlocked', async () => {
+    const { container } = render(SeasonManagerWizard, { props: defaultProps() })
+    await fillStep1(container)
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => {
+      const mpInput = container.querySelector('input[data-field="mp_value"]') as HTMLInputElement
+      expect(mpInput).not.toBeNull()
+      expect(mpInput.disabled).toBe(false)
+    })
+  })
+
   // ph3.26 — first-ever season (priorConfig=null) renders defaults banner
   it('ph3.26: first-ever season shows defaults banner in step 2', async () => {
     const onloadpriorconfig = vi.fn().mockResolvedValue({

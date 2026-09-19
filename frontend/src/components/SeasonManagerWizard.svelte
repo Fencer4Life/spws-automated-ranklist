@@ -104,6 +104,8 @@
             <ScoringConfigEditor
               config={effectiveScoringConfig}
               seasonCode={draftCode}
+              readonly={effectiveScoringConfig?.scoring_admin_locked ?? false}
+              {scoringEngines}
               onchange={(updated) => { capturedScoring = updated }}
               onsave={(updated) => { capturedScoring = updated; advanceToStep3() }}
               oncancel={handleCancel}
@@ -215,12 +217,14 @@
   let {
     open = false,
     seasons = [] as Season[],
+    scoringEngines = [] as { code: string, label: string }[],
     onclose = () => {},
     onloadpriorconfig = (_dtStart: string): Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }> => Promise.resolve({ priorConfig: null, priorCode: null, priorBreakdown: null }),
     oncommit = (_payload: CommitPayload): Promise<string | null> => Promise.resolve(null),
   }: {
     open?: boolean
     seasons?: Season[]
+    scoringEngines?: { code: string, label: string }[]
     onclose?: () => void
     onloadpriorconfig?: (dtStart: string) => Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }>
     oncommit?: (payload: CommitPayload) => Promise<string | null>

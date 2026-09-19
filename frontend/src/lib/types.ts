@@ -301,6 +301,15 @@ export interface ScoringConfig {
   // config so the ScoringConfigEditor's engine dropdown can read/write it.
   // Optional because legacy seasons predate the field; default is FK.
   engine?: CarryoverEngine
+  // SS26.LOCK/§05 (governance lock, 2026-09-19): server-authoritative lock
+  // state, keyed off the season's first scored result, not a season date.
+  // Optional for the same reason as pps_multiplier above — legacy configs
+  // and MOCK_CONFIG fixtures predate these columns.
+  scoring_admin_locked?: boolean
+  scoring_locked_at?: string | null
+  // tbl_scoring_engine.txt_code for the season's current id_scoring_engine —
+  // distinct from `engine` above (carry-over engine, ADR-045), never conflated.
+  engine_code?: string
 }
 
 export type ImportStatus = 'PLANNED' | 'PENDING' | 'IMPORTED' | 'SCORED' | 'REJECTED'
