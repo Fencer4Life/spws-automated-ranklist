@@ -391,6 +391,20 @@ starts from it rather than rediscovering it.
    named *Senior* to `V0`, which on a genuinely senior event silently mis-tags every
    bracket. **Recommendation:** sequence the season's planned scoring-formula change first,
    so PPS results are not scored under a formula about to be replaced.
+   **Partially resolved 2026-09-19.** The recommended sequencing happened: the scoring
+   formula change ([SS26 design](../plans/versioned-season-scoring-and-pzsz-ranking-design.html))
+   landed first, and its dispatcher already resolves multipliers through
+   `tbl_scoring_type_config` rather than the hardcoded `CASE` blocks this item warned
+   about, so adding PPS/MPS there was a normal row, not the three-site edit described
+   above. `enum_tournament_type` now carries `PPS` and `MPS`
+   (`20260919000003_add_pps_mps_enum.sql`), each with its own Admin-configurable
+   multiplier (`20260919000004_pps_mps_multipliers.sql`), and a PPS/MPS result scores
+   end to end with it. Still open, unchanged from above: the `best`/`best 2` cap is
+   unsettled, `enum_age_category` has no `SENIOR` member, `parse_tournament_name()`
+   still mis-tags a *Senior* bracket as `V0`, and — new since this item was written —
+   no ranking bucket selects PPS/MPS, so a scored result does not yet reach any
+   published ranklist total. That is deliberate for now: offering a bucket before the
+   SPWS/EVF+/Razem two-group redesign (design step 4) would show a wrong total.
 2. **Whether PZSz hosts its own results.** Each tournament has a page at
    `/zawody/kalendarium-zawodow/turniej/?id=NNNNN` carrying tabs for *Lista startowa*,
    *Grupy*, *Ranking Grupowy*, *Tabela* and *Klasyfikacja końcowa*, with pool-sheet markup

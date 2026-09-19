@@ -1,7 +1,7 @@
 export type WeaponType = 'EPEE' | 'FOIL' | 'SABRE'
 export type GenderType = 'M' | 'F'
 export type AgeCategory = 'V0' | 'V1' | 'V2' | 'V3' | 'V4'
-export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW' | 'PSW'
+export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW' | 'PSW' | 'PPS' | 'MPS'
 
 export interface RankingBucket {
   types: string[]
@@ -280,6 +280,12 @@ export interface ScoringConfig {
   mew_droppable: boolean
   msw_multiplier: number
   psw_multiplier: number
+  // PZSz senior events (SS26 design §07). Optional: legacy configs predate
+  // these two columns (COALESCE 1.0 server-side), and required fields would
+  // break MOCK_CONFIG fixtures in ScoringConfigEditor.test.ts and
+  // SeasonManagerWizard.test.ts as compile errors.
+  pps_multiplier?: number
+  mps_multiplier?: number
   min_participants_evf: number
   min_participants_ppw: number
   // Ranklist +EVF/Kadra toggle (default FALSE — SPWS lost the national-team

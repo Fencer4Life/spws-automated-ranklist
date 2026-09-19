@@ -23,6 +23,8 @@ const MOCK_CONFIG: ScoringConfig = {
   mew_droppable: false,
   msw_multiplier: 2.0,
   psw_multiplier: 2.0,
+  pps_multiplier: 1.0,
+  mps_multiplier: 1.1,
   min_participants_evf: 5,
   min_participants_ppw: 1,
   show_evf_toggle: false,
@@ -67,8 +69,10 @@ describe('ScoringConfigEditor (T8.8)', () => {
     expect(bronzeInput?.value).toBe('1')
   })
 
-  // 8.66 — Displays 6 tournament multipliers in 2×3 grid
-  it('displays 6 tournament multipliers', () => {
+  // 8.66 — Displays 8 tournament multipliers in a 3/3/2 grid (PPS/MPS added,
+  // pulled forward from delivery step 6 per
+  // doc/plans/did-you-plan-to-optimized-penguin.md)
+  it('displays 8 tournament multipliers', () => {
     const { container } = render(ScoringConfigEditor, { props: defaultProps })
     const ppwMult = container.querySelector('input[data-field="ppw_multiplier"]') as HTMLInputElement
     const mpwMult = container.querySelector('input[data-field="mpw_multiplier"]') as HTMLInputElement
@@ -76,12 +80,16 @@ describe('ScoringConfigEditor (T8.8)', () => {
     const mewMult = container.querySelector('input[data-field="mew_multiplier"]') as HTMLInputElement
     const mswMult = container.querySelector('input[data-field="msw_multiplier"]') as HTMLInputElement
     const pswMult = container.querySelector('input[data-field="psw_multiplier"]') as HTMLInputElement
+    const ppsMult = container.querySelector('input[data-field="pps_multiplier"]') as HTMLInputElement
+    const mpsMult = container.querySelector('input[data-field="mps_multiplier"]') as HTMLInputElement
     expect(ppwMult?.value).toBe('1')
     expect(mpwMult?.value).toBe('1.2')
     expect(pewMult?.value).toBe('1')
     expect(mewMult?.value).toBe('1.2')
     expect(mswMult?.value).toBe('2')
     expect(pswMult?.value).toBe('2')
+    expect(ppsMult?.value).toBe('1')
+    expect(mpsMult?.value).toBe('1.1')
   })
 
   // Part 3 — expected-rounds label clarifies "DE rounds" (PL default locale)

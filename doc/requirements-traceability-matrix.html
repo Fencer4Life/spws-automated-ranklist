@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="b86e50f11519e6fdc010d09940669771c9f565545a6c9b42565cb1aa17c6c1dd">
+<meta name="doc-source-sha256" content="586e76279c7e1e240d08505549da01bdb06b880328156f1c77777a13abae6136">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>248 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>249 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1232,8 +1232,15 @@
 <td><strong>Landed</strong> (2026-09-19)</td>
 </tr>
 <tr>
-<td>SS26.TYPE.06</td>
-<td>PPS/MPS enum values and their settings; SENIOR source tournament accepted; a SENIOR <strong>result</strong> category rejected.</td>
+<td>SS26.TYPE.06a–d</td>
+<td>PPS/MPS enum values and multiplier columns; a config-write reaches the normalized type table; <code>fn_assert_type_configured</code> resolves it; a PPS tournament scores end-to-end with its multiplier; <code>fn_auto_populate_multiplier</code> caches a non-NULL value for PSW and PPS. Pulled forward from delivery step 6 per <code>doc/plans/did-you-plan-to-optimized-penguin.md</code>, ahead of <code>SS26.TYPE.06e–f</code> below — no ranking bucket exists for either type yet (design step 4).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
+</tr>
+<tr>
+<td>SS26.TYPE.06e–f</td>
+<td>SENIOR source tournament accepted; a SENIOR <strong>result</strong> category rejected. Split out of the original <code>SS26.TYPE.06</code> when its enum/multiplier half landed ahead of the PZSz ingestion flow it depends on.</td>
 <td>pgTAP</td>
 <td>—</td>
 <td>Planned</td>
@@ -1366,5 +1373,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b86e50f11519e6fdc010d09940669771c9f565545a6c9b42565cb1aa17c6c1dd</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>586e76279c7e1e240d08505549da01bdb06b880328156f1c77777a13abae6136</code></footer>
 </div></body></html>
