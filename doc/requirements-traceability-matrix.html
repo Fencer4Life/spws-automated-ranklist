@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="6ac2f0e69ad17867497a9ce90051fb96f986c0d285d2f779418d5ad24b7e5277">
+<meta name="doc-source-sha256" content="5c60daccf59763bdaf2792eb1c83c20b267e313905dd6931a71ee01789e4c6ae">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1275,10 +1275,10 @@
 </tr>
 <tr>
 <td>SS26.PUBLISH.01–10</td>
-<td>Historical ranking publication boundary: the three spreadsheet-derived seasons are permanently <code>PPW_ONLY</code>, 2026/2027 and later are permanently <code>FULL</code>, the full RPC rejects <code>PPW_ONLY</code>, historical EVF/FIE data is retained, calendar scope unchanged.</td>
+<td>Historical ranking publication boundary: the three spreadsheet-derived seasons are permanently <code>PPW_ONLY</code>, 2026/2027 and later are permanently <code>FULL</code>, the column is immutable under direct <code>UPDATE</code> but unrelated <code>tbl_season</code> writes pass through, <code>fn_ranking_full</code> rejects <code>PPW_ONLY</code> with the searchable phrase while succeeding normally for <code>FULL</code>, <code>fn_ranking_kadra</code>/<code>fn_ranking_ppw</code> and the scoring-config JSON are untouched. Delivered via ADR-099.</td>
 <td>pgTAP</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td><strong>Landed</strong> (2026-09-19)</td>
 </tr>
 <tr>
 <td>SS26.UI.01–14</td>
@@ -1387,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>6ac2f0e69ad17867497a9ce90051fb96f986c0d285d2f779418d5ad24b7e5277</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>5c60daccf59763bdaf2792eb1c83c20b267e313905dd6931a71ee01789e4c6ae</code></footer>
 </div></body></html>
