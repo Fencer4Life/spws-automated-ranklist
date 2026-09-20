@@ -33,6 +33,16 @@ BEGIN
   -- Use fn_create_season which auto-creates scoring_config
   v_season := fn_create_season('INGEST-TEST-SEASON', '2035-09-01', '2036-06-30');
 
+  -- A season must be assigned a scoring engine before anything in it can be
+  -- scored (2026-09-19, versioned season scoring). fn_create_season deliberately
+  -- does NOT assign one: nothing infers an engine, so an unassigned season fails
+  -- closed rather than scoring under a formula nobody chose. This is the step a
+  -- real operator takes in the Admin editor. Classic is chosen here because it is
+  -- the formula this file's expectations were derived under.
+  UPDATE tbl_season SET id_scoring_engine =
+         (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
+   WHERE id_season = v_season;
+
   INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
   VALUES ('INGEST-EVT-1', 'Ingest Test Event', v_season, v_org, 'PLANNED')
   RETURNING id_event INTO v_event;
@@ -530,6 +540,16 @@ BEGIN
   VALUES ('CARRY-CURR', '2028-09-01', '2029-06-30', FALSE,
           'EVENT_CODE_MATCHING'::enum_event_carryover_engine)
   RETURNING id_season INTO v_curr_season;
+
+  -- A season must be assigned a scoring engine before anything in it can be
+  -- scored (2026-09-19, versioned season scoring). fn_create_season deliberately
+  -- does NOT assign one: nothing infers an engine, so an unassigned season fails
+  -- closed rather than scoring under a formula nobody chose. This is the step a
+  -- real operator takes in the Admin editor. Classic is chosen here because it is
+  -- the formula this file's expectations were derived under.
+  UPDATE tbl_season SET id_scoring_engine =
+         (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
+   WHERE id_season = v_prev_season OR id_season = v_curr_season;
 
   -- Both seasons need scoring_config with json_ranking_rules (JSONB path)
   INSERT INTO tbl_scoring_config (id_season, json_ranking_rules)

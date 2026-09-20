@@ -59,9 +59,14 @@ class ResolveFencers(BasePlugin):
         )
         db = svc.db
         domestic = _is_domestic(pctx.event)
+        intake = ctx.params.get("intake")
+        pzsz_senior = intake == "PZSZ_SENIOR"
         season_end = pctx.season_end_year
         parsed_gender = getattr(pctx.parsed, "gender", None)
-        bracket_gender = parsed_gender if domestic else None  # ADR-064
+        # PZSz senior brackets are gender-specific like domestic ones (ADR-064
+        # applies the same way); only the deferred international path has no
+        # bracket_gender signal.
+        bracket_gender = parsed_gender if (domestic or pzsz_senior) else None
         auto_thresh = (svc.config or {}).get("auto_link_threshold")  # optional recalibration knob
 
         fencer_db = db.fetch_fencer_db()
@@ -171,6 +176,43 @@ class ResolveFencers(BasePlugin):
                         notes="fuzzy-link",
                     )
                 )
+            elif pzsz_senior:
+                # design §07 item 4: only an existing canonical fencer or an
+                # approved exact alias auto-links (Phase A already covers
+                # that). Anything else here is Phase B fuzzy territory --
+                # never auto-created, never silently excluded. A found-but-
+                # uncertain candidate is PENDING (queued for Admin review by
+                # CommitPzszSenior, via `alternatives`); no candidate at all
+                # is a genuine non-match, dropped exactly like EXCLUDED.
+                if best.id_fencer is not None:
+                    matches.append(
+                        StageMatchResult(
+                            scraped_name=r.fencer_name,
+                            place=r.place,
+                            id_fencer=None,
+                            confidence=best.confidence,
+                            method="PENDING",
+                            alternatives=[
+                                {
+                                    "id_fencer": best.id_fencer,
+                                    "name": best.matched_name,
+                                    "confidence": best.confidence,
+                                }
+                            ],
+                            notes="PZSz senior: uncertain match queued for review",
+                        )
+                    )
+                else:
+                    matches.append(
+                        StageMatchResult(
+                            scraped_name=r.fencer_name,
+                            place=r.place,
+                            id_fencer=None,
+                            confidence=best.confidence,
+                            method="EXCLUDED",
+                            notes="PZSz senior: no candidate",
+                        )
+                    )
             elif domestic:
                 new_id, gby = self._create(
                     db, fencer_db, r, vcat, season_end, parsed_gender, ctx, best=best

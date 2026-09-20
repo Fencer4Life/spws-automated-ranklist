@@ -21,18 +21,17 @@
             {#if context?.birthYear} ({t('born')} {context.birthYear}){/if}
           </span>
           {#if showEvfToggle}
-            <div class="toggle" class:kadra-disabled={kadraDisabled}>
+            <div class="toggle">
               <button
                 class="toggle-btn"
                 class:active={mode === 'PPW'}
                 onclick={() => setMode('PPW')}
-              >SPWS</button>
+              >{t('mode_ppw')}</button>
               <button
                 class="toggle-btn"
-                class:active={mode === 'KADRA'}
-                disabled={kadraDisabled}
-                onclick={() => setMode('KADRA')}
-              >EVF+</button>
+                class:active={mode === 'RANKING'}
+                onclick={() => setMode('RANKING')}
+              >{t('mode_ranking')}</button>
             </div>
           {/if}
           <button class="btn-export-sub" title={t('export_to_ods')} onclick={handleExport}>&#9113;</button>
@@ -71,7 +70,7 @@
               </div>
             </div>
 
-            {#if mode === 'KADRA'}
+            {#if mode === 'RANKING'}
               <div class="breakdown-col">
                 <h4>{t('international_evf')}: {fmt(internationalTotal)} {t('pts')}</h4>
                 <div class="chart-area">
@@ -82,6 +81,8 @@
                         <div
                           class="chart-bar international"
                           class:international-carried={item.carried}
+                          class:chart-bar-evf={EVF_TYPES.includes(item.type as (typeof EVF_TYPES)[number])}
+                          class:chart-bar-pzsz={PZSZ_TYPES.includes(item.type as (typeof PZSZ_TYPES)[number])}
                           style="width: {maxScore > 0 ? (item.score / maxScore) * 100 : 0}%"
                         ></div>
                       </div>
@@ -92,30 +93,46 @@
               </div>
             {/if}
           </div>
-          {#if hasCarryover}
+          {#if hasCarryover || (mode === 'RANKING' && hasPzszResults)}
             <div class="carried-legend">
-              <div class="carried-legend-item"><div class="legend-swatch current"></div> {t('domestic_ppw_mpw').split(' (')[0]}</div>
-              <div class="carried-legend-item"><div class="legend-swatch carried"></div> {t('rolling_carried_over')}</div>
-              {#if mode === 'KADRA'}
-                <div class="carried-legend-item"><div class="legend-swatch intl-current"></div> {t('international_evf').split(' (')[0]}</div>
-                <div class="carried-legend-item"><div class="legend-swatch intl-carried"></div> {t('rolling_carried_over')} (EVF)</div>
+              {#if hasCarryover}
+                <div class="carried-legend-item"><div class="legend-swatch current"></div> {t('domestic_ppw_mpw').split(' (')[0]}</div>
+                <div class="carried-legend-item"><div class="legend-swatch carried"></div> {t('rolling_carried_over')}</div>
+                {#if mode === 'RANKING'}
+                  <div class="carried-legend-item"><div class="legend-swatch intl-current"></div> {t('international_evf').split(' (')[0]}</div>
+                  <div class="carried-legend-item"><div class="legend-swatch intl-carried"></div> {t('rolling_carried_over')} (EVF)</div>
+                {/if}
+                <div class="carried-legend-item">★ Best</div>
+                <div class="carried-legend-item">✓ {t('sc_rule_always')}</div>
+                <div class="carried-legend-item">↩ {t('rolling_carried_over')}</div>
               {/if}
-              <div class="carried-legend-item">★ Best</div>
-              <div class="carried-legend-item">✓ {t('sc_rule_always')}</div>
-              <div class="carried-legend-item">↩ {t('rolling_carried_over')}</div>
+              {#if mode === 'RANKING' && hasPzszResults}
+                <div class="carried-legend-item"><div class="legend-swatch evf-color"></div> {t('legend_evf_label')}</div>
+                <div class="carried-legend-item"><div class="legend-swatch pzsz-color"></div> {t('legend_pzsz_label')}</div>
+              {/if}
             </div>
           {/if}
         </div>
 
-        <div class="table-total">
-          {mode === 'KADRA' ? t('kadra_total_label') : t('ppw_total_label')}: {mode === 'KADRA' ? fmt(grandTotal) : fmt(ppwModeTotal)} {t('pts')}
-        </div>
+        {#if mode === 'RANKING'}
+          <div class="table-total">
+            {t('ppw_total_label')}: {fmt(domesticTotal)} {t('pts')}
+            <span class="sep">·</span>
+            {t('evf_plus_total_label')}: {fmt(internationalTotal)} {t('pts')}
+            <span class="sep">·</span>
+            {t('col_total')}: {fmt(grandTotal)} {t('pts')}
+          </div>
+        {:else}
+          <div class="table-total">
+            {t('ppw_total_label')}: {fmt(ppwModeTotal)} {t('pts')}
+          </div>
+        {/if}
 
         <div class="table-section">
           <h3>{t('domestic_tournaments')}</h3>
           {@render tournamentTable(domesticScores)}
           {@render tournamentCards(domesticScores)}
-          {#if mode === 'KADRA' && internationalScores.length > 0}
+          {#if mode === 'RANKING' && internationalScores.length > 0}
             <h3>{t('international_tournaments_evf')}</h3>
             {@render tournamentTable(internationalScores)}
             {@render tournamentCards(internationalScores)}
@@ -214,14 +231,19 @@
   import { t, getLocale } from '../lib/locale.svelte'
   import LangToggle from './LangToggle.svelte'
 
-  const INTL_TYPES = ['PEW', 'MEW', 'MSW', 'PSW'] as const
+  // SS26.UI (design step 7, ADR-101): split for bar-color provenance — both
+  // groups still combine into the one EVF+ total/pool below (INTL_TYPES is
+  // their union), matching §06: "Color communicates provenance only; it does
+  // not create separate orange or red subtotals."
+  const EVF_TYPES = ['PEW', 'MEW', 'MSW', 'PSW'] as const
+  const PZSZ_TYPES = ['PPS', 'MPS'] as const
+  const INTL_TYPES = [...EVF_TYPES, ...PZSZ_TYPES] as const
 
   let {
     open = false,
     fencerName = '',
     scores = [] as ScoreRow[],
     mode = 'PPW' as RankingMode,
-    kadraDisabled = false,
     showEvfToggle = false,
     loading = false,
     context = null as DrilldownContext | null,
@@ -232,7 +254,6 @@
     fencerName?: string
     scores?: ScoreRow[]
     mode?: RankingMode
-    kadraDisabled?: boolean
     showEvfToggle?: boolean
     loading?: boolean
     context?: DrilldownContext | null
@@ -348,6 +369,12 @@
   // Chart data
   let hasCarryover = $derived(scores.some(s => s.bool_carried_over))
   let carriedResultIds = $derived(new Set(scores.filter(s => s.bool_carried_over).map(s => s.id_result)))
+  // SS26.UI: only show the EVF/PZSz provenance legend when a PZSz result is
+  // actually present — otherwise every bar is orange and the distinction is
+  // noise, not information.
+  let hasPzszResults = $derived(
+    internationalScores.some((s) => PZSZ_TYPES.includes(s.enum_type as (typeof PZSZ_TYPES)[number]))
+  )
 
   interface ChartItem {
     score: number
@@ -433,6 +460,23 @@
         carried,
       })
     }
+    // SS26.UI (design step 7): MSW/PSW/PPS/MPS have no legacy best-J/marker
+    // convention (the pre-JSONB model only ever defined one for PEW/MEW) —
+    // included here with no marker so a real result is never silently
+    // dropped from the chart while ranking_rules JSONB hasn't loaded yet.
+    // This closes a pre-existing gap (MSW/PSW were already missing from this
+    // branch before design step 7; PPS/MPS are new as of design step 6).
+    const OTHER_INTL_TYPES = ['MSW', 'PSW', 'PPS', 'MPS'] as const
+    for (const s of scores.filter((s) => OTHER_INTL_TYPES.includes(s.enum_type as (typeof OTHER_INTL_TYPES)[number]))) {
+      const carried = !!s.bool_carried_over
+      items.push({
+        score: s.num_final_score ?? 0,
+        code: s.txt_tournament_code,
+        marker: carried ? '↩' : '',
+        type: s.enum_type,
+        carried,
+      })
+    }
     // Current first, then carried; within each group by score desc
     items.sort((a, b) => {
       if (a.carried !== b.carried) return a.carried ? 1 : -1
@@ -494,7 +538,6 @@
   }
 
   function setMode(m: RankingMode) {
-    if (m === 'KADRA' && kadraDisabled) return
     mode = m
   }
 
@@ -564,10 +607,6 @@
   .toggle-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
-  }
-  .kadra-disabled .toggle-btn:last-child {
-    background: #f5f5f5;
-    color: #aaa;
   }
   .btn-close {
     background: none;
@@ -683,6 +722,20 @@
   .chart-bar.international-carried {
     background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 4px, #f0e4c4 4px, #f0e4c4 8px);
   }
+  /* SS26.UI (design step 7): provenance-only coloring inside the one EVF+
+     bar chart — orange (.chart-bar-evf, same shade .international already
+     used) stays the default, red overrides it for a PZSz result. Same PZSz
+     brand red (#c72626) the calendar already uses (EventCard.svelte,
+     CalendarBarrel.svelte). No separate subtotal is implied by either color. */
+  .chart-bar.chart-bar-evf {
+    background: #e8a838;
+  }
+  .chart-bar.chart-bar-pzsz {
+    background: #c72626;
+  }
+  .chart-bar.chart-bar-pzsz.international-carried {
+    background: repeating-linear-gradient(45deg, #e8a3a3, #e8a3a3 4px, #f4d1d1 4px, #f4d1d1 8px);
+  }
   .chart-marker {
     min-width: 28px;
     text-align: center;
@@ -735,12 +788,23 @@
     background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 3px, #f0e4c4 3px, #f0e4c4 6px);
     border: 1px solid #d4b87a;
   }
+  .legend-swatch.evf-color {
+    background: #e8a838;
+  }
+  .legend-swatch.pzsz-color {
+    background: #c72626;
+  }
   .table-total {
     text-align: right;
     font-size: 15px;
     font-weight: 700;
     color: #222;
     margin-bottom: 4px;
+  }
+  .table-total .sep {
+    color: #ccc;
+    font-weight: 400;
+    margin: 0 4px;
   }
 
   /* Tables */

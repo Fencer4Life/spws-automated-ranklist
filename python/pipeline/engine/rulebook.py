@@ -65,6 +65,7 @@ def _build_plugins() -> dict[str, object]:
         ValidateIR,
     )
     from python.pipeline.plugins.post_commit import Notify, ParticipantCount
+    from python.pipeline.plugins.pzsz_commit import CommitPzszSenior
     from python.pipeline.plugins.recompute import LoadCommitted
     from python.pipeline.plugins.resolve_fencers import ResolveFencers
     from python.pipeline.plugins.staging_formatter import StagingFormatter
@@ -81,6 +82,7 @@ def _build_plugins() -> dict[str, object]:
         DetectPoolRound(),
         AssignFinalVcat(),
         Commit(),
+        CommitPzszSenior(),
         LoadCommitted(),
         ParticipantCount(),
         Notify(),
@@ -166,5 +168,29 @@ RULEBOOK: dict[Flow, Rule] = {
             Step("StagingFormatter"),
         ),
         seeds=frozenset({"event"}),
+    ),
+    # 5. PZSz senior result flow (design step 6, ADR-100). Built from the same
+    #    plugins INGEST_DOMESTIC uses, minus the three pool-splitting steps
+    #    that do not apply -- a PZSz field is never split into several
+    #    tournaments, it writes exactly one SENIOR tournament per weapon/
+    #    gender and lets each row carry its own V-cat instead (§07).
+    #    ValidateCounts is reused unchanged: it already does the URL->data
+    #    validation §07 item 2 requires, plus the fail-closed min-
+    #    participants gate against the season's PPS/MPS configuration.
+    Flow.INGEST_PZSZ_SENIOR: Rule(
+        Flow.INGEST_PZSZ_SENIOR,
+        "Ingest a PZSz PPS/MPS senior bracket: exact/alias match only, no "
+        "auto-create, an uncertain candidate queues for Admin review instead "
+        "of linking or dropping, original places and the full source field "
+        "size are preserved. Never halts.",
+        steps=(
+            Step("ParseSource"),
+            Step("ValidateIR"),
+            Step("ResolveEvent"),
+            Step("ResolveFencers", params={"intake": "PZSZ_SENIOR"}),
+            Step("ValidateCounts"),
+            Step("CommitPzszSenior"),
+        ),
+        seeds=frozenset(),
     ),
 }

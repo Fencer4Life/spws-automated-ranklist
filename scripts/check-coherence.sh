@@ -37,8 +37,11 @@ echo "--- Gate 2: ADR file count vs spec Appendix C ---"
 ADR_FILE_COUNT=$(ls -1 doc/adr/*.md 2>/dev/null | wc -l | tr -d ' ')
 SPEC_FILE="doc/Project Specification. SPWS Automated Ranklist System.md"
 
-# Count ADR rows in spec: lines matching "| [ADR-0" pattern in Appendix C
-ADR_SPEC_COUNT=$(grep -c '| \[ADR-0' "$SPEC_FILE" 2>/dev/null || echo 0)
+# Count ADR rows in spec: lines matching "| [ADR-NNN" pattern in Appendix C.
+# Matches any digit after the hyphen, not just "0" -- a leading-digit-only
+# pattern silently undercounts once ADR numbering rolls past 099 (caught
+# live going from ADR-099 to ADR-100, design step 6).
+ADR_SPEC_COUNT=$(grep -c '| \[ADR-[0-9]' "$SPEC_FILE" 2>/dev/null || echo 0)
 
 if [ "$ADR_FILE_COUNT" -eq "$ADR_SPEC_COUNT" ]; then
   echo "  PASS: $ADR_FILE_COUNT ADR files = $ADR_SPEC_COUNT spec rows"

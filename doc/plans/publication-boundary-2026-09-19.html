@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Publication boundary — design step 5</title>
+<style>
+    :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd;--serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+    @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}}
+    :root[data-theme="dark"]{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}
+    :root[data-theme="light"]{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd}
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:60rem;margin:auto;padding:58px 30px 110px}code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}code{background:var(--surface-2);padding:.08em .36em;border:1px solid var(--line);border-radius:5px;font-size:.84em;font-weight:600}a{color:var(--accent)}.eyebrow,.kicker{font:700 14px/1.3 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);text-wrap:balance}h1{font-size:clamp(38px,6vw,57px);line-height:1.05;max-width:19ch;margin:14px 0 18px}h2{font-size:33px;line-height:1.15;margin:0 0 18px}h3{font-size:20px;margin:28px 0 10px}.dek{font-size:23px;line-height:1.48;color:var(--muted);max-width:58ch}.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--strong);border-radius:7px;background:var(--surface);color:var(--muted);font:600 14px var(--mono)}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}.pill.good .dot{background:var(--good)}.pill.warn .dot{background:var(--warn)}.rule{height:2px;border:0;background:var(--line);margin:48px 0}section{margin-top:54px}p,ul,ol{max-width:69ch}ul,ol{padding-left:1.4em}li{margin:8px 0}li::marker{color:var(--accent)}.toc{columns:2;column-gap:38px}@media(max-width:700px){.toc{columns:1}.wrap{padding:36px 20px 80px}body{font-size:17px}}
+    .note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}.note>:last-child{margin-bottom:0}.note.accent{border-left-color:var(--accent);background:var(--accent-soft)}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.note.pzs{border-left-color:var(--pzs);background:var(--pzs-soft)}.lede{font-weight:800;margin:0 0 7px}.tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}table{border-collapse:collapse;width:100%;font-size:16px;min-width:620px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.chip{display:inline-block;padding:3px 8px;border-radius:6px;font:800 12px var(--mono);white-space:nowrap}.chip.lock{background:var(--danger-soft);color:var(--danger)}.chip.edit{background:var(--good-soft);color:var(--good)}.chip.future{background:var(--warn-soft);color:var(--warn)}pre{overflow:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:17px 20px;font:15px/1.7 var(--mono);color:var(--ink)}.formula{font:600 16px/1.8 var(--mono);background:var(--surface);padding:18px 22px;border:1px solid var(--line);border-radius:10px;overflow:auto}.checklist{font-family:var(--mono);font-size:15px;white-space:pre-wrap}.foot{margin-top:62px;padding-top:24px;border-top:2px solid var(--line);font:14px/1.6 var(--mono);color:var(--faint)}
+</style>
+</head>
+<body><div class="wrap">
+
+<p class="eyebrow">Implementation plan · design step 5</p>
+<h1>An immutable per-season publication capability, enforced where it matters</h1>
+<p class="dek">Implements <a href="versioned-season-scoring-and-pzsz-ranking-design.html">the approved design</a>'s §06 (historical ranking publication boundary) and §11 step 5 — schema and RPC enforcement only. Frontend enforcement (FilterBar/App/drilldown/export) is design step 7's job, same boundary step 4 already drew for the frontend cutover.</p>
+<div class="meta">
+  <span class="pill good"><span class="dot"></span>steps 1–4 landed on this branch, unpushed to origin/main</span>
+  <span class="pill warn"><span class="dot"></span>ADR-099 drafted below — sign-off requested before the file is written</span>
+</div>
+
+<nav class="toc">
+<ol>
+<li><a href="#outcome">Outcome and scope</a></li>
+<li><a href="#baseline">Verified baseline</a></li>
+<li><a href="#adr">Proposed ADR-099 — sign-off requested</a></li>
+<li><a href="#schema">Schema</a></li>
+<li><a href="#enforce">Enforcement in fn_ranking_full</a></li>
+<li><a href="#scenario">Scenario walkthrough</a></li>
+<li><a href="#tests">Acceptance tests</a></li>
+<li><a href="#delivery">Delivery</a></li>
+<li><a href="#verify">Verification</a></li>
+<li><a href="#docs">Documentation coherence gate</a></li>
+<li><a href="#flags">Flags</a></li>
+</ol>
+</nav>
+
+<section id="outcome">
+<p class="kicker">01 · Outcome and scope</p>
+<h2>What exists after this lands</h2>
+<ul>
+<li><code>tbl_season.enum_ranking_publication</code> (<code>PPW_ONLY</code> | <code>FULL</code>), immutable once set — a trigger rejects any later change to this one column, on any UPDATE, from any role. Design §06: "Migration/season-creation policy only; never an Admin display toggle."</li>
+<li>The three spreadsheet-derived seasons (<code>SPWS-2023-2024</code>, <code>SPWS-2024-2025</code>, <code>SPWS-2025-2026</code>) are backfilled to <code>PPW_ONLY</code>. <code>SPWS-2026-2027</code> is backfilled to <code>FULL</code>.</li>
+<li>The column defaults to <code>FULL</code>, so every season created after this migration — through <code>fn_create_season</code> or <code>fn_create_season_with_skeletons</code>, neither of which needs to change — is <code>FULL</code> by construction, matching design §06's "later seasons: FULL by season-creation policy."</li>
+<li><code>fn_ranking_full</code> (design step 4) rejects the call outright for a <code>PPW_ONLY</code> season. <code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code> and every other existing read path are untouched — a <code>PPW_ONLY</code> season's own PPW ranking keeps working exactly as today; only the combined SPWS+EVF+ view is refused.</li>
+</ul>
+<div class="note warn">
+<p class="lede">Deliberately out of scope</p>
+<p>Frontend enforcement — season selection normalizing to PPW, the Ranking/PPW switch disappearing, drilldown/export/deep-link constraints, stale-response discarding — is design step 7's job, the same step that wires the live frontend onto <code>fn_ranking_full</code> in the first place. Enforcing a capability boundary in a UI that does not yet call the RPC the boundary protects would be enforcement with nothing to enforce against. This mirrors exactly the boundary step 4 drew for the same reason.</p>
+</div>
+</section>
+
+<section id="baseline">
+<p class="kicker">02 · Verified baseline</p>
+<h2>What exists today, read from the actual schema</h2>
+<div class="tablewrap"><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>No publication-capability column exists anywhere</td><td><code>\d tbl_season</code> on LOCAL: <code>id_season, txt_code, dt_start, dt_end, bool_active, ts_created, enum_carryover_engine, int_carryover_days, enum_european_event_type, id_scoring_engine, ts_scoring_locked_at, id_active_scoring_revision</code>. No publication flag.</td></tr>
+<tr><td>The four real seasons' dates</td><td><code>SELECT txt_code, dt_start, dt_end FROM tbl_season</code>: <code>SPWS-2023-2024</code> (2023-01-01–2024-07-15), <code>SPWS-2024-2025</code> (2024-08-15–2025-07-15), <code>SPWS-2025-2026</code> (2025-08-01–2026-07-11), <code>SPWS-2026-2027</code> (2026-07-13–2027-07-15).</td></tr>
+<tr><td>A column default alone already covers "new objects get the new behavior with no code change" elsewhere in this codebase</td><td><code>enum_carryover_engine enum_event_carryover_engine NOT NULL DEFAULT 'EVENT_FK_MATCHING'</code> (ADR-045); <code>enum_default_ranking_mode enum_ranking_mode NOT NULL DEFAULT 'PPW'</code> (this branch, step 4). Neither <code>fn_create_season</code> nor <code>fn_create_season_with_skeletons</code> sets either column explicitly — both are letting the column default do the work already.</td></tr>
+<tr><td><code>fn_ranking_full</code> exists, unreachable from any UI, and does not yet know about publication capability</td><td><code>supabase/migrations/20260919000008_ranking_full.sql</code>, this branch. Its own comment records the deferral: "Enforcing the <code>views</code> map's membership at the presentation boundary is step 5/7's job... not this RPC's."</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="adr">
+<p class="kicker">03 · Proposed ADR-099 — sign-off requested before the file is written</p>
+<h2>An immutable per-season publication capability, checked once, in one function</h2>
+<div class="note accent">
+<p class="lede">Per <code>doc/claude/planning.md</code> rule 6, this ADR is drafted here and <strong>not written to <code>doc/adr/099-…</code> until you say so.</strong> Schema and <code>fn_ranking_full</code> changes can proceed once you confirm this plan; only the ADR file's creation waits.</p>
+</div>
+<p><strong>Context.</strong> The three spreadsheet-derived seasons (2023/2024–2025/2026) reproduce what the association's Excel workbooks already published — PPW-only material that never represented an official combined ranking. 2026/2027 is the first season with a real, database-computed EVF+ total. Design §06 requires this distinction to be a stored, permanent fact rather than something inferred from a date comparison against "the active season" (which would silently flip once 2026/2027 itself becomes historical).</p>
+<p><strong>Decision.</strong> Add <code>tbl_season.enum_ranking_publication</code> (<code>PPW_ONLY</code> | <code>FULL</code>), <code>NOT NULL DEFAULT 'FULL'</code>. Backfill the three historical seasons to <code>PPW_ONLY</code>; <code>SPWS-2026-2027</code> stays at its default, <code>FULL</code>. A <code>BEFORE UPDATE</code> trigger rejects any change to this one column specifically — checked column-by-column like <code>fn_guard_scoring_config_write</code> already does for the scoring lock, not a blanket freeze on the row — so the column is genuinely immutable once a season exists, for every writer, not just the ordinary Admin session. <code>fn_ranking_full</code> reads the season's publication capability first and <code>RAISE EXCEPTION</code>s before doing any aggregation work if it is <code>PPW_ONLY</code>; every other ranking function is untouched, so a <code>PPW_ONLY</code> season's plain PPW ranking keeps working exactly as it does today.</p>
+<p><strong>Alternatives rejected.</strong> <em>"Older than the active season" logic</em> — rejected per design §06: this would silently reclassify 2026/2027 as PPW-only the moment a later season becomes active, when design explicitly requires 2026/2027 to "retain Ranking/PPW forever." <em>A hardcoded date cutoff duplicated at each call site</em> — rejected: one stored, queried fact is what makes the boundary a database invariant instead of a convention every new caller has to remember. <em>Inferring publication from the assigned scoring engine</em> — rejected: engine and publication are orthogonal facts (a season could in principle reuse an old engine while still being a first-class published season), and conflating them would make a future engine reuse silently change publication too. <em>Enforcing only in the UI</em> — rejected on the same grounds as every other governance decision in this codebase (ADR-097): a disabled button is presentation, not a guarantee, and this codebase has already paid for that lesson once. <em>Governing this column through the existing scoring-config lock</em> (the same mechanism as <code>default_ranking_mode</code>) — rejected: publication capability is not something an administrator ever legitimately changes after the fact, even before a season scores its first result, whereas every field the scoring lock governs is ordinarily editable until that point. A different, stricter mechanism (permanent immutability, not "editable until first score") matches what the value actually means.</p>
+<p><strong>Consequences.</strong> A historical season's underlying EVF/FIE result data is never deleted or hidden from other read paths (<code>fn_ranking_kadra</code>, raw queries, audit, future carry-over) — only the new combined-view RPC is restricted. A future season wanting to launch as <code>PPW_ONLY</code> (unlikely, but not impossible) would need an explicit migration statement, matching the "migration/season-creation policy only" phrase in design §06 literally. The frontend cannot yet observe or react to this column — that wiring, and the actual UI-level restriction design §06 also describes, is design step 7.</p>
+<p><strong>Relationships.</strong> Implements the design's own <a href="versioned-season-scoring-and-pzsz-ranking-design.html#adrs">§12 "Proposed ADR C"</a>. Composes with <a href="../adr/098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (adds a check to the same <code>fn_ranking_full</code> that ADR-098 introduced). Directly supersedes <a href="../adr/017-season-configurable-evf-toggle.html">ADR-017</a>'s historical PPW/+EVF presentation rule, per design §12's own note.</p>
+</section>
+
+<section id="schema">
+<p class="kicker">04 · Schema</p>
+<h2>One migration: the column, its immutability guard, the backfill</h2>
+<div class="tablewrap"><table><thead><tr><th>Object</th><th>Shape</th></tr></thead><tbody>
+<tr><td><code>enum_ranking_publication</code></td><td>New enum: <code>PPW_ONLY</code>, <code>FULL</code>.</td></tr>
+<tr><td><code>tbl_season.enum_ranking_publication</code></td><td><code>NOT NULL DEFAULT 'FULL'</code>. Existing rows: the three historical seasons explicitly set to <code>PPW_ONLY</code> by <code>txt_code</code>; <code>SPWS-2026-2027</code> left at its default.</td></tr>
+<tr><td><code>fn_guard_season_publication_immutable()</code> trigger function</td><td><code>BEFORE UPDATE ON tbl_season</code>: <code>IF NEW.enum_ranking_publication IS DISTINCT FROM OLD.enum_ranking_publication THEN RAISE EXCEPTION 'Ranking publication capability for season % is immutable and cannot be changed after creation', OLD.txt_code; END IF;</code> — one column checked, every other <code>tbl_season</code> column (dates, active flag, carry-over engine, scoring engine, lock timestamp) passes through untouched. No role check: unlike the scoring lock's trigger guards, which exist specifically to let privileged/internal callers past an ordinarily-blocked write, nothing should ever change this value, including a migration correcting a mistake — that case is an explicit, reviewed <code>DROP TRIGGER</code>/<code>ALTER</code>/<code>CREATE TRIGGER</code> sequence in its own migration, not a bypass built in ahead of time.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="enforce">
+<p class="kicker">05 · Enforcement in fn_ranking_full</p>
+<h2>One check, at the top, before any aggregation runs</h2>
+<p><code>fn_ranking_full</code>'s dispatcher (not each per-engine body — the check belongs where the season is first resolved, before the engine is even read) gains one lookup and one guard:</p>
+<pre>SELECT enum_carryover_engine, enum_ranking_publication INTO v_engine, v_publication
+  FROM tbl_season WHERE id_season = v_resolved_season;
+
+IF v_publication = 'PPW_ONLY' THEN
+  RAISE EXCEPTION 'Season % is PPW_ONLY and does not publish the full (SPWS+EVF+) ranking -- historical ranking publication boundary', v_resolved_season;
+END IF;</pre>
+<p>The exact phrase <strong>"historical ranking publication boundary"</strong> is embedded in the error text deliberately — design §13 requires it to be the one searchable phrase used consistently across implementation, docs and now the error message itself, so a future `grep`/docs-search hit on the phrase leads straight to the enforcing code, not just the prose describing it.</p>
+<p>Nothing else changes in <code>fn_ranking_full_event_code_matching</code>/<code>fn_ranking_full_event_fk_matching</code> — a <code>FULL</code> season's call proceeds exactly as design step 4 left it.</p>
+</section>
+
+<section id="scenario">
+<p class="kicker">06 · Scenario walkthrough</p>
+<h2>Concrete behavior at the boundary</h2>
+<ol>
+<li>An operator calls <code>fn_ranking_full('EPEE','M','V2', id_season_2025_2026)</code> directly, out of curiosity or by an old script. It raises immediately, naming the season and the reason, before touching <code>fn_ranking_rules_canonical</code> or any result row.</li>
+<li>The same operator calls <code>fn_ranking_ppw('EPEE','M','V2', id_season_2025_2026)</code> instead. It succeeds exactly as it does today — 2025/2026's domestic PPW ranking is real, published, and untouched by this step.</li>
+<li>A migration attempts <code>UPDATE tbl_season SET enum_ranking_publication = 'FULL' WHERE txt_code = 'SPWS-2025-2026'</code>. The trigger raises; the season stays <code>PPW_ONLY</code> unless a human deliberately drops and recreates the guard in a reviewed migration.</li>
+<li>A new season is created for 2027/2028 via the ordinary wizard path (<code>fn_create_season_with_skeletons</code>). Its <code>enum_ranking_publication</code> is <code>FULL</code> from the column default — no code in the wizard path needed to know this column exists.</li>
+<li>2027/2028 eventually becomes historical. Its <code>enum_ranking_publication</code> is untouched by that transition — still <code>FULL</code>, matching design §06's "2026/2027 keeps full Ranking after becoming historical," now proven true of every later season by the same mechanism rather than a special case for 2026/2027 alone.</li>
+</ol>
+</section>
+
+<section id="tests">
+<p class="kicker">07 · Acceptance tests</p>
+<h2><code>SS26.PUBLISH.01–10</code>, written before implementation</h2>
+<div class="tablewrap"><table><thead><tr><th>ID</th><th>Asserts</th></tr></thead><tbody>
+<tr><td><code>SS26.PUBLISH.01</code></td><td>All four real seasons carry the correct <code>enum_ranking_publication</code> after backfill: the three historical ones <code>PPW_ONLY</code>, <code>SPWS-2026-2027</code> <code>FULL</code>.</td></tr>
+<tr><td><code>SS26.PUBLISH.02</code></td><td>A freshly created scratch season (<code>fn_create_season</code>, no explicit publication argument) defaults to <code>FULL</code> — the column default alone, no code path needed.</td></tr>
+<tr><td><code>SS26.PUBLISH.03</code></td><td><code>fn_ranking_full</code> raises for a <code>PPW_ONLY</code> scratch season, with "historical ranking publication boundary" in the message.</td></tr>
+<tr><td><code>SS26.PUBLISH.04</code></td><td><code>fn_ranking_full</code> succeeds normally (no raise, correct totals) for a <code>FULL</code> scratch season with real scored results — the regression proof that this step didn't also break the <code>FULL</code> path.</td></tr>
+<tr><td><code>SS26.PUBLISH.05</code></td><td>A direct <code>UPDATE ... SET enum_ranking_publication</code> against any season raises, run as <code>postgres</code> (no role exemption exists, unlike the scoring lock's guards).</td></tr>
+<tr><td><code>SS26.PUBLISH.06</code></td><td>The same trigger does not block an ordinary, unrelated <code>UPDATE</code> to <code>tbl_season</code> (e.g. <code>bool_active</code> or <code>dt_end</code>) — the guard is scoped to the one column, not the row.</td></tr>
+<tr><td><code>SS26.PUBLISH.07</code></td><td>Historical EVF/FIE result data remains fully queryable for a <code>PPW_ONLY</code> season through <code>fn_ranking_kadra</code> — restricting <code>fn_ranking_full</code> does not touch any other read path or delete anything.</td></tr>
+<tr><td><code>SS26.PUBLISH.08</code></td><td><code>fn_ranking_ppw</code> succeeds normally for a <code>PPW_ONLY</code> season — the restriction is specific to the combined view, not a blanket lockout of historical ranking reads.</td></tr>
+<tr><td><code>SS26.PUBLISH.09</code></td><td><code>fn_export_scoring_config</code>'s JSON is unchanged by this step — <code>enum_ranking_publication</code> lives on <code>tbl_season</code>, not <code>tbl_scoring_config</code>, and is not a governed field of the scoring lock.</td></tr>
+<tr><td><code>SS26.PUBLISH.10</code></td><td><code>bool_show_evf_toggle_calendar</code> and <code>enum_ranking_publication</code> are independent: changing the calendar toggle through the ordinary config path has no effect on publication capability, and vice versa — design §06's "calendar scope is unchanged."</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="delivery">
+<p class="kicker">08 · Delivery</p>
+<h2>One migration</h2>
+<p><strong><code>20260919000009_ranking_publication_boundary.sql</code></strong> — <code>enum_ranking_publication</code>, the column, the backfill, the immutability trigger, and the <code>fn_ranking_full</code> guard (a <code>CREATE OR REPLACE</code> of the same function step 4 introduced). One migration is enough here — unlike steps 3b/4, there is no second, independently-testable half to split out.</p>
+</section>
+
+<section id="verify">
+<p class="kicker">09 · Verification</p>
+<h2>Definition of done</h2>
+<pre>scripts/preflight.sh          # exit 0</pre>
+<p>Outside preflight: <code>scripts/refresh-graph.sh</code>; <code>postgrestools check</code> on the new migration; a manual <code>psql</code> call confirming <code>fn_ranking_full</code> raises for the real <code>SPWS-2025-2026</code> season and still returns correct totals for a <code>FULL</code> scratch fixture.</p>
+</section>
+
+<section id="docs">
+<p class="kicker">10 · Documentation coherence gate</p>
+<div class="checklist">☐ Documentation coherence gate complete
+Impact: architecture | configuration
+Canonical docs affected: doc/handbook/subsystems/scoring-and-ranking.html (publication capability, immutability guard, fn_ranking_full's rejection); doc/handbook/domain/competition-and-ranking.html (which seasons publish the full ranking, using the exact phrase "historical ranking publication boundary"); doc/handbook/domain/glossary.html (PPW_ONLY, FULL)
+ADR impact: new (099, pending sign-off -- see §03); supersedes ADR-017's historical PPW/+EVF presentation rule
+Operational impact: none -- no new runbook, no UI surface yet
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from <base> [PASS]
+Superseded prose archived rather than appended: not applicable -- no prior publication-boundary documentation exists</div>
+<p>RTM: <code>SS26.PUBLISH.01–10</code> moves from Planned to Landed. pgTAP baseline (currently 1100) updates by the exact count of new assertions actually written.</p>
+</section>
+
+<section id="flags">
+<p class="kicker">Flags</p>
+<ul>
+<li><strong>ADR-099 is drafted, not written to disk.</strong> Schema and <code>fn_ranking_full</code> changes can proceed once you confirm this plan; only <code>doc/adr/099-…</code>'s creation waits for explicit sign-off.</li>
+<li><strong>This step supersedes ADR-017's historical presentation rule</strong> (design §12's own note) — worth confirming that's still intended before the ADR file is written, since ADR-017 is a real, currently-cited decision elsewhere in the codebase (<code>bool_show_evf_toggle</code>'s own history).</li>
+<li><strong>No frontend surface exists to observe this column yet</strong> — same as <code>fn_ranking_full</code> itself, this is backend-only and inert until step 7.</li>
+</ul>
+</section>
+
+<div class="rule"></div>
+<p class="foot">Repository state: claude/season-scoring-contracts @ f7d27782. Written 19 September 2026.</p>
+</div></body></html>

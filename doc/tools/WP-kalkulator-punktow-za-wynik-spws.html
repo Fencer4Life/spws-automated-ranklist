@@ -119,6 +119,18 @@ footer{margin-top:22px;font-size:12px;color:var(--muted);text-align:center}
 </style>
 </head>
 <body>
+<!-- Parametry punktacji pobierane są z konfiguracji sezonu. Wartości poniżej są
+     LOKALNE atrapy; .github/workflows/release.yml podmienia je przy budowaniu na
+     dane CERT/PROD z GitHub Secrets, tak samo jak w index.html i register.html.
+     Żadne poświadczenie nie jest trzymane w repozytorium, a osobny strażnik
+     "no localhost in dist" nie przepuści builda, w którym podmiana się nie
+     wykonała. Klucz anon jest publiczny z założenia — chroni go RLS i lista
+     dozwolonych funkcji (52.7), nie tajność. -->
+<div id="spws-env" hidden
+     data-supabase-cert-url="http://127.0.0.1:54321"
+     data-supabase-cert-key="sb_publishable_local_anon_placeholder"
+     data-supabase-prod-url=""
+     data-supabase-prod-key=""></div>
 <main class="wrap">
 
 <header class="head">
@@ -205,45 +217,184 @@ footer{margin-top:22px;font-size:12px;color:var(--muted);text-align:center}
 </main>
 
 <script>
+/* === SPWS-SCORING-MODULE:BEGIN — generated from frontend/src/lib/scoring.ts by
+   frontend/scripts/build-scoring-pages.mjs. DO NOT EDIT BY HAND: run that script.
+   The formula has one source of truth; this is a build artefact of it. === */
+"use strict";
+var SPWSScoring = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // frontend/src/lib/scoring.ts
+  var scoring_exports = {};
+  __export(scoring_exports, {
+    CLASSIC_ENGINE: () => CLASSIC_ENGINE,
+    FIELD_SCALED_ENGINE: () => FIELD_SCALED_ENGINE,
+    deBonus: () => deBonus,
+    engineBase: () => engineBase,
+    podiumBonus: () => podiumBonus,
+    scoreComponents: () => scoreComponents
+  });
+  var CLASSIC_ENGINE = "EVF_CLASSIC_V1_2025_2026";
+  var FIELD_SCALED_ENGINE = "SPWS_FIELD_SCALED_V1_2026_2027";
+  function round2(value) {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+  function isPowerOfTwo(n) {
+    return (n & n - 1) === 0;
+  }
+  function engineBase(engineCode, n, mpValue, baseSlope) {
+    if (engineCode === CLASSIC_ENGINE) return mpValue;
+    if (engineCode === FIELD_SCALED_ENGINE) {
+      return Math.min(mpValue, baseSlope * Math.log2(Math.max(2, n)));
+    }
+    throw new Error(
+      `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`
+    );
+  }
+  function assertScoringInput(n, place) {
+    if (!Number.isFinite(n) || !Number.isFinite(place)) {
+      throw new Error("Invalid scoring input: entries and place must be numbers.");
+    }
+    if (n < 1) {
+      throw new Error(`Invalid scoring input: a field of ${n} has no results.`);
+    }
+    if (place < 1) {
+      throw new Error(`Invalid scoring input: place ${place} is below first.`);
+    }
+    if (place > n) {
+      throw new Error(
+        `Invalid scoring input: place ${place} exceeds the field of ${n}. A place larger than the field is corrupt data, not a weak result.`
+      );
+    }
+  }
+  function deBonus(n, place, deRound) {
+    if (n <= 1) return 0;
+    const rounds = Math.max(
+      0,
+      Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (isPowerOfTwo(n) ? 0 : 1)
+    );
+    return rounds * deRound;
+  }
+  function podiumBonus(n, place, gold, silver, bronze) {
+    const coefficient = place === 1 ? gold : place === 2 ? silver : place === 3 ? bronze : 0;
+    return coefficient * 3 * Math.cbrt(n);
+  }
+  function scoreComponents(params, engineCode, n, place, multiplier) {
+    const base = engineBase(engineCode, n, params.mpValue, params.baseSlope);
+    assertScoringInput(n, place);
+    const placePoints = n === 1 ? base : base - (base - 1) * (Math.log(place) / Math.log(n));
+    const de = deBonus(n, place, params.deRound);
+    const podium = podiumBonus(
+      n,
+      place,
+      params.podiumGold,
+      params.podiumSilver,
+      params.podiumBronze
+    );
+    return {
+      base: round2(base),
+      placePoints: round2(placePoints),
+      deBonus: round2(de),
+      podiumBonus: round2(podium),
+      finalScore: round2((placePoints + de + podium) * multiplier)
+    };
+  }
+  return __toCommonJS(scoring_exports);
+})();
+/* === SPWS-SCORING-MODULE:END === */
+
 /* ------------------------------------------------------------------ *
- * Silnik punktowy. Obie funkcje przepisane bez zmian z dokumentu
- * doc/plans/Nowy_ranking_indywidualny-kalkulator.html — spws() z score(),
- * evf() z oldScore(). Punktacja liczona zawsze od FAKTYCZNEJ liczby
- * startujących, więc ostatnie miejsce daje 1 punkt niezależnie od stawki
- * (regulamin EVF Ranking System v6, §3.2).
+ * Silnik punktowy. Wzór ma JEDNO źródło — frontend/src/lib/scoring.ts —
+ * wbudowane powyżej przez scripts/build-scoring-pages.mjs. Ta strona
+ * przeliczała go kiedyś własnym kodem; trzy kopie zdążyły się rozjechać
+ * (tabela punktacji zaczynała od 4 startujących, kalkulator od 1).
+ *
+ * Liczby — podstawa i mnożniki podium — NIE są tu zaszyte. Pochodzą
+ * z konfiguracji sezonu (fn_public_scoring_params), więc zmiana ustawień
+ * w panelu administracyjnym przed pierwszym punktowanym wynikiem sezonu
+ * jest widoczna także tutaj. Po zamknięciu sezonu przestają się zmieniać
+ * i strona zamarza razem z silnikiem.
  * ------------------------------------------------------------------ */
-// Podstawa za pierwsze miejsce. Dziś algorytm EVF ma tu sztywne 50 niezależnie od
-// tego, czy pokonało się jednego rywala, czy stu. Propozycja SPWS zastępuje tę stałą
-// funkcją liczby startujących: 10 punktów za każdą rundę drabinki, nie więcej niż 50.
-//   2 osoby → 10 · 4 → 20 · 8 → 30 · 16 → 40 · 32 → 50
-// Od 32 startujących w górę podstawa osiąga pułap 50, więc punktacja jest DOKŁADNIE
-// taka jak dzisiejsza. Cała zmiana dotyczy stawek mniejszych.
-const NACHYLENIE = 10;   // punktów podstawy na jedną rundę drabinki
-const PULAP = 50;        // powyżej tej wartości podstawa nie rośnie
-
-function fN(n){ return Math.min(PULAP, NACHYLENIE * Math.log2(Math.max(2, n))); }
-
-// liczba wygranych rund bezpośredniej eliminacji — wzór EVF, bez zmian
-function rundy(place, n){
-  if (n <= 1) return 0;
-  const pow2 = (n & (n - 1)) === 0;
-  return Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (pow2 ? 0 : 1));
+const SPWS_ENV_NODE = document.getElementById('spws-env');
+function spwsEndpoint(){
+  const d = SPWS_ENV_NODE ? SPWS_ENV_NODE.dataset : {};
+  const url = d.supabaseCertUrl || d.supabaseProdUrl || '';
+  const key = d.supabaseCertKey || d.supabaseProdKey || '';
+  return url && key ? {url: url.replace(/\/+$/, ''), key: key} : null;
 }
 
-// Oba algorytmy mają IDENTYCZNĄ budowę — różnią się wyłącznie podstawą.
-// EVF: podstawa 50 zawsze.   SPWS: podstawa f(N).
-// Premia za rundy i bonus podiumowy są w obu takie same.
+// Parametry aktywnego sezonu. null dopóki nie wczytane — dopóki tak jest,
+// parts() zwraca null i strona pokazuje swój własny komunikat, zamiast
+// liczyć ze starych, zaszytych stałych.
+let SPWS_PARAMS = null;
+let SPWS_PARAMS_ERROR = null;
+
+async function loadScoringParams(){
+  const endpoint = spwsEndpoint();
+  if (!endpoint){ SPWS_PARAMS_ERROR = 'brak konfiguracji połączenia'; return; }
+  try {
+    const response = await fetch(endpoint.url + '/rest/v1/rpc/fn_public_scoring_params', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', apikey: endpoint.key,
+                Authorization: 'Bearer ' + endpoint.key},
+      body: JSON.stringify({p_season_code: null})
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const rows = await response.json();
+    if (!rows || !rows.length) throw new Error('brak aktywnego sezonu');
+    const r = rows[0];
+    SPWS_PARAMS = {
+      engineCode: r.engine_code, engineLabel: r.engine_label,
+      mpValue: Number(r.mp_value), baseSlope: Number(r.base_slope),
+      deRound: Number(r.de_round), podiumGold: Number(r.podium_gold),
+      podiumSilver: Number(r.podium_silver), podiumBronze: Number(r.podium_bronze)
+    };
+    SPWS_PARAMS_ERROR = null;
+  } catch (e) {
+    SPWS_PARAMS_ERROR = e && e.message ? e.message : String(e);
+  }
+}
+
+// Ten przełącznik EVF/SPWS porównuje dwa silniki dla CZŁOWIEKA patrzącego na
+// stronę. Nie jest tym, czym system wybiera silnik: sezon ma przypisany
+// dokładnie jeden i nic nie wybiera algorytmu w chwili liczenia.
+function spwsEngineFor(alg){
+  return alg === 'evf' ? SPWSScoring.CLASSIC_ENGINE : SPWSScoring.FIELD_SCALED_ENGINE;
+}
+
 function parts(place, n, alg){
-  if (n < 1 || place > n || place < 1) return null;
-  const MP = alg === 'evf' ? 50 : fN(n);
-  const pp = n === 1 ? MP : MP - (MP - 1) * Math.log(place) / Math.log(n);
-  const c  = {1:3, 2:2, 3:1}[place] || 0;
-  return {base: MP, place: pp, rounds: rundy(place, n) * 10, podium: c * 3 * Math.cbrt(n)};
+  if (!SPWS_PARAMS) return null;
+  try {
+    const c = SPWSScoring.scoreComponents(SPWS_PARAMS, spwsEngineFor(alg), n, place, 1);
+    return {base: c.base, place: c.placePoints, rounds: c.deBonus, podium: c.podiumBonus};
+  } catch (e) {
+    return null;   // miejsce spoza stawki to błędne dane, nie słaby wynik
+  }
 }
 
 function total(place, n, w, alg){
-  const p = parts(place, n, alg);
-  return p === null ? null : (p.place + (p.rounds || 0) + p.podium) * w;
+  if (!SPWS_PARAMS) return null;
+  try {
+    return SPWSScoring.scoreComponents(SPWS_PARAMS, spwsEngineFor(alg), n, place, w).finalScore;
+  } catch (e) {
+    return null;
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -356,6 +507,20 @@ function render(){
 
 function renderBreakdown(m, n, w){
   const t = T[lang], p = parts(m, n, alg);
+  // Dopóki parametry sezonu nie są wczytane, parts() zwraca null. To nie jest
+  // błąd wejścia — to brak liczb, którymi w ogóle wolno liczyć. Strona mówi to
+  // wprost, zamiast wracać do zaszytych stałych albo się wysypać przy starcie.
+  if (p === null){
+    $('breakdown').innerHTML = '';
+    $('out').textContent = '\u2014';
+    $('howText').textContent = SPWS_PARAMS_ERROR
+      ? (lang === 'en' ? 'Season parameters unavailable: ' + SPWS_PARAMS_ERROR
+                       : 'Nie udalo sie pobrac parametrow sezonu: ' + SPWS_PARAMS_ERROR)
+      : (lang === 'en' ? 'Loading season parameters...'
+                       : 'Wczytywanie parametrow sezonu...');
+    $('allBody').innerHTML = '';
+    return;
+  }
   const sum = p.place + (p.rounds || 0) + p.podium;
   // „Razem" liczone ze składników JUŻ ZAOKRĄGLONYCH, żeby kolumna zgadzała się
   // dla kogoś, kto ją dodaje na kartce; „Wynik" idzie z wartości dokładnych
@@ -377,7 +542,7 @@ function renderAll(m, n, w){
   let html = '';
   for (let i = 1; i <= n; i++){
     html += `<tr${i === m ? ' class="me" id="meRow"' : ''}><td class="pl">${i}</td>`
-          + `<td>${fmt(total(i, n, w, alg))}</td></tr>`;
+          + `<td>${(v => v === null ? '\u2014' : fmt(v))(total(i, n, w, alg))}</td></tr>`;
   }
   $('allBody').innerHTML = html;
   if (!$('allPanel').hidden) scrollToMe(false);
@@ -462,6 +627,10 @@ try {
   restore();
   applyLang();
   render();
+  // Parametry sezonu dociągamy po pierwszym rysowaniu, żeby strona pojawiła
+  // się natychmiast, a potem przeliczyła się z prawdziwymi liczbami. Błąd
+  // sieci zostaje na stronie — nigdy nie wracamy do starych, zaszytych stałych.
+  loadScoringParams().then(render);
 } catch (err) {
   const box = document.getElementById('warn');
   if (box){

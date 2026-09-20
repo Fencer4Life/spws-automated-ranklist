@@ -53,15 +53,20 @@ BEGIN
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, num_multiplier,
                               dt_tournament, enum_weapon, enum_gender, enum_age_category,
                               int_participant_count)
+  -- Participant count 8, not 1: the results below place this fencer 5th and 7th,
+  -- and a place larger than the field is rejected at scoring as of 2026-09-19
+  -- (versioned season scoring). fn_transfer_fencer_alias re-scores the affected
+  -- tournaments, so incoherent placeholder counts now abort this file. The
+  -- numbers are arbitrary to what this file asserts — only their coherence matters.
   VALUES (v_event1, 'PGTAP36-T-A-V2-M-EPEE', 'pgTAP 36 t A V2 M EPEE', 'PPW', 1.0,
-          '2024-04-01', 'EPEE', 'M', 'V2', 1)
+          '2024-04-01', 'EPEE', 'M', 'V2', 8)
   RETURNING id_tournament INTO v_t1;
 
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, num_multiplier,
                               dt_tournament, enum_weapon, enum_gender, enum_age_category,
                               int_participant_count)
   VALUES (v_event2, 'PGTAP36-T-B-V2-M-EPEE', 'pgTAP 36 t B V2 M EPEE', 'PPW', 1.0,
-          '2024-05-01', 'EPEE', 'M', 'V2', 1)
+          '2024-05-01', 'EPEE', 'M', 'V2', 8)
   RETURNING id_tournament INTO v_t2;
 
   INSERT INTO tbl_result (id_tournament, id_fencer, txt_scraped_name, int_place,

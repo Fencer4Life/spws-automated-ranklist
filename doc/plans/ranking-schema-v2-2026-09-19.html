@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ranking schema v2 — design step 4</title>
+<style>
+    :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd;--serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+    @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}}
+    :root[data-theme="dark"]{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}
+    :root[data-theme="light"]{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd}
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:60rem;margin:auto;padding:58px 30px 110px}code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}code{background:var(--surface-2);padding:.08em .36em;border:1px solid var(--line);border-radius:5px;font-size:.84em;font-weight:600}a{color:var(--accent)}.eyebrow,.kicker{font:700 14px/1.3 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);text-wrap:balance}h1{font-size:clamp(38px,6vw,57px);line-height:1.05;max-width:19ch;margin:14px 0 18px}h2{font-size:33px;line-height:1.15;margin:0 0 18px}h3{font-size:20px;margin:28px 0 10px}.dek{font-size:23px;line-height:1.48;color:var(--muted);max-width:58ch}.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--strong);border-radius:7px;background:var(--surface);color:var(--muted);font:600 14px var(--mono)}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}.pill.good .dot{background:var(--good)}.pill.warn .dot{background:var(--warn)}.rule{height:2px;border:0;background:var(--line);margin:48px 0}section{margin-top:54px}p,ul,ol{max-width:69ch}ul,ol{padding-left:1.4em}li{margin:8px 0}li::marker{color:var(--accent)}.toc{columns:2;column-gap:38px}@media(max-width:700px){.toc{columns:1}.wrap{padding:36px 20px 80px}body{font-size:17px}}
+    .note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}.note>:last-child{margin-bottom:0}.note.accent{border-left-color:var(--accent);background:var(--accent-soft)}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.note.pzs{border-left-color:var(--pzs);background:var(--pzs-soft)}.lede{font-weight:800;margin:0 0 7px}.tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}table{border-collapse:collapse;width:100%;font-size:16px;min-width:620px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.chip{display:inline-block;padding:3px 8px;border-radius:6px;font:800 12px var(--mono);white-space:nowrap}.chip.lock{background:var(--danger-soft);color:var(--danger)}.chip.edit{background:var(--good-soft);color:var(--good)}.chip.future{background:var(--warn-soft);color:var(--warn)}pre{overflow:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:17px 20px;font:15px/1.7 var(--mono);color:var(--ink)}.formula{font:600 16px/1.8 var(--mono);background:var(--surface);padding:18px 22px;border:1px solid var(--line);border-radius:10px;overflow:auto}.checklist{font-family:var(--mono);font-size:15px;white-space:pre-wrap}.foot{margin-top:62px;padding-top:24px;border-top:2px solid var(--line);font:14px/1.6 var(--mono);color:var(--faint)}
+</style>
+</head>
+<body><div class="wrap">
+
+<p class="eyebrow">Implementation plan · design step 4</p>
+<h1>Three Season Scoring Rules, two displayed groups, one new ranking RPC</h1>
+<p class="dek">Implements <a href="versioned-season-scoring-and-pzsz-ranking-design.html">the approved design</a>'s §06 and §11 step 4 — Season Scoring Rules v2, display-group aggregation, the SPWS/EVF+/Razem row contract, and a compatibility wrapper — <strong>before</strong> any frontend consumer changes (design's own words; step 7 does that).</p>
+<div class="meta">
+  <span class="pill good"><span class="dot"></span>steps 1–3b landed and pushed to this branch, unpushed to origin/main</span>
+  <span class="pill warn"><span class="dot"></span>ADR-098 drafted below — sign-off requested before the file is written</span>
+  <span class="pill warn"><span class="dot"></span>a live-season hazard was found during baseline verification — see §03</span>
+</div>
+
+<nav class="toc">
+<ol>
+<li><a href="#outcome">Outcome and scope</a></li>
+<li><a href="#baseline">Verified baseline</a></li>
+<li><a href="#hazard">The gap this plan found: the active season cannot be cut over yet</a></li>
+<li><a href="#adr">Proposed ADR-098 — sign-off requested</a></li>
+<li><a href="#schema">Schema: v2 JSON shape and the new governed column</a></li>
+<li><a href="#canon">Canonicalization and validation</a></li>
+<li><a href="#rpc">fn_ranking_full — the new generalized RPC</a></li>
+<li><a href="#scenario">Scenario walkthroughs</a></li>
+<li><a href="#tests">Acceptance tests</a></li>
+<li><a href="#delivery">Delivery increments</a></li>
+<li><a href="#verify">Verification</a></li>
+<li><a href="#docs">Documentation coherence gate</a></li>
+<li><a href="#flags">Flags</a></li>
+</ol>
+</nav>
+
+<section id="outcome">
+<p class="kicker">01 · Outcome and scope</p>
+<h2>What exists after this lands</h2>
+<p>Today, <code>tbl_scoring_config.json_ranking_rules</code> holds one implicit schema — <code>{"domestic": [...], "international": [...]}</code> — read by six independently-maintained functions (three ranking concerns × two carry-over engines). It has no room for a third, PZSz-flavored rule group, and no versioning to let a new shape coexist with the old one. Season default ranking mode (design §05's table) is not a column anywhere. This step:</p>
+<ul>
+<li>Defines <code>schema_version: 2</code> for <code>json_ranking_rules</code>: three independent Season Scoring Rules sections (<code>spws</code>, <code>evf_fie</code>, <code>pzsz</code>), each naming a display <code>group</code>, its <code>types</code>, and its <code>buckets</code>; a <code>display_groups</code> map from group to sections; a <code>views</code> map from mode (<code>PPW</code>, <code>RANKING</code>) to the groups it exposes — exactly the shape in design §06.</li>
+<li>Adds <code>tbl_scoring_config.enum_default_ranking_mode</code> (<code>PPW</code> | <code>RANKING</code>), the column the governance-lock plan's own Flags section deferred ("its column doesn't exist yet... belongs to ranking schema v2, design step 4"), and folds it into the existing lock guard in the same migration.</li>
+<li>Adds one new public RPC, <code>fn_ranking_full</code>, returning <code>rank, id_fencer, fencer_name, spws_total, evf_plus_total, total_score, bool_has_carryover</code> — the design's "generalized ranking RPC" — dispatched per season carry-over engine exactly like the three existing ranking functions (ADR-042/045 pattern).</li>
+<li>Makes <code>fn_ranking_full</code> read <strong>either</strong> schema shape through one canonicalization step, so it is provably correct against the real, golden 2023/2024–2025/2026 seasons (still on schema v1) before any season is ever moved to schema v2.</li>
+</ul>
+<div class="note danger">
+<p class="lede">Deliberately out of scope — found necessary during baseline verification, not assumed</p>
+<p><strong>No existing function is modified, and the real <code>SPWS-2026-2027</code> season's <code>json_ranking_rules</code> is not touched.</strong> <code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code> and their four <code>_event_code_matching</code>/<code>_event_fk_matching</code> bodies are untouched, byte-for-byte. See §03 for why, and §11 for when the real cutover happens.</p>
+<p>Also out of scope, per the design's own step boundary: the Admin UI for authoring <code>season_scoring_rules</code> (step 7); the SPWS/EVF+/Razem ranklist, drilldown and export UI (step 7); publication boundary / <code>enum_ranking_publication</code> (step 5); PZSz ingestion itself (step 6) — this step only makes the ranking side ready to score PZSz results once they exist.</p>
+</div>
+</section>
+
+<section id="baseline">
+<p class="kicker">02 · Verified baseline</p>
+<h2>What exists today, read from the actual files and the running LOCAL database</h2>
+<div class="tablewrap"><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Three ranking RPCs, each duplicated per carry-over engine — six functions carrying the same bucket-loop shape</td><td><code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code>/<code>fn_fencer_scores_rolling</code> in <code>20260425000009_dispatcher_register_fk_engine.sql</code> each dispatch via a static <code>CASE</code> on <code>enum_event_carryover_engine</code> to <code>..._event_code_matching</code> (current bodies in <code>20260626120000_carry_stop_on_current_result.sql</code>) or <code>..._event_fk_matching</code> (current bodies in <code>20260425000008_fn_event_fk_matching_engines.sql</code>). This duplication is pre-existing and not introduced by this step.</td></tr>
+<tr><td>The bucket schema today is <code>{"domestic": [...], "international": [...]}</code>, each bucket <code>{"best": N} | {"always": true}</code> plus <code>"types"</code>, no <code>schema_version</code> key anywhere</td><td><code>fn_ranking_kadra_event_code_matching</code> L536-548: <code>jsonb_array_elements(v_rules -&gt; 'international')</code>. Confirmed on the running LOCAL database: <code>SELECT s.txt_code, sc.json_ranking_rules FROM tbl_season s JOIN tbl_scoring_config sc ...</code> returns exactly this shape for 2024/2025, 2025/2026 and 2026/2027; 2023/2024 has <code>json_ranking_rules IS NULL</code> (the pure-legacy path, no JSONB at all).</td></tr>
+<tr><td><code>json_ranking_rules</code> is an opaque pass-through in the config API — no shape validation exists today</td><td><code>fn_export_scoring_config</code> (current body, <code>20260919000005_scoring_governance_lock.sql:334</code>): <code>'ranking_rules', sc.json_ranking_rules</code>, no transformation. <code>fn_import_scoring_config</code> (same file, L419): <code>COALESCE(NULLIF(p_config-&gt;'ranking_rules', 'null'::jsonb), v_current.json_ranking_rules)</code> — round-trips whatever JSON arrives, unexamined.</td></tr>
+<tr><td><code>enum_tournament_type</code> already has all eight values, including <code>PPS</code>/<code>MPS</code></td><td><code>SELECT enum_range(NULL::enum_tournament_type)</code> on LOCAL → <code>{PPW,MPW,PEW,MEW,MSW,PSW,PPS,MPS}</code> (landed in <code>bb5596b7</code>, this branch).</td></tr>
+<tr><td>Carry-over eligibility (FR-68, ADR-021) is rules-driven: a type carries over from the prior season only if it appears in <em>some</em> bucket's <code>types</code> and the current season has no completed result at that event position yet</td><td><code>fn_ranking_kadra_event_code_matching</code> L546-549 (<code>rules_types</code> CTE) and L602-604 (<code>carried_eligible</code> filter) — this is exactly the mechanism FR-68's RTM row and ADR-021 describe. Any new aggregation code must reproduce it, not reinvent it, or FR-68/ADR-021 regress silently.</td></tr>
+<tr><td>The real, active <code>SPWS-2026-2027</code> season is unscored and unlocked</td><td><code>SELECT txt_code, ts_scoring_locked_at, id_active_scoring_revision FROM tbl_season</code> on LOCAL: 2023/2024, 2024/2025, 2025/2026 all locked (backfilled by ADR-097); <code>2026-2027</code> has both columns <code>NULL</code>. Its <code>json_ranking_rules</code> is still schema v1 (previous row) — it has never been touched by this branch.</td></tr>
+<tr><td>No "default ranking mode" column exists anywhere</td><td><code>\d tbl_scoring_config</code> and <code>\d tbl_season</code> on LOCAL — neither carries such a column. The governance-lock plan's own Flags section (§05, <code>doc/plans/scoring-governance-lock-2026-09-19.html</code>) records this as deliberately deferred to this step.</td></tr>
+<tr><td>ADR-042/045's dispatch pattern (static <code>CASE</code>, <code>ELSE RAISE</code>) is the established precedent this codebase already uses three times over for exactly this kind of per-season branching</td><td><code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code>/<code>fn_fencer_scores_rolling</code> bodies, §above. <code>fn_calc_tournament_scores</code>'s scoring-engine dispatcher (design step 2, landed) is the same pattern again.</td></tr>
+<tr><td>Highest ADR is 097 on this worktree</td><td><code>ls doc/adr/*.md</code> tops out at <code>097-scoring-governance-lock-and-privileged-revision.md</code>, confirmed 19 Sep 2026. <strong>098 is free.</strong></td></tr>
+<tr><td>pgTAP baseline is 1086 assertions; <code>80_season_scoring_contract.sql</code> currently declares <code>plan(59)</code></td><td><code>grep "pgTAP total" "doc/Project Specification..."</code> → 1086. <code>grep "SELECT plan(" supabase/tests/80_season_scoring_contract.sql</code> → 59.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="hazard">
+<p class="kicker">03 · The gap this plan found</p>
+<h2>Cutting the active season over to schema v2 today would silently break the live ranklist</h2>
+<p>Design §11 step 4 says "Ranking schema v2... before changing frontend consumers." Read literally that sounds like a frontend-only deferral. It is not: the <strong>live, unmodified frontend today queries <code>fn_ranking_kadra</code> and <code>fn_ranking_ppw</code> for whichever season is active</strong> — currently <code>SPWS-2026-2027</code> — and those functions read <code>v_rules -&gt; 'domestic'</code> / <code>v_rules -&gt; 'international'</code> directly. Schema v2 has no top-level <code>domestic</code>/<code>international</code> keys at all; it nests everything under <code>season_scoring_rules</code>. If this step wrote schema v2 into the real <code>SPWS-2026-2027</code> row, <code>fn_ranking_kadra</code> would either error or silently return an empty international bucket for the currently active season — a production ranklist regression — for the entire interval between this step landing and step 7's frontend cutover.</p>
+<p>This is exactly the class of gap planning.md rule 3 exists to catch (walk the concrete scenario, not the abstract design). The resolution below is locked into this plan rather than left as a live judgment call during implementation.</p>
+<div class="note danger">
+<p class="lede">Locked decision: the real <code>SPWS-2026-2027</code> row is not touched by this migration</p>
+<p><code>fn_ranking_full</code> is built and pgTAP-proven against (a) the real, golden 2023/2024–2025/2026 seasons on schema v1 — via the canonicalization adapter, §06 — and (b) LOCAL-only scratch seasons carrying real schema v2 JSON, the same fixture pattern this branch already used for <code>SS26.LOCK</code>/<code>SS26.REVISION</code> (isolated scratch seasons, not the shared active season). The live <code>SPWS-2026-2027</code> config keeps its current schema-v1 shape, continues to be served by the untouched <code>fn_ranking_kadra</code>/<code>fn_ranking_ppw</code>, and is cut over to schema v2 only in design step 7, in the same change that moves the frontend onto <code>fn_ranking_full</code>. Doing both together means there is never a moment where the live season's stored JSON and the function reading it disagree about its shape.</p>
+</div>
+</section>
+
+<section id="adr">
+<p class="kicker">04 · Proposed ADR-098 — sign-off requested before the file is written</p>
+<h2>Season Scoring Rules v2: three rule sections, two display groups, one new generalized RPC</h2>
+<div class="note accent">
+<p class="lede">Per <code>doc/claude/planning.md</code> rule 6, this ADR is drafted here and <strong>not written to <code>doc/adr/098-…</code> until you say so.</strong> Everything else in this plan — schema, canonicalization, <code>fn_ranking_full</code>, tests — can be implemented once you confirm the plan; only the ADR file's creation waits.</p>
+</div>
+<p><strong>Context.</strong> The design (§06) requires three independently-configured Season Scoring Rules (SPWS, EVF/FIE, PZSz) that aggregate into exactly two publicly displayed groups (SPWS, EVF+), plus a governed "default ranking mode" per season. The existing bucket schema only has two implicit groups and no versioning, and no column exists for default mode.</p>
+<p><strong>Decision.</strong> Introduce <code>schema_version: 2</code> for <code>json_ranking_rules</code>: <code>season_scoring_rules</code> (three named sections, each a <code>group</code> + <code>types</code> + <code>buckets</code>), <code>display_groups</code> (group → sections) and <code>views</code> (mode → groups), exactly as design §06 specifies. Add <code>tbl_scoring_config.enum_default_ranking_mode</code>, governed by the existing lock (ADR-097) from the moment it exists. Add <code>fn_ranking_full(p_weapon, p_gender, p_category, p_season, p_rolling)</code>, dispatched per carry-over engine following the ADR-042/045 pattern already used three times in this codebase. Internally it canonicalizes <em>either</em> JSON shape (v1's <code>domestic</code>/<code>international</code>, or v2's <code>season_scoring_rules</code>) into one internal group/type/bucket representation, then runs a single generic best/always aggregation loop per declared group — one loop definition instead of duplicating it per (engine × group). <code>fn_ranking_ppw</code>, <code>fn_ranking_kadra</code>, <code>fn_fencer_scores_rolling</code> and their four per-engine bodies are left untouched. The real <code>SPWS-2026-2027</code> row is not migrated to schema v2 in this step (§03) — that happens in step 7, together with the frontend cutover. PZSz (<code>PPS</code>/<code>MPS</code>) carry-over is explicitly excluded from the generic <code>carried_eligible</code> resolution and begins disabled, matching design §07's "future PPS/MPS carry-over... begins disabled."</p>
+<p><strong>Alternatives rejected.</strong> <em>A legacy-shape translation shim inserted into all six existing duplicated ranking functions</em>, rather than one new RPC — rejected: it multiplies the surface that must agree with the new validation rules, and this codebase already has one documented instance of exactly this drift class (ADR-096, two independently-drifting copies of the tournament-code formula). <em>Cutting the real <code>SPWS-2026-2027</code> row over to schema v2 immediately</em> — rejected per §03: the live frontend still calls the untouched old functions against the active season, and they cannot read the new shape. <em>Six new functions mirroring today's six (one per engine × group)</em> — rejected as unneeded duplication now that a generic loop can cover all three groups from one canonical structure. <em>Validating <code>season_scoring_rules</code> shape inside <code>fn_import_scoring_config</code> at save time</em> — deferred, not rejected: no Admin UI exists yet to author schema v2 JSON (step 7), so validating where it can actually be exercised today — read time, inside <code>fn_ranking_full</code> — is what this step can test; save-time validation is added when the editor UI lands.</p>
+<p><strong>Consequences.</strong> <code>fn_ranking_full</code> becomes the only code that understands schema v2, and the only code that understands both schemas at once; the four frozen schema-v1-only functions and this one new function coexist for a bounded, documented interval ending at step 7. The default-ranking-mode column joins the governance lock's field list in the same migration, closing the flag the governance-lock plan left open. A later step must still build the Admin UI for authoring <code>season_scoring_rules</code>, migrate the frontend from <code>fn_ranking_kadra</code>/<code>fn_ranking_ppw</code> to <code>fn_ranking_full</code>, and cut <code>SPWS-2026-2027</code>'s JSON over to schema v2 as part of that same change — not before.</p>
+<p><strong>Relationships.</strong> Extends ADR-042/ADR-045 (the dispatch pattern). Composes with ADR-097 (the field-level governance lock gains one more governed field). Prepares for, but does not implement, the still-open Proposed ADR B (PZSz) and Proposed ADR C (publication boundary) from the design's §12.</p>
+</section>
+
+<section id="schema">
+<p class="kicker">05 · Schema</p>
+<h2>One migration: the v2 JSON shape, the default-mode column, the lock guard addition</h2>
+<div class="tablewrap"><table><thead><tr><th>Object</th><th>Shape</th></tr></thead><tbody>
+<tr><td><code>tbl_scoring_config.json_ranking_rules</code> — no column change</td><td>Same <code>JSONB NULL</code> column. Schema v2 is a new <em>value shape</em>, not a new column — <code>fn_export_scoring_config</code>/<code>fn_import_scoring_config</code> need zero changes, since <code>ranking_rules</code> already round-trips whatever JSON is stored, unexamined (§02).</td></tr>
+<tr><td><code>tbl_scoring_config.enum_default_ranking_mode</code></td><td><code>enum_ranking_mode</code> (new enum: <code>PPW</code>, <code>RANKING</code>) <code>NOT NULL DEFAULT 'PPW'</code>. Existing seasons backfill to <code>PPW</code> (their only mode today); <code>SPWS-2026-2027</code> is explicitly set to <code>RANKING</code> per design §06's matrix, in the same migration, since it is still unlocked (§02) and this is an ordinary pre-lock Admin-equivalent write.</td></tr>
+<tr><td><code>fn_export_scoring_config</code></td><td>Gains <code>'default_ranking_mode', sc.enum_default_ranking_mode</code> in its <code>jsonb_build_object</code>.</td></tr>
+<tr><td><code>fn_import_scoring_config</code></td><td>Gains <code>default_ranking_mode</code> to the governed-field list (§05 of the governance-lock plan): resolved via <code>COALESCE</code> against current, compared, and <code>fn_raise_scoring_locked(v_season, 'default_ranking_mode')</code> on a locked, changed value — the same pattern as every other governed field, added as one more line, not a new mechanism.</td></tr>
+<tr><td><code>fn_apply_scoring_config_write</code></td><td>Gains the same field, unconditionally applied (this is the function the privileged revision path calls with no lock check — ADR-097 §4) — so a future board-authorized revision can also change default mode.</td></tr>
+</tbody></table></div>
+<h3>The schema v2 JSON shape (design §06, verbatim)</h3>
+<pre>{
+  "schema_version": 2,
+  "season_scoring_rules": {
+    "spws":    { "group": "spws",      "types": ["PPW", "MPW"],               "buckets": [{"best":4,"types":["PPW"]}, {"always":true,"types":["MPW"]}] },
+    "evf_fie": { "group": "evf_plus",  "types": ["PEW", "MEW", "MSW", "PSW"], "buckets": [{"best":3,"types":["PEW","MEW","MSW","PSW"]}] },
+    "pzsz":    { "group": "evf_plus",  "types": ["PPS", "MPS"],               "buckets": [{"always":true,"types":["PPS","MPS"]}] }
+  },
+  "display_groups": {
+    "spws":     { "sections": ["spws"] },
+    "evf_plus": { "sections": ["evf_fie", "pzsz"] }
+  },
+  "views": {
+    "PPW":     ["spws"],
+    "RANKING": ["spws", "evf_plus"]
+  }
+}</pre>
+<p>A section's own <code>group</code> field and its membership in <code>display_groups.&lt;group&gt;.sections</code> must agree — this is asserted, not merely documented (§06 RANK.07 double-count test covers the failure mode where they disagree).</p>
+</section>
+
+<section id="canon">
+<p class="kicker">06 · Canonicalization and validation</p>
+<h2>One function reads either shape; validation happens where it can be tested today</h2>
+<p><code>fn_ranking_rules_canonical(v_rules JSONB) RETURNS TABLE(section TEXT, grp TEXT, types TEXT[], best INT, always_include BOOLEAN, bucket_idx INT)</code> — a new, small, set-returning function, called once at the top of <code>fn_ranking_full</code>'s per-engine bodies, replacing what would otherwise be six copies of the same branch:</p>
+<ul>
+<li>If <code>v_rules</code> is <code>NULL</code> or has no <code>schema_version</code> key (schema v1, or the pure-legacy <code>NULL</code> season): treat <code>domestic</code> as section <code>spws</code>/group <code>spws</code>, and <code>international</code> as section <code>evf_fie</code>/group <code>evf_plus</code> (no <code>pzsz</code> section — historically it cannot exist). This is the "frozen compatibility adapter" design §06 names.</li>
+<li>If <code>v_rules-&gt;&gt;'schema_version' = '2'</code>: read <code>season_scoring_rules</code> directly, one row per bucket per declared section.</li>
+<li>Any other <code>schema_version</code> value: <code>RAISE EXCEPTION 'Unsupported ranking rules schema_version: %'</code> — fail closed on a future, not-yet-understood version rather than silently misreading it.</li>
+</ul>
+<p>Validation, raised inline while canonicalizing (each condition below maps directly to one <code>SS26.RANK</code> test in §09):</p>
+<ol>
+<li>A bucket's <code>types</code> array contains a value not in <code>enum_tournament_type</code> → <code>RAISE 'Unknown tournament type in ranking rules: %'</code>.</li>
+<li>A bucket has both <code>best</code> and <code>always</code>, or neither → <code>RAISE 'Ranking bucket must declare exactly one of best or always'</code>.</li>
+<li><code>best &lt;= 0</code> → <code>RAISE 'Ranking bucket best must be positive, got %'</code>.</li>
+<li>A section's declared <code>group</code> does not match the group under which <code>display_groups</code> lists that section, or a section is listed under two different groups → <code>RAISE 'Ranking section % is assigned to conflicting display groups'</code>.</li>
+<li>The same tournament type appears in two sections that both feed the same <code>views</code> entry → <code>RAISE 'Tournament type % is double-counted within view %'</code> (computed by unioning, per view, every type reachable through that view's groups → sections → types, and checking for a non-empty intersection between any two sections in the same view).</li>
+</ol>
+</section>
+
+<section id="rpc">
+<p class="kicker">07 · <code>fn_ranking_full</code> — the new generalized RPC</p>
+<h2>Same dispatch pattern as the three existing ranking functions, one new pair of bodies</h2>
+<pre>fn_ranking_full(
+  p_weapon   enum_weapon_type,
+  p_gender   enum_gender_type,
+  p_category enum_age_category,
+  p_season   INT DEFAULT NULL,
+  p_rolling  BOOLEAN DEFAULT FALSE
+) RETURNS TABLE (
+  rank               INT,
+  id_fencer          INT,
+  fencer_name        TEXT,
+  spws_total         NUMERIC,
+  evf_plus_total     NUMERIC,
+  total_score        NUMERIC,
+  bool_has_carryover BOOLEAN
+)</pre>
+<p>A thin dispatcher (identical shape to <code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code>/<code>fn_fencer_scores_rolling</code>) resolves the season's <code>enum_carryover_engine</code> and calls <code>fn_ranking_full_event_code_matching</code> or <code>fn_ranking_full_event_fk_matching</code>, <code>ELSE RAISE EXCEPTION 'Unknown carryover engine: % for season %'</code> — the same fail-closed <code>CASE</code> ADR-042/045 established. Each body:</p>
+<ol>
+<li>Calls <code>fn_ranking_rules_canonical</code> once for the season's <code>json_ranking_rules</code>.</li>
+<li>Resolves <code>current_eligible</code> (this season's scored results, gender/category-effective per ADR-034) and <code>carried_eligible</code> (prior-season results for types in <em>any</em> section's <code>types</code>, at positions not yet completed this season — the existing FR-68/ADR-021 mechanism, reproduced not reinvented) exactly as the existing per-engine bodies do, <strong>except</strong> <code>carried_eligible</code> explicitly excludes <code>PPS</code>/<code>MPS</code> regardless of section membership — design §07's "begins disabled" (§09 RANK.12).</li>
+<li>For each canonical <code>(section, grp, types, best, always_include)</code> row, computes that section's contribution: <code>always_include</code> sums every eligible score of its <code>types</code>; a <code>best</code> bucket sums the top-<code>best</code> eligible scores of its <code>types</code> — the same rank-and-cap logic <code>fn_ranking_kadra_event_code_matching</code>'s <code>best_pew</code>/<code>next_pew</code> CTEs already use, generalized to N groups instead of hardcoded to two.</li>
+<li>Sums every section whose <code>grp = 'spws'</code> into <code>spws_total</code>, every section whose <code>grp = 'evf_plus'</code> into <code>evf_plus_total</code> — no third bucket, no per-section subtotal returned, matching design §06's "EVF+ exposes one subtotal only."</li>
+<li>Returns <code>rank</code> ordered by <code>total_score DESC</code>, exactly like the three existing functions.</li>
+</ol>
+<p><code>fn_ranking_full</code> takes no view/mode parameter — the caller (eventually the frontend, in step 7) decides whether to show <code>spws_total</code> alone (PPW view) or both totals (RANKING view); the RPC always computes both, since a <code>PPW_ONLY</code> season's <code>evf_plus_total</code> will simply be zero or absent-in-practice until that season ever configures an <code>evf_fie</code>/<code>pzsz</code> section. Enforcing the <code>views</code> map's membership at the presentation boundary is step 5/7's job (<code>enum_ranking_publication</code>), not this RPC's.</p>
+<h3>Grants</h3>
+<p><code>GRANT EXECUTE ON FUNCTION fn_ranking_full(...) TO anon, authenticated;</code> — identical grant to <code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code> today (public ranking read, no write). <code>fn_ranking_rules_canonical</code> is an internal helper: <code>REVOKE ALL ... FROM PUBLIC, anon</code>, called only from <code>SECURITY DEFINER</code> functions that already have season read access.</p>
+</section>
+
+<section id="scenario">
+<p class="kicker">08 · Scenario walkthroughs</p>
+<h2>Concrete behavior at the boundaries</h2>
+<h3>A. A schema-v1 season computed through the new RPC (parity check)</h3>
+<ol><li>A pgTAP test calls both <code>fn_ranking_kadra(weapon, gender, category, id_season_2025_2026)</code> (old, untouched) and <code>fn_ranking_full(...)</code> for the same arguments.</li><li><code>fn_ranking_rules_canonical</code> sees no <code>schema_version</code> key, applies the legacy adapter, and produces exactly the two sections <code>spws</code>/<code>evf_fie</code> that reproduce <code>domestic</code>/<code>international</code>.</li><li><code>fn_ranking_full</code>'s <code>spws_total</code> equals <code>fn_ranking_kadra</code>'s <code>ppw_total</code>; <code>evf_plus_total</code> equals its <code>pew_total</code>, for every fencer in the golden fixture — <code>SS26.RANK.11</code>.</li></ol>
+<h3>B. A schema-v2 scratch season with all three sections populated</h3>
+<ol><li>A pgTAP fixture creates an isolated scratch season (not the shared active one — the pattern this branch's own <code>02_scoring_engine.sql</code> fix already established) with a full schema-v2 <code>json_ranking_rules</code> and PPW, PEW and PPS results.</li><li><code>fn_ranking_full</code> returns non-zero <code>spws_total</code> (from the <code>spws</code> section) and a single <code>evf_plus_total</code> combining the <code>evf_fie</code> PEW score and the <code>pzsz</code> PPS score — no separate PZSz column exists in the row.</li><li>Removing the PPS result changes only <code>evf_plus_total</code>; <code>spws_total</code> is unaffected — sections are independent, as designed.</li></ol>
+<h3>C. A malformed configuration</h3>
+<ol><li>A test builds a <code>season_scoring_rules</code> value where <code>evf_fie</code> and <code>pzsz</code> both list <code>PSW</code> in their <code>types</code>, and both feed <code>evf_plus</code>.</li><li><code>fn_ranking_rules_canonical</code> detects the intersection under one <code>views</code> entry and raises before any aggregation runs — the caller gets a clear error, never a silently inflated total.</li></ol>
+<h3>D. The real, active season today</h3>
+<ol><li>An operator calls <code>fn_ranking_full</code> against the real <code>SPWS-2026-2027</code> <code>id_season</code> out of curiosity.</li><li>Its <code>json_ranking_rules</code> is still schema v1 (§03 — untouched by this migration), so the legacy adapter path runs, and the result matches what <code>fn_ranking_kadra</code>/<code>fn_ranking_ppw</code> already return for it today.</li><li>The live frontend is unaffected either way — it still calls the old functions, unchanged, until step 7.</li></ol>
+</section>
+
+<section id="tests">
+<p class="kicker">09 · Acceptance tests</p>
+<h2><code>SS26.RANK.01–12</code>, written before implementation</h2>
+<p>All land in <code>supabase/tests/80_season_scoring_contract.sql</code> (extends the existing SS26 file, current <code>plan(59)</code>).</p>
+<div class="tablewrap"><table><thead><tr><th>ID</th><th>Asserts</th></tr></thead><tbody>
+<tr><td><code>SS26.RANK.01</code></td><td>A schema-v2 config's three sections (<code>spws</code>, <code>evf_fie</code>, <code>pzsz</code>) resolve to exactly two display groups (<code>spws</code>, <code>evf_plus</code>) via <code>fn_ranking_rules_canonical</code>.</td></tr>
+<tr><td><code>SS26.RANK.02</code></td><td>A <code>best: N</code> bucket sums exactly the top-N eligible scores of its declared types, dropping the rest.</td></tr>
+<tr><td><code>SS26.RANK.03</code></td><td>An <code>always: true</code> bucket sums every eligible score of its declared types unconditionally, no cap.</td></tr>
+<tr><td><code>SS26.RANK.04</code></td><td>A bucket declaring both <code>best</code> and <code>always</code>, or neither, is rejected by <code>fn_ranking_rules_canonical</code> before any aggregation runs.</td></tr>
+<tr><td><code>SS26.RANK.05</code></td><td>A bucket type outside <code>enum_tournament_type</code> is rejected.</td></tr>
+<tr><td><code>SS26.RANK.06</code></td><td><code>best &lt;= 0</code> is rejected.</td></tr>
+<tr><td><code>SS26.RANK.07</code></td><td>The same tournament type declared in two sections that both feed one <code>views</code> entry is rejected — the double-count guard.</td></tr>
+<tr><td><code>SS26.RANK.08</code></td><td><code>evf_fie</code> and <code>pzsz</code> scores combine into one <code>evf_plus_total</code>; the returned row exposes no third, per-section subtotal column.</td></tr>
+<tr><td><code>SS26.RANK.09</code></td><td>Membership: a fencer with only <code>spws</code>-group scores and one with both groups both compute correctly; <code>total_score = spws_total + evf_plus_total</code> in every case.</td></tr>
+<tr><td><code>SS26.RANK.10</code></td><td>V0: with no <code>evf_fie</code> results configured or scored, <code>evf_plus_total</code> reflects only <code>pzsz</code> (or zero), <code>spws_total</code> is unaffected, and the call does not error or short-circuit for V0 the way the old client-side coercion (design §02's table) used to.</td></tr>
+<tr><td><code>SS26.RANK.11</code></td><td>Legacy adapter parity: for the real 2025/2026 golden fixture, <code>fn_ranking_full</code>'s <code>spws_total</code>/<code>evf_plus_total</code> exactly equal <code>fn_ranking_ppw</code>'s <code>total_score</code> and <code>fn_ranking_kadra</code>'s <code>pew_total</code> respectively, for every fencer.</td></tr>
+<tr><td><code>SS26.RANK.12</code></td><td>PZSz carry-over is disabled by default: a scratch season with a prior-season PPS result and a matching current-season <code>pzsz</code> section still returns zero carried PZSz contribution — no result carries over absent the not-yet-built explicit-link mechanism (design §07).</td></tr>
+</tbody></table></div>
+<p>Additional non-RANK coverage in the same delivery: <code>SS26.LOCK.13</code> (new) — <code>default_ranking_mode</code> is editable before first score and rejected after, following the exact pattern of <code>SS26.LOCK.01</code>/<code>02</code>. <code>SS26.REVISION.09</code> (new) — the privileged revision path can change <code>default_ranking_mode</code> without an engine or multiplier change.</p>
+</section>
+
+<section id="delivery">
+<p class="kicker">10 · Delivery increments</p>
+<h2>One migration, tested independently of steps 5–7</h2>
+<ol>
+<li><strong><code>20260919000007_ranking_schema_v2.sql</code></strong> — <code>enum_ranking_mode</code>, <code>tbl_scoring_config.enum_default_ranking_mode</code> (backfilled <code>PPW</code>, <code>SPWS-2026-2027</code> set to <code>RANKING</code>), the field-level lock addition in <code>fn_import_scoring_config</code>/<code>fn_apply_scoring_config_write</code>, <code>fn_export_scoring_config</code>'s new key. Closes <code>SS26.LOCK.13</code>, <code>SS26.REVISION.09</code>.</li>
+<li><strong><code>20260919000008_ranking_full.sql</code></strong> — <code>fn_ranking_rules_canonical</code>, <code>fn_ranking_full</code> and its two per-engine bodies. Depends on (1) only for the new column being present in exports used by fixtures, not for any functional dependency. Closes <code>SS26.RANK.01–12</code>.</li>
+</ol>
+<p>Each is its own commit, RED tests observed before the implementation lands, matching the two-migration pattern the governance lock just used.</p>
+</section>
+
+<section id="verify">
+<p class="kicker">11 · Verification</p>
+<h2>Definition of done</h2>
+<pre>scripts/preflight.sh          # exit 0 — the whole answer, nothing hand-copied</pre>
+<p>Outside preflight, owed by this work specifically: <code>scripts/refresh-graph.sh</code> before each commit; <code>postgrestools check &lt;file&gt;</code> for both new migrations; a manual <code>psql</code> comparison of <code>fn_ranking_full</code> against <code>fn_ranking_kadra</code>/<code>fn_ranking_ppw</code> for the real, active <code>SPWS-2026-2027</code> season and for 2025/2026, confirming the numbers agree before this is called done — the same live-fixture discipline the governance lock plan used for its privileged-revision run.</p>
+</section>
+
+<section id="docs">
+<p class="kicker">12 · Documentation coherence gate</p>
+<div class="checklist">☐ Documentation coherence gate complete
+Impact: architecture | configuration
+Canonical docs affected: doc/handbook/subsystems/scoring-and-ranking.html (schema v2, canonicalization adapter, fn_ranking_full, the untouched-until-step-7 boundary); doc/handbook/domain/competition-and-ranking.html (Season Scoring Rules concept, three sections/two groups); doc/handbook/domain/glossary.html (season_scoring_rules, display_groups, views, default ranking mode)
+ADR impact: new (098, pending sign-off — see §04)
+Operational impact: none — no new runbook, fn_ranking_full is read-only and not yet reachable from any UI
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from <base> [PASS]
+Superseded prose archived rather than appended: not applicable — no prior ranking-schema-v2 documentation exists</div>
+<p>RTM: <code>SS26.RANK.01–12</code>, <code>SS26.LOCK.13</code>, <code>SS26.REVISION.09</code> move from Planned to Landed on completion, against FR-15/16/17/19 (ranking rules) and FR-64/68 (toggle/rolling behavior this must not regress). pgTAP baseline (currently 1086) updates by the exact count of new assertions actually written, checked with <code>scripts/check-coherence.sh</code> before pushing, not estimated here.</p>
+</section>
+
+<section id="flags">
+<p class="kicker">Flags</p>
+<ul>
+<li><strong>ADR-098 is drafted, not written to disk.</strong> The schema, canonicalization function and <code>fn_ranking_full</code> can all be implemented once you confirm this plan; only <code>doc/adr/098-…</code>'s creation waits for explicit sign-off, per the repo's rule 6.</li>
+<li><strong>The real <code>SPWS-2026-2027</code> season keeps its schema-v1 <code>json_ranking_rules</code> after this step.</strong> §03/§04 lock this in as a deliberate, documented deferral to step 7 — flagging it again here so it is not mistaken for an oversight when step 7 starts.</li>
+<li><strong><code>fn_ranking_full</code> is unreachable from any UI when this step lands</strong> — it exists, is granted to <code>anon</code>/<code>authenticated</code>, and is pgTAP-proven, but no page calls it yet. That wiring is step 7's job.</li>
+<li><strong>PZSz carry-over "begins disabled" is enforced here even though PZSz results don't exist yet</strong> (step 6 builds ingestion). <code>SS26.RANK.12</code> tests the disabled state directly against a synthetic fixture so the behavior is pinned before there is real data to accidentally get it right or wrong by omission.</li>
+</ul>
+</section>
+
+<div class="rule"></div>
+<p class="foot">Repository state: claude/season-scoring-contracts @ b1a7b49f. Written 19 September 2026.</p>
+</div></body></html>

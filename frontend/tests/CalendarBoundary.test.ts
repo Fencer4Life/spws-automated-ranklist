@@ -16,6 +16,9 @@ vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
   refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
+  // SS26.LOCK.01/§05 (governance lock, 2026-09-19) — released scoring-engine
+  // codes for ScoringConfigEditor's engine selector, fetched once in init().
+  fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),
   fetchRankingKadra: vi.fn().mockResolvedValue([]),
   fetchFencerScores: vi.fn().mockResolvedValue([]),

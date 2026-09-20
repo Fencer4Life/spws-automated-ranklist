@@ -21,7 +21,7 @@ vi.stubGlobal('confirm', vi.fn(() => true))
 import type { CalendarEvent, Season, Organizer, Tournament } from '../src/lib/types'
 
 const MOCK_SEASONS: Season[] = [
-  { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true },
+  { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true, enum_ranking_publication: 'FULL' },
 ]
 
 const MOCK_ORGANIZERS: Organizer[] = [
@@ -1151,8 +1151,8 @@ describe('EventManager Phase 3c', () => {
   // Multi-season fixture so the season selector + prior-event picker have
   // something to surface (prior season + a CREATED skeleton in the new season).
   const PHASE3_SEASONS: Season[] = [
-    { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: false },
-    { id_season: 2, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
+    { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: false, enum_ranking_publication: 'PPW_ONLY' },
+    { id_season: 2, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true, enum_ranking_publication: 'FULL' },
   ]
 
   const PRIOR_EVENT: CalendarEvent = {

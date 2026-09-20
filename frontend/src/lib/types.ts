@@ -1,7 +1,7 @@
 export type WeaponType = 'EPEE' | 'FOIL' | 'SABRE'
 export type GenderType = 'M' | 'F'
 export type AgeCategory = 'V0' | 'V1' | 'V2' | 'V3' | 'V4'
-export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW' | 'PSW'
+export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW' | 'PSW' | 'PPS' | 'MPS'
 
 export interface RankingBucket {
   types: string[]
@@ -13,7 +13,9 @@ export interface RankingRules {
   domestic: RankingBucket[]
   international: RankingBucket[]
 }
-export type RankingMode = 'PPW' | 'KADRA'
+// SS26.UI (design step 7, ADR-101): renamed from 'PPW' | 'KADRA'. RANKING
+// calls fn_ranking_full (schema v2, ADR-098); PPW is unchanged (fn_ranking_ppw).
+export type RankingMode = 'PPW' | 'RANKING'
 export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_fencers'
 export type FencerTab = 'identities' | 'birth_year_review' | 'aliases'
 
@@ -83,6 +85,10 @@ export interface Season {
   int_carryover_days?: number
   enum_european_event_type?: EuropeanEventType
   enum_carryover_engine?: CarryoverEngine
+  // SS26.UIHIST (design step 7, ADR-101/ADR-099): the season's permanent
+  // publication capability. NOT NULL in the database — no optional marker,
+  // unlike the Phase 3 fields above.
+  enum_ranking_publication: 'PPW_ONLY' | 'FULL'
 }
 
 export interface RankingPpwRow {
@@ -101,6 +107,20 @@ export interface RankingKadraRow {
   fencer_name: string
   ppw_total: number
   pew_total: number
+  total_score: number
+  bool_has_carryover?: boolean
+}
+
+// SS26.UI (design step 7, ADR-098/ADR-101): fn_ranking_full's row shape —
+// replaces RankingKadraRow as the frontend's combined-view source. Kept
+// alongside RankingKadraRow rather than replacing it: fn_ranking_kadra
+// stays in the database as pgTAP's own parity oracle and is not removed.
+export interface RankingFullRow {
+  rank: number
+  id_fencer: number
+  fencer_name: string
+  spws_total: number
+  evf_plus_total: number
   total_score: number
   bool_has_carryover?: boolean
 }
@@ -280,6 +300,12 @@ export interface ScoringConfig {
   mew_droppable: boolean
   msw_multiplier: number
   psw_multiplier: number
+  // PZSz senior events (SS26 design §07). Optional: legacy configs predate
+  // these two columns (COALESCE 1.0 server-side), and required fields would
+  // break MOCK_CONFIG fixtures in ScoringConfigEditor.test.ts and
+  // SeasonManagerWizard.test.ts as compile errors.
+  pps_multiplier?: number
+  mps_multiplier?: number
   min_participants_evf: number
   min_participants_ppw: number
   // Ranklist +EVF/Kadra toggle (default FALSE — SPWS lost the national-team
@@ -294,7 +320,24 @@ export interface ScoringConfig {
   // tbl_season.enum_carryover_engine but is exposed alongside the scoring
   // config so the ScoringConfigEditor's engine dropdown can read/write it.
   // Optional because legacy seasons predate the field; default is FK.
-  engine?: CarryoverEngine
+  // Renamed from the bare `engine` (design step 7, ADR-101 SS26.CARRY): that
+  // name was the last ambiguous carry-over alias in the frontend — the
+  // database column, CarryoverEngine type and Admin selector variables were
+  // already unambiguous.
+  carryover_engine?: CarryoverEngine
+  // SS26.LOCK/§05 (governance lock, 2026-09-19): server-authoritative lock
+  // state, keyed off the season's first scored result, not a season date.
+  // Optional for the same reason as pps_multiplier above — legacy configs
+  // and MOCK_CONFIG fixtures predate these columns.
+  scoring_admin_locked?: boolean
+  scoring_locked_at?: string | null
+  // tbl_scoring_engine.txt_code for the season's current id_scoring_engine —
+  // distinct from `carryover_engine` above (ADR-045), never conflated.
+  engine_code?: string
+  // SS26.UIHIST (design step 7, ADR-098): the season's configured landing
+  // view, read by the public ranklist page to pick its initial mode for a
+  // FULL-publication season (a PPW_ONLY season always forces 'PPW' instead).
+  default_ranking_mode?: 'PPW' | 'RANKING'
 }
 
 export type ImportStatus = 'PLANNED' | 'PENDING' | 'IMPORTED' | 'SCORED' | 'REJECTED'
