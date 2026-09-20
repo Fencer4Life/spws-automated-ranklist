@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="5c60daccf59763bdaf2792eb1c83c20b267e313905dd6931a71ee01789e4c6ae">
+<meta name="doc-source-sha256" content="acec58f5e93200de0ea26487e40ff16df775e9efc9244e29ad3fd6cf82be46f7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1254,17 +1254,17 @@
 </tr>
 <tr>
 <td>SS26.TYPE.06e–f</td>
-<td>SENIOR source tournament accepted; a SENIOR <strong>result</strong> category rejected. Split out of the original <code>SS26.TYPE.06</code> when its enum/multiplier half landed ahead of the PZSz ingestion flow it depends on.</td>
+<td>SENIOR source tournament accepted; a SENIOR <strong>result</strong> category rejected via <code>chk_result_source_vcat_not_senior</code>. Split out of the original <code>SS26.TYPE.06</code> when its enum/multiplier half landed ahead of the PZSz ingestion flow it depends on. Delivered via ADR-100.</td>
 <td>pgTAP</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>supabase/tests/81_pzsz_senior_ingestion.sql</code></td>
+<td><strong>Landed</strong> (2026-09-20)</td>
 </tr>
 <tr>
-<td>SS26.PZSZ.01–10</td>
-<td>PZSz senior ingestion: FTL reuse, full N, original place, exact/alias match only, uncertain matches to review, unmatched skipped, no auto-created fencer, season V-category, no historical scoring, URL/data rejection.</td>
+<td>SS26.PZSZ.01–09</td>
+<td>PZSz senior ingestion: FTL reuse (no second parser), full N as <code>int_participant_count</code>, original place never renumbered, exact/alias match only, an uncertain candidate queued for review rather than linked or dropped, a genuine non-match skipped with no fencer ever auto-created, each result's own season-derived V-category independent of the tournament's SENIOR label, and the actual &quot;no historical scoring&quot; boundary (a historical season's <code>json_ranking_rules</code> never names PPS/MPS — not an ingestion-time gate; corrected from the design doc's original premise, see ADR-100 Consequences). <code>SS26.PZSZ.10</code> (URL/data rejection) has no dedicated new test — it is the existing <code>ValidateCounts</code> step, reused unchanged, plus a live-verified <code>URL_DATA_MISMATCH</code> fault on LOCAL. Delivered via ADR-100.</td>
 <td>pytest + pgTAP</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>python/tests/test_pzsz_ingestion.py</code>, <code>supabase/tests/81_pzsz_senior_ingestion.sql</code></td>
+<td><strong>Landed</strong> (2026-09-20)</td>
 </tr>
 <tr>
 <td>SS26.RANK.01–12</td>
@@ -1387,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>5c60daccf59763bdaf2792eb1c83c20b267e313905dd6931a71ee01789e4c6ae</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>acec58f5e93200de0ea26487e40ff16df775e9efc9244e29ad3fd6cf82be46f7</code></footer>
 </div></body></html>
