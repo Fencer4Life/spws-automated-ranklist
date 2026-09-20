@@ -139,6 +139,12 @@ SELECT set_eq(
     'fn_fencer_scores_rolling',
     'fn_fencer_scores_rolling_event_code_matching',
     'fn_fencer_scores_rolling_event_fk_matching',
+    -- design step 8: the parameter surface the published calculator and the
+    -- scoring-table annex compute from. STABLE + SECURITY DEFINER, publishes
+    -- the engine code/label and the season's own constants, never a mutable
+    -- registry field. fn_preview_tournament_score stays revoked: it takes an
+    -- id_tournament, which neither published page has.
+    'fn_public_scoring_params',
     'fn_ranking_full',
     'fn_ranking_full_event_code_matching',
     'fn_ranking_full_event_fk_matching',

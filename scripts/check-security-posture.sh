@@ -52,7 +52,7 @@ read -r -d '' ALLOWLIST <<'EOF' || true
 'fn_export_scoring_config','fn_fencer_scores_rolling',
 'fn_fencer_scores_rolling_event_code_matching','fn_fencer_scores_rolling_event_fk_matching',
 'fn_match_registration_fencer','fn_update_registration',
-'fn_ranking_full','fn_ranking_full_event_code_matching','fn_ranking_full_event_fk_matching',
+'fn_public_scoring_params','fn_ranking_full','fn_ranking_full_event_code_matching','fn_ranking_full_event_fk_matching',
 'fn_ranking_kadra','fn_ranking_kadra_event_code_matching',
 'fn_ranking_kadra_event_fk_matching','fn_ranking_ppw','fn_ranking_ppw_event_code_matching',
 'fn_ranking_ppw_event_fk_matching','fn_season_summary','fn_vcat_violation_msg',
