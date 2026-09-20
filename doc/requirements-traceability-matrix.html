@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="acec58f5e93200de0ea26487e40ff16df775e9efc9244e29ad3fd6cf82be46f7">
+<meta name="doc-source-sha256" content="8af51558691881390f6c7724e27e6cd9c08eaf6fab8ef6359aa551ddfa514cfc">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1282,24 +1282,24 @@
 </tr>
 <tr>
 <td>SS26.UI.01–14</td>
-<td>Ranking/PPW labels and the 2026/2027 default; <code>Zawodnik / SPWS / EVF+ / Razem</code> columns; two top-level drilldown sections and one EVF+ subtotal; orange EVF/FIE and red voluntary-senior PZSz bars with no colour-specific subtotals; V0 enabled; server-authoritative lock state with a visible guarded save action.</td>
+<td>Ranking/PPW labels and the 2026/2027 default; <code>Zawodnik / SPWS / EVF+ / Razem</code> columns; two top-level drilldown sections and one EVF+ subtotal; orange EVF/FIE and red voluntary-senior PZSz bars with no colour-specific subtotals; V0 enabled. The &quot;server-authoritative lock state with a visible guarded save action&quot; clause was already delivered by <code>SS26.LOCK</code> in design step 3 (ADR before ADR-098/099) — re-verified here only incidentally via the unchanged <code>ScoringConfigEditor</code>/<code>SeasonManagerWizard</code> fixtures, not re-tested as new scope. A real pre-existing bug was also found and fixed while implementing this ID: the legacy (non-JSONB) drilldown chart branch silently dropped MSW/PSW/PPS/MPS scores, handling only MEW/PEW.</td>
 <td>Vitest</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>frontend/tests/FilterBar.test.ts</code>, <code>frontend/tests/RanklistTable.test.ts</code>, <code>frontend/tests/DrilldownModal.test.ts</code>, <code>frontend/tests/export.test.ts</code>, <code>frontend/tests/locale-parity.test.ts</code></td>
+<td><strong>Landed</strong> (2026-09-20)</td>
 </tr>
 <tr>
 <td>SS26.UIHIST.01–10</td>
-<td>A historical season forces PPW before fetch, hides the switch, constrains drilldown/export/deep links, ignores stale responses across season/mode/filter/drilldown changes, and never strips FULL from 2026/2027 once it becomes historical.</td>
+<td>A historical (<code>PPW_ONLY</code>) season forces PPW before fetch and hides the switch; drilldown/export inherit PPW while such a season is selected; stale responses across season/mode/filter/drilldown changes are discarded via two independent generation counters (<code>rankingGen</code>, <code>drilldownGen</code> — a deliberate deviation from the design's single-counter sketch, since a drilldown open must not discard an unrelated in-flight ranklist load); returning to a <code>FULL</code> season restores the switch and its own configured default. The &quot;deep links&quot; sub-clause is <strong>descoped</strong>, not delivered: no URL-state persistence exists yet (design plan §13 Flags), so there is nothing for a deep link to constrain.</td>
 <td>Vitest + Playwright</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>frontend/tests/AppShell.test.ts</code> (<code>SS26.UIHIST</code> describe block), <code>frontend/e2e/ranking-publication-boundary.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-09-20)</td>
 </tr>
 <tr>
 <td>SS26.CARRY.01–04</td>
-<td>The ADR-042/ADR-045 event carry-over matcher keeps its values and behaviour under the explicit <code>carryover_engine</code> name; scoring-engine selection is independent and cannot mutate carry-over policy.</td>
+<td>The ADR-042/ADR-045 event carry-over matcher keeps its values and behaviour under the explicit <code>carryover_engine</code> name (renamed from the ambiguous <code>ScoringConfig.engine</code>); scoring-engine selection (<code>engine_code</code>) is independent and cannot mutate carry-over policy. Frontend naming only — the renamed field round-trips through the existing <code>fn_export_scoring_config</code>/<code>updateSeasonCarryoverEngine</code> path unchanged; no new SQL.</td>
 <td>Vitest + pgTAP</td>
-<td>—</td>
-<td>Planned</td>
+<td><code>frontend/tests/ScoringConfigEditor.test.ts</code>, <code>frontend/tests/SeasonManagerWizard.test.ts</code>, <code>supabase/tests/80_season_scoring_contract.sql</code> (existing, re-tagged)</td>
+<td><strong>Landed</strong> (2026-09-20)</td>
 </tr>
 <tr>
 <td>SS26.CALC.01–12</td>
@@ -1387,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>acec58f5e93200de0ea26487e40ff16df775e9efc9244e29ad3fd6cf82be46f7</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8af51558691881390f6c7724e27e6cd9c08eaf6fab8ef6359aa551ddfa514cfc</code></footer>
 </div></body></html>
