@@ -50,7 +50,11 @@ SELECT is(
    FROM pg_type t
    JOIN pg_enum e ON e.enumtypid = t.oid
    WHERE t.typname = 'enum_age_category'),
-  'V0,V1,V2,V3,V4',
+  -- SENIOR appended 2026-09-20 (design step 6, ADR-100): a PZSz PPS/MPS
+  -- tournament's source bracket -- one undivided senior field, never a
+  -- result's own published category (tbl_result.enum_source_age_category
+  -- has its own CHECK forbidding this value; see 81_pzsz_senior_ingestion.sql).
+  'V0,V1,V2,V3,V4,SENIOR',
   '1.1d enum_age_category values'
 );
 

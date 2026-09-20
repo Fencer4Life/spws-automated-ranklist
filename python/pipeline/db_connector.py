@@ -516,6 +516,45 @@ class DbConnector:
         resp = self._sb.rpc("fn_ingest_tournament_results", params).execute()
         return resp.data
 
+    def set_tournament_participant_count(self, tournament_id: int, count: int) -> None:
+        """Set int_participant_count directly, independent of any result write.
+
+        Design step 6 (PZSz senior ingestion, ADR-100): a SENIOR bracket's full
+        source field size is known at parse time and must be recorded even when
+        zero rows are initially auto-matched (everyone queued for review) --
+        fn_ingest_tournament_results refuses an empty results array, so its own
+        p_participant_count override cannot be relied on alone.
+        """
+        self._sb.table("tbl_tournament").update({"int_participant_count": count}).eq(
+            "id_tournament", tournament_id
+        ).execute()
+
+    def queue_pzsz_match_review(
+        self,
+        id_tournament: int,
+        scraped_name: str,
+        place: int,
+        id_candidate_fencer: int | None,
+        confidence: float | None,
+    ) -> int:
+        """Queue one uncertain PZSz senior match for Admin review (ADR-100).
+
+        No tbl_result row is written -- fn_queue_pzsz_match_review holds the
+        candidate for a human decision (fn_approve_pzsz_match_review /
+        fn_reject_pzsz_match_review).
+        """
+        resp = self._sb.rpc(
+            "fn_queue_pzsz_match_review",
+            {
+                "p_id_tournament": id_tournament,
+                "p_txt_scraped_name": scraped_name,
+                "p_int_place": place,
+                "p_id_candidate_fencer": id_candidate_fencer,
+                "p_num_confidence": confidence,
+            },
+        ).execute()
+        return resp.data
+
     def insert_fencer(self, fencer_dict: dict) -> int:
         """Insert a new fencer and return the id_fencer."""
         resp = self._sb.table("tbl_fencer").insert(fencer_dict).execute()
@@ -664,9 +703,14 @@ def derive_tourn_type_from_event_code(event_code: str) -> str | None:
       - DMEW (international team championship)               → MPW (team semantics)
       - MSW (international SuperSenior championship)         → MSW
       - IMSW (alternation pair; individual SuperSenior)      → MSW
+      - PPS{round}[W|M]{efs}* (PZSz Puchar Polski Seniorów)  → PPS
+      - MPS[W|M]{efs}* (PZSz Mistrzostwa Polski Seniorów, no round) → MPS
 
-    Returns None for codes that don't match any known prefix (defensive
-    fallback — `gate_below_min_participants` then defaults to threshold=1).
+    Returns None for codes that don't match any known prefix. As of the
+    2026-09-19/20 fail-closed rewrite (design step 6, ADR-100),
+    `get_min_participants` RAISES `UnconfiguredTournamentType` for a None
+    type rather than silently defaulting to threshold=1 — a stale claim this
+    docstring used to make.
     """
     if not event_code:
         return None
@@ -694,6 +738,25 @@ def derive_tourn_type_from_event_code(event_code: str) -> str | None:
         return "MPW"
     if prefix == "MSW" or prefix == "IMSW":
         return "MSW"
+    if prefix.startswith("PPS"):
+        rest = prefix[3:]
+        head = ""
+        for ch in rest:
+            if ch.isdigit():
+                head += ch
+            else:
+                break
+        suffix = rest[len(head) :]
+        if suffix[:1] in ("W", "M"):
+            suffix = suffix[1:]
+        if head and (not suffix or all(c in "efs" for c in suffix.lower())):
+            return "PPS"
+    if prefix.startswith("MPS"):
+        rest = prefix[3:]
+        if rest[:1] in ("W", "M"):
+            rest = rest[1:]
+        if not rest or all(c in "efs" for c in rest.lower()):
+            return "MPS"
     return None
 
 
