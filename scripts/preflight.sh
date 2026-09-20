@@ -99,6 +99,11 @@ if [[ $CI_ONLY -eq 0 ]]; then
   # drift stays green through all of CI and fails in the deploy job instead.
   gate "anon allowlist in sync (deploy)" bash scripts/check-anon-allowlist-sync.sh
   gate "svelte-check (AGENTS)"        bash -c 'cd frontend && npm run check'
+  # The published calculator and scoring-table annex carry a GENERATED copy of
+  # frontend/src/lib/scoring.ts. Nothing else may write between their markers,
+  # and a stale copy means the pages and the database disagree about the
+  # formula — which no other gate would notice.
+  gate "published pages match scoring.ts" node frontend/scripts/build-scoring-pages.mjs --check
   # Trailing whitespace blocks scripts/integrate-agent-branch.sh, which runs
   # `git diff --check` before it will merge a task branch.
   gate "git diff --check (integrate)" bash -c 'git fetch origin main -q 2>/dev/null; git diff --check origin/main...HEAD'

@@ -161,6 +161,16 @@
   </style>
 </head>
 <body>
+<!-- Parametry punktacji pobierane są z konfiguracji sezonu 2026/2027. Wartości
+     poniżej są LOKALNE atrapy; .github/workflows/release.yml podmienia je przy
+     budowaniu na dane CERT/PROD z GitHub Secrets, tak samo jak w index.html
+     i register.html. Żadne poświadczenie nie jest trzymane w repozytorium,
+     a strażnik "no localhost in dist" nie przepuści builda bez podmiany. -->
+<div id="spws-env" hidden
+     data-supabase-cert-url="http://127.0.0.1:54321"
+     data-supabase-cert-key="sb_publishable_local_anon_placeholder"
+     data-supabase-prod-url=""
+     data-supabase-prod-key=""></div>
   <!-- Radiobuttony MUSZĄ stać tutaj: bezpośrednio w BODY, przed MAIN.
        Patrz komentarz przy .lang-switch w arkuszu stylów. -->
   <input class="lang-radio" type="radio" name="lang" id="langPl" checked>
@@ -263,12 +273,125 @@ c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
   <script>
     'use strict';
 
-    // Implementacja zgodna z opublikowanym kalkulatorem SPWS, odczytanym 11.09.2026.
+/* === SPWS-SCORING-MODULE:BEGIN — generated from frontend/src/lib/scoring.ts by
+   frontend/scripts/build-scoring-pages.mjs. DO NOT EDIT BY HAND: run that script.
+   The formula has one source of truth; this is a build artefact of it. === */
+"use strict";
+var SPWSScoring = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // frontend/src/lib/scoring.ts
+  var scoring_exports = {};
+  __export(scoring_exports, {
+    CLASSIC_ENGINE: () => CLASSIC_ENGINE,
+    FIELD_SCALED_ENGINE: () => FIELD_SCALED_ENGINE,
+    deBonus: () => deBonus,
+    engineBase: () => engineBase,
+    podiumBonus: () => podiumBonus,
+    scoreComponents: () => scoreComponents
+  });
+  var CLASSIC_ENGINE = "EVF_CLASSIC_V1_2025_2026";
+  var FIELD_SCALED_ENGINE = "SPWS_FIELD_SCALED_V1_2026_2027";
+  function round2(value) {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+  function isPowerOfTwo(n) {
+    return (n & n - 1) === 0;
+  }
+  function engineBase(engineCode, n, mpValue, baseSlope) {
+    if (engineCode === CLASSIC_ENGINE) return mpValue;
+    if (engineCode === FIELD_SCALED_ENGINE) {
+      return Math.min(mpValue, baseSlope * Math.log2(Math.max(2, n)));
+    }
+    throw new Error(
+      `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`
+    );
+  }
+  function assertScoringInput(n, place) {
+    if (!Number.isFinite(n) || !Number.isFinite(place)) {
+      throw new Error("Invalid scoring input: entries and place must be numbers.");
+    }
+    if (n < 1) {
+      throw new Error(`Invalid scoring input: a field of ${n} has no results.`);
+    }
+    if (place < 1) {
+      throw new Error(`Invalid scoring input: place ${place} is below first.`);
+    }
+    if (place > n) {
+      throw new Error(
+        `Invalid scoring input: place ${place} exceeds the field of ${n}. A place larger than the field is corrupt data, not a weak result.`
+      );
+    }
+  }
+  function deBonus(n, place, deRound) {
+    if (n <= 1) return 0;
+    const rounds = Math.max(
+      0,
+      Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (isPowerOfTwo(n) ? 0 : 1)
+    );
+    return rounds * deRound;
+  }
+  function podiumBonus(n, place, gold, silver, bronze) {
+    const coefficient = place === 1 ? gold : place === 2 ? silver : place === 3 ? bronze : 0;
+    return coefficient * 3 * Math.cbrt(n);
+  }
+  function scoreComponents(params, engineCode, n, place, multiplier) {
+    const base = engineBase(engineCode, n, params.mpValue, params.baseSlope);
+    assertScoringInput(n, place);
+    const placePoints = n === 1 ? base : base - (base - 1) * (Math.log(place) / Math.log(n));
+    const de = deBonus(n, place, params.deRound);
+    const podium = podiumBonus(
+      n,
+      place,
+      params.podiumGold,
+      params.podiumSilver,
+      params.podiumBronze
+    );
+    return {
+      base: round2(base),
+      placePoints: round2(placePoints),
+      deBonus: round2(de),
+      podiumBonus: round2(podium),
+      finalScore: round2((placePoints + de + podium) * multiplier)
+    };
+  }
+  return __toCommonJS(scoring_exports);
+})();
+/* === SPWS-SCORING-MODULE:END === */
+
+    // Wzór ma JEDNO źródło — frontend/src/lib/scoring.ts — wbudowane powyżej
+    // przez frontend/scripts/build-scoring-pages.mjs. Ta strona liczyła go
+    // kiedyś własnym kodem (firstPlaceBase/wonRounds/scoreParts/totalScore),
+    // równolegle do kalkulatora; obie kopie zdążyły się rozjechać.
+    //
+    // MIN_PARTICIPANTS to zakres TABELI, nie ograniczenie wzoru. Wzór przyjmuje
+    // stawki od 1 (walkower punktuje — ADR-066), ale załącznik zaczyna od 4,
+    // bo wiersze dla 1-3 startujących byłyby niemal puste.
     const MIN_PARTICIPANTS = 4;
     const MAX_PARTICIPANTS = 300;
     const MAX_PLACE = 300;
-    const NACHYLENIE = 10;
-    const PULAP = 50;
+
+    // Załącznik nr 1 jest PRZYPISANY do sezonu 2026/2027 i taki zostaje.
+    // Kalkulator chodzi za sezonem aktywnym, ten dokument nie: regulaminowy
+    // załącznik, który po zmianie sezonu cicho pokazałby inne liczby pod tym
+    // samym tytułem, przestałby być tym dokumentem, którym się deklaruje.
+    const SEASON_CODE = 'SPWS-2026-2027';
 
     const byId = id => document.getElementById(id);
     const participantsInput = byId('participants');
@@ -342,40 +465,62 @@ c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
     let tableReady = false;
     let renderToken = 0;
 
-    function isPowerOfTwo(value) {
-      return value > 0 && (value & (value - 1)) === 0;
-    }
+    // Liczby — podstawa i mnożniki podium — pochodzą z konfiguracji sezonu
+    // 2026/2027, a nie są tu zaszyte. Dopóki nie zostaną wczytane, scoreParts
+    // zwraca null i strona pokazuje własny komunikat, zamiast liczyć ze starych
+    // stałych. Po zamknięciu sezonu te wartości przestają się zmieniać i
+    // załącznik zamarza razem z silnikiem.
+    const SPWS_ENV_NODE = document.getElementById('spws-env');
+    let SPWS_PARAMS = null;
+    let SPWS_PARAMS_ERROR = null;
 
-    function firstPlaceBase(participants) {
-      return Math.min(PULAP, NACHYLENIE * Math.log2(Math.max(2, participants)));
-    }
-
-    function wonRounds(place, participants) {
-      if (participants <= 1) return 0;
-      return Math.max(
-        0,
-        Math.floor(Math.log2(participants)) - Math.ceil(Math.log2(place)) + (isPowerOfTwo(participants) ? 0 : 1)
-      );
+    async function loadScoringParams() {
+      const d = SPWS_ENV_NODE ? SPWS_ENV_NODE.dataset : {};
+      const url = (d.supabaseCertUrl || d.supabaseProdUrl || '').replace(/\/+$/, '');
+      const key = d.supabaseCertKey || d.supabaseProdKey || '';
+      if (!url || !key) { SPWS_PARAMS_ERROR = 'brak konfiguracji połączenia'; return; }
+      try {
+        const response = await fetch(url + '/rest/v1/rpc/fn_public_scoring_params', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', apikey: key,
+                    Authorization: 'Bearer ' + key},
+          body: JSON.stringify({p_season_code: SEASON_CODE})
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const rows = await response.json();
+        if (!rows || !rows.length) throw new Error('brak sezonu ' + SEASON_CODE);
+        const r = rows[0];
+        SPWS_PARAMS = {
+          engineCode: r.engine_code, engineLabel: r.engine_label,
+          mpValue: Number(r.mp_value), baseSlope: Number(r.base_slope),
+          deRound: Number(r.de_round), podiumGold: Number(r.podium_gold),
+          podiumSilver: Number(r.podium_silver), podiumBronze: Number(r.podium_bronze)
+        };
+        SPWS_PARAMS_ERROR = null;
+      } catch (e) {
+        SPWS_PARAMS_ERROR = e && e.message ? e.message : String(e);
+      }
     }
 
     function scoreParts(place, participants) {
-      if (participants < 1 || place < 1 || place > participants) return null;
-      const base = firstPlaceBase(participants);
-      const placePoints = participants === 1
-        ? base
-        : base - (base - 1) * Math.log(place) / Math.log(participants);
-      const podiumFactor = ({1: 3, 2: 2, 3: 1})[place] || 0;
-      return {
-        base,
-        place: placePoints,
-        rounds: wonRounds(place, participants) * 10,
-        podium: podiumFactor * 3 * Math.cbrt(participants)
-      };
+      if (!SPWS_PARAMS) return null;
+      try {
+        const c = SPWSScoring.scoreComponents(
+          SPWS_PARAMS, SPWS_PARAMS.engineCode, participants, place, 1);
+        return {base: c.base, place: c.placePoints, rounds: c.deBonus, podium: c.podiumBonus};
+      } catch (e) {
+        return null;   // miejsce spoza stawki to błędne dane, nie słaby wynik
+      }
     }
 
     function totalScore(place, participants, rank) {
-      const parts = scoreParts(place, participants);
-      return parts === null ? null : (parts.place + parts.rounds + parts.podium) * rank;
+      if (!SPWS_PARAMS) return null;
+      try {
+        return SPWSScoring.scoreComponents(
+          SPWS_PARAMS, SPWS_PARAMS.engineCode, participants, place, rank).finalScore;
+      } catch (e) {
+        return null;
+      }
     }
 
     function validInputs() {
@@ -401,6 +546,21 @@ c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
       }
 
       const parts = scoreParts(values.place, values.participants);
+      // Dopóki parametry sezonu nie są wczytane, scoreParts zwraca null. To nie
+      // jest błąd wejścia — to brak liczb, którymi w ogóle wolno liczyć. Strona
+      // mówi to wprost, zamiast wracać do zaszytych stałych albo się wysypać.
+      if (parts === null) {
+        byId('resultValue').textContent = '—';
+        byId('resultDescription').textContent = SPWS_PARAMS_ERROR
+          ? (lang === 'en'
+              ? 'Season parameters unavailable: ' + SPWS_PARAMS_ERROR
+              : 'Nie udało się pobrać parametrów sezonu: ' + SPWS_PARAMS_ERROR)
+          : (lang === 'en'
+              ? 'Loading season parameters…'
+              : 'Wczytywanie parametrów sezonu…');
+        byId('breakdown').innerHTML = '';
+        return;
+      }
       const subtotal = parts.place + parts.rounds + parts.podium;
       const score = subtotal * values.rank;
       byId('resultValue').textContent = formatter.format(score);
@@ -449,7 +609,7 @@ c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
             if (place > participants) {
               html += `<td class="impossible${tenth}" aria-label="${t().impossible(place)}">—</td>`;
             } else {
-              html += `<td id="cell-${participants}-${place}" class="${tenth.trim()}" title="${t().cellTitle(place, participants)}">${formatter.format(totalScore(place, participants, rank))}</td>`;
+              html += `<td id="cell-${participants}-${place}" class="${tenth.trim()}" title="${t().cellTitle(place, participants)}">${(v => v === null ? '\u2014' : formatter.format(v))(totalScore(place, participants, rank))}</td>`;
             }
           }
           html += '</tr>';
@@ -492,7 +652,9 @@ c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
       for (let participants = MIN_PARTICIPANTS; participants <= MAX_PARTICIPANTS; participants += 1) {
         const row = [participants];
         for (let place = 1; place <= MAX_PLACE; place += 1) {
-          row.push(place <= participants ? formatter.format(totalScore(place, participants, rank)) : '');
+          row.push(place <= participants
+            ? (v => v === null ? '' : formatter.format(v))(totalScore(place, participants, rank))
+            : '');
         }
         lines.push(row.map(csvValue).join(';'));
       }
@@ -562,6 +724,10 @@ c: 3 for 1st place, 2 for 2nd, 1 for 3rd, 0 off the podium</span></div>
       renderHeader();
       renderCalculator();
       renderTable();
+      // Parametry sezonu dociągamy po pierwszym rysowaniu, żeby strona pojawiła
+      // się natychmiast, a potem przeliczyła się z prawdziwymi liczbami. Błąd
+      // sieci zostaje na stronie — nigdy nie wracamy do zaszytych stałych.
+      loadScoringParams().then(() => { renderCalculator(); renderTable(); });
     } catch (err) {
       const box = byId('status');
       if (box) {
