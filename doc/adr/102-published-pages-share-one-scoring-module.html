@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="102-published-pages-share-one-scoring-module.md">
+<meta name="adr-source-sha256" content="9e843382d9d10ac2290759abed976423d2b6494061e32dbc7b5afedb751e0be1">
+<title>ADR-102 · The Published Pages Share One Scoring Module and Read Season Parameters</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 102</p><h1>The Published Pages Share One Scoring Module and Read Season Parameters</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-20; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-20</dd></div><div><dt>Source</dt><dd class=""><code>102-published-pages-share-one-scoring-module.md</code></dd></div><div><dt>Length</dt><dd class="">157 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-20; awaiting sign-off)
+<strong>Date:</strong> 2026-09-20
+<strong>Supersedes:</strong> <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §3 (Expiry condition) — its <em>intent</em> is fulfilled and its <em>mechanism</em> is reversed: the calculator is driven by the ranklist scoring engine as §3 required, but it is <strong>kept at its address</strong> rather than removed, and plan test 8.88 is kept rather than deleted. §§1–2 (publication mechanism, exception-not-pattern) are untouched and still bind.
+<strong>Amends:</strong> <a href="092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> — the scoring-table annex stops carrying its own copy of the formula and computes from the shared module. Its identity is unchanged: it stays <em>Załącznik nr 1</em> pinned to <code>SPWS-2026-2027</code>, by season code, and does not follow the active season.
+<strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (deny-by-default: the new function is granted to <code>anon</code> in both copies of the allowlist), <a href="097-scoring-governance-lock-and-privileged-revision.html">ADR-097</a> (the lock that freezes these pages along with the scorer), <a href="011-artifact-release-pipeline.html">ADR-011</a> (both pages still ride the same Pages artifact), <a href="090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> (the WordPress destination), <a href="066-min-participants-ingestion-gate.html">ADR-066</a> (walkover brackets, which the new base re-prices)
+<strong>Source:</strong> <code>doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html</code> §08 and §11 step 8</p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-one-formula-generated-into-the-pages">1 · One formula, generated into the pages</a></li><li class="depth-3"><a href="#2-the-numbers-come-from-the-season-not-from-the-page">2 · The numbers come from the season, not from the page</a></li><li class="depth-3"><a href="#3-the-two-pages-bind-to-different-seasons-deliberately">3 · The two pages bind to different seasons, deliberately</a></li><li class="depth-3"><a href="#4-credentials-are-embedded-as-they-already-are-elsewhere">4 · Credentials are embedded, as they already are elsewhere</a></li><li class="depth-3"><a href="#5-fn-preview-tournament-score-stays-revoked-from-anon">5 · `fn_preview_tournament_score` stays revoked from `anon`</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The scoring formula was written <strong>three times</strong> in browser JavaScript:</p>
+<ul>
+<li><code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code> — <code>fN</code> / <code>rundy</code> / <code>parts</code> / <code>total</code></li>
+<li><code>doc/tools/WP-kalkulator-punktow-za-wynik-spws.html</code> — a byte-identical copy</li>
+<li><code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> — <code>firstPlaceBase</code> / <code>wonRounds</code> / <code>scoreParts</code> / <code>totalScore</code></li>
+</ul>
+<p>ADR-085 accepted this duplication explicitly and bounded it in time: &quot;the scoring function now
+exists in two implementations … and it ends with the page, under §3&quot;. Two things have since
+changed.</p>
+<p><strong>The duplication stopped being two and stopped being identical.</strong> ADR-092 added the annex,
+independently implemented, making three. They had already drifted where nobody would look: the
+annex refuses fields below <code>MIN_PARTICIPANTS = 4</code> while the calculator accepts <code>N = 1</code>. Nothing
+compared them, because plan test 8.88 asserts that the calculator's three <em>copies</em> match each
+other — not that the annex agrees with the calculator, and not that either agrees with the
+database.</p>
+<p><strong>The proposal became the rule.</strong> ADR-085 §3's trigger has fired: the field-scaled formula is
+adopted for 2026/2027 and implemented in the database as
+<code>fn_score_spws_field_scaled_v1_2026_2027</code>, assigned to that season and dispatched to by engine
+code (ADR-097). ADR-085's alternative 2 was rejected because &quot;wiring the proposal into the engine
+before the board decides would change ranking results&quot; — the board has decided, so that reason
+has expired.</p>
+<p>What §3 did <strong>not</strong> anticipate is that the page is worth keeping. It is linked from the
+navigation drawer, it is the artefact the board and fencers actually open, and deleting it would
+remove the only place where the two engines can be compared side by side.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-one-formula-generated-into-the-pages">1 · One formula, generated into the pages</h3>
+<p><code>frontend/src/lib/scoring.ts</code> is the single browser-side implementation. Both published pages
+carry a <strong>generated build artefact</strong> of it, written between fixed markers by
+<code>frontend/scripts/build-scoring-pages.mjs</code>, which bundles the module with esbuild and then copies
+the <code>doc/tools/</code> source byte-for-byte to its published and WordPress destinations. Nothing else
+may write between the markers. <code>--check</code> fails when a page is stale — the same contract
+<code>scripts/render_docs.py --check</code> provides for the generated HTML twins — and it is a
+<code>scripts/preflight.sh</code> gate.</p>
+<p>The formula consequently lives in exactly <strong>two</strong> places: this module and the SQL strategies.
+<code>frontend/tests/scoring.test.ts</code> is the pin between them, with all 27 expectations derived by
+calling <code>fn_score_by_engine</code> against a live database rather than written by hand.</p>
+<h3 id="2-the-numbers-come-from-the-season-not-from-the-page">2 · The numbers come from the season, not from the page</h3>
+<p><code>fn_public_scoring_params(p_season_code TEXT DEFAULT NULL)</code> publishes one season's assigned
+engine code and label together with its own <code>int_mp_value</code> and podium coefficients, plus
+<code>base_slope</code> and <code>de_round</code> as <strong>separate</strong> parameters — the two unrelated tens that merely
+coincide at 10. <code>STABLE</code>, <code>SECURITY DEFINER</code> (because <code>tbl_scoring_engine</code> carries RLS with no
+policy), pinned <code>search_path</code>, and it exposes no mutable registry field. An unknown season code
+returns zero rows rather than raising, so the page renders its own message instead of surfacing
+an opaque 400 to an anonymous visitor.</p>
+<p>A <code>NULL</code> code means the active season. The calculator passes <code>NULL</code>; the annex passes
+<code>SPWS-2026-2027</code> explicitly.</p>
+<p>This is what makes a pre-lock Admin edit reach the engine, the calculator and the annex alike.
+It also means the freeze is free: once ADR-097's lock closes the season's configuration, the
+parameters stop changing and all three surfaces freeze together. <strong>The database lock is the only
+lock</strong>; neither page needs a freezing mechanism of its own.</p>
+<h3 id="3-the-two-pages-bind-to-different-seasons-deliberately">3 · The two pages bind to different seasons, deliberately</h3>
+<p>The calculator follows the <strong>active</strong> season. The annex stays <strong>pinned to 2026/2027</strong> by season
+code. A regulation annex that silently re-rendered itself under the same title when the season
+rolled over would no longer be the document it declares itself to be.</p>
+<h3 id="4-credentials-are-embedded-as-they-already-are-elsewhere">4 · Credentials are embedded, as they already are elsewhere</h3>
+<p>Both pages carry a hidden <code>#spws-env</code> element whose attributes
+<code>.github/workflows/release.yml</code> rewrites from GitHub Secrets at build time, exactly as it already
+does for <code>index.html</code> and <code>register.html</code>. The repository holds LOCAL placeholders; the existing
+<em>no localhost in dist</em> guard fails the build if the rewrite is skipped. The <code>anon</code> key is a public
+credential protected by RLS and the 52.7 allowlist rather than by secrecy.</p>
+<h3 id="5-fn-preview-tournament-score-stays-revoked-from-anon">5 · <code>fn_preview_tournament_score</code> stays revoked from <code>anon</code></h3>
+<p>It takes an <code>id_tournament</code>, which neither published page has — both take N and place as user
+input. Publishing it would widen the anon surface to per-tournament previews for no gain. The
+invariant that matters is that whatever the pages <em>do</em> call is granted in <strong>both</strong> copies of the
+allowlist in the same change: <code>supabase/tests/52_security_posture.sql</code> and
+<code>scripts/check-security-posture.sh</code>, which drifted on 2026-09-12 and blocked a PROD deploy.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Delete the calculator, as ADR-085 §3 directed.</strong> Rejected. §3 assumed the page's only
+purpose was to preview a proposal, so adoption would retire it. In practice it is the
+artefact the board and fencers open, it is linked from the drawer (ADR-085 §1, ADR-092), and
+it is the only surface where the classic and field-scaled engines can be compared directly.
+Its <em>intent</em> — &quot;driven by the ranklist scoring engine&quot; — is met without deleting anything.</li>
+<li><strong>Make the pages Vite entry points.</strong> Rejected: they would leave <code>frontend/public/</code> and their
+published paths would change, which §08 forbids. This is also ADR-085 alternative 1, whose
+stated objection was that building would &quot;split one hand-maintained file into an input and an
+output, while the same file must stay directly uploadable to the SPWS WordPress site&quot;. Half of
+that objection now stands answered and half is accepted: the file <em>does</em> become a generated
+output, which is the price of having one formula — but it stays <strong>one file</strong>, still directly
+uploadable, which is exactly why alternative 3 was rejected too.</li>
+<li><strong>Emit one shared <code>.js</code> beside the pages and <code>import</code> it.</strong> Rejected: it turns the
+hand-carried WordPress calculator into two files that must travel together, and that page
+exists precisely to be carried as one.</li>
+<li><strong>Have the pages call a score RPC per value, or fetch a whole precomputed grid.</strong> Rejected:
+the annex renders up to 300 × 300 cells and re-renders on every rank-coefficient change. A
+round trip per value is unusable, and a grid response is roughly a megabyte per change.</li>
+<li><strong>Keep the annex's numbers static and regenerate them at deploy.</strong> Rejected: an administrator
+editing configuration before the season's first scored result would not see the annex change
+until someone rebuilt, which is the failure this step exists to remove.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>New files:</strong> <code>frontend/src/lib/scoring.ts</code>, <code>frontend/tests/scoring.test.ts</code>,
+<code>frontend/scripts/build-scoring-pages.mjs</code>,
+<code>supabase/migrations/20260920000003_public_scoring_params.sql</code>,
+<code>supabase/tests/82_published_page_params.sql</code>.</li>
+<li><strong>Deleted:</strong> no file. The three page copies and plan test 8.88 are all retained, reversing
+ADR-085 §3's removal list. <code>assets.test.ts</code> keeps its three-way byte-identity assertion
+unchanged, because the generator writes the source and copies it verbatim.</li>
+<li><strong>Tests:</strong> SS26.CALC.01–09 (pgTAP, +9 → 1132 total) and 27 Vitest parity cases. A new
+<code>scripts/preflight.sh</code> gate, <em>published pages match scoring.ts</em>, fails on a stale page.</li>
+<li><strong>The anon surface grows by one</strong>, documented in
+<code>doc/handbook/reference/security-posture.html</code>, whose count moves from nineteen to twenty-nine
+— most of that drift predates this change and is corrected here rather than left standing.</li>
+<li><strong>The published pages now require network access.</strong> <code>doc/tools/WP-instrukcja-wgrania.txt</code> no
+longer promises otherwise. Offline, each page renders and reads, and shows a
+parameters-unavailable message in place of a figure. That is deliberate: a number computed from
+stale constants is worse than an honest absence.</li>
+<li><strong>Two defects were found by loading the pages in a browser</strong>, after every unit test, pgTAP
+assertion and type check was already green — a dangling comment terminator left by the
+generator's marker constant, and a null dereference on the first render before parameters
+arrive, which made each page show its startup-failure banner and never issue the fetch. Both
+are fixed. They are recorded here because they are the argument for verifying a published page
+by opening it, not only by testing its parts.</li>
+<li><strong>Walkover re-pricing becomes visible to the public.</strong> With the annex driven by the 2026/2027
+engine, a one-competitor bracket now reads 19 points where the classic engine gives 59
+(ADR-066 records six of seven FOIL brackets in <code>PPW2-2025-2026</code> as single-competitor). The
+arithmetic is unchanged by this ADR; only its visibility is new.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong>ADR-092's <code>robots</code> meta.</strong> The annex still carries <code>noindex, nofollow</code> as the only thing
+keeping an unadopted regulation draft out of search results (ADR-092 §4). Adoption is a
+deliberate act and is not part of this change. <strong>Recommendation:</strong> leave it, and lift it in
+the same change that adopts the annex.</li>
+<li><strong>ADR-085 §2 — &quot;no other static page is expected to be published this way&quot;.</strong> There are now
+two, and both are generated. <strong>Recommendation:</strong> treat §2 as still binding for <em>new</em> pages and
+revisit it only if a third is proposed.</li>
+</ol>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="101-ranking-ppw-public-ui-and-publication-boundary.html">← ADR-101: The public ranking switch is Ranking / PPW; publication capability is read, not re-decided, by the UI</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>102-published-pages-share-one-scoring-module.md</code> · source SHA-256 <code>9e843382d9d10ac2290759abed976423d2b6494061e32dbc7b5afedb751e0be1</code></footer>
+</div></body></html>

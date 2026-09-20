@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="8af51558691881390f6c7724e27e6cd9c08eaf6fab8ef6359aa551ddfa514cfc">
+<meta name="doc-source-sha256" content="476f1a254bf1038f593ddeb574409dc2e706c2ea75e09d8b2a026b993f406d9e">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1302,18 +1302,18 @@
 <td><strong>Landed</strong> (2026-09-20)</td>
 </tr>
 <tr>
-<td>SS26.CALC.01–12</td>
-<td>Both published URLs unchanged; the calculator renders the active season and the annex stays pinned to <code>SPWS-2026-2027</code>; no local formula remains in either page; the rank-coefficient control and EVF/SPWS toggle survive; no season or tournament-type selector is added; rounding matches the database; <code>assets.test.ts</code> three-way byte identity still holds.</td>
-<td>Vitest + Playwright</td>
-<td>—</td>
-<td>Planned</td>
+<td>SS26.CALC.01–09</td>
+<td>The published scoring-parameter surface: <code>fn_public_scoring_params(TEXT)</code> exists keyed by season <strong>code</strong>, is anon-executable, is <code>STABLE</code> with a pinned <code>search_path</code>, reports 2026/2027's assigned field-scaled engine, publishes the season's own stored base and podium coefficients rather than literals, reports <code>base_slope</code> and <code>de_round</code> as separate parameters, returns zero rows for an unknown season rather than raising, and resolves a NULL code to the active season. Both published URLs are unchanged, no local formula remains in either page, the rank-coefficient control and EVF/SPWS toggle survive, no season or tournament-type selector is added, and <code>assets.test.ts</code> keeps its three-way byte identity.</td>
+<td>pgTAP (<code>82_published_page_params.sql</code>) + 27 Vitest parity cases (<code>frontend/tests/scoring.test.ts</code>)</td>
+<td>ADR-102</td>
+<td>Implemented</td>
 </tr>
 <tr>
 <td>SS26.ANON.01–02</td>
-<td>The preview RPC appears in <strong>both</strong> copies of the anon allowlist — <code>supabase/tests/52_security_posture.sql</code> (52.7 is a set equality) and <code>scripts/check-security-posture.sh</code> — and <code>scripts/check-anon-allowlist-sync.sh</code> passes. Updating only one leaves CI green and blocks the PROD deploy job.</td>
-<td>pgTAP + shell</td>
-<td>—</td>
-<td>Planned</td>
+<td>The anon-granted function appears in <strong>both</strong> copies of the allowlist — <code>supabase/tests/52_security_posture.sql</code> (52.7 is a set equality) and <code>scripts/check-security-posture.sh</code> — and <code>scripts/check-anon-allowlist-sync.sh</code> passes. Updating only one leaves CI green and blocks the PROD deploy job, as it did on 2026-09-12. <strong>Implemented as <code>fn_public_scoring_params</code>, not <code>fn_preview_tournament_score</code>:</strong> the preview function takes an <code>id_tournament</code> neither published page has, so it stays revoked and the anon surface stays narrower than the design assumed.</td>
+<td>pgTAP (52.7) + shell</td>
+<td>ADR-102</td>
+<td>Implemented</td>
 </tr>
 </tbody>
 </table></div>
@@ -1387,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8af51558691881390f6c7724e27e6cd9c08eaf6fab8ef6359aa551ddfa514cfc</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>476f1a254bf1038f593ddeb574409dc2e706c2ea75e09d8b2a026b993f406d9e</code></footer>
 </div></body></html>
