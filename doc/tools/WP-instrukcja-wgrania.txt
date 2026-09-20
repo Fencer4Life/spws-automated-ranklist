@@ -6,10 +6,22 @@ Wielkosc: okolo 37 KB. Data przygotowania: 15 sierpnia 2026.
 
 CO TO JEST
 ----------
-Jeden samodzielny plik HTML. Nie potrzebuje niczego wiecej - ani obrazkow,
-ani arkuszy stylow, ani polaczenia z internetem. Logo SPWS jest wklejone
-w srodek pliku. Cale liczenie odbywa sie w przegladarce osoby, ktora
-otworzy strone; nic nie jest wysylane na zaden serwer.
+Jeden samodzielny plik HTML. Nie potrzebuje zadnych plikow obok siebie -
+ani obrazkow, ani arkuszy stylow. Logo SPWS jest wklejone w srodek pliku,
+a caly wzor punktowy jest w nim zawarty; liczenie odbywa sie w przegladarce
+osoby, ktora otworzy strone.
+
+UWAGA - ZMIANA OD WRZESNIA 2026. Kalkulator potrzebuje juz POLACZENIA
+Z INTERNETEM. Liczby, na ktorych liczy - podstawa za pierwsze miejsce
+i mnozniki podium - nie sa w nim zaszyte na sztywno. Pobiera je z
+konfiguracji aktualnego sezonu, dzieki czemu zawsze pokazuje to samo,
+co system rankingowy, a zmiana ustawien przed pierwszym punktowanym
+wynikiem sezonu jest widoczna takze tutaj.
+
+Bez internetu strona sie otworzy i da sie ja przeczytac, ale zamiast
+wyniku pokaze komunikat o braku parametrow sezonu. Tak ma byc: lepiej
+powiedziec wprost, ze nie ma czym liczyc, niz pokazac liczbe wyliczona
+ze starych, nieaktualnych stalych.
 
 
 NAJWAZNIEJSZE OSTRZEZENIE
