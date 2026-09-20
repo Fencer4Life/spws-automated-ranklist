@@ -7,14 +7,14 @@
         {#if mode === 'PPW'}
           <th class="col-score col-total">{t('col_points')}</th>
         {:else}
-          <th class="col-score">{t('col_ppw_total')}</th>
-          <th class="col-score">{t('col_pew_total')}</th>
+          <th class="col-score">{t('col_spws')}</th>
+          <th class="col-score">{t('col_evf_plus')}</th>
           <th class="col-score col-total">{t('col_total')}</th>
         {/if}
       </tr>
     </thead>
     <tbody>
-      {#if ppwRows.length === 0 && kadraRows.length === 0}
+      {#if ppwRows.length === 0 && fullRows.length === 0}
         <tr><td colspan={mode === 'PPW' ? 3 : 5} class="empty-state">{t('no_results')}</td></tr>
       {:else if mode === 'PPW'}
         {#each ppwRows as row}
@@ -25,12 +25,12 @@
           </tr>
         {/each}
       {:else}
-        {#each kadraRows as row}
+        {#each fullRows as row}
           <tr class="data-row" onclick={() => onrowclick?.(row.id_fencer, row.fencer_name)}>
             <td class="col-rank">{row.rank}</td>
             <td class="col-fencer">{row.fencer_name}</td>
-            <td class="col-score">{fmt(row.ppw_total)}</td>
-            <td class="col-score">{fmt(row.pew_total)}</td>
+            <td class="col-score">{fmt(row.spws_total)}</td>
+            <td class="col-score">{fmt(row.evf_plus_total)}</td>
             <td class="col-score col-total">{fmt(row.total_score)}</td>
           </tr>
         {/each}
@@ -40,18 +40,18 @@
 </div>
 
 <script lang="ts">
-  import type { RankingPpwRow, RankingKadraRow, RankingMode } from '../lib/types'
+  import type { RankingPpwRow, RankingFullRow, RankingMode } from '../lib/types'
   import { t } from '../lib/locale.svelte'
 
   let {
     mode = 'PPW' as RankingMode,
     ppwRows = [] as RankingPpwRow[],
-    kadraRows = [] as RankingKadraRow[],
+    fullRows = [] as RankingFullRow[],
     onrowclick,
   }: {
     mode?: RankingMode
     ppwRows?: RankingPpwRow[]
-    kadraRows?: RankingKadraRow[]
+    fullRows?: RankingFullRow[]
     onrowclick?: (fencerId: number, fencerName: string) => void
   } = $props()
 

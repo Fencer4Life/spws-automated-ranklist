@@ -18,13 +18,21 @@
       <div class="config-section-body">
         <div class="field-row">
           <label for="mp_value">{t('sc_mp_value')}</label>
-          <input id="mp_value" type="number" data-field="mp_value" bind:value={draft.mp_value} />
+          <input id="mp_value" type="number" data-field="mp_value" bind:value={draft.mp_value} disabled={readonly} />
           <span class="hint">{t('sc_mp_hint')}</span>
         </div>
         <div class="field-row">
           <label for="ppw_total_rounds">{t('sc_expected_rounds')}</label>
-          <input id="ppw_total_rounds" type="number" data-field="ppw_total_rounds" bind:value={draft.ppw_total_rounds} />
+          <input id="ppw_total_rounds" type="number" data-field="ppw_total_rounds" bind:value={draft.ppw_total_rounds} disabled={readonly} />
           <span class="hint">{t('sc_rounds_hint')}</span>
+        </div>
+        <div class="field-row">
+          <label for="scoring-engine-select">{t('sc_scoring_engine_label')}</label>
+          <select id="scoring-engine-select" data-field="scoring-engine-select" bind:value={draft.engine_code} disabled={readonly}>
+            {#each scoringEngines as eng}
+              <option value={eng.code}>{eng.label}</option>
+            {/each}
+          </select>
         </div>
       </div>
     {/if}
@@ -41,16 +49,16 @@
       <div class="config-section-body">
         <div class="field-row">
           <label for="podium_gold">&#129351; {t('sc_gold')}</label>
-          <input id="podium_gold" type="number" data-field="podium_gold" bind:value={draft.podium_gold} />
+          <input id="podium_gold" type="number" data-field="podium_gold" bind:value={draft.podium_gold} disabled={readonly} />
           <span class="hint">{t('sc_gold_hint')}</span>
         </div>
         <div class="field-row">
           <label for="podium_silver">&#129352; {t('sc_silver')}</label>
-          <input id="podium_silver" type="number" data-field="podium_silver" bind:value={draft.podium_silver} />
+          <input id="podium_silver" type="number" data-field="podium_silver" bind:value={draft.podium_silver} disabled={readonly} />
         </div>
         <div class="field-row">
           <label for="podium_bronze">&#129353; {t('sc_bronze')}</label>
-          <input id="podium_bronze" type="number" data-field="podium_bronze" bind:value={draft.podium_bronze} />
+          <input id="podium_bronze" type="number" data-field="podium_bronze" bind:value={draft.podium_bronze} disabled={readonly} />
         </div>
       </div>
     {/if}
@@ -68,33 +76,43 @@
         <div class="mult-grid">
           <div class="mult-card">
             <div><span class="type-badge domestic">PPW</span></div>
-            <input type="number" step="0.0001" data-field="ppw_multiplier" bind:value={draft.ppw_multiplier} />
+            <input type="number" step="0.0001" data-field="ppw_multiplier" bind:value={draft.ppw_multiplier} disabled={readonly} />
             <div class="card-label">{t('sc_ppw_label')}</div>
           </div>
           <div class="mult-card">
             <div><span class="type-badge domestic">MPW</span></div>
-            <input type="number" step="0.0001" data-field="mpw_multiplier" bind:value={draft.mpw_multiplier} />
+            <input type="number" step="0.0001" data-field="mpw_multiplier" bind:value={draft.mpw_multiplier} disabled={readonly} />
             <div class="card-label">{t('sc_mpw_label')}</div>
           </div>
           <div class="mult-card">
             <div><span class="type-badge international">PEW</span></div>
-            <input type="number" step="0.0001" data-field="pew_multiplier" bind:value={draft.pew_multiplier} />
+            <input type="number" step="0.0001" data-field="pew_multiplier" bind:value={draft.pew_multiplier} disabled={readonly} />
             <div class="card-label">{t('sc_pew_label')}</div>
           </div>
           <div class="mult-card">
             <div><span class="type-badge international">MEW</span></div>
-            <input type="number" step="0.0001" data-field="mew_multiplier" bind:value={draft.mew_multiplier} />
+            <input type="number" step="0.0001" data-field="mew_multiplier" bind:value={draft.mew_multiplier} disabled={readonly} />
             <div class="card-label">{t('sc_mew_label')}</div>
           </div>
           <div class="mult-card">
             <div><span class="type-badge international">MSW</span></div>
-            <input type="number" step="0.0001" data-field="msw_multiplier" bind:value={draft.msw_multiplier} />
+            <input type="number" step="0.0001" data-field="msw_multiplier" bind:value={draft.msw_multiplier} disabled={readonly} />
             <div class="card-label">{t('sc_msw_label')}</div>
           </div>
           <div class="mult-card">
             <div><span class="type-badge international">PSW</span></div>
-            <input type="number" step="0.0001" data-field="psw_multiplier" bind:value={draft.psw_multiplier} />
+            <input type="number" step="0.0001" data-field="psw_multiplier" bind:value={draft.psw_multiplier} disabled={readonly} />
             <div class="card-label">{t('sc_psw_label')}</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge pzs">PPS</span></div>
+            <input type="number" step="0.0001" data-field="pps_multiplier" bind:value={draft.pps_multiplier} disabled={readonly} />
+            <div class="card-label">{t('sc_pps_label')}</div>
+          </div>
+          <div class="mult-card">
+            <div><span class="type-badge pzs">MPS</span></div>
+            <input type="number" step="0.0001" data-field="mps_multiplier" bind:value={draft.mps_multiplier} disabled={readonly} />
+            <div class="card-label">{t('sc_mps_label')}</div>
           </div>
         </div>
       </div>
@@ -112,11 +130,11 @@
       <div class="config-section-body">
         <div class="field-row">
           <label for="min_participants_ppw">{t('sc_min_ppw')}</label>
-          <input id="min_participants_ppw" type="number" data-field="min_participants_ppw" bind:value={draft.min_participants_ppw} />
+          <input id="min_participants_ppw" type="number" data-field="min_participants_ppw" bind:value={draft.min_participants_ppw} disabled={readonly} />
         </div>
         <div class="field-row">
           <label for="min_participants_evf">{t('sc_min_evf')}</label>
-          <input id="min_participants_evf" type="number" data-field="min_participants_evf" bind:value={draft.min_participants_evf} />
+          <input id="min_participants_evf" type="number" data-field="min_participants_evf" bind:value={draft.min_participants_evf} disabled={readonly} />
           <span class="hint">{t('sc_min_evf_hint')}</span>
         </div>
       </div>
@@ -137,20 +155,20 @@
           <select
             id="engine-select"
             data-field="engine-select"
-            bind:value={draft.engine}
+            bind:value={draft.carryover_engine}
             disabled={readonly}
-            class:legacy={draft.engine === 'EVENT_CODE_MATCHING'}
+            class:legacy={draft.carryover_engine === 'EVENT_CODE_MATCHING'}
           >
             {#each CARRYOVER_ENGINE_VALUES as engineValue}
               <option value={engineValue}>{engineLabel(engineValue)}</option>
             {/each}
           </select>
-          {#if draft.engine === 'EVENT_CODE_MATCHING'}
+          {#if draft.carryover_engine === 'EVENT_CODE_MATCHING'}
             <span class="engine-legacy-tag" data-field="engine-legacy-tag">{t('sc_engine_legacy_tag')}</span>
           {/if}
         </div>
         <div class="engine-hint" data-field="engine-hint">
-          {#if draft.engine === 'EVENT_CODE_MATCHING'}
+          {#if draft.carryover_engine === 'EVENT_CODE_MATCHING'}
             <strong>{t('sc_engine_hint_code')}</strong>
           {:else}
             <strong>{t('sc_engine_hint_fk')}</strong>
@@ -181,18 +199,18 @@
                 {/each}
               </div>
               <div class="bucket-rule">
-                <select value={bucket.always ? 'all' : 'best'} onchange={(e) => toggleBucketMode('domestic', i, (e.target as HTMLSelectElement).value)}>
+                <select disabled={readonly} value={bucket.always ? 'all' : 'best'} onchange={(e) => toggleBucketMode('domestic', i, (e.target as HTMLSelectElement).value)}>
                   <option value="best">{t('sc_rule_best')}</option>
                   <option value="all">{t('sc_rule_all')}</option>
                 </select>
                 {#if !bucket.always}
-                  <input type="number" value={bucket.best ?? 1} onchange={(e) => updateBucketBest('domestic', i, parseInt((e.target as HTMLInputElement).value))} />
+                  <input type="number" disabled={readonly} value={bucket.best ?? 1} onchange={(e) => updateBucketBest('domestic', i, parseInt((e.target as HTMLInputElement).value))} />
                   <span class="rule-label">{t('sc_rule_results')}</span>
                 {:else}
                   <span class="always-label">{t('sc_rule_always')}</span>
                 {/if}
               </div>
-              <button class="remove-bucket-btn" title="Remove" onclick={() => removeBucket('domestic', i)}>&#10005;</button>
+              <button class="remove-bucket-btn" disabled={readonly} title="Remove" onclick={() => removeBucket('domestic', i)}>&#10005;</button>
             </div>
           {/each}
           {#if addingBucket?.pool === 'domestic'}
@@ -212,7 +230,7 @@
               <button class="picker-cancel" onclick={cancelAddBucket}>&#10005;</button>
             </div>
           {:else}
-            <button class="add-bucket-btn" onclick={() => startAddBucket('domestic')}>{t('sc_add_bucket')}</button>
+            <button class="add-bucket-btn" disabled={readonly} onclick={() => startAddBucket('domestic')}>{t('sc_add_bucket')}</button>
           {/if}
         </div>
 
@@ -228,18 +246,18 @@
                 {/each}
               </div>
               <div class="bucket-rule">
-                <select value={bucket.always ? 'all' : 'best'} onchange={(e) => toggleBucketMode('international', i, (e.target as HTMLSelectElement).value)}>
+                <select disabled={readonly} value={bucket.always ? 'all' : 'best'} onchange={(e) => toggleBucketMode('international', i, (e.target as HTMLSelectElement).value)}>
                   <option value="best">{t('sc_rule_best')}</option>
                   <option value="all">{t('sc_rule_all')}</option>
                 </select>
                 {#if !bucket.always}
-                  <input type="number" value={bucket.best ?? 1} onchange={(e) => updateBucketBest('international', i, parseInt((e.target as HTMLInputElement).value))} />
+                  <input type="number" disabled={readonly} value={bucket.best ?? 1} onchange={(e) => updateBucketBest('international', i, parseInt((e.target as HTMLInputElement).value))} />
                   <span class="rule-label">{t('sc_rule_results')}</span>
                 {:else}
                   <span class="always-label">{t('sc_rule_always')}</span>
                 {/if}
               </div>
-              <button class="remove-bucket-btn" title="Remove" onclick={() => removeBucket('international', i)}>&#10005;</button>
+              <button class="remove-bucket-btn" disabled={readonly} title="Remove" onclick={() => removeBucket('international', i)}>&#10005;</button>
             </div>
           {/each}
           {#if addingBucket?.pool === 'international'}
@@ -259,7 +277,7 @@
               <button class="picker-cancel" onclick={cancelAddBucket}>&#10005;</button>
             </div>
           {:else}
-            <button class="add-bucket-btn" onclick={() => startAddBucket('international')}>{t('sc_add_bucket')}</button>
+            <button class="add-bucket-btn" disabled={readonly} onclick={() => startAddBucket('international')}>{t('sc_add_bucket')}</button>
           {/if}
         </div>
       </div>
@@ -270,10 +288,15 @@
   <div class="config-footer">
     <button class="config-export-btn" onclick={handleExport}>{t('sc_export')}</button>
     <button class="config-cancel-btn" onclick={oncancel}>{readonly ? t('sc_close') : t('sc_cancel')}</button>
-    {#if !readonly}
-      <button class="config-save-btn" onclick={handleSave}>{t('sc_save')}</button>
-    {/if}
+    <button class="config-save-btn" onclick={handleSave}>{t('sc_save')}</button>
   </div>
+
+  {#if readonly && showLockedNotice}
+    <div class="config-locked-notice" data-field="locked-notice" role="alert">
+      <strong>{t('sc_locked_title')}</strong>
+      <p>{t('sc_locked_explanation')}</p>
+    </div>
+  {/if}
 </div>
 
 <script lang="ts">
@@ -285,6 +308,7 @@
     config,
     seasonCode,
     readonly = false,
+    scoringEngines = [],
     onsave = (_c: ScoringConfig) => {},
     oncancel = () => {},
     onchange = (_c: ScoringConfig) => {},
@@ -292,6 +316,10 @@
     config: ScoringConfig
     seasonCode: string
     readonly?: boolean
+    // SS26.LOCK.01/§05: released scoring-engine codes for the new selector
+    // below, fetched once by the caller (App.svelte) — never hardcoded here,
+    // so a third released engine needs no frontend redeploy.
+    scoringEngines?: { code: string, label: string }[]
     onsave?: (config: ScoringConfig) => void
     oncancel?: () => void
     // Part 4 (ADR-044): fires on every draft edit so a parent wizard can capture
@@ -299,9 +327,9 @@
     onchange?: (config: ScoringConfig) => void
   } = $props()
 
-  // Default engine for new seasons (no incoming config.engine) is the FK
-  // engine — see ADR-045. Existing configs preserve whatever the season
-  // currently has on tbl_season.enum_carryover_engine.
+  // Default engine for new seasons (no incoming config.carryover_engine) is
+  // the FK engine — see ADR-045. Existing configs preserve whatever the
+  // season currently has on tbl_season.enum_carryover_engine.
   // Intentional one-time snapshot, not a live derivation: `draft` is an
   // editable working copy seeded from the incoming `config` prop. It must
   // NOT track `config` reactively — that would clobber in-progress edits
@@ -309,8 +337,15 @@
   // svelte-ignore state_referenced_locally
   let draft: ScoringConfig = $state({
     ...JSON.parse(JSON.stringify(config)),
-    engine: config.engine ?? 'EVENT_FK_MATCHING',
+    carryover_engine: config.carryover_engine ?? 'EVENT_FK_MATCHING',
+    engine_code: config.engine_code ?? scoringEngines[0]?.code ?? '',
   })
+
+  // SS26.LOCK.11: clicking Save while locked shows this instead of calling
+  // onsave — a native `disabled` attribute on the button would work for the
+  // input fields above but cannot "communicate on click" (§05), so the
+  // button stays enabled and the guard lives in handleSave instead.
+  let showLockedNotice = $state(false)
 
   function engineLabel(engine: string): string {
     if (engine === 'EVENT_FK_MATCHING') return t('sc_engine_opt_fk')
@@ -331,7 +366,7 @@
   // button still works for the standalone edit-config flow). Reads draft +
   // draftRules so the effect re-runs on any change; onchange defaults to a no-op.
   $effect(() => {
-    onchange({ ...draft, ranking_rules: draftRules, engine: draft.engine })
+    onchange({ ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine })
   })
 
   let collapsedSections: Record<string, boolean> = $state({
@@ -401,14 +436,19 @@
   }
 
   function handleSave() {
-    // Include `engine` so App.svelte's handler can patch tbl_season.enum_carryover_engine
-    // separately from tbl_scoring_config (instant flip, no migration).
-    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules, engine: draft.engine }
+    if (readonly) {
+      showLockedNotice = true
+      return
+    }
+    // Include `carryover_engine` so App.svelte's handler can patch
+    // tbl_season.enum_carryover_engine separately from tbl_scoring_config
+    // (instant flip, no migration).
+    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine, engine_code: draft.engine_code }
     onsave(updated)
   }
 
   function handleExport() {
-    const json = JSON.stringify({ ...draft, ranking_rules: draftRules, engine: draft.engine }, null, 2)
+    const json = JSON.stringify({ ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine }, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -610,6 +650,14 @@
   .type-badge.international {
     background: #fff8e1;
     color: #b8860b;
+  }
+  /* PZSz senior events (PPS/MPS). Same desaturated PZSz red as the calendar
+     drum's own .p.pzs panel (CalendarBarrel.svelte) — the brand red #c72626
+     toned down to sit beside domestic green / international gold rather than
+     shout over them. */
+  .type-badge.pzs {
+    background: #fdf0f0;
+    color: #a92020;
   }
   .mult-card input {
     width: 80px;
@@ -838,6 +886,17 @@
   }
   .config-save-btn:hover {
     background: #3a7bc8;
+  }
+  .config-locked-notice {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #fff3cd;
+    border: 1px solid #ffe08a;
+    border-radius: 6px;
+    color: #664d03;
+  }
+  .config-locked-notice p {
+    margin: 4px 0 0;
   }
   /* Read-only mode: disable all inputs visually */
   .config-readonly :global(input),

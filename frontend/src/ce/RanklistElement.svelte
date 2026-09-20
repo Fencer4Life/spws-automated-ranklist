@@ -1,4 +1,6 @@
-<svelte:options customElement="spws-ranklist" />
+<svelte:options
+  customElement={{ tag: 'spws-ranklist', props: { demo: { type: 'Boolean' } } }}
+/>
 
 <App
   supabase-cert-url={supabaseCertUrl}

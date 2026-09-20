@@ -1,4 +1,6 @@
-<svelte:options customElement="spws-calendar" />
+<svelte:options
+  customElement={{ tag: 'spws-calendar', props: { demo: { type: 'Boolean' } } }}
+/>
 
 <App
   supabase-cert-url={supabaseCertUrl}

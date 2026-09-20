@@ -19,7 +19,8 @@ from enum import StrEnum
 
 
 class Flow(StrEnum):
-    """The full domestic automated pipeline — 4 flows (design §6.2).
+    """The full domestic automated pipeline — 4 flows (design §6.2), plus the
+    PZSz senior result flow (design step 6, ADR-100).
 
     International flows (FRESH_INGEST_INTERNATIONAL, EVF_SYNC) are deferred — §12.
     """
@@ -28,6 +29,7 @@ class Flow(StrEnum):
     RECOMPUTE_DOMESTIC = "recompute_domestic"
     DEDUP_SWEEP = "dedup_sweep"
     POST_COMMIT = "post_commit"
+    INGEST_PZSZ_SENIOR = "ingest_pzsz_senior"
 
 
 @dataclass(frozen=True)

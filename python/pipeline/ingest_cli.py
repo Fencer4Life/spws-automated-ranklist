@@ -317,16 +317,21 @@ def ingest_via_flow(
 
 
 def _run_parsed_through_flow(
-    parsed, event_code, season_end_year, overrides, db, *, label="", commit_cats=None
+    parsed, event_code, season_end_year, overrides, db, *, label="", commit_cats=None, flow=None
 ):
-    """Route one already-parsed IR bracket through `run_flow(INGEST_DOMESTIC)` and
-    print a one-line commit summary. Shared by the file path (`ingest_via_flow`)
-    and the URL path (`ingest_event_from_url`). `commit_cats` (the keep-rule's owned
-    set, N13.3) restricts which categories `Commit` may write — None ⇒ write all."""
+    """Route one already-parsed IR bracket through `run_flow` and print a
+    one-line commit summary. Shared by the file path (`ingest_via_flow`), the
+    domestic URL path (`ingest_event_from_url`) and the PZSz senior URL path
+    (`ingest_pzsz_senior_bracket_from_url`). `commit_cats` (the keep-rule's
+    owned set, N13.3) restricts which categories `Commit` may write — None ⇒
+    write all; unused by the PZSz flow, which never splits by category.
+    `flow` defaults to INGEST_DOMESTIC, unchanged from before this parameter
+    existed."""
     from python.pipeline.core.contract import Services
     from python.pipeline.engine.flows import Flow, FlowParams
     from python.pipeline.run import run_flow
 
+    flow = flow or Flow.INGEST_DOMESTIC
     svc = Services(
         db=db,
         config={
@@ -337,7 +342,7 @@ def _run_parsed_through_flow(
             "commit_cats": commit_cats,
         },
     )
-    ctx = run_flow(FlowParams(Flow.INGEST_DOMESTIC), svc=svc)
+    ctx = run_flow(FlowParams(flow), svc=svc)
     committed = ctx.get("committed") or {}
     faults = [f.kind.value for f in ctx.faults]
     if committed.get("skipped"):
@@ -708,6 +713,68 @@ def ingest_event_from_url(
     if send_telegram:
         _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
     return contexts
+
+
+def ingest_pzsz_senior_bracket_from_url(
+    event_code: str,
+    weapon: str,
+    gender: str,
+    url: str,
+    season_end_year: int,
+    db=None,
+) -> list:
+    """Design step 6 (ADR-100): ingest one PZSz PPS/MPS senior bracket from its
+    FTL results-data URL, through `Flow.INGEST_PZSZ_SENIOR`.
+
+    Deliberately NOT `ingest_event_from_url`'s own round-discovery path: that
+    function's `parse_tournament_name` decodes a bracket's WEAPON/GENDER/V-CAT
+    from its FTL name, a convention specific to how SPWS/EVF name brackets
+    (e.g. "Weterani M V2"). A PZSz senior field carries no V-cat at all and
+    this session has no verified sample of PZSz's own FTL bracket-naming
+    convention to decode instead of guessing at one — see design plan §12
+    Flags. `weapon`/`gender` are therefore the caller's own (an admin action
+    naming the specific bracket, the same shape the N15 Telegram `ingest`
+    command already uses for a URL). Bracket discovery/name-decoding for PZSz
+    is left for whoever wires an operator-facing trigger onto this function.
+
+    REUSES the existing FTL parser end-to-end (`get_authed_ftl_client`,
+    `ftl.parse_json`) — no second parser, per design §07 item 1.
+    """
+    from python.pipeline.overrides import load_for_event
+    from python.scrapers import ftl
+    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
+
+    if db is None:
+        db = create_db_connector()
+
+    event = db.find_event_by_code(event_code)
+    if event is None:
+        raise ValueError(f"Event {event_code!r} not found in tbl_event.")
+
+    overrides = load_for_event(event_code)
+
+    with get_authed_ftl_client() as client:
+        resp = client.get(normalize_ftl_url(url))
+        resp.raise_for_status()
+        parsed = ftl.parse_json(resp.json(), source_url=url)
+
+    parsed.weapon = weapon
+    parsed.gender = gender
+    parsed.organizer_hint = "PZSz"
+    parsed.season_end_year = season_end_year
+
+    from python.pipeline.engine.flows import Flow
+
+    ctx = _run_parsed_through_flow(
+        parsed,
+        event_code,
+        season_end_year,
+        overrides,
+        db,
+        label=f"{event_code} {weapon}/{gender}",
+        flow=Flow.INGEST_PZSZ_SENIOR,
+    )
+    return [ctx]
 
 
 def _ingest_source_records(decisions, schedule_skips):

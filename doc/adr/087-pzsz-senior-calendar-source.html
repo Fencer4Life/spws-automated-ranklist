@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
-<meta name="adr-source-sha256" content="49f7f6196af7d6ad90a694339d52df34155dcc1a437e1516661b7da5af1932e6">
+<meta name="adr-source-sha256" content="12a557abfdf2008f39289f1976e61d1a5ce3cc1fbaaf92811923bb494df9204f">
 <title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 087</p><h1>PZSz as a fourth event source — Polish national senior events on the calendar</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">410 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">424 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.
 <strong>Date:</strong> 2026-09-03
 <strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §F and §11 (<code>registryOf()</code> widens from three registries to four; a fourth hue enters the organizer channel; <code>PanelType</code> gains a fifth member)
@@ -489,7 +489,21 @@ has an <code>ELSE</code>. <code>enum_age_category</code> would need a <code>SENI
 <code>parse_tournament_name()</code> (<code>python/tools/scrape_ftl_event_urls.py:289</code>) maps a bracket
 named <em>Senior</em> to <code>V0</code>, which on a genuinely senior event silently mis-tags every
 bracket. <strong>Recommendation:</strong> sequence the season's planned scoring-formula change first,
-so PPS results are not scored under a formula about to be replaced.</li>
+so PPS results are not scored under a formula about to be replaced.
+<strong>Partially resolved 2026-09-19.</strong> The recommended sequencing happened: the scoring
+formula change (<a href="../plans/versioned-season-scoring-and-pzsz-ranking-design.html">SS26 design</a>)
+landed first, and its dispatcher already resolves multipliers through
+<code>tbl_scoring_type_config</code> rather than the hardcoded <code>CASE</code> blocks this item warned
+about, so adding PPS/MPS there was a normal row, not the three-site edit described
+above. <code>enum_tournament_type</code> now carries <code>PPS</code> and <code>MPS</code>
+(<code>20260919000003_add_pps_mps_enum.sql</code>), each with its own Admin-configurable
+multiplier (<code>20260919000004_pps_mps_multipliers.sql</code>), and a PPS/MPS result scores
+end to end with it. Still open, unchanged from above: the <code>best</code>/<code>best 2</code> cap is
+unsettled, <code>enum_age_category</code> has no <code>SENIOR</code> member, <code>parse_tournament_name()</code>
+still mis-tags a <em>Senior</em> bracket as <code>V0</code>, and — new since this item was written —
+no ranking bucket selects PPS/MPS, so a scored result does not yet reach any
+published ranklist total. That is deliberate for now: offering a bucket before the
+SPWS/EVF+/Razem two-group redesign (design step 4) would show a wrong total.</li>
 <li><strong>Whether PZSz hosts its own results.</strong> Each tournament has a page at
 <code>/zawody/kalendarium-zawodow/turniej/?id=NNNNN</code> carrying tabs for <em>Lista startowa</em>,
 <em>Grupy</em>, <em>Ranking Grupowy</em>, <em>Tabela</em> and <em>Klasyfikacja końcowa</em>, with pool-sheet markup
@@ -511,5 +525,5 @@ All eight members are on <code>cancel-in-progress: false</code>, so none is affe
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="088-calendar-location-contract.html">→ ADR-088: One location contract for every calendar scraper — city, venue and address</a></nav>
-<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>49f7f6196af7d6ad90a694339d52df34155dcc1a437e1516661b7da5af1932e6</code></footer>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>12a557abfdf2008f39289f1976e61d1a5ce3cc1fbaaf92811923bb494df9204f</code></footer>
 </div></body></html>

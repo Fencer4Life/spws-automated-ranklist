@@ -23,6 +23,8 @@ const MOCK_CONFIG: ScoringConfig = {
   mew_droppable: false,
   msw_multiplier: 2.0,
   psw_multiplier: 2.0,
+  pps_multiplier: 1.0,
+  mps_multiplier: 1.1,
   min_participants_evf: 5,
   min_participants_ppw: 1,
   show_evf_toggle: false,
@@ -67,8 +69,10 @@ describe('ScoringConfigEditor (T8.8)', () => {
     expect(bronzeInput?.value).toBe('1')
   })
 
-  // 8.66 — Displays 6 tournament multipliers in 2×3 grid
-  it('displays 6 tournament multipliers', () => {
+  // 8.66 — Displays 8 tournament multipliers in a 3/3/2 grid (PPS/MPS added,
+  // pulled forward from delivery step 6 per
+  // doc/plans/did-you-plan-to-optimized-penguin.md)
+  it('displays 8 tournament multipliers', () => {
     const { container } = render(ScoringConfigEditor, { props: defaultProps })
     const ppwMult = container.querySelector('input[data-field="ppw_multiplier"]') as HTMLInputElement
     const mpwMult = container.querySelector('input[data-field="mpw_multiplier"]') as HTMLInputElement
@@ -76,12 +80,16 @@ describe('ScoringConfigEditor (T8.8)', () => {
     const mewMult = container.querySelector('input[data-field="mew_multiplier"]') as HTMLInputElement
     const mswMult = container.querySelector('input[data-field="msw_multiplier"]') as HTMLInputElement
     const pswMult = container.querySelector('input[data-field="psw_multiplier"]') as HTMLInputElement
+    const ppsMult = container.querySelector('input[data-field="pps_multiplier"]') as HTMLInputElement
+    const mpsMult = container.querySelector('input[data-field="mps_multiplier"]') as HTMLInputElement
     expect(ppwMult?.value).toBe('1')
     expect(mpwMult?.value).toBe('1.2')
     expect(pewMult?.value).toBe('1')
     expect(mewMult?.value).toBe('1.2')
     expect(mswMult?.value).toBe('2')
     expect(pswMult?.value).toBe('2')
+    expect(ppsMult?.value).toBe('1')
+    expect(mpsMult?.value).toBe('1.1')
   })
 
   // Part 3 — expected-rounds label clarifies "DE rounds" (PL default locale)
@@ -211,16 +219,16 @@ describe('ScoringConfigEditor (T8.8)', () => {
   // ph3.37b — defaults to EVENT_FK_MATCHING when config has no engine set
   // (new season, prior to first save). When config carries an engine value,
   // the dropdown reflects it instead.
-  it('ph3.37b: defaults engine to FK when config.engine is undefined', () => {
+  it('ph3.37b: defaults engine to FK when config.carryover_engine is undefined', () => {
     const configNoEngine = { ...MOCK_CONFIG }
-    delete (configNoEngine as { engine?: string }).engine
+    delete (configNoEngine as { carryover_engine?: string }).carryover_engine
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: configNoEngine } })
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_FK_MATCHING')
   })
 
   it('ph3.37b: engine dropdown reflects existing config.engine value', () => {
-    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig } })
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_CODE_MATCHING')
@@ -228,7 +236,7 @@ describe('ScoringConfigEditor (T8.8)', () => {
 
   // ph3.37c — selecting EVENT_CODE_MATCHING surfaces the (legacy) tag + warning hint
   it('ph3.37c: selecting EVENT_CODE_MATCHING shows the (legacy) tag', async () => {
-    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig } })
     const tag = container.querySelector('[data-field="engine-legacy-tag"]')
     expect(tag).not.toBeNull()
@@ -239,7 +247,7 @@ describe('ScoringConfigEditor (T8.8)', () => {
   // can patch tbl_season.enum_carryover_engine separately from the scoring config.
   it('ph3.37d: onsave payload includes the engine field', async () => {
     const onsave = vi.fn()
-    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig, onsave } })
 
     // Flip the dropdown to FK
@@ -250,16 +258,115 @@ describe('ScoringConfigEditor (T8.8)', () => {
     await fireEvent.click(saveBtn)
     expect(onsave).toHaveBeenCalled()
     const payload = onsave.mock.calls[0][0]
-    expect(payload.engine).toBe('EVENT_FK_MATCHING')
+    expect(payload.carryover_engine).toBe('EVENT_FK_MATCHING')
+  })
+
+  // SS26.CARRY (design step 7, ADR-101): carryover_engine and engine_code
+  // are independently settable — changing the scoring engine must never
+  // touch the carry-over engine, and vice versa. Both remain distinct
+  // fields all the way through the onsave payload.
+  describe('SS26.CARRY — carryover_engine and engine_code stay independent', () => {
+    it('changing the scoring engine leaves carryover_engine untouched', async () => {
+      const onsave = vi.fn()
+      const config: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING', engine_code: 'CLASSIC_V1' }
+      const { container } = render(ScoringConfigEditor, {
+        props: { ...defaultProps, config, onsave, scoringEngines: [{ code: 'CLASSIC_V1', label: 'Classic' }, { code: 'FIELD_SCALED_V1', label: 'Field-scaled' }] },
+      })
+      const scoringSelect = container.querySelector('select[data-field="scoring-engine-select"]') as HTMLSelectElement
+      await fireEvent.change(scoringSelect, { target: { value: 'FIELD_SCALED_V1' } })
+
+      const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+      await fireEvent.click(saveBtn)
+      const payload = onsave.mock.calls[0][0]
+      expect(payload.engine_code).toBe('FIELD_SCALED_V1')
+      expect(payload.carryover_engine).toBe('EVENT_CODE_MATCHING')
+    })
+
+    it('changing the carry-over engine leaves engine_code untouched', async () => {
+      const onsave = vi.fn()
+      const config: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_FK_MATCHING', engine_code: 'CLASSIC_V1' }
+      const { container } = render(ScoringConfigEditor, {
+        props: { ...defaultProps, config, onsave, scoringEngines: [{ code: 'CLASSIC_V1', label: 'Classic' }] },
+      })
+      const carryoverSelect = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+      await fireEvent.change(carryoverSelect, { target: { value: 'EVENT_CODE_MATCHING' } })
+
+      const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+      await fireEvent.click(saveBtn)
+      const payload = onsave.mock.calls[0][0]
+      expect(payload.carryover_engine).toBe('EVENT_CODE_MATCHING')
+      expect(payload.engine_code).toBe('CLASSIC_V1')
+    })
   })
 
   // ph3.37e — opening editor on an existing season's 🎯 button shows the
   // dropdown with that season's current engine value (verifies prop wiring
   // through the existing config flow, not a regression).
   it('ph3.37e: existing season editor shows current engine in dropdown', () => {
-    const fkConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_FK_MATCHING' }
+    const fkConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_FK_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: fkConfig } })
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_FK_MATCHING')
+  })
+
+  // ==========================================================================
+  // SS26.LOCK.11 — governance lock (2026-09-19): server-authoritative
+  // scoring_admin_locked, not a season date, disables every field; the save
+  // button stays visible and clickable but shows the Polish explanation
+  // instead of calling onsave.
+  // ==========================================================================
+
+  const LOCKED_CONFIG: ScoringConfig = { ...MOCK_CONFIG, scoring_admin_locked: true }
+
+  it('SS26.LOCK.11: renders every field disabled when scoring_admin_locked', () => {
+    const { container } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, config: LOCKED_CONFIG, readonly: true },
+    })
+    const fields = [
+      'mp_value', 'ppw_total_rounds', 'podium_gold', 'podium_silver', 'podium_bronze',
+      'ppw_multiplier', 'mpw_multiplier', 'pew_multiplier', 'mew_multiplier',
+      'msw_multiplier', 'psw_multiplier', 'pps_multiplier', 'mps_multiplier',
+      'min_participants_ppw', 'min_participants_evf', 'engine-select', 'scoring-engine-select',
+    ]
+    for (const f of fields) {
+      const el = container.querySelector(`[data-field="${f}"]`) as HTMLInputElement | HTMLSelectElement
+      expect(el, `field ${f} should exist`).not.toBeNull()
+      expect(el.disabled, `field ${f} should be disabled`).toBe(true)
+    }
+  })
+
+  it('SS26.LOCK.11: save button stays visible when locked', () => {
+    const { container } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, config: LOCKED_CONFIG, readonly: true },
+    })
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    expect(saveBtn).not.toBeNull()
+    expect(saveBtn.disabled).toBe(false)
+  })
+
+  it('SS26.LOCK.11: clicking save while locked shows the exact Polish explanation and calls no RPC', async () => {
+    const onsave = vi.fn()
+    const { container, getByText } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, config: LOCKED_CONFIG, readonly: true, onsave },
+    })
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    await fireEvent.click(saveBtn)
+    expect(onsave).not.toHaveBeenCalled()
+    expect(
+      getByText(
+        'Konfiguracja punktacji jest zablokowana, ponieważ sezon zawiera już obliczone wyniki. Zmiana wymaga zatwierdzonej aktualizacji konfiguracji i ponownego przeliczenia całego sezonu poza panelem administracyjnym.',
+      ),
+    ).not.toBeNull()
+  })
+
+  it('SS26.LOCK.11: no locked notice and normal save when unlocked', async () => {
+    const onsave = vi.fn()
+    const { container, queryByText } = render(ScoringConfigEditor, {
+      props: { ...defaultProps, onsave },
+    })
+    expect(queryByText('Konfiguracja punktacji zablokowana')).toBeNull()
+    const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+    await fireEvent.click(saveBtn)
+    expect(onsave).toHaveBeenCalled()
   })
 })

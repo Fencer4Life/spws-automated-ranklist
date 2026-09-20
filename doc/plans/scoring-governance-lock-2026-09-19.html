@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Governance lock — design step 3b</title>
+<style>
+    :root{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd;--serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+    @media(prefers-color-scheme:dark){:root{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}}
+    :root[data-theme="dark"]{--bg:#12151b;--surface:#1b2029;--surface-2:#232935;--ink:#f1f4f8;--muted:#aeb8c6;--faint:#7c8797;--line:#2c333f;--strong:#3c4552;--accent:#8cbdec;--accent-ink:#a9d0f5;--accent-soft:#1a2a3c;--danger:#f59a90;--danger-soft:#331d1a;--good:#6cdc98;--good-soft:#15271b;--warn:#e6bd6f;--warn-soft:#282011;--pzs:#ff8c85;--pzs-soft:#351d1d}
+    :root[data-theme="light"]{--bg:#e8ecf3;--surface:#fff;--surface-2:#dce2ec;--ink:#0f1319;--muted:#414b59;--faint:#6b7482;--line:#c9d1dc;--strong:#b3bdcc;--accent:#12467e;--accent-ink:#0d3763;--accent-soft:#dbe7f5;--danger:#9e2418;--danger-soft:#f7ddd9;--good:#0f5f37;--good-soft:#d8eede;--warn:#7a4d02;--warn-soft:#f4e6c8;--pzs:#a92020;--pzs-soft:#f6dddd}
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.62 var(--sans);-webkit-font-smoothing:antialiased}.wrap{max-width:60rem;margin:auto;padding:58px 30px 110px}code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}code{background:var(--surface-2);padding:.08em .36em;border:1px solid var(--line);border-radius:5px;font-size:.84em;font-weight:600}a{color:var(--accent)}.eyebrow,.kicker{font:700 14px/1.3 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:var(--serif);text-wrap:balance}h1{font-size:clamp(38px,6vw,57px);line-height:1.05;max-width:19ch;margin:14px 0 18px}h2{font-size:33px;line-height:1.15;margin:0 0 18px}h3{font-size:20px;margin:28px 0 10px}.dek{font-size:23px;line-height:1.48;color:var(--muted);max-width:58ch}.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--strong);border-radius:7px;background:var(--surface);color:var(--muted);font:600 14px var(--mono)}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}.pill.good .dot{background:var(--good)}.pill.warn .dot{background:var(--warn)}.rule{height:2px;border:0;background:var(--line);margin:48px 0}section{margin-top:54px}p,ul,ol{max-width:69ch}ul,ol{padding-left:1.4em}li{margin:8px 0}li::marker{color:var(--accent)}.toc{columns:2;column-gap:38px}@media(max-width:700px){.toc{columns:1}.wrap{padding:36px 20px 80px}body{font-size:17px}}
+    .note{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}.note>:last-child{margin-bottom:0}.note.accent{border-left-color:var(--accent);background:var(--accent-soft)}.note.good{border-left-color:var(--good);background:var(--good-soft)}.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}.note.danger{border-left-color:var(--danger);background:var(--danger-soft)}.note.pzs{border-left-color:var(--pzs);background:var(--pzs-soft)}.lede{font-weight:800;margin:0 0 7px}.tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}table{border-collapse:collapse;width:100%;font-size:16px;min-width:620px}th,td{text-align:left;vertical-align:top;padding:12px 15px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{background:var(--surface-2);font:700 13px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.chip{display:inline-block;padding:3px 8px;border-radius:6px;font:800 12px var(--mono);white-space:nowrap}.chip.lock{background:var(--danger-soft);color:var(--danger)}.chip.edit{background:var(--good-soft);color:var(--good)}.chip.future{background:var(--warn-soft);color:var(--warn)}pre{overflow:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:17px 20px;font:15px/1.7 var(--mono);color:var(--ink)}.formula{font:600 16px/1.8 var(--mono);background:var(--surface);padding:18px 22px;border:1px solid var(--line);border-radius:10px;overflow:auto}.checklist{font-family:var(--mono);font-size:15px;white-space:pre-wrap}.foot{margin-top:62px;padding-top:24px;border-top:2px solid var(--line);font:14px/1.6 var(--mono);color:var(--faint)}
+</style>
+</head>
+<body><div class="wrap">
+
+<p class="eyebrow">Implementation plan · design step 3b</p>
+<h1>Close the Admin scoring editor when a season starts scoring</h1>
+<p class="dek">Second half of <a href="versioned-season-scoring-and-pzsz-ranking-design.html">the approved design</a>'s §05 and §11 step 3 — the total governance lock (<code>SS26.LOCK.01–12</code>) and the audited privileged revision/rescore path (<code>SS26.REVISION.01–08</code>). Everything else in step 3 (normalized type policy) is already landed.</p>
+<div class="meta">
+  <span class="pill good"><span class="dot"></span>steps 1, 2, 3a landed — 3919ac46</span>
+  <span class="pill good"><span class="dot"></span>PPS/MPS pulled forward — bb5596b7</span>
+  <span class="pill good"><span class="dot"></span>SS26.LOCK.01–12 landed — f5933171</span>
+  <span class="pill good"><span class="dot"></span>ADR-097 signed off and written — doc/adr/097-scoring-governance-lock-and-privileged-revision.md</span>
+  <span class="pill good"><span class="dot"></span>SS26.REVISION.01–08 landed — 1086 pgTAP assertions, LOCAL-verified</span>
+</div>
+<div class="note good">
+<p class="lede">Done</p>
+<p>Both halves of design step 3b are landed. SS26.LOCK.01–12 (§05–06) and SS26.REVISION.01–08 (§07) are implemented, tested (pgTAP 1086 assertions + the full frontend suite), documented (handbook, RTM, spec Appendix C/D, ADR-097) and manually verified against LOCAL fixtures, including a real privileged-revision run that moved a stored score and a separate run that rolled back cleanly off a genuine pre-existing data defect. Not yet run against CERT or PROD.</p>
+</div>
+
+<nav class="toc">
+<ol>
+<li><a href="#outcome">Outcome and scope</a></li>
+<li><a href="#baseline">Verified baseline</a></li>
+<li><a href="#scenario">Scenario walkthrough</a></li>
+<li><a href="#adr">Proposed ADR-097 — sign-off requested</a></li>
+<li><a href="#schema">Schema</a></li>
+<li><a href="#guard">Field-level authorization</a></li>
+<li><a href="#revision">Privileged revision procedure</a></li>
+<li><a href="#frontend">Frontend contract</a></li>
+<li><a href="#tests">Acceptance tests</a></li>
+<li><a href="#delivery">Delivery increments</a></li>
+<li><a href="#verify">Verification</a></li>
+<li><a href="#docs">Documentation coherence gate</a></li>
+<li><a href="#flags">Flags</a></li>
+</ol>
+</nav>
+
+<section id="outcome">
+<p class="kicker">01 · Outcome and scope</p>
+<h2>What "closes" after this lands</h2>
+<p>Today, an administrator can edit any season's scoring configuration at any time — the client hides the <code>ScoringConfigEditor</code> save button when <code>isSeasonPast(season)</code> (a <em>date</em> check), but nothing on the server stops a write. A season with 777 already-scored tournaments can still have its multipliers silently changed with no audit trail and no rescore. This step makes the boundary real: the moment a season's <strong>first result is scored</strong> — not its start or end date — its scoring configuration becomes server-enforced read-only, and the only way to change it afterward is an audited, out-of-band procedure that rescores the whole season atomically.</p>
+<p><strong>In scope:</strong> <code>tbl_season.ts_scoring_locked_at</code>; an append-only <code>tbl_scoring_config_revision</code> audit table; per-result revision provenance; field-level authorization inside <code>fn_import_scoring_config</code> (locked fields reject a change, unlocked fields — the EVF/Kadra toggles — keep working through the same call); trigger guards on direct <code>tbl_scoring_config</code>/<code>tbl_scoring_type_config</code> writes; a minimal Admin scoring-engine selector (does not exist today — see §02); the privileged <code>fn_revise_and_rescore_season</code> procedure, reachable only outside the web Admin session; all three editor mount points reading server-authoritative lock state instead of season dates; the Polish lock explanation; backfilling already-scored seasons as administratively locked.</p>
+<p><strong>Out of scope, deliberately:</strong> <em>default ranking mode</em> locking — the design's own lock table lists it, but its column doesn't exist yet (it belongs to ranking schema v2, design step 4, not yet built); adding it to this guard now would invent schema ahead of its owning step. It gets folded into the same guard when step 4 lands the column. Also out: creating new engine <em>versions</em> (a new formula needs code, not data — <code>fn_revise_and_rescore_season</code> only re-points a season at an existing released engine); ranking schema v2 itself; PZSz ingestion.</p>
+</section>
+
+<section id="baseline">
+<p class="kicker">02 · Verified baseline</p>
+<h2>What exists today, read from the actual files</h2>
+<div class="tablewrap"><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Client-only, date-based lock</td><td><code>SeasonManager.svelte:264-266</code> <code>isSeasonPast(s)</code> returns <code>dt_end &lt; today</code>; used at <code>SeasonManager.svelte:148</code> as <code>readonly={isSeasonPast(season)}</code>. <code>SeasonManagerWizard.svelte</code> passes no <code>readonly</code> at all (always editable — correct today, since a wizard season has no scores yet, but not server-verified).</td></tr>
+<tr><td>Save button vanishes when locked</td><td><code>ScoringConfigEditor.svelte:283</code> — <code>{#if !readonly}</code> around the save button. No guarded click affordance exists.</td></tr>
+<tr><td>No lock schema exists</td><td><code>\d tbl_season</code> on LOCAL: columns are <code>id_season, txt_code, dt_start, dt_end, bool_active, ts_created, enum_carryover_engine, int_carryover_days, enum_european_event_type, id_scoring_engine</code>. No <code>ts_scoring_locked_at</code>, no revision table, no <code>tbl_result</code> provenance column.</td></tr>
+<tr><td><code>fn_import_scoring_config</code> is one flat JSONB upsert</td><td><code>20260919000004_pps_mps_multipliers.sql</code> (current definition) — single <code>INSERT ... ON CONFLICT (id_season) DO UPDATE</code> over every <code>tbl_scoring_config</code> column at once, no field-level logic.</td></tr>
+<tr><td>The EVF-toggle save path proves field-level, not whole-function, guarding is required</td><td><code>App.svelte:1169-1197</code> <code>handleUpdateSeason</code> — flipping "Pokaż przełącznik +EVF" calls <code>fetchScoringConfig</code>, spreads the <strong>entire</strong> config, overrides only the two toggle booleans, and re-saves through <code>saveScoringConfig</code> → <code>fn_import_scoring_config</code>. A whole-function lock guard would permanently block this legitimate, non-scoring edit on any scored season. Confirmed by reading the actual call site, not assumed.</td></tr>
+<tr><td>Carry-over engine is a separate, always-editable write path</td><td><code>api.ts:300-308</code> <code>updateSeasonCarryoverEngine</code> — a direct PostgREST <code>PATCH</code> on <code>tbl_season.enum_carryover_engine</code>, called from <code>App.svelte:1414</code> in the <em>scoring</em> save handler but structurally independent of <code>fn_import_scoring_config</code>. Untouched by this lock, per §05's own table.</td></tr>
+<tr><td>No Admin UI exists for <code>tbl_season.id_scoring_engine</code></td><td><code>ScoringConfigEditor.svelte</code>'s existing <code>id="engine-select"</code> (line 147) is <code>CARRYOVER_ENGINE_VALUES</code> — the <em>carry-over</em> engine, a different concept design §03 forbids conflating with the <em>scoring</em> engine. <code>fn_export_scoring_config</code>/<code>fn_import_scoring_config</code> carry no <code>engine_code</code> key today. The scoring engine is currently assignable only by migration default (<code>fn_create_season_with_skeletons</code>, <code>bb5596b7</code>). <code>SS26.LOCK.01</code> requires "engine" to be editable-before/rejected-after, so this plan adds the minimal selector.</td></tr>
+<tr><td>No <code>auth.uid()</code>/role table anywhere in this codebase</td><td><code>grep -rl 'auth.uid()\|auth.jwt()' supabase/migrations/*.sql</code> → zero matches. Every Admin RPC gates on <code>auth.role() = 'authenticated'</code> (13 occurrences) — one shared admin login, not per-operator identity. The audited revision's "actor" field cannot be derived from session identity; it must be an explicit parameter the human running the procedure fills in.</td></tr>
+<tr><td>No dedicated reimport/rescore RPC exists</td><td><code>grep -rn 'fn_.*reimport\|fn_.*rescore\|fn_.*resync' supabase/migrations/*.sql</code> → zero matches. Repair happens by fixing a source field (unrelated to <code>tbl_scoring_config</code>) and re-running ingestion, which calls <code>fn_calc_tournament_scores</code> again. That function reads scoring params but never writes <code>tbl_scoring_config</code>, so it is untouched by this lock by construction — "repair remains available" is a fact to prove, not new code to write.</td></tr>
+<tr><td>Highest ADR is 096 on both this worktree and <code>origin/main</code></td><td><code>ls doc/adr/*.md</code> and <code>git show origin/main:doc/adr/</code> both top out at <code>096</code>, confirmed 19 Sep 2026. <strong>097–099 are free.</strong></td></tr>
+</tbody></table></div>
+</section>
+
+<section id="scenario">
+<p class="kicker">03 · Scenario walkthrough</p>
+<h2>SPWS-2026-2027, first PPW result of the season</h2>
+<ol>
+<li>Admin opens <em>Konfiguracja punktacji</em> for SPWS-2026-2027 (unscored so far under the new field-scaled engine). Every field is editable; <code>scoring_admin_locked</code> reads <code>false</code>.</li>
+<li>Admin sets a real PPS multiplier (this repo's own recent commit, <code>bb5596b7</code>) and saves. Ordinary write, unlocked — succeeds exactly as verified live in that commit.</li>
+<li>Ingestion commits the season's first PPW result and calls <code>fn_calc_tournament_scores</code>. Inside the same transaction: no active revision exists for this season yet, so one is created — a snapshot of the current <code>tbl_scoring_config</code> + <code>tbl_scoring_type_config</code> + engine, reason <code>"initial — first scored result"</code> — and <code>tbl_season.ts_scoring_locked_at</code> is set. The result itself is stamped with that revision's id.</li>
+<li>Admin reopens the same editor. <code>fn_export_scoring_config</code> now returns <code>scoring_admin_locked: true</code>. Every input is disabled; the save button is still visible and still clickable.</li>
+<li>Admin edits the MPW multiplier anyway (an old page, a stale tab, a direct API call) and clicks save. <code>fn_import_scoring_config</code> sees <code>mpw_multiplier</code> present and different from the stored value while <code>ts_scoring_locked_at</code> is set — raises. The frontend shows the exact Polish explanation from §05. Nothing was written.</li>
+<li>Admin flips "Pokaż przełącznik +EVF w Kalendarzu" instead — same RPC, same full-config payload, but only <code>show_evf_toggle_calendar</code> differs from stored. Not a locked field. Succeeds.</li>
+<li>An operator notices the FTL URL for one PPW tournament was wrong. They fix <code>tbl_event</code>'s URL (untouched by this lock), re-run ingestion, which calls <code>fn_calc_tournament_scores</code> again. Active revision is already set; the result is rescored and re-stamped with the <em>same</em> revision. No lock error, because scoring config was never touched.</li>
+<li>The board decides MPW's multiplier was wrong all along. An operator runs <code>fn_revise_and_rescore_season</code> directly via <code>docker exec ... psql</code> (LOCAL) or <code>scripts/cloud-sql.sh</code> (CERT/PROD) — this function is not reachable from the authenticated web session at all. They pass the new config, a reason, and a board reference. A new revision row is created inactive; every already-scored result in the season is rescored and re-stamped; only once that fully succeeds does the new revision activate and the old one deactivate. <code>ts_scoring_locked_at</code> is untouched (still set from step 3) — the season was never unlocked, its rules were audibly replaced.</li>
+<li>Admin reopens the editor. Still locked, still read-only — the privileged path does not reopen ordinary editing, matching §05's table exactly ("new revision + full rescore", not "editable").</li>
+</ol>
+<div class="note warn"><p class="lede">Adjacent path — mid-rescore failure</p><p>If step 8's rescore raises partway through (a corrupt result row, a type newly missing its config), the whole transaction rolls back: the new revision row never commits, <code>id_active_scoring_revision</code> still points at the old revision, and every score keeps its prior value. No partial rescore is ever visible — this falls out of ordinary Postgres transaction semantics as long as no exception handler in the procedure swallows the error, which is why <code>SS26.REVISION.07</code> exists as an explicit test rather than an assumption.</p></div>
+</section>
+
+<section id="adr">
+<p class="kicker">04 · Proposed ADR-097 — sign-off requested before the file is written</p>
+<h2>Versioned season scoring strategies and governed configuration revision</h2>
+<div class="note accent">
+<p class="lede">This is the design doc's own §12 "Proposed ADR A", carried forward for the specific piece this step implements. Per <code>doc/claude/planning.md</code> rule 6, the ADR is drafted here and <strong>not written to <code>doc/adr/097-…</code> until you say so.</strong> Everything else in this plan can proceed without that file existing — only its creation is gated.</p>
+</div>
+<p><strong>Context.</strong> One mutable scoring function cannot preserve old seasons' history while introducing new formulas, while the board must retain authority to correct a season's rules and rescore it coherently.</p>
+<p><strong>Decision.</strong> A season is assigned an engine; a static <code>CASE</code> dispatcher resolves it (already landed, step 2) — extending the pattern <a href="../adr/042-carryover-engine-dispatcher.html">ADR-042</a> and <a href="../adr/045-engine-selector-default-flip.html">ADR-045</a> established for carry-over. Immutable released strategies behind that dispatcher (landed). <code>tbl_scoring_engine</code> as metadata only, no function reference (landed). Shared preview/persistence contract (landed). Normalized revisioned type policy (landed, step 3a). Base value and podium coefficients remain season configuration, not engine constants (landed). <strong>This step adds:</strong> database-enforced closure of the whole Admin scoring editor after first scoring; unrestricted source/result repair under the active revision; a privileged, audited, whole-season revision/rescore procedure reachable only outside the Admin web session.</p>
+<p><strong>Alternatives rejected.</strong> One growing <code>IF</code> tree holding the arithmetic inline. Dispatch through a function reference stored in a table — needs dynamic <code>EXECUTE</code> inside <code>SECURITY DEFINER</code>, defeats Postgres dependency tracking, hides the call edge from static analysis. A partial lock leaving ranking buckets editable while they silently reorder the published ranklist with no rescore and no audit trail. A whole-function guard on <code>fn_import_scoring_config</code> instead of field-level — verified above (§02) to break the legitimate EVF-toggle save path on any scored season. Deriving "actor" from Supabase Auth identity — this system has none; the field is an explicit, required parameter instead. Season-code inference of lock state instead of a server field. UI-only enforcement. Permanently forbidding authorized corrections. Overwriting released engine bodies or configuration history.</p>
+<p><strong>Consequences.</strong> Configuration audit history becomes mandatory going forward — every scored season carries at least one revision row. A formula change still requires a new engine <em>version</em> (code); this procedure only re-points a season at an already-released one or edits its data-only parameters. Exceptional revision remains an operator procedure outside Admin and can never publish a partially rescored season, by construction of the transaction.</p>
+<p><strong>Relationships.</strong> Extends ADR-042/ADR-045 (carry-over dispatcher pattern). Amends nothing new beyond what steps 1–3a already touched. Registry: next free number is <strong>097</strong> (098–099 remain free for the still-open Proposed ADR B/C).</p>
+</section>
+
+<section id="schema">
+<p class="kicker">05 · Schema</p>
+<h2>One migration: lock evidence, revision history, provenance</h2>
+<div class="tablewrap"><table><thead><tr><th>Object</th><th>Shape</th></tr></thead><tbody>
+<tr><td><code>tbl_season.ts_scoring_locked_at</code></td><td><code>TIMESTAMPTZ NULL</code>. Set once, transactionally, by <code>fn_calc_tournament_scores</code> on the season's first successful score. Never cleared by anything, including the privileged revision.</td></tr>
+<tr><td><code>tbl_season.id_active_scoring_revision</code></td><td><code>INT NULL REFERENCES tbl_scoring_config_revision</code>. The season's single source of "which revision is authoritative right now" — a direct FK rather than an inferred <code>WHERE bool_active</code> scan.</td></tr>
+<tr><td><code>tbl_scoring_config_revision</code></td><td><code>id_revision SERIAL PK, id_season INT NOT NULL REFERENCES tbl_season, id_engine INT NOT NULL REFERENCES tbl_scoring_engine, json_snapshot JSONB NOT NULL, ts_effective TIMESTAMPTZ NOT NULL DEFAULT NOW(), txt_actor TEXT NOT NULL, txt_reason TEXT NOT NULL, txt_board_ref TEXT, bool_active BOOLEAN NOT NULL DEFAULT FALSE</code>. <code>json_snapshot</code> is <code>fn_export_scoring_config</code>'s own shape plus the type-config rows and engine code — one self-contained audit record, not a diff. Partial unique index <code>(id_season) WHERE bool_active</code> enforces "exactly one active revision".</td></tr>
+<tr><td><code>tbl_result.id_scoring_revision</code></td><td><code>INT NULL REFERENCES tbl_scoring_config_revision</code>. Written only by <code>fn_calc_tournament_scores</code>, stamped from the season's currently active revision at scoring time.</td></tr>
+</tbody></table></div>
+<h3>Backfill</h3>
+<p>Existing scored seasons (2023/2024 through 2025/2026, and 2026/2027 once it carries the PPW1 fixture) get an initial revision synthesized from their current stored configuration, activated, with <code>ts_scoring_locked_at</code> set from <strong>the earliest surviving <code>ts_points_calc</code></strong> in that season per §05 — not <code>NOW()</code>, so the audit trail's timestamp reflects when scoring actually happened, not when this migration ran. Idempotent and split from the migration transaction the same way <code>fn_backfill_scoring_engines</code>/<code>fn_backfill_scoring_type_config</code> are, because <code>supabase db reset</code> applies migrations before the seed loads (the trap this branch has hit twice already).</p>
+<h3>Grants</h3>
+<p><code>ENABLE ROW LEVEL SECURITY</code> on <code>tbl_scoring_config_revision</code> (52.1). New functions default-<code>REVOKE</code> from <code>PUBLIC, anon</code> (52.7) — except the privileged revision function, which is additionally revoked from <code>authenticated</code> (§07).</p>
+</section>
+
+<section id="guard">
+<p class="kicker">06 · Field-level authorization</p>
+<h2>Inside <code>fn_import_scoring_config</code>, not around it</h2>
+<p>At the top: read <code>ts_scoring_locked_at</code> for the season. For each field the §05 table marks locked — <code>mp_value</code>, the three podium coefficients, all eight type multipliers, both threshold columns, <code>json_ranking_rules</code>, and the new <code>engine_code</code> key (§below) — apply the existing <code>COALESCE(new, stored)</code> logic <strong>first</strong>, then compare: if the season is locked <strong>and</strong> the resolved new value differs from the currently stored value, raise the exact exception text §05 quotes. <code>show_evf_toggle</code>, <code>show_evf_toggle_calendar</code> and <code>json_extra</code> apply unconditionally regardless of lock state — this is what keeps <code>handleUpdateSeason</code>'s toggle-only save (§02) working forever.</p>
+<p>Comparing "differs from stored" rather than "key present" is deliberate and verified necessary: the toggle-save path always resends the <strong>entire</strong> config object, including every locked field at its unchanged value. A presence check would reject that legitimate call outright.</p>
+<h3><code>engine_code</code> — new key</h3>
+<p><code>fn_export_scoring_config</code> gains an <code>engine_code</code> field (<code>tbl_scoring_engine.txt_code</code> for the season's current <code>id_scoring_engine</code> — currently absent from its JSONB entirely). <code>fn_import_scoring_config</code> accepts the same key: if present and locked and the resolved engine differs from the season's current one, raise; if present and unlocked, resolve <code>txt_code → id_engine</code> (raise <code>"Unknown scoring engine: %"</code> for a bad code — no silent no-op) and <code>UPDATE tbl_season</code>. If absent, no change — existing callers (the EVF-toggle path, any caller not sending it) are unaffected.</p>
+<h3>Trigger guards (defense in depth)</h3>
+<p><code>BEFORE UPDATE</code> on <code>tbl_scoring_config</code>: same locked-field comparison, for a direct table write that bypasses the RPC entirely. <code>BEFORE INSERT OR UPDATE OR DELETE</code> on <code>tbl_scoring_type_config</code>: unconditionally rejects any writer other than <code>fn_sync_scoring_type_config</code> itself and the privileged revision path — ordinary users should never reach this table directly, locked or not, since it is already trigger-owned. Both guards are bypassed only when <code>current_setting('app.privileged_revision', true) = 'true'</code>, a session-local flag <code>fn_revise_and_rescore_season</code> sets for the duration of its own transaction (§07) — this is how the privileged path writes through triggers designed to stop everyone else.</p>
+</section>
+
+<section id="revision">
+<p class="kicker">07 · Privileged revision procedure</p>
+<h2><code>fn_revise_and_rescore_season</code> — reachable only outside the Admin session</h2>
+<pre>fn_revise_and_rescore_season(
+  p_id_season   INT,
+  p_new_config  JSONB,   -- fn_import_scoring_config's shape (governed fields only)
+  p_new_engine  TEXT,    -- NULL keeps the current engine
+  p_reason      TEXT,    -- NOT NULL, non-empty
+  p_actor       TEXT,    -- NOT NULL, non-empty — no session identity exists to infer this from
+  p_board_ref   TEXT     -- nullable, but a real decision reference is expected in practice
+) RETURNS TABLE(id_revision INT, rescored_count INT)</pre>
+<ol>
+<li>Validate the season exists, <code>p_reason</code> and <code>p_actor</code> are non-empty. Resolve <code>p_new_engine</code> to an existing <code>id_engine</code> if given (never creates one — a new formula is a code change, not data).</li>
+<li>Set <code>app.privileged_revision = true</code> for this transaction (lets the two trigger guards in §06 step aside for this call only).</li>
+<li>Apply <code>p_new_config</code> to <code>tbl_scoring_config</code> and the engine change to <code>tbl_season</code> — same COALESCE-over-current-values semantics as ordinary import, but with no lock check (the lock exists to stop <em>ordinary</em> editing; this function <em>is</em> the authorized exception).</li>
+<li>Insert a new <code>tbl_scoring_config_revision</code> row: <code>bool_active = FALSE</code> initially, snapshotting the state just written.</li>
+<li>Loop every tournament in the season with <code>enum_import_status = 'SCORED'</code>, calling <code>fn_calc_tournament_scores</code> for each — which stamps every result it touches with whichever revision is currently active. Because step 4's row is not yet active, results are still stamped with the <em>old</em> revision at this point.</li>
+<li>Activate: <code>UPDATE tbl_scoring_config_revision SET bool_active = FALSE WHERE id_season = p_id_season AND bool_active</code>, then the new row to <code>TRUE</code>, then <code>UPDATE tbl_season SET id_active_scoring_revision = new</code>. Re-run step 5's loop <em>after</em> activation so every result actually carries the new revision id — or, simpler and chosen here: activate first (steps 4–6 reordered so the INSERT already sets <code>bool_active = TRUE</code> and immediately deactivates the sibling in the same statement via a CTE), <strong>then</strong> rescore once. One rescore pass, not two.</li>
+<li>Assert <code>SS26.REVISION.06</code>'s invariant inline before returning: no result in this season references any revision for this season other than the new one. A mismatch raises — the transaction (including the activation) rolls back.</li>
+<li>Reset <code>app.privileged_revision</code>.</li>
+</ol>
+<h3>Grants</h3>
+<p><code>REVOKE EXECUTE ON FUNCTION fn_revise_and_rescore_season(...) FROM PUBLIC, anon, authenticated;</code> — deliberately including <code>authenticated</code>, unlike every other function in this codebase. Reachable only as <code>postgres</code>/<code>service_role</code>: <code>docker exec -i supabase_db_SPWSranklist psql</code> on LOCAL, <code>scripts/cloud-sql.sh &lt;cert|prod&gt;</code> on CERT/PROD (the existing, established privileged-write path per the <code>cloud-db-ops</code> skill — no new access mechanism invented). This is the concrete meaning of design §05's "an operator procedure outside Admin": not a UI affordance behind an extra permission check, but a function the web session's role cannot call at all.</p>
+</section>
+
+<section id="frontend">
+<p class="kicker">08 · Frontend contract</p>
+<h2>Server-authoritative lock state at all three mount points</h2>
+<p><code>ScoringConfig</code> gains <code>scoring_admin_locked?: boolean</code>, <code>scoring_locked_at?: string | null</code>, <code>engine_code?: string</code> — optional, same reason as the PPS/MPS fields: <code>MOCK_CONFIG</code> fixtures in <code>ScoringConfigEditor.test.ts</code>/<code>SeasonManagerWizard.test.ts</code> must keep compiling.</p>
+<ul>
+<li><code>SeasonManager.svelte:148</code> — <code>readonly={isSeasonPast(season)}</code> becomes <code>readonly={scoringConfig?.scoring_admin_locked ?? false}</code>. <code>isSeasonPast</code>'s own comment ("used to hide the 🎯 Konfiguracja punktacji button") describes a <em>different</em>, still-valid use — showing the button at all is unrelated to whether its contents are locked; only the <code>readonly</code> prop changes.</li>
+<li><code>SeasonManagerWizard.svelte:104</code> — same field, read explicitly rather than left unset. Always <code>false</code> for a brand-new season in practice, but now provably so rather than assumed.</li>
+<li><code>ScoringConfigEditor.svelte:283</code> — the <code>{#if !readonly}</code> around the save button is removed. The button (label unchanged — <code>sc_save</code>, "Zapisz i przelicz", already matches the design's intent even though §05's prose paraphrases it as "Zapisz konfigurację") is always rendered; <code>onclick</code> checks <code>readonly</code> first and, when locked, shows the guarded explanation instead of calling <code>onsave</code>. A native <code>disabled</code> attribute is not used for this reason alone — §05: "cannot communicate on click".</li>
+<li>New locale keys, both files: <code>sc_locked_title</code>, <code>sc_locked_explanation</code> (the exact Polish text from §05, with an English equivalent) and a label for the new engine selector, <code>sc_scoring_engine_label</code>.</li>
+<li>Minimal engine selector: one more <code>&lt;select&gt;</code> in <code>ScoringConfigEditor.svelte</code>'s base-parameters section, bound to <code>draft.engine_code</code>, options from the two released engine codes (fetched once, not hardcoded — a third engine version must not require a frontend redeploy). Disabled when <code>readonly</code>, same as every other field.</li>
+</ul>
+</section>
+
+<section id="tests">
+<p class="kicker">09 · Acceptance tests</p>
+<h2>SS26.LOCK.01–12 and SS26.REVISION.01–08, written before implementation</h2>
+<p>All land in <code>supabase/tests/80_season_scoring_contract.sql</code> (extends the existing SS26 file) except the Vitest/integration rows, which land in <code>frontend/tests/ScoringConfigEditor.test.ts</code>, <code>SeasonManager.test.ts</code> and <code>SeasonManagerWizard.test.ts</code>.</p>
+<div class="tablewrap"><table><thead><tr><th>ID</th><th>Asserts</th></tr></thead><tbody>
+<tr><td><code>SS26.LOCK.01</code></td><td>Every governed field (engine, base, podium, all 8 multipliers, both thresholds, ranking buckets) is writable before first score.</td></tr>
+<tr><td><code>SS26.LOCK.02</code></td><td>The same call, after a score exists, raises for each governed field individually — one assertion per field, not one combined attempt, so a future field addition can't silently skip the check.</td></tr>
+<tr><td><code>SS26.LOCK.03</code></td><td>The trigger is the first <em>scored result</em>, not <code>dt_end</code> — a season with <code>dt_end</code> in the past but zero scores stays editable; a season with <code>dt_end</code> in the future but one score is locked.</td></tr>
+<tr><td><code>SS26.LOCK.04</code></td><td>Direct <code>UPDATE tbl_scoring_config</code> (bypassing the RPC) is rejected post-lock by the trigger guard.</td></tr>
+<tr><td><code>SS26.LOCK.05</code></td><td>Direct <code>INSERT/UPDATE/DELETE</code> on <code>tbl_scoring_type_config</code> is rejected unconditionally (not just post-lock — this table was never a direct write surface).</td></tr>
+<tr><td><code>SS26.LOCK.06</code></td><td><code>ts_scoring_locked_at</code> persists across a same-revision rescore (repair path) — set once, read many times, never cleared.</td></tr>
+<tr><td><code>SS26.LOCK.07</code></td><td>The EVF-toggle save (§02, §06) still succeeds on a locked season — the regression test for the field-level-not-whole-function decision.</td></tr>
+<tr><td><code>SS26.LOCK.08</code></td><td><code>updateSeasonCarryoverEngine</code>'s underlying column stays writable regardless of lock state.</td></tr>
+<tr><td><code>SS26.LOCK.09</code></td><td>Result deletion, tournament URL correction and same-revision <code>fn_calc_tournament_scores</code> all remain unaffected by the lock (they never touch <code>tbl_scoring_config</code>).</td></tr>
+<tr><td><code>SS26.LOCK.10</code></td><td>Concurrent write: two ordinary saves racing on the season's first score do not both create a revision row — the partial unique index makes the loser's <code>INSERT</code> fail closed, not silently double-create.</td></tr>
+<tr><td><code>SS26.LOCK.11</code></td><td>Vitest — <code>ScoringConfigEditor</code> renders every field disabled and the save button visible when <code>scoring_admin_locked: true</code>; clicking save shows the exact Polish text, not a native alert, and calls no RPC.</td></tr>
+<tr><td><code>SS26.LOCK.12</code></td><td>Vitest — <code>SeasonManager</code> and <code>SeasonManagerWizard</code> both derive <code>readonly</code> from <code>scoringConfig.scoring_admin_locked</code>, never from a season date, for a season row engineered to disagree with <code>isSeasonPast</code> in both directions.</td></tr>
+<tr><td><code>SS26.REVISION.01</code></td><td><code>authenticated</code> cannot execute <code>fn_revise_and_rescore_season</code> — <code>has_function_privilege('authenticated', ...)</code> is false. The one function in this codebase revoked from that role.</td></tr>
+<tr><td><code>SS26.REVISION.02</code></td><td>Empty <code>p_reason</code> or <code>p_actor</code> raises before anything is written.</td></tr>
+<tr><td><code>SS26.REVISION.03</code></td><td>The prior active revision row survives, <code>bool_active = FALSE</code>, snapshot intact — append-only, never deleted or overwritten.</td></tr>
+<tr><td><code>SS26.REVISION.04</code></td><td>Passing an engine code identical to the current one is a data-only revision — no new engine row, existing engine reused.</td></tr>
+<tr><td><code>SS26.REVISION.05</code></td><td>Multiplier/threshold-only revision (no engine change) is permitted and rescoring reflects it.</td></tr>
+<tr><td><code>SS26.REVISION.06</code></td><td>After a successful call, every result in the season references the new revision id — zero rows reference the old one.</td></tr>
+<tr><td><code>SS26.REVISION.07</code></td><td>An injected mid-rescore failure (a tournament with a deliberately unconfigured type) leaves the prior revision active and every score at its pre-revision value — the whole transaction rolled back, asserted by re-querying after the call raises.</td></tr>
+<tr><td><code>SS26.REVISION.08</code></td><td>A successful call is atomic end-to-end: <code>id_active_scoring_revision</code>, every rescored result's stamp, and the new row's <code>bool_active</code> all flip together or none do — checked by asserting no intermediate state is observable from a concurrent read (advisory lock or single-transaction assertion, matching the pattern <code>evf_historical_event_fragment_repair.sql</code> already uses for a comparable all-or-nothing migration).</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="delivery">
+<p class="kicker">10 · Delivery increments</p>
+<h2>Two migrations, tested independently</h2>
+<ol>
+<li><strong><code>20260919000005_scoring_governance_lock.sql</code></strong> — schema (§05), backfill, <code>fn_calc_tournament_scores</code> revision-stamping, field-level guard in <code>fn_import_scoring_config</code> (§06), trigger guards, <code>engine_code</code> plumbing, minimal engine selector. Closes <code>SS26.LOCK.01–12</code>.</li>
+<li><strong><code>20260919000006_scoring_privileged_revision.sql</code></strong> — <code>fn_revise_and_rescore_season</code> (§07). Closes <code>SS26.REVISION.01–08</code>. Depends on (1) for the schema and the privileged-bypass flag the trigger guards check.</li>
+</ol>
+<p>Each is its own commit, RED tests observed before the implementation lands, exactly as the PPS/MPS work (<code>bb5596b7</code>) just did.</p>
+</section>
+
+<section id="verify">
+<p class="kicker">11 · Verification</p>
+<h2>Definition of done</h2>
+<pre>scripts/preflight.sh          # exit 0 — the whole answer, nothing hand-copied</pre>
+<p>Outside preflight, per <code>doc/claude/planning.md</code> §5a and owed by this work specifically: <code>scripts/refresh-graph.sh</code> before each commit; <code>postgrestools check &lt;file&gt;</code> for both new migrations; live browser verification of the guarded save click and the engine selector, the same way the PPS/MPS multiplier round-trip was verified in the prior commit; a manual privileged-revision run via <code>docker exec ... psql</code> against a LOCAL fixture, confirming rescored totals actually move.</p>
+</section>
+
+<section id="docs">
+<p class="kicker">12 · Documentation coherence gate</p>
+<div class="checklist">☐ Documentation coherence gate complete
+Impact: architecture | configuration
+Canonical docs affected: doc/handbook/subsystems/scoring-and-ranking.html (lock invariant, revision table, implementation map); doc/handbook/product/product-surfaces.html (guarded save affordance, server-authoritative lock message)
+ADR impact: new (097, pending sign-off — see §04)
+Operational impact: doc/handbook/operations/ — a new "revise a locked season" runbook entry naming fn_revise_and_rescore_season and its two invocation paths
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from <base> [PASS]
+Superseded prose archived rather than appended: not applicable — no prior lock documentation exists</div>
+<p>RTM: <code>SS26.LOCK.01–12</code> and <code>SS26.REVISION.01–08</code> move from Planned to Landed on completion. pgTAP baseline (currently 1066) updates by the exact count of new <code>SELECT is(...)</code>/<code>throws_like(...)</code> calls actually written — not estimated here, since §5a's own history is that an estimated number drifts from the real one.</p>
+</section>
+
+<section id="flags">
+<p class="kicker">Flags</p>
+<ul>
+<li><strong>ADR-097 is drafted, not written to disk.</strong> Everything else in this plan can proceed regardless; only <code>doc/adr/097-…</code>'s creation waits for explicit sign-off, per the repo's own rule 6.</li>
+<li><strong>"Default ranking mode" is not locked yet</strong> — its column doesn't exist until design step 4. Revisit this guard when that step lands the field, rather than adding it speculatively now.</li>
+<li><strong>The minimal engine selector is new UI, not just wiring</strong> — no such control exists today anywhere in the Admin. It is scoped to exactly what <code>SS26.LOCK.01</code> needs (a dropdown over the two released engine codes), not a general engine-management surface.</li>
+<li><strong>Backfilling existing scored seasons as locked is a one-way door for LOCAL/CERT/PROD alike</strong> — once this migration lands, SPWS-2023-2024 through 2025-2026 (and 2026-2027, once it carries real results) can no longer be edited ordinarily anywhere, including LOCAL. Confirm that's intended before this reaches CERT: it matches §05's own instruction ("Existing scored or published seasons are backfilled as administratively locked"), but it is worth one explicit look before the migration runs somewhere real results already exist.</li>
+</ul>
+</section>
+
+<div class="rule"></div>
+<p class="foot">Repository state: claude/season-scoring-contracts @ bb5596b7. Written 19 September 2026.</p>
+</div></body></html>

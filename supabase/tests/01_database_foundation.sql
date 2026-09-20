@@ -36,7 +36,12 @@ SELECT is(
    FROM pg_type t
    JOIN pg_enum e ON e.enumtypid = t.oid
    WHERE t.typname = 'enum_tournament_type'),
-  'PPW,MPW,PEW,MEW,MSW,PSW',
+  -- PPS and MPS appended 2026-09-19: PZSz national senior events (Puchar Polski
+  -- Seniorów / Mistrzostwa Polski Seniorów), whose results a veteran can score
+  -- as a voluntary senior bonus. ALTER TYPE ... ADD VALUE appends, so they sort
+  -- last. This assertion is an exact ordered string on purpose — it is the one
+  -- place the roster is pinned, and the enum is not something to grow casually.
+  'PPW,MPW,PEW,MEW,MSW,PSW,PPS,MPS',
   '1.1c enum_tournament_type values'
 );
 
@@ -45,7 +50,11 @@ SELECT is(
    FROM pg_type t
    JOIN pg_enum e ON e.enumtypid = t.oid
    WHERE t.typname = 'enum_age_category'),
-  'V0,V1,V2,V3,V4',
+  -- SENIOR appended 2026-09-20 (design step 6, ADR-100): a PZSz PPS/MPS
+  -- tournament's source bracket -- one undivided senior field, never a
+  -- result's own published category (tbl_result.enum_source_age_category
+  -- has its own CHECK forbidding this value; see 81_pzsz_senior_ingestion.sql).
+  'V0,V1,V2,V3,V4,SENIOR',
   '1.1d enum_age_category values'
 );
 

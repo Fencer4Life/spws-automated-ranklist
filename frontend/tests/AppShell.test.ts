@@ -5,16 +5,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import { tick } from 'svelte'
 import { setLocale } from '../src/lib/locale.svelte'
+import type { Season } from '../src/lib/types'
 
 // Mock the api module before importing App
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
   refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
+  // SS26.LOCK.01/§05 (governance lock, 2026-09-19) — released scoring-engine
+  // codes for ScoringConfigEditor's engine selector, fetched once in init().
+  fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),
   fetchRankingKadra: vi.fn().mockResolvedValue([]),
+  // SS26.UI (design step 7, ADR-101): fn_ranking_full replaces fn_ranking_kadra
+  // as the frontend's RANKING-mode source.
+  fetchRankingFull: vi.fn().mockResolvedValue([]),
   fetchFencerScores: vi.fn().mockResolvedValue([]),
   fetchRankingRules: vi.fn().mockResolvedValue(null),
+  // SS26.UIHIST (design step 7): refreshEvfToggle() reads default_ranking_mode
+  // from this same call to normalize filters.mode on season selection.
+  fetchScoringConfig: vi.fn().mockResolvedValue(null),
   fetchCalendarEvents: vi.fn().mockResolvedValue([]),
   // ADR-084 — the calendar view spans every season, so App loads through this.
   fetchAllCalendarEvents: vi.fn().mockResolvedValue([]),
@@ -123,9 +133,9 @@ describe('App Shell (T8.4)', () => {
   })
 })
 
-const MOCK_SEASONS = [
-  { id_season: 1, txt_code: 'SPWS-2025-2026', dt_start: '2025-08-01', dt_end: '2026-07-15', bool_active: true },
-  { id_season: 2, txt_code: 'SPWS-2024-2025', dt_start: '2024-08-15', dt_end: '2025-07-15', bool_active: false },
+const MOCK_SEASONS: Season[] = [
+  { id_season: 1, txt_code: 'SPWS-2025-2026', dt_start: '2025-08-01', dt_end: '2026-07-15', bool_active: true, enum_ranking_publication: 'FULL' },
+  { id_season: 2, txt_code: 'SPWS-2024-2025', dt_start: '2024-08-15', dt_end: '2025-07-15', bool_active: false, enum_ranking_publication: 'PPW_ONLY' },
 ]
 
 describe('Birth Year Subtitle (BY.1–BY.7)', () => {
@@ -231,6 +241,160 @@ describe('Birth Year Subtitle (BY.1–BY.7)', () => {
     // V1 → 1985..1976
     const subtitleAfter = container.querySelector('.category-subtitle')
     expect(subtitleAfter?.textContent).toContain('1985, 1984, .. 1976')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// SS26.UIHIST (design step 7, ADR-101): season selection normalizes the
+// Ranking/PPW switch from the season's own publication capability and
+// configured default, and a stale ranking response never overwrites state a
+// newer request already set. MOCK_SEASONS below (season 1: FULL; season 2:
+// PPW_ONLY) is the shared fixture the Birth Year Subtitle tests above also use.
+// ---------------------------------------------------------------------------
+describe('SS26.UIHIST — publication boundary and staleness', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setLocale('en')
+  })
+
+  function renderApp(extraProps = {}) {
+    return render(App, {
+      props: {
+        'supabase-cert-url': 'https://cert.supabase.co',
+        'supabase-cert-key': 'cert-key-123',
+        ...extraProps,
+      },
+    })
+  }
+
+  async function mockConfigs(bySeasonId: Record<number, { show_evf_toggle: boolean; default_ranking_mode: 'PPW' | 'RANKING' }>) {
+    const { fetchSeasons, fetchScoringConfig } = await import('../src/lib/api')
+    vi.mocked(fetchSeasons).mockResolvedValue(MOCK_SEASONS)
+    vi.mocked(fetchScoringConfig).mockImplementation(async (seasonId: number) => {
+      const cfg = bySeasonId[seasonId]
+      if (!cfg) return null
+      return {
+        season_code: 'x', mp_value: 50, podium_gold: 3, podium_silver: 2, podium_bronze: 1,
+        ppw_multiplier: 1, ppw_best_count: 4, ppw_total_rounds: 5, mpw_multiplier: 1.2, mpw_droppable: false,
+        pew_multiplier: 1, pew_best_count: 3, mew_multiplier: 2, mew_droppable: false, msw_multiplier: 1.2,
+        psw_multiplier: 2, min_participants_evf: 5, min_participants_ppw: 1, ranking_rules: null,
+        show_evf_toggle: cfg.show_evf_toggle, show_evf_toggle_calendar: true,
+        default_ranking_mode: cfg.default_ranking_mode,
+      } as never
+    })
+  }
+
+  // Scoped to the FilterBar's own toggle — the app header also mounts
+  // LangToggle, which renders two .toggle-btn flag buttons of its own, so an
+  // unscoped '.toggle-btn' count is satisfied by the header alone before the
+  // ranklist (or even its season dropdown) has finished loading.
+  function modeButtons(container: HTMLElement): NodeListOf<HTMLButtonElement> {
+    return container.querySelectorAll('.filter-bar .toggle-btn')
+  }
+
+  async function waitForSeasonOptions(container: HTMLElement) {
+    await vi.waitFor(() => {
+      expect(container.querySelectorAll('.season-select option').length).toBeGreaterThan(0)
+    })
+    await tick()
+  }
+
+  // SS26.UIHIST: a FULL season with the toggle enabled shows the switch and
+  // adopts that season's own configured default mode.
+  it('a FULL season shows the switch and defaults to its configured mode', async () => {
+    await mockConfigs({ 1: { show_evf_toggle: true, default_ranking_mode: 'RANKING' } })
+    const { container } = renderApp()
+    await waitForSeasonOptions(container)
+    await vi.waitFor(() => {
+      expect(modeButtons(container).length).toBe(2)
+    })
+    const btns = modeButtons(container)
+    expect(btns[1].classList.contains('active')).toBe(true) // Ranking is active
+  })
+
+  // SS26.UIHIST: a PPW_ONLY season forces PPW and hides the switch entirely —
+  // even though season 2's own config has show_evf_toggle: true, publication
+  // capability wins.
+  it('a PPW_ONLY season forces PPW and hides the switch regardless of the config flag', async () => {
+    await mockConfigs({
+      1: { show_evf_toggle: true, default_ranking_mode: 'RANKING' },
+      2: { show_evf_toggle: true, default_ranking_mode: 'RANKING' },
+    })
+    const { container } = renderApp()
+    await waitForSeasonOptions(container)
+    await vi.waitFor(() => {
+      expect(modeButtons(container).length).toBe(2)
+    })
+    const seasonSelect = container.querySelector('.season-select') as HTMLSelectElement
+    await fireEvent.change(seasonSelect, { target: { value: '2' } })
+    await vi.waitFor(() => {
+      expect(modeButtons(container).length).toBe(0)
+    })
+  })
+
+  // SS26.UIHIST: returning to a FULL season restores the switch and its own
+  // configured default (design §09 scenario E).
+  it('returning to a FULL season restores the switch and its own default', async () => {
+    await mockConfigs({
+      1: { show_evf_toggle: true, default_ranking_mode: 'RANKING' },
+      2: { show_evf_toggle: true, default_ranking_mode: 'RANKING' },
+    })
+    const { container } = renderApp()
+    await waitForSeasonOptions(container)
+    await vi.waitFor(() => expect(modeButtons(container).length).toBe(2))
+
+    const seasonSelect = container.querySelector('.season-select') as HTMLSelectElement
+    await fireEvent.change(seasonSelect, { target: { value: '2' } })
+    await vi.waitFor(() => expect(modeButtons(container).length).toBe(0))
+
+    await fireEvent.change(seasonSelect, { target: { value: '1' } })
+    await vi.waitFor(() => expect(modeButtons(container).length).toBe(2))
+    const btns = modeButtons(container)
+    expect(btns[1].classList.contains('active')).toBe(true)
+  })
+
+  // SS26.UIHIST: a slow response from an abandoned mode switch is discarded —
+  // the ranklist ends up reflecting only the LAST selected mode's data, not a
+  // late-arriving response from the one the user already switched away from.
+  it('discards a stale ranking response that resolves after a newer request started', async () => {
+    await mockConfigs({ 1: { show_evf_toggle: true, default_ranking_mode: 'PPW' } })
+    const { fetchRankingPpw, fetchRankingFull } = await import('../src/lib/api')
+
+    let resolveStaleFull: (rows: unknown[]) => void = () => {}
+    // First PPW load (init) resolves immediately with an empty list.
+    vi.mocked(fetchRankingPpw).mockResolvedValueOnce([])
+    const { container } = renderApp()
+    await waitForSeasonOptions(container)
+    await vi.waitFor(() => {
+      expect(modeButtons(container).length).toBe(2)
+    })
+
+    // Switch to Ranking: hang this fetchRankingFull call deliberately.
+    const hungFull = new Promise((resolve) => {
+      resolveStaleFull = resolve as (rows: unknown[]) => void
+    })
+    vi.mocked(fetchRankingFull).mockReturnValueOnce(hungFull as never)
+    const rankingBtn = modeButtons(container)[1]
+    await fireEvent.click(rankingBtn)
+
+    // Before it resolves, switch back to PPW — a newer generation starts.
+    vi.mocked(fetchRankingPpw).mockResolvedValueOnce([
+      { rank: 1, id_fencer: 1, fencer_name: 'LATE Arrival', ppw_score: 90, mpw_score: 9, total_score: 99 },
+    ])
+    const ppwBtn = modeButtons(container)[0]
+    await fireEvent.click(ppwBtn)
+    await vi.waitFor(() => {
+      expect(container.textContent).toContain('LATE Arrival')
+    })
+
+    // Now let the abandoned Ranking-mode fetch resolve late.
+    resolveStaleFull([{ rank: 1, id_fencer: 2, fencer_name: 'STALE Response', spws_total: 1, evf_plus_total: 1, total_score: 2 }])
+    await tick()
+    await tick()
+    // The stale RANKING-mode row must never have overwritten the PPW rows
+    // the user is now looking at.
+    expect(container.textContent).not.toContain('STALE Response')
+    expect(container.textContent).toContain('LATE Arrival')
   })
 })
 

@@ -104,6 +104,8 @@
             <ScoringConfigEditor
               config={effectiveScoringConfig}
               seasonCode={draftCode}
+              readonly={effectiveScoringConfig?.scoring_admin_locked ?? false}
+              {scoringEngines}
               onchange={(updated) => { capturedScoring = updated }}
               onsave={(updated) => { capturedScoring = updated; advanceToStep3() }}
               oncancel={handleCancel}
@@ -215,12 +217,14 @@
   let {
     open = false,
     seasons = [] as Season[],
+    scoringEngines = [] as { code: string, label: string }[],
     onclose = () => {},
     onloadpriorconfig = (_dtStart: string): Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }> => Promise.resolve({ priorConfig: null, priorCode: null, priorBreakdown: null }),
     oncommit = (_payload: CommitPayload): Promise<string | null> => Promise.resolve(null),
   }: {
     open?: boolean
     seasons?: Season[]
+    scoringEngines?: { code: string, label: string }[]
     onclose?: () => void
     onloadpriorconfig?: (dtStart: string) => Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }>
     oncommit?: (payload: CommitPayload) => Promise<string | null>
@@ -246,11 +250,13 @@
     mew_droppable: true,
     msw_multiplier: 2.0,
     psw_multiplier: 2.0,
+    pps_multiplier: 1.0,
+    mps_multiplier: 1.0,
     min_participants_evf: 5,
     min_participants_ppw: 1,
     show_evf_toggle: false,
     ranking_rules: null,
-    engine: 'EVENT_FK_MATCHING',
+    carryover_engine: 'EVENT_FK_MATCHING',
   }
 
   // Part 4 (ADR-044): suggest the next season from the latest existing one, so
@@ -375,7 +381,7 @@
     commitError = null
     committing = true
     const config = capturedScoring ?? effectiveScoringConfig
-    const engine: CarryoverEngine = (config.engine as CarryoverEngine | undefined) ?? 'EVENT_FK_MATCHING'
+    const engine: CarryoverEngine = (config.carryover_engine as CarryoverEngine | undefined) ?? 'EVENT_FK_MATCHING'
     try {
       const err = await oncommit({
         code: draftCode,

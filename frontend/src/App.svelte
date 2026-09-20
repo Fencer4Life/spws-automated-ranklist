@@ -76,7 +76,7 @@
       <RanklistTable
         mode={filters.mode}
         ppwRows={ppwRows}
-        kadraRows={kadraRows}
+        fullRows={fullRows}
         onrowclick={openDrilldown}
       />
     {/if}
@@ -86,7 +86,6 @@
       fencerName={modalFencerName}
       scores={modalScores}
       mode={filters.mode}
-      kadraDisabled={filters.category === 'V0'}
       showEvfToggle={showEvfToggleRanklist}
       loading={modalLoading}
       context={modalContext}
@@ -129,6 +128,7 @@
       onfetchevf={handleFetchEvfToggle}
       onscoringconfig={handleOpenScoringConfig}
       {scoringConfig}
+      {scoringEngines}
       scoringSeasonId={editingScoringSeasonId}
       onsavescoring={handleSaveScoringConfig}
       onclosescoring={() => { editingScoringSeasonId = null }}
@@ -276,7 +276,7 @@
   import type {
     Season,
     RankingPpwRow,
-    RankingKadraRow,
+    RankingFullRow,
     ScoreRow,
     DrilldownContext,
     WeaponType,
@@ -295,7 +295,7 @@
     initClient,
     fetchSeasons,
     fetchRankingPpw,
-    fetchRankingKadra,
+    fetchRankingFull,
     fetchFencerScores,
     fetchFencerScoresRolling,
     fetchRankingRules,
@@ -311,6 +311,7 @@
     updateEventStatus,
     deleteEventCascade,
     fetchScoringConfig,
+    fetchScoringEngines,
     saveScoringConfig,
     updateSeasonCarryoverEngine,
     updateSeasonCarryoverFields,
@@ -347,11 +348,12 @@
   import {
     MOCK_SEASONS,
     MOCK_PPW_ROWS,
-    MOCK_KADRA_ROWS,
+    MOCK_FULL_ROWS,
     MOCK_SCORES,
     MOCK_DRILLDOWN,
   } from './lib/mock-data'
-  import { exportRankingPpw, exportRankingKadra } from './lib/export'
+  import { exportRankingPpw, exportRankingFull } from './lib/export'
+  import { untrack } from 'svelte'
   import { shouldUseRolling } from './lib/rolling'
   import { t } from './lib/locale.svelte'
   import Sidebar from './components/Sidebar.svelte'
@@ -487,8 +489,18 @@
     mode: 'PPW',
   })
   let ppwRows: RankingPpwRow[] = $state([])
-  let kadraRows: RankingKadraRow[] = $state([])
+  let fullRows: RankingFullRow[] = $state([])
   let loading = $state(false)
+  // SS26.UIHIST (design step 7, ADR-101): two independent monotonic
+  // request-generation counters. Each async load captures its own value at
+  // the start and checks it against the current one on resolution; a
+  // mismatch means a newer load of the SAME kind has since started, so the
+  // stale response is discarded instead of overwriting state a faster, later
+  // request already set. Two counters, not one shared one: loadRanking() and
+  // openDrilldown() write disjoint state (ranklist rows vs. modal scores), so
+  // opening a drilldown must not discard an in-flight, unrelated ranklist load.
+  let rankingGen = $state(0)
+  let drilldownGen = $state(0)
   let error: string | null = $state(null)
   let errorType: 'error' | 'success' | 'progress' = $state('error')
   let errorLink: string | null = $state(null)
@@ -507,6 +519,11 @@
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
   let editingScoringSeasonId: number | null = $state(null)
+  // SS26.LOCK.01/§05: released scoring-engine codes, fetched once at app init
+  // (public read, tbl_scoring_engine) and passed down to every
+  // ScoringConfigEditor mount (SeasonManager's standalone editor + the
+  // SeasonManagerWizard step-2 editor) rather than hardcoded.
+  let scoringEngines: { code: string, label: string }[] = $state([])
   // Part 1 (ADR-044 amend): two independent +EVF flags. Ranklist defaults OFF
   // (SPWS lost the national-team appointment); Calendar defaults ON (richer view).
   let showEvfToggleRanklist = $state(false)
@@ -539,13 +556,22 @@
   let modalContext: DrilldownContext | null = $state(null)
 
   $effect(() => {
+    // SS26.UIHIST: initDemo()/init() both write state they also read
+    // (filters, seasons, selectedSeasonId) — untracked, or those reads get
+    // attributed to THIS effect and its own writes re-trigger it, producing
+    // Svelte's effect_update_depth_exceeded. The real-client init() path never
+    // hit this because its first `await` already left the effect's synchronous
+    // tracking window before touching that state; the fully-synchronous demo
+    // path did not.
     if (demo) {
-      initDemo()
+      untrack(() => initDemo())
     } else if (supabaseUrl && supabaseKey) {
-      initClient(supabaseUrl, supabaseKey)
-      resetAuth()
-      if (adminRequested) startAuth()
-      init()
+      untrack(() => {
+        initClient(supabaseUrl, supabaseKey)
+        resetAuth()
+        if (adminRequested) startAuth()
+        init()
+      })
     }
   })
 
@@ -556,13 +582,21 @@
   function initDemo() {
     seasons = MOCK_SEASONS
     selectedSeasonId = MOCK_SEASONS[0].id_season
-    ppwRows = MOCK_PPW_ROWS
+    // SS26.UIHIST (design step 7): demo mode showcases the Ranking/PPW
+    // switch and the historical publication boundary too, not just the PPW
+    // table — refreshEvfToggle's own demo branch reads MOCK_SEASONS'
+    // enum_ranking_publication instead of hardcoding the switch off. It must
+    // run (and settle filters.mode) before loadRanking(), whose own demo
+    // branch picks MOCK_PPW_ROWS vs MOCK_FULL_ROWS from that mode.
+    void refreshEvfToggle()
+    void loadRanking()
   }
 
   async function init() {
     try {
       await refreshActiveSeason().catch(() => {}) // best-effort: may fail for anon
       seasons = await fetchSeasons()
+      scoringEngines = await fetchScoringEngines().catch(() => [])
       const active = seasons.find((s) => s.bool_active)
       if (active) {
         selectedSeasonId = active.id_season
@@ -591,22 +625,44 @@
     loadRanking()
   }
 
+  // SS26.UIHIST (design step 7, ADR-101): also normalizes filters.mode from
+  // the selected season's publication capability and configured default —
+  // the same fetchScoringConfig call already made here for the EVF toggle
+  // flags already carries default_ranking_mode, so no second RPC is needed.
+  // A PPW_ONLY season forces PPW and hides the switch regardless of the
+  // config flag; a FULL season's switch visibility stays config-driven and
+  // its mode resets to that season's own configured default on every
+  // selection (§09 scenario E: returning to a FULL season restores Ranking
+  // and that season's own default, not whatever mode was active before).
   async function refreshEvfToggle() {
-    if (demo || selectedSeasonId == null) {
+    if (selectedSeasonId == null) {
       showEvfToggleRanklist = false
       showEvfToggleCalendar = true
       return
     }
+    const season = seasons.find((s) => s.id_season === selectedSeasonId)
+    const isFullPublication = season?.enum_ranking_publication !== 'PPW_ONLY'
+    // Demo mode has no scoring config to read show_evf_toggle/default_ranking_mode
+    // from — MOCK_SEASONS' own enum_ranking_publication is enough to showcase
+    // both the switch and the historical publication boundary.
+    if (demo) {
+      showEvfToggleCalendar = true
+      showEvfToggleRanklist = isFullPublication
+      filters = { ...filters, mode: isFullPublication ? 'RANKING' : 'PPW' }
+      return
+    }
     try {
       scoringConfig = await fetchScoringConfig(selectedSeasonId)
-      showEvfToggleRanklist = scoringConfig?.show_evf_toggle ?? false
       showEvfToggleCalendar = scoringConfig?.show_evf_toggle_calendar ?? true
+      showEvfToggleRanklist = isFullPublication && (scoringConfig?.show_evf_toggle ?? false)
     } catch {
       showEvfToggleRanklist = false
       showEvfToggleCalendar = true
     }
-    if (filters.mode === 'KADRA') {
+    if (!isFullPublication) {
       filters = { ...filters, mode: 'PPW' }
+    } else {
+      filters = { ...filters, mode: scoringConfig?.default_ranking_mode ?? 'PPW' }
     }
   }
 
@@ -624,50 +680,61 @@
   }
 
   async function loadRanking() {
+    const gen = ++rankingGen
     loading = true
     error = null
     try {
       if (demo) {
         if (filters.mode === 'PPW') {
           ppwRows = MOCK_PPW_ROWS
-          kadraRows = []
+          fullRows = []
         } else {
-          kadraRows = MOCK_KADRA_ROWS
+          fullRows = MOCK_FULL_ROWS
           ppwRows = []
         }
       } else if (filters.mode === 'PPW') {
-        ppwRows = await fetchRankingPpw(
+        const rows = await fetchRankingPpw(
           filters.weapon,
           filters.gender,
           filters.category,
           selectedSeasonId,
           useRolling,
         )
-        kadraRows = []
+        if (gen !== rankingGen) return
+        ppwRows = rows
+        fullRows = []
         if (selectedSeasonId != null) {
-          rankingRules = await fetchRankingRules(selectedSeasonId)
+          const rules = await fetchRankingRules(selectedSeasonId)
+          if (gen !== rankingGen) return
+          rankingRules = rules
         }
       } else {
-        kadraRows = await fetchRankingKadra(
+        const rows = await fetchRankingFull(
           filters.weapon,
           filters.gender,
           filters.category,
           selectedSeasonId,
           useRolling,
         )
+        if (gen !== rankingGen) return
+        fullRows = rows
         ppwRows = []
         if (selectedSeasonId != null) {
-          rankingRules = await fetchRankingRules(selectedSeasonId)
+          const rules = await fetchRankingRules(selectedSeasonId)
+          if (gen !== rankingGen) return
+          rankingRules = rules
         }
       }
     } catch (e: unknown) {
+      if (gen !== rankingGen) return
       error = e instanceof Error ? e.message : String(e)
     } finally {
-      loading = false
+      if (gen === rankingGen) loading = false
     }
   }
 
   async function openDrilldown(fencerId: number, fencerName: string) {
+    const gen = ++drilldownGen
     modalOpen = true
     modalFencerName = fencerName
     modalFencerId = fencerId
@@ -679,7 +746,7 @@
         modalScores = MOCK_SCORES[fencerId] ?? []
         modalContext = MOCK_DRILLDOWN[fencerId] ?? null
       } else if (selectedSeasonId != null) {
-        modalScores = useRolling
+        const scores = useRolling
           ? await fetchFencerScoresRolling(
               fencerId,
               filters.weapon,
@@ -693,10 +760,12 @@
               filters.weapon,
               filters.gender,
             )
+        if (gen !== drilldownGen) return
+        modalScores = scores
         const row =
           filters.mode === 'PPW'
             ? ppwRows.find((r) => r.id_fencer === fencerId)
-            : kadraRows.find((r) => r.id_fencer === fencerId)
+            : fullRows.find((r) => r.id_fencer === fencerId)
         if (row) {
           const birthYear = modalScores[0]?.int_birth_year ?? null
           const season = seasons.find((s) => s.id_season === selectedSeasonId)
@@ -715,13 +784,15 @@
         }
       }
     } catch (e: unknown) {
+      if (gen !== drilldownGen) return
       error = e instanceof Error ? e.message : String(e)
     } finally {
-      modalLoading = false
+      if (gen === drilldownGen) modalLoading = false
     }
   }
 
   function closeDrilldown() {
+    drilldownGen++
     modalOpen = false
     modalFencerId = null
     modalScores = []
@@ -1407,10 +1478,11 @@
     try {
       await saveScoringConfig(config as unknown as Record<string, unknown>)
       // Phase 3 (ADR-045): patch the season's carry-over engine separately.
-      // ScoringConfigEditor's save payload now carries `engine` so the dropdown
-      // flip propagates to tbl_season without a migration.
-      if (config.engine && editingScoringSeasonId != null) {
-        await updateSeasonCarryoverEngine(editingScoringSeasonId, config.engine)
+      // ScoringConfigEditor's save payload now carries `carryover_engine` (SS26.CARRY,
+      // ADR-101 — renamed from the ambiguous `engine`) so the dropdown flip
+      // propagates to tbl_season without a migration.
+      if (config.carryover_engine && editingScoringSeasonId != null) {
+        await updateSeasonCarryoverEngine(editingScoringSeasonId, config.carryover_engine)
       }
       await refreshEvfToggle()
       await fetchSeasons()
@@ -1454,7 +1526,7 @@
     if (filters.mode === 'PPW') {
       exportRankingPpw(ppwRows, title)
     } else {
-      exportRankingKadra(kadraRows, title)
+      exportRankingFull(fullRows, title)
     }
   }
 

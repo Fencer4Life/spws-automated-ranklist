@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import type { RankingPpwRow, RankingKadraRow, ScoreRow, RankingMode } from './types'
+import type { RankingPpwRow, RankingFullRow, ScoreRow, RankingMode } from './types'
 
 function triggerDownload(wb: XLSX.WorkBook, filename: string): void {
   XLSX.writeFile(wb, filename, { bookType: 'ods' })
@@ -17,17 +17,20 @@ export function exportRankingPpw(rows: RankingPpwRow[], title: string): void {
   triggerDownload(wb, `${title}.ods`)
 }
 
-export function exportRankingKadra(rows: RankingKadraRow[], title: string): void {
+// SS26.UI (design step 7, ADR-101): renamed from exportRankingKadra — the
+// export mirrors fn_ranking_full's own spws_total/evf_plus_total/total_score
+// columns, replacing the legacy fn_ranking_kadra shape.
+export function exportRankingFull(rows: RankingFullRow[], title: string): void {
   const data = rows.map((r) => ({
     Rank: r.rank,
     Fencer: r.fencer_name,
-    'PPW Total': Number(r.ppw_total),
-    'PEW Total': Number(r.pew_total),
-    Total: Number(r.total_score),
+    SPWS: Number(r.spws_total),
+    'EVF+': Number(r.evf_plus_total),
+    Razem: Number(r.total_score),
   }))
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'plusEVF Ranking')
+  XLSX.utils.book_append_sheet(wb, ws, 'Ranking')
   triggerDownload(wb, `${title}.ods`)
 }
 

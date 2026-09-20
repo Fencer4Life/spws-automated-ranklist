@@ -3,6 +3,7 @@ import type {
   Season,
   RankingPpwRow,
   RankingKadraRow,
+  RankingFullRow,
   ScoreRow,
   TournamentDetail,
   CalendarEvent,
@@ -61,7 +62,7 @@ export async function refreshActiveSeason(): Promise<void> {
 export async function fetchSeasons(): Promise<Season[]> {
   const { data, error } = await getClient()
     .from('tbl_season')
-    .select('id_season, txt_code, dt_start, dt_end, bool_active, enum_european_event_type')
+    .select('id_season, txt_code, dt_start, dt_end, bool_active, enum_european_event_type, enum_ranking_publication')
     .order('dt_start', { ascending: false })
   if (error) throw error
   return data ?? []
@@ -125,6 +126,33 @@ export async function fetchRankingKadra(
   if (season != null) params.p_season = season
   if (rolling) params.p_rolling = true
   const { data, error } = await getClient().rpc('fn_ranking_kadra', params)
+  if (error) throw error
+  return data ?? []
+}
+
+// SS26.UI (design step 7, ADR-098/ADR-101): the schema-v2 combined-view RPC.
+// Replaces fetchRankingKadra as the frontend's RANKING-mode source — kept
+// alongside it, not instead of it, since fn_ranking_kadra remains in the
+// database as pgTAP's own parity oracle for fn_ranking_full and is not
+// removed. Raises with "...historical ranking publication boundary" for a
+// PPW_ONLY season; App.svelte never calls this for such a season (it forces
+// PPW mode before any fetch), so that exception is not expected to surface
+// here in normal operation.
+export async function fetchRankingFull(
+  weapon: WeaponType,
+  gender: GenderType,
+  category: AgeCategory,
+  season?: number | null,
+  rolling?: boolean,
+): Promise<RankingFullRow[]> {
+  const params: Record<string, unknown> = {
+    p_weapon: weapon,
+    p_gender: gender,
+    p_category: category,
+  }
+  if (season != null) params.p_season = season
+  if (rolling) params.p_rolling = true
+  const { data, error } = await getClient().rpc('fn_ranking_full', params)
   if (error) throw error
   return data ?? []
 }
@@ -283,7 +311,25 @@ export async function fetchScoringConfig(seasonId: number): Promise<ScoringConfi
     .eq('id_season', seasonId)
     .single()
   const engine = (seasonRow as { enum_carryover_engine?: string } | null)?.enum_carryover_engine
-  return { ...(data as ScoringConfig), engine: engine as ScoringConfig['engine'] }
+  return { ...(data as ScoringConfig), carryover_engine: engine as ScoringConfig['carryover_engine'] }
+}
+
+// SS26.LOCK.01/§05: released scoring-engine codes for ScoringConfigEditor's
+// engine selector. Fetched once (called from App.svelte at admin-view mount),
+// never hardcoded — a third released engine then needs no frontend redeploy.
+// tbl_scoring_engine has a plain "Public read" RLS policy (20260919000005),
+// matching every other reference/lookup table in this codebase.
+export async function fetchScoringEngines(): Promise<{ code: string, label: string }[]> {
+  const { data, error } = await getClient()
+    .from('tbl_scoring_engine')
+    .select('txt_code, txt_label')
+    .eq('bool_active', true)
+    .order('id_engine')
+  if (error || !data) return []
+  return (data as { txt_code: string, txt_label: string }[]).map((row) => ({
+    code: row.txt_code,
+    label: row.txt_label,
+  }))
 }
 
 export async function saveScoringConfig(config: Record<string, unknown>): Promise<void> {

@@ -59,6 +59,8 @@ def _organizer_for_event(event: dict | None) -> str:
         return "EVF"
     if code.startswith("MSW"):
         return "FIE"
+    if code.startswith(("PPS", "MPS")):
+        return "PZSz"
     return "UNKNOWN"
 
 
