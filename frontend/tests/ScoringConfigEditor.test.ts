@@ -219,16 +219,16 @@ describe('ScoringConfigEditor (T8.8)', () => {
   // ph3.37b — defaults to EVENT_FK_MATCHING when config has no engine set
   // (new season, prior to first save). When config carries an engine value,
   // the dropdown reflects it instead.
-  it('ph3.37b: defaults engine to FK when config.engine is undefined', () => {
+  it('ph3.37b: defaults engine to FK when config.carryover_engine is undefined', () => {
     const configNoEngine = { ...MOCK_CONFIG }
-    delete (configNoEngine as { engine?: string }).engine
+    delete (configNoEngine as { carryover_engine?: string }).carryover_engine
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: configNoEngine } })
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_FK_MATCHING')
   })
 
   it('ph3.37b: engine dropdown reflects existing config.engine value', () => {
-    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig } })
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_CODE_MATCHING')
@@ -236,7 +236,7 @@ describe('ScoringConfigEditor (T8.8)', () => {
 
   // ph3.37c — selecting EVENT_CODE_MATCHING surfaces the (legacy) tag + warning hint
   it('ph3.37c: selecting EVENT_CODE_MATCHING shows the (legacy) tag', async () => {
-    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig } })
     const tag = container.querySelector('[data-field="engine-legacy-tag"]')
     expect(tag).not.toBeNull()
@@ -247,7 +247,7 @@ describe('ScoringConfigEditor (T8.8)', () => {
   // can patch tbl_season.enum_carryover_engine separately from the scoring config.
   it('ph3.37d: onsave payload includes the engine field', async () => {
     const onsave = vi.fn()
-    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_CODE_MATCHING' }
+    const codeConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: codeConfig, onsave } })
 
     // Flip the dropdown to FK
@@ -258,14 +258,52 @@ describe('ScoringConfigEditor (T8.8)', () => {
     await fireEvent.click(saveBtn)
     expect(onsave).toHaveBeenCalled()
     const payload = onsave.mock.calls[0][0]
-    expect(payload.engine).toBe('EVENT_FK_MATCHING')
+    expect(payload.carryover_engine).toBe('EVENT_FK_MATCHING')
+  })
+
+  // SS26.CARRY (design step 7, ADR-101): carryover_engine and engine_code
+  // are independently settable — changing the scoring engine must never
+  // touch the carry-over engine, and vice versa. Both remain distinct
+  // fields all the way through the onsave payload.
+  describe('SS26.CARRY — carryover_engine and engine_code stay independent', () => {
+    it('changing the scoring engine leaves carryover_engine untouched', async () => {
+      const onsave = vi.fn()
+      const config: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_CODE_MATCHING', engine_code: 'CLASSIC_V1' }
+      const { container } = render(ScoringConfigEditor, {
+        props: { ...defaultProps, config, onsave, scoringEngines: [{ code: 'CLASSIC_V1', label: 'Classic' }, { code: 'FIELD_SCALED_V1', label: 'Field-scaled' }] },
+      })
+      const scoringSelect = container.querySelector('select[data-field="scoring-engine-select"]') as HTMLSelectElement
+      await fireEvent.change(scoringSelect, { target: { value: 'FIELD_SCALED_V1' } })
+
+      const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+      await fireEvent.click(saveBtn)
+      const payload = onsave.mock.calls[0][0]
+      expect(payload.engine_code).toBe('FIELD_SCALED_V1')
+      expect(payload.carryover_engine).toBe('EVENT_CODE_MATCHING')
+    })
+
+    it('changing the carry-over engine leaves engine_code untouched', async () => {
+      const onsave = vi.fn()
+      const config: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_FK_MATCHING', engine_code: 'CLASSIC_V1' }
+      const { container } = render(ScoringConfigEditor, {
+        props: { ...defaultProps, config, onsave, scoringEngines: [{ code: 'CLASSIC_V1', label: 'Classic' }] },
+      })
+      const carryoverSelect = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
+      await fireEvent.change(carryoverSelect, { target: { value: 'EVENT_CODE_MATCHING' } })
+
+      const saveBtn = container.querySelector('.config-save-btn') as HTMLButtonElement
+      await fireEvent.click(saveBtn)
+      const payload = onsave.mock.calls[0][0]
+      expect(payload.carryover_engine).toBe('EVENT_CODE_MATCHING')
+      expect(payload.engine_code).toBe('CLASSIC_V1')
+    })
   })
 
   // ph3.37e — opening editor on an existing season's 🎯 button shows the
   // dropdown with that season's current engine value (verifies prop wiring
   // through the existing config flow, not a regression).
   it('ph3.37e: existing season editor shows current engine in dropdown', () => {
-    const fkConfig: ScoringConfig = { ...MOCK_CONFIG, engine: 'EVENT_FK_MATCHING' }
+    const fkConfig: ScoringConfig = { ...MOCK_CONFIG, carryover_engine: 'EVENT_FK_MATCHING' }
     const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: fkConfig } })
     const select = container.querySelector('select[data-field="engine-select"]') as HTMLSelectElement
     expect(select.value).toBe('EVENT_FK_MATCHING')

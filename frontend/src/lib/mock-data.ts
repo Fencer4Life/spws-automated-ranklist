@@ -1,8 +1,11 @@
-import type { Season, RankingPpwRow, RankingKadraRow, ScoreRow, DrilldownContext } from './types'
+import type { Season, RankingPpwRow, RankingFullRow, ScoreRow, DrilldownContext } from './types'
 
+// SS26.UIHIST (design step 7, ADR-101): season 1 is PPW_ONLY so the demo
+// build can showcase the historical publication boundary (switch hidden,
+// PPW forced) alongside season 2's FULL Ranking/PPW switch.
 export const MOCK_SEASONS: Season[] = [
-  { id_season: 2, txt_code: '2024/25', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true },
-  { id_season: 1, txt_code: '2023/24', dt_start: '2023-09-01', dt_end: '2024-06-30', bool_active: false },
+  { id_season: 2, txt_code: '2024/25', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true, enum_ranking_publication: 'FULL' },
+  { id_season: 1, txt_code: '2023/24', dt_start: '2023-09-01', dt_end: '2024-06-30', bool_active: false, enum_ranking_publication: 'PPW_ONLY' },
 ]
 
 // PPW ranking: best-4 PPW + conditional MPW
@@ -21,20 +24,21 @@ export const MOCK_PPW_ROWS: RankingPpwRow[] = [
   { rank: 12, id_fencer: 12, fencer_name: 'MŁYNEK Janusz',      ppw_score: 90, mpw_score: 0,   total_score: 90 },
 ]
 
-// Kadra ranking: domestic (PPW+MPW) + international (best-3 PEW + conditional MEW)
-export const MOCK_KADRA_ROWS: RankingKadraRow[] = [
-  { rank: 1, id_fencer: 1, fencer_name: 'ATANASSOW Aleksander', ppw_total: 465, pew_total: 490, total_score: 955 },
-  { rank: 2, id_fencer: 4, fencer_name: 'DUDEK Andrzej',        ppw_total: 435, pew_total: 195, total_score: 630 },
-  { rank: 3, id_fencer: 2, fencer_name: 'BARAŃSKI Marek',       ppw_total: 380, pew_total: 120, total_score: 500 },
-  { rank: 4, id_fencer: 5, fencer_name: 'CIEŚLIK Marek',        ppw_total: 290, pew_total: 85,  total_score: 375 },
-  { rank: 5, id_fencer: 3, fencer_name: 'BAZAK Jacek',          ppw_total: 280, pew_total: 0,   total_score: 280 },
-  { rank: 6, id_fencer: 6, fencer_name: 'FIAŁKOWSKI Jerzy',     ppw_total: 255, pew_total: 0,   total_score: 255 },
-  { rank: 7, id_fencer: 7, fencer_name: 'GĘZIKIEWICZ Marcin',   ppw_total: 225, pew_total: 0,   total_score: 225 },
-  { rank: 8, id_fencer: 8, fencer_name: 'HAŚKO Robert',         ppw_total: 195, pew_total: 0,   total_score: 195 },
-  { rank: 9, id_fencer: 9, fencer_name: 'JABŁOŃSKI Krzysztof',  ppw_total: 170, pew_total: 0,   total_score: 170 },
-  { rank: 10, id_fencer: 10, fencer_name: 'KOŃCZYŁO Tomasz',    ppw_total: 145, pew_total: 0,   total_score: 145 },
-  { rank: 11, id_fencer: 11, fencer_name: 'LEWANDOWSKI Piotr',  ppw_total: 120, pew_total: 0,   total_score: 120 },
-  { rank: 12, id_fencer: 12, fencer_name: 'MŁYNEK Janusz',      ppw_total: 90, pew_total: 0,    total_score: 90 },
+// SS26.UI (design step 7, ADR-101): renamed from MOCK_KADRA_ROWS to match
+// fn_ranking_full's spws_total/evf_plus_total/total_score shape.
+export const MOCK_FULL_ROWS: RankingFullRow[] = [
+  { rank: 1, id_fencer: 1, fencer_name: 'ATANASSOW Aleksander', spws_total: 465, evf_plus_total: 490, total_score: 955 },
+  { rank: 2, id_fencer: 4, fencer_name: 'DUDEK Andrzej',        spws_total: 435, evf_plus_total: 195, total_score: 630 },
+  { rank: 3, id_fencer: 2, fencer_name: 'BARAŃSKI Marek',       spws_total: 380, evf_plus_total: 120, total_score: 500 },
+  { rank: 4, id_fencer: 5, fencer_name: 'CIEŚLIK Marek',        spws_total: 290, evf_plus_total: 85,  total_score: 375 },
+  { rank: 5, id_fencer: 3, fencer_name: 'BAZAK Jacek',          spws_total: 280, evf_plus_total: 0,   total_score: 280 },
+  { rank: 6, id_fencer: 6, fencer_name: 'FIAŁKOWSKI Jerzy',     spws_total: 255, evf_plus_total: 0,   total_score: 255 },
+  { rank: 7, id_fencer: 7, fencer_name: 'GĘZIKIEWICZ Marcin',   spws_total: 225, evf_plus_total: 0,   total_score: 225 },
+  { rank: 8, id_fencer: 8, fencer_name: 'HAŚKO Robert',         spws_total: 195, evf_plus_total: 0,   total_score: 195 },
+  { rank: 9, id_fencer: 9, fencer_name: 'JABŁOŃSKI Krzysztof',  spws_total: 170, evf_plus_total: 0,   total_score: 170 },
+  { rank: 10, id_fencer: 10, fencer_name: 'KOŃCZYŁO Tomasz',    spws_total: 145, evf_plus_total: 0,   total_score: 145 },
+  { rank: 11, id_fencer: 11, fencer_name: 'LEWANDOWSKI Piotr',  spws_total: 120, evf_plus_total: 0,   total_score: 120 },
+  { rank: 12, id_fencer: 12, fencer_name: 'MŁYNEK Janusz',      spws_total: 90, evf_plus_total: 0,    total_score: 90 },
 ]
 
 export const MOCK_DRILLDOWN: Record<number, DrilldownContext> = {

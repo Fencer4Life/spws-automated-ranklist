@@ -155,20 +155,20 @@
           <select
             id="engine-select"
             data-field="engine-select"
-            bind:value={draft.engine}
+            bind:value={draft.carryover_engine}
             disabled={readonly}
-            class:legacy={draft.engine === 'EVENT_CODE_MATCHING'}
+            class:legacy={draft.carryover_engine === 'EVENT_CODE_MATCHING'}
           >
             {#each CARRYOVER_ENGINE_VALUES as engineValue}
               <option value={engineValue}>{engineLabel(engineValue)}</option>
             {/each}
           </select>
-          {#if draft.engine === 'EVENT_CODE_MATCHING'}
+          {#if draft.carryover_engine === 'EVENT_CODE_MATCHING'}
             <span class="engine-legacy-tag" data-field="engine-legacy-tag">{t('sc_engine_legacy_tag')}</span>
           {/if}
         </div>
         <div class="engine-hint" data-field="engine-hint">
-          {#if draft.engine === 'EVENT_CODE_MATCHING'}
+          {#if draft.carryover_engine === 'EVENT_CODE_MATCHING'}
             <strong>{t('sc_engine_hint_code')}</strong>
           {:else}
             <strong>{t('sc_engine_hint_fk')}</strong>
@@ -327,9 +327,9 @@
     onchange?: (config: ScoringConfig) => void
   } = $props()
 
-  // Default engine for new seasons (no incoming config.engine) is the FK
-  // engine — see ADR-045. Existing configs preserve whatever the season
-  // currently has on tbl_season.enum_carryover_engine.
+  // Default engine for new seasons (no incoming config.carryover_engine) is
+  // the FK engine — see ADR-045. Existing configs preserve whatever the
+  // season currently has on tbl_season.enum_carryover_engine.
   // Intentional one-time snapshot, not a live derivation: `draft` is an
   // editable working copy seeded from the incoming `config` prop. It must
   // NOT track `config` reactively — that would clobber in-progress edits
@@ -337,7 +337,7 @@
   // svelte-ignore state_referenced_locally
   let draft: ScoringConfig = $state({
     ...JSON.parse(JSON.stringify(config)),
-    engine: config.engine ?? 'EVENT_FK_MATCHING',
+    carryover_engine: config.carryover_engine ?? 'EVENT_FK_MATCHING',
     engine_code: config.engine_code ?? scoringEngines[0]?.code ?? '',
   })
 
@@ -366,7 +366,7 @@
   // button still works for the standalone edit-config flow). Reads draft +
   // draftRules so the effect re-runs on any change; onchange defaults to a no-op.
   $effect(() => {
-    onchange({ ...draft, ranking_rules: draftRules, engine: draft.engine })
+    onchange({ ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine })
   })
 
   let collapsedSections: Record<string, boolean> = $state({
@@ -440,14 +440,15 @@
       showLockedNotice = true
       return
     }
-    // Include `engine` so App.svelte's handler can patch tbl_season.enum_carryover_engine
-    // separately from tbl_scoring_config (instant flip, no migration).
-    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules, engine: draft.engine, engine_code: draft.engine_code }
+    // Include `carryover_engine` so App.svelte's handler can patch
+    // tbl_season.enum_carryover_engine separately from tbl_scoring_config
+    // (instant flip, no migration).
+    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine, engine_code: draft.engine_code }
     onsave(updated)
   }
 
   function handleExport() {
-    const json = JSON.stringify({ ...draft, ranking_rules: draftRules, engine: draft.engine }, null, 2)
+    const json = JSON.stringify({ ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine }, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

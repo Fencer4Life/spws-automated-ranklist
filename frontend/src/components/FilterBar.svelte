@@ -40,20 +40,18 @@
 
     {#if showEvfToggle}
       <div class="filter-group toggle-group">
-        <span class="filter-label">{t('ranking')}</span>
-        <div class="toggle" class:kadra-disabled={category === 'V0'}>
+        <span class="filter-label">{t('view_toggle_label')}</span>
+        <div class="toggle">
           <button
             class="toggle-btn"
             class:active={mode === 'PPW'}
             onclick={() => setMode('PPW')}
-          >SPWS</button>
+          >{t('mode_ppw')}</button>
           <button
             class="toggle-btn"
-            class:active={mode === 'KADRA'}
-            disabled={category === 'V0'}
-            title={category === 'V0' ? t('kadra_disabled_title') : t('kadra_title')}
-            onclick={() => setMode('KADRA')}
-          >EVF+</button>
+            class:active={mode === 'RANKING'}
+            onclick={() => setMode('RANKING')}
+          >{t('mode_ranking')}</button>
         </div>
       </div>
     {/if}
@@ -95,14 +93,10 @@
   }
 
   function onCategoryChange() {
-    if (category === 'V0' && mode === 'KADRA') {
-      mode = 'PPW'
-    }
     emitChange()
   }
 
   function setMode(m: RankingMode) {
-    if (m === 'KADRA' && category === 'V0') return
     mode = m
     emitChange()
   }
@@ -186,10 +180,6 @@
   .toggle-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
-  }
-  .kadra-disabled .toggle-btn:last-child {
-    background: #f5f5f5;
-    color: #aaa;
   }
 
   @media (max-width: 600px) {

@@ -256,7 +256,7 @@
     min_participants_ppw: 1,
     show_evf_toggle: false,
     ranking_rules: null,
-    engine: 'EVENT_FK_MATCHING',
+    carryover_engine: 'EVENT_FK_MATCHING',
   }
 
   // Part 4 (ADR-044): suggest the next season from the latest existing one, so
@@ -381,7 +381,7 @@
     commitError = null
     committing = true
     const config = capturedScoring ?? effectiveScoringConfig
-    const engine: CarryoverEngine = (config.engine as CarryoverEngine | undefined) ?? 'EVENT_FK_MATCHING'
+    const engine: CarryoverEngine = (config.carryover_engine as CarryoverEngine | undefined) ?? 'EVENT_FK_MATCHING'
     try {
       const err = await oncommit({
         code: draftCode,

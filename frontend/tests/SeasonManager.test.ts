@@ -7,8 +7,8 @@ import SeasonManager from '../src/components/SeasonManager.svelte'
 import type { Season } from '../src/lib/types'
 
 const MOCK_SEASONS: Season[] = [
-  { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true },
-  { id_season: 2, txt_code: 'SPWS-2023-2024', dt_start: '2023-09-01', dt_end: '2024-06-30', bool_active: false },
+  { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true, enum_ranking_publication: 'FULL' },
+  { id_season: 2, txt_code: 'SPWS-2023-2024', dt_start: '2023-09-01', dt_end: '2024-06-30', bool_active: false, enum_ranking_publication: 'PPW_ONLY' },
 ]
 
 describe('SeasonManager (T9.2)', () => {
@@ -271,6 +271,7 @@ describe('SeasonManager (T9.2)', () => {
       dt_start: '2020-01-01',
       dt_end: yesterday,
       bool_active: false,
+      enum_ranking_publication: 'FULL',
     }
     const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, {
@@ -297,6 +298,7 @@ describe('SeasonManager (T9.2)', () => {
       dt_start: '2099-01-01',
       dt_end: future,
       bool_active: false,
+      enum_ranking_publication: 'FULL',
     }
     const onfetchevf = vi.fn().mockResolvedValue({ ranklist: false, calendar: true })
     const { container } = render(SeasonManager, {
@@ -342,7 +344,7 @@ describe('SeasonManager (T9.2)', () => {
   it('SS26.LOCK.12: past season with scoring_admin_locked false stays editable', async () => {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     const pastSeason: Season = {
-      id_season: 99, txt_code: 'SPWS-PAST', dt_start: '2020-01-01', dt_end: yesterday, bool_active: false,
+      id_season: 99, txt_code: 'SPWS-PAST', dt_start: '2020-01-01', dt_end: yesterday, bool_active: false, enum_ranking_publication: 'FULL',
     }
     const { container } = render(SeasonManager, {
       props: {
@@ -364,7 +366,7 @@ describe('SeasonManager (T9.2)', () => {
   it('SS26.LOCK.12: future season with scoring_admin_locked true is locked', async () => {
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     const futureSeason: Season = {
-      id_season: 100, txt_code: 'SPWS-FUTURE', dt_start: '2099-01-01', dt_end: future, bool_active: false,
+      id_season: 100, txt_code: 'SPWS-FUTURE', dt_start: '2099-01-01', dt_end: future, bool_active: false, enum_ranking_publication: 'FULL',
     }
     const { container } = render(SeasonManager, {
       props: {
