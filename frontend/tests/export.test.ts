@@ -14,8 +14,8 @@ vi.mock('xlsx', () => ({
 }))
 
 import * as XLSX from 'xlsx'
-import { exportRankingPpw, exportRankingKadra, exportDrilldown } from '../src/lib/export'
-import type { RankingPpwRow, RankingKadraRow, ScoreRow } from '../src/lib/types'
+import { exportRankingPpw, exportRankingFull, exportDrilldown } from '../src/lib/export'
+import type { RankingPpwRow, RankingFullRow, ScoreRow } from '../src/lib/types'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -40,20 +40,21 @@ describe('exportRankingPpw', () => {
   })
 })
 
-// 6.13 — +EVF ranking ODS export
-describe('exportRankingKadra', () => {
-  it('creates ODS file with +EVF columns', () => {
-    const rows: RankingKadraRow[] = [
-      { rank: 1, id_fencer: 1, fencer_name: 'SMITH John', ppw_total: 400, pew_total: 200, total_score: 600 },
+// SS26.UI (design step 7, ADR-101): renamed from exportRankingKadra — columns
+// are now SPWS/EVF+/Razem from fn_ranking_full, not PPW Total/PEW Total/Total.
+describe('exportRankingFull', () => {
+  it('creates ODS file with SPWS/EVF+/Razem columns', () => {
+    const rows: RankingFullRow[] = [
+      { rank: 1, id_fencer: 1, fencer_name: 'SMITH John', spws_total: 400, evf_plus_total: 200, total_score: 600 },
     ]
-    exportRankingKadra(rows, 'kadra_test')
+    exportRankingFull(rows, 'ranking_test')
 
     expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith([
-      { Rank: 1, Fencer: 'SMITH John', 'PPW Total': 400, 'PEW Total': 200, Total: 600 },
+      { Rank: 1, Fencer: 'SMITH John', SPWS: 400, 'EVF+': 200, Razem: 600 },
     ])
     expect(XLSX.writeFile).toHaveBeenCalledWith(
       expect.any(Object),
-      'kadra_test.ods',
+      'ranking_test.ods',
       { bookType: 'ods' },
     )
   })
@@ -104,8 +105,8 @@ describe('exportDrilldown', () => {
     expect(jsonCall[0].Tournament).toBe('PPW-01')
   })
 
-  it('KADRA mode includes all tournaments', () => {
-    exportDrilldown('DOE Jane', [score, pewScore], 'KADRA')
+  it('RANKING mode includes all tournaments', () => {
+    exportDrilldown('DOE Jane', [score, pewScore], 'RANKING')
 
     const jsonCall = (XLSX.utils.json_to_sheet as ReturnType<typeof vi.fn>).mock.calls[0][0]
     expect(jsonCall).toHaveLength(2)

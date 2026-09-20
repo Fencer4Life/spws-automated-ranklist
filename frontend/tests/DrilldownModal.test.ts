@@ -1,5 +1,11 @@
 // Plan tests: 6.5, 6.6, 6.8, 6.10, 6.11, 6.12, 6.15, 6.16 — DrilldownModal component.
 // See doc/archive/POC_development_plan.md §M6 test table.
+// SS26.UI (design step 7, ADR-101): mode renamed KADRA -> RANKING; toggle
+// labels renamed SPWS/EVF+ -> PPW/Ranking; the blue domestic section is now
+// headed "SPWS" and the combined section "EVF+"; kadraDisabled prop removed
+// (V0 no longer disables Ranking); the compact summary shows PPW/EVF+/Total
+// together in Ranking mode; EVF/FIE and PZSz result bars are colored
+// separately (no new subtotal).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/svelte'
@@ -97,19 +103,33 @@ describe('DrilldownModal', () => {
     expect(rows[0].textContent).toContain('PPW-01')
   })
 
-  // 6.16 — Kadra drill-down: domestic + international
-  it('KADRA mode shows all tournaments', () => {
+  // SS26.UI: Ranking mode shows domestic + international (renamed from KADRA)
+  it('RANKING mode shows all tournaments', () => {
     const scores = [
       makeScore({ id_result: 1, txt_tournament_code: 'PPW-01', enum_type: 'PPW' }),
       makeScore({ id_result: 2, txt_tournament_code: 'PEW-01', enum_type: 'PEW', id_tournament: 20 }),
     ]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
     })
     const codeTexts = Array.from(container.querySelectorAll('tbody td:first-child'))
       .map((td) => td.textContent?.trim())
     expect(codeTexts).toContain('PPW-01')
     expect(codeTexts).toContain('PEW-01')
+  })
+
+  // SS26.UI: a PZSz result also appears in Ranking mode's international column
+  it('RANKING mode includes PZSz results alongside EVF/FIE ones', () => {
+    const scores = [
+      makeScore({ id_result: 1, txt_tournament_code: 'PPW-01', enum_type: 'PPW' }),
+      makeScore({ id_result: 2, txt_tournament_code: 'PPS-01', enum_type: 'PPS', id_tournament: 30, num_final_score: 40 }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
+    })
+    const codeTexts = Array.from(container.querySelectorAll('tbody td:first-child'))
+      .map((td) => td.textContent?.trim())
+    expect(codeTexts).toContain('PPS-01')
   })
 
   // 6.6 — score markers (best-K)
@@ -159,8 +179,9 @@ describe('DrilldownModal', () => {
     expect(h4?.textContent).toContain('265')
   })
 
-  // 6.6 — Kadra grand total in table-total
-  it('KADRA mode shows grand total in table-total', () => {
+  // SS26.UI: Ranking mode's compact summary shows PPW/EVF+/Total together
+  // (renamed from a single "Kadra grand total")
+  it('RANKING mode shows PPW/EVF+/Total together in table-total', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
       makeScore({ id_result: 2, enum_type: 'MPW', num_final_score: 45, id_tournament: 20 }),
@@ -169,32 +190,37 @@ describe('DrilldownModal', () => {
     ]
     const ctx = { ...CTX, ppwBestCount: 4, pewBestCount: 3 }
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA', context: ctx },
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING', context: ctx },
     })
     const tableTotal = container.querySelector('.table-total')
-    expect(tableTotal?.textContent).toContain('285')
+    expect(tableTotal?.textContent).toContain('PPW Total')
+    expect(tableTotal?.textContent).toContain('145') // domestic: 100 + 45
+    expect(tableTotal?.textContent).toContain('EVF+ Total')
+    expect(tableTotal?.textContent).toContain('140') // international: 80 + 60
+    expect(tableTotal?.textContent).toContain('Total')
+    expect(tableTotal?.textContent).toContain('285') // grand total
   })
 
-  // 6.11b — same rename as FilterBar and the calendar footer (ADR-017 lists
-  // this control in three places). Values stay 'PPW'/'KADRA'; only labels move.
-  it('6.11b: the scope toggle is labelled SPWS / EVF+', () => {
+  // SS26.UI: the scope toggle reads PPW / Ranking (design step 7, ADR-101)
+  it('SS26.UI: the scope toggle is labelled PPW / Ranking', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', showEvfToggle: true, context: CTX },
     })
     const btns = [...container.querySelectorAll('.toggle-btn')].map((b) => b.textContent!.trim())
-    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle), [2]=SPWS, [3]=EVF+ (subheader toggle)
-    expect(btns.slice(2)).toEqual(['SPWS', 'EVF+'])
+    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle), [2]=PPW, [3]=Ranking (subheader toggle)
+    expect(btns.slice(2)).toEqual(['PPW', 'Ranking'])
   })
 
-  // 6.12 — V0 disables +EVF in drill-down
-  it('disables +EVF toggle when kadraDisabled is true', () => {
+  // SS26.UI: V0 no longer disables Ranking in the drill-down (kadraDisabled
+  // prop removed — this test replaces "disables +EVF toggle when
+  // kadraDisabled is true").
+  it('SS26.UI: the Ranking toggle button is never disabled', () => {
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', kadraDisabled: true, showEvfToggle: true, context: CTX },
+      props: { open: true, fencerName: 'Test', showEvfToggle: true, context: CTX },
     })
     const btns = container.querySelectorAll('.toggle-btn')
-    // [0]=🇬🇧, [1]=🇵🇱 (LangToggle in modal-actions), [2]=PPW, [3]=+EVF (toggle in subheader)
-    const kadraBtn = btns[3] as HTMLButtonElement
-    expect(kadraBtn.disabled).toBe(true)
+    const rankingBtn = btns[3] as HTMLButtonElement
+    expect(rankingBtn.disabled).toBe(false)
   })
 
   // 6.8 — skeleton/loading indicator
@@ -254,13 +280,13 @@ describe('DrilldownModal', () => {
     expect(container.querySelector('.table-total')?.textContent).toContain('PPW Total')
   })
 
-  // 6.11 — +EVF total label
-  it('D — table-total shows +EVF Total label in KADRA mode', () => {
+  // SS26.UI: EVF+ total label (renamed from "+EVF Total", mode renamed KADRA -> RANKING)
+  it('D — table-total shows EVF+ Total label in RANKING mode', () => {
     const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'KADRA' },
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'RANKING' },
     })
-    expect(container.querySelector('.table-total')?.textContent).toContain('+EVF Total')
+    expect(container.querySelector('.table-total')?.textContent).toContain('EVF+ Total')
   })
 
   // 6.6 — breakdown section heading
@@ -273,18 +299,20 @@ describe('DrilldownModal', () => {
     expect(h3.some((el) => el.textContent?.includes('Points Breakdown'))).toBe(true)
   })
 
-  // 6.15 — domestic column heading
-  it('F — domestic column heading contains Domestic', () => {
+  // SS26.UI: the blue domestic section is headed "SPWS" (renamed from
+  // "Domestic (PPW + MPW)" — design §06: "exactly two top-level sections:
+  // blue SPWS and EVF+").
+  it('F — domestic column heading contains SPWS', () => {
     const scores = [makeScore({ enum_type: 'PPW', num_final_score: 100 })]
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
     })
     const h4 = container.querySelector('.breakdown-col h4')
-    expect(h4?.textContent).toContain('Domestic')
+    expect(h4?.textContent).toContain('SPWS')
   })
 
-  // 6.16 — international column in Kadra only
-  it('G — international column only visible in KADRA mode', () => {
+  // SS26.UI: international column only visible in RANKING mode (renamed from KADRA)
+  it('G — international column only visible in RANKING mode', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
       makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
@@ -294,10 +322,63 @@ describe('DrilldownModal', () => {
     })
     expect(cPpw.querySelectorAll('.breakdown-col').length).toBe(1)
 
-    const { container: cKadra } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+    const { container: cRanking } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
     })
-    expect(cKadra.querySelectorAll('.breakdown-col').length).toBe(2)
+    expect(cRanking.querySelectorAll('.breakdown-col').length).toBe(2)
+  })
+
+  // SS26.UI: the international column heading is "EVF+" (renamed from
+  // "International (EVF)")
+  it('G2 — international column heading contains EVF+', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
+    })
+    const headings = Array.from(container.querySelectorAll('.breakdown-col h4')).map((h) => h.textContent)
+    expect(headings.some((h) => h?.includes('EVF+'))).toBe(true)
+  })
+
+  // SS26.UI: an EVF/FIE result bar renders orange, a PZSz result bar renders
+  // red, and both feed the one EVF+ total with no separate subtotal.
+  it('G3 — EVF/FIE bars are orange and PZSz bars are red inside the one EVF+ chart', () => {
+    const scores = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
+      makeScore({ id_result: 3, enum_type: 'PPS', num_final_score: 40, id_tournament: 30 }),
+    ]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
+    })
+    const intlCol = container.querySelectorAll('.breakdown-col')[1]
+    const evfBars = intlCol.querySelectorAll('.chart-bar-evf')
+    const pzszBars = intlCol.querySelectorAll('.chart-bar-pzsz')
+    expect(evfBars.length).toBe(1)
+    expect(pzszBars.length).toBe(1)
+    // Only one EVF+ subtotal heading exists — no per-color subtotal.
+    expect(intlCol.querySelectorAll('h4').length).toBe(1)
+  })
+
+  // SS26.UI: the EVF/PZSz provenance legend appears only when a PZSz result
+  // is actually present.
+  it('G4 — provenance legend appears only when a PZSz result is present', () => {
+    const scoresNoPzsz = [
+      makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
+      makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
+    ]
+    const { container: cNoPzsz } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores: scoresNoPzsz, mode: 'RANKING' },
+    })
+    expect(cNoPzsz.textContent).not.toContain('PZSz')
+
+    const scoresWithPzsz = [...scoresNoPzsz, makeScore({ id_result: 3, enum_type: 'PPS', num_final_score: 40, id_tournament: 30 })]
+    const { container: cWithPzsz } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores: scoresWithPzsz, mode: 'RANKING' },
+    })
+    expect(cWithPzsz.textContent).toContain('PZSz')
   })
 
   // 6.6 — tournament type legend
@@ -346,13 +427,13 @@ describe('DrilldownModal', () => {
   })
 
   // 6.10 — toggle placement
-  it('L — PPW/Kadra toggle is in subheader (second row), LangToggle is in modal-actions (top row)', () => {
+  it('L — PPW/Ranking toggle is in subheader (second row), LangToggle is in modal-actions (top row)', () => {
     const { container } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', showEvfToggle: true, context: CTX },
     })
     const subheader = container.querySelector('.subheader')
     const actions = container.querySelector('.modal-actions')
-    // LangToggle root also carries class="toggle", so use :not(.lang-toggle) to target PPW/Kadra toggle
+    // LangToggle root also carries class="toggle", so use :not(.lang-toggle) to target PPW/Ranking toggle
     expect(subheader?.querySelector('.toggle:not(.lang-toggle)')).not.toBeNull()
     expect(actions?.querySelector('.toggle:not(.lang-toggle)')).toBeNull()
     expect(actions?.textContent).toContain('🇬🇧')
@@ -508,7 +589,7 @@ describe('DrilldownModal — Card layout', () => {
       makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
     ]
     const { container } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
     })
     const badges = container.querySelectorAll('.result-card .type-badge')
     const intlBadge = Array.from(badges).find((b) => b.textContent === 'PEW')
@@ -571,16 +652,16 @@ describe('DrilldownModal — Card layout', () => {
     expect(badge?.textContent).toContain('2023/24')
   })
 
-  // C.14 — KADRA renders 2 card-lists, PPW renders 1
-  it('C.14: KADRA mode renders 2 card-lists, PPW mode renders 1', () => {
+  // SS26.UI: RANKING mode renders 2 card-lists, PPW renders 1 (renamed from KADRA)
+  it('C.14: RANKING mode renders 2 card-lists, PPW mode renders 1', () => {
     const scores = [
       makeScore({ id_result: 1, enum_type: 'PPW', num_final_score: 100 }),
       makeScore({ id_result: 2, enum_type: 'PEW', num_final_score: 80, id_tournament: 20 }),
     ]
-    const { container: cKadra } = render(DrilldownModal, {
-      props: { open: true, fencerName: 'Test', scores, mode: 'KADRA' },
+    const { container: cRanking } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
     })
-    expect(cKadra.querySelectorAll('.card-list').length).toBe(2)
+    expect(cRanking.querySelectorAll('.card-list').length).toBe(2)
 
     const { container: cPpw } = render(DrilldownModal, {
       props: { open: true, fencerName: 'Test', scores, mode: 'PPW' },
