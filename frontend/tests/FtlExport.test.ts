@@ -33,7 +33,7 @@ const entry = (
   enum_age_category: cat,
   enum_weapon: weapon,
   int_order: order,
-  txt_club: null,
+  int_rank: order,
 })
 
 const ROWS: ExportEntryRow[] = [
@@ -198,6 +198,7 @@ describe('FtlExport', () => {
               enum_gender: 'M',
               enum_age_category: 'V2',
               int_order: 1,
+              int_rank: 1,
             },
           ],
         },

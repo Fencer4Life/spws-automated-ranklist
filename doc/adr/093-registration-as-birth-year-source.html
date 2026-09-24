@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="093-registration-as-birth-year-source.md">
-<meta name="adr-source-sha256" content="eb3eef8c1c5e899007261f8cb2b3e67627bee7bea17b8b07441695079e18ea80">
+<meta name="adr-source-sha256" content="387a36a98e39b9ff2598077b398d19f2b3e3b2a75a501647d86705c8d1868000">
 <title>ADR-093 · Registration as an Authoritative Birth-Year Source</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 093</p><h1>Registration as an Authoritative Birth-Year Source</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-09-12; database and form implemented, operator alert implemented)</dd></div><div><dt>Date</dt><dd class="">2026-09-12</dd></div><div><dt>Source</dt><dd class=""><code>093-registration-as-birth-year-source.md</code></dd></div><div><dt>Length</dt><dd class="">320 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-09-12; database and form implemented, operator alert implemented)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-09-12; database and form implemented, operator alert implemented). <strong>Amended 2026-09-24 — §4's third tier is withdrawn: every declared birth year is applied.</strong></dd></div><div><dt>Date</dt><dd class="">2026-09-12</dd></div><div><dt>Source</dt><dd class=""><code>093-registration-as-birth-year-source.md</code></dd></div><div><dt>Length</dt><dd class="">386 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-09-12; database and form implemented, operator alert implemented). <strong>Amended 2026-09-24 — §4's third tier is withdrawn: every declared birth year is applied.</strong>
 <strong>Date:</strong> 2026-09-12
 <strong>Supersedes:</strong> <a href="079-event-self-registration-identity.html">ADR-079</a> §1 (<em>Core invariant — registration is READ-ONLY on <code>tbl_fencer</code></em>), and the &quot;by construction&quot; security consequence stated there. §§2–5 stand, as do both of ADR-079's own amendments.
 <strong>Amends:</strong> <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> §2's restatement of the read-only invariant (&quot;the <strong>declared</strong> birth year (read-only invariant), not <code>tbl_fencer</code>'s&quot;). The seeding behaviour that sentence describes is unchanged — only its claim that nothing flows back.
@@ -21,7 +21,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-declaration-outranks-a-derived-value-and-may-write-back">1 · The declaration outranks a derived value, and may write back</a></li><li class="depth-3"><a href="#2-the-lookup-classifies-it-never-decides">2 · The lookup classifies; it never decides</a></li><li class="depth-3"><a href="#3-the-write-is-gated-on-a-capability-not-on-knowing-a-name">3 · The write is gated on a capability, not on knowing a name</a></li><li class="depth-3"><a href="#4-three-tiers-of-birth-year-and-the-third-is-loud">4 · Three tiers of birth year — and the third is loud</a></li><li class="depth-3"><a href="#5-the-ranking-heals-itself-and-must-not-be-prevented-from-doing-so">5 · The ranking heals itself, and must not be prevented from doing so</a></li><li class="depth-3"><a href="#6-where-the-decision-is-actually-made">6 · Where the decision is actually made</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#answering-adr-079-4-s-threat-model">Answering ADR-079 §4&#x27;s threat model</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-declaration-outranks-a-derived-value-and-may-write-back">1 · The declaration outranks a derived value, and may write back</a></li><li class="depth-3"><a href="#2-the-lookup-classifies-it-never-decides">2 · The lookup classifies; it never decides</a></li><li class="depth-3"><a href="#3-the-write-is-gated-on-a-capability-not-on-knowing-a-name">3 · The write is gated on a capability, not on knowing a name</a></li><li class="depth-3"><a href="#4-three-tiers-of-birth-year-and-the-third-is-loud">4 · Three tiers of birth year — and the third is loud</a></li><li class="depth-3"><a href="#5-the-ranking-heals-itself-and-must-not-be-prevented-from-doing-so">5 · The ranking heals itself, and must not be prevented from doing so</a></li><li class="depth-3"><a href="#6-where-the-decision-is-actually-made">6 · Where the decision is actually made</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#answering-adr-079-4-s-threat-model">Answering ADR-079 §4&#x27;s threat model</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-24-every-declared-birth-year-is-authoritative">Amendment (2026-09-24) — every declared birth year is authoritative</a></li><li class="depth-3"><a href="#what-forced-it">What forced it</a></li><li class="depth-3"><a href="#what-it-costs-stated-rather-than-softened">What it costs, stated rather than softened</a></li><li class="depth-3"><a href="#what-changes-in-the-code">What changes in the code</a></li><li class="depth-3"><a href="#promotion-needed-nothing-new">Promotion needed nothing new</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>fn_match_registration_fencer</code> (<code>supabase/migrations/20260704000001_event_registration_schema.sql:201</code>)
 matches the exact tuple <code>(upper(surname), upper(first name), birth year)</code> and nothing
@@ -341,6 +341,86 @@ explicit <code>REVOKE</code>. &quot;I did not write a <code>GRANT</code>&quot; i
 surfaced while building the PROD mirror; they are fixed in the same change but belong to
 ADR-036, not to this decision, and are recorded in its amendment.</p>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-24-every-declared-birth-year-is-authoritative">Amendment (2026-09-24) — every declared birth year is authoritative</h2>
+<p>§4 divided birth years into three tiers and applied only two of them. A NULL was filled
+and an ESTIMATE overwritten, but an already-CONFIRMED year was captured as a PENDING
+proposal that only <code>fn_apply_identity_override</code> could apply. <strong>That third tier is
+withdrawn. The declaration is applied, whatever is stored.</strong> §§1, 2, 3 and 5 stand
+unchanged, and so do all four guards on the write.</p>
+<h3 id="what-forced-it">What forced it</h3>
+<p>The entry list is the moment the association hears from the fencer directly, and what
+they say about themselves outranks what we hold. Leaving a correction unapplied is not a
+neutral delay, because the birth year decides the V-category: an unapplied correction
+puts somebody in the wrong category on the day.</p>
+<p>Measured on PROD on 2026-09-24, while the PPW1 files were already being imported: six
+declarations sat <code>PENDING</code>, and two of them moved a fencer between categories. PĘCZEK
+Sandra had turned V1 and declared it; her proposal was undecided, so the seeding put her
+in V0 — where, because the ranking categorises on <code>tbl_fencer</code> and the export
+categorised on the declaration, she was looked up in a sub-ranking she was not in, lost
+her rank entirely and fell to seed 32 of 52. The top of FV0 went to the genuinely
+fourth-placed fencer instead. CHUDY Tomasz was the same defect in the other direction.</p>
+<h3 id="what-it-costs-stated-rather-than-softened">What it costs, stated rather than softened</h3>
+<p>§4 refused this write for a reason that has not stopped being true: <code>ADOPT_DECLARED</code> is
+a <strong>parameter</strong>, not a click, so the server cannot tell a fencer pressing the button from
+a crafted RPC call, and the edit token is no obstacle to a caller who minted it for a row
+they created themselves. With the third tier applied, somebody who reads a name off the
+public entry list can move that fencer's birth year, and therefore their V-category and
+every score they hold. pgTAP 75.15 asserts exactly that, on a fencer with nineteen
+results, rather than leaving it as prose.</p>
+<p>What the system still guarantees is that the change is <strong>loud</strong> and <strong>reversible</strong>: an
+<code>APPLIED</code> row in <code>tbl_registration_identity_override</code>, a <code>WARNING</code>, a Telegram alert from
+the drain, <code>trg_audit_fencer</code>, and <code>fn_reject_identity_override</code> as an undo that restores
+the previous year through the same plain <code>UPDATE</code> — so the self-heal runs on the way back
+too. §4's rejected alternative stays rejected for the reason it gave: a plausibility
+bound stops <code>1900</code> and does nothing about <code>1979 -&gt; 1982</code>.</p>
+<h3 id="what-changes-in-the-code">What changes in the code</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fn_confirm_registration_identity</code></td>
+<td>One write for all three tiers. The confirmed case additionally inserts an <code>APPLIED</code> audit row and raises the <code>WARNING</code>.</td>
+</tr>
+<tr>
+<td><code>tbl_registration_identity_override</code></td>
+<td>An <strong>audit log</strong>, not an approval queue. <code>PENDING</code> survives only as history — rows written before this amendment.</td>
+</tr>
+<tr>
+<td><code>fn_reject_identity_override</code></td>
+<td>Repurposed as the <strong>undo</strong>: restores <code>int_birth_year_before</code>, marks the row <code>REJECTED</code>.</td>
+</tr>
+<tr>
+<td><code>fn_apply_identity_override</code></td>
+<td>Vestigial. Still applies a genuinely <code>PENDING</code> legacy row; the public path no longer creates one.</td>
+</tr>
+<tr>
+<td><code>fn_claim_identity_override_alerts</code></td>
+<td>Claims <code>APPLIED</code> rows. The alert now reports what happened, not what is waiting.</td>
+</tr>
+<tr>
+<td>Backfill</td>
+<td>Migration <code>20260924000002</code> adopts every declared year still differing from master — six on PROD, re-queueing seventeen events. A no-op on a fresh bootstrap, where <code>tbl_registration</code> is empty by design.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Migration <code>20260924000002_declared_birth_year_is_authoritative.sql</code>. Tests: pgTAP
+75.8b-e (the declaration overwrites, is recorded <code>APPLIED</code>, re-queues and is audited),
+75.14 (the undo restores and re-queues), 75.15 (the accepted exposure, demonstrated and
+then reverted), 75.16 (the undo is administrator-only).</p>
+<h3 id="promotion-needed-nothing-new">Promotion needed nothing new</h3>
+<p>The reason the correction is enough on its own is ADR-010: the ranking resolves a
+fencer's category live from their birth year against the <em>target season's</em> end year,
+<code>COALESCE(fn_age_category(f.int_birth_year, season_end), t.enum_age_category)</code>, with
+cross-category carry-over pinned by tests 5.14-5.15. Verified on a PROD mirror the same
+day: with her year corrected, PĘCZEK's 267.87 appeared at FV1 rank 2 <strong>without any
+recompute having run</strong>. A fencer ageing into a new category carries their points with
+them by construction; there is no promotion step to build.</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ol>
 <li>
@@ -365,5 +445,5 @@ in §3, but it still has value against a flood of proposals. Tracked in
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="092-scoring-table-annex-bilingual-static-page.html">← ADR-092: A Second Standalone Static Page — the Scoring-Table Annex, Published Bilingually</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="094-release-docs-only-skip.html">→ ADR-094: Release Gate Skips Build/Deploy for Documentation-Only CI Runs</a></nav>
-<footer class="foot">Generated from <code>093-registration-as-birth-year-source.md</code> · source SHA-256 <code>eb3eef8c1c5e899007261f8cb2b3e67627bee7bea17b8b07441695079e18ea80</code></footer>
+<footer class="foot">Generated from <code>093-registration-as-birth-year-source.md</code> · source SHA-256 <code>387a36a98e39b9ff2598077b398d19f2b3e3b2a75a501647d86705c8d1868000</code></footer>
 </div></body></html>

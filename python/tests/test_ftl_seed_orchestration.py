@@ -109,6 +109,29 @@ def test_assemble_ranked_before_unranked_then_by_ts():
     assert [e.surname for e in subr["MV0"]] == ["AAA", "BBB", "ZZZ"]
 
 
+def test_assemble_carries_the_true_rank_not_the_position_among_entrants():
+    """The rank that reaches the interleave is the fencer's position in the
+    WHOLE sub-ranking, not among those who entered. Here ranks 1-3 stayed at
+    home and only the 4th-placed fencer registered; she is rank 4, and it is
+    interleave_mixall's job to lay her down with the other 4th places rather
+    than treat her as a category winner (PPW1 2026, EPEE FV0)."""
+    regs = [_reg(44, "Szklar", "Bozena", "F", 1992, ["EPEE"])]
+    rankings = {"FV0": [11, 22, 33, 44, 55]}  # she is genuinely 4th of five
+    subr = assemble_mixall_subrankings(regs, "EPEE", rankings, SEY)
+    assert subr["FV0"][0].rank == 4
+
+
+def test_assemble_leaves_rank_none_for_a_fencer_with_no_points():
+    """None is not rank 0 and not "last": it is the absence of a ranking, which
+    is what puts the entry in the unranked tail."""
+    regs = [
+        _reg(None, "Newcomer", "Ewa", "F", 1992, ["EPEE"]),
+        _reg(99, "Matched", "Ola", "F", 1992, ["EPEE"]),  # matched but absent from the ranking
+    ]
+    subr = assemble_mixall_subrankings(regs, "EPEE", {"FV0": [11]}, SEY)
+    assert [e.rank for e in subr["FV0"]] == [None, None]
+
+
 def test_assemble_multiple_unranked_ordered_by_ts_created():
     regs = [
         _reg(None, "Later", "B", "M", 1990, ["EPEE"], ts="2026-03-01T00:00:00Z"),
@@ -140,7 +163,6 @@ def test_mixall_tireurs_running_id_sexe_and_marker():
         "prenom": "Jan",
         "sexe": "M",
         "classement": 2,
-        "club": None,
     }
     assert tireurs[1] == {
         "id": 1,
@@ -148,18 +170,21 @@ def test_mixall_tireurs_running_id_sexe_and_marker():
         "prenom": "Sandra",
         "sexe": "F",
         "classement": 1,
-        "club": None,
     }
 
 
-def test_mixall_tireurs_carries_declared_club():
-    # ADR-080 amendment (f), 2026-09-13.
+def test_mixall_tireurs_no_longer_carries_a_club():
+    """ADR-080 amendment (f) is withdrawn (2026-09-24). 41 of PPW1's 90
+    registrations declared a club and the free text was already unusable — one
+    Poznan club arrived under three spellings, plus a "Wawrszawa" typo. The
+    Tireur dict stops carrying one; build_fie_xml still writes the attribute,
+    empty, as it did before the field existed."""
     regs = [_reg(1, "Peczek", "Sandra", "F", 1990, ["EPEE"], club="AZS AWFiS Gdańsk")]
     subr = assemble_mixall_subrankings(regs, "EPEE", {}, SEY)
     from python.pipeline.ftl_seed_export import interleave_mixall
 
     tireurs = mixall_tireurs(interleave_mixall(subr))
-    assert tireurs[0]["club"] == "AZS AWFiS Gdańsk"
+    assert "club" not in tireurs[0]
 
 
 # ---------------------------------------------------------------------------

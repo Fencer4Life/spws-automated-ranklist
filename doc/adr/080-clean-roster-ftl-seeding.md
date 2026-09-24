@@ -342,6 +342,9 @@ registered, which is precisely the person the organizer might need to tick in.
 
 ### (f) Club, and the public download page
 
+> **WITHDRAWN 2026-09-24 — see the amendment at the end of this record.** The club is no
+> longer published in the seed files. What follows is the decision as it stood.
+
 **Built 2026-09-13, migration `20260913000001_registration_club.sql`** — narrower
 than this section originally predicted. The club is asked at registration, per
 event, and emitted only when given: `tbl_registration.txt_club`, populated by both
@@ -511,3 +514,54 @@ not added to any WP menu, matching (f) and (h)'s "capability-link-only" intent u
 astray — one `UPDATE`" — understated the operation. **[ADR-095](095-ftl-export-token-lifecycle.md)**
 is now the canonical, detailed reference for finding the current link, minting a token for a
 new organizer, and rotating or revoking one; nothing here is superseded, only extended.
+
+## Amendment (2026-09-24) — the club is withdrawn, and seeding tiers on the true rank
+
+Two corrections from importing the PPW1 2026 files into Fencing Time.
+
+### The club (reverses amendment (f), 2026-09-13)
+
+Amendment (f) carried a declared club into the seed files. Eleven days later, 41 of
+PPW1's 90 registrations had supplied one and the free text was already unusable: a single
+Poznań club arrived as `Warta Muszkieterowie Poznań`, `WARTA-MUSZKIETEROWIE POZNAŃ` and
+`Warta Muszkieter Poznań`; `KSz` and `KSZ Warszawianka` were the same club; `FundAkcja`
+and `Fundakcja Szczecin` likewise; and there was a `KS KARABELA Wawrszawa`, a
+`Dragon Lodz` and a `KKS Krakow` with the diacritics dropped. A free-text field filled in
+by ninety different people is not a club roster, and merging it into results afterwards
+costs more than it saves.
+
+`fn_ftl_export_entries` stops publishing `txt_club` (seven columns back to six) and both
+generators emit `Club=""` again — the **attribute** stays, because the validated FIE
+reference files carry it and it was empty before (f) existed.
+
+Collection is a separate question and deliberately unchanged here.
+`tbl_registration.txt_club`, `fn_create_registration`'s parameter and the form field stay
+for now, because the RODO panel the fencer agreed to (`CONSENT_VERSION` v1.1) names the
+club: retiring the field is a consent change, and it is not one to make two days before
+an event with registration still open. pgTAP 78.1-78.6 keep asserting collection; 78.7
+now asserts that publication has stopped.
+
+### Seeding tiers on the true rank, not the position among entrants
+
+§2's interleave laid down "every sub-ranking's first-placed fencer, then every
+second-placed". The projection was handing it a dense `ROW_NUMBER()` over the fencers who
+*entered*, which is not the same thing. EPEE FV0's entrants held true ranks 4, 5 and 7 —
+ranks 1-3 stayed at home — and were renumbered 1, 2, 3, so a genuine fourth place was
+seeded ahead of every real category winner.
+
+The rule is that absent ranks are simply omitted **for that category**: the true number
+one leads, and a true fourth is laid down with the other fourth places. The projection
+publishes the true rank, `NULL` when the fencer holds no points at all; `int_order`
+survives only to keep the unranked tail deterministic without publishing `ts_created`;
+and every unranked fencer now follows every ranked one instead of being interleaved as
+though holding the next position.
+
+The category a fencer is seeded in also comes from `tbl_fencer` now rather than the
+declaration, because that is what `fn_ranking_ppw` ranks on (ADR-010) — see
+[ADR-093](093-registration-as-birth-year-source.md)'s 2026-09-24 amendment, which makes
+the two agree by construction.
+
+Migration `20260924000001_ftl_export_true_rank.sql`. Tests: pgTAP 76.4b-d,
+`test_ftl_seed_export.py` (the interleave tiers, unranked last, tied ranks stable),
+`test_ftl_seed_orchestration.py` (the true rank reaches the interleave), and
+`ftlSeedExport.test.ts` X8.8/X8.8b/X8.8c in the twin.

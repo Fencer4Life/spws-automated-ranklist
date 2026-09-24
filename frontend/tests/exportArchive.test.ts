@@ -19,7 +19,7 @@ const rows: ExportEntryRow[] = [
     enum_age_category: 'V2',
     enum_weapon: 'EPEE',
     int_order: 1,
-    txt_club: null,
+    int_rank: 1,
   },
 ]
 const files = buildEventSeedFiles(rows, 'PPW1-2026-2027')

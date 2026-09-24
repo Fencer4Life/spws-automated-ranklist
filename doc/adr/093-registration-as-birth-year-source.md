@@ -1,6 +1,6 @@
 # ADR-093: Registration as an Authoritative Birth-Year Source
 
-**Status:** Accepted (2026-09-12; database and form implemented, operator alert implemented)
+**Status:** Accepted (2026-09-12; database and form implemented, operator alert implemented). **Amended 2026-09-24 — §4's third tier is withdrawn: every declared birth year is applied.**
 **Date:** 2026-09-12
 **Supersedes:** [ADR-079](079-event-self-registration-identity.md) §1 (*Core invariant — registration is READ-ONLY on `tbl_fencer`*), and the "by construction" security consequence stated there. §§2–5 stand, as do both of ADR-079's own amendments.
 **Amends:** [ADR-080](080-clean-roster-ftl-seeding.md) §2's restatement of the read-only invariant ("the **declared** birth year (read-only invariant), not `tbl_fencer`'s"). The seeding behaviour that sentence describes is unchanged — only its claim that nothing flows back.
@@ -300,6 +300,72 @@ explicit `REVOKE`. "I did not write a `GRANT`" is not the same as "anon cannot c
 **Defects found and deliberately not fixed here** — three pre-existing bootstrap defects
 surfaced while building the PROD mirror; they are fixed in the same change but belong to
 ADR-036, not to this decision, and are recorded in its amendment.
+
+## Amendment (2026-09-24) — every declared birth year is authoritative
+
+§4 divided birth years into three tiers and applied only two of them. A NULL was filled
+and an ESTIMATE overwritten, but an already-CONFIRMED year was captured as a PENDING
+proposal that only `fn_apply_identity_override` could apply. **That third tier is
+withdrawn. The declaration is applied, whatever is stored.** §§1, 2, 3 and 5 stand
+unchanged, and so do all four guards on the write.
+
+### What forced it
+
+The entry list is the moment the association hears from the fencer directly, and what
+they say about themselves outranks what we hold. Leaving a correction unapplied is not a
+neutral delay, because the birth year decides the V-category: an unapplied correction
+puts somebody in the wrong category on the day.
+
+Measured on PROD on 2026-09-24, while the PPW1 files were already being imported: six
+declarations sat `PENDING`, and two of them moved a fencer between categories. PĘCZEK
+Sandra had turned V1 and declared it; her proposal was undecided, so the seeding put her
+in V0 — where, because the ranking categorises on `tbl_fencer` and the export
+categorised on the declaration, she was looked up in a sub-ranking she was not in, lost
+her rank entirely and fell to seed 32 of 52. The top of FV0 went to the genuinely
+fourth-placed fencer instead. CHUDY Tomasz was the same defect in the other direction.
+
+### What it costs, stated rather than softened
+
+§4 refused this write for a reason that has not stopped being true: `ADOPT_DECLARED` is
+a **parameter**, not a click, so the server cannot tell a fencer pressing the button from
+a crafted RPC call, and the edit token is no obstacle to a caller who minted it for a row
+they created themselves. With the third tier applied, somebody who reads a name off the
+public entry list can move that fencer's birth year, and therefore their V-category and
+every score they hold. pgTAP 75.15 asserts exactly that, on a fencer with nineteen
+results, rather than leaving it as prose.
+
+What the system still guarantees is that the change is **loud** and **reversible**: an
+`APPLIED` row in `tbl_registration_identity_override`, a `WARNING`, a Telegram alert from
+the drain, `trg_audit_fencer`, and `fn_reject_identity_override` as an undo that restores
+the previous year through the same plain `UPDATE` — so the self-heal runs on the way back
+too. §4's rejected alternative stays rejected for the reason it gave: a plausibility
+bound stops `1900` and does nothing about `1979 -> 1982`.
+
+### What changes in the code
+
+| | |
+|---|---|
+| `fn_confirm_registration_identity` | One write for all three tiers. The confirmed case additionally inserts an `APPLIED` audit row and raises the `WARNING`. |
+| `tbl_registration_identity_override` | An **audit log**, not an approval queue. `PENDING` survives only as history — rows written before this amendment. |
+| `fn_reject_identity_override` | Repurposed as the **undo**: restores `int_birth_year_before`, marks the row `REJECTED`. |
+| `fn_apply_identity_override` | Vestigial. Still applies a genuinely `PENDING` legacy row; the public path no longer creates one. |
+| `fn_claim_identity_override_alerts` | Claims `APPLIED` rows. The alert now reports what happened, not what is waiting. |
+| Backfill | Migration `20260924000002` adopts every declared year still differing from master — six on PROD, re-queueing seventeen events. A no-op on a fresh bootstrap, where `tbl_registration` is empty by design. |
+
+Migration `20260924000002_declared_birth_year_is_authoritative.sql`. Tests: pgTAP
+75.8b-e (the declaration overwrites, is recorded `APPLIED`, re-queues and is audited),
+75.14 (the undo restores and re-queues), 75.15 (the accepted exposure, demonstrated and
+then reverted), 75.16 (the undo is administrator-only).
+
+### Promotion needed nothing new
+
+The reason the correction is enough on its own is ADR-010: the ranking resolves a
+fencer's category live from their birth year against the *target season's* end year,
+`COALESCE(fn_age_category(f.int_birth_year, season_end), t.enum_age_category)`, with
+cross-category carry-over pinned by tests 5.14-5.15. Verified on a PROD mirror the same
+day: with her year corrected, PĘCZEK's 267.87 appeared at FV1 rank 2 **without any
+recompute having run**. A fencer ageing into a new category carries their points with
+them by construction; there is no promotion step to build.
 
 ## Open items
 

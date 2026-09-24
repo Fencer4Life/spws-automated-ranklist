@@ -59,10 +59,19 @@ export interface ExportEntryRow {
   enum_gender: string
   enum_age_category: string
   enum_weapon: string
-  /** Resolved position inside this weapon × gender × category, 1-based. */
+  /**
+   * Dense 1-based position among the fencers who entered this weapon × gender
+   * × category. NO LONGER the seed position (2026-09-24): it survives only to
+   * order the unranked tail deterministically without publishing ts_created.
+   */
   int_order: number
-  /** Declared club (2026-09-13, ADR-080 amendment (f)); null when not given. */
-  txt_club: string | null
+  /**
+   * The fencer's TRUE rank in that sub-ranking, null when they hold no points.
+   * Seeding tiers on this. Using int_order instead made a genuine 4th place —
+   * ranks 1-3 had not entered — look like a category winner and seeded her
+   * first.
+   */
+  int_rank: number | null
 }
 
 /** One row of fn_ftl_roster — the organizer's pick-list for one weapon. */
@@ -76,11 +85,12 @@ export interface RosterRow {
 }
 
 export interface SeedEntry {
+  /** Tie-break within a tier, and the ordering of the unranked tail. */
   idx: number
   surname: string
   firstName: string
-  /** Declared club; '' when not given (roster entries always pass ''). */
-  club: string
+  /** True rank in the sub-ranking; null when the fencer holds no points. */
+  rank: number | null
 }
 
 export interface Tireur {
@@ -89,7 +99,6 @@ export interface Tireur {
   prenom: string
   sexe: string
   classement: number
-  club: string
 }
 
 export type SeedFileKind = 'MIXALL' | 'DE' | 'ROSTER'
@@ -205,21 +214,39 @@ export function formatNomWithMarker(surnameCanon: string, vcatDigit: string): st
 
 /**
  * Round-robin ("snake by rank") across the ten sub-rankings in the fixed
- * FV0..FV4, MV0..MV4 order: every sub-ranking's first-placed fencer, then every
- * second-placed, and so on, with empty sub-rankings skipped rather than padded.
+ * FV0..FV4, MV0..MV4 order: everyone holding TRUE rank 1, then every true rank
+ * 2, and so on, with every unranked fencer after all of them.
+ *
+ * The tier is the rank the fencer actually holds, not their position among
+ * those who entered (2026-09-24). Ranks 1-3 of EPEE FV0 did not enter PPW1, so
+ * compacting the entrants made SZKLAR — genuinely 4th — into FV0's "first" and
+ * seeded her ahead of every real category winner. Absent ranks are simply
+ * omitted for that category: the true number 1 leads, and a true 4th goes down
+ * with the other 4th places.
+ *
  * Returns [entry, subRankingKey] pairs in seed order; the key carries both the
  * Sexe (its first character) and the (N) marker (its last).
  */
 export function interleaveMixall(
   subRankings: Record<string, SeedEntry[]>,
 ): Array<[SeedEntry, string]> {
-  const maxLen = Math.max(0, ...Object.values(subRankings).map((e) => e.length))
   const result: Array<[SeedEntry, string]> = []
-  for (let rankIdx = 0; rankIdx < maxLen; rankIdx++) {
+  const highest = Math.max(
+    0,
+    ...Object.values(subRankings).flatMap((es) => es.map((e) => e.rank ?? 0)),
+  )
+  for (let tier = 1; tier <= highest; tier++) {
     for (const key of MIXALL_SUBRANKING_ORDER) {
-      const entries = subRankings[key] ?? []
-      if (rankIdx < entries.length) result.push([entries[rankIdx], key])
+      // A tier can hold more than one entry per bucket: fn_ranking_ppw gives
+      // two fencers on the same score the same rank. Array order breaks the
+      // tie, so two downloads of one entry list agree.
+      for (const e of subRankings[key] ?? []) if (e.rank === tier) result.push([e, key])
     }
+  }
+  for (const key of MIXALL_SUBRANKING_ORDER) {
+    // == null on purpose: an absent rank and an explicit null are the same
+    // thing here, and a caller building entries by hand supplies neither.
+    for (const e of subRankings[key] ?? []) if (e.rank == null) result.push([e, key])
   }
   return result
 }
@@ -240,7 +267,6 @@ export function mixallTireurs(seedOrder: Array<[SeedEntry, string]>): Tireur[] {
       prenom: entry.firstName,
       sexe: key[0],
       classement: i + 1,
-      club: entry.club,
     },
     // Keyed off the raw names, not the formatted Nom: the "(N)" marker is
     // appended above, and sorting on it would interleave categories instead of
@@ -393,7 +419,11 @@ export function buildFieXml(input: FieXmlInput): string {
         ['Nom', t.nom],
         ['Prenom', t.prenom],
         ['Sexe', t.sexe],
-        ['Club', t.club],
+        // Club withdrawn 2026-09-24: the declared values were free text and
+        // already unusable (one club under three spellings). The ATTRIBUTE
+        // stays — the validated FIE reference files carry it — and is empty,
+        // exactly as it was before ADR-080 amendment (f) added the field.
+        ['Club', ''],
         ['Nation', 'POL'],
         ['Licence', ''],
         ['Statut', 'N'],
@@ -417,7 +447,7 @@ function subRankingsForWeapon(rows: ExportEntryRow[]): Record<string, SeedEntry[
   for (const r of rows) {
     const key = `${r.enum_gender}${r.enum_age_category}`
     const [surname, firstName] = toCanonicalName(r.txt_surname, r.txt_first_name)
-    ;(buckets[key] ??= []).push({ idx: r.int_order, surname, firstName, club: r.txt_club ?? '' })
+    ;(buckets[key] ??= []).push({ idx: r.int_order, surname, firstName, rank: r.int_rank ?? null })
   }
   for (const entries of Object.values(buckets)) entries.sort((a, b) => a.idx - b.idx)
   return buckets
@@ -530,7 +560,9 @@ export function buildEventSeedFiles(
           .map((r) => {
             const [surname, firstName] = toCanonicalName(r.txt_surname, r.txt_first_name)
             return [
-              { idx: r.int_order, surname, firstName, club: '' },
+              // A pick-list has no seeding: every entry is unranked by
+              // construction, so the tail ordering is the alphabetical int_order.
+              { idx: r.int_order, surname, firstName, rank: null },
               `${r.enum_gender}${r.enum_age_category}`,
             ] as [SeedEntry, string]
           }),

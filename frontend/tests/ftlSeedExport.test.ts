@@ -38,7 +38,9 @@ const row = (
   cat: string,
   weapon: string,
   order: number,
-  club: string | null = null,
+  // The true rank defaults to the entry order, which is what these fixtures
+  // meant before the two were separated (2026-09-24).
+  rank: number | null = order,
 ): ExportEntryRow => ({
   txt_surname: surname,
   txt_first_name: first,
@@ -46,7 +48,7 @@ const row = (
   enum_age_category: cat,
   enum_weapon: weapon,
   int_order: order,
-  txt_club: club,
+  int_rank: rank,
 })
 
 // ---------------------------------------------------------------------------
@@ -97,26 +99,57 @@ describe('formatNomWithMarker', () => {
 // The interleave (ADR-080 §2) — the same worked example as the Python test
 // ---------------------------------------------------------------------------
 describe('interleaveMixall', () => {
-  it('X8.8 lays down every sub-ranking rank 1, then every rank 2, skipping empties', () => {
+  it('X8.8 lays down every true rank 1, then every true rank 2, skipping empties', () => {
     const sub = {
       FV0: [
-        { idx: 1, surname: 'PECZEK', firstName: 'Sandra', club: '' },
-        { idx: 10, surname: 'SZMAJDZINSKA', firstName: 'Katarzyna', club: '' },
+        { idx: 1, surname: 'PECZEK', firstName: 'Sandra', rank: 1 },
+        { idx: 10, surname: 'SZMAJDZINSKA', firstName: 'Katarzyna', rank: 2 },
       ],
-      FV1: [{ idx: 2, surname: 'KAMINSKA', firstName: 'Gabriela', club: '' }],
-      FV2: [{ idx: 3, surname: 'WASILCZUK', firstName: 'Beata', club: '' }],
+      FV1: [{ idx: 2, surname: 'KAMINSKA', firstName: 'Gabriela', rank: 1 }],
+      FV2: [{ idx: 3, surname: 'WASILCZUK', firstName: 'Beata', rank: 1 }],
       FV3: [],
-      FV4: [{ idx: 4, surname: 'BORKOWSKA', firstName: 'Halina', club: '' }],
-      MV0: [{ idx: 5, surname: 'SPLAWA-NEYMAN', firstName: 'Maciej', club: '' }],
-      MV1: [{ idx: 6, surname: 'SEKOWSKI', firstName: 'Maciej', club: '' }],
-      MV2: [{ idx: 7, surname: 'JENDRYS', firstName: 'Marek', club: '' }],
-      MV3: [{ idx: 8, surname: 'KRZEMINSKI', firstName: 'Mariusz', club: '' }],
-      MV4: [{ idx: 9, surname: 'SZCZESNY', firstName: 'Jacek', club: '' }],
+      FV4: [{ idx: 4, surname: 'BORKOWSKA', firstName: 'Halina', rank: 1 }],
+      MV0: [{ idx: 5, surname: 'SPLAWA-NEYMAN', firstName: 'Maciej', rank: 1 }],
+      MV1: [{ idx: 6, surname: 'SEKOWSKI', firstName: 'Maciej', rank: 1 }],
+      MV2: [{ idx: 7, surname: 'JENDRYS', firstName: 'Marek', rank: 1 }],
+      MV3: [{ idx: 8, surname: 'KRZEMINSKI', firstName: 'Mariusz', rank: 1 }],
+      MV4: [{ idx: 9, surname: 'SZCZESNY', firstName: 'Jacek', rank: 1 }],
     }
     const order = interleaveMixall(sub)
     expect(order.map(([e]: [SeedEntry, string]) => e.idx)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     expect(order[3][1]).toBe('FV4') // FV3 skipped, so FV4 is fourth and not fifth
     expect(order[order.length - 1][1]).toBe('FV0') // the rank-2 entry keeps its key
+  })
+
+  it('X8.8b tiers on the true rank, so a 4th place is not seeded as a winner', () => {
+    // PPW1 2026, EPEE. SZKLAR is 4th on the FV0 ranklist and ranks 1-3 did not
+    // enter; compacting the entrants made her FV0's "first" and seeded her
+    // ahead of every genuine category winner.
+    const order = interleaveMixall({
+      FV0: [{ idx: 1, surname: 'SZKLAR', firstName: 'Bozena', rank: 4 }],
+      FV1: [{ idx: 1, surname: 'KAMINSKA', firstName: 'Gabriela', rank: 1 }],
+      MV2: [{ idx: 1, surname: 'JENDRYS', firstName: 'Marek', rank: 2 }],
+    })
+    expect(order.map(([e]: [SeedEntry, string]) => e.surname)).toEqual([
+      'KAMINSKA',
+      'JENDRYS',
+      'SZKLAR',
+    ])
+  })
+
+  it('X8.8c puts every unranked fencer after every ranked one', () => {
+    const order = interleaveMixall({
+      FV0: [
+        { idx: 1, surname: 'RANKED', firstName: 'Anna', rank: 9 },
+        { idx: 2, surname: 'NEW', firstName: 'Ewa', rank: null },
+      ],
+      MV0: [{ idx: 1, surname: 'TOPMAN', firstName: 'Adam', rank: 1 }],
+    })
+    expect(order.map(([e]: [SeedEntry, string]) => e.surname)).toEqual([
+      'TOPMAN',
+      'RANKED',
+      'NEW',
+    ])
   })
 
   it('X8.9 returns nothing for an empty entry list', () => {
@@ -175,9 +208,9 @@ describe('polishSortKey', () => {
 describe('mixallTireurs', () => {
   const entry = (surname: string, firstName: string): SeedEntry => ({
     idx: 1,
+    rank: 1,
     surname,
     firstName,
-    club: '',
   })
 
   it('X8.35 numbers by seed first, then writes the records out alphabetically', () => {
@@ -261,8 +294,9 @@ describe('naming', () => {
 // ---------------------------------------------------------------------------
 describe('buildFieXml', () => {
   it('X8.14 matches the Python exporter byte for byte, escaping included', () => {
-    // Captured from build_fie_xml() in the venv on 2026-09-13 (re-captured when
-    // Club started carrying a real value, ADR-080 amendment (f)). Attribute
+    // Captured from build_fie_xml() in the venv on 2026-09-24, re-captured when
+    // the declared club was withdrawn: a club is passed in below and the
+    // exporter emits Club="" regardless, which is the point of the assertion. Attribute
     // order, the space before "/>", the XML declaration and the DOCTYPE are
     // all part of what Fencing Time has been proven to accept, so this is an
     // equality assertion and not a structural one.
@@ -272,7 +306,7 @@ describe('buildFieXml', () => {
       genderCode: 'M',
       title: 'Tytuł "x" & <y>',
       tireurs: [
-        { id: 1, nom: 'ŁĘCKI (2)', prenom: 'Krzysztof', sexe: 'M', classement: 1, club: 'AZS AWFiS Gdańsk' },
+        { id: 1, nom: 'ŁĘCKI (2)', prenom: 'Krzysztof', sexe: 'M', classement: 1 },
       ],
       dateFichierXml: '2026-09-12',
     })
@@ -282,7 +316,7 @@ describe('buildFieXml', () => {
         '<BaseCompetitionIndividuelle Championnat="SPWS" ID="ID1" Arme="E" Sexe="M" ' +
         'Domaine="N" Federation="POL" Categorie="V" ' +
         'TitreLong="Tytuł &quot;x&quot; &amp; &lt;y&gt;" Date="" DateFichierXML="2026-09-12">' +
-        '<Tireurs><Tireur ID="1" Nom="ŁĘCKI (2)" Prenom="Krzysztof" Sexe="M" Club="AZS AWFiS Gdańsk" ' +
+        '<Tireurs><Tireur ID="1" Nom="ŁĘCKI (2)" Prenom="Krzysztof" Sexe="M" Club="" ' +
         'Nation="POL" Licence="" Statut="N" Classement="1" /></Tireurs>' +
         '</BaseCompetitionIndividuelle>',
     )
@@ -294,7 +328,7 @@ describe('buildFieXml', () => {
       weaponCode: 'E',
       genderCode: 'M',
       title: 'T',
-      tireurs: [{ id: 1, nom: 'KOWALSKI (2)', prenom: 'Jan', sexe: 'M', classement: 1, club: '' }],
+      tireurs: [{ id: 1, nom: 'KOWALSKI (2)', prenom: 'Jan', sexe: 'M', classement: 1 }],
     })
     expect(xml).toContain('Club=""')
   })
@@ -373,17 +407,29 @@ describe('buildEventSeedFiles', () => {
     expect(manifest.filter((m) => m.kind === 'DE').map((m) => m.count).sort()).toEqual([1, 1, 2])
   })
 
-  it('X8.20b carries the declared club from the projection all the way to the XML', () => {
+  it('X8.20b emits an empty club even when the projection still carries one', () => {
+    // ADR-080 amendment (f) withdrawn 2026-09-24: 41 of PPW1's 90 registrations
+    // declared a club and the free text was unusable — one Poznan club under
+    // three spellings, a "Wawrszawa" typo, diacritics dropped. The attribute
+    // stays because the validated FIE reference files carry it.
     const files = buildEventSeedFiles(
       [
-        row('Kowalski', 'Jan', 'M', 'V0', 'EPEE', 1, 'AZS AWFiS Gdańsk'),
-        row('Nowak', 'Piotr', 'M', 'V0', 'EPEE', 2, null),
+        {
+          txt_surname: 'Kowalski',
+          txt_first_name: 'Jan',
+          enum_gender: 'M',
+          enum_age_category: 'V0',
+          enum_weapon: 'EPEE',
+          int_order: 1,
+          int_rank: 1,
+        },
       ],
       'PPW1-2026-2027',
+      '',
     )
     const mixall = files.find((f) => f.kind === 'MIXALL')!
-    expect(mixall.xml).toContain('Nom="KOWALSKI (0)" Prenom="Jan" Sexe="M" Club="AZS AWFiS Gdańsk"')
-    expect(mixall.xml).toContain('Nom="NOWAK (0)" Prenom="Piotr" Sexe="M" Club=""')
+    expect(mixall.xml).toContain('Nom="KOWALSKI (0)" Prenom="Jan" Sexe="M" Club=""')
+    expect(mixall.xml).not.toContain('AZS')
   })
 
   it('X8.20 ignores a weapon nobody entered', () => {

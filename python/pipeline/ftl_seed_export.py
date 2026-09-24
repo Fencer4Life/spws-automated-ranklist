@@ -67,10 +67,11 @@ class FencerEntry:
     id_fencer: int | None
     surname: str
     first_name: str
-    # Declared club (2026-09-13, ADR-080 amendment (f)). None for roster
-    # entries — fn_ftl_roster's rows come from tbl_fencer, which carries no
-    # club for any PROD fencer today, so the roster path never gains one.
-    club: str | None = None
+    # The fencer's TRUE position in their sub-ranking, None when they hold no
+    # points at all (2026-09-24). Not the position among those who entered:
+    # compacting the entrants to a dense 1..N made a true 4th look like a
+    # category winner and seeded her first — see interleave_mixall.
+    rank: int | None = None
 
 
 @dataclass
@@ -162,18 +163,35 @@ def interleave_mixall(
     """Round-robin ("snake by rank") interleave across the 10 domestic
     sub-rankings in the fixed FV0..FV4,MV0..MV4 order (ADR-080 Section 2).
 
-    Lays down the 1st-placed fencer of every LIVE sub-ranking (in fixed
-    order, empties skipped), then every 2nd-placed fencer, and so on.
+    Lays down every fencer holding TRUE rank 1 (in fixed bucket order, empties
+    skipped), then every true rank 2, and so on; every unranked fencer follows
+    after all of them, in bucket order and then in list order.
+
+    The tier is the rank the fencer actually holds, NOT their position among
+    those who entered (2026-09-24). Ranks 1-3 of EPEE FV0 did not enter PPW1,
+    and compacting the entrants to a dense 1..N made SZKLAR — genuinely 4th —
+    into FV0's "first", seeding her ahead of every real category winner. If
+    ranks 1-3 are absent they are simply omitted for that category: the true
+    number 1 leads, and a true 4th is laid down with the other 4th places.
+    Tiers with nobody in them produce nothing, so a bucket first appears at its
+    lowest real rank.
+
     Returns (fencer, sub_ranking_key) pairs in seed order; the caller derives
     Sexe from the key's F/M prefix and the (N) marker from its trailing digit.
     """
-    max_len = max((len(entries) for entries in sub_rankings.values()), default=0)
     result: list[tuple[FencerEntry, str]] = []
-    for rank_idx in range(max_len):
+    highest = max(
+        (e.rank for entries in sub_rankings.values() for e in entries if e.rank is not None),
+        default=0,
+    )
+    for tier in range(1, highest + 1):
         for key in MIXALL_SUBRANKING_ORDER:
-            entries = sub_rankings.get(key, [])
-            if rank_idx < len(entries):
-                result.append((entries[rank_idx], key))
+            # A tier may hold more than one entry per bucket: fn_ranking_ppw
+            # gives two fencers on the same score the same rank. List order
+            # breaks the tie, so two downloads of one entry list agree.
+            result.extend((e, key) for e in sub_rankings.get(key, []) if e.rank == tier)
+    for key in MIXALL_SUBRANKING_ORDER:
+        result.extend((e, key) for e in sub_rankings.get(key, []) if e.rank is None)
     return result
 
 
@@ -270,8 +288,8 @@ def build_fie_xml(
     Section 1). No DateNaissance (FTL infers/enforces an age category from it
     otherwise; the authoritative BY lives only in tbl_registration). No
     Lateralite (FTL accepts import without it). Licence always "" (not
-    collected). Club is the declared value when given (2026-09-13, ADR-080
-    amendment (f)), else "" — same as before this field existed. Matches the
+    collected). Club always "" — the declared-club field of ADR-080 amendment
+    (f) was withdrawn on 2026-09-24 (see the Club attribute below). Matches the
     validated reference files in doc/external_files/FTL_SRC/.
     """
     root = ET.Element(
@@ -299,7 +317,12 @@ def build_fie_xml(
                 "Nom": t["nom"],
                 "Prenom": t["prenom"],
                 "Sexe": t["sexe"],
-                "Club": t.get("club") or "",
+                # Club withdrawn 2026-09-24: the declared values were free text
+                # and already unusable (one club arrived under three spellings,
+                # plus a "Wawrszawa" typo). The ATTRIBUTE stays — the validated
+                # FIE reference files carry it — and is empty, exactly as it was
+                # before ADR-080 amendment (f) added the field.
+                "Club": "",
                 "Nation": "POL",
                 "Licence": "",
                 "Statut": "N",
@@ -375,11 +398,21 @@ def assemble_mixall_subrankings(
             return (1, 0, reg.get("ts_created") or "")
 
         ordered = sorted(regs, key=_sort_key)
+
+        def _true_rank(reg: dict, _rank_order: list[int] = rank_order) -> int | None:
+            """Position in the WHOLE sub-ranking, counting the fencers who did
+            not enter. Returning the position among entrants instead is what
+            made a genuine 4th place seed first — see interleave_mixall."""
+            idf = reg.get("id_fencer")
+            if idf is None or idf not in _rank_order:
+                return None
+            return _rank_order.index(idf) + 1
+
         out[key] = [
             FencerEntry(
                 reg.get("id_fencer"),
                 *to_canonical_name(reg["txt_surname"], reg["txt_first_name"]),
-                club=reg.get("txt_club"),
+                rank=_true_rank(reg),
             )
             for reg in ordered
         ]
@@ -416,7 +449,6 @@ def mixall_tireurs(
                     "prenom": entry.first_name,
                     "sexe": key[0],
                     "classement": seed,
-                    "club": entry.club,
                 },
             )
         )
