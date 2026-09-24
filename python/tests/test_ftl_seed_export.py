@@ -85,16 +85,19 @@ def test_interleave_mixall_matches_worked_example_order():
     # other sub-ranking has exactly one rank-1 entry except FV0 which also has
     # a rank-2 entry (seed 10 in the real example).
     sub_rankings = {
-        "FV0": [FencerEntry(1, "PECZEK", "Sandra"), FencerEntry(10, "SZMAJDZINSKA", "Katarzyna")],
-        "FV1": [FencerEntry(2, "KAMINSKA", "Gabriela")],
-        "FV2": [FencerEntry(3, "WASILCZUK", "Beata")],
+        "FV0": [
+            FencerEntry(1, "PECZEK", "Sandra", rank=1),
+            FencerEntry(10, "SZMAJDZINSKA", "Katarzyna", rank=2),
+        ],
+        "FV1": [FencerEntry(2, "KAMINSKA", "Gabriela", rank=1)],
+        "FV2": [FencerEntry(3, "WASILCZUK", "Beata", rank=1)],
         "FV3": [],
-        "FV4": [FencerEntry(4, "BORKOWSKA", "Halina")],
-        "MV0": [FencerEntry(5, "SPLAWA-NEYMAN", "Maciej")],
-        "MV1": [FencerEntry(6, "SEKOWSKI", "Maciej")],
-        "MV2": [FencerEntry(7, "JENDRYS", "Marek")],
-        "MV3": [FencerEntry(8, "KRZEMINSKI", "Mariusz")],
-        "MV4": [FencerEntry(9, "SZCZESNY", "Jacek")],
+        "FV4": [FencerEntry(4, "BORKOWSKA", "Halina", rank=1)],
+        "MV0": [FencerEntry(5, "SPLAWA-NEYMAN", "Maciej", rank=1)],
+        "MV1": [FencerEntry(6, "SEKOWSKI", "Maciej", rank=1)],
+        "MV2": [FencerEntry(7, "JENDRYS", "Marek", rank=1)],
+        "MV3": [FencerEntry(8, "KRZEMINSKI", "Mariusz", rank=1)],
+        "MV4": [FencerEntry(9, "SZCZESNY", "Jacek", rank=1)],
     }
     order = interleave_mixall(sub_rankings)
     ids_in_order = [entry.id_fencer for entry, _vcat_key in order]
@@ -104,6 +107,45 @@ def test_interleave_mixall_matches_worked_example_order():
     assert order[0][1] == "FV0"
     assert order[3][1] == "FV4"  # FV3 correctly skipped, FV4 is 4th not 5th
     assert order[-1][1] == "FV0"  # the rank-2 entry is still tagged with its sub-ranking
+
+
+def test_interleave_mixall_tiers_on_the_true_rank_not_the_position():
+    """PPW1 2026, EPEE. SZKLAR is 4th on the FV0 ranklist; ranks 1-3 did not
+    enter. The old code compacted the registered fencers to a dense 1..N, so she
+    became FV0's "index 1" and was seeded ahead of every genuine category
+    winner. The tier is the rank the fencers actually hold: a true 1st is laid
+    down in the first pass, and SZKLAR appears with the rest of the 4th places.
+    """
+    sub_rankings = {
+        "FV0": [FencerEntry(1, "SZKLAR", "Bozena", rank=4)],
+        "FV1": [FencerEntry(2, "KAMINSKA", "Gabriela", rank=1)],
+        "MV1": [FencerEntry(3, "SEKOWSKI", "Maciej", rank=1)],
+        "MV2": [FencerEntry(4, "JENDRYS", "Marek", rank=2)],
+    }
+    order = interleave_mixall(sub_rankings)
+    assert [e.id_fencer for e, _ in order] == [2, 3, 4, 1]
+    # A bucket whose lowest real rank is 4 first appears in the 4th pass; the
+    # empty tiers above it simply produce nothing.
+    assert order[-1][1] == "FV0"
+
+
+def test_interleave_mixall_puts_every_unranked_fencer_after_every_ranked_one():
+    """A fencer with no points is not a category winner. They used to be
+    interleaved as if they held the next rank in their bucket."""
+    sub_rankings = {
+        "FV0": [FencerEntry(1, "RANKED", "Anna", rank=9), FencerEntry(2, "NEW", "Ewa")],
+        "MV0": [FencerEntry(3, "ALSONEW", "Jan"), FencerEntry(4, "TOPMAN", "Adam", rank=1)],
+    }
+    order = interleave_mixall(sub_rankings)
+    assert [e.id_fencer for e, _ in order] == [4, 1, 2, 3]
+
+
+def test_interleave_mixall_keeps_tied_ranks_in_list_order():
+    """fn_ranking_ppw can return two fencers on the same score, so a tier may
+    hold more than one entry per bucket. Stable, or two downloads of the same
+    entry list disagree."""
+    sub_rankings = {"MV1": [FencerEntry(1, "A", "A", rank=3), FencerEntry(2, "B", "B", rank=3)]}
+    assert [e.id_fencer for e, _ in interleave_mixall(sub_rankings)] == [1, 2]
 
 
 def test_interleave_mixall_empty_input():
@@ -341,8 +383,11 @@ def test_build_fie_xml_tireur_attributes_canonical_and_empty_club_licence():
     assert tireur.get("Nation") == "POL"
 
 
-def test_build_fie_xml_tireur_emits_declared_club():
-    # ADR-080 amendment (f), 2026-09-13: a declared club is emitted verbatim.
+def test_build_fie_xml_tireur_club_is_always_empty():
+    """ADR-080 amendment (f) withdrawn 2026-09-24. A club supplied by a caller
+    is ignored rather than emitted: the declared values were free text and one
+    Poznan club reached us under three spellings. The ATTRIBUTE survives, empty
+    — the validated FIE reference files carry it."""
     xml_text = build_fie_xml(
         root_id="x",
         weapon_code="S",
@@ -362,7 +407,7 @@ def test_build_fie_xml_tireur_emits_declared_club():
     root = ET.fromstring(xml_text.split("\n", 2)[-1] if xml_text.startswith("<?xml") else xml_text)
     tireur = root.find(".//Tireur")
     assert tireur is not None
-    assert tireur.get("Club") == "AZS AWFiS Gdańsk"
+    assert tireur.get("Club") == ""
 
 
 def test_build_fie_xml_tireur_renders_none_club_as_empty_string():

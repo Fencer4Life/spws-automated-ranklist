@@ -158,17 +158,18 @@ SELECT is(
   '78.6 fn_update_registration with p_club NULL clears a previously declared club'
 );
 
--- 78.7 — fn_ftl_export_entries returns the declared club for a live token.
+-- 78.7 — the club is still COLLECTED (78.1-78.6 above) but is no longer
+-- PUBLISHED. ADR-080 amendment (f) is withdrawn (2026-09-24): 41 of PPW1's 90
+-- registrations declared one and the free text was already unusable — a single
+-- Poznan club under three spellings, a "Wawrszawa" typo, dropped diacritics.
+-- Retiring the collection is a consent change (CONSENT_VERSION names the club)
+-- and follows after the event; the seed files stop carrying it now.
 INSERT INTO tbl_ftl_export_token (uuid_token, txt_label)
   VALUES ('78000000-0000-4000-8000-000000000001', 'pgTAP 78');
 
-SELECT is(
-  (SELECT txt_club FROM fn_ftl_export_entries(
-     (SELECT id_event FROM tbl_event WHERE txt_code = 'REG78EVT'),
-     '78000000-0000-4000-8000-000000000001'::UUID)
-   WHERE txt_surname = 'PGTAP78_NEW'),
-  'AZS AWFiS Gdańsk',
-  '78.7 fn_ftl_export_entries returns the declared club for a live token'
+SELECT ok(
+  pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) NOT LIKE '%txt_club%',
+  '78.7 fn_ftl_export_entries no longer publishes the declared club'
 );
 
 -- ---------------------------------------------------------------------------

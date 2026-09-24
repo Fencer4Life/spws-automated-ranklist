@@ -163,26 +163,29 @@ SELECT ok(
   AND pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) NOT LIKE '%email%',
   '76.4 the projection publishes no birth year, fencer id, registration id, edit token or e-mail hash');
 
--- 76.4b/76.4c — the declared club (2026-09-13, ADR-080 amendment (f)) IS part
--- of this projection, given or not.
+-- 76.4b/76.4c — the declared club is WITHDRAWN (2026-09-24). ADR-080 amendment
+-- (f) added it on 2026-09-13; 41 of PPW1's 90 registrations supplied one and
+-- the free text was already unusable — one Poznan club arrived under three
+-- spellings, plus a "Wawrszawa" typo and dropped diacritics. tbl_registration
+-- .txt_club still holds what was collected; the public projection stops
+-- publishing it, so the seed files stop carrying it.
 SELECT ok(
-  pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) LIKE '%txt_club%',
-  '76.4b the projection DOES publish txt_club — the organizer-only surface that widens for it');
+  pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) NOT LIKE '%txt_club%',
+  '76.4b the projection no longer publishes txt_club');
+
+-- 76.4c — the seed tier is the fencer's TRUE rank, published alongside the
+-- dense int_order that now only orders the unranked tail. Returning the
+-- position among entrants instead is what seeded a genuine 4th place first.
+SELECT ok(
+  pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) LIKE '%int_rank%',
+  '76.4c the projection publishes the true rank the seeding tiers on');
 
 SELECT is(
-  (SELECT txt_club FROM fn_ftl_export_entries(
-     (SELECT id_event FROM tbl_event WHERE txt_code = 'FTLX76EVT'), '76000000-0000-4000-8000-000000000001'::UUID)
-   -- PGTAP76RANK declared two weapons (EPEE+FOIL), so scope to one row.
-   WHERE txt_surname = 'PGTAP76RANK' AND enum_weapon = 'EPEE'),
-  'Klub Testowy 76',
-  '76.4c a declared club is returned verbatim');
-
-SELECT is(
-  (SELECT txt_club FROM fn_ftl_export_entries(
+  (SELECT int_rank FROM fn_ftl_export_entries(
      (SELECT id_event FROM tbl_event WHERE txt_code = 'FTLX76EVT'), '76000000-0000-4000-8000-000000000001'::UUID)
    WHERE txt_surname = 'PGTAP76LATE'),
   NULL,
-  '76.4d a registration with no declared club returns NULL, not an empty string');
+  '76.4d a fencer with no ranking points has no rank — NULL, not a position');
 
 SELECT ok(
   has_function_privilege('anon', 'fn_ftl_export_entries(integer,uuid)', 'EXECUTE'),
