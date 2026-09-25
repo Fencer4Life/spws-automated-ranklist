@@ -57,10 +57,23 @@ class FtlSeedExporter:
         )
         return resp.data or []
 
-    def fetch_weapon_rankings(self, weapon: str, season: int | None = None) -> dict[str, list[int]]:
-        """id_fencer order (rank ascending) for each of the 10 sub-rankings of
-        one weapon, via fn_ranking_ppw. Empty sub-rankings map to []."""
+    def fetch_weapon_rankings(
+        self, weapon: str, season: int | None = None
+    ) -> tuple[dict[str, list[int]], dict[str, dict[int, float]]]:
+        """id_fencer order (rank ascending) AND the points behind it, for each
+        of the 10 sub-rankings of one weapon, via fn_ranking_ppw. Empty
+        sub-rankings map to [] and {}.
+
+        The points half was added 2026-09-26. Until then this threw total_score
+        away, so every FencerEntry reached the interleave with points=None and
+        this path kept ordering each tier by the fixed FV0..MV4 sequence while
+        the browser download page — which reads num_rank_points straight off
+        fn_ftl_export_entries — ordered it by points. Two generators, one event,
+        two different seed orders. The byte-parity test cannot catch that: it
+        feeds both the same entries.
+        """
         rankings: dict[str, list[int]] = {}
+        scores: dict[str, dict[int, float]] = {}
         for gender, category in _SUBRANKING_ARGS:
             params: dict[str, object] = {
                 "p_weapon": _WEAPON_ARG[weapon],
@@ -72,10 +85,14 @@ class FtlSeedExporter:
             resp = self._sb.rpc("fn_ranking_ppw", params).execute()
             rows = resp.data or []
             rows = sorted(rows, key=lambda r: r.get("rank") or 0)
-            rankings[f"{gender}{category}"] = [
-                r["id_fencer"] for r in rows if r.get("id_fencer") is not None
-            ]
-        return rankings
+            key = f"{gender}{category}"
+            rankings[key] = [r["id_fencer"] for r in rows if r.get("id_fencer") is not None]
+            scores[key] = {
+                r["id_fencer"]: float(r["total_score"])
+                for r in rows
+                if r.get("id_fencer") is not None and r.get("total_score") is not None
+            }
+        return rankings, scores
 
     def build_bundle(
         self,
@@ -91,14 +108,17 @@ class FtlSeedExporter:
         tbl_event.txt_code in full ('PPW1-2026-2027'); `weapons` is the event's
         declared weapon set (tbl_event arr_weapons)."""
         registrations = self.fetch_registrations(id_event)
-        rankings_by_weapon = {w: self.fetch_weapon_rankings(w, season) for w in weapons}
+        fetched = {w: self.fetch_weapon_rankings(w, season) for w in weapons}
         return build_event_mixall_files(
             registrations=registrations,
             weapons=weapons,
-            rankings_by_weapon=rankings_by_weapon,
+            rankings_by_weapon={w: order for w, (order, _) in fetched.items()},
             event_code=event_code,
             season_end_year=season_end_year,
             date_fichier_xml=date_fichier_xml,
+            # Without this the tier falls back to the fixed category order and
+            # this path diverges from the download page. See fetch_weapon_rankings.
+            scores_by_weapon={w: pts for w, (_, pts) in fetched.items()},
         )
 
     def build_bundle_zip(self, *args, **kwargs) -> bytes:

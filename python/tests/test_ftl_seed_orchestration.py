@@ -512,3 +512,59 @@ def test_seed_files_without_rosters_are_unchanged():
         season_end_year=SEY,
     )
     assert [f.kind for f in seed] == ["MIXALL", "DE"]
+
+
+def test_exporter_carries_total_score_so_a_tier_seeds_by_points():
+    """The tier order the ORGANIZER receives must come from points, on this
+    path too.
+
+    This is the seam that broke. fetch_weapon_rankings read fn_ranking_ppw and
+    kept only id_fencer, throwing total_score away, so every entry reached
+    interleave_mixall with points=None and each tier silently fell back to the
+    fixed FV0..MV4 sequence — while the browser download page, reading
+    num_rank_points off fn_ftl_export_entries, ordered the same tier by points.
+    One event, two generators, two different seed orders.
+
+    The byte-for-byte parity test cannot see it: it hands both generators the
+    same pre-built entries, so it compares the two halves downstream of the
+    place where they disagree. The assertion has to start at the RPC.
+
+    Jan is rank 1 of MV0 on 400 points; Anna is rank 1 of FV0 on 300. Both are
+    tier 1. Alphabetically FV0 precedes MV0, so the old code seeded Anna first.
+    """
+    from python.pipeline.ftl_seed_export_db import FtlSeedExporter
+
+    sb = MagicMock()
+    sb.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value.data = [
+        _reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"]),
+        _reg(2, "Nowak", "Anna", "F", 1990, ["EPEE"]),
+    ]
+
+    def _ranking(_name, params):
+        rows = {
+            ("M", "V0"): [{"rank": 1, "id_fencer": 1, "total_score": 400.0}],
+            ("F", "V0"): [{"rank": 1, "id_fencer": 2, "total_score": 300.0}],
+        }.get((params["p_gender"], params["p_category"]), [])
+        rpc = MagicMock()
+        rpc.execute.return_value.data = rows
+        return rpc
+
+    sb.rpc.side_effect = _ranking
+
+    files = FtlSeedExporter(sb).build_bundle(
+        id_event=42,
+        weapons=["EPEE"],
+        event_code="PPW5-2025-2026",
+        season_end_year=SEY,
+        season=None,
+    )
+    # By name, not by filename: the suffix records which genders entered
+    # (here W+M), and this test is about the order inside the file.
+    doc = next(v for k, v in files.items() if "POOLS-MIXED" in k)
+    # Nom carries the "(N)" category marker, so key on the surname it starts with.
+    seeds = {
+        (t.get("Nom") or "").split(" (")[0]: t.get("Classement")
+        for t in ET.fromstring(doc).iter("Tireur")
+    }
+    assert seeds["KOWALSKI"] == "1", "the higher score takes the first seed of the tier"
+    assert seeds["NOWAK"] == "2"

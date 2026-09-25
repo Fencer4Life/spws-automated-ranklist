@@ -24,6 +24,8 @@ import defusedxml.ElementTree as ET
 
 from python.pipeline.ftl_seed_export import (
     FencerEntry,
+    assemble_mixall_subrankings,
+    build_event_mixall_files,
     build_fie_xml,
     de_title,
     export_filename,
@@ -511,3 +513,74 @@ def test_build_fie_xml_multiple_tireurs_preserve_order():
     root = ET.fromstring(xml_text.split("\n", 2)[-1] if xml_text.startswith("<?xml") else xml_text)
     tireurs = root.findall(".//Tireur")
     assert [t.get("Nom") for t in tireurs] == ["AAA (0)", "BBB (1)"]
+
+
+def test_assemble_mixall_subrankings_carries_the_points_through():
+    """The orchestration must reach the interleave with points, or the two
+    generators disagree about the same event.
+
+    fetch_weapon_rankings kept only id_fencer and threw total_score away, so
+    every FencerEntry arrived with points=None, every tier fell back to the
+    fixed category order, and the Python path (ftl-seed.yml -> Telegram
+    delivery) produced a different seed order from the browser download page —
+    which reads num_rank_points straight off the projection. The byte-parity
+    test cannot see this: it feeds both generators the same entries.
+    """
+    regs = [
+        {
+            "id_fencer": 7,
+            "txt_surname": "SEKOWSKI",
+            "txt_first_name": "Maciej",
+            "enum_gender": "M",
+            "int_birth_year": 1980,
+            "arr_weapons": ["EPEE"],
+            "ts_created": "2026-09-01T00:00:00Z",
+        },
+    ]
+    sub = assemble_mixall_subrankings(
+        regs,
+        "EPEE",
+        {"MV1": [7]},
+        2027,
+        scores={"MV1": {7: 435.96}},
+    )
+    assert sub["MV1"][0].points == 435.96
+
+
+def test_build_event_seed_files_orders_a_tier_by_points_end_to_end():
+    """The whole Python path, registrations in and seed order out."""
+    regs = [
+        # FV1 rank 1 on fewer points than MV1's rank 1. Under the old fixed
+        # order she led the tier because 'F' sorts before 'M'.
+        {
+            "id_fencer": 1,
+            "txt_surname": "KAMINSKA",
+            "txt_first_name": "Gabriela",
+            "enum_gender": "F",
+            "int_birth_year": 1982,
+            "arr_weapons": ["EPEE"],
+            "ts_created": "2026-09-01T00:00:00Z",
+        },
+        {
+            "id_fencer": 2,
+            "txt_surname": "SEKOWSKI",
+            "txt_first_name": "Maciej",
+            "enum_gender": "M",
+            "int_birth_year": 1982,
+            "arr_weapons": ["EPEE"],
+            "ts_created": "2026-09-02T00:00:00Z",
+        },
+    ]
+    files = build_event_mixall_files(
+        registrations=regs,
+        weapons=["EPEE"],
+        rankings_by_weapon={"EPEE": {"FV1": [1], "MV1": [2]}},
+        event_code="PPW1-2026-2027",
+        season_end_year=2027,
+        scores_by_weapon={"EPEE": {"FV1": {1: 363.20}, "MV1": {2: 435.96}}},
+    )
+    doc = next(iter(files.values()))
+    # Classement 1 belongs to the higher score, whatever the category letter.
+    tireurs = {t.get("Nom"): t.get("Classement") for t in ET.fromstring(doc).iter("Tireur")}
+    assert tireurs["SEKOWSKI (1)"] == "1"
+    assert tireurs["KAMINSKA (1)"] == "2"
