@@ -188,8 +188,8 @@
     "schema_fingerprint": "3951c893c57bdfb926ac28d94a0cf5a1"
   },
   "prod": {
-    "last_updated": "2026-09-20T16:22:54Z",
-    "last_sha": "603516ffae632bb5055509c81c514f79e01b1260",
+    "last_updated": "2026-09-25T06:41:25Z",
+    "last_sha": "06554a7ff0109f1836a31f9f28e8671700e2aebd",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -370,8 +370,9 @@
       "20260919000009_ranking_publication_boundary.sql",
       "20260920000001_add_senior_enum.sql",
       "20260920000002_pzsz_senior_result_ingestion.sql",
-      "20260920000003_public_scoring_params.sql"
+      "20260920000003_public_scoring_params.sql",
+      "20260924000001_ftl_export_true_rank.sql"
     ],
-    "schema_fingerprint": "d0e0daad0ad00d80736ecdfe5b7d1c06"
+    "schema_fingerprint": "3951c893c57bdfb926ac28d94a0cf5a1"
   }
 }
