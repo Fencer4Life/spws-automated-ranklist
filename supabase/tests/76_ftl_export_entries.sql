@@ -41,7 +41,7 @@
 
 BEGIN;
 
-SELECT plan(32);
+SELECT plan(35);
 
 DO $setup$
 DECLARE
@@ -186,6 +186,32 @@ SELECT is(
    WHERE txt_surname = 'PGTAP76LATE'),
   NULL,
   '76.4d a fencer with no ranking points has no rank — NULL, not a position');
+
+-- 76.4e/f/g — the ranking POINTS behind that rank (2026-09-26). Inside a seed
+-- tier the generators used to walk the fixed FV0..FV4, MV0..MV4 order, so a
+-- woman took the first seed of every tier because 'F' sorts before 'M'. They
+-- now sort the tier by points, and this is where the points come from. It
+-- publishes nothing new: fn_ranking_ppw is anon-EXECUTEable, so the numbers
+-- are already public (76.5 below pins the same for this projection).
+SELECT ok(
+  pg_get_function_result('fn_ftl_export_entries(integer,uuid)'::regprocedure) LIKE '%num_rank_points%',
+  '76.4e the projection publishes the points the tier is ordered by');
+
+SELECT isnt(
+  (SELECT num_rank_points FROM fn_ftl_export_entries(
+     (SELECT id_event FROM tbl_event WHERE txt_code = 'FTLX76EVT'), '76000000-0000-4000-8000-000000000001'::UUID)
+   WHERE txt_surname = 'PGTAP76RANK' AND enum_weapon = 'EPEE'),
+  NULL,
+  '76.4f a ranked entrant carries a points value');
+
+-- NULL exactly when int_rank is NULL, and for the same reason: no points at
+-- all is not zero points, and it is what sends the entry to the tail.
+SELECT is(
+  (SELECT num_rank_points FROM fn_ftl_export_entries(
+     (SELECT id_event FROM tbl_event WHERE txt_code = 'FTLX76EVT'), '76000000-0000-4000-8000-000000000001'::UUID)
+   WHERE txt_surname = 'PGTAP76LATE'),
+  NULL,
+  '76.4g an unranked fencer has no points — NULL, not zero');
 
 SELECT ok(
   has_function_privilege('anon', 'fn_ftl_export_entries(integer,uuid)', 'EXECUTE'),

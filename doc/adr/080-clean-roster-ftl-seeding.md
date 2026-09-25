@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's `<Tireur>` element order is now alphabetical by surname under Polish collation in every generated file; `Classement` keeps the interleave seed.)
+**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's `<Tireur>` element order is now alphabetical by surname under Polish collation in every generated file; `Classement` keeps the interleave seed. Amended 2026-09-24: the club is withdrawn and seeding tiers on the true rank. Amended 2026-09-26: inside a tier the order is ranking points, not the fixed category sequence, which becomes the tie-break; the amendment states the whole algorithm and carries the Regulamin wording.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -565,3 +565,106 @@ Migration `20260924000001_ftl_export_true_rank.sql`. Tests: pgTAP 76.4b-d,
 `test_ftl_seed_export.py` (the interleave tiers, unranked last, tied ranks stable),
 `test_ftl_seed_orchestration.py` (the true rank reaches the interleave), and
 `ftlSeedExport.test.ts` X8.8/X8.8b/X8.8c in the twin.
+
+## Amendment (2026-09-26) — a seed tier is ordered by points, not by category
+
+§2 fixed the order inside a tier as the sequence `FV0, FV1, FV2, FV3, FV4, MV0, MV1,
+MV2, MV3, MV4`. A woman therefore took the first seed of **every** tier because `F`
+sorts before `M`, and V0 led the women because `0` sorts before `1`. Neither was
+earned — alphabetical order standing in for merit, on the file the organizer imports.
+Measured on PPW1-2026-2027 épée, tier 1 opened with KAMIŃSKA on 363.20 while SĘKOWSKI
+sat fifth on 435.96.
+
+**Within a tier, entries are now ordered by ranking points, descending, across all ten
+sub-rankings.** The fixed order is not deleted: it becomes the tie-break.
+
+### The algorithm, end to end
+
+Recorded here in full because this is the page the Regulamin quotes, and because the
+rule now has three layers — the original interleave, the true-rank tiering of
+2026-09-24, and this.
+
+1. **Population.** Every registration that declared this weapon. No payment gate. One
+   row per registration × declared weapon, so a fencer entered for épée and foil is
+   seeded independently in each.
+2. **Sub-ranking.** Each entrant lands in one of ten sub-rankings — `{F,M} × {V0..V4}`
+   — resolved from `tbl_fencer.int_birth_year` against the target season's end year for
+   a matched registration, falling back to the declared year only for an unmatched one.
+   The same source `fn_ranking_ppw` ranks on, which is what stops a fencer being looked
+   up in a sub-ranking they are not in.
+3. **True rank.** Position in that whole sub-ranking, counting fencers who did not
+   enter; `NULL` when the fencer holds no points. **Not** the position among entrants —
+   compacting entrants to a dense `1..N` is what once seeded a genuine fourth place
+   first (2026-09-24).
+4. **Tiers.** Pass 1 lays down every true rank 1, pass 2 every true rank 2, and so on.
+   An empty tier consumes no seed numbers, so a sub-ranking first appears at its lowest
+   real rank.
+5. **Order within a tier.** Ranking points, descending, across all ten sub-rankings.
+   Ties resolve by the fixed order `FV0..FV4, MV0..MV4`, then by `int_order`
+   (alphabetical). The sort is **total** — `fn_ranking_ppw` gives two fencers on the
+   same score the same rank, so ties are real, and two downloads of one entry list that
+   disagreed could not be reconciled against the organizer's software.
+6. **The tail.** Every entrant holding no points follows all ranked entrants, in the
+   fixed sub-ranking order then alphabetically. They have no points to sort on.
+7. **The number.** Seed positions are numbered `1..N` with no gaps and written to the
+   `Classement` attribute of each `<Tireur>`. The file's *rows* stay alphabetical by
+   surname (amendment 2026-09-14), so row order is not seed order and reading the file
+   top to bottom does not show the seeding.
+
+### Consequences
+
+The points come from `fn_ftl_export_entries`, which gains `num_rank_points`
+(migration `20260926000001`). It publishes nothing new: `fn_ranking_ppw` is
+anon-EXECUTEable under ADR-083's allowlist, so every one of these numbers is already
+public. No consent question, no allowlist change. Because the projection's OUT columns
+change, the migration DROPs and recreates the function, which makes its `REVOKE`/`GRANT`
+block load-bearing rather than decorative.
+
+**The order within a tier is now field-sensitive, and that is worth stating plainly.**
+The active engine scales the base by field size on purpose —
+`B(N) = min(mpValue, baseSlope × log2(max(2, N)))` — so a win in a larger sub-ranking
+outranks a win in a smaller one. Épée ranked-field sizes at the time of writing: FV4 2,
+FV0 7, FV1 7, FV2 11, MV4 11, MV3 14, MV0 22, MV1 22, MV2 23. Tier 1 of PPW1 becomes
+SĘKOWSKI, KRZEMIŃSKI, JENDRYŚ, KAMIŃSKA, WASILCZUK, SPŁAWA-NEYMAN, BORKOWSKA — the
+arbitrariness is gone, and larger fields lead. BORKOWSKA moves from third to seventh on
+a field of two rather than on her fencing. This is the ranking's own scoring rule
+applied to seeding, and it was accepted knowingly.
+
+Tests: `test_ftl_seed_export.py` (a tier ordered by points; equal points falling back
+to the fixed order; points never deciding *which* tier; the unranked tail unchanged),
+`ftlSeedExport.test.ts` X8.8d/X8.8e/X8.8f in the twin, and pgTAP 76.4e/f/g for the
+column. Byte-for-byte XML equality between the two generators is what keeps them honest.
+
+### Regulamin — treść po polsku
+
+Kept here verbatim so the regulation and the code are amended in one place.
+
+> **Kolejność rozstawienia w turniejach rozgrywanych we wspólnej puli (mixed)**
+>
+> Numer rozstawienia ustalany jest według trzech zasad.
+>
+> **1. Miejsce w rankingu.** Dla każdego zgłoszonego zawodnika system odczytuje jego
+> miejsce we właściwym rankingu SPWS — osobnym dla każdej broni, płci i kategorii
+> wiekowej (V0–V4). Jest to miejsce rzeczywiste: jeżeli trzy pierwsze osoby z danej
+> kategorii nie zgłosiły się na zawody, zawodnik czwarty pozostaje czwartym, a nie
+> staje się pierwszym.
+>
+> **2. Kroki.** Rozstawienie układane jest krokami. W pierwszym kroku umieszczani są
+> wszyscy zawodnicy zajmujący w swoich rankingach miejsce pierwsze, w drugim kroku —
+> wszyscy zajmujący miejsce drugie, w trzecim kroku — wszyscy zajmujący miejsce
+> trzecie, i tak dalej. Krok, w którym nikt nie startuje, nie zajmuje żadnego numeru.
+>
+> **3. Kolejność w obrębie kroku.** Decyduje liczba punktów rankingowych — od
+> najwyższej do najniższej, niezależnie od płci i kategorii wiekowej. Przy równej
+> liczbie punktów rozstrzyga ustalona kolejność kategorii (FV0–FV4, następnie
+> MV0–MV4), a w dalszej kolejności kolejność alfabetyczna.
+>
+> **Zawodnicy bez punktów rankingowych** otrzymują numery na końcu listy, po wszystkich
+> zawodnikach sklasyfikowanych.
+>
+> Liczba punktów rankingowych zależy również od liczebności rankingu, w którym zawodnik
+> jest sklasyfikowany — zwycięstwo w liczniejszej stawce jest punktowane wyżej.
+>
+> Numer rozstawienia zapisywany jest w pliku XML w atrybucie `Classement`. Wiersze w
+> pliku uporządkowane są alfabetycznie według nazwiska, dlatego kolejność wierszy nie
+> odpowiada kolejności rozstawienia.

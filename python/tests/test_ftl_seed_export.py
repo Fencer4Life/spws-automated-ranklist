@@ -148,6 +148,67 @@ def test_interleave_mixall_keeps_tied_ranks_in_list_order():
     assert [e.id_fencer for e, _ in interleave_mixall(sub_rankings)] == [1, 2]
 
 
+def test_interleave_mixall_orders_a_tier_by_points_not_by_category():
+    """Within a tier the order is ranking points, descending, across all ten
+    sub-rankings (2026-09-26).
+
+    Before this, the order inside a tier was the fixed FV0..MV4 sequence, so a
+    woman took the first seed of every tier because "F" sorts before "M", and V0
+    led the women because "0" sorts before "1". Neither was earned. Measured on
+    PPW1 EPEE, tier 1 was KAMINSKA(FV1) first on 363.20 while SEKOWSKI(MV1) sat
+    fifth on 435.96.
+    """
+    sub_rankings = {
+        "FV1": [FencerEntry(1, "KAMINSKA", "Gabriela", rank=1, points=363.20)],
+        "FV2": [FencerEntry(2, "WASILCZUK", "Beata", rank=1, points=320.70)],
+        "FV4": [FencerEntry(3, "BORKOWSKA", "Halina", rank=1, points=156.95)],
+        "MV0": [FencerEntry(4, "SPLAWA-NEYMAN", "Maciej", rank=1, points=319.07)],
+        "MV1": [FencerEntry(5, "SEKOWSKI", "Maciej", rank=1, points=435.96)],
+        "MV2": [FencerEntry(6, "JENDRYS", "Marek", rank=1, points=389.99)],
+        "MV3": [FencerEntry(7, "KRZEMINSKI", "Mariusz", rank=1, points=422.84)],
+    }
+    assert [e.id_fencer for e, _ in interleave_mixall(sub_rankings)] == [5, 7, 6, 1, 2, 4, 3]
+
+
+def test_interleave_mixall_breaks_equal_points_on_the_fixed_category_order():
+    """The sort must be TOTAL: fn_ranking_ppw gives two fencers on the same
+    score the same rank, so exact ties are real. Two downloads of one entry list
+    that disagree would be impossible to reconcile against the organizer's
+    software. The old fixed order survives as the tie-break.
+    """
+    sub_rankings = {
+        "MV2": [FencerEntry(3, "CCC", "Three", rank=1, points=100.00)],
+        "FV0": [FencerEntry(1, "AAA", "One", rank=1, points=100.00)],
+        "MV0": [FencerEntry(2, "BBB", "Two", rank=1, points=100.00)],
+    }
+    assert [e.id_fencer for e, _ in interleave_mixall(sub_rankings)] == [1, 2, 3]
+
+
+def test_interleave_mixall_points_never_decide_which_tier():
+    """Points order WITHIN a tier; they must never leak into WHICH tier.
+
+    A rank-2 fencer holding more points than a rank-1 fencer of another
+    sub-ranking still seeds behind them — the small-field category winner leads
+    their tier, which is the whole point of seeding by rank rather than by score.
+    """
+    sub_rankings = {
+        "FV4": [FencerEntry(1, "SMALLFIELD", "Winner", rank=1, points=10.00)],
+        "MV1": [FencerEntry(2, "BIGFIELD", "Runnerup", rank=2, points=999.00)],
+    }
+    assert [e.id_fencer for e, _ in interleave_mixall(sub_rankings)] == [1, 2]
+
+
+def test_interleave_mixall_unranked_tail_ignores_points():
+    """An unranked fencer has no points to sort on, so the tail keeps the fixed
+    bucket order and list order it always had."""
+    sub_rankings = {
+        "MV1": [FencerEntry(3, "CCC", "Three", rank=None, points=None)],
+        "FV0": [FencerEntry(1, "AAA", "One", rank=None, points=None)],
+        "FV2": [FencerEntry(2, "BBB", "Two", rank=None, points=None)],
+    }
+    assert [e.id_fencer for e, _ in interleave_mixall(sub_rankings)] == [1, 2, 3]
+
+
 def test_interleave_mixall_empty_input():
     assert interleave_mixall({}) == []
 
