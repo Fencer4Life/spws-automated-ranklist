@@ -210,7 +210,10 @@
 <p>The ranking repairs itself afterwards without anyone acting: changing a birth year queues a recompute of every event that fencer played, and the queue drains on a schedule.</p>
 <ul class="sequence">
 <li>Where the stored birth year was an <b>estimate</b>, the declaration wins and the stored value is corrected. Collecting exactly this is one reason unlinked registration is accepted at all.</li>
-<li>Where the stored birth year is <b>known</b> and the declaration disagrees, ingestion still holds the conflict for review rather than applying it. A namesake and a bad edit look identical <em>here</em>, because nobody is present to ask. That is precisely why the question is now put at registration instead, where the one person who can answer it is looking at the screen.</li>
+<li>Where the stored birth year is <b>known</b> and the declaration disagrees, ingestion applies it only when the category the fencer actually competed in agrees with the declared year — two independent sources against one stored value. With nothing to corroborate it, the conflict is held for review instead. A namesake and a bad edit look identical <em>here</em>, because nobody is present to ask. That is precisely why the question is also put at registration, where the one person who can answer it is looking at the screen.</li>
+<li>Where the entrant was <b>never matched</b> to anybody, the fencer created for them at ingestion carries the year they declared, recorded as known rather than estimated. Before this, such a person was created from the midpoint of whichever age band they fenced in — a guess wrong by as much as two years, in a value that decides which age category they are ranked in, made while their own answer sat unread in the entry list.</li>
+<li>Where the declared year and the competed category <b>contradict each other</b>, neither is written and the disagreement is reported. Writing the declaration would preserve a seeding mistake as fact; writing the band midpoint would overrule somebody about their own birth year.</li>
+<li>Where two fencers <b>share the entrant's name</b>, nothing is written at all. Two such pairs exist on the master list today, and a birth year placed on the wrong one of them cannot be told apart from a correction afterwards.</li>
 </ul>
 <p>Once results are ingested and reconciled, the registration has done its work and the row is purged. The ranking record is durable; the registration is not. That is the end of the lifecycle, and it is the reason nothing downstream may treat a registration as a lasting identity.</p>
 </section>
@@ -257,7 +260,7 @@
 <li><a href="../../adr/079-event-self-registration-identity.html">ADR-079</a> — the identity model, the read-only invariant, impersonation posture, and the amendments covering unlinked registration, twin absorption and the edit path.</li>
 <li><a href="../../adr/078-gdpr-data-handling.html">ADR-078</a> — lawful bases, the data inventory, and the rights matrix including rectification.</li>
 <li><a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> — the seed file format, category markers and seeding order.</li>
-<li><a href="../../adr/093-registration-as-birth-year-source.html">ADR-093</a> — why a declaration may correct a birth year, the six-rung order, the four guards on the write, and why overwriting a confirmed year is loud and reversible rather than withheld.</li>
+<li><a href="../../adr/093-registration-as-birth-year-source.html">ADR-093</a> — why a declaration may correct a birth year, the six-rung order, the four guards on the write, and why overwriting a confirmed year is never silent.</li>
 <li><a href="../../adr/083-server-enforced-authorization.html">ADR-083</a> — why the public functions are the entire anonymous surface, and why that surface is an allowlist.</li>
 <li><a href="../subsystems/events-and-registration.html">Events and registration</a> — the owning subsystem page. <a href="../architecture/end-to-end-flows.html">End-to-end flows</a> places this journey among the others.</li>
 </ul>

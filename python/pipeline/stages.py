@@ -25,6 +25,7 @@ from typing import Any
 
 from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
 from python.matcher.pipeline import _VCAT_ORDER, estimate_birth_year, reconciled_birth_year
+from python.pipeline.age_split import birth_year_to_vcat
 from python.pipeline.types import (
     HaltError,
     HaltReason,
@@ -172,6 +173,69 @@ def _bracket_mixed_gender(
     return len(genders) > 1
 
 
+def declared_birth_years(ctx: PipelineContext, db: Any) -> dict[tuple[str, str], int]:
+    """This event's declared birth years, keyed by normalised (surname, first).
+
+    A registration is the one moment the association hears a birth year from
+    the fencer directly, and it outranks anything we inferred from a bracket
+    label. Until 2026-09-25 the ingestion pipeline never read it: a new entrant
+    was minted from a band midpoint — wrong by up to two years, which then
+    decides their V-category — while their exact declared year sat one table
+    away, for the very same event.
+
+    Keys are normalised with the same diacritic-folding parse the scraped names
+    go through (`_find_exact_fencer`), so both sides are compared on equal
+    terms and MŁYNEK matches MLYNEK.
+
+    **A name carrying more than one registration is dropped**, not resolved.
+    PROD holds two live same-name pairs (KRAWCZYK Paweł, MŁYNEK Janusz — the
+    latter with nineteen results), and a birth year written onto the wrong one
+    of those is unrecoverable. Same rule as ADR-093's lookup: software never
+    picks between namesakes.
+
+    Empty for an event with no registrations, which is every historical event
+    and every international one — so every caller keeps its old behaviour there.
+    """
+    try:
+        rows = db.fetch_registration_birth_years(ctx.event_code)
+    except Exception:
+        # A registration lookup must never block an ingestion run. Falling back
+        # to the band midpoint is exactly today's behaviour, so a failure here
+        # costs precision, never correctness.
+        return {}
+
+    seen: dict[tuple[str, str], int] = {}
+    ambiguous: set[tuple[str, str]] = set()
+    for r in rows or []:
+        by = r.get("int_birth_year")
+        if by is None:
+            continue
+        key = (
+            normalize_name(r.get("txt_surname") or "", use_diacritic_folding=True),
+            normalize_name(r.get("txt_first_name") or "", use_diacritic_folding=True),
+        )
+        if key in seen and seen[key] != by:
+            ambiguous.add(key)
+        elif key not in seen:
+            seen[key] = int(by)
+    for key in ambiguous:
+        seen.pop(key, None)
+    return seen
+
+
+def _declared_for(declared: dict[tuple[str, str], int] | None, scraped_name: str) -> int | None:
+    """The declared year for a scraped name, or None."""
+    if not declared:
+        return None
+    sur, fst = parse_scraped_name(scraped_name)
+    return declared.get(
+        (
+            normalize_name(sur, use_diacritic_folding=True),
+            normalize_name(fst, use_diacritic_folding=True),
+        )
+    )
+
+
 def reconcile_fencer_birth_year(
     pctx: PipelineContext,
     db: Any,
@@ -183,6 +247,7 @@ def reconcile_fencer_birth_year(
     scraped_name: str,
     source: str | None = None,
     bracket_is_mixed_gender: bool = False,
+    declared_birth_year: int | None = None,
 ) -> int | None:
     """Reconcile ONE matched fencer's stored birth year against a bracket V-cat.
 
@@ -211,6 +276,83 @@ def reconcile_fencer_birth_year(
     """
     row = next((f for f in fencer_db if f["id_fencer"] == existing_id), None)
     stored_by = row.get("int_birth_year") if row else None
+
+    # ---- The declaration, before any bracket-derived rule ----------------
+    # Everything below this block infers an age from a bracket LABEL. This
+    # fencer told us their birth year themselves when they entered, and a
+    # first-hand declaration outranks an inference — that is ADR-093's premise,
+    # applied at the point where master data is actually written rather than
+    # only in the registration form.
+    #
+    # It is written CONFIRMED, unlike every other branch here, because it is
+    # not an estimate. That also re-arms Guard 1 for this fencer: the next
+    # bracket that disagrees can no longer demote them silently.
+    if declared_birth_year is not None and row is not None:
+        declared_vcat = birth_year_to_vcat(declared_birth_year, season_end)
+        if bracket_is_mixed_gender:
+            # Guard 2 distrusts the BRACKET, and a declaration is not a
+            # bracket. There is simply nothing here to cross-check against, so
+            # the declaration stands on its own.
+            pass
+        elif target_vcat is not None and declared_vcat != target_vcat:
+            # The fencer's own year and the category they actually fenced in
+            # disagree. Take NEITHER — writing the declaration would bake a
+            # mis-seeding into master data, and writing the midpoint would
+            # overrule a person about their own birth year. ADR-056 Guard 2's
+            # posture: an untrustworthy label calibrates nothing.
+            pctx.reconcile_conflicts.append(
+                {
+                    "id_fencer": existing_id,
+                    "scraped_name": scraped_name,
+                    "first_vcat": declared_vcat,
+                    "second_vcat": target_vcat,
+                    "source": source,
+                    "reason": "declared_vs_bracket",
+                    "declared_birth_year": declared_birth_year,
+                }
+            )
+            return stored_by
+        was_confirmed = not bool(row.get("bool_birth_year_estimated"))
+        if declared_birth_year == stored_by and was_confirmed:
+            return stored_by  # already exactly this, confirmed — no write, no enqueue
+        if was_confirmed and stored_by is not None and target_vcat is None:
+            # ADR-079 §3's rule is that an ESTIMATED stored year yields to the
+            # declaration and a KNOWN one does not. A confirmed year is only
+            # overruled here because the declaration and the bracket agree —
+            # two independent sources against one stored value. With no bracket
+            # to corroborate, that majority does not exist, so the rule stands
+            # and the disagreement goes to a human instead.
+            pctx.reconcile_conflicts.append(
+                {
+                    "id_fencer": existing_id,
+                    "scraped_name": scraped_name,
+                    "first_vcat": declared_vcat,
+                    "second_vcat": None,
+                    "source": source,
+                    "reason": "declared_vs_confirmed_uncorroborated",
+                    "declared_birth_year": declared_birth_year,
+                }
+            )
+            return stored_by
+        db.update_fencer_birth_year(existing_id, declared_birth_year, estimated=False)
+        row["int_birth_year"] = declared_birth_year
+        row["bool_birth_year_estimated"] = False
+        if target_vcat is not None:
+            touched[existing_id] = target_vcat
+        pctx.reconciled_fencers.append(
+            {
+                "id_fencer": existing_id,
+                "scraped_name": scraped_name,
+                "vcat": declared_vcat,
+                "old_birth_year": stored_by,
+                "new_birth_year": declared_birth_year,
+                "was_confirmed": was_confirmed,
+                "anchor": "declared at registration",
+                "source": source,
+            }
+        )
+        return declared_birth_year
+
     if target_vcat is None or stored_by is None:
         return stored_by  # no authoritative V-cat or no BY → nothing to reconcile
     assert row is not None  # stored_by is only non-None when row was truthy above
@@ -323,6 +465,9 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
     source = getattr(ctx.parsed.source_kind, "value", str(ctx.parsed.source_kind))
 
     fencer_db = db.fetch_fencer_db()
+    # This event's declared birth years, keyed by normalised name. Empty for
+    # every historical and international event, so behaviour there is unchanged.
+    declared = declared_birth_years(ctx, db)
     # Track per-run touches so a fencer appearing in two conflicting brackets
     # within one run is flagged once, not thrashed back and forth.
     touched: dict[int, str] = {}
@@ -351,12 +496,38 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
         if existing_id is None:
             # ---- Job 1: create the new participant ----
             surname, first_name = parse_scraped_name(r.fencer_name)
-            by = estimate_birth_year(vcat, season_end) if vcat else None
+            # The declaration first. A midpoint is wrong by up to two years in
+            # either direction and that error picks the fencer's V-category, so
+            # inventing one while their own answer sits in tbl_registration for
+            # this very event was never defensible. It is only taken when the
+            # year it implies agrees with the bracket they actually fenced in —
+            # otherwise the entry list and the results contradict each other,
+            # and neither is good enough to mint an identity from.
+            declared_by = _declared_for(declared, r.fencer_name)
+            if declared_by is not None and (
+                vcat is None or birth_year_to_vcat(declared_by, season_end) == vcat
+            ):
+                by, by_estimated = declared_by, False
+            else:
+                if declared_by is not None:
+                    ctx.reconcile_conflicts.append(
+                        {
+                            "id_fencer": None,
+                            "scraped_name": r.fencer_name,
+                            "first_vcat": birth_year_to_vcat(declared_by, season_end),
+                            "second_vcat": vcat,
+                            "source": source,
+                            "reason": "declared_vs_bracket",
+                            "declared_birth_year": declared_by,
+                        }
+                    )
+                by = estimate_birth_year(vcat, season_end) if vcat else None
+                by_estimated = by is not None
             payload = {
                 "txt_surname": surname,
                 "txt_first_name": first_name,
                 "int_birth_year": by,
-                "bool_birth_year_estimated": by is not None,
+                "bool_birth_year_estimated": by_estimated,
                 "txt_nationality": nat or "PL",
             }
             if bracket_gender:
@@ -370,7 +541,7 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
                     "txt_surname": surname,
                     "txt_first_name": first_name,
                     "int_birth_year": by,
-                    "bool_birth_year_estimated": by is not None,
+                    "bool_birth_year_estimated": by_estimated,
                     "txt_nationality": nat or "PL",
                     "enum_gender": bracket_gender,
                     "json_name_aliases": [],
@@ -385,7 +556,7 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
                     "nationality": nat or "PL",
                     "vcat": vcat,
                     "birth_year": by,
-                    "estimated": by is not None,
+                    "estimated": by_estimated,
                     "source": source,
                 }
             )
@@ -403,6 +574,7 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
             r.fencer_name,
             source,
             bracket_is_mixed_gender=bracket_mixed,
+            declared_birth_year=_declared_for(declared, r.fencer_name),
         )
 
 

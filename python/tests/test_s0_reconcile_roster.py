@@ -491,3 +491,134 @@ class TestStagingMdSection:
 
         ctx = self._ctx_with()
         assert _format_stage0_section([("slot", None, ctx, None)]) == []
+
+
+# ---------------------------------------------------------------------------
+# 10.9  The declared birth year (2026-09-25)
+# ---------------------------------------------------------------------------
+# Until this change the ingestion pipeline never opened tbl_registration. A new
+# entrant was minted from a band MIDPOINT — wrong by up to two years, and that
+# error picks their V-category — while the year they declared for the very same
+# event sat one table away. Measured on PPW1-2026-2027: 17 of 90 registrations
+# were unmatched, so 17 people were about to be created from a guess.
+#
+# A declaration is first-hand and is written CONFIRMED. It is refused in exactly
+# two situations: when the name does not identify one person, and when the year
+# it implies contradicts the bracket the fencer actually fenced in.
+
+
+class RegDB(FakeDB):
+    """FakeDB that also answers the registration lookup."""
+
+    def __init__(self, fencers=None, registrations=None) -> None:
+        super().__init__(fencers)
+        self._regs = registrations or []
+
+    def fetch_registration_birth_years(self, event_code: str) -> list[dict]:
+        return [dict(r) for r in self._regs]
+
+
+def _reg(surname, first, by):
+    return {"txt_surname": surname, "txt_first_name": first, "int_birth_year": by}
+
+
+class TestDeclaredBirthYear:
+    def test_new_fencer_takes_the_declared_year_confirmed(self):
+        """10.9.1 — one matching registration beats the band midpoint."""
+        db = RegDB(registrations=[_reg("NOWAK", "Ewa", 1993)])
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V0")
+        stages.s0_reconcile_roster(ctx, db)
+        assert len(db.inserted) == 1
+        assert db.inserted[0]["int_birth_year"] == 1993
+        assert db.inserted[0]["bool_birth_year_estimated"] is False
+
+    def test_no_registration_still_uses_the_midpoint(self):
+        """10.9.2 — unchanged behaviour where there is nothing to consult."""
+        db = RegDB(registrations=[])
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V0")
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.inserted[0]["int_birth_year"] == 1991  # V0 midpoint
+        assert db.inserted[0]["bool_birth_year_estimated"] is True
+
+    def test_two_namesakes_fall_back_to_the_midpoint(self):
+        """10.9.3 — software never picks between namesakes.
+
+        PROD carries two live same-name pairs (KRAWCZYK Pawel, MLYNEK Janusz),
+        and a birth year written onto the wrong one is unrecoverable.
+        """
+        db = RegDB(registrations=[_reg("KRAWCZYK", "Pawel", 1989), _reg("KRAWCZYK", "Pawel", 1954)])
+        ctx = _ctx([_result("KRAWCZYK Pawel")], category_hint="V0")
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.inserted[0]["int_birth_year"] == 1991  # midpoint, not either year
+        assert db.inserted[0]["bool_birth_year_estimated"] is True
+
+    def test_declared_year_contradicting_the_bracket_is_refused(self):
+        """10.9.4 — entry list and results disagree: take neither, report it."""
+        db = RegDB(registrations=[_reg("NOWAK", "Ewa", 1993)])  # 1993 -> V0
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V2")  # fenced V2
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.inserted[0]["int_birth_year"] == 1971  # V2 midpoint
+        assert db.inserted[0]["bool_birth_year_estimated"] is True
+        reasons = [c["reason"] for c in ctx.reconcile_conflicts]
+        assert "declared_vs_bracket" in reasons
+
+    def test_diacritics_are_folded_on_both_sides(self):
+        """10.9.5 — a registrant typing L for Ł still matches their own entry."""
+        db = RegDB(registrations=[_reg("MLYNEK", "Janusz", 1951)])
+        ctx = _ctx([_result("MŁYNEK Janusz")], category_hint="V4")
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.inserted[0]["int_birth_year"] == 1951
+        assert db.inserted[0]["bool_birth_year_estimated"] is False
+
+    def test_matched_fencer_is_corrected_by_the_declaration(self):
+        """10.9.6 — the declaration also corrects somebody we already hold."""
+        db = RegDB(
+            fencers=[_fencer(1, "NOWAK", "Ewa", by=1991, estimated=True)],
+            registrations=[_reg("NOWAK", "Ewa", 1993)],
+        )
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V0")
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.updated == [{"id_fencer": 1, "int_birth_year": 1993, "estimated": False}]
+
+    def test_confirmed_fencer_is_still_not_demoted_by_a_bracket_alone(self):
+        """10.9.7 — Guard 1 survives. No registration, so no declaration.
+
+        A CONFIRMED birth year is promote-only; a younger bracket must not move
+        it. This is the guard a global estimated-flag flip would have disarmed.
+        """
+        db = RegDB(
+            fencers=[_fencer(1, "NOWAK", "Ewa", by=1971, estimated=False)],  # V2
+            registrations=[],
+        )
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V0")  # younger bracket
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.updated == []
+        assert "confirmed_no_demote" in [c["reason"] for c in ctx.reconcile_conflicts]
+
+    def test_confirmed_year_is_not_overruled_without_a_bracket(self):
+        """10.9.8 — ADR-079 §3: a KNOWN stored year does not yield alone.
+
+        The declaration overrules a confirmed year only when the bracket agrees
+        with it — two independent sources against one stored value. With no
+        V-cat on the row there is no second source, so the rule stands.
+        """
+        db = RegDB(
+            fencers=[_fencer(1, "NOWAK", "Ewa", by=1991, estimated=False)],
+            registrations=[_reg("NOWAK", "Ewa", 1993)],
+        )
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint=None)
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.updated == []
+        assert "declared_vs_confirmed_uncorroborated" in [
+            c["reason"] for c in ctx.reconcile_conflicts
+        ]
+
+    def test_estimated_year_yields_to_the_declaration_without_a_bracket(self):
+        """10.9.9 — the mirror of 10.9.8: an ESTIMATE has nothing to defend."""
+        db = RegDB(
+            fencers=[_fencer(1, "NOWAK", "Ewa", by=1991, estimated=True)],
+            registrations=[_reg("NOWAK", "Ewa", 1993)],
+        )
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint=None)
+        stages.s0_reconcile_roster(ctx, db)
+        assert db.updated == [{"id_fencer": 1, "int_birth_year": 1993, "estimated": False}]
