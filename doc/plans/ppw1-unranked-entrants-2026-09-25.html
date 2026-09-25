@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Unranked entrants — PPW1 EPEE</title>
+<style>
+:root{--navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+--green:#1c5a3e;--green-bg:#e3f2ea;--amber:#7a5209;--amber-bg:#fbf1da;--coral:#9e3a29;--coral-bg:#fae2dd;--navy-soft:#e4ecf7;
+--serif:"Iowan Old Style",Charter,Palatino Linotype,Georgia,serif;--sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;
+--card:#1a2330;--navy-soft:#1f2c3e;--green-bg:#17301f;--amber-bg:#332a12;--coral-bg:#3a1e18;--green:#8fd6ab;--amber:#e2b75c;--coral:#f0a394;}}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;padding:0 16px}
+main{max-width:1000px;margin:0 auto;padding:48px 0 80px}
+h1{font-family:var(--serif);font-size:2rem;margin:0 0 .25em;font-weight:600}
+h2{font-family:var(--serif);font-size:1.25rem;margin:2em 0 .5em;font-weight:600}
+.lede{color:var(--muted);font-size:1.05rem;margin:0 0 1.6em;max-width:64ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:0 0 18px}
+.card p{margin:.45em 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th{background:var(--navy-soft);text-align:left;padding:9px 11px;font-size:.75rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+td{padding:8px 11px;border-top:1px solid var(--line);vertical-align:top}
+td.cat{font-family:var(--mono);color:var(--muted)}
+tr.ok td:first-child{box-shadow:inset 3px 0 var(--green)}
+tr.warn td:first-child{box-shadow:inset 3px 0 var(--amber)}
+tr.bad td:first-child{box-shadow:inset 3px 0 var(--coral)}
+tr.ok{background:var(--green-bg)}tr.warn{background:var(--amber-bg)}tr.bad{background:var(--coral-bg)}
+code{font-family:var(--mono);font-size:.88em;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.q{border-left:4px solid var(--navy);padding-left:16px;margin:1.2em 0}
+ol li{margin:.4em 0}
+</style></head><body><main>
+<h1>Why ten entrants show no rank</h1>
+<p class="lede">Ten of the 52 EPEE entrants carry no ranking position. Six of those are correct.
+Four are not, and all four are fencers who already hold results.</p>
+
+<div class="card">
+<p><b>First, the thing that is not a problem.</b> The seed file itself has no gaps. Every
+<code>&lt;Tireur&gt;</code> carries a <code>Classement</code>, numbered 1 to 52 with nothing
+missing — <code>WYLĘGAŁA (4)</code> is <code>Classement="52"</code>. Nothing needs filling with
+999. The dash in the comparison table is a different column: <em>true rank</em>, meaning
+&ldquo;how many ranking points this fencer holds&rdquo;, and a dash there means none. Those fencers
+are still seeded — they are simply seeded after everyone who has points, which is the fix that
+shipped today.</p>
+</div>
+
+<h2>The ten, one by one</h2>
+<table><thead><tr><th>Entrant</th><th>Cat</th><th>Registration</th><th>Evidence</th><th>Why</th></tr></thead>
+<tbody>
+<tr class="ok"><td>CISZEWSKA Barbara</td><td class="cat">FV2</td><td>#366 matched</td><td>0 results anywhere</td><td>Genuinely new to the ranking. Nothing to rank.</td></tr>
+<tr class="ok"><td>KRAWCZYK Paweł</td><td class="cat">MV4</td><td>#355 matched</td><td>0 results anywhere</td><td>The 1954 twin. Correctly matched on the exact triplet, and holds no results.</td></tr>
+<tr class="ok"><td>KOWALSKI Jan</td><td class="cat">MV1</td><td>unmatched</td><td>no counterpart on the roster</td><td>No fencer of that name exists. Will be created at ingestion.</td></tr>
+<tr class="ok"><td>ĆWIORO Krzysztof</td><td class="cat">MV3</td><td>#41 matched</td><td>15 EPEE results, last June <b>2024</b></td><td>Outside the 366-day carry-over window, so no current points.</td></tr>
+<tr class="ok"><td>POKRZYWA Mariusz</td><td class="cat">MV3</td><td>#231 matched</td><td>11 EPEE results, last June <b>2024</b></td><td>Same window. Both sit in GP8-2023-2024.</td></tr>
+<tr class="ok"><td>WYLĘGAŁA Jerzy</td><td class="cat">MV4</td><td>#336 matched</td><td>3 EPEE results, last April 2023</td><td>Well outside the window.</td></tr>
+<tr class="bad"><td>ŁĘCKI Krzysztof</td><td class="cat">MV0</td><td><b>unmatched</b></td><td><b>#168, 9 results</b></td><td>Surname, given name and birth year are <b>byte-identical</b> to #168. This should have matched and did not.</td></tr>
+<tr class="warn"><td>STAŃCZYK Marcin</td><td class="cat">MV1</td><td><b>unmatched</b></td><td><b>#280, 4 results</b></td><td>Declared 1979; #280 holds 1980. One year apart.</td></tr>
+<tr class="warn"><td>WALCZEWSKI Konrad</td><td class="cat">MV1</td><td><b>unmatched</b></td><td><b>#314, 13 results</b></td><td>Declared 1987; #314 holds 1990.</td></tr>
+<tr class="warn"><td>MACIEJ Spława - Neyman</td><td class="cat">MV0</td><td><b>unmatched</b></td><td><b>#276, 14 results</b></td><td>Name fields swapped <em>and</em> the year differs: declared 1988, #276 holds 1991.</td></tr>
+</tbody></table>
+
+<h2>The four that are wrong</h2>
+<div class="card">
+<p><b>Their registrations never linked to their fencer rows</b>, so the export had nobody to look
+up and treated a ranked fencer as a newcomer. <code>ŁĘCKI Krzysztof</code> is the clearest case:
+his registration and fencer&nbsp;#168 are byte-identical in surname, given name and birth year.</p>
+<p>The reason is that a registration is matched <b>once, at the moment it is created</b>. Editing
+the name or year afterwards does not re-run the match. ADR-093's own notes record this entry
+arriving as &ldquo;KRZYSZTOF Łęcki&rdquo; with the fields swapped; it was corrected later, and the
+link was never re-derived.</p>
+<p>Left alone, ingestion will mint a <b>second</b> fencer row for each of them and split their
+result history in two.</p>
+</div>
+
+<h2>The decision</h2>
+<div class="q">
+<p><b>Which of the four should I link to their existing fencer before the files go out?</b></p>
+<ol>
+<li><b>ŁĘCKI only</b> — the exact-triplet match. Unambiguous, no judgement involved.</li>
+<li><b>All four</b> — also STAŃCZYK Marcin (1979 vs 1980), WALCZEWSKI Konrad (1987 vs 1990) and
+Spława-Neyman Maciej (1988 vs 1991, fields swapped). Each is a person the roster clearly already
+holds, but each needs someone to decide the birth year is a typo rather than a different person.</li>
+<li><b>None</b> — accept four duplicate fencers and reconcile after the event.</li>
+</ol>
+<p><b>Recommendation: link ŁĘCKI now, and all four if you can confirm the three birth years.</b>
+ŁĘCKI carries no risk at all — the triplet matches exactly, which is the identity rule you set.
+The other three are the same near-miss population this subsystem was built for, and they are the
+ones that cost the most if left: WALCZEWSKI holds 13 results and Spława-Neyman 14, so a duplicate
+row does not merely mis-seed them tomorrow, it splits a real ranking history. But a birth year
+three years out is not something I should decide for somebody.</p>
+</div>
+
+<h2>Separately — a date defect worth a ticket</h2>
+<div class="card">
+<p><code>GP8-V3-M-EPEE-2023-2024</code> carries <code>dt_tournament = 2026-06-22</code> while its
+event is dated <code>2024-06-22</code>. The tournament row is two years out. It changes no ranking
+today — the carry-over engine works from the event — but it makes ĆWIORO's and POKRZYWA's last
+result look 95 days old when it is over two years old, which is exactly what sent me looking for a
+bug that was not there.</p>
+</div>
+<p class="lede" style="margin-top:2em;font-size:.9rem">Measured on deployed PROD, 2026-09-25.</p>
+</main></body></html>
