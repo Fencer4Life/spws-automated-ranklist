@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-09-25T07:11:31Z",
-    "last_sha": "1648a6cf3c3450d9a8297de1f2f388509914a617",
+    "last_updated": "2026-09-25T14:11:36Z",
+    "last_sha": "647b1818c2350cdcf181bc5567401ff5f1ad67d8",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -184,9 +184,10 @@
       "20260920000002_pzsz_senior_result_ingestion.sql",
       "20260920000003_public_scoring_params.sql",
       "20260924000001_ftl_export_true_rank.sql",
-      "20260925000001_identity_lookup_folds_names.sql"
+      "20260925000001_identity_lookup_folds_names.sql",
+      "20260926000001_ftl_export_rank_points.sql"
     ],
-    "schema_fingerprint": "946035dd7b39e83957e0ebf852289abd"
+    "schema_fingerprint": "f778bb9da2c03347fb2586585bb6e97d"
   },
   "prod": {
     "last_updated": "2026-09-25T07:19:31Z",
