@@ -137,6 +137,44 @@ describe('interleaveMixall', () => {
     ])
   })
 
+  it('X8.8d orders a tier by points, not by the fixed category order', () => {
+    // Before 2026-09-26 the order inside a tier was FV0..MV4, so a woman took
+    // the first seed of every tier because 'F' sorts before 'M'. On PPW1 EPEE
+    // that put KAMINSKA first on 363.20 while SEKOWSKI sat fifth on 435.96.
+    const order = interleaveMixall({
+      FV1: [{ idx: 1, surname: 'KAMINSKA', firstName: 'Gabriela', rank: 1, points: 363.2 }],
+      FV2: [{ idx: 2, surname: 'WASILCZUK', firstName: 'Beata', rank: 1, points: 320.7 }],
+      FV4: [{ idx: 3, surname: 'BORKOWSKA', firstName: 'Halina', rank: 1, points: 156.95 }],
+      MV0: [{ idx: 4, surname: 'SPLAWA-NEYMAN', firstName: 'Maciej', rank: 1, points: 319.07 }],
+      MV1: [{ idx: 5, surname: 'SEKOWSKI', firstName: 'Maciej', rank: 1, points: 435.96 }],
+      MV2: [{ idx: 6, surname: 'JENDRYS', firstName: 'Marek', rank: 1, points: 389.99 }],
+      MV3: [{ idx: 7, surname: 'KRZEMINSKI', firstName: 'Mariusz', rank: 1, points: 422.84 }],
+    })
+    expect(order.map(([e]: [SeedEntry, string]) => e.idx)).toEqual([5, 7, 6, 1, 2, 4, 3])
+  })
+
+  it('X8.8e breaks equal points on the fixed category order', () => {
+    // The sort must be TOTAL: fn_ranking_ppw gives two fencers on the same
+    // score the same rank, so ties are real, and two downloads of one entry
+    // list that disagree cannot be reconciled against the organizer's software.
+    const order = interleaveMixall({
+      MV2: [{ idx: 3, surname: 'CCC', firstName: 'Three', rank: 1, points: 100 }],
+      FV0: [{ idx: 1, surname: 'AAA', firstName: 'One', rank: 1, points: 100 }],
+      MV0: [{ idx: 2, surname: 'BBB', firstName: 'Two', rank: 1, points: 100 }],
+    })
+    expect(order.map(([e]: [SeedEntry, string]) => e.idx)).toEqual([1, 2, 3])
+  })
+
+  it('X8.8f never lets points decide WHICH tier somebody is in', () => {
+    // A rank-2 fencer holding more points than another sub-ranking's rank-1
+    // still seeds behind them. Points order within a tier; the tier is rank.
+    const order = interleaveMixall({
+      FV4: [{ idx: 1, surname: 'SMALLFIELD', firstName: 'Winner', rank: 1, points: 10 }],
+      MV1: [{ idx: 2, surname: 'BIGFIELD', firstName: 'Runnerup', rank: 2, points: 999 }],
+    })
+    expect(order.map(([e]: [SeedEntry, string]) => e.idx)).toEqual([1, 2])
+  })
+
   it('X8.8c puts every unranked fencer after every ranked one', () => {
     const order = interleaveMixall({
       FV0: [

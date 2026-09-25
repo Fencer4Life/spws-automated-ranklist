@@ -72,6 +72,8 @@ export interface ExportEntryRow {
    * first.
    */
   int_rank: number | null
+  /** Ranking points behind int_rank; orders the entries inside a tier. */
+  num_rank_points?: number | null
 }
 
 /** One row of fn_ftl_roster — the organizer's pick-list for one weapon. */
@@ -91,6 +93,13 @@ export interface SeedEntry {
   firstName: string
   /** True rank in the sub-ranking; null when the fencer holds no points. */
   rank: number | null
+  /**
+   * Ranking points, null when the fencer holds none. Orders the entries INSIDE
+   * a tier (2026-09-26); the tier itself is still decided by `rank`. Optional
+   * so a caller building entries by hand — several tests do — need not supply
+   * a value the unranked tail never uses.
+   */
+  points?: number | null
 }
 
 export interface Tireur {
@@ -224,9 +233,23 @@ export function formatNomWithMarker(surnameCanon: string, vcatDigit: string): st
  * omitted for that category: the true number 1 leads, and a true 4th goes down
  * with the other 4th places.
  *
+ * WITHIN a tier the order is ranking POINTS, descending, across all ten
+ * sub-rankings (2026-09-26). It used to be the fixed FV0..MV4 sequence, which
+ * handed the first seed of every tier to a woman because 'F' sorts before 'M'.
+ * The fixed order survives as the tie-break.
+ *
  * Returns [entry, subRankingKey] pairs in seed order; the key carries both the
  * Sexe (its first character) and the (N) marker (its last).
  */
+/**
+ * Position of each sub-ranking in the fixed order, as a lookup. Keyed by plain
+ * string because the interleave carries keys as strings, and doing this once
+ * also keeps it out of the sort comparator.
+ */
+const SUBRANKING_RANK: Record<string, number> = Object.fromEntries(
+  MIXALL_SUBRANKING_ORDER.map((k, i) => [k, i]),
+)
+
 export function interleaveMixall(
   subRankings: Record<string, SeedEntry[]>,
 ): Array<[SeedEntry, string]> {
@@ -236,12 +259,25 @@ export function interleaveMixall(
     ...Object.values(subRankings).flatMap((es) => es.map((e) => e.rank ?? 0)),
   )
   for (let tier = 1; tier <= highest; tier++) {
+    // Everybody at this tier, from every sub-ranking, then sorted by points.
+    // A tier can hold more than one entry per bucket: fn_ranking_ppw gives two
+    // fencers on the same score the same rank.
+    const tierEntries: Array<[SeedEntry, string]> = []
     for (const key of MIXALL_SUBRANKING_ORDER) {
-      // A tier can hold more than one entry per bucket: fn_ranking_ppw gives
-      // two fencers on the same score the same rank. Array order breaks the
-      // tie, so two downloads of one entry list agree.
-      for (const e of subRankings[key] ?? []) if (e.rank === tier) result.push([e, key])
+      for (const e of subRankings[key] ?? []) if (e.rank === tier) tierEntries.push([e, key])
     }
+    // Highest points first. The sort must be TOTAL, or two downloads of one
+    // entry list could differ and be impossible to reconcile against the
+    // organizer's software — so equal points fall back to the fixed FV0..MV4
+    // order this pass used to walk. Array#sort is stable, so the array order
+    // built above survives as the final tie-break without being spelled out.
+    tierEntries.sort(([a, ka], [b, kb]) => {
+      const pa = a.points ?? Number.NEGATIVE_INFINITY
+      const pb = b.points ?? Number.NEGATIVE_INFINITY
+      if (pa !== pb) return pb - pa
+      return (SUBRANKING_RANK[ka] ?? 0) - (SUBRANKING_RANK[kb] ?? 0)
+    })
+    result.push(...tierEntries)
   }
   for (const key of MIXALL_SUBRANKING_ORDER) {
     // == null on purpose: an absent rank and an explicit null are the same
@@ -447,7 +483,15 @@ function subRankingsForWeapon(rows: ExportEntryRow[]): Record<string, SeedEntry[
   for (const r of rows) {
     const key = `${r.enum_gender}${r.enum_age_category}`
     const [surname, firstName] = toCanonicalName(r.txt_surname, r.txt_first_name)
-    ;(buckets[key] ??= []).push({ idx: r.int_order, surname, firstName, rank: r.int_rank ?? null })
+    ;(buckets[key] ??= []).push({
+      idx: r.int_order,
+      surname,
+      firstName,
+      rank: r.int_rank ?? null,
+      // PostgREST returns NUMERIC as a string; Number() keeps the sort
+      // numeric, so 99.5 cannot end up before 100 as text would.
+      points: r.num_rank_points == null ? null : Number(r.num_rank_points),
+    })
   }
   for (const entries of Object.values(buckets)) entries.sort((a, b) => a.idx - b.idx)
   return buckets

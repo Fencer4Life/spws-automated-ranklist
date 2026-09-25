@@ -72,6 +72,9 @@ class FencerEntry:
     # compacting the entrants to a dense 1..N made a true 4th look like a
     # category winner and seeded her first — see interleave_mixall.
     rank: int | None = None
+    # Ranking points, None when the fencer holds none. Orders the entries
+    # INSIDE a tier (2026-09-26); the tier itself is still decided by `rank`.
+    points: float | None = None
 
 
 @dataclass
@@ -161,11 +164,20 @@ def interleave_mixall(
     sub_rankings: dict[str, list[FencerEntry]],
 ) -> list[tuple[FencerEntry, str]]:
     """Round-robin ("snake by rank") interleave across the 10 domestic
-    sub-rankings in the fixed FV0..FV4,MV0..MV4 order (ADR-080 Section 2).
+    sub-rankings (ADR-080 Section 2).
 
-    Lays down every fencer holding TRUE rank 1 (in fixed bucket order, empties
-    skipped), then every true rank 2, and so on; every unranked fencer follows
-    after all of them, in bucket order and then in list order.
+    Lays down every fencer holding TRUE rank 1, then every true rank 2, and so
+    on; every unranked fencer follows after all of them, in bucket order and
+    then in list order.
+
+    WITHIN a tier the order is ranking POINTS, descending, across all ten
+    sub-rankings (2026-09-26). It used to be the fixed FV0..MV4 sequence, which
+    handed the first seed of every tier to a woman because "F" sorts before "M",
+    and to V0 because "0" sorts before "1" — alphabetical order standing in for
+    merit, on the file the organizer imports. The fixed order survives as the
+    tie-break. Note this makes the tier order field-sensitive: the engine scales
+    points by field size on purpose, so a win in a larger sub-ranking outranks a
+    win in a smaller one.
 
     The tier is the rank the fencer actually holds, NOT their position among
     those who entered (2026-09-24). Ranks 1-3 of EPEE FV0 did not enter PPW1,
@@ -185,11 +197,30 @@ def interleave_mixall(
         default=0,
     )
     for tier in range(1, highest + 1):
-        for key in MIXALL_SUBRANKING_ORDER:
-            # A tier may hold more than one entry per bucket: fn_ranking_ppw
-            # gives two fencers on the same score the same rank. List order
-            # breaks the tie, so two downloads of one entry list agree.
-            result.extend((e, key) for e in sub_rankings.get(key, []) if e.rank == tier)
+        # Everybody at this tier, from every sub-ranking, then sorted by points.
+        # A tier may hold more than one entry per bucket: fn_ranking_ppw gives
+        # two fencers on the same score the same rank.
+        tier_entries = [
+            (e, key)
+            for key in MIXALL_SUBRANKING_ORDER
+            for e in sub_rankings.get(key, [])
+            if e.rank == tier
+        ]
+        # Highest points first. The sort must be TOTAL, or two downloads of one
+        # entry list could differ and be impossible to reconcile against the
+        # organizer's software — so equal points fall back to the fixed
+        # FV0..MV4 order this pass used to walk, and then to list order.
+        # Python's sort is stable, so list order survives as the final tie-break
+        # without being spelled out.
+        tier_entries.sort(
+            key=lambda pair: (
+                -(pair[0].points if pair[0].points is not None else float("-inf")),
+                MIXALL_SUBRANKING_ORDER.index(pair[1]),
+            )
+        )
+        result.extend(tier_entries)
+    # The unranked tail has no points to sort on, so it keeps the fixed bucket
+    # order and list order it always had.
     for key in MIXALL_SUBRANKING_ORDER:
         result.extend((e, key) for e in sub_rankings.get(key, []) if e.rank is None)
     return result

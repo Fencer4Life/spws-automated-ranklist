@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="080-clean-roster-ftl-seeding.md">
-<meta name="adr-source-sha256" content="d812e16d67544089e872d3bd6eb2c6b7b9c859f37a277ad94a3286cbe29e3704">
+<meta name="adr-source-sha256" content="ddf0876e73409578cda6dd11af54cb3c0843eda57a8a011e93731b9a2304097e">
 <title>ADR-080 · Clean-Roster FTL Seeding</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 080</p><h1>Clean-Roster FTL Seeding</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's <code>&lt;Tireur&gt;</code> element order is now alphabetical by surname under Polish collation in every generated file; <code>Classement</code> keeps the interleave seed.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">567 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's <code>&lt;Tireur&gt;</code> element order is now alphabetical by surname under Polish collation in every generated file; <code>Classement</code> keeps the interleave seed.)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's <code>&lt;Tireur&gt;</code> element order is now alphabetical by surname under Polish collation in every generated file; <code>Classement</code> keeps the interleave seed. Amended 2026-09-24: the club is withdrawn and seeding tiers on the true rank. Amended 2026-09-26: inside a tier the order is ranking points, not the fixed category sequence, which becomes the tie-break; the amendment states the whole algorithm and carries the Regulamin wording.)</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>080-clean-roster-ftl-seeding.md</code></dd></div><div><dt>Length</dt><dd class="">670 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — <code>tbl_registration.txt_club</code>, migration <code>20260913000001</code> — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's <code>&lt;Tireur&gt;</code> element order is now alphabetical by surname under Polish collation in every generated file; <code>Classement</code> keeps the interleave seed. Amended 2026-09-24: the club is withdrawn and seeding tiers on the true rank. Amended 2026-09-26: inside a tier the order is ranking points, not the fixed category sequence, which becomes the tie-break; the amendment states the whole algorithm and carries the Regulamin wording.)
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#amendment-2026-09-14-element-order-is-alphabetical-classement-is-the-seed">Amendment (2026-09-14) — element order is alphabetical; `Classement` is the seed</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-2026-09-13-slug-correction-full-token-lifecycle-moved-to-adr-095">Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)</a></li><li class="depth-2"><a href="#amendment-2026-09-24-the-club-is-withdrawn-and-seeding-tiers-on-the-true-rank">Amendment (2026-09-24) — the club is withdrawn, and seeding tiers on the true rank</a></li><li class="depth-3"><a href="#the-club-reverses-amendment-f-2026-09-13">The club (reverses amendment (f), 2026-09-13)</a></li><li class="depth-3"><a href="#seeding-tiers-on-the-true-rank-not-the-position-among-entrants">Seeding tiers on the true rank, not the position among entrants</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-seed-format">1. Seed format</a></li><li class="depth-3"><a href="#2-mix-all-pool-seeding-interleave-snake-by-rank-across-the-10-sub-rankings">2. Mix-all pool seeding — interleave (&quot;snake by rank&quot;) across the 10 sub-rankings</a></li><li class="depth-4"><a href="#amendment-2026-09-14-element-order-is-alphabetical-classement-is-the-seed">Amendment (2026-09-14) — element order is alphabetical; `Classement` is the seed</a></li><li class="depth-4"><a href="#implementation-note-population-vs-ordering-2026-07-05">Implementation note — population vs ordering (2026-07-05)</a></li><li class="depth-3"><a href="#3-predicted-combined-de-brackets-t-4">3. Predicted combined DE brackets (T = 4)</a></li><li class="depth-3"><a href="#4-file-naming">4. File naming</a></li><li class="depth-3"><a href="#5-delivery-on-demand-email-to-the-organizer">5. Delivery — on-demand email to the organizer</a></li><li class="depth-3"><a href="#6-ingestion-unchanged-writers">6. Ingestion (unchanged writers)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-organizer-downloads-the-files-marker-moves-mid-name">Amendment (2026-09-12 — the organizer downloads the files; marker moves mid-name)</a></li><li class="depth-3"><a href="#a-context-correction-the-scrape-does-expose-a-club">(a) Context correction — the scrape does expose a club</a></li><li class="depth-3"><a href="#b-the-v-category-marker-moves-mid-name">(b) The V-category marker moves mid-name</a></li><li class="depth-3"><a href="#c-3-s-predicted-combined-brackets-are-dropped">(c) §3&#x27;s predicted combined brackets are dropped</a></li><li class="depth-3"><a href="#d-4-s-file-naming-is-replaced">(d) §4&#x27;s file naming is replaced</a></li><li class="depth-3"><a href="#e-a-roster-file-per-weapon-and-how-it-is-suppressed">(e) A roster file per weapon, and how it is suppressed</a></li><li class="depth-3"><a href="#f-club-and-the-public-download-page">(f) Club, and the public download page</a></li><li class="depth-3"><a href="#g-how-the-browser-gets-the-data-and-what-it-is-not-given">(g) How the browser gets the data, and what it is not given</a></li><li class="depth-3"><a href="#h-the-page-is-one-page-protected-by-a-capability-and-shows-only-live-events">(h) The page is one page, protected by a capability, and shows only live events</a></li><li class="depth-2"><a href="#references">References</a></li><li class="depth-2"><a href="#amendment-2026-09-13-slug-correction-full-token-lifecycle-moved-to-adr-095">Amendment (2026-09-13 — slug correction; full token lifecycle moved to ADR-095)</a></li><li class="depth-2"><a href="#amendment-2026-09-24-the-club-is-withdrawn-and-seeding-tiers-on-the-true-rank">Amendment (2026-09-24) — the club is withdrawn, and seeding tiers on the true rank</a></li><li class="depth-3"><a href="#the-club-reverses-amendment-f-2026-09-13">The club (reverses amendment (f), 2026-09-13)</a></li><li class="depth-3"><a href="#seeding-tiers-on-the-true-rank-not-the-position-among-entrants">Seeding tiers on the true rank, not the position among entrants</a></li><li class="depth-2"><a href="#amendment-2026-09-26-a-seed-tier-is-ordered-by-points-not-by-category">Amendment (2026-09-26) — a seed tier is ordered by points, not by category</a></li><li class="depth-3"><a href="#the-algorithm-end-to-end">The algorithm, end to end</a></li><li class="depth-3"><a href="#consequences-2">Consequences</a></li><li class="depth-3"><a href="#regulamin-tre-po-polsku">Regulamin — treść po polsku</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>&quot;FTL&quot; is <strong>Fencing Time</strong> (results at fencingtimelive.com), the software the
 organizer runs. A domestic SPWS event is run as, per weapon, one <strong>mix-all pool
@@ -553,8 +553,95 @@ the two agree by construction.</p>
 <code>test_ftl_seed_export.py</code> (the interleave tiers, unranked last, tied ranks stable),
 <code>test_ftl_seed_orchestration.py</code> (the true rank reaches the interleave), and
 <code>ftlSeedExport.test.ts</code> X8.8/X8.8b/X8.8c in the twin.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-26-a-seed-tier-is-ordered-by-points-not-by-category">Amendment (2026-09-26) — a seed tier is ordered by points, not by category</h2>
+<p>§2 fixed the order inside a tier as the sequence <code>FV0, FV1, FV2, FV3, FV4, MV0, MV1, MV2, MV3, MV4</code>. A woman therefore took the first seed of <strong>every</strong> tier because <code>F</code>
+sorts before <code>M</code>, and V0 led the women because <code>0</code> sorts before <code>1</code>. Neither was
+earned — alphabetical order standing in for merit, on the file the organizer imports.
+Measured on PPW1-2026-2027 épée, tier 1 opened with KAMIŃSKA on 363.20 while SĘKOWSKI
+sat fifth on 435.96.</p>
+<p><strong>Within a tier, entries are now ordered by ranking points, descending, across all ten
+sub-rankings.</strong> The fixed order is not deleted: it becomes the tie-break.</p>
+<h3 id="the-algorithm-end-to-end">The algorithm, end to end</h3>
+<p>Recorded here in full because this is the page the Regulamin quotes, and because the
+rule now has three layers — the original interleave, the true-rank tiering of
+2026-09-24, and this.</p>
+<ol>
+<li><strong>Population.</strong> Every registration that declared this weapon. No payment gate. One
+row per registration × declared weapon, so a fencer entered for épée and foil is
+seeded independently in each.</li>
+<li><strong>Sub-ranking.</strong> Each entrant lands in one of ten sub-rankings — <code>{F,M} × {V0..V4}</code>
+— resolved from <code>tbl_fencer.int_birth_year</code> against the target season's end year for
+a matched registration, falling back to the declared year only for an unmatched one.
+The same source <code>fn_ranking_ppw</code> ranks on, which is what stops a fencer being looked
+up in a sub-ranking they are not in.</li>
+<li><strong>True rank.</strong> Position in that whole sub-ranking, counting fencers who did not
+enter; <code>NULL</code> when the fencer holds no points. <strong>Not</strong> the position among entrants —
+compacting entrants to a dense <code>1..N</code> is what once seeded a genuine fourth place
+first (2026-09-24).</li>
+<li><strong>Tiers.</strong> Pass 1 lays down every true rank 1, pass 2 every true rank 2, and so on.
+An empty tier consumes no seed numbers, so a sub-ranking first appears at its lowest
+real rank.</li>
+<li><strong>Order within a tier.</strong> Ranking points, descending, across all ten sub-rankings.
+Ties resolve by the fixed order <code>FV0..FV4, MV0..MV4</code>, then by <code>int_order</code>
+(alphabetical). The sort is <strong>total</strong> — <code>fn_ranking_ppw</code> gives two fencers on the
+same score the same rank, so ties are real, and two downloads of one entry list that
+disagreed could not be reconciled against the organizer's software.</li>
+<li><strong>The tail.</strong> Every entrant holding no points follows all ranked entrants, in the
+fixed sub-ranking order then alphabetically. They have no points to sort on.</li>
+<li><strong>The number.</strong> Seed positions are numbered <code>1..N</code> with no gaps and written to the
+<code>Classement</code> attribute of each <code>&lt;Tireur&gt;</code>. The file's <em>rows</em> stay alphabetical by
+surname (amendment 2026-09-14), so row order is not seed order and reading the file
+top to bottom does not show the seeding.</li>
+</ol>
+<h3 id="consequences-2">Consequences</h3>
+<p>The points come from <code>fn_ftl_export_entries</code>, which gains <code>num_rank_points</code>
+(migration <code>20260926000001</code>). It publishes nothing new: <code>fn_ranking_ppw</code> is
+anon-EXECUTEable under ADR-083's allowlist, so every one of these numbers is already
+public. No consent question, no allowlist change. Because the projection's OUT columns
+change, the migration DROPs and recreates the function, which makes its <code>REVOKE</code>/<code>GRANT</code>
+block load-bearing rather than decorative.</p>
+<p><strong>The order within a tier is now field-sensitive, and that is worth stating plainly.</strong>
+The active engine scales the base by field size on purpose —
+<code>B(N) = min(mpValue, baseSlope × log2(max(2, N)))</code> — so a win in a larger sub-ranking
+outranks a win in a smaller one. Épée ranked-field sizes at the time of writing: FV4 2,
+FV0 7, FV1 7, FV2 11, MV4 11, MV3 14, MV0 22, MV1 22, MV2 23. Tier 1 of PPW1 becomes
+SĘKOWSKI, KRZEMIŃSKI, JENDRYŚ, KAMIŃSKA, WASILCZUK, SPŁAWA-NEYMAN, BORKOWSKA — the
+arbitrariness is gone, and larger fields lead. BORKOWSKA moves from third to seventh on
+a field of two rather than on her fencing. This is the ranking's own scoring rule
+applied to seeding, and it was accepted knowingly.</p>
+<p>Tests: <code>test_ftl_seed_export.py</code> (a tier ordered by points; equal points falling back
+to the fixed order; points never deciding <em>which</em> tier; the unranked tail unchanged),
+<code>ftlSeedExport.test.ts</code> X8.8d/X8.8e/X8.8f in the twin, and pgTAP 76.4e/f/g for the
+column. Byte-for-byte XML equality between the two generators is what keeps them honest.</p>
+<h3 id="regulamin-tre-po-polsku">Regulamin — treść po polsku</h3>
+<p>Kept here verbatim so the regulation and the code are amended in one place.</p>
+<blockquote>
+<p><strong>Kolejność rozstawienia w turniejach rozgrywanych we wspólnej puli (mixed)</strong></p>
+<p>Numer rozstawienia ustalany jest według trzech zasad.</p>
+<p><strong>1. Miejsce w rankingu.</strong> Dla każdego zgłoszonego zawodnika system odczytuje jego
+miejsce we właściwym rankingu SPWS — osobnym dla każdej broni, płci i kategorii
+wiekowej (V0–V4). Jest to miejsce rzeczywiste: jeżeli trzy pierwsze osoby z danej
+kategorii nie zgłosiły się na zawody, zawodnik czwarty pozostaje czwartym, a nie
+staje się pierwszym.</p>
+<p><strong>2. Kroki.</strong> Rozstawienie układane jest krokami. W pierwszym kroku umieszczani są
+wszyscy zawodnicy zajmujący w swoich rankingach miejsce pierwsze, w drugim kroku —
+wszyscy zajmujący miejsce drugie, w trzecim kroku — wszyscy zajmujący miejsce
+trzecie, i tak dalej. Krok, w którym nikt nie startuje, nie zajmuje żadnego numeru.</p>
+<p><strong>3. Kolejność w obrębie kroku.</strong> Decyduje liczba punktów rankingowych — od
+najwyższej do najniższej, niezależnie od płci i kategorii wiekowej. Przy równej
+liczbie punktów rozstrzyga ustalona kolejność kategorii (FV0–FV4, następnie
+MV0–MV4), a w dalszej kolejności kolejność alfabetyczna.</p>
+<p><strong>Zawodnicy bez punktów rankingowych</strong> otrzymują numery na końcu listy, po wszystkich
+zawodnikach sklasyfikowanych.</p>
+<p>Liczba punktów rankingowych zależy również od liczebności rankingu, w którym zawodnik
+jest sklasyfikowany — zwycięstwo w liczniejszej stawce jest punktowane wyżej.</p>
+<p>Numer rozstawienia zapisywany jest w pliku XML w atrybucie <code>Classement</code>. Wiersze w
+pliku uporządkowane są alfabetycznie według nazwiska, dlatego kolejność wierszy nie
+odpowiada kolejności rozstawienia.</p>
+</blockquote>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="079-event-self-registration-identity.html">← ADR-079: Event Self-Registration &amp; Identity Resolution</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="081-cert-prod-event-reconciler.html">→ ADR-081: CERT→PROD Event Reconciler</a></nav>
-<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>d812e16d67544089e872d3bd6eb2c6b7b9c859f37a277ad94a3286cbe29e3704</code></footer>
+<footer class="foot">Generated from <code>080-clean-roster-ftl-seeding.md</code> · source SHA-256 <code>ddf0876e73409578cda6dd11af54cb3c0843eda57a8a011e93731b9a2304097e</code></footer>
 </div></body></html>
