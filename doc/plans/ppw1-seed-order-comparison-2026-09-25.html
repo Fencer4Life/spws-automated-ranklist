@@ -35,7 +35,7 @@ code{font-family:var(--mono);font-size:.88em;background:var(--navy-soft);padding
 </style></head><body><main>
 
 <h1>PPW1 · EPEE mixed — seed order</h1>
-<p class="lede">The new code's order, with each fencer's <strong>true rank</strong> in their
+<p class="lede">Generated from <strong>deployed PROD</strong> after the 2026-09-25 release. The new code's order, with each fencer's <strong>true rank</strong> in their
 sub-ranking and the seed number the <strong>code live on PROD today</strong> would give them.
 Read a row as: this fencer is Nth in their category, so they belong in the Nth tier.</p>
 
@@ -44,7 +44,7 @@ Read a row as: this fencer is Nth in their category, so they belong in the Nth t
 live PROD entry list and re-linked to mirror PROD's fencer matching exactly — 73 distinct
 fencers, 17 unmatched rows, identical on both sides. The only difference is the change itself:
 the six declared birth years adopted into <code>tbl_fencer</code>.</p>
-<p class="note">Left column: new <code>fn_ftl_export_entries</code> + new <code>interleave_mixall</code> on LOCAL.
+<p class="note">Left column: deployed PROD, running the released <code>fn_ftl_export_entries</code> and <code>interleave_mixall</code>. <strong>This supersedes the pre-release LOCAL column.</strong> That earlier run used a PROD mirror whose <code>id_scoring_revision</code> links had been nulled to force a then-unloadable seed to load — the defect fixed in the same release — which moved five fencers by one rank and put SZKLAR at seed 13. On PROD she is seed 12.
 Right column: the generator on <code>origin/main</code> against the live PROD projection.
 52 entries each.</p>
 </div>
@@ -54,8 +54,7 @@ Right column: the generator on <code>origin/main</code> against the live PROD pr
 <p><strong>Tier 1</strong> (rows 1–6) holds only genuine category winners. <strong>Tier 2</strong>
 (rows 7–12), only true seconds — and so on. A tier with nobody in it produces nothing, which is
 why the true-rank column skips 5, 9, 10, 13, 14 and so on.</p>
-<p><strong>SZKLAR Bożena</strong> is true rank 3 in FV0 and now sits at seed 13, with the other
-third places. The live code put her at seed 1, ahead of every real winner, because ranks 1 and 2
+<p><strong>SZKLAR Bożena</strong> is true rank 3 in FV0 and sits at seed 12, with the other third places. The live code put her at seed 1, ahead of every real winner, because ranks 1 and 2
 of FV0 did not enter and she was compacted up into their place.</p>
 <p><strong>PĘCZEK Sandra</strong> moves from 32 to 7: her declared 1987 is now her master year,
 so she is FV1, where she is rank 2 on her carried 267.87. <strong>CHUDY Tomasz</strong> likewise
@@ -77,23 +76,23 @@ interleaved as though they held places.</p>
 <tr class=""><td class="num">6</td><td>KRZEMIŃSKI Mariusz</td><td class="cat">MV3</td><td class="num rank">1</td><td class="num">8</td><td class="num up">+2</td></tr>
 <tr class=""><td class="num">7</td><td>PĘCZEK Sandra</td><td class="cat">FV1</td><td class="num rank">2</td><td class="num">32</td><td class="num up">+25</td></tr>
 <tr class=""><td class="num">8</td><td>STAŃCZYK Agnieszka</td><td class="cat">FV2</td><td class="num rank">2</td><td class="num">12</td><td class="num up">+4</td></tr>
-<tr class=""><td class="num">9</td><td>STOCKI Piotr</td><td class="cat">MV1</td><td class="num rank">2</td><td class="num">22</td><td class="num up">+13</td></tr>
+<tr class=""><td class="num">9</td><td>DOBRZAŃSKI Maciej</td><td class="cat">MV1</td><td class="num rank">2</td><td class="num">14</td><td class="num up">+5</td></tr>
 <tr class=""><td class="num">10</td><td>KORONA Przemysław</td><td class="cat">MV2</td><td class="num rank">2</td><td class="num">15</td><td class="num up">+5</td></tr>
 <tr class=""><td class="num">11</td><td>KOSTRZEWA Ireneusz</td><td class="cat">MV3</td><td class="num rank">2</td><td class="num">16</td><td class="num up">+5</td></tr>
-<tr class=""><td class="num">12</td><td>SOBIERAJ Wojciech</td><td class="cat">MV4</td><td class="num rank">2</td><td class="num">9</td><td class="num down">-3</td></tr>
-<tr class=""><td class="num">13</td><td>SZKLAR Bożena</td><td class="cat">FV0</td><td class="num rank">3</td><td class="num">1</td><td class="num down">-12</td></tr>
-<tr class=""><td class="num">14</td><td>SAMECKA-NACZYŃSKA Martyna</td><td class="cat">FV1</td><td class="num rank">3</td><td class="num">11</td><td class="num down">-3</td></tr>
-<tr class=""><td class="num">15</td><td>GANSZCZYK Anna</td><td class="cat">FV2</td><td class="num rank">3</td><td class="num">20</td><td class="num up">+5</td></tr>
-<tr class=""><td class="num">16</td><td>DZIUBIŃSKI Mateusz</td><td class="cat">MV0</td><td class="num rank">3</td><td class="num">5</td><td class="num down">-11</td></tr>
-<tr class=""><td class="num">17</td><td>DOBRZAŃSKI Maciej</td><td class="cat">MV1</td><td class="num rank">3</td><td class="num">14</td><td class="num down">-3</td></tr>
-<tr class=""><td class="num">18</td><td>ATANASSOW Aleksander</td><td class="cat">MV2</td><td class="num rank">3</td><td class="num">23</td><td class="num up">+5</td></tr>
-<tr class=""><td class="num">19</td><td>DRAPELLA Maciej</td><td class="cat">MV3</td><td class="num rank">3</td><td class="num">24</td><td class="num up">+5</td></tr>
+<tr class=""><td class="num">12</td><td>SZKLAR Bożena</td><td class="cat">FV0</td><td class="num rank">3</td><td class="num">1</td><td class="num down">-11</td></tr>
+<tr class=""><td class="num">13</td><td>SAMECKA-NACZYŃSKA Martyna</td><td class="cat">FV1</td><td class="num rank">3</td><td class="num">11</td><td class="num down">-2</td></tr>
+<tr class=""><td class="num">14</td><td>GANSZCZYK Anna</td><td class="cat">FV2</td><td class="num rank">3</td><td class="num">20</td><td class="num up">+6</td></tr>
+<tr class=""><td class="num">15</td><td>DZIUBIŃSKI Mateusz</td><td class="cat">MV0</td><td class="num rank">3</td><td class="num">5</td><td class="num down">-10</td></tr>
+<tr class=""><td class="num">16</td><td>STOCKI Piotr</td><td class="cat">MV1</td><td class="num rank">3</td><td class="num">22</td><td class="num up">+6</td></tr>
+<tr class=""><td class="num">17</td><td>ATANASSOW Aleksander</td><td class="cat">MV2</td><td class="num rank">3</td><td class="num">23</td><td class="num up">+6</td></tr>
+<tr class=""><td class="num">18</td><td>DRAPELLA Maciej</td><td class="cat">MV3</td><td class="num rank">3</td><td class="num">24</td><td class="num up">+6</td></tr>
+<tr class=""><td class="num">19</td><td>SOBIERAJ Wojciech</td><td class="cat">MV4</td><td class="num rank">3</td><td class="num">9</td><td class="num down">-10</td></tr>
 <tr class=""><td class="num">20</td><td>GÓRNA Karolina</td><td class="cat">FV0</td><td class="num rank">4</td><td class="num">10</td><td class="num down">-10</td></tr>
 <tr class=""><td class="num">21</td><td>CHMIELEWSKA Emilia</td><td class="cat">FV1</td><td class="num rank">4</td><td class="num">19</td><td class="num down">-2</td></tr>
 <tr class=""><td class="num">22</td><td>KORNAŚ Jarosław</td><td class="cat">MV1</td><td class="num rank">4</td><td class="num">28</td><td class="num up">+6</td></tr>
 <tr class=""><td class="num">23</td><td>DROBIŃSKI Leszek</td><td class="cat">MV3</td><td class="num rank">4</td><td class="num">30</td><td class="num up">+7</td></tr>
-<tr class=""><td class="num">24</td><td>KIERSZNICKI Ryszard</td><td class="cat">MV4</td><td class="num rank">4</td><td class="num">17</td><td class="num down">-7</td></tr>
-<tr class=""><td class="num">25</td><td>SADOWSKA Małgorzata</td><td class="cat">FV1</td><td class="num rank">5</td><td class="num">26</td><td class="num up">+1</td></tr>
+<tr class=""><td class="num">24</td><td>SADOWSKA Małgorzata</td><td class="cat">FV1</td><td class="num rank">5</td><td class="num">26</td><td class="num up">+2</td></tr>
+<tr class=""><td class="num">25</td><td>KIERSZNICKI Ryszard</td><td class="cat">MV4</td><td class="num rank">5</td><td class="num">17</td><td class="num down">-8</td></tr>
 <tr class=""><td class="num">26</td><td>DRAPELLA Magdalena</td><td class="cat">FV0</td><td class="num rank">6</td><td class="num">18</td><td class="num down">-8</td></tr>
 <tr class=""><td class="num">27</td><td>BOBUSIA Jarosław</td><td class="cat">MV1</td><td class="num rank">6</td><td class="num">34</td><td class="num up">+7</td></tr>
 <tr class=""><td class="num">28</td><td>JASZCZAK Piotr</td><td class="cat">MV2</td><td class="num rank">6</td><td class="num">29</td><td class="num up">+1</td></tr>
@@ -109,7 +108,7 @@ interleaved as though they held places.</p>
 <tr class=""><td class="num">38</td><td>WIERZBICKI Jacek</td><td class="cat">MV2</td><td class="num rank">12</td><td class="num">40</td><td class="num up">+2</td></tr>
 <tr class=""><td class="num">39</td><td>CHUDYCKI Artur</td><td class="cat">MV3</td><td class="num rank">12</td><td class="num">50</td><td class="num up">+11</td></tr>
 <tr class=""><td class="num">40</td><td>CHUDY Tomasz</td><td class="cat">MV2</td><td class="num rank">15</td><td class="num">49</td><td class="num up">+9</td></tr>
-<tr class=""><td class="num">41</td><td>PARDUS Borys</td><td class="cat">MV2</td><td class="num rank">16</td><td class="num">43</td><td class="num up">+2</td></tr>
+<tr class=""><td class="num">41</td><td>PARDUS Borys</td><td class="cat">MV2</td><td class="num rank">17</td><td class="num">43</td><td class="num up">+2</td></tr>
 <tr class=""><td class="num">42</td><td>HEŁKA Jacek</td><td class="cat">MV2</td><td class="num rank">21</td><td class="num">46</td><td class="num up">+4</td></tr>
 <tr class="unranked"><td class="num">43</td><td>CISZEWSKA Barbara</td><td class="cat">FV2</td><td class="num rank">—</td><td class="num">38</td><td class="num down">-5</td></tr>
 <tr class="unranked"><td class="num">44</td><td>ŁĘCKI Krzysztof</td><td class="cat">MV0</td><td class="num rank">—</td><td class="num">13</td><td class="num down">-31</td></tr>

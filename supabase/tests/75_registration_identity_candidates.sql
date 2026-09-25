@@ -38,7 +38,7 @@
 
 BEGIN;
 
-SELECT plan(38);
+SELECT plan(42);
 
 DO $setup$
 DECLARE
@@ -517,6 +517,64 @@ SELECT is(
 SELECT ok(
   NOT has_function_privilege('anon', 'fn_apply_identity_override(int)', 'EXECUTE'),
   '75.16 anon cannot apply a proposal — that would restore the exposure');
+
+-- ---------------------------------------------------------------------------
+-- 75.17 — the lookup normalises names the way the INGESTION matcher does.
+--
+-- MACIEJ Splawa - Neyman entered PPW1-2026-2027 with the two name fields
+-- exchanged. #276 SPLAWA-NEYMAN Maciej has been on the roster for 14 results,
+-- so rung 3 should have offered the swap. It never fired, because the lookup
+-- compared with upper(btrim(...)) and nothing else:
+--
+--   typed first name  'SPLAWA - NEYMAN'   (plain L, spaces around the hyphen)
+--   fencer surname    'SPLAWA-NEYMAN'     (L-with-stroke, no spaces)
+--
+-- Two differences, either one fatal. The lookup returned ZERO candidates, so
+-- the form skipped every rung and echoed the canonical form back as a brand-new
+-- person -- which, for a swapped name, looks perfectly correct to the reader.
+--
+-- python/matcher/fuzzy_match.py has handled both for years:
+-- fold_diacritics special-cases L-stroke because NFD does not decompose it,
+-- and canonicalize_scraped_name collapses 'A - B' to 'A-B' (the SAMECKA
+-- -NACZYNSKA case). The registration half of the system simply never got the
+-- same treatment. fn_fold_name is that normalisation, shared by both sides.
+-- ---------------------------------------------------------------------------
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year,
+                        bool_birth_year_estimated, enum_gender, txt_nationality)
+VALUES ('SPŁAWA-NEYMAN', 'PGTAP75Maciej', 1991, FALSE, 'M', 'PL');
+
+SELECT is(
+  (SELECT count(*)::INT FROM fn_registration_identity_candidates(
+     'PGTAP75MACIEJ', 'SPLAWA - NEYMAN', 1988::SMALLINT)
+    WHERE enum_kind = 'SWAPPED'),
+  1,
+  '75.17a a swapped name is found across BOTH a folded diacritic and hyphen spacing'
+);
+
+SELECT is(
+  (SELECT txt_surname FROM fn_registration_identity_candidates(
+     'PGTAP75MACIEJ', 'SPLAWA - NEYMAN', 1988::SMALLINT)
+    WHERE enum_kind = 'SWAPPED'),
+  'SPŁAWA-NEYMAN',
+  '75.17b and it returns the stored spelling, not the typed one'
+);
+
+-- 75.18 — the folding must not collapse two genuinely different people.
+SELECT is(
+  (SELECT count(*)::INT FROM fn_registration_identity_candidates(
+     'PGTAP75NOSUCH', 'Nobody', 1970::SMALLINT)),
+  0,
+  '75.18 an unrelated name still matches nobody'
+);
+
+-- 75.19 — folding is applied to the typed-order branch too, not only SWAPPED.
+SELECT is(
+  (SELECT count(*)::INT FROM fn_registration_identity_candidates(
+     'SPLAWA - NEYMAN', 'PGTAP75Maciej', 1991::SMALLINT)
+    WHERE enum_kind = 'EXACT'),
+  1,
+  '75.19 the same normalisation finds an exact match typed in the right order'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

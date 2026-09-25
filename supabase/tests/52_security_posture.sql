@@ -175,6 +175,11 @@ SELECT set_eq(
     -- "Public read fencers" policy — it exposes no column the fencer table
     -- does not already publish, and it is STABLE with no SECURITY DEFINER.
     'fn_registration_identity_candidates',
+    -- fn_fold_name (2026-09-25) is the name normalisation that lookup compares
+    -- through. It is a pure string function — IMMUTABLE, no table access, no
+    -- SECURITY DEFINER — and anon needs EXECUTE on it only because the lookup
+    -- above is SECURITY INVOKER and calls it. It publishes nothing.
+    'fn_fold_name',
     -- fn_confirm_registration_identity is the one genuinely new capability on
     -- this surface: it is SECURITY DEFINER and it can write tbl_fencer, which
     -- deliberately reverses ADR-079's read-only-birth-year invariant. It is
