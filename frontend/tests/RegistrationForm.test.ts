@@ -1042,6 +1042,32 @@ describe('RegistrationForm — identity resolution ladder', () => {
     )
   })
 
+  // 6.38b — RUNG 4 MUST NOT PICK BETWEEN NAMESAKES. ADR-093's lookup returns
+  // every candidate precisely so that "software never picks", and PROD carries
+  // two live same-name pairs (KRAWCZYK Paweł #354/#355, MŁYNEK Janusz
+  // #197/#356, the latter holding nineteen results). Counting BY_NULL rows
+  // rather than candidates made rung 4 pick anyway whenever exactly one of the
+  // namesakes had no stored year: it linked the entry and wrote a birth year
+  // onto somebody who may not be the registrant, silently, with guard 3 unable
+  // to help because NULL is tier 1 and not tier 3. Ambiguity falls through to
+  // rung 5, which asks.
+  it('does not populate a null birth year when two fencers share the name', async () => {
+    mockFetchEvent.mockResolvedValue(BASE_EVENT)
+    mockMatch.mockResolvedValue(null)
+    mockCreate.mockResolvedValue(101)
+    mockCandidates.mockResolvedValue([
+      { idFencer: 501, surname: 'KOWALSKI', firstName: 'Jan', birthYear: null, birthYearEstimated: false, kind: 'BY_NULL' },
+      { idFencer: 502, surname: 'KOWALSKI', firstName: 'Jan', birthYear: 1966, birthYearEstimated: false, kind: 'BY_DIFFERS' },
+    ])
+    const { container, findByText } = render(RegistrationForm, { props: { eventCode: 'PPW4-2025-2026' } })
+    await findByText('IV Puchar Polski Weteranów')
+    await fillIdentity(container)
+    await fireEvent.click(container.querySelector('button.reg-continue') as HTMLButtonElement)
+    // Rung 5 prompt, listing both namesakes — not a silent write.
+    await waitFor(() => expect(container.querySelectorAll('.reg-idcheck').length).toBe(2))
+    expect(mockConfirm).not.toHaveBeenCalled()
+  })
+
   // 6.39 — RUNG 6. Nobody at all, so we are about to mint a new identity. The
   // canonical form is echoed back — this is the only path that can catch NAGY
   // Orsolya, whom the swap retry cannot help because she is not in the table.

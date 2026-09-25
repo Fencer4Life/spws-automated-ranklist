@@ -39,6 +39,32 @@ class DbConnector:
         )
         return resp.data
 
+    def fetch_registration_birth_years(self, event_code: str) -> list[dict]:
+        """Return this event's declared birth years, for s0_reconcile_roster.
+
+        A registration is the one moment the association hears a birth year
+        from the fencer directly, and until 2026-09-25 the ingestion pipeline
+        never opened this table: a new entrant was created from a band midpoint
+        while their declared year sat one row away. ADR-093 already treats the
+        declaration as authoritative for tbl_fencer; this is the same rule
+        applied where master data is actually written.
+
+        Returns the raw rows — surname, first name and year, as declared, not
+        canonicalised. The caller canonicalises with the same parse the scraped
+        names go through, so both sides are compared on equal terms, and drops
+        any name carrying more than one registration.
+
+        Safe on an event with no registrations (an empty list), which is every
+        historical event and every international one.
+        """
+        resp = (
+            self._sb.table("tbl_registration")
+            .select("txt_surname, txt_first_name, int_birth_year, tbl_event!inner(txt_code)")
+            .eq("tbl_event.txt_code", event_code)
+            .execute()
+        )
+        return resp.data or []
+
     def find_event_by_date(self, date: str) -> dict | None:
         """Find event in active season by date (ADR-025).
 

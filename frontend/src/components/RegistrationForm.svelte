@@ -140,9 +140,16 @@
             <button class="reg-btn reg-continue reg-id-adopt" onclick={() => answerBirthYear(c, 'ADOPT_DECLARED')}>
               {t('reg_by_adopt', { year: birthYear ?? '' })}
             </button>
-            <button class="reg-btn reg-id-fix" onclick={() => answerBirthYear(c, 'FIX_REGISTRATION')}>
-              {t('reg_by_fix')}
-            </button>
+            <!-- Only when that candidate HAS a year to copy. fn_confirm_
+                 registration_identity raises on FIX_REGISTRATION against a
+                 NULL birth year, and a raise here strands a real entrant
+                 mid-registration. Adopting the declared year is the answer
+                 that fits a candidate we hold without one. -->
+            {#if c.birthYear != null}
+              <button class="reg-btn reg-id-fix" onclick={() => answerBirthYear(c, 'FIX_REGISTRATION')}>
+                {t('reg_by_fix')}
+              </button>
+            {/if}
           </div>
         </div>
       {/each}
@@ -522,6 +529,11 @@
     const swapped = candidates.filter((c) => c.kind === 'SWAPPED')
     const byNull = candidates.filter((c) => c.kind === 'BY_NULL')
     const byDiffers = candidates.filter((c) => c.kind === 'BY_DIFFERS')
+    // Everybody the typed name reaches. SWAPPED is excluded because it is a
+    // different name orientation, hence a different person, not a namesake.
+    // More than one of these and the name does not identify anybody on its
+    // own — the triplet does — so no rung below may pick between them.
+    const namesakes = candidates.filter((c) => c.kind !== 'SWAPPED')
 
     if (swapped.length === 1) {
       // RUNG 3 — the two name fields were typed into each other's boxes. A hit
@@ -529,18 +541,33 @@
       // rather than tells.
       identityCandidates = swapped
       identityPrompt = 'swap'
-    } else if (byNull.length === 1) {
+    } else if (byNull.length === 1 && namesakes.length === 1) {
       // RUNG 4 — we hold this person with no birth year at all, which the exact
       // matcher structurally cannot reach (NULL is never equal to anything).
       // Populate it silently: there is nothing to contradict and nothing to ask.
+      //
+      // Only when the name reaches ONE fencer. With two namesakes and a NULL
+      // year on one of them, counting BY_NULL rows alone made this rung pick —
+      // linking the entry and writing a year onto somebody who may not be the
+      // registrant, silently, and guard 3 cannot catch it because NULL is
+      // tier 1. PROD carries two such pairs today (KRAWCZYK Pawel, MLYNEK
+      // Janusz, the latter holding nineteen results). Ambiguity falls to
+      // rung 5, which asks. ADR-093: the lookup returns every candidate so
+      // that software never picks.
       identityCandidates = byNull
       pendingIdentity = { idFencer: byNull[0].idFencer, action: 'ADOPT_DECLARED' }
       fencerId = byNull[0].idFencer
       isNewFencer = false
-    } else if (byDiffers.length > 0) {
+    } else if (namesakes.length > 0) {
       // RUNG 5 — a confirmed birth year is never overwritten silently. Every
       // candidate is listed, not just the first: this is the MŁYNEK case.
-      identityCandidates = byDiffers
+      //
+      // Every NAMESAKE, not only the ones whose year differs. A namesake we
+      // hold with no birth year is still a person the registrant might be, and
+      // leaving them off the list would make picking themselves impossible —
+      // they would answer "different person" and be minted a second time,
+      // which is the duplicate this whole block exists to prevent.
+      identityCandidates = namesakes
       identityPrompt = 'birth_year'
     } else {
       // RUNG 6 — nobody at all, so we are about to mint a brand-new identity.

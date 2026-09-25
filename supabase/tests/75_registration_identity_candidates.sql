@@ -239,45 +239,36 @@ SELECT is(
   (SELECT id_fencer FROM t75_adopt),
   '75.8a ADOPT_DECLARED links the registration to the chosen fencer');
 
--- ADR-093 section 4, AMENDED 2026-09-24: every declared birth year is
--- authoritative, including over a CONFIRMED one. The declaration is the moment
--- the association hears from the fencer directly, and leaving a correction
--- unapplied is not neutral — the birth year decides the V-category, so it puts
--- somebody in the wrong category on the day. PPW1 2026 had six such rows
--- waiting, two of which moved a fencer between categories, while the files
--- were already being imported.
---
--- The exposure the old rule closed is accepted rather than solved, and is
--- recorded in the amendment: ADOPT_DECLARED is a PARAMETER, not a click, so a
--- caller who creates a registration for a name from the public entry list —
--- minting its edit token themselves — can move that fencer's birth year. What
--- remains is that the change is loud (an APPLIED audit row and a Telegram
--- alert) and reversible (fn_reject_identity_override).
+-- THE EXPOSURE THIS CLOSES. ADOPT_DECLARED is a PARAMETER, not a click: the
+-- server cannot tell a fencer pressing the button from a crafted RPC call, and
+-- the edit token is no obstacle to a caller who mints it for a row they just
+-- created. Demonstrated on a PROD mirror 2026-09-12 — an anonymous caller
+-- knowing only the name "BUJKO Paulina" moved a CONFIRMED 1979 to 1900.
+-- So a confirmed year is no longer applied here at all. It is PROPOSED.
 SELECT is(
   (SELECT f.int_birth_year FROM tbl_fencer f
      JOIN t75_adopt a ON a.id_fencer = f.id_fencer),
-  1982::SMALLINT,
-  '75.8b the declared year overwrites the confirmed master year');
+  1979::SMALLINT,
+  '75.8b the confirmed master birth year is NOT changed by the public call');
 
 SELECT is(
   (SELECT o.enum_status FROM tbl_registration_identity_override o
      JOIN t75_adopt a ON a.id_fencer = o.id_fencer),
-  'APPLIED',
-  '75.8c the overwrite is recorded as an applied change, not a proposal');
+  'PENDING',
+  '75.8c it is recorded as a proposal awaiting an administrator');
 
--- 75.8d/e — the write is a plain UPDATE, so the self-heal runs: every event the
--- fencer played re-queues (ADR-093 section 5) and trg_audit_fencer records it.
--- That re-queue is what actually carries their points into the new category.
+-- 75.8d/e — nothing was written to tbl_fencer, so neither the recompute queue
+-- nor the audit log may show anything yet. Both fire on the APPLY, not here.
 SELECT ok(
-  EXISTS (SELECT 1 FROM tbl_recompute_queue q
-            JOIN t75_adopt a ON a.id_event = q.id_event),
-  '75.8d the affected event is queued for recompute');
+  NOT EXISTS (SELECT 1 FROM tbl_recompute_queue q
+                JOIN t75_adopt a ON a.id_event = q.id_event),
+  '75.8d nothing is queued for recompute — no master row moved');
 
 SELECT ok(
-  EXISTS (SELECT 1 FROM tbl_audit_log l
-            JOIN t75_adopt a ON a.id_fencer = l.id_row
-           WHERE l.txt_table_name = 'tbl_fencer' AND l.txt_action = 'UPDATE'),
-  '75.8e and trg_audit_fencer recorded the change');
+  NOT EXISTS (SELECT 1 FROM tbl_audit_log l
+                JOIN t75_adopt a ON a.id_fencer = l.id_row
+               WHERE l.txt_table_name = 'tbl_fencer' AND l.txt_action = 'UPDATE'),
+  '75.8e and trg_audit_fencer has nothing to record');
 
 -- ---------------------------------------------------------------------------
 -- 75.9 — FIX_REGISTRATION. The mirror image: the registration is corrected to
@@ -445,12 +436,10 @@ SELECT is(
   '75.13b nor does FIX_REGISTRATION, which never touches the fencer at all');
 
 -- ---------------------------------------------------------------------------
--- 75.14 — there is nothing left to approve. ADR-093 section 4 as amended
--- 2026-09-24 applies the declared year on the public call itself (75.8b-e), so
--- what an administrator needs is not an apply but an UNDO. Reject restores the
--- previous year through the same plain UPDATE, so the self-heal runs again.
+-- 75.14 — the administrator applies the proposal. This is where the master row
+-- finally moves, and where the self-heal fires.
 -- ---------------------------------------------------------------------------
-DO $undo$
+DO $apply$
 DECLARE v_o INT;
 BEGIN
   SELECT o.id_override INTO v_o FROM tbl_registration_identity_override o
@@ -460,32 +449,38 @@ BEGIN
   -- (same shape as 01_database_foundation.sql:227).
   PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', TRUE);
   SET LOCAL ROLE authenticated;
-  PERFORM fn_reject_identity_override(v_o);
+  PERFORM fn_apply_identity_override(v_o);
   RESET ROLE;
-END $undo$;
+END $apply$;
 
 SELECT is(
   (SELECT f.int_birth_year FROM tbl_fencer f JOIN t75_adopt a ON a.id_fencer = f.id_fencer),
-  1979::SMALLINT,
-  '75.14a the undo puts the confirmed birth year back');
+  1982::SMALLINT,
+  '75.14a applying the proposal corrects the master birth year');
 
+SELECT is(
+  (SELECT f.bool_birth_year_estimated FROM tbl_fencer f JOIN t75_adopt a ON a.id_fencer = f.id_fencer),
+  FALSE,
+  '75.14b and leaves it marked confirmed');
+
+-- The apply must be a PLAIN UPDATE for the same reason the original write was:
+-- trg_assert_result_vcat does not fire on tbl_fencer, so without this enqueue
+-- every old result keeps its old V-cat with no error raised anywhere.
 SELECT ok(
   EXISTS (SELECT 1 FROM tbl_recompute_queue q JOIN t75_adopt a ON a.id_event = q.id_event),
-  '75.14b and the event is queued again, so the ranking follows the reversal');
+  '75.14c and re-queues the event she actually played');
 
 SELECT is(
   (SELECT o.enum_status FROM tbl_registration_identity_override o
      JOIN t75_adopt a ON a.id_fencer = o.id_fencer),
-  'REJECTED',
-  '75.14c and the audit row is closed, so one change cannot be undone twice');
+  'APPLIED',
+  '75.14d and the proposal is closed, so it cannot be applied twice');
 
 -- ---------------------------------------------------------------------------
--- 75.15 — the amendment's cost, asserted rather than described. A caller who
--- creates a registration for a name off the public entry list mints its own
--- edit token, so the declaration WILL move a 19-result fencer's birth year.
--- What the system still guarantees is that it is loud and reversible.
+-- 75.15 — rejecting one writes nothing at all. This is the attacker's path,
+-- and it must leave the fencer exactly as they were.
 -- ---------------------------------------------------------------------------
-DO $expose$
+DO $reject$
 DECLARE v_e INT; v_r INT; v_f INT; v_o INT; v_tok UUID := gen_random_uuid();
 BEGIN
   SELECT id_event INTO v_e FROM tbl_event WHERE txt_code = 'REG75EVT';
@@ -496,41 +491,32 @@ BEGIN
   PERFORM fn_confirm_registration_identity(v_r, v_tok, v_f, 'ADOPT_DECLARED');
 
   SELECT id_override INTO v_o FROM tbl_registration_identity_override
-   WHERE id_fencer = v_f AND enum_status = 'APPLIED';
-  CREATE TEMP TABLE t75_reject AS SELECT v_f AS id_fencer, v_o AS id_override;
-END $expose$;
-
-SELECT is(
-  (SELECT f.int_birth_year FROM tbl_fencer f JOIN t75_reject x ON x.id_fencer = f.id_fencer),
-  1902::SMALLINT,
-  '75.15a the declaration moves even a 19-result Janusz — the accepted cost');
-
-SELECT ok(
-  (SELECT x.id_override FROM t75_reject x) IS NOT NULL,
-  '75.15b but it is recorded as an APPLIED change somebody can find');
-
-DO $undo2$
-DECLARE v_o INT;
-BEGIN
-  SELECT x.id_override INTO v_o FROM t75_reject x;
+   WHERE id_fencer = v_f AND enum_status = 'PENDING';
   PERFORM set_config('request.jwt.claims', '{"role":"authenticated"}', TRUE);
   SET LOCAL ROLE authenticated;
   PERFORM fn_reject_identity_override(v_o);
   RESET ROLE;
-END $undo2$;
+  CREATE TEMP TABLE t75_reject AS SELECT v_f AS id_fencer, v_o AS id_override;
+END $reject$;
 
 SELECT is(
   (SELECT f.int_birth_year FROM tbl_fencer f JOIN t75_reject x ON x.id_fencer = f.id_fencer),
   1951::SMALLINT,
-  '75.15c and the undo restores him exactly as he was');
+  '75.15a rejecting leaves the 19-result Janusz exactly as he was');
+
+SELECT is(
+  (SELECT o.enum_status FROM tbl_registration_identity_override o
+     JOIN t75_reject x ON x.id_override = o.id_override),
+  'REJECTED',
+  '75.15b and the proposal is closed');
 
 -- ---------------------------------------------------------------------------
--- 75.16 — the undo is the administrator's, not the public's. If anon could
--- call it, an attacker could also revert a genuine correction.
+-- 75.16 — and the whole fix is worthless if the public can apply its own
+-- proposal, so the apply path is administrator-only.
 -- ---------------------------------------------------------------------------
 SELECT ok(
-  NOT has_function_privilege('anon', 'fn_reject_identity_override(int)', 'EXECUTE'),
-  '75.16 anon cannot revert a birth-year change');
+  NOT has_function_privilege('anon', 'fn_apply_identity_override(int)', 'EXECUTE'),
+  '75.16 anon cannot apply a proposal — that would restore the exposure');
 
 SELECT * FROM finish();
 ROLLBACK;

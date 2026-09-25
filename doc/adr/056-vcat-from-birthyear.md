@@ -325,3 +325,64 @@ allowed, mixed-gender skip, order-independence), `python/tests/test_s0_reconcile
 (10.4.2b confirmed no-op, 10.4.2c estimated midpoint), `python/tests/test_vcat_from_birthyear.py`
 (5.20.1 mixed-gender→BY split, 5.20.2 mixed-age+gender, 5.20.3 single-gender label preserved),
 `python/tests/test_pipeline_plugins.py` (N2.10 commit gender None→'M').
+
+## Amendment (2026-09-25) — a declared birth year outranks a bracket inference
+
+Every rule above infers an age from a bracket **label**. A registration is the one
+moment the association hears a birth year from the fencer themselves, and until now
+the ingestion pipeline never looked at it: `python/pipeline/stages.py` read
+`tbl_fencer` and nothing else, so `s0_reconcile_roster` minted a new participant from
+a band **midpoint** — wrong by up to two years, and that error selects their
+V-category — while the year they had declared for *that same event* sat one table
+away in `tbl_registration`. Measured on PPW1-2026-2027: **17 of 90 registrations were
+unmatched**, so seventeen people were about to be created from a guess nobody needed
+to make.
+
+ADR-079 §3 already promised this ("the declared BY feeds the existing reconciliation
+machinery unchanged"). The machinery simply never consumed it. This amendment makes
+that sentence true and states the precedence it implies.
+
+### The rule
+
+`s0_reconcile_roster` loads the event's declared birth years once, keyed by the same
+diacritic-folded name normalisation `_find_exact_fencer` uses, and prefers a
+declaration over anything derived from a bracket. It is written **confirmed**,
+because it is not an estimate — which also re-arms Guard 1 for that fencer.
+
+Four refusals, each with a reason:
+
+1. **More than one registration under the name — no pick.** PROD carries two live
+   same-name pairs (`KRAWCZYK Paweł`, `MŁYNEK Janusz`, the latter holding nineteen
+   results) and a birth year written onto the wrong one is unrecoverable. The same
+   rule ADR-093's lookup follows: software never picks between namesakes.
+2. **The declared year's V-category contradicts the bracket — take neither.** The
+   entry list and the results disagree; writing the declaration would bake an
+   organizer's mis-seeding into master data, and writing the midpoint would overrule
+   a person about their own birth year. Recorded as a `declared_vs_bracket` conflict.
+   This is the 2026-06-27 amendment's Guard 2 posture: an untrustworthy label
+   calibrates nothing.
+3. **A CONFIRMED stored year with no bracket to corroborate — the stored year
+   stands.** ADR-079 §3's rule is that an estimated year yields to the declaration
+   and a known one does not. A confirmed year is overruled here *only* because the
+   declaration and the bracket agree — two independent sources against one stored
+   value. Without a V-cat on the row that majority does not exist. Recorded as
+   `declared_vs_confirmed_uncorroborated`.
+4. **A mixed-gender bracket does not block the declaration.** Guard 2 distrusts the
+   *bracket*, and a declaration is not a bracket; there is nothing to cross-check
+   against, so it stands on its own.
+
+An event with no registrations yields an empty map, so every historical event and
+every international one behaves exactly as before, and a failed lookup falls back to
+the midpoint rather than halting a run.
+
+### Consequences
+
+`DbConnector.fetch_registration_birth_years` is new. `reconcile_fencer_birth_year`
+gains an optional `declared_birth_year`, so both ingestion pipelines share the policy
+and it cannot fork. `tbl_registration` must not be purged before ingestion has run —
+already true, the purge follows reconciliation (`20260912000002`).
+
+Tests: `python/tests/test_s0_reconcile_roster.py` 10.9.1–10.9.9 — the declaration
+taken for a new fencer and for a matched one, the midpoint retained with no
+registration, namesakes refused, `declared_vs_bracket` refused, diacritics folded,
+Guard 1 still blocking a bracket-only demotion, and both halves of refusal 3.

@@ -166,14 +166,130 @@ def export_monolithic(ref: str, token: str) -> str:
     lines.append("")
 
     # --- tbl_season ---
+    #
+    # Two of this table's columns are foreign keys that a portable dump cannot
+    # carry as raw ids, and one of them is part of a CYCLE:
+    #
+    #   tbl_season.id_active_scoring_revision -> tbl_scoring_config_revision
+    #   tbl_scoring_config_revision.id_season -> tbl_season
+    #
+    # Neither constraint is deferrable, so no ordering of plain INSERTs can
+    # satisfy both. The pointer is therefore left out of the INSERT and set by
+    # an UPDATE once the revisions exist — the same deferred-write shape this
+    # file already uses for tbl_scoring_config below.
+    #
+    # id_scoring_engine is not circular but is just as unportable: it points at
+    # tbl_scoring_engine, which migration 20260919000001 seeds as reference
+    # data, so the ids only happen to line up because the migration inserts in
+    # a fixed order. Resolved by txt_code like every other FK in this file.
+    #
+    # This is the defect that made the 2026-09-24 dump unloadable: the export
+    # discovers its columns from the live schema, so when the September scoring
+    # migrations added both columns it began emitting dangling ids the same day,
+    # silently, with nothing in CI loading a freshly generated seed to notice.
     print("  tbl_season...", file=sys.stderr)
     cols = discover_cols(ref, token, "tbl_season")
-    col_names = [c["name"] for c in cols]
-    rows = q(f"SELECT {select_expr(cols)} FROM tbl_season ORDER BY dt_start")
+    season_cols = [
+        c for c in cols if c["name"] not in ("id_active_scoring_revision", "id_scoring_engine")
+    ]
+    has_engine = any(c["name"] == "id_scoring_engine" for c in cols)
+    s_select = ", ".join(
+        f"s.{c['name']}::TEXT"
+        if c["type"]
+        in ("date", "timestamp with time zone", "timestamp without time zone", "USER-DEFINED")
+        else f"s.{c['name']}"
+        for c in season_cols
+    )
+    rows = q(f"""
+    SELECT {s_select}, e.txt_code AS engine_code
+    FROM tbl_season s
+    LEFT JOIN tbl_scoring_engine e ON e.id_engine = s.id_scoring_engine
+    ORDER BY s.dt_start
+    """)
     lines.append(f"-- tbl_season ({len(rows)} rows)")
     for r in rows:
-        vals = ", ".join(sql_val(r.get(c["name"]), c["type"]) for c in cols)
-        lines.append(f"INSERT INTO tbl_season ({', '.join(col_names)}) VALUES ({vals});")
+        names = [c["name"] for c in season_cols]
+        vals = [sql_val(r.get(c["name"]), c["type"]) for c in season_cols]
+        if has_engine:
+            names.append("id_scoring_engine")
+            vals.append(
+                "(SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = "
+                f"'{esc(str(r['engine_code']))}')"
+                if r.get("engine_code")
+                else "NULL"
+            )
+        lines.append(f"INSERT INTO tbl_season ({', '.join(names)}) VALUES ({', '.join(vals)});")
+    lines.append("")
+
+    # --- tbl_scoring_config_revision ---
+    #
+    # The other half of the cycle. Emitted after tbl_season so its id_season
+    # resolves, and guarded by NOT EXISTS because migrations create revision
+    # rows of their own (20260919000005, 20260919000006) and run BEFORE the
+    # seed on a fresh bootstrap (ADR-036 amendment, 2026-07-14). Two idempotent
+    # halves are not idempotent together unless both guard — the same lesson
+    # tbl_organizer above records.
+    #
+    # The table has no unique constraint, only its primary key, so the natural
+    # key here is (season, ts_effective): unique across every revision on PROD,
+    # and the pair that identifies a revision to a human reading the dump.
+    print("  tbl_scoring_config_revision...", file=sys.stderr)
+    rev_cols = discover_cols(ref, token, "tbl_scoring_config_revision")
+    rev_cols_data = [c for c in rev_cols if c["name"] not in ("id_season", "id_engine")]
+    rev_select = ", ".join(
+        f"v.{c['name']}::TEXT"
+        if c["type"]
+        in ("date", "timestamp with time zone", "timestamp without time zone", "USER-DEFINED")
+        else f"v.{c['name']}"
+        for c in rev_cols_data
+    )
+    rows = q(f"""
+    SELECT {rev_select}, s.txt_code AS season_code, e.txt_code AS engine_code
+    FROM tbl_scoring_config_revision v
+    JOIN tbl_season s ON s.id_season = v.id_season
+    JOIN tbl_scoring_engine e ON e.id_engine = v.id_engine
+    ORDER BY v.ts_effective
+    """)
+    lines.append(f"-- tbl_scoring_config_revision ({len(rows)} rows)")
+    for r in rows:
+        names = [c["name"] for c in rev_cols_data] + ["id_season", "id_engine"]
+        vals = [sql_val(r.get(c["name"]), c["type"]) for c in rev_cols_data]
+        season_sub = (
+            f"(SELECT id_season FROM tbl_season WHERE txt_code = '{esc(str(r['season_code']))}')"
+        )
+        vals.append(season_sub)
+        vals.append(
+            "(SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = "
+            f"'{esc(str(r['engine_code']))}')"
+        )
+        lines.append(
+            f"INSERT INTO tbl_scoring_config_revision ({', '.join(names)}) "
+            f"SELECT {', '.join(vals)} "
+            f"WHERE NOT EXISTS (SELECT 1 FROM tbl_scoring_config_revision x "
+            f"WHERE x.id_season = {season_sub} "
+            f"AND x.ts_effective = {sql_val(r.get('ts_effective'), 'timestamp with time zone')});"
+        )
+    lines.append("")
+
+    # Close the cycle: the active-revision pointer, now that both ends exist.
+    lines.append("-- tbl_season.id_active_scoring_revision (deferred — FK cycle)")
+    rows = q("""
+    SELECT s.txt_code AS season_code, v.ts_effective::TEXT AS ts_effective
+    FROM tbl_season s
+    JOIN tbl_scoring_config_revision v ON v.id_revision = s.id_active_scoring_revision
+    ORDER BY s.dt_start
+    """)
+    for r in rows:
+        season_sub = (
+            f"(SELECT id_season FROM tbl_season WHERE txt_code = '{esc(str(r['season_code']))}')"
+        )
+        lines.append(
+            "UPDATE tbl_season SET id_active_scoring_revision = "
+            f"(SELECT id_revision FROM tbl_scoring_config_revision "
+            f"WHERE id_season = {season_sub} "
+            f"AND ts_effective = {sql_val(r.get('ts_effective'), 'timestamp with time zone')}) "
+            f"WHERE id_season = {season_sub};"
+        )
     lines.append("")
 
     # --- tbl_organizer ---
@@ -370,6 +486,12 @@ def export_monolithic(ref: str, token: str) -> str:
         "id_result",
         "id_fencer",
         "id_tournament",
+        # Scoring-engine output, like the four score columns below it: set by
+        # fn_calc_tournament_scores (20260919000005:177) to record which
+        # revision scored the row, and repopulated by the post-seed recompute.
+        # Carrying it as a raw id pointed at a table the dump did not emit,
+        # which is half of what made the 2026-09-24 dump unloadable.
+        "id_scoring_revision",
         "num_place_pts",
         "num_de_bonus",
         "num_podium_bonus",

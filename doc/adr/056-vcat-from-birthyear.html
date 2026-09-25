@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="056-vcat-from-birthyear.md">
-<meta name="adr-source-sha256" content="179411d52edbeae5925f4aca43283041ed5c3182015ed426151c36bb8ac060c2">
+<meta name="adr-source-sha256" content="186993f0c7a41a0dd46f34456eb3e431763505243626223d0a099a4a8c5b18c0">
 <title>ADR-056 · V-cat resolution by post-match fencer birth year</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 056</p><h1>V-cat resolution by post-match fencer birth year</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-02) <strong>Related:</strong> ADR-047 (V-cat invariant + splitter consolidation), ADR-049 (joint-pool split flag), ADR-050 (unified ingestion pipeline), ADR-055 (ingest traceability) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>056-vcat-from-birthyear.md</code></dd></div><div><dt>Length</dt><dd class="">327 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-05-02) <strong>Related:</strong> ADR-047 (V-cat invariant + splitter consolidation), ADR-049 (joint-pool split flag), ADR-050 (unified ingestion pipeline), ADR-055 (ingest traceability) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>056-vcat-from-birthyear.md</code></dd></div><div><dt>Length</dt><dd class="">388 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-05-02)
 <strong>Related:</strong> ADR-047 (V-cat invariant + splitter consolidation), ADR-049 (joint-pool split flag), ADR-050 (unified ingestion pipeline), ADR-055 (ingest traceability)
 <strong>Phase:</strong> 5 (operational rebuild)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#test-scope-tdd">Test scope (TDD)</a></li><li class="depth-2"><a href="#revision-2026-05-03-bracket-label-v-cat-overrides-by-derivation-for-past-tournaments">Revision (2026-05-03) — Bracket-label V-cat overrides BY derivation for past tournaments</a></li><li class="depth-3"><a href="#context-revised">Context (revised)</a></li><li class="depth-3"><a href="#decision-revised">Decision (revised)</a></li><li class="depth-3"><a href="#implementation-impact">Implementation impact</a></li><li class="depth-3"><a href="#consequences-additional">Consequences (additional)</a></li><li class="depth-3"><a href="#test-scope-tdd-plan-ids-5-19-x">Test scope (TDD, plan IDs 5.19.x)</a></li><li class="depth-2"><a href="#revision-2026-06-13-stage-0-birth-year-reconciliation-midpoint-estimate">Revision (2026-06-13) — Stage-0 birth-year reconciliation + midpoint estimate</a></li><li class="depth-3"><a href="#context-revised-2">Context (revised)</a></li><li class="depth-3"><a href="#decision-revised-2">Decision (revised)</a></li><li class="depth-3"><a href="#midpoint-convention-replaces-youngest-edge">Midpoint convention (replaces youngest-edge)</a></li><li class="depth-3"><a href="#idempotence">Idempotence</a></li><li class="depth-3"><a href="#one-time-backfill-migration-20260613000002">One-time backfill (migration 20260613000002)</a></li><li class="depth-3"><a href="#reuse-no-new-db-objects">Reuse (no new DB objects)</a></li><li class="depth-3"><a href="#test-scope-tdd-plan-ids-10-x">Test scope (TDD, plan IDs 10.x)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-reconcile-correction-target-promotion-band-youngest-edge">Amendment (2026-06-26) — reconcile correction target: promotion → band youngest edge</a></li><li class="depth-2"><a href="#amendment-2026-06-27-monotonic-mixed-gender-safe-reconcile-mixed-brackets-split-by-by">Amendment (2026-06-27) — monotonic + mixed-gender-safe reconcile; mixed brackets split by BY</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#implementation">Implementation</a></li><li class="depth-2"><a href="#test-scope-tdd">Test scope (TDD)</a></li><li class="depth-2"><a href="#revision-2026-05-03-bracket-label-v-cat-overrides-by-derivation-for-past-tournaments">Revision (2026-05-03) — Bracket-label V-cat overrides BY derivation for past tournaments</a></li><li class="depth-3"><a href="#context-revised">Context (revised)</a></li><li class="depth-3"><a href="#decision-revised">Decision (revised)</a></li><li class="depth-3"><a href="#implementation-impact">Implementation impact</a></li><li class="depth-3"><a href="#consequences-additional">Consequences (additional)</a></li><li class="depth-3"><a href="#test-scope-tdd-plan-ids-5-19-x">Test scope (TDD, plan IDs 5.19.x)</a></li><li class="depth-2"><a href="#revision-2026-06-13-stage-0-birth-year-reconciliation-midpoint-estimate">Revision (2026-06-13) — Stage-0 birth-year reconciliation + midpoint estimate</a></li><li class="depth-3"><a href="#context-revised-2">Context (revised)</a></li><li class="depth-3"><a href="#decision-revised-2">Decision (revised)</a></li><li class="depth-3"><a href="#midpoint-convention-replaces-youngest-edge">Midpoint convention (replaces youngest-edge)</a></li><li class="depth-3"><a href="#idempotence">Idempotence</a></li><li class="depth-3"><a href="#one-time-backfill-migration-20260613000002">One-time backfill (migration 20260613000002)</a></li><li class="depth-3"><a href="#reuse-no-new-db-objects">Reuse (no new DB objects)</a></li><li class="depth-3"><a href="#test-scope-tdd-plan-ids-10-x">Test scope (TDD, plan IDs 10.x)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-reconcile-correction-target-promotion-band-youngest-edge">Amendment (2026-06-26) — reconcile correction target: promotion → band youngest edge</a></li><li class="depth-2"><a href="#amendment-2026-06-27-monotonic-mixed-gender-safe-reconcile-mixed-brackets-split-by-by">Amendment (2026-06-27) — monotonic + mixed-gender-safe reconcile; mixed brackets split by BY</a></li><li class="depth-2"><a href="#amendment-2026-09-25-a-declared-birth-year-outranks-a-bracket-inference">Amendment (2026-09-25) — a declared birth year outranks a bracket inference</a></li><li class="depth-3"><a href="#the-rule">The rule</a></li><li class="depth-3"><a href="#consequences-2">Consequences</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The unified pipeline's Stage 4 split combined-pool brackets into per-V-cat tournaments using <code>raw_age_marker</code> — a per-fencer marker the parser was supposed to extract from source data (e.g. FTL's &quot;(1)&quot; suffix on a fencer name, FT XML's <code>&lt;AgeCategory&gt;</code> attribute, etc.).</p>
 <p>In practice this is unreliable:</p>
@@ -383,8 +383,61 @@ allowed, mixed-gender skip, order-independence), <code>python/tests/test_s0_reco
 (10.4.2b confirmed no-op, 10.4.2c estimated midpoint), <code>python/tests/test_vcat_from_birthyear.py</code>
 (5.20.1 mixed-gender→BY split, 5.20.2 mixed-age+gender, 5.20.3 single-gender label preserved),
 <code>python/tests/test_pipeline_plugins.py</code> (N2.10 commit gender None→'M').</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-25-a-declared-birth-year-outranks-a-bracket-inference">Amendment (2026-09-25) — a declared birth year outranks a bracket inference</h2>
+<p>Every rule above infers an age from a bracket <strong>label</strong>. A registration is the one
+moment the association hears a birth year from the fencer themselves, and until now
+the ingestion pipeline never looked at it: <code>python/pipeline/stages.py</code> read
+<code>tbl_fencer</code> and nothing else, so <code>s0_reconcile_roster</code> minted a new participant from
+a band <strong>midpoint</strong> — wrong by up to two years, and that error selects their
+V-category — while the year they had declared for <em>that same event</em> sat one table
+away in <code>tbl_registration</code>. Measured on PPW1-2026-2027: <strong>17 of 90 registrations were
+unmatched</strong>, so seventeen people were about to be created from a guess nobody needed
+to make.</p>
+<p>ADR-079 §3 already promised this (&quot;the declared BY feeds the existing reconciliation
+machinery unchanged&quot;). The machinery simply never consumed it. This amendment makes
+that sentence true and states the precedence it implies.</p>
+<h3 id="the-rule">The rule</h3>
+<p><code>s0_reconcile_roster</code> loads the event's declared birth years once, keyed by the same
+diacritic-folded name normalisation <code>_find_exact_fencer</code> uses, and prefers a
+declaration over anything derived from a bracket. It is written <strong>confirmed</strong>,
+because it is not an estimate — which also re-arms Guard 1 for that fencer.</p>
+<p>Four refusals, each with a reason:</p>
+<ol>
+<li><strong>More than one registration under the name — no pick.</strong> PROD carries two live
+same-name pairs (<code>KRAWCZYK Paweł</code>, <code>MŁYNEK Janusz</code>, the latter holding nineteen
+results) and a birth year written onto the wrong one is unrecoverable. The same
+rule ADR-093's lookup follows: software never picks between namesakes.</li>
+<li><strong>The declared year's V-category contradicts the bracket — take neither.</strong> The
+entry list and the results disagree; writing the declaration would bake an
+organizer's mis-seeding into master data, and writing the midpoint would overrule
+a person about their own birth year. Recorded as a <code>declared_vs_bracket</code> conflict.
+This is the 2026-06-27 amendment's Guard 2 posture: an untrustworthy label
+calibrates nothing.</li>
+<li><strong>A CONFIRMED stored year with no bracket to corroborate — the stored year
+stands.</strong> ADR-079 §3's rule is that an estimated year yields to the declaration
+and a known one does not. A confirmed year is overruled here <em>only</em> because the
+declaration and the bracket agree — two independent sources against one stored
+value. Without a V-cat on the row that majority does not exist. Recorded as
+<code>declared_vs_confirmed_uncorroborated</code>.</li>
+<li><strong>A mixed-gender bracket does not block the declaration.</strong> Guard 2 distrusts the
+<em>bracket</em>, and a declaration is not a bracket; there is nothing to cross-check
+against, so it stands on its own.</li>
+</ol>
+<p>An event with no registrations yields an empty map, so every historical event and
+every international one behaves exactly as before, and a failed lookup falls back to
+the midpoint rather than halting a run.</p>
+<h3 id="consequences-2">Consequences</h3>
+<p><code>DbConnector.fetch_registration_birth_years</code> is new. <code>reconcile_fencer_birth_year</code>
+gains an optional <code>declared_birth_year</code>, so both ingestion pipelines share the policy
+and it cannot fork. <code>tbl_registration</code> must not be purged before ingestion has run —
+already true, the purge follows reconciliation (<code>20260912000002</code>).</p>
+<p>Tests: <code>python/tests/test_s0_reconcile_roster.py</code> 10.9.1–10.9.9 — the declaration
+taken for a new fencer and for a matched one, the midpoint retained with no
+registration, namesakes refused, <code>declared_vs_bracket</code> refused, diacritics folded,
+Guard 1 still blocking a bracket-only demotion, and both halves of refusal 3.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="055-ingest-traceability.html">← ADR-055: Ingest Traceability — Per-Parser Provenance + Bounded History</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="057-pool-round-structural-detection.html">→ ADR-057: Pool-round detection by structural data signal, not bracket-name regex</a></nav>
-<footer class="foot">Generated from <code>056-vcat-from-birthyear.md</code> · source SHA-256 <code>179411d52edbeae5925f4aca43283041ed5c3182015ed426151c36bb8ac060c2</code></footer>
+<footer class="foot">Generated from <code>056-vcat-from-birthyear.md</code> · source SHA-256 <code>186993f0c7a41a0dd46f34456eb3e431763505243626223d0a099a4a8c5b18c0</code></footer>
 </div></body></html>
