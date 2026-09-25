@@ -393,6 +393,7 @@ def assemble_mixall_subrankings(
     weapon: str,
     rankings: dict[str, list[int]],
     season_end_year: int,
+    scores: dict[str, dict[int, float]] | None = None,
 ) -> dict[str, list[FencerEntry]]:
     """Group one weapon's declared registrants into the 10 mix-all sub-rankings,
     ordered as the interleave expects (ADR-080 §2).
@@ -430,6 +431,15 @@ def assemble_mixall_subrankings(
 
         ordered = sorted(regs, key=_sort_key)
 
+        bucket_scores = (scores or {}).get(key, {})
+
+        def _points(reg: dict, _scores: dict[int, float] = bucket_scores) -> float | None:
+            """The ranking points behind the rank, which order the entries
+            inside a tier. None when the fencer holds none — same condition as
+            _true_rank, for the same reason."""
+            idf = reg.get("id_fencer")
+            return None if idf is None else _scores.get(idf)
+
         def _true_rank(reg: dict, _rank_order: list[int] = rank_order) -> int | None:
             """Position in the WHOLE sub-ranking, counting the fencers who did
             not enter. Returning the position among entrants instead is what
@@ -444,6 +454,7 @@ def assemble_mixall_subrankings(
                 reg.get("id_fencer"),
                 *to_canonical_name(reg["txt_surname"], reg["txt_first_name"]),
                 rank=_true_rank(reg),
+                points=_points(reg),
             )
             for reg in ordered
         ]
@@ -636,6 +647,7 @@ def build_event_seed_files(
     season_end_year: int,
     date_fichier_xml: str = "",
     rosters: dict[str, list[dict]] | None = None,
+    scores_by_weapon: dict[str, dict[str, dict[int, float]]] | None = None,
 ) -> list[SeedFile]:
     """The event's whole file set: one mix-all per weapon with registrants, one
     DE file per gender × category present in it, and — when `rosters` carries
@@ -653,7 +665,11 @@ def build_event_seed_files(
     out: list[SeedFile] = []
     for weapon in weapons:
         sub_rankings = assemble_mixall_subrankings(
-            registrations, weapon, rankings_by_weapon.get(weapon, {}), season_end_year
+            registrations,
+            weapon,
+            rankings_by_weapon.get(weapon, {}),
+            season_end_year,
+            scores=(scores_by_weapon or {}).get(weapon, {}),
         )
         mixall = _weapon_seed_file(sub_rankings, weapon, event_code, date_fichier_xml)
         if mixall is None:
@@ -692,6 +708,7 @@ def build_event_mixall_files(
     event_code: str,
     season_end_year: int,
     date_fichier_xml: str = "",
+    scores_by_weapon: dict[str, dict[str, dict[int, float]]] | None = None,
 ) -> dict[str, str]:
     """{filename: xml} for the whole competition file set — the shape the
     Telegram delivery path and the .zip bundler consume."""
@@ -704,6 +721,7 @@ def build_event_mixall_files(
             event_code=event_code,
             season_end_year=season_end_year,
             date_fichier_xml=date_fichier_xml,
+            scores_by_weapon=scores_by_weapon,
         )
     }
 
