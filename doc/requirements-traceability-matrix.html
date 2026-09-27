@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="476f1a254bf1038f593ddeb574409dc2e706c2ea75e09d8b2a026b993f406d9e">
+<meta name="doc-source-sha256" content="a4c35cbd537a27e505c260dd06beab794e256879dafed80682e8117f3ab6c989">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -936,10 +936,10 @@
 </tr>
 <tr>
 <td>FR-131</td>
-<td><strong>Organizer FTL seed delivery:</strong> authenticated admin UI and allowlisted Telegram command dispatch <code>ftl-seed.yml</code> for an explicit CERT/PROD event; Python generates a fresh, non-empty mix-all ZIP in memory, sends it as the SPWS Gmail over verified <code>SMTP_SSL</code>/465, and stamps <code>ts_ftl_sent</code> only after SMTP acceptance through service-role-only <code>fn_mark_ftl_sent</code>. Manual dispatch is an explicit re-send. The daily PROD deadline sweep is at-least-once, selects only unstamped live events after cutoff, skips empty bundles, serializes with <code>prod-write</code>, and remains disabled until <code>ENABLE_FTL_DEADLINE_SEND=true</code> after the CERT pilot.</td>
+<td><strong>Organizer FTL seed delivery — WITHDRAWN, never in service:</strong> authenticated admin UI and allowlisted Telegram command dispatch <code>ftl-seed.yml</code> for an explicit CERT/PROD event; Python generates a fresh, non-empty mix-all ZIP in memory, sends it as the SPWS Gmail over verified <code>SMTP_SSL</code>/465, and stamps <code>ts_ftl_sent</code> only after SMTP acceptance through service-role-only <code>fn_mark_ftl_sent</code>. Manual dispatch is an explicit re-send. The daily PROD deadline sweep is at-least-once, selects only unstamped live events after cutoff, skips empty bundles, serializes with <code>prod-write</code>, and remains disabled until <code>ENABLE_FTL_DEADLINE_SEND=true</code> after the CERT pilot.</td>
 <td>ADR-080 §5, spec §5.2</td>
 <td><code>FTLDEL-PY-01</code>–<code>FTLDEL-PY-07</code> (<code>test_ftl_feed_seed_send.py</code>, exporter/orchestration compatibility); <code>FTLDEL-DB-01</code>–<code>FTLDEL-DB-03</code> (pgTAP 49.28–49.33, 8.25); <code>FTLDEL-UI-01</code>–<code>FTLDEL-UI-02</code> (<code>EventManager.test.ts</code>); <code>FTLDEL-OPS-01</code> (<code>test_ftl_seed_workflow_contract.py</code>)</td>
-<td>Implemented; CERT pilot pending</td>
+<td><strong>WITHDRAWN 2026-09-25 — never commissioned.</strong> Code exists and its tests pass, but the requirement was never satisfied in service: outbound e-mail needs a registered sending identity the association does not hold. <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events carry <code>ts_ftl_sent</code> on either CERT or PROD. Superseded by FR-132's download page as the organizer handoff. See ADR-080 amendment 2026-09-25. The listed tests are retained but exercise an unused path.</td>
 </tr>
 <tr>
 <td>FR-132</td>
@@ -1387,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>476f1a254bf1038f593ddeb574409dc2e706c2ea75e09d8b2a026b993f406d9e</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a4c35cbd537a27e505c260dd06beab794e256879dafed80682e8117f3ab6c989</code></footer>
 </div></body></html>

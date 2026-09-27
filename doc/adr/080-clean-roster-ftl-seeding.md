@@ -1,6 +1,6 @@
 # ADR-080: Clean-Roster FTL Seeding
 
-**Status:** Accepted (mix-all export and organizer delivery implemented; CERT pilot pending. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's `<Tireur>` element order is now alphabetical by surname under Polish collation in every generated file; `Classement` keeps the interleave seed. Amended 2026-09-24: the club is withdrawn and seeding tiers on the true rank. Amended 2026-09-26: inside a tier the order is ranking points, not the fixed category sequence, which becomes the tie-break; the amendment states the whole algorithm and carries the Regulamin wording.)
+**Status:** Accepted (mix-all export implemented. §5's e-mail delivery to the organizer is WITHDRAWN — never commissioned, never ran on any environment, and unreachable because the association holds no registered sending identity; see the 2026-09-25 amendment. The capability-gated download page is the only organizer handoff. Per-bracket DE export and scrape-back wiring remain deferred — see spec §5.2. Amended 2026-09-12: marker moves mid-name, §3's combined-bracket prediction dropped, §4's naming replaced, roster file and club added, public download page. Built 2026-09-12: the marker owner, the new naming, the maximal DE split, the public projection, the roster file and the download page (capability-gated, multi-event, bilingual); the club remains pending. See the amendment and ADR-093. Amended 2026-09-13: §(h)'s draft slug corrected to the one actually published; the token's full lifecycle moves to ADR-095. §(f)'s club now built too — `tbl_registration.txt_club`, migration `20260913000001` — narrower than originally predicted: registration-declared only, no scrape-harvest wiring; closes ADR-079 open item 2. Amended 2026-09-14: §2's `<Tireur>` element order is now alphabetical by surname under Polish collation in every generated file; `Classement` keeps the interleave seed. Amended 2026-09-24: the club is withdrawn and seeding tiers on the true rank. Amended 2026-09-26: inside a tier the order is ranking points, not the fixed category sequence, which becomes the tie-break; the amendment states the whole algorithm and carries the Regulamin wording. Amended 2026-09-25: §5's e-mail delivery withdrawn as never commissioned; the Python generator is retained but unused and unmaintained.)
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-079
 
@@ -184,6 +184,13 @@ ADR-024), so a wrong prediction is self-correcting.
 `SPWS-2025-2026_PPW5_E_mixall.xml`, `SPWS-2025-2026_PPW5_E_M-V0V1.xml`.
 
 ### 5. Delivery — on-demand email to the organizer
+
+> **WITHDRAWN (2026-09-25). Nothing in this section describes behaviour that exists.**
+> It was never commissioned: the association holds no registered sending identity, so the
+> project cannot send e-mail. Zero of 103 events carry `ts_ftl_sent` on either CERT or
+> PROD, `ftl-seed.yml` has never been dispatched, and every scheduled run was skipped.
+> The organizer handoff is the capability-gated download page in amendment (h).
+> Retained below as the record of a decision taken, not as a specification.
 
 `tbl_event.txt_organizer_email` holds the address (from the invitation letter,
 admin-entered). A single action **`send_seed_to_organizer(event)`** — generate-at-
@@ -668,3 +675,62 @@ Kept here verbatim so the regulation and the code are amended in one place.
 > Numer rozstawienia zapisywany jest w pliku XML w atrybucie `Classement`. Wiersze w
 > pliku uporządkowane są alfabetycznie według nazwiska, dlatego kolejność wierszy nie
 > odpowiada kolejności rozstawienia.
+
+## Amendment (2026-09-25) — §5's e-mail delivery was never commissioned, and is withdrawn
+
+§5 describes an on-demand e-mail of the seed bundle to the organizer, and its
+"Implemented delivery contract (2026-07-13)" paragraph reads as a live capability.
+It is not one, and it never was. **The association holds no registered sending
+identity for outbound mail, so the project cannot send e-mail at all.** The
+delivery half of §5 was built and then abandoned at that obstacle; it was never
+commissioned on any environment.
+
+The evidence is unambiguous, measured 2026-09-25:
+
+| Check | Result |
+|---|---|
+| `ftl-seed.yml` scheduled runs | every one `skipped` — `ENABLE_FTL_DEADLINE_SEND` was never set |
+| `ftl-seed.yml` manual dispatches | none, ever |
+| Events with `ts_ftl_sent` on PROD | 0 of 103 |
+| Events with `ts_ftl_sent` on CERT | 0 of 103 |
+
+Since the stamp is written only after SMTP accepts the recipient, zero stamps
+across both cloud environments is proof that no bundle has ever been delivered.
+The "CERT pilot pending" in this ADR's status was never a schedule; it was the
+point at which the work stopped.
+
+**What is withdrawn.** §5's three triggers, the generate-at-send contract, the
+at-least-once delivery semantics, `ts_ftl_sent` as a record of delivery, and the
+`ENABLE_FTL_DEADLINE_SEND` rollout gate. None of it describes behaviour that
+exists. The ADR-078 ROPA entry for "roster sent to organizer" describes a
+transfer that has never occurred.
+
+**What replaces it.** Amendment (h) of 2026-09-12 already introduced the pull-side
+route — the capability-gated page from which the organizer downloads their own
+files — and that is now the **only** handoff. It has no dependency on e-mail. It
+is the path in service, and the one documented in the handbook.
+
+**What remains in the tree, unused.** `.github/workflows/ftl-seed.yml`,
+`python/pipeline/ftl_feed_seed_send.py`, `python/pipeline/ftl_seed_export_db.py`,
+the pure generator `python/pipeline/ftl_seed_export.py`, and the service-role
+`fn_mark_ftl_sent`. They are retained rather than deleted, but they are **not a
+second supported path**, and their behaviour is not maintained against the
+browser generator. Two defects found on 2026-09-25 illustrate the cost of
+treating them as live: the Python generator discarded `total_score` and so never
+applied this ADR's points ordering, and it never passes `p_rolling` to
+`fn_ranking_ppw`, which for the first event of a season empties the ranking
+entirely and seeds the whole field in registration order. The first was repaired;
+**the second is left unfixed deliberately**, because the path is abandoned.
+
+**Consequence for the twins.** This ADR has spoken of the Python generator and
+its TypeScript twin as though an automated check held them equal. No such check
+exists — the two suites are independent, nothing compares their output, and the
+identical Polish alphabet in both files agrees, as `ftlSeedExport.ts` puts it,
+"by construction". With delivery withdrawn this no longer matters operationally,
+because `frontend/src/lib/ftlSeedExport.ts` is the only generator that runs; it
+is recorded here so that nobody reinstates the Python path believing a gate
+protects it.
+
+**Sending e-mail remains unavailable project-wide.** Any future feature that
+depends on outbound mail — delivery, notification or confirmation — is blocked by
+the same obstacle and must not be planned as though the capability exists.
