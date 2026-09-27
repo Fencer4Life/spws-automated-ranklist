@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="doc-id" content="HB-OPS-FTL-GMAIL-SETUP">
-  <meta name="doc-status" content="current">
+  <meta name="doc-status" content="archived">
   <meta name="doc-type" content="operations">
   <meta name="doc-owner" content="Release operations">
-  <meta name="last-verified" content="2026-07-14">
+  <meta name="last-verified" content="2026-09-25">
   <meta name="source-globs" content=".github/workflows/ftl-seed.yml; python/pipeline/ftl_feed_seed_send.py; python/pipeline/db_connector.py; frontend/src/components/EventManager.svelte">
-  <meta name="review-triggers" content="Gmail sender, App Password, GitHub Actions secret, FTL workflow input, CERT pilot, SMTP delivery, delivery stamp, or Telegram notification changes">
+  <meta name="review-triggers" content="None — archived 2026-09-25. The procedure it describes was never commissioned and will not be.">
   <title>Set up Gmail delivery for FTL seed bundles</title>
   <style>
     :root{
@@ -121,7 +121,7 @@
 
   <hr class="rule">
 
-  <section id="outcome">
+  <div class="note danger"><p class="lede">Archived — do not follow this procedure.</p><p>E-mail delivery of FTL seed bundles was never commissioned and never ran. The association holds no registered sending identity, so the project cannot send e-mail; the setup below cannot be completed and would achieve nothing if it were. Measured 2026-09-25: <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events on CERT and 0 of 103 on PROD carry <code>ts_ftl_sent</code>.</p><p>The organizer handoff in service is the capability-gated download page — see <a href="operator-runbooks.html#ftl-seed">Operator runbooks</a> and <a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> amendment 2026-09-25. Do not create a Google App Password or set <code>ENABLE_FTL_DEADLINE_SEND</code> for this. Retained as the record of work that was done, not as an instruction.</p></div><section id="outcome">
     <p class="kicker">Start here</p>
     <h2>What this setup enables</h2>
     <p>The manual workflow reads an event from CERT, generates the current mix-all FTL seed ZIP in memory, sends it through Gmail over certificate-verifying TLS, and stamps <code>tbl_event.ts_ftl_sent</code> only after Gmail accepts the message.</p>
