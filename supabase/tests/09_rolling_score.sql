@@ -67,7 +67,10 @@ UPDATE tbl_season SET id_scoring_engine =
 
 -- Clone a real season's full scoring config (real place-point formula + real
 -- json_ranking_rules with domestic PPW/MPW + international PEW/MEW) into each
--- synthetic season → engine-real scores, our inputs.
+-- synthetic season → engine-real scores, our inputs. The source is SPWS-2025-2026
+-- by name: it used to be "the newest two-pool season", which since 2026-09-28
+-- (ADM27.RULES.14) is SPWS-2026-2027 with its own best-2 / best-5 rules and no
+-- third international bucket for R.21 to edit.
 UPDATE tbl_scoring_config dst SET
   int_mp_value             = src.int_mp_value,
   int_podium_gold          = src.int_podium_gold,
@@ -88,10 +91,7 @@ UPDATE tbl_scoring_config dst SET
   int_min_participants_ppw = src.int_min_participants_ppw,
   json_ranking_rules       = src.json_ranking_rules
 FROM tbl_scoring_config src
-WHERE src.id_season = (
-        SELECT id_season FROM tbl_scoring_config
-         WHERE json_ranking_rules ? 'domestic' AND json_ranking_rules ? 'international'
-         ORDER BY id_season DESC LIMIT 1)
+WHERE src.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026')
   AND dst.id_season IN (SELECT id_season FROM tbl_season
                          WHERE txt_code IN ('TST-PREV', 'TST-CURR', 'TST-ROOT'));
 

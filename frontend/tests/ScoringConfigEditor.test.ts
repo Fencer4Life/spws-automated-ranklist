@@ -131,23 +131,26 @@ describe('ScoringConfigEditor (T8.8)', () => {
     expect(ppwMult.value).toBe('1.5')
   })
 
-  // 8.70 — Can add a new bucket to domestic pool
+  // 8.70 — Can add a new bucket to domestic pool. MOCK_CONFIG already uses
+  // PPW and MPW, and a type may sit in one bucket only (ADM27.RULES.11), so the
+  // config here leaves MPW free.
   it('can add a new bucket to domestic pool', async () => {
-    const { container } = render(ScoringConfigEditor, { props: defaultProps })
+    const config: ScoringConfig = { ...MOCK_CONFIG, ranking_rules: { domestic: [{ types: ['PPW'], best: 4 }], international: [] } }
+    const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config } })
     const domesticSection = container.querySelector('.rules-domestic')
     const addBtn = domesticSection!.querySelector('.add-bucket-btn')
     expect(addBtn).not.toBeNull()
     await fireEvent.click(addBtn!)
-    // Type picker appears — select PPW type and confirm
+    // Type picker appears — select MPW and confirm
     const picker = domesticSection!.querySelector('.new-bucket-picker')
     expect(picker).not.toBeNull()
-    const typeButtons = picker!.querySelectorAll('.picker-type-btn')
-    expect(typeButtons.length).toBeGreaterThan(0)
-    await fireEvent.click(typeButtons[0]) // select first type (PPW)
+    const mpw = Array.from(picker!.querySelectorAll('.picker-type-btn')).find((b) => b.textContent === 'MPW')
+    expect(mpw).toBeDefined()
+    await fireEvent.click(mpw!)
     const confirmBtn = picker!.querySelector('.picker-confirm')
     await fireEvent.click(confirmBtn!)
     const buckets = domesticSection!.querySelectorAll('.bucket-row')
-    expect(buckets.length).toBe(3)
+    expect(buckets.length).toBe(2)
   })
 
   // 8.71 — Can remove a bucket from a pool
@@ -630,6 +633,103 @@ describe('ScoringConfigEditor (T8.8)', () => {
       expect(hint()).toBe('algorytm EVF — PPW, MPW, PPS, MPS, PEW, MEW, MSW, PSW')
       await fireEvent.change(typeSelect(container, 'PPW'), { target: { value: PLACE_MEDAL } })
       expect(hint()).toBe('algorytm EVF — MPW, PPS, MPS, PEW, MEW, MSW, PSW oraz stawki od 32 w PPW')
+    })
+  })
+
+  // ADM27 (doc/plans/admin-ui-ranking-buckets-and-skeletons-2026-09-28.html,
+  // Part 2 · A): the editor refuses the buckets fn_validate_ranking_rules_write
+  // refuses on the server, and flags loaded ones the ranking cannot use.
+  describe('ADM27 — ranking buckets the ranking can use', () => {
+    const VALID: ScoringConfig = {
+      ...MOCK_CONFIG,
+      ranking_rules: {
+        domestic: [{ types: ['PPW'], best: 2 }, { types: ['MPW'], always: true }],
+        international: [{ types: ['PEW', 'MEW', 'MSW'], best: 4 }],
+      },
+    }
+
+    function pool(container: HTMLElement, name: 'domestic' | 'international'): Element {
+      return container.querySelector(name === 'domestic' ? '.rules-domestic' : '.rules-international')!
+    }
+
+    async function openPicker(container: HTMLElement, name: 'domestic' | 'international'): Promise<HTMLButtonElement[]> {
+      await fireEvent.click(pool(container, name).querySelector('.add-bucket-btn')!)
+      return Array.from(pool(container, name).querySelectorAll('.picker-type-btn')) as HTMLButtonElement[]
+    }
+
+    it('ADM27.RULES.10 each pool\'s picker offers only its own types, PPS and MPS included', async () => {
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: { ...MOCK_CONFIG, ranking_rules: null } } })
+      expect((await openPicker(container, 'domestic')).map((b) => b.textContent)).toEqual(['PPW', 'MPW'])
+      await fireEvent.click(pool(container, 'domestic').querySelector('.picker-cancel')!)
+      expect((await openPicker(container, 'international')).map((b) => b.textContent))
+        .toEqual(['PEW', 'MEW', 'MSW', 'PSW', 'PPS', 'MPS'])
+    })
+
+    it('ADM27.RULES.10 PPS and MPS carry the PZSz colour in the picker', async () => {
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: { ...MOCK_CONFIG, ranking_rules: null } } })
+      const buttons = await openPicker(container, 'international')
+      const pps = buttons.find((b) => b.textContent === 'PPS')!
+      expect(pps.classList.contains('pzs')).toBe(true)
+      expect(pps.classList.contains('international')).toBe(false)
+    })
+
+    it('ADM27.RULES.11 a type already in a bucket cannot be picked again', async () => {
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: VALID } })
+      const intl = await openPicker(container, 'international')
+      const byText = (tp: string) => intl.find((b) => b.textContent === tp)!
+      expect(byText('PEW').disabled).toBe(true)
+      expect(byText('MSW').disabled).toBe(true)
+      expect(byText('PSW').disabled).toBe(false)
+      expect(byText('PPS').disabled).toBe(false)
+    })
+
+    it('ADM27.RULES.11 "best" cannot go below 1', () => {
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config: VALID } })
+      const best = pool(container, 'domestic').querySelector('.bucket-rule input[type="number"]') as HTMLInputElement
+      expect(best.min).toBe('1')
+    })
+
+    it('ADM27.RULES.12 a loaded bucket the ranking cannot use shows why', () => {
+      // MOCK_CONFIG is 2024/25-shaped: its international pool repeats PPW and MPW.
+      const { container } = render(ScoringConfigEditor, { props: defaultProps })
+      const rows = Array.from(pool(container, 'international').querySelectorAll('.bucket-row'))
+      const warning = (row: Element) => row.querySelector('[data-field="bucket-warning"]')?.textContent ?? null
+      expect(warning(rows[0])).toContain('PPW')
+      expect(warning(rows[0])).toContain('puli międzynarodowej')
+      expect(warning(rows[1])).toContain('MPW')
+      expect(warning(rows[2])).toBeNull()
+      expect(warning(rows[3])).toBeNull()
+      expect(pool(container, 'domestic').querySelector('[data-field="bucket-warning"]')).toBeNull()
+    })
+
+    it('ADM27.RULES.13 unchanged older-style rules still save', async () => {
+      const onsave = vi.fn()
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, onsave } })
+      await fireEvent.click(container.querySelector('.config-save-btn')!)
+      expect(onsave).toHaveBeenCalled()
+      expect(container.querySelector('[data-field="rules-error"]')).toBeNull()
+    })
+
+    it('ADM27.RULES.13 changed rules that still break a rule are not saved', async () => {
+      const onsave = vi.fn()
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, onsave } })
+      const pewBest = pool(container, 'international').querySelectorAll('.bucket-rule input[type="number"]')[1] as HTMLInputElement
+      await fireEvent.change(pewBest, { target: { value: '4' } })
+      await fireEvent.click(container.querySelector('.config-save-btn')!)
+      expect(onsave).not.toHaveBeenCalled()
+      expect(container.querySelector('[data-field="rules-error"]')?.textContent).toContain('Nie zapisano')
+    })
+
+    it('ADM27.RULES.13 once the flagged buckets are removed, the change saves', async () => {
+      const onsave = vi.fn()
+      const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, onsave } })
+      const intl = pool(container, 'international')
+      await fireEvent.click(intl.querySelectorAll('.remove-bucket-btn')[0])
+      await fireEvent.click(intl.querySelectorAll('.remove-bucket-btn')[0])
+      await fireEvent.click(container.querySelector('.config-save-btn')!)
+      expect(onsave).toHaveBeenCalled()
+      const saved = onsave.mock.calls[0][0] as ScoringConfig
+      expect(saved.ranking_rules!.international).toEqual([{ types: ['PEW'], best: 3 }, { types: ['MEW'], always: true }])
     })
   })
 })
