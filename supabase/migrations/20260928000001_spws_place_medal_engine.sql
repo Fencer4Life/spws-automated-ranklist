@@ -909,9 +909,10 @@ DROP FUNCTION IF EXISTS fn_score_spws_field_scaled_v1_2026_2027(
 -- =============================================================================
 -- Replaces the 2026-09-19 version, which named the deleted engine. 2026/2027
 -- gets the new engine as its default and all eight type rows set explicitly
--- (FR-137): PPW, MPW, PPS, MPS on the new engine; PEW, MEW, MSW, PSW on EVF
--- classic. Earlier seasons keep NULL type rows and their EVF classic season
--- engine, which is how they were scored.
+-- (FR-137): PPW and MPW on the new engine; PPS, MPS, PEW, MEW, MSW and PSW on
+-- EVF classic (ADR-103 §2 as amended 2026-09-28 — the PZSz senior types keep
+-- the algorithm they had). Earlier seasons keep NULL type rows and their EVF
+-- classic season engine, which is how they were scored.
 CREATE OR REPLACE FUNCTION fn_backfill_scoring_engines()
 RETURNS VOID
 LANGUAGE plpgsql
@@ -966,7 +967,7 @@ BEGIN
        WHERE id_season = v_season AND id_scoring_engine IS NULL;
 
       UPDATE tbl_scoring_type_config tc
-         SET id_scoring_engine = CASE WHEN tc.enum_type::TEXT IN ('PPW', 'MPW', 'PPS', 'MPS')
+         SET id_scoring_engine = CASE WHEN tc.enum_type::TEXT IN ('PPW', 'MPW')
                                       THEN v_new ELSE v_classic END,
              ts_updated = NOW()
         FROM tbl_scoring_config c
@@ -983,7 +984,7 @@ BEGIN
         JOIN tbl_season s         ON s.id_season = c.id_season
        WHERE c.id_season = v_season
          AND COALESCE(tc.id_scoring_engine, s.id_scoring_engine) IS DISTINCT FROM
-             CASE WHEN tc.enum_type::TEXT IN ('PPW', 'MPW', 'PPS', 'MPS') THEN v_new ELSE v_classic END;
+             CASE WHEN tc.enum_type::TEXT IN ('PPW', 'MPW') THEN v_new ELSE v_classic END;
       IF v_mismatch IS NOT NULL THEN
         RAISE NOTICE
           'SPWS-2026-2027 holds % scored result(s); types % are not on their ADR-103 engine and are left unchanged. A privileged revision (fn_revise_and_rescore_season) is required.',
@@ -1920,9 +1921,11 @@ END;
 $function$;
 
 -- The PZSz review queue keeps b; an approval writes K = the full senior field,
--- m = the original place and that b (ADR-103 §4, ADR-100). The queue call
--- gains a required argument, so the old signature is dropped rather than left
--- as a way to queue a row the engine could not score.
+-- m = the original place and that b (ADR-103 §4, ADR-100). They are facts about
+-- the field, written whatever the engine: EVF classic, which scores PPS and MPS
+-- in 2026/2027, does not read them, and a later engine that does can. The queue
+-- call gains a required argument, so the old signature is dropped rather than
+-- left as a way to queue a row without them.
 DROP FUNCTION IF EXISTS fn_queue_pzsz_match_review(INT, TEXT, INT, INT, NUMERIC);
 
 CREATE OR REPLACE FUNCTION fn_queue_pzsz_match_review(
@@ -2016,8 +2019,8 @@ BEGIN
     ELSE NULL
   END;
 
-  -- A senior bracket is one category to the engine: K = the full field and
-  -- m = the original place (ADR-103 §4, ADR-100: never renumbered).
+  -- A senior bracket is one category: K = the full field and m = the
+  -- original place (ADR-103 §4, ADR-100: never renumbered).
   INSERT INTO tbl_result (
     id_fencer, id_tournament, int_place,
     txt_scraped_name, num_match_confidence, enum_match_method,

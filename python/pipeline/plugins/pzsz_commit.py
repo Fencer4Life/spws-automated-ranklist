@@ -21,11 +21,12 @@ a per-V-cat bracket:
   - A matched veteran's `int_place` is their ORIGINAL scraped place, never
     renumbered -- the PER_CATEGORY_RENUMBER module is a per-V-cat-split
     concept and is never invoked here.
-  - To the 2026/2027 engine the senior field is ONE category (ADR-103 §4):
-    K = the full field, m = the original place, and b = the fencers of the
-    full field with a strictly worse place. b is written on every row and kept
-    on a queued review, since the unmatched field is never stored and could not
-    be recounted at approval.
+  - The senior field is ONE category (ADR-103 §4): K = the full field, m =
+    the original place, and b = the fencers of the full field with a strictly
+    worse place. They are written whatever the engine -- EVF classic, which
+    scores PPS and MPS in 2026/2027, does not read them -- and b is kept on a
+    queued review, since the unmatched field is never stored and could not be
+    recounted at approval.
 
 A `PENDING` match (ResolveFencers's PZSZ_SENIOR intake: a fuzzy candidate
 found but too uncertain to auto-link) writes NO `tbl_result` row here --
