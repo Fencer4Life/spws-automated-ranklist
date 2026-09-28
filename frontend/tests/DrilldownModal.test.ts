@@ -263,6 +263,53 @@ describe('DrilldownModal', () => {
     expect(container.querySelector('.subheader')?.textContent).toContain('2024/25')
   })
 
+  // R.26–R.29 (FR-66) — on a rolling ranking fn_fencer_scores_rolling returns
+  // the carried previous-season rows first, each carrying ITS OWN season in
+  // txt_season_code. The header must name the season being ranked.
+  const carried = (id: number, code = 'SPWS-2025-2026') =>
+    makeScore({ id_result: id, txt_season_code: code, bool_carried_over: true, txt_source_season_code: code })
+  const current = (id: number) => makeScore({ id_result: id, txt_season_code: 'SPWS-2026-2027', bool_carried_over: false })
+
+  it('R.26 — the header names the ranked season it was opened for, not a carried row\'s season', () => {
+    const scores = [carried(1), carried(2), current(3)]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'PPW', seasonCode: 'SPWS-2026-2027' },
+    })
+    const sub = container.querySelector('.subheader')?.textContent ?? ''
+    expect(sub).toContain('SPWS-2026-2027')
+    expect(sub).not.toContain('SPWS-2025-2026')
+  })
+
+  it('R.27 — without a ranked season, the header takes the first row that is not carried over', () => {
+    const scores = [carried(1), current(2)]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'PPW' },
+    })
+    const sub = container.querySelector('.subheader')?.textContent ?? ''
+    expect(sub).toContain('SPWS-2026-2027')
+    expect(sub).not.toContain('SPWS-2025-2026')
+  })
+
+  it('R.28 — with only carried rows and no ranked season, the header names no season rather than a wrong one', () => {
+    const scores = [carried(1), carried(2)]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'PPW' },
+    })
+    const sub = container.querySelector('.subheader')?.textContent ?? ''
+    expect(sub).toContain('V2')
+    expect(sub).not.toContain('SPWS-2025-2026')
+  })
+
+  it('R.29 — the ranked season is named even when every row is carried over', () => {
+    const scores = [carried(1), carried(2)]
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, context: CTX, mode: 'PPW', seasonCode: 'SPWS-2026-2027' },
+    })
+    const sub = container.querySelector('.subheader')?.textContent ?? ''
+    expect(sub).toContain('SPWS-2026-2027')
+    expect(sub).not.toContain('SPWS-2025-2026')
+  })
+
   // 6.5 — subheader absent when no data
   it('B — subheader hidden when context is null and scores empty', () => {
     const { container } = render(DrilldownModal, {

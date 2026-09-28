@@ -4,7 +4,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import SeasonManager from '../src/components/SeasonManager.svelte'
-import type { Season } from '../src/lib/types'
+import type { CalendarEvent, ScoringConfig, Season } from '../src/lib/types'
 
 const MOCK_SEASONS: Season[] = [
   { id_season: 1, txt_code: 'SPWS-2024-2025', dt_start: '2024-09-01', dt_end: '2025-06-30', bool_active: true, enum_ranking_publication: 'FULL' },
@@ -442,5 +442,106 @@ describe('SeasonManager (T9.2)', () => {
     expect(btn).not.toBeNull()
     expect(btn.disabled).toBe(true)
     expect(container.querySelector('[data-field="promote-disabled-hint"]')).not.toBeNull()
+  })
+})
+
+// =============================================================================
+// ADM27 — the season edit card (doc/plans/admin-ui-ranking-buckets-and-
+// skeletons-2026-09-28.html, Part 2 · B and C): the skeleton panel opens
+// collapsed, and the season's Zapisz / Anuluj are always the last thing in the
+// card — below the panel, and below the scoring editor's footer when open.
+// =============================================================================
+describe('ADM27 — season edit card', () => {
+  const SKELETONS = ['PPW1-2026-2027', 'PPW2-2026-2027', 'PPW3-2026-2027', 'MPW-2026-2027', 'MSW-2026-2027']
+    .map((txt_code, i) => ({ id_event: 900 + i, txt_code, txt_location: null, txt_country: null })) as unknown as CalendarEvent[]
+
+  const SCORING_CONFIG: ScoringConfig = {
+    season_code: 'SPWS-2024-2025',
+    mp_value: 50,
+    podium_gold: 3,
+    podium_silver: 2,
+    podium_bronze: 1,
+    ppw_multiplier: 1.0,
+    ppw_best_count: 4,
+    ppw_total_rounds: 5,
+    mpw_multiplier: 1.2,
+    mpw_droppable: false,
+    pew_multiplier: 1.0,
+    pew_best_count: 3,
+    mew_multiplier: 1.2,
+    mew_droppable: false,
+    msw_multiplier: 2.0,
+    psw_multiplier: 2.0,
+    min_participants_evf: 5,
+    min_participants_ppw: 1,
+    show_evf_toggle: false,
+    ranking_rules: null,
+  }
+
+  const baseProps = {
+    seasons: MOCK_SEASONS,
+    isAdmin: true,
+    oncreate: vi.fn(),
+    onupdate: vi.fn(),
+    ondelete: vi.fn(),
+    onfetchevf: vi.fn().mockResolvedValue({ ranklist: false, calendar: true }),
+  }
+
+  async function openEdit(extra: Record<string, unknown> = {}) {
+    const view = render(SeasonManager, {
+      props: { ...baseProps, onfetchskeletons: vi.fn().mockResolvedValue(SKELETONS), ...extra },
+    })
+    await fireEvent.click(view.container.querySelector('[data-field="edit-btn"]')!)
+    await vi.waitFor(() => expect(view.container.querySelector('[data-field="skel-section-header"]')).not.toBeNull())
+    return view
+  }
+
+  const q = (c: HTMLElement, field: string) => c.querySelector(`[data-field="${field}"]`)
+  const follows = (a: Element, b: Element) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+
+  it('ADM27.SKEL.01 the skeleton panel opens collapsed: its header and count, no boxes, no revert', async () => {
+    const { container } = await openEdit()
+    const header = q(container, 'skel-section-header')!
+    expect(header.textContent).toContain('5')
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+    expect(container.querySelectorAll('[data-field="skel-box"]').length).toBe(0)
+    expect(q(container, 'skel-revert-btn')).toBeNull()
+  })
+
+  it('ADM27.SKEL.02 a click on the header expands it: the boxes and "Cofnij całość"', async () => {
+    const { container } = await openEdit()
+    await fireEvent.click(q(container, 'skel-section-header')!)
+    expect(q(container, 'skel-section-header')!.getAttribute('aria-expanded')).toBe('true')
+    expect(container.querySelectorAll('[data-field="skel-box"]').length).toBe(5)
+    expect(q(container, 'skel-revert-btn')).not.toBeNull()
+  })
+
+  it('ADM27.SKEL.03 reopening the form collapses the panel again', async () => {
+    const { container } = await openEdit()
+    await fireEvent.click(q(container, 'skel-section-header')!)
+    await fireEvent.click(q(container, 'form-cancel-btn')!)
+    await fireEvent.click(q(container, 'edit-btn')!)
+    await vi.waitFor(() => expect(q(container, 'skel-section-header')).not.toBeNull())
+    expect(q(container, 'skel-section-header')!.getAttribute('aria-expanded')).toBe('false')
+    expect(container.querySelectorAll('[data-field="skel-box"]').length).toBe(0)
+  })
+
+  it('ADM27.FORM.01 Zapisz and Anuluj come after the skeleton panel', async () => {
+    const { container } = await openEdit()
+    const header = q(container, 'skel-section-header')!
+    expect(follows(header, q(container, 'form-save-btn')!)).toBe(true)
+    expect(follows(header, q(container, 'form-cancel-btn')!)).toBe(true)
+  })
+
+  it('ADM27.FORM.02 with Punktacja open, Zapisz and Anuluj come after "Eksport JSON"', async () => {
+    const { container } = await openEdit({ scoringConfig: SCORING_CONFIG, scoringSeasonId: 1 })
+    const exportBtn = container.querySelector('.config-export-btn')!
+    expect(exportBtn).not.toBeNull()
+    expect(follows(exportBtn, q(container, 'form-save-btn')!)).toBe(true)
+    expect(follows(exportBtn, q(container, 'form-cancel-btn')!)).toBe(true)
+    // Both stay inside the season's own edit card.
+    const form = q(container, 'season-form')!
+    expect(form.contains(exportBtn)).toBe(true)
+    expect(form.contains(q(container, 'form-save-btn'))).toBe(true)
   })
 })

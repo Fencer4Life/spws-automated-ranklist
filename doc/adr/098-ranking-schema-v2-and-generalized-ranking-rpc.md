@@ -2,7 +2,7 @@
 
 **Status:** Accepted (drafted in [doc/plans/ranking-schema-v2-2026-09-19.html](../plans/ranking-schema-v2-2026-09-19.html) §04, signed off 2026-09-19). Implemented and verified on LOCAL: `fn_ranking_rules_canonical`, `fn_ranking_full` and its two per-engine bodies (`supabase/migrations/20260919000008_ranking_full.sql`) plus the `default_ranking_mode` governed field (`supabase/migrations/20260919000007_ranking_schema_v2.sql`). 1100 pgTAP assertions pass, and a manual comparison against the real `SPWS-2024-2025` and `SPWS-2025-2026` seed data confirms `fn_ranking_full` agrees with `fn_ranking_ppw`/`fn_ranking_kadra` exactly across every weapon/gender/category combination that has results, except V0 — where the difference is `fn_ranking_kadra`'s own documented early return, not a defect (see Consequences).
 **Date:** 2026-09-19
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the Season Scoring Rules gain `entry_types`).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the Season Scoring Rules gain `entry_types`); the write-time validation of the original shape (2026-09-28, signed off 2026-09-28; see below).
 **Amends:** [ADR-006](006-jsonb-ranking-rules.md) (the bucket schema it introduced gains a versioned successor, `schema_version: 2`, coexisting with the original shape rather than replacing it)
 **Extends:** [ADR-042](042-carryover-engine-dispatcher.md), [ADR-045](045-engine-selector-default-flip.md) (the per-season dispatch pattern, applied a fourth time)
 **Relates to:** [ADR-021](021-imew-biennial-carry-over.md) (the rules-based carry-over eligibility this ADR's code reproduces unchanged, never re-derives), [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the governance lock gains one more governed field), [ADR-096](096-no-bracket-stubs-before-results.md) (the duplicated-logic drift class this ADR's design deliberately avoids), the design doc's own [§06](../plans/versioned-season-scoring-and-pzsz-ranking-design.html#ranking)
@@ -11,6 +11,14 @@
 ## Amendment (2026-09-28 — `entry_types`)
 
 [ADR-103](103-spws-place-medal-engine-per-type.md) adds `entry_types`, a top-level key of `json_ranking_rules` read in both schemas. When it is present, `fn_ranking_full_event_code_matching` and `fn_ranking_full_event_fk_matching` admit only fencers with a result of one of those types in the ranking's window — the ranked season, plus the carried previous season in rolling mode — in any weapon. SPWS-2026-2027 sets `["PPW","MPW"]`. Seasons without the key are unchanged.
+
+## Amendment (2026-09-28 — write-time validation of the original shape; signed off 2026-09-28)
+
+The original two-pool shape was stored as given and read leniently. `fn_ranking_rules_canonical`'s legacy adapter drops an international bucket whose types are all domestic, so an international "PPW best 1" or "MPW best 0" reached no ranking and said nothing — PROD's SPWS-2026-2027 carried both until 2026-09-28 — and a type named in two buckets counts one score twice.
+
+Migration `20260928000002` adds `fn_validate_ranking_rules_write`, which `fn_import_scoring_config` calls **only when the incoming rules differ from the stored rules**. It refuses a type outside its pool (domestic: PPW, MPW; international: PEW, MEW, MSW, PSW, PPS, MPS), a type already named by another bucket in either pool, and a bucket without exactly one of `best` (a whole number ≥ 1) or `always`. `schema_version: 2` rules go to `fn_ranking_rules_canonical`, which already refuses the equivalent faults. The Admin editor applies the same checks before it sends anything.
+
+The read side does not change: the legacy adapter keeps dropping what it dropped, because 2024/2025 and 2025/2026 repeat their domestic buckets in the international pool by design, and reading them differently would move historical rankings. For the same reason an unchanged resend passes — every Admin save re-sends the whole configuration. Validating in the editor alone was rejected: `fn_import_scoring_config` is also reached by the season wizard and by direct calls, and the gap that let PROD's ignored buckets in was the server accepting them. Tests: ADM27.RULES.01–13 (`supabase/tests/84_admin_ranking_rules_validation.sql`, `frontend/tests/ScoringConfigEditor.test.ts`, `frontend/tests/ranking-rules.test.ts`).
 
 ## Context
 

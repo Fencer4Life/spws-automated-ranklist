@@ -189,7 +189,7 @@
             <div class="bucket-row">
               <div class="bucket-types">
                 {#each bucket.types as tp}
-                  <span class="tag" class:domestic={isDomesticType(tp)} class:international={!isDomesticType(tp)}>{tp}</span>
+                  <span class="tag" class:domestic={typeBadge(tp) === 'domestic'} class:pzs={typeBadge(tp) === 'pzs'} class:international={typeBadge(tp) === 'international'}>{tp}</span>
                 {/each}
               </div>
               <div class="bucket-rule">
@@ -198,24 +198,30 @@
                   <option value="all">{t('sc_rule_all')}</option>
                 </select>
                 {#if !bucket.always}
-                  <input type="number" disabled={readonly} value={bucket.best ?? 1} onchange={(e) => updateBucketBest('domestic', i, parseInt((e.target as HTMLInputElement).value))} />
+                  <input type="number" min="1" step="1" disabled={readonly} value={bucket.best ?? 1} onchange={(e) => updateBucketBest('domestic', i, parseInt((e.target as HTMLInputElement).value))} />
                   <span class="rule-label">{t('sc_rule_results')}</span>
                 {:else}
                   <span class="always-label">{t('sc_rule_always')}</span>
                 {/if}
               </div>
               <button class="remove-bucket-btn" disabled={readonly} title="Remove" onclick={() => removeBucket('domestic', i)}>&#10005;</button>
+              {#each problemsOf('domestic', i) as problem}
+                <div class="bucket-warning" data-field="bucket-warning">{problemText('domestic', problem)}</div>
+              {/each}
             </div>
           {/each}
           {#if addingBucket?.pool === 'domestic'}
             <div class="new-bucket-picker">
               <div class="picker-types">
-                {#each [...DOMESTIC_TYPES, ...INTERNATIONAL_TYPES] as tp}
+                {#each POOL_TYPES[addingBucket.pool] as tp}
                   <button
                     class="picker-type-btn"
                     class:selected={addingBucket.types.has(tp)}
-                    class:domestic={isDomesticType(tp)}
-                    class:international={!isDomesticType(tp)}
+                    class:domestic={typeBadge(tp) === 'domestic'}
+                    class:pzs={typeBadge(tp) === 'pzs'}
+                    class:international={typeBadge(tp) === 'international'}
+                    disabled={usedTypes.has(tp)}
+                    title={usedTypes.has(tp) ? t('sc_rules_type_used') : undefined}
                     onclick={() => toggleNewBucketType(tp)}
                   >{tp}</button>
                 {/each}
@@ -236,7 +242,7 @@
             <div class="bucket-row">
               <div class="bucket-types">
                 {#each bucket.types as tp}
-                  <span class="tag" class:domestic={isDomesticType(tp)} class:international={!isDomesticType(tp)}>{tp}</span>
+                  <span class="tag" class:domestic={typeBadge(tp) === 'domestic'} class:pzs={typeBadge(tp) === 'pzs'} class:international={typeBadge(tp) === 'international'}>{tp}</span>
                 {/each}
               </div>
               <div class="bucket-rule">
@@ -245,24 +251,30 @@
                   <option value="all">{t('sc_rule_all')}</option>
                 </select>
                 {#if !bucket.always}
-                  <input type="number" disabled={readonly} value={bucket.best ?? 1} onchange={(e) => updateBucketBest('international', i, parseInt((e.target as HTMLInputElement).value))} />
+                  <input type="number" min="1" step="1" disabled={readonly} value={bucket.best ?? 1} onchange={(e) => updateBucketBest('international', i, parseInt((e.target as HTMLInputElement).value))} />
                   <span class="rule-label">{t('sc_rule_results')}</span>
                 {:else}
                   <span class="always-label">{t('sc_rule_always')}</span>
                 {/if}
               </div>
               <button class="remove-bucket-btn" disabled={readonly} title="Remove" onclick={() => removeBucket('international', i)}>&#10005;</button>
+              {#each problemsOf('international', i) as problem}
+                <div class="bucket-warning" data-field="bucket-warning">{problemText('international', problem)}</div>
+              {/each}
             </div>
           {/each}
           {#if addingBucket?.pool === 'international'}
             <div class="new-bucket-picker">
               <div class="picker-types">
-                {#each [...DOMESTIC_TYPES, ...INTERNATIONAL_TYPES] as tp}
+                {#each POOL_TYPES[addingBucket.pool] as tp}
                   <button
                     class="picker-type-btn"
                     class:selected={addingBucket.types.has(tp)}
-                    class:domestic={isDomesticType(tp)}
-                    class:international={!isDomesticType(tp)}
+                    class:domestic={typeBadge(tp) === 'domestic'}
+                    class:pzs={typeBadge(tp) === 'pzs'}
+                    class:international={typeBadge(tp) === 'international'}
+                    disabled={usedTypes.has(tp)}
+                    title={usedTypes.has(tp) ? t('sc_rules_type_used') : undefined}
                     onclick={() => toggleNewBucketType(tp)}
                   >{tp}</button>
                 {/each}
@@ -285,6 +297,10 @@
     <button class="config-save-btn" onclick={handleSave}>{t('sc_save')}</button>
   </div>
 
+  {#if rulesSaveBlocked && rulesProblems.length > 0}
+    <div class="config-rules-error" data-field="rules-error" role="alert">{t('sc_rules_invalid_save')}</div>
+  {/if}
+
   {#if readonly && showLockedNotice}
     <div class="config-locked-notice" data-field="locked-notice" role="alert">
       <strong>{t('sc_locked_title')}</strong>
@@ -297,6 +313,7 @@
   import type { ScoringConfig, ScoringEngineOption, RankingRules, TournamentType } from '../lib/types'
   import { CARRYOVER_ENGINE_VALUES } from '../lib/types'
   import { CLASSIC_ENGINE, PLACE_MEDAL, PLACE_MEDAL_ENGINE } from '../lib/scoring'
+  import { POOL_TYPES, rankingRulesProblems, sameRankingRules, type BucketProblem, type Pool } from '../lib/ranking-rules'
   import { getLocale, t } from '../lib/locale.svelte'
 
   let {
@@ -512,12 +529,31 @@
     collapsedSections[key] = !collapsedSections[key]
   }
 
-  function isDomesticType(tp: string): boolean {
-    return tp === 'PPW' || tp === 'MPW'
+  // A bucket tag and picker button take the colour of the type's card badge.
+  function typeBadge(tp: string): TypeCard['badge'] {
+    return TYPE_CARDS.find((card) => card.type === tp)?.badge ?? 'international'
   }
 
-  const DOMESTIC_TYPES = ['PPW', 'MPW']
-  const INTERNATIONAL_TYPES = ['PEW', 'MEW', 'MSW', 'PSW']
+  // ADM27: a type may sit in one bucket only, and every fault the server
+  // refuses (fn_validate_ranking_rules_write) is flagged at its bucket.
+  let usedTypes = $derived(new Set([...draftRules.domestic, ...draftRules.international].flatMap((b) => b.types)))
+  let rulesProblems = $derived(rankingRulesProblems(draftRules))
+  let rulesSaveBlocked = $state(false)
+
+  function problemsOf(pool: Pool, index: number): BucketProblem[] {
+    return rulesProblems.filter((p) => p.pool === pool && p.index === index).map((p) => p.problem)
+  }
+
+  function problemText(pool: Pool, problem: BucketProblem): string {
+    switch (problem.kind) {
+      case 'wrong_pool': return t(`sc_rules_warn_pool_${pool}`, { type: problem.type })
+      case 'duplicate': return t('sc_rules_warn_duplicate', { type: problem.type })
+      case 'unknown_type': return t('sc_rules_warn_unknown_type', { type: problem.type })
+      case 'no_types': return t('sc_rules_warn_no_types')
+      case 'best_or_always': return t('sc_rules_warn_best_or_always')
+      case 'best_below_one': return t('sc_rules_warn_best_below_one')
+    }
+  }
 
   let addingBucket: { pool: 'domestic' | 'international', types: Set<string> } | null = $state(null)
 
@@ -570,6 +606,14 @@
       showLockedNotice = true
       return
     }
+    // ADM27: changed rules must be rules the ranking can use, as the server
+    // requires. Unchanged rules save as they are, so a season whose older
+    // rules repeat the domestic buckets internationally stays savable.
+    if (rulesProblems.length > 0 && !sameRankingRules(draftRules, config.ranking_rules)) {
+      rulesSaveBlocked = true
+      return
+    }
+    rulesSaveBlocked = false
     // Includes `carryover_engine` so App.svelte's handler can patch
     // tbl_season.enum_carryover_engine separately from tbl_scoring_config
     // (instant flip, no migration).
@@ -887,6 +931,7 @@
   /* Bucket rows */
   .bucket-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
@@ -913,6 +958,15 @@
   .tag.international {
     background: #fff8e1;
     color: #b8860b;
+  }
+  .tag.pzs {
+    background: #fdf0f0;
+    color: #a92020;
+  }
+  .bucket-warning {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: #a92020;
   }
   .bucket-rule {
     display: flex;
@@ -1004,6 +1058,16 @@
     color: #b8860b;
     border-color: #b8860b;
   }
+  .picker-type-btn.selected.pzs {
+    background: #fdf0f0;
+    color: #a92020;
+    border-color: #a92020;
+  }
+  .picker-type-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
   .picker-type-btn:hover {
     border-color: #999;
   }
@@ -1082,6 +1146,14 @@
   }
   .config-save-btn:hover {
     background: #3a7bc8;
+  }
+  .config-rules-error {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #fdf0f0;
+    border: 1px solid #f0b4b4;
+    border-radius: 6px;
+    color: #a92020;
   }
   .config-locked-notice {
     margin-top: 12px;

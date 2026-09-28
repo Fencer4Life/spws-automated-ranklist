@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>2026/27 buckets and season form</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line);overflow-wrap:anywhere}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:30px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+
+  pre.json{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.gate{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:12px 0 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink);white-space:pre-wrap}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:var(--bg);border:0}
+
+  .stack{border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;margin:18px 0;background:var(--surface);max-width:40rem}
+  .stack .row{padding:12px 16px;border-bottom:1px solid var(--line);font-size:17px;display:flex;gap:14px;align-items:baseline}
+  .stack .row:last-child{border-bottom:0;background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+  .stack .n{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--accent);min-width:1.4em}
+  .stack .sub{color:var(--faint);font-size:15px}
+
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:600px){ .wrap{padding:36px 16px 80px} body{font-size:18px} .dek{font-size:20px} h2{font-size:28px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Admin · Ranking rules · Season form · Implementation plan</p>
+  <h1>2026/27 ranking buckets, bucket validation and a tidier season form</h1>
+  <p class="dek">Set the 2026/27 rules to <b>best 2 PPW + MPW</b>, plus <b>the best 5 of the six international and PZSz types</b>, so no score counts twice. This is a configuration change, done before PPW1 is scored. Then the code change: the editor and the server <b>refuse buckets the engine would ignore</b>, the skeleton panel starts <b>collapsed</b>, <b>Zapisz / Anuluj</b> sit at the bottom of the form, and the last stub-tournament helper is removed.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Approved 28 Sep · in progress</span>
+    <span class="pill danger"><span class="dot"></span>Deadline: before PPW1 2026/27 is scored</span>
+    <span class="pill"><span class="dot"></span>Part 1 ships as migration 20260928000003</span>
+    <span class="pill"><span class="dot"></span>1 migration + frontend</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="progress">
+    <p class="kicker">Progress · 28 September 2026, evening</p>
+    <h2>Where this stands, and what I need from you</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>State</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Part 1 · LOCAL rehearsal</td><td><span class="chip never">done</span></td><td>
+          <ul>
+            <li>Rules applied. Re-importing the saved rules gave a byte-identical export, so the rollback works.</li>
+            <li>With the PPW1 fixture, 215 ranked rows across all 30 sub-rankings match an independent recount exactly: SPWS, EVF+ and total.</li>
+            <li>76 fencers had more than 2 PPW results, so the cap was actually exercised.</li>
+            <li>A synthetic PPS result (58.62) entered EVF+ as one of the best 5.</li>
+            <li>The drilldown agrees with the table: GANSZCZYK, V2 men's sabre, 304.0 · 307.4 · 611.4.</li>
+          </ul></td></tr>
+        <tr><td>Part 1 · CERT and PROD</td><td><span class="chip never">in the PR, applied by the deploy</span></td><td>Changed on your instruction (28 Sep): instead of hand-run writes, migration <code>20260928000003</code> sets the rules through <code>fn_import_scoring_config</code> as the deploy reaches CERT, then PROD. Both were unlocked with 0 scored results just before; their previous rules are saved for rollback. Rehearsed on LOCAL against PROD&rsquo;s exact rules: target reached, a second run changes nothing, and a locked season stops the deploy with the lock message. LOCAL gets the same rules from <code>seed_post_backfill.sql</code> (ADM27.RULES.14).</td></tr>
+        <tr><td>Part 2 · code</td><td><span class="chip never">merged to main on your instruction</span></td><td>
+          <ul>
+            <li><code>scripts/preflight.sh</code> exits 0: 15 of 15 gates. pgTAP total 1175; Vitest 1019 tests; svelte-check 0 errors.</li>
+            <li>Browser check on LOCAL:
+              <ul>
+                <li>the panel is one collapsed line, "5 boxów ▸";</li>
+                <li>Zapisz / Anuluj come after "Eksport JSON";</li>
+                <li>the international PPW and MPW buckets show their warnings;</li>
+                <li>the picker offers PSW, PPS and MPS.</li>
+              </ul></li>
+            <li>The editor built the 2026/27 rules itself and saved them through the server; the stored rules equal the target. The server refuses a changed invalid rule set.</li>
+          </ul></td></tr>
+        <tr><td>ADR-098 amendment</td><td><span class="chip never">signed off, 28 Sep</span></td><td>In <a href="../adr/098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> as "Amendment (2026-09-28 — write-time validation of the original shape)".</td></tr>
+        <tr><td>Commit and release</td><td><span class="chip never">merged, 28 Sep</span></td><td>Committed with the ADR-102 commit <code>86669eeb</code> and merged to <code>main</code> through a pull request on your instruction, together with Part 1&rsquo;s migration, so the handbook&rsquo;s description of the 2026/27 rules is true once the deploy completes.</td></tr>
+        <tr><td>Drilldown header</td><td><span class="chip never">fixed, merged</span></td><td>The header names the ranked season, never a carried row's (R.26–R.30); found during the Part 1 check.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note good">
+      <p class="lede">Decided · 28 September</p>
+      <ul>
+        <li>The ADR-098 amendment is signed off.</li>
+        <li>Part 1 goes into the same pull request as a migration instead of hand-run writes, so the deploy applies it to CERT and then PROD.</li>
+      </ul>
+    </div>
+    <div class="note good">
+      <p class="lede">Found on the way, and fixed</p>
+      <p>The drilldown header used to name the season of the fencer's first score row. On a rolling ranking that can be a carried-over row, so GANSZCZYK's 2026/27 card read "SPWS-2025-2026". The header now takes the season the drilldown was opened for (R.26–R.30).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">What you decided · 28 September 2026</p>
+    <h2>The decisions this plan carries out</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decision</th><th>Your choice</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>PPW ranking = best 2 PPW + MPW. The full ranking adds the best 5 of PEW, MEW, MSW, PSW, PPS and MPS. PPW results beyond the best 2 don't count toward the full ranking.</td><td>The cheaper version: configuration only</td></tr>
+        <tr><td>2</td><td>No tournament score counts twice. If a score is in one bucket, it's excluded from every other.</td><td>Hard rule</td></tr>
+        <tr><td>3</td><td>PSW stays in the international bucket, even though no PSW is planned yet.</td><td>Keep</td></tr>
+        <tr><td>4</td><td>Season start creates PPW1–n, MPW and MSW events. It creates no tournaments and no EVF events; calendar sync creates the EVF events.</td><td>MSW stays</td></tr>
+        <tr><td>5</td><td>The "🦴 Szkielety wygenerowane przez kreator" panel is collapsed by default.</td><td>A</td></tr>
+        <tr><td>6</td><td>Zapisz and Anuluj are always last in the season form. They sit below the skeleton panel, and below "Eksport JSON" when Punktacja is open.</td><td>Always last</td></tr>
+        <tr><td>7</td><td>Buckets the engine would ignore or count twice are refused, in the editor and on the server.</td><td>A</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Why · the state today, verified read-only</p>
+    <h2>The stored rules don't say what you intend, and the editor can't express it</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Environment</th><th>Domestic pool</th><th>International pool</th><th>What the engine actually uses</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PROD</strong></td><td>PPW best 3 · MPW all</td><td>PPW best 1 · MPW best 0 · PEW+MEW+MSW best 4</td><td>PPW best 3 + MPW, then PEW/MEW/MSW best 4. <span class="chip over">silently dropped</span> The two domestic-type international buckets are ignored. PPS and MPS count nowhere.</td></tr>
+        <tr><td><strong>CERT, LOCAL</strong></td><td>PPW best 4 · MPW all</td><td>PPW best 4 · MPW all · PEW+MEW+MSW best 3</td><td>The same shape: the international PPW and MPW buckets are ignored.</td></tr>
+      </tbody>
+    </table></div>
+    <p>SPWS-2026-2027 is unlocked with 0 scored results on all three environments.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Why PPS and MPS can't be picked in the editor</p>
+      <p>Both bucket pickers read two hard-coded lists in <code>ScoringConfigEditor.svelte:519</code>: <code>['PPW','MPW']</code> and <code>['PEW','MEW','MSW','PSW']</code>. The lists date from 27 March 2026 (<code>70e4df53</code>). PPS and MPS became types on 19 September (<code>bb5596b7</code>), which added their multiplier cards and engine wiring but not the picker lists.</p>
+      <p>The same code shows every listed type in <em>both</em> pools. That's how PROD ended up with a PPW bucket in the international pool.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Skeletons already behave as you want</p>
+      <ul>
+        <li>Season creation stopped making tournaments on 27 June (<code>20260627000003_init_season_childless.sql</code>; pinned by ph3.6 v2 and 74.8). CERT and PROD 2026/27 skeletons have 0 tournaments.</li>
+        <li>EVF skeletons stopped on 6 September (ADR-091), and stub brackets from calendar sync stopped on 13 September (ADR-096).</li>
+        <li>The season wizard is the only thing that creates skeletons.</li>
+      </ul>
+      <p>What's left: the panel's size, and the helper <code>_fn_create_skeleton_children</code>. Nothing in the app calls the helper, but any signed-in account can execute it. Only test 19 (ph3.15–17) uses it, as a fixture.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Part 1 · configuration only · before PPW1 2026/27</p>
+    <h2>Set the 2026/27 buckets on LOCAL, then CERT, then PROD</h2>
+    <p>The same rules go to every environment:</p>
+<pre class="json">{"domestic":      [{"types":["PPW"],"best":2},
+                   {"types":["MPW"],"always":true}],
+ "international": [{"types":["PEW","MEW","MSW","PSW","PPS","MPS"],"best":5}],
+ "entry_types":   ["PPW","MPW"]}</pre>
+
+    <div class="note accent">
+      <p class="lede">Why nothing is counted twice</p>
+      <p>Each type sits in exactly one bucket. <code>fn_ranking_full</code> ranks candidates within each bucket separately and takes a result into a bucket only when its type is listed there, so a result can only count in its own type's bucket.</p>
+      <p><code>fn_ranking_ppw</code> reads the domestic pool alone, and <code>fn_ranking_full</code> adds the international pool as the EVF+ column. Carried PPS and MPS results never count (SS26.RANK.12).</p>
+      <p><strong>New:</strong> PPS and MPS results will count in the 2026/27 full ranking. No ranklist has shown them before.</p>
+    </div>
+
+    <p><strong>Why not through the editor.</strong> The editor can't select PPS or MPS until Part 2 ships. The rules go in through <code>fn_import_scoring_config</code>, the same call the editor's Save makes (<code>api.ts:344</code>), so the ADR-097 lock applies exactly as it would to a UI save.</p>
+
+    <div class="note good">
+      <p class="lede">Changed on 28 September, on your instruction</p>
+      <p>Steps 2 and 3 below were replaced. Instead of hand-run writes, migration <code>20260928000003</code> makes the same <code>fn_import_scoring_config</code> call as the deploy reaches CERT, then PROD, and <code>seed_post_backfill.sql</code> repeats it for LOCAL. The rollback copies of both environments&rsquo; previous rules were saved before the merge.</p>
+    </div>
+
+    <ol class="steps">
+      <li><strong>LOCAL rehearsal.</strong>
+        <ul>
+          <li>Save the current export, then apply the target.</li>
+          <li>Re-import the saved rules and confirm the export is identical; this proves the rollback. Apply the target again.</li>
+          <li>Load the PPW1 fixture, plus one synthetic PPS result for a V2 fencer, and run every Part 1 check below.</li>
+          <li>Finish with <code>./scripts/reset-dev.sh</code>.</li>
+        </ul></li>
+      <li><strong>CERT, on your go.</strong>
+        <ul>
+          <li>Confirm unlocked with 0 scored results, and save the rules to <code>rules-before-cert.json</code> in the scratchpad.</li>
+          <li>Run the same call through <code>CLOUD_SQL_CONFIRM=yes scripts/cloud-sql.sh cert</code>.</li>
+          <li>Read back the export, and call <code>fn_ranking_ppw</code> and <code>fn_ranking_full</code>.</li>
+        </ul></li>
+      <li><strong>PROD, on its own go.</strong> The same steps, saving <code>rules-before-prod.json</code>. It has to happen before any PPW1 2026/27 result is scored, because the first scored result locks the rules.</li>
+    </ol>
+    <p><strong>Rollback:</strong> re-import the saved JSON with the same call. That works until the first scored result; after that, only <code>fn_revise_and_rescore_season</code> can change the rules.</p>
+
+    <h3>Checks for Part 1</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>How</th><th>Passes when</th></tr></thead>
+      <tbody>
+        <tr><td>PPW ranking total</td><td><code>fn_ranking_ppw</code> vs an independent sum of each fencer's best 2 PPW + MPW</td><td>Equal for every fixture fencer</td></tr>
+        <tr><td>Full ranking totals</td><td><code>fn_ranking_full</code>: <code>spws_total</code> and <code>evf_plus_total</code></td><td>SPWS equals the line above; EVF+ is the best 5 of the six types</td></tr>
+        <tr><td>No double count</td><td>Every <code>id_result</code> behind the totals</td><td>No result appears in two buckets</td></tr>
+        <tr><td>PZSz counts</td><td>The synthetic PPS result</td><td>It appears in <code>evf_plus_total</code></td></tr>
+        <tr><td>Drilldown</td><td>Browser on LOCAL, the V2 leader</td><td>2 PPW starred and up to 5 international scores starred; totals match the table row</td></tr>
+        <tr><td>CERT and PROD</td><td>Export after the write</td><td>Equals the target; both ranking functions answer</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Part 2 · A · the gap behind PROD's ignored buckets</p>
+    <h2>Refuse invalid buckets in the editor and on the server</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Rule</th><th>Refused example</th><th>What it prevents</th></tr></thead>
+      <tbody>
+        <tr><td>The domestic pool holds only PPW and MPW</td><td>PEW in the domestic pool</td><td>An international score inside the PPW ranking</td></tr>
+        <tr><td>The international pool holds only PEW, MEW, MSW, PSW, PPS, MPS</td><td>PPW best 1 in the international pool</td><td>A bucket the engine ignores without a word (PROD has one today)</td></tr>
+        <tr><td>Each type is in at most one bucket, across both pools</td><td>PPW in two buckets</td><td>A score counted twice</td></tr>
+        <tr><td>Each bucket is either "best N" with N ≥ 1, or "all" — never both, never neither</td><td>MPW best 0; best 2 plus all</td><td>An ignored bucket, or one with no clear meaning</td></tr>
+        <tr><td>Each bucket names at least one known type</td><td>An empty bucket; "XYZ"</td><td>Already refused by the engine; now refused earlier, with a clear message</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>On the server</h3>
+    <ul>
+      <li>A new internal function, <code>fn_validate_ranking_rules_write(jsonb)</code>, with no grant. It raises a message that names the bucket and the rule it breaks.</li>
+      <li><code>fn_import_scoring_config</code> calls it <strong>only when the incoming rules differ from the stored rules</strong>.</li>
+      <li>Rules in the newer three-section shape (<code>schema_version: 2</code>) are already refused by <code>fn_ranking_rules_canonical</code> for the same faults. The engine's reading of stored rules doesn't change.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Why "only when the rules change"</p>
+      <p>The 2024/25 and 2025/26 rules repeat the domestic buckets in the international pool; that's the older format, and the engine drops the copies. Every Admin save re-sends the whole configuration, for example when the +EVF toggle changes, so an unconditional check would make those seasons unsavable.</p>
+      <p>With the check scoped to changes, they save as before and their rankings don't move. A new season inherits the previous season's rules (FR-21), so the wizard passes as well.</p>
+    </div>
+
+    <h3>In the editor</h3>
+    <p>The editor is <code>ScoringConfigEditor.svelte</code>, used by the season form and the season wizard. The checks live in a new pure module, <code>frontend/src/lib/ranking-rules.ts</code>, which mirrors the server rules and is tested on its own.</p>
+    <ul>
+      <li>Each pool's picker offers only its own types. <strong>PPS and MPS are added</strong> to the international picker, with the red PZSz colour.</li>
+      <li>A type already used in another bucket shows as disabled. "Best" can't go below 1, and "best" and "all" are mutually exclusive.</li>
+      <li>A loaded bucket that breaks a rule shows a warning under it, for example "Silnik pomija ten kubełek" or "Ten typ jest już w innym kubełku".</li>
+      <li>Saving is refused, with a Polish message, only when the rules changed and are invalid. That matches the server.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Part 2 · B and C · the season edit card</p>
+    <h2>Zapisz / Anuluj last, and the skeleton panel folded away</h2>
+    <p>The new order inside the season's edit card in <code>SeasonManager.svelte</code>, top to bottom:</p>
+    <div class="stack">
+      <div class="row"><span class="n">1</span><span>Season fields, and the carry-over setting (IMEW / DMEW)</span></div>
+      <div class="row"><span class="n">2</span><span>🦴 Szkielety · 5 ▸ <span class="sub">— one collapsed line; a click opens the boxes and "Cofnij całość"</span></span></div>
+      <div class="row"><span class="n">3</span><span>Punktacja, when open <span class="sub">— with its own footer: Eksport JSON · Anuluj · Zapisz i przelicz</span></span></div>
+      <div class="row"><span class="n">4</span><span>Error line, then Zapisz · Anuluj — always the last thing in the card</span></div>
+    </div>
+    <ul>
+      <li>Today the Zapisz / Anuluj block (lines 91–101) sits above the skeleton panel, and the scoring editor is mounted after the form's closing tag (lines 149–158). The editor moves inside the card and the buttons move to its end. The save and cancel handlers don't change.</li>
+      <li>The panel's header becomes a button showing the count and ▸ / ▾. The boxes, the revert link and the revert error render only when it's expanded, and it collapses again each time the form reopens.</li>
+      <li><strong>Consequence:</strong> with Punktacja open you'll see two Anuluj buttons. The editor's closes the editor; the season's closes the whole form.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Part 2 · D · the last stub-tournament code</p>
+    <h2>Remove <code>_fn_create_skeleton_children</code></h2>
+    <ul>
+      <li>The new migration drops <code>_fn_create_skeleton_children(INTEGER, TEXT, enum_tournament_type)</code>.</li>
+      <li><code>supabase/tests/19_phase3_wizard.sql</code> ph3.15–17 inserts its six V2 brackets directly, with the same assertions.</li>
+      <li><code>52_security_posture.sql</code> and <code>scripts/check-security-posture.sh</code> are updated together, if either one lists the helper or needs the new internal function.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Tests first · each one seen failing before the change</p>
+    <h2>Test plan</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td>ADM27.RULES.01</td><td>pgTAP, new file</td><td>Changed rules with an international bucket of only PPW are refused</td></tr>
+        <tr><td>ADM27.RULES.02</td><td>pgTAP</td><td>A mixed PPW + PEW international bucket is refused</td></tr>
+        <tr><td>ADM27.RULES.03</td><td>pgTAP</td><td>MPW best 0 is refused</td></tr>
+        <tr><td>ADM27.RULES.04</td><td>pgTAP</td><td>A bucket with both best and all is refused</td></tr>
+        <tr><td>ADM27.RULES.05</td><td>pgTAP</td><td>A type in two buckets is refused</td></tr>
+        <tr><td>ADM27.RULES.06</td><td>pgTAP</td><td>PEW in the domestic pool is refused</td></tr>
+        <tr><td>ADM27.RULES.07</td><td>pgTAP</td><td>The Part 1 target is accepted</td></tr>
+        <tr><td>ADM27.RULES.08</td><td>pgTAP</td><td>An unchanged resend of 2025/26-style rules is accepted</td></tr>
+        <tr><td>ADM27.RULES.09</td><td>pgTAP</td><td>The validator has no <code>anon</code> or <code>authenticated</code> grant</td></tr>
+        <tr><td>ADM27.RULES.10</td><td>Vitest</td><td>The international picker offers PEW, MEW, MSW, PSW, PPS and MPS; the domestic picker offers PPW and MPW</td></tr>
+        <tr><td>ADM27.RULES.11</td><td>Vitest</td><td>A type in another bucket is disabled; "best" can't go below 1</td></tr>
+        <tr><td>ADM27.RULES.12</td><td>Vitest</td><td>A loaded invalid bucket shows its warning</td></tr>
+        <tr><td>ADM27.RULES.13</td><td>Vitest</td><td>Save is refused when changed rules are invalid; unchanged legacy rules save</td></tr>
+        <tr><td>ADM27.FORM.01</td><td>Vitest</td><td>Zapisz comes after the skeleton panel header</td></tr>
+        <tr><td>ADM27.FORM.02</td><td>Vitest</td><td>With Punktacja open, Zapisz comes after "Eksport JSON"</td></tr>
+        <tr><td>ADM27.SKEL.01</td><td>Vitest</td><td>The panel renders collapsed: header and count, no boxes, no revert</td></tr>
+        <tr><td>ADM27.SKEL.02</td><td>Vitest</td><td>A click expands it, showing the boxes and "Cofnij całość"</td></tr>
+        <tr><td>ADM27.SKEL.03</td><td>Vitest</td><td>Reopening the form collapses it again</td></tr>
+        <tr><td>ADM27.SKEL.04</td><td>pgTAP</td><td><code>_fn_create_skeleton_children</code> no longer exists</td></tr>
+      </tbody>
+    </table></div>
+    <p><span class="chip plain">existing</span> ph3.15–17 get a new fixture, not new assertions. ph3.6 v2 and 74.8 must stay green, since the wizard still makes 0 tournaments. The pgTAP files that pass <code>ranking_rules</code> through the import (<code>02</code>, <code>08</code>, <code>80</code>) are audited; any fixture that sends changed, invalid rules is corrected. Existing skeleton Vitest cases that read the boxes expand the panel first.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Where the change lands</p>
+    <h2>Files</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/migrations/20260929000001_admin_ranking_rules_validation.sql</code></td><td>New: the validator; <code>fn_import_scoring_config</code> redefined from its current body with the one added call; the helper dropped</td></tr>
+        <tr><td><code>supabase/tests/84_admin_ranking_rules_validation.sql</code></td><td>New: RULES.01–09 and SKEL.04</td></tr>
+        <tr><td><code>supabase/tests/19_phase3_wizard.sql</code></td><td>The ph3.15–17 fixture</td></tr>
+        <tr><td><code>frontend/src/lib/ranking-rules.ts</code></td><td>New: the pure rule checks</td></tr>
+        <tr><td><code>frontend/src/components/ScoringConfigEditor.svelte</code></td><td>Pickers, warnings, save guard</td></tr>
+        <tr><td><code>frontend/src/components/SeasonManager.svelte</code></td><td>Card order; collapsible panel</td></tr>
+        <tr><td><code>frontend/src/locales/pl.json</code>, <code>en.json</code></td><td>New messages</td></tr>
+        <tr><td><code>frontend/tests/SeasonManager.test.ts</code>, <code>ScoringConfigEditor.test.ts</code>, <code>ranking-rules.test.ts</code></td><td>The Vitest cases above</td></tr>
+      </tbody>
+    </table></div>
+    <p>The migration timestamp is a placeholder; it takes the next free slot on the day it's written.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note good">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+<pre class="gate">Impact: product | configuration | reference
+Canonical docs affected:
+  doc/handbook/product/product-surfaces.html — season edit card order, collapsed panel, bucket validation in the editor
+  doc/handbook/subsystems/scoring-and-ranking.html — write-time bucket validation; PZSz in the 2026/27 full ranking
+  doc/handbook/domain/competition-and-ranking.html — the 2026/27 bucket composition; replaces the "PZSz results have no visible effect" sentence
+  doc/handbook/subsystems/events-and-registration.html — only if it names the removed helper or the panel
+  doc/handbook/reference/codebase-map.html — new validator and TS module, removed helper
+  doc/requirements-traceability-matrix.md — ADM27.* rows under FR-19 (buckets) and FR-100 (wizard skeletons)
+  spec Appendix D — pgTAP total 1165 + the new file's plan(N)
+ADR impact: amend — a dated amendment to ADR-098 recording write-time validation of the two-pool shape; shown to you for sign-off before commit
+Operational impact: none — Part 1 runs through the existing cloud-db-ops path; no runbook changes
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: yes — the PZSz sentence is replaced in present tense</pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Done means preflight exits 0, then a release on your go</p>
+    <h2>Finish and release</h2>
+    <ol class="steps">
+      <li>Run <code>postgrestools</code> on the new migration and test file, and <code>npm run check</code> for the Svelte and TypeScript.</li>
+      <li>Browser check on LOCAL (Sezony → ✎ SPWS-2026-2027): the panel is one collapsed line, Zapisz / Anuluj are last with and without Punktacja, and the pickers offer the right types.</li>
+      <li><code>scripts/preflight.sh</code> exits 0; I quote its summary.</li>
+      <li>Refresh the graph (full-code-set pass if the shrink guard fires), run <code>python3 tools/docs-search/ingest.py</code>, and commit explicit paths only.</li>
+      <li><strong>On your go:</strong> release through the integration checkout (<code>merge --ff-only</code>, <code>integrate-agent-branch.sh</code>, identical tree, push <code>integration/main:main</code>). This also carries the ADR-102 sign-off commit <code>86669eeb</code>.</li>
+      <li>Watch CI and Release to the end. Then read-only on CERT and PROD: the helper is gone, the validator exists, and the 2026/27 export still equals the Part 1 target.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li>A shared pool for the PPW results left over after the best 2. It needs ordered, exclusive buckets in the engine, so it's a separate engine change.</li>
+      <li><code>int_ppw_best_count</code>, which is read only when a season has no rules at all.</li>
+      <li>How stored rules of past seasons are read. That doesn't change, so historical rankings stay exactly as they are.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">After you approve</p>
+      <p>I start with the Part 1 LOCAL rehearsal and the Part 2 tests. Nothing is written to CERT or PROD until you give a go for each environment.</p>
+    </div>
+  </section>
+
+  <p class="foot">plan · admin-ui-ranking-buckets-and-skeletons · 2026-09-28 · branch claude/scoring-engine-2026-2027</p>
+</div>
+</body>
+</html>
