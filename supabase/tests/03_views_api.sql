@@ -68,6 +68,19 @@ BEGIN
   SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
 
+  -- The expectations below (best 4 PPW + MPW always; best 3 of the PEW/MEW
+  -- pool; fn_ranking_kadra's JSONB walk over an international pool that repeats
+  -- the domestic buckets) are the original two-pool semantics the 2024/25 and
+  -- 2025/26 seasons still carry. They used to come from the active season's
+  -- seeded rules; since 2026-09-28 (ADM27.RULES.14) SPWS-2026-2027 carries its
+  -- own best-2 / best-5 rules, so the fixture pins the shape it tests.
+  UPDATE tbl_scoring_config SET json_ranking_rules = $j$
+    {"domestic": [{"best": 4, "types": ["PPW"]}, {"types": ["MPW"], "always": true}],
+     "international": [{"best": 4, "types": ["PPW"]}, {"types": ["MPW"], "always": true},
+                       {"best": 3, "types": ["PEW", "MEW", "MSW"]}]}
+  $j$::jsonb
+   WHERE id_season = v_season;
+
   -- Clear pre-loaded tournament data for the test season so tests are isolated.
   -- This runs inside BEGIN...ROLLBACK, so real seed data is restored after tests.
   -- Must delete match_candidates first (FK → tbl_result)

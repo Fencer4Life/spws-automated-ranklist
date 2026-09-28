@@ -369,3 +369,26 @@ SELECT fn_prune_bracket_stubs();
 -- write the method for the tournaments they touch; this names it on any scored
 -- row they did not. Same function as the migration's, so the two cannot drift.
 SELECT fn_backfill_score_method();
+
+-- ADM27 Part 1 (Migration 20260928000003): SPWS-2026-2027 ranking buckets —
+-- best 2 PPW + MPW; the full ranking adds the best 5 of PEW, MEW, MSW, PSW, PPS,
+-- MPS. Repeated here for LOCAL dev, where the migration ran before the seed
+-- created the season. PROD/CERT run the migration directly; the next seed
+-- export from PROD carries these rules itself. Same admin contract, so a
+-- locked season is refused rather than silently rewritten.
+DO $adm27$
+DECLARE
+  v_season INT;
+BEGIN
+  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  IF v_season IS NULL THEN
+    RETURN;
+  END IF;
+  PERFORM fn_import_scoring_config(jsonb_build_object(
+    'id_season', v_season,
+    'ranking_rules', $j$
+      {"domestic": [{"types": ["PPW"], "best": 2}, {"types": ["MPW"], "always": true}],
+       "international": [{"types": ["PEW", "MEW", "MSW", "PSW", "PPS", "MPS"], "best": 5}],
+       "entry_types": ["PPW", "MPW"]}
+    $j$::JSONB));
+END $adm27$;

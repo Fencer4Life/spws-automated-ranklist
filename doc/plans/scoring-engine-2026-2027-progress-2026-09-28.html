@@ -47,14 +47,15 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-si
 <body>
 <div class="page">
 <p class="eyebrow">Progress · 28 September 2026 · SPWS 2026/2027 scoring engine</p>
-<h1>All nine plan steps are built on LOCAL; the release waits for your go</h1>
-<p class="dek">Plan steps 1–9 are done and committed on the branch, step 7 as the mockup you approved (A). Nothing is pushed, and PROD is unchanged.</p>
+<h1>The 2026/27 engine is live on CERT and PROD</h1>
+<p class="dek">Plan steps 1–9 are released: <code>main</code> <code>523b6d1b</code>, 28 September 2026, at your go. Both databases and the live pages were checked afterwards. ADR-103 and ADR-102 are both signed off.</p>
 
 <h2>Where things stand</h2>
 <ul>
-<li><b>Branch</b> <code>claude/scoring-engine-2026-2027</code>, local only. Commits: <code>848c1836</code> ADR-103 · <code>60d18b95</code> database engine · <code>f61429a3</code> pipeline modules · <code>70932880</code> exact cube root · <code>1b8afd4d</code> scoring module and pages · <code>02af2305</code> page generator independent of the working directory · <code>0ed2e575</code> PPS and MPS on EVF classic · <code>c9ad58f2</code> step 7, the Admin editor and the drilldown export · the documentation commit that carries this page.</li>
-<li><b>PROD</b> still serves the board preview at <code>/tabela-punktacji-projekt-2026-2027.html</code> and the old annex and calculator. They change only when you give the release go.</li>
-<li><b>On hold, as agreed:</b> PPW1 ingestion and every 2026/27 promotion to PROD.</li>
+<li><b>Branch</b> <code>claude/scoring-engine-2026-2027</code>, released through the integration checkout. Commits: <code>848c1836</code> ADR-103 · <code>60d18b95</code> database engine · <code>f61429a3</code> pipeline modules · <code>70932880</code> exact cube root · <code>1b8afd4d</code> scoring module and pages · <code>02af2305</code> page generator independent of the working directory · <code>0ed2e575</code> PPS and MPS on EVF classic · <code>c9ad58f2</code> step 7, the Admin editor and the drilldown export · the documentation commit that carries this page.</li>
+<li><b>Release</b> <code>main</code> <code>523b6d1b</code>. CI run 36461358091 and Release run 36461571571 succeeded in every job; the migration <code>20260928000001_spws_place_medal_engine.sql</code> applied on CERT at 17:57 and on PROD at 17:58 UTC. Before the push, the scoring preflight passed every check on both databases.</li>
+<li><b>Checked after the release, read-only, on CERT and PROD alike:</b> both engines active with their modules and field-scaled gone; 2026/27 with PPW and MPW on the SPWS engine and the other six on EVF classic; ranking entry through PPW and MPW; one public parameter row per type with each database&rsquo;s own coefficients; all 2811 historical results marked EVF classic; 2026/27 still unlocked with nothing scored. The live annex reads PROD&rsquo;s parameters, the calculator carries both engines and takes N up to 300, and the board preview answers 404.</li>
+<li><b>Next:</b> PPW1 2026/27 ingestion, held until the engine landed, can now go by the ordinary path with its per-event sign-off. If the PPW1 fixture is loaded on LOCAL again, remove it first: it uses the same tournament codes.</li>
 <li><b>Gate:</b> <code>scripts/preflight.sh</code> exits 0. All 15 gates pass: ruff, basedpyright, the ADR and doc renders, <code>check_docs</code>, pytest, vitest (996), pgTAP (1165), coherence, spec-sync, the anon allowlist, svelte-check, the published-pages check and <code>git diff --check</code>. <code>postgrestools</code> on the migration reports no errors, only lock-safety warnings.</li>
 </ul>
 
@@ -112,15 +113,11 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-si
 <li>Observed while checking (read-only): PROD holds the coefficients set on 21 September (MEW 1.3, MSW 1.4, PSW 1.1, PPS 1.1, MPS 1.3), while CERT still holds the older defaults (MEW and PSW 2.0, MSW 1.2, PPS and MPS 1.0). Both are unlocked with nothing scored. If PPW1 is ingested on CERT first, CERT scores with CERT&rsquo;s values; this matters only for the types that differ, not for PPW or MPW.</li>
 </ul>
 
-<h2>What waits for you</h2>
-<div class="card q">
-<span class="lb">1 · Release — a separate go</span>
-<p>Before the push I run the scoring preflight against CERT and PROD. The push itself goes only from the integration checkout (<code>integration/main:main</code>) and deploys CERT and PROD. It also replaces the live annex and calculator and removes the board preview.</p>
-</div>
-<div class="card q">
-<span class="lb">2 · Later — ADR-102's status</span>
-<p>ADR-102 is still a Draft, and ADR-103 amends it. I will ask that as its own question once the release is decided.</p>
-</div>
+<h2>Decided since</h2>
+<ul>
+<li><b>Release</b> — your go of 28 September; released and checked as above.</li>
+<li><b>ADR-102</b> — signed off 28 September with its open items as recommended: the annex keeps <code>noindex, nofollow</code> until the change that adopts it, and the third-page item is closed because the board preview was deleted in the release.</li>
+</ul>
 
 <footer>Sources: branch <code>claude/scoring-engine-2026-2027</code>; <code>supabase/migrations/20260928000001_spws_place_medal_engine.sql</code>; <code>frontend/src/lib/scoring.ts</code>; <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>; <code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code>; plan <a href="scoring-engine-2026-2027-implementation-plan-2026-09-28.html">scoring-engine-2026-2027-implementation-plan-2026-09-28.html</a>.</footer>
 </div>

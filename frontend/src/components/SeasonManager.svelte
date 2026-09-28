@@ -88,6 +88,80 @@
               </label>
               <div class="european-hint">{t('season_field_european_lock_hint')}</div>
 
+              <!-- Phase 3 — skeleton inventory (ADR-044). ADM27: one collapsed
+                   line until the admin opens it; it collapses again each time
+                   the form opens. -->
+              {#if editingSkeletons.length > 0}
+                <button
+                  type="button"
+                  class="skel-section-header"
+                  data-field="skel-section-header"
+                  aria-expanded={skeletonsExpanded}
+                  onclick={() => { skeletonsExpanded = !skeletonsExpanded }}
+                >
+                  {t('season_skel_section')}
+                  <span class="skel-meta">
+                    {t('season_skel_count').replace('{count}', String(editingSkeletons.length))}
+                  </span>
+                  <span class="skel-chevron" aria-hidden="true">{skeletonsExpanded ? '▾' : '▸'}</span>
+                </button>
+                {#if skeletonsExpanded}
+                  <div class="skel-actions">
+                    <button
+                      type="button"
+                      class="skel-revert-link"
+                      data-field="skel-revert-btn"
+                      onclick={handleRevert}
+                    >{t('season_skel_revert')}</button>
+                  </div>
+                  {#if revertError}
+                    <div class="form-error" data-field="skel-revert-error">{revertError}</div>
+                  {/if}
+                  {#each ['PPW', 'PEW', 'CHAMPIONSHIPS', 'OTHER'] as group}
+                    {@const groupSkeletons = skeletonsBy(group as 'PPW' | 'PEW' | 'CHAMPIONSHIPS' | 'OTHER')}
+                    {#if groupSkeletons.length > 0}
+                      <div class="skel-group-header" data-field="skel-group-header">
+                        {#if group === 'PPW'}{t('wizard_skel_ppw')}{/if}
+                        {#if group === 'PEW'}{t('wizard_skel_pew')}{/if}
+                        {#if group === 'CHAMPIONSHIPS'}Mistrzostwa{/if}
+                        {#if group === 'OTHER'}Inne{/if}
+                        <span class="skel-group-count">{groupSkeletons.length}</span>
+                      </div>
+                      <div class="skel-grid" data-field="skel-grid">
+                        {#each groupSkeletons as skel}
+                          <div class="skel-box" data-field="skel-box">
+                            <span class="skel-code {codeKindClass(skel.txt_code)}">{codeKindLabel(skel.txt_code)}</span>
+                            <span class="skel-name">
+                              {#if skel.txt_location}
+                                {skel.txt_location}{#if skel.txt_country}, {skel.txt_country}{/if}
+                              {:else}
+                                <span class="empty">{t('season_skel_pending')}</span>
+                              {/if}
+                            </span>
+                            <span class="skel-badge">{t('season_skel_badge_created')}</span>
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+                  {/each}
+                {/if}
+              {/if}
+
+              {#if scoringConfig && scoringSeasonId === season.id_season}
+                <div class="scoring-editor-slot">
+                  <ScoringConfigEditor
+                    config={scoringConfig}
+                    seasonCode={season.txt_code}
+                    readonly={scoringConfig?.scoring_admin_locked ?? false}
+                    {scoringEngines}
+                    onsave={onsavescoring}
+                    oncancel={onclosescoring}
+                  />
+                </div>
+              {/if}
+
+              <!-- ADM27: the season's own Zapisz / Anuluj are always the last
+                   thing in the card, below the skeletons and the scoring editor. -->
               {#if formError}
                 <div class="form-error">{formError}</div>
               {/if}
@@ -99,63 +173,7 @@
                   {t('season_cancel')}
                 </button>
               </div>
-
-              <!-- Phase 3 — skeleton inventory (ADR-044) -->
-              {#if editingSkeletons.length > 0}
-                <div class="skel-section-header" data-field="skel-section-header">
-                  {t('season_skel_section')}
-                  <span class="skel-meta">
-                    {t('season_skel_count').replace('{count}', String(editingSkeletons.length))} ·
-                    <button
-                      type="button"
-                      class="skel-revert-link"
-                      data-field="skel-revert-btn"
-                      onclick={handleRevert}
-                    >{t('season_skel_revert')}</button>
-                  </span>
-                </div>
-                {#if revertError}
-                  <div class="form-error" data-field="skel-revert-error">{revertError}</div>
-                {/if}
-                {#each ['PPW', 'PEW', 'CHAMPIONSHIPS', 'OTHER'] as group}
-                  {@const groupSkeletons = skeletonsBy(group as 'PPW' | 'PEW' | 'CHAMPIONSHIPS' | 'OTHER')}
-                  {#if groupSkeletons.length > 0}
-                    <div class="skel-group-header" data-field="skel-group-header">
-                      {#if group === 'PPW'}{t('wizard_skel_ppw')}{/if}
-                      {#if group === 'PEW'}{t('wizard_skel_pew')}{/if}
-                      {#if group === 'CHAMPIONSHIPS'}Mistrzostwa{/if}
-                      {#if group === 'OTHER'}Inne{/if}
-                      <span class="skel-group-count">{groupSkeletons.length}</span>
-                    </div>
-                    <div class="skel-grid" data-field="skel-grid">
-                      {#each groupSkeletons as skel}
-                        <div class="skel-box" data-field="skel-box">
-                          <span class="skel-code {codeKindClass(skel.txt_code)}">{codeKindLabel(skel.txt_code)}</span>
-                          <span class="skel-name">
-                            {#if skel.txt_location}
-                              {skel.txt_location}{#if skel.txt_country}, {skel.txt_country}{/if}
-                            {:else}
-                              <span class="empty">{t('season_skel_pending')}</span>
-                            {/if}
-                          </span>
-                          <span class="skel-badge">{t('season_skel_badge_created')}</span>
-                        </div>
-                      {/each}
-                    </div>
-                  {/if}
-                {/each}
-              {/if}
             </div>
-            {#if scoringConfig && scoringSeasonId === season.id_season}
-              <ScoringConfigEditor
-                config={scoringConfig}
-                seasonCode={season.txt_code}
-                readonly={scoringConfig?.scoring_admin_locked ?? false}
-                {scoringEngines}
-                onsave={onsavescoring}
-                oncancel={onclosescoring}
-              />
-            {/if}
           {/if}
           <div data-field="season-row" class="season-row">
             <span data-field="season-code" class="season-cell">{season.txt_code}</span>
@@ -254,6 +272,7 @@
 
   let wizardOpen = $state(false)
   let editingSkeletons = $state<CalendarEvent[]>([])
+  let skeletonsExpanded = $state(false)
 
   let showForm = $state(false)
   let editingId: number | null = $state(null)
@@ -283,6 +302,7 @@
     draftEuropean = (season.enum_european_event_type ?? null) as EuropeanEventType
     formError = null
     revertError = null
+    skeletonsExpanded = false
     showForm = true
     // Load skeleton inventory for the edited season (CREATED status only).
     editingSkeletons = await onfetchskeletons(season.id_season)
@@ -294,6 +314,7 @@
     formError = null
     revertError = null
     editingSkeletons = []
+    skeletonsExpanded = false
   }
 
   async function handleSave() {
@@ -421,6 +442,7 @@
     justify-content: flex-start;
   }
   .form-actions {
+    width: 100%;
     display: flex;
     gap: 8px;
     align-items: flex-end;
@@ -605,14 +627,33 @@
     width: 100%;
     padding: 10px 0 6px 0;
     margin-top: 12px;
+    border: none;
     border-top: 1px dashed #b794f6;
+    background: none;
+    font: inherit;
     font-size: 14px;
     color: #6b46c1;
     font-weight: 700;
+    text-align: left;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+  }
+  .skel-section-header:hover .skel-chevron {
+    color: #6b46c1;
+  }
+  .skel-chevron {
+    color: #b794f6;
+    font-size: 12px;
+  }
+  .skel-actions {
+    width: 100%;
+    font-size: 12px;
+  }
+  .scoring-editor-slot {
+    width: 100%;
   }
   .skel-meta {
     font-size: 12px;
