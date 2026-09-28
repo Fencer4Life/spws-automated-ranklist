@@ -32,7 +32,7 @@ BEGIN;
 -- same targeted bypass 80_season_scoring_contract.sql uses.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(34);
+SELECT plan(35);
 
 -- -----------------------------------------------------------------------------
 -- The strategy, called directly with the season's EVF settings (50, 10, 3/2/1).
@@ -209,6 +209,17 @@ SELECT throws_like(
   $$SELECT fn_score_spws_place_medal_v1_2026_2027(10, 3, -1, -1, -1, 50, 10, 3, 2, 1)$$,
   '%Invalid scoring input%',
   'SE27.ENG.13 a 4–31 bracket without K, m and fencers below raises');
+
+-- SE27.ENG.14 — the cube root of a perfect cube is exact, as in the signed-off
+-- table and the browser module. POWER(8, 1.0/3) is 1.999…9 in numeric, which
+-- sends a tie at the final ROUND down: N = 8, place 3 of a single category is
+-- 26.5 raw, and at a 0.75 coefficient must store 19.88, not 19.87.
+SELECT is(
+  (SELECT ROUND(b.num_medal_bonus, 20)::TEXT || ' / '
+          || ROUND((b.num_field_pts + b.num_below_pts + b.num_medal_bonus) * 0.75, 2)::TEXT
+     FROM fn_score_spws_place_medal_v1_2026_2027(8, 3, 8, 3, 5, 50, 10, 3, 2, 1) b),
+  '6.00000000000000000000 / 19.88',
+  'SE27.ENG.14 the medal on K = 8 is exactly 3 x 2, and a tie at the final rounding goes up');
 
 -- =============================================================================
 -- SE27.TYPE — the engine per tournament type (2026/2027 still unlocked here)

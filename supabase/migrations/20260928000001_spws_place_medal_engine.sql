@@ -181,12 +181,16 @@ BEGIN
   END IF;
 
   -- UNROUNDED on purpose, like every strategy: the caller rounds once.
+  -- cbrt(), not the classic engine's POWER(n, 1.0/3): numeric 1.0/3 stops at
+  -- twenty digits, so a perfect cube (K = 8, 27) lands a hair below its root
+  -- and a tie at the final ROUND goes down, where the signed-off table and the
+  -- browser module (Math.cbrt) go up. SE27.ENG.14 / scoring.test.ts pin it.
   v_out.num_field_pts   := (LN(p_n) / LN(2))::NUMERIC;
   v_out.num_below_pts   := 3.5 * p_below;
   v_out.num_medal_bonus :=
     CASE WHEN p_m < p_k AND p_m <= 3
          THEN (CASE p_m WHEN 1 THEN 13 WHEN 2 THEN 7 ELSE 3 END)
-              * POWER(p_k::NUMERIC, 1.0 / 3)
+              * cbrt(p_k::DOUBLE PRECISION)::NUMERIC
          ELSE 0::NUMERIC
     END;
   v_out.enum_score_method := 'PLACE_MEDAL';
