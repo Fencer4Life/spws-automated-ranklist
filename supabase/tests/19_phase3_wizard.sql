@@ -170,9 +170,8 @@ SELECT is(
 
 -- ph3.6 v2 — skeleton events are CHILDLESS. Tournaments are ingested per event
 -- after the season is created; the empty events serve a calendar purpose only
--- (user requirement 2026-06-27). fn_init_season no longer creates child
--- tournaments (the `_fn_create_skeleton_children` helper is retained only as a
--- fixture builder for cascade-rename tests).
+-- (user requirement 2026-06-27). fn_init_season creates no child tournaments,
+-- and no function in the schema creates skeleton brackets (ADM27.SKEL.04).
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_tournament t
      JOIN tbl_event e ON e.id_event = t.id_event
@@ -439,11 +438,13 @@ SELECT 'PEW1efs-2026-2027', 'PEW1efs-2026-2027',
 
 -- fn_init_season creates CHILDLESS skeletons (ph3.6 v2), so build the 6 V2
 -- children fixture explicitly to exercise fn_update_event's cascade rename.
-SELECT _fn_create_skeleton_children(
-  (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),
-  'PEW1efs-2026-2027',
-  'PEW'
-);
+INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category)
+SELECT e.id_event, 'PEW1efs-V2-' || g || '-' || w || '-2026-2027', 'PEW',
+       w::enum_weapon_type, g::enum_gender_type, 'V2'
+  FROM tbl_event e,
+       unnest(ARRAY['F', 'M']) AS g,
+       unnest(ARRAY['EPEE', 'FOIL', 'SABRE']) AS w
+ WHERE e.txt_code = 'PEW1efs-2026-2027';
 
 SELECT fn_update_event(
   (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW1efs-2026-2027'),

@@ -90,6 +90,7 @@
       loading={modalLoading}
       context={modalContext}
       rankingRules={rankingRules}
+      seasonCode={modalSeasonCode}
       onclose={closeDrilldown}
     />
 
@@ -554,6 +555,8 @@
   let modalScores: ScoreRow[] = $state([])
   let modalLoading = $state(false)
   let modalContext: DrilldownContext | null = $state(null)
+  // The season the open drilldown was opened for, captured with its scores.
+  let modalSeasonCode: string | null = $state(null)
 
   $effect(() => {
     // SS26.UIHIST: initDemo()/init() both write state they also read
@@ -752,6 +755,7 @@
     modalLoading = true
     modalScores = []
     modalContext = null
+    modalSeasonCode = seasons.find((s) => s.id_season === selectedSeasonId)?.txt_code ?? null
     try {
       if (demo) {
         modalScores = MOCK_SCORES[fencerId] ?? []
@@ -808,6 +812,7 @@
     modalFencerId = null
     modalScores = []
     modalContext = null
+    modalSeasonCode = null
   }
 
   async function navigateTo(view: AppView) {

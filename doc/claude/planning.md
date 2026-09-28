@@ -6,6 +6,14 @@ rules. They supersede defaults.
 
 Every human-facing plan is a standalone `.html` file using the repository's approved Editorial template and includes the exact documentation coherence gate from [the documentation standard](../handbook/reference/documentation-standard.html).
 
+In plan mode, every draft and every revision follows three steps in this order:
+
+1. Write the plan to `doc/plans/<descriptive-kebab-name>.html`.
+2. Give the user a clickable link to it.
+3. Only then request approval.
+
+The harness's `.md` plan file is only a stub that points to the `.html`. A plan shown only in chat or as an inline widget is not a plan the user can approve.
+
 ## 1. Planning gate — always before any plan
 
 1. Open [governance](../governance/index.html), then read the relevant rows in the requirements traceability matrix to identify in-scope FRs/NFRs.

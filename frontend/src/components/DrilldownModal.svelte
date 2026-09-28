@@ -9,7 +9,7 @@
         </div>
       </div>
 
-      {#if context || seasonCode}
+      {#if context || seasonLabel}
         <div class="subheader">
           {#if context}
             <span>{t('rank')} #{context.rank}</span>
@@ -17,7 +17,7 @@
           {/if}
           <span>
             {context?.category ?? scores[0]?.enum_age_category ?? ''}
-            {#if seasonCode} · {seasonCode}{/if}
+            {#if seasonLabel} · {seasonLabel}{/if}
             {#if context?.birthYear} ({t('born')} {context.birthYear}){/if}
           </span>
           {#if showEvfToggle}
@@ -248,6 +248,7 @@
     loading = false,
     context = null as DrilldownContext | null,
     rankingRules = null as RankingRules | null,
+    seasonCode = null as string | null,
     onclose,
   }: {
     open?: boolean
@@ -258,12 +259,20 @@
     loading?: boolean
     context?: DrilldownContext | null
     rankingRules?: RankingRules | null
+    // The season the ranking being drilled into belongs to (R.26–R.30).
+    seasonCode?: string | null
     onclose?: () => void
   } = $props()
 
   // --- Derived data ---
 
-  let seasonCode = $derived(scores[0]?.txt_season_code ?? null)
+  // The header names the season being ranked. On a rolling ranking the
+  // carried previous-season rows come first and each carries its own season,
+  // so without one from the caller only a row that is not carried over can
+  // name it — and with none, no season is named rather than the wrong one.
+  let seasonLabel = $derived(
+    seasonCode ?? scores.find((s) => !s.bool_carried_over)?.txt_season_code ?? null,
+  )
 
   let filteredScores = $derived(
     mode === 'PPW'

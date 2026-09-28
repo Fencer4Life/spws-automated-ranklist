@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="8186488e63e6ead04089c86d64c49316d045cc1b13094e241b655f889ccf1445">
+<meta name="doc-source-sha256" content="21a3cedbe48fd12034b9d584eb9d5e040d2500db618e83fc79f207db431c5e97">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>277 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>291 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -161,8 +161,8 @@
 <td>FR-19</td>
 <td>JSONB bucket-based ranking rules</td>
 <td>§8.6.6</td>
-<td>5.4–5.7, 5.20–5.22, SS26.RANK.01–12</td>
-<td>Covered (M6; <strong>amended 2026-09-19, ADR-098:</strong> <code>schema_version: 2</code> adds three independently-configured sections (SPWS/EVF-FIE/PZSz) aggregating into two display groups, read by <code>fn_ranking_rules_canonical</code> alongside the original <code>domestic</code>/<code>international</code> shape via a frozen legacy adapter; the original shape is unchanged and <code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code> are untouched)</td>
+<td>5.4–5.7, 5.20–5.22, SS26.RANK.01–12, ADM27.RULES.01–14</td>
+<td>Covered (M6; <strong>amended 2026-09-28, ADM27:</strong> a change to original-shape rules is refused unless each bucket admits only its own pool's types, no type sits in two buckets and each bucket takes exactly one of best N ≥ 1 or all — in the Admin editor and in <code>fn_import_scoring_config</code>; an unchanged resend passes; <strong>amended 2026-09-19, ADR-098:</strong> <code>schema_version: 2</code> adds three independently-configured sections (SPWS/EVF-FIE/PZSz) aggregating into two display groups, read by <code>fn_ranking_rules_canonical</code> alongside the original <code>domestic</code>/<code>international</code> shape via a frozen legacy adapter; the original shape is unchanged and <code>fn_ranking_ppw</code>/<code>fn_ranking_kadra</code> are untouched)</td>
 </tr>
 <tr>
 <td>FR-20</td>
@@ -490,7 +490,7 @@
 <td>FR-66</td>
 <td>Rolling drilldown: <code>fn_fencer_scores_rolling</code> returns carried-over scores with <code>bool_carried_over</code> flag and source season code; visual distinction in DrilldownModal (grey striped bars, <code>↩</code> marker, rolling info banner) and CalendarView (progress slot bar). <strong>Amended 2026-06-26 (ADR-018/021):</strong> never shows both this-year and last-year for the same position — the carried row drops the moment a current-season result exists.</td>
 <td>ADR-018</td>
-<td>R.15–R.21, R.22–R.24 (pgTAP, results-based carry-stop)</td>
+<td>R.15–R.21, R.22–R.24 (pgTAP, results-based carry-stop), R.26–R.30 (Vitest: the drilldown header names the ranked season, never a carried row's — <code>DrilldownModal.test.ts</code>, <code>DrilldownRankedSeason.test.ts</code>)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -719,9 +719,9 @@
 </tr>
 <tr>
 <td>FR-100</td>
-<td>Season-init wizard with skeleton pre-allocation: admin creates a new season via a 3-step modal (Identity → Scoring → Confirm). On commit, <code>fn_create_season_with_skeletons</code> runs as one atomic transaction — INSERT season → overwrite default scoring config (carries <code>bool_show_evf_toggle</code>) → call <code>fn_init_season(p_id_season)</code> which produces one CREATED-status skeleton per recurring event kind (<code>^PPW\d+-</code> family, <code>^PEW\d+-</code> family, always-MPW, always-MSW, optional IMEW/DMEW per <code>enum_european_event_type</code>) plus 6 V2 child tournaments per skeleton. Cancel at any step = nothing persists (transaction rollback). Post-commit EDIT form shows skeletons as calendar-style boxes with &quot;↶ Cofnij całość&quot; link calling <code>fn_revert_season_init</code> (refuses if any skeleton has advanced past CREATED). EventManager exposes editable <code>txt_code</code> (cascades to children via <code>fn_update_event</code> v2) and <code>id_prior_event</code> picker. Supersedes carry-over admin runbook §3, §4, §6, §9.</td>
+<td>Season-init wizard with skeleton pre-allocation: admin creates a new season via a 3-step modal (Identity → Scoring → Confirm). On commit, <code>fn_create_season_with_skeletons</code> runs as one atomic transaction — INSERT season → overwrite default scoring config (carries <code>bool_show_evf_toggle</code>) → call <code>fn_init_season(p_id_season)</code> which produces one CREATED-status skeleton per SPWS-run or FIE event kind — the <code>^PPW\d+-</code> family, MPW and MSW — and no tournament (childless since 2026-06-27; EVF events, the PEW circuit and IMEW/DMEW, come from calendar sync since ADR-091). Cancel at any step = nothing persists (transaction rollback). Post-commit EDIT form shows the skeleton inventory as one collapsed line with its count (ADM27.SKEL.01–03), expanding to calendar-style boxes with a &quot;↶ Cofnij całość&quot; link calling <code>fn_revert_season_init</code> (refuses if any skeleton has advanced past CREATED). EventManager exposes editable <code>txt_code</code> (cascades to children via <code>fn_update_event</code> v2) and <code>id_prior_event</code> picker. Supersedes carry-over admin runbook §3, §4, §6, §9.</td>
 <td>UC22(a), ADR-044</td>
-<td>ph3.1–ph3.21 (pgTAP), ph3.23–ph3.37 (vitest wizard), ph3c.1–ph3c.12 (vitest EventManager)</td>
+<td>ph3.1–ph3.21 (pgTAP), ph3.23–ph3.37 (vitest wizard), ph3c.1–ph3c.12 (vitest EventManager), ADM27.SKEL.01–04, ADM27.FORM.01–02</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1490,6 +1490,71 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</h2>
+<p>Acceptance IDs for <a href="plans/admin-ui-ranking-buckets-and-skeletons-2026-09-28.html">doc/plans/admin-ui-ranking-buckets-and-skeletons-2026-09-28.html</a>, Part 2, registered with their tests.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADM27.RULES.01–08</td>
+<td><code>fn_import_scoring_config</code> refuses CHANGED original-shape rules with an international bucket of only PPW (01) or of PPW + PEW (02), a <code>best</code> of 0 (03), both <code>best</code> and <code>always</code> (04), a type in two buckets (05) or PEW in the domestic pool (06); it accepts the 2026/2027 rules (07) and an unchanged resend of 2025/2026-shaped rules that repeat the domestic buckets internationally (08).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/84_admin_ranking_rules_validation.sql</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>ADM27.RULES.09</td>
+<td><code>fn_validate_ranking_rules_write</code> exists and neither <code>anon</code> nor <code>authenticated</code> can execute it.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/84_admin_ranking_rules_validation.sql</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>ADM27.RULES.14</td>
+<td>SPWS-2026-2027 carries the rules chosen on 2026-09-28: best 2 PPW + every MPW; the best 5 of PEW, MEW, MSW, PSW, PPS and MPS; <code>entry_types</code> PPW, MPW. Migration <code>20260928000003</code> sets them on CERT/PROD through <code>fn_import_scoring_config</code> (a locked season fails the deploy); <code>seed_post_backfill.sql</code> repeats it on LOCAL, where the season is created after the migrations.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/84_admin_ranking_rules_validation.sql</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>ADM27.RULES.10–13</td>
+<td>The Admin editor: each pool's picker offers only its own types, PPS and MPS included in PZSz colour (10); a type already in a bucket is disabled and <code>best</code> cannot go below 1 (11); a loaded bucket the ranking cannot use shows why (12); changed rules that break a rule are not saved while unchanged rules save (13).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/ScoringConfigEditor.test.ts</code>, <code>frontend/tests/ranking-rules.test.ts</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>ADM27.FORM.01–02</td>
+<td>The season edit card's Zapisz / Anuluj come after the skeleton inventory (01) and, with Punktacja open, after the scoring editor's „Eksport JSON”, inside the same card (02).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/SeasonManager.test.ts</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>ADM27.SKEL.01–03</td>
+<td>The skeleton inventory opens collapsed with its count and no boxes or revert link (01), expands on a click (02) and collapses again when the form reopens (03).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/SeasonManager.test.ts</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>ADM27.SKEL.04</td>
+<td><code>_fn_create_skeleton_children</code> no longer exists; <code>19_phase3_wizard.sql</code> ph3.15–17 build their brackets directly.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/84_admin_ranking_rules_validation.sql</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -1500,5 +1565,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8186488e63e6ead04089c86d64c49316d045cc1b13094e241b655f889ccf1445</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>21a3cedbe48fd12034b9d584eb9d5e040d2500db618e83fc79f207db431c5e97</code></footer>
 </div></body></html>
