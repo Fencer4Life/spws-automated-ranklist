@@ -154,4 +154,6 @@ allowlist in the same change: `supabase/tests/52_security_posture.sql` and
    the same change that adopts the annex.
 2. **ADR-085 §2 — "no other static page is expected to be published this way".** There are now
    two, and both are generated. **Recommendation:** treat §2 as still binding for *new* pages and
-   revisit it only if a third is proposed.
+   revisit it only if a third is proposed. **2026-09-28:** a third was proposed — a time-limited,
+   self-contained board preview of the 2026/2027 engine — and is recorded as a dated amendment to
+   [ADR-085](085-points-calculator-temporary-static-page.md) §2.

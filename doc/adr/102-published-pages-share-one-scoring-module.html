@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="102-published-pages-share-one-scoring-module.md">
-<meta name="adr-source-sha256" content="9e843382d9d10ac2290759abed976423d2b6494061e32dbc7b5afedb751e0be1">
+<meta name="adr-source-sha256" content="9948b09f3e91e9361f89d3b7af6e9c5741a7dcbaf48af1526411b4c8c7af8bb6">
 <title>ADR-102 · The Published Pages Share One Scoring Module and Read Season Parameters</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 102</p><h1>The Published Pages Share One Scoring Module and Read Season Parameters</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-20; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-20</dd></div><div><dt>Source</dt><dd class=""><code>102-published-pages-share-one-scoring-module.md</code></dd></div><div><dt>Length</dt><dd class="">157 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-20; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-20</dd></div><div><dt>Source</dt><dd class=""><code>102-published-pages-share-one-scoring-module.md</code></dd></div><div><dt>Length</dt><dd class="">159 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-20; awaiting sign-off)
 <strong>Date:</strong> 2026-09-20
 <strong>Supersedes:</strong> <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §3 (Expiry condition) — its <em>intent</em> is fulfilled and its <em>mechanism</em> is reversed: the calculator is driven by the ranklist scoring engine as §3 required, but it is <strong>kept at its address</strong> rather than removed, and plan test 8.88 is kept rather than deleted. §§1–2 (publication mechanism, exception-not-pattern) are untouched and still bind.
@@ -154,10 +154,12 @@ deliberate act and is not part of this change. <strong>Recommendation:</strong> 
 the same change that adopts the annex.</li>
 <li><strong>ADR-085 §2 — &quot;no other static page is expected to be published this way&quot;.</strong> There are now
 two, and both are generated. <strong>Recommendation:</strong> treat §2 as still binding for <em>new</em> pages and
-revisit it only if a third is proposed.</li>
+revisit it only if a third is proposed. <strong>2026-09-28:</strong> a third was proposed — a time-limited,
+self-contained board preview of the 2026/2027 engine — and is recorded as a dated amendment to
+<a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §2.</li>
 </ol>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="101-ranking-ppw-public-ui-and-publication-boundary.html">← ADR-101: The public ranking switch is Ranking / PPW; publication capability is read, not re-decided, by the UI</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>102-published-pages-share-one-scoring-module.md</code> · source SHA-256 <code>9e843382d9d10ac2290759abed976423d2b6494061e32dbc7b5afedb751e0be1</code></footer>
+<footer class="foot">Generated from <code>102-published-pages-share-one-scoring-module.md</code> · source SHA-256 <code>9948b09f3e91e9361f89d3b7af6e9c5741a7dcbaf48af1526411b4c8c7af8bb6</code></footer>
 </div></body></html>

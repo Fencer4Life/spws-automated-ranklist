@@ -1,10 +1,54 @@
 # ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition
 
-**Status:** Accepted (signed off 2026-08-15)
+**Status:** Accepted (signed off 2026-08-15; §2 amended 2026-09-28)
 **Date:** 2026-08-15
 **Amends:** [ADR-015](015-m8-ui-design-decisions.md) §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (frontend built once in CI and deployed to GitHub Pages — unchanged; the page rides the same artifact), [ADR-079](079-event-self-registration-identity.md) and [ADR-007](007-shadow-dom-deferred.md) (`register.html`, the existing standalone page, built through `vite.config.ce.ts` as a custom element — deliberately *not* the mechanism used here)
 **Source:** `doc/plans/kalkulator-w-menu-ranklisty-2026-08-15.html` §4
+
+## Amendment (2026-09-28 — a third, time-limited page: the board preview of the 2026/2027 engine)
+
+§2 is amended at the user's instruction of 2026-09-28.
+[ADR-092](092-scoring-table-annex-bilingual-static-page.md) §3 requires a third standalone page
+to carry its own decision, and [ADR-102](102-published-pages-share-one-scoring-module.md) open
+item 2 left §2 to be revisited only if a third was proposed. This amendment is that decision.
+
+**What is published.** `frontend/public/tabela-punktacji-projekt-2026-2027.html` is served at
+`/tabela-punktacji-projekt-2026-2027.html` on the Pages origin, by the mechanism in §1. It shows
+the board the proposed 2026/2027 SPWS formula: the three ranges by bracket size, the rules table,
+a calculator with „Stawka łączona”, the medal table, the 64 × 64 grid and a worked example. The
+content is the signed-off `doc/plans/tabela-punktacji-propozycja-2026-09-27.html` with one
+change. Its footer link to an analysis under `doc/plans/` would return 404 on Pages, so that link
+is now plain text.
+
+**Why it may carry its own formula.** ADR-102 §1 ended private formula copies in the published
+pages, because those pages show the scoring in force and must agree with the database. This page
+shows a formula that no engine implements yet. The engine is drafted as ADR-103 in
+`doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html` and awaits sign-off.
+There is nothing in `frontend/src/lib/scoring.ts` to generate the page from, and adding the
+proposal there would be the engine work itself. This is the situation this ADR was written for,
+and the duplication is bounded the same way, by an expiry.
+
+**Conditions of the exception.** Each condition is held by a test or by the page itself.
+
+1. **Self-contained.** The page computes everything in the browser. It has no `fetch`, no
+   `#spws-env` element and no Supabase URL or key. The release workflow's credential step
+   (`.github/workflows/release.yml`) therefore does not touch it, and it works offline. It links
+   to no unpublished file. Test: SE27.PREVIEW.03.
+2. **Not indexed, not linked.** It carries `noindex, nofollow` (test SE27.PREVIEW.02), and its
+   footer reads „Projekt — nieprzyjęty”. The drawer does not link to it; the board receives the
+   address. It is not Załącznik nr 1: the annex at `/tabela-punktacji.html` and the calculator at
+   `/kalkulator-punktow.html` are unchanged, and they keep following the season's assigned engine
+   (ADR-102).
+3. **It ships.** Test SE27.PREVIEW.01. `frontend/scripts/build-scoring-pages.mjs` deliberately
+   does not list the page, because the page carries no generated module.
+4. **Expiry.** The page, together with SE27.PREVIEW.01–03, is deleted in the change that releases
+   the 2026/2027 engine. That change rebuilds the annex and the calculator around the adopted
+   formula, so the preview has nothing left to show. This expiry belongs to the preview alone. §3
+   of this ADR was superseded by ADR-102, and this amendment does not revive it.
+
+**§2 otherwise stands.** This page sets no precedent. A fourth page, or keeping this one past its
+expiry, needs its own decision.
 
 ## Context
 

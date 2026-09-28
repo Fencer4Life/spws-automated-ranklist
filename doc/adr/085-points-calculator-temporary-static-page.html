@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="085-points-calculator-temporary-static-page.md">
-<meta name="adr-source-sha256" content="22c30952217fa5bb807329929ac4927537336e937bea7788cd21a4c9a469aa52">
+<meta name="adr-source-sha256" content="6d2709ce2c186d7f27776d228a27c6751ebd225106ecd12c18d540e61422a508">
 <title>ADR-085 · Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 085</p><h1>Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-08-15)</dd></div><div><dt>Date</dt><dd class="">2026-08-15</dd></div><div><dt>Source</dt><dd class=""><code>085-points-calculator-temporary-static-page.md</code></dd></div><div><dt>Length</dt><dd class="">109 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-08-15)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-08-15; §2 amended 2026-09-28)</dd></div><div><dt>Date</dt><dd class="">2026-08-15</dd></div><div><dt>Source</dt><dd class=""><code>085-points-calculator-temporary-static-page.md</code></dd></div><div><dt>Length</dt><dd class="">153 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-08-15; §2 amended 2026-09-28)
 <strong>Date:</strong> 2026-08-15
 <strong>Amends:</strong> <a href="015-m8-ui-design-decisions.html">ADR-015</a> §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
 <strong>Relates to:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> (frontend built once in CI and deployed to GitHub Pages — unchanged; the page rides the same artifact), <a href="079-event-self-registration-identity.html">ADR-079</a> and <a href="007-shadow-dom-deferred.html">ADR-007</a> (<code>register.html</code>, the existing standalone page, built through <code>vite.config.ce.ts</code> as a custom element — deliberately <em>not</em> the mechanism used here)
@@ -20,8 +20,48 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-publication-mechanism">1 · Publication mechanism</a></li><li class="depth-3"><a href="#2-this-is-an-exception-not-a-pattern">2 · This is an exception, not a pattern</a></li><li class="depth-3"><a href="#3-expiry-condition">3 · Expiry condition</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-28-a-third-time-limited-page-the-board-preview-of-the-2026-2027-engine">Amendment (2026-09-28 — a third, time-limited page: the board preview of the 2026/2027 engine)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-publication-mechanism">1 · Publication mechanism</a></li><li class="depth-3"><a href="#2-this-is-an-exception-not-a-pattern">2 · This is an exception, not a pattern</a></li><li class="depth-3"><a href="#3-expiry-condition">3 · Expiry condition</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-28-a-third-time-limited-page-the-board-preview-of-the-2026-2027-engine">Amendment (2026-09-28 — a third, time-limited page: the board preview of the 2026/2027 engine)</h2>
+<p>§2 is amended at the user's instruction of 2026-09-28.
+<a href="092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> §3 requires a third standalone page
+to carry its own decision, and <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> open
+item 2 left §2 to be revisited only if a third was proposed. This amendment is that decision.</p>
+<p><strong>What is published.</strong> <code>frontend/public/tabela-punktacji-projekt-2026-2027.html</code> is served at
+<code>/tabela-punktacji-projekt-2026-2027.html</code> on the Pages origin, by the mechanism in §1. It shows
+the board the proposed 2026/2027 SPWS formula: the three ranges by bracket size, the rules table,
+a calculator with „Stawka łączona”, the medal table, the 64 × 64 grid and a worked example. The
+content is the signed-off <code>doc/plans/tabela-punktacji-propozycja-2026-09-27.html</code> with one
+change. Its footer link to an analysis under <code>doc/plans/</code> would return 404 on Pages, so that link
+is now plain text.</p>
+<p><strong>Why it may carry its own formula.</strong> ADR-102 §1 ended private formula copies in the published
+pages, because those pages show the scoring in force and must agree with the database. This page
+shows a formula that no engine implements yet. The engine is drafted as ADR-103 in
+<code>doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html</code> and awaits sign-off.
+There is nothing in <code>frontend/src/lib/scoring.ts</code> to generate the page from, and adding the
+proposal there would be the engine work itself. This is the situation this ADR was written for,
+and the duplication is bounded the same way, by an expiry.</p>
+<p><strong>Conditions of the exception.</strong> Each condition is held by a test or by the page itself.</p>
+<ol>
+<li><strong>Self-contained.</strong> The page computes everything in the browser. It has no <code>fetch</code>, no
+<code>#spws-env</code> element and no Supabase URL or key. The release workflow's credential step
+(<code>.github/workflows/release.yml</code>) therefore does not touch it, and it works offline. It links
+to no unpublished file. Test: SE27.PREVIEW.03.</li>
+<li><strong>Not indexed, not linked.</strong> It carries <code>noindex, nofollow</code> (test SE27.PREVIEW.02), and its
+footer reads „Projekt — nieprzyjęty”. The drawer does not link to it; the board receives the
+address. It is not Załącznik nr 1: the annex at <code>/tabela-punktacji.html</code> and the calculator at
+<code>/kalkulator-punktow.html</code> are unchanged, and they keep following the season's assigned engine
+(ADR-102).</li>
+<li><strong>It ships.</strong> Test SE27.PREVIEW.01. <code>frontend/scripts/build-scoring-pages.mjs</code> deliberately
+does not list the page, because the page carries no generated module.</li>
+<li><strong>Expiry.</strong> The page, together with SE27.PREVIEW.01–03, is deleted in the change that releases
+the 2026/2027 engine. That change rebuilds the annex and the calculator around the adopted
+formula, so the preview has nothing left to show. This expiry belongs to the preview alone. §3
+of this ADR was superseded by ADR-102, and this amendment does not revive it.</li>
+</ol>
+<p><strong>§2 otherwise stands.</strong> This page sets no precedent. A fourth page, or keeping this one past its
+expiry, needs its own decision.</p>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The points calculator (<code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code>) exists to show
 fencers and the board the <strong>proposed</strong> scoring function before it becomes the scoring rule in
 force. The proposal keeps the EVF algorithm intact — logarithmic place scale, 10 points per
@@ -117,5 +157,5 @@ formula was reworked to <code>f(N)</code> and now satisfies all six conditions.<
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="084-calendar-quarter-barrel-event-card.html">← ADR-084: Calendar Quarter Barrel + Single Event Card</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="086-evf-weapon-evidence-ladder-strict-skip.html">→ ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a></nav>
-<footer class="foot">Generated from <code>085-points-calculator-temporary-static-page.md</code> · source SHA-256 <code>22c30952217fa5bb807329929ac4927537336e937bea7788cd21a4c9a469aa52</code></footer>
+<footer class="foot">Generated from <code>085-points-calculator-temporary-static-page.md</code> · source SHA-256 <code>6d2709ce2c186d7f27776d228a27c6751ebd225106ecd12c18d540e61422a508</code></footer>
 </div></body></html>
