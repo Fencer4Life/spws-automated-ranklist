@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan — Joined age categories: a per-season policy</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.old td{background:var(--amber-bg)}
+tr.sum td{font-weight:600;border-top:2px solid var(--line)}
+td.down{color:var(--coral);font-weight:600}
+td.up{color:var(--green);font-weight:600}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:6px}
+blockquote{margin:12px 0;padding:10px 16px;border-left:3px solid var(--navy);background:var(--card);font-family:var(--serif)}
+ul.gate{list-style:none;padding-left:0}
+ul.gate li{padding:4px 0}
+ul.gate li:before{content:"☐ ";font-family:var(--mono);color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Brainstorm · 27 September 2026 · round 4 · awaiting decisions R1 and R2</p>
+<h1>Joined age categories: §8 plus a flat table for small brackets</h1>
+<p class="dek">If brackets under four fencers are worth only 1–3 points, joining becomes the better choice for the older category in almost every case. The younger category then loses points only to an older fencer who actually beats them.</p>
+
+<div class="card warn"><span class="lb">Round 5 — see the engine analysis</span>
+<a href="joined-bracket-scoring-engine-analysis-2026-09-27.html">joined-bracket-scoring-engine-analysis-2026-09-27.html</a> shows that §8 with the table (R1) and with the category medal at N ≥ 8 (R2) still leaves 9–37% of fencers worse off when categories join. It proposes an engine under which every fencer gains from every join (decision E1). R2 is superseded by it.</div>
+
+<nav class="toc"><ol>
+<li><a href="#why">Why this is being done</a></li>
+<li><a href="#proposal">Your proposal — a flat table for N &lt; 4</a></li>
+<li><a href="#effect">What joining is worth under §8 plus the table</a></li>
+<li><a href="#risks">Side effects to weigh</a></li>
+<li><a href="#r1">Decision R1 — which combination to carry forward (open)</a></li>
+<li><a href="#eight">Going further — making N ≥ 8 attractive, decision R2 (open)</a></li>
+<li><a href="#round2">Round 2 — §8 on today's engine (for reference)</a></li>
+<li><a href="#today">How joined brackets are scored today</a></li>
+<li><a href="#design">Design points that survive any R1 answer</a></li>
+<li><a href="#side">Side finding — out of scope</a></li>
+<li><a href="#steps">Implementation outline (RED before GREEN)</a></li>
+<li><a href="#done">Definition of done</a></li>
+<li><a href="#coherence">Documentation coherence gate</a></li>
+</ol></nav>
+
+<h2 id="why">1 · Why this is being done</h2>
+<blockquote>8 — Wyniki w połączonych kategoriach wiekowych. 1. W przypadku zawodów rozgrywanych w połączonych kategoriach wiekowych wyniki przypisuje się zgodnie z zajętym miejscem, bez dodatkowego rozdzielania kategorii w celu obliczenia punktów rankingowych.</blockquote>
+<p>The goal is for older categories to be <b>willing to join</b> younger ones instead of fencing tiny brackets of their own. Round 2 (§7) showed that §8 alone works against that on the 2026/2027 engine: a small bracket still pays more than a low place in a joined one.</p>
+
+<h2 id="proposal">2 · Your proposal — a flat table for N &lt; 4</h2>
+<p>For brackets of 1, 2 or 3 fencers, points = N − place + 1, with no DE or podium bonus. From N = 4 upward the engine is unchanged.</p>
+<div class="tw"><table>
+<thead><tr><th>Bracket</th><th>Place</th><th class="n">Engine today (2026/27)</th><th class="n">Proposed</th></tr></thead>
+<tbody>
+<tr><td>N = 1</td><td>1st</td><td class="n">19.00</td><td class="n">1</td></tr>
+<tr><td rowspan="2">N = 2</td><td>1st</td><td class="n">31.34</td><td class="n">2</td></tr>
+<tr><td>2nd</td><td class="n">8.56</td><td class="n">1</td></tr>
+<tr><td rowspan="3">N = 3</td><td>1st</td><td class="n">48.83</td><td class="n">3</td></tr>
+<tr><td>2nd</td><td class="n">25.13</td><td class="n">2</td></tr>
+<tr><td>3rd</td><td class="n">5.33</td><td class="n">1</td></tr>
+<tr><td>N = 4 (unchanged)</td><td>1st · 4th</td><td class="n">54.29 · 1.00</td><td class="n">54.29 · 1.00</td></tr>
+</tbody></table></div>
+
+<h2 id="effect">3 · What joining is worth under §8 plus the table</h2>
+<h3>The older category: stay apart or join a bracket of 7?</h3>
+<div class="tw"><table>
+<thead><tr><th>Case</th><th class="n">Stay apart</th><th class="n">Join (§8, N = 7)</th><th class="n">Difference</th></tr></thead>
+<tbody>
+<tr class="old"><td>Your example — V2 gold of 2, finishes 3rd on the piste</td><td class="n">2</td><td class="n">28.53</td><td class="n up">+26.53</td></tr>
+<tr class="old"><td>Your example — V2 silver of 2, finishes 7th</td><td class="n">1</td><td class="n">1.00</td><td class="n">0</td></tr>
+<tr><td>Gold of 2 who wins the joined bracket</td><td class="n">2</td><td class="n">75.29</td><td class="n up">+73.29</td></tr>
+</tbody></table></div>
+
+<h3>Worst case: every younger fencer finishes ahead</h3>
+<p>A fencer who is m-th of k in their category has k − m category-mates behind them, so in a joined bracket of N they finish no lower than place N − k + m. Gold of 3 therefore finishes 5th of 7 at worst, never 7th.</p>
+<div class="tw"><table>
+<thead><tr><th>Category result</th><th class="n">Worst joined place (N = 7)</th><th class="n">Stay apart</th><th class="n">Join, worst case</th><th class="n">Difference</th></tr></thead>
+<tbody>
+<tr><td>Gold of 1</td><td class="n">7th</td><td class="n">1</td><td class="n">1.00</td><td class="n">0</td></tr>
+<tr><td>Gold of 2</td><td class="n">6th</td><td class="n">2</td><td class="n">3.14</td><td class="n up">+1.14</td></tr>
+<tr><td>Silver of 2</td><td class="n">7th</td><td class="n">1</td><td class="n">1.00</td><td class="n">0</td></tr>
+<tr><td>Gold of 3</td><td class="n">5th</td><td class="n">3</td><td class="n">5.68</td><td class="n up">+2.68</td></tr>
+<tr><td>Silver of 3</td><td class="n">6th</td><td class="n">2</td><td class="n">3.14</td><td class="n up">+1.14</td></tr>
+<tr><td>Bronze of 3</td><td class="n">7th</td><td class="n">1</td><td class="n">1.00</td><td class="n">0</td></tr>
+</tbody></table></div>
+<p><b>In a joined bracket of 7, no older fencer can lose points by joining,</b> even in the worst case. Checked for every joined size from 4 to 64: joining never costs anything up to N = 14. From N = 15 or 16 upward, a gold or silver who finishes behind every younger fencer can lose a fraction of a point, because bottom places on a large field earn barely more than 1. The largest loss is −0.55 for gold of 2 at N = 32 and −1.09 for gold of 3 at N = 32; the extreme is −1.63 at N = 64. Veteran joined brackets are typically well below 15.</p>
+
+<h3>The younger category: accept the join?</h3>
+<div class="tw"><table>
+<thead><tr><th>V1 fencer (5 in category)</th><th class="n">Alone, N = 5</th><th class="n">Joined — older pair finish 6th and 7th</th><th class="n">Joined — your example (V2 gold finishes 3rd)</th></tr></thead>
+<tbody>
+<tr><td>A · 1st in V1</td><td class="n">68.61</td><td class="n up">75.29</td><td class="n up">75.29</td></tr>
+<tr><td>B · 2nd in V1</td><td class="n">43.91</td><td class="n up">49.91</td><td class="n up">49.91</td></tr>
+<tr><td>C · 3rd in V1</td><td class="n">23.18</td><td class="n up">28.53</td><td class="n down">18.79</td></tr>
+<tr><td>D · 4th in V1</td><td class="n">14.08</td><td class="n up">18.79</td><td class="n down">5.68</td></tr>
+<tr><td>E · 5th in V1</td><td class="n">1.00</td><td class="n up">5.68</td><td class="n up">3.14</td></tr>
+</tbody></table></div>
+<p>A bigger joined field raises every younger fencer's points. A younger fencer loses only when an older fencer finishes ahead of them. That is the sporting result, not a side effect of the rule.</p>
+
+<div class="card locked"><span class="lb">Conclusion</span>
+§8 plus the flat table gives the incentive you want. The older category never loses by joining a bracket of up to 14 fencers, the younger one gains unless it is beaten, and rule D from round 2 becomes unnecessary. The table must never be combined with the split: that would cut small categories to 1–3 points and leave them no way to recover by joining (split keeps them at 2 and 1).</div>
+
+<h2 id="risks">4 · Side effects to weigh</h2>
+<div class="card warn"><span class="lb">1 · Fencers pay for the organizer's decision</span>
+Joining is decided on the day, not by the fencer. If an organizer runs a small category separately, its fencers get 1–3 points through no choice of their own. On PROD in 2025/2026, 86 of 145 domestic brackets (59%) had N &lt; 4. They held 28% of results and 32.5% of raw points (small-bracket report, 22 September). The table only works together with a regulation that <b>obliges</b> the organizer to join a category below 4 with an adjacent one.</div>
+<div class="card warn"><span class="lb">2 · A cliff at N = 4</span>
+1st of 3 earns 3 points and 1st of 4 earns 54.29. A fourth entrant is worth 51 points to the winner, which rewards padding a bracket. N already counts only fencers with a result, so a no-show does not count, but a fencer who withdraws after one bout does.</div>
+<div class="card"><span class="lb">3 · Details to settle later</span>
+Do type multipliers apply to the table (MPW ×1.2 would make 1st of 2 worth 2.4)? How do ties work (places 1, 2, 2 → 3, 2, 2 points under N − place + 1)? And the joined bracket itself can be under 4 (V3 1 + V4 2 = N 3), in which case it takes the table too.</div>
+
+<h2 id="r1">5 · Decision R1 — which combination to carry forward (open)</h2>
+<div class="card open"><span class="lb">Question</span>
+Which combination should the 2026/2027 season use?</div>
+<div class="tw"><table>
+<thead><tr><th>Option</th><th>Willingness to join</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td><b>§8 + flat table for N &lt; 4</b><span class="rec">recommended</span></td><td>An older fencer never loses by joining a bracket of up to 14, and loses at most a fraction of a point in larger ones. Younger category loses only when beaten.</td><td>§8 stays as written. The table is a formula change, so it needs a <b>new released engine version</b>, which 2026/27 can still switch to because it is unlocked. The public calculator and Załącznik nr 1 follow the engine automatically (ADR-102). A board rule is needed for the table and for the obligation to join.</td></tr>
+<tr><td>§8 + minimum 4 participants (N &lt; 4 scores 0)</td><td>Almost the same incentive.</td><td>Config only, no new engine. But small-bracket fencers vanish from the ranking instead of keeping a 1–3 point trace.</td></tr>
+<tr><td>§8 alone</td><td>Discourages joining (§7).</td><td>Cheapest.</td></tr>
+<tr><td>Better-of rule (round 2's D)</td><td>Strong, but the table achieves the same for the older category.</td><td>A scoring-engine change with two place/N pairs per result, and a §8 amendment. No longer justified.</td></tr>
+</tbody></table></div>
+<p><b>Recommendation: §8 plus the flat table,</b> together with the obligation to join below 4. It keeps §8 exactly as adopted and turns small brackets into a reason to join rather than a reward for staying apart. The work splits cleanly into two parts: the joined-category approach at ingestion (§8) and a new engine version for N &lt; 4.</p>
+
+<h2 id="eight">6 · Going further — making N ≥ 8 attractive</h2>
+<p><b>The question.</b> The flat table makes joining better than staying apart. It does not make a <i>bigger</i> join better than a small one. What would make an older category want to join two younger ones so the bracket reaches 8 or more?</p>
+
+<h3>Under §8 alone, a weaker fencer prefers the smallest join</h3>
+<p>A V3 pair (gold and silver of 2) that finishes at the bottom of whichever bracket it joins:</p>
+<div class="tw"><table>
+<thead><tr><th>V3 fencer</th><th class="n">Apart (table)</th><th class="n">Join V2 only · N = 5, places 4 and 5</th><th class="n">Join V1+V2 · N = 9, places 8 and 9</th><th class="n">Join V1+V2 · N = 12, places 10 and 12</th></tr></thead>
+<tbody>
+<tr class="old"><td>Gold of 2</td><td class="n">2</td><td class="n">14.08</td><td class="n down">12.65</td><td class="n down">3.56</td></tr>
+<tr class="old"><td>Silver of 2</td><td class="n">1</td><td class="n">1.00</td><td class="n">1.00</td><td class="n">1.00</td></tr>
+</tbody></table></div>
+<p>The bigger the join, the less the older gold earns. The engine's table in §7 shows why: points for bottom places stay under about 5 at any N (8th of 9 earns 2.6 place points; 10th of 12 earns 3.6). The two levers that grow with N — the base and the podium bonus — only reach the top of the bracket, and that is where the younger fencers finish.</p>
+
+<h3>Three levers, and who each one reaches</h3>
+<div class="tw"><table>
+<thead><tr><th>Lever</th><th>What it does</th><th>Reaches the older category?</th></tr></thead>
+<tbody>
+<tr><td>Steeper base (cap reached at N = 16 instead of 32)</td><td>Raises the winner's points in bigger brackets.</td><td>Barely. Bottom places stay near 1–5. It pays the younger winners.</td></tr>
+<tr><td>Multiplier for joined brackets of N ≥ 8 (for example ×1.2)</td><td>Raises everyone's points in a qualifying bracket.</td><td>Proportionally. 12.65 becomes 15.2, 1 becomes 1.2. Most of the extra goes to the top.</td></tr>
+<tr><td><b>Category medal bonus in joined brackets of N ≥ 8</b></td><td>The podium bonus is paid for the medal won <b>in your own category</b>, scored on the joined N, instead of for the overall top 3.</td><td><b>Yes, directly.</b> It pays exactly the medallists of the small categories, and it grows with the joined N.</td></tr>
+</tbody></table></div>
+
+<h3>The category medal bonus on the same V3 pair</h3>
+<p>Podium bonus today = coefficient × 3·∛N (gold 3, silver 2, bronze 1). At N = 9, gold is worth 18.72 and silver 12.48.</p>
+<div class="tw"><table>
+<thead><tr><th>V3 fencer</th><th class="n">Apart</th><th class="n">N = 5 (below 8, no change)</th><th class="n">N = 9</th><th class="n">N = 12</th></tr></thead>
+<tbody>
+<tr class="old"><td>Gold of 2</td><td class="n">2</td><td class="n">14.08</td><td class="n up">31.37</td><td class="n up">24.16</td></tr>
+<tr class="old"><td>Silver of 2</td><td class="n">1</td><td class="n">1.00</td><td class="n up">13.48</td><td class="n up">14.74</td></tr>
+</tbody></table></div>
+
+<div class="card locked"><span class="lb">Why this lever fits</span>
+<ul>
+<li><b>Points follow the medals actually handed out.</b> This is the gold and silver from your first objection.</li>
+<li><b>Nobody loses.</b> Category place is never worse than overall place, so every fencer's podium bonus stays the same or rises. The younger category's own medallists gain too, so they have no reason to refuse a join.</li>
+<li><b>It stays within its own ranking.</b> Rankings compare only fencers of the same category. A V3 medal from a joined 9 competes only with other V3 results, and a genuine V3 bracket of 4 still pays more (1st of 4 = 54.29) than being carried by a large joined field (31.37).</li>
+<li><b>It restores what a small-category gold used to be worth, but only through joining.</b> 1st of 2 earned 31.34 on the current engine. Under the table, staying apart earns 2, and joining 8+ earns about 31.</li>
+<li><b>No new columns.</b> Under §8 storage each V-cat tournament holds exactly one category's fencers, so the category place is the rank of the row's place inside its own tournament, and the joined N is its stored N. It goes into the same new engine version as the flat table.</li>
+</ul></div>
+
+<div class="card warn"><span class="lb">Points to settle</span>
+<ul>
+<li><b>The cliff at 8 is intentional.</b> At 7th of 7 a V3 gold earns 1.00; at 8th of 8 with one more joiner, 19.0. That rewards bringing in another category, which is the goal. The risk is padding the bracket. N counts only fencers with a result.</li>
+<li><b>A medal with no category opponent.</b> Should a gold of 1 (nobody beaten in the category) get the bonus? I recommend requiring at least one category-mate behind you. Otherwise a lone V4 earns about 18 points without winning a bout against anyone in the category.</li>
+<li><b>Domestic slices only.</b> For EVF tournaments only Polish rows are stored, so "rank inside the tournament" would hand podium bonuses to the best Pole. The rule must apply only to domestic joined slices (<code>bool_joint_pool_split</code>, PPW/MPW).</li>
+<li><b>8 or 9?</b> The engine's DE bonus already steps at 9: from 9 fencers the tableau is 16, and places 5–8 earn +10. A threshold of 8 is a full tableau of 8. Both work, and 8 is your number.</li>
+</ul></div>
+
+<h3>Decision R2 (open)</h3>
+<div class="card open"><span class="lb">Question</span>
+Should joined brackets of N ≥ 8 pay the podium bonus for the medal won in the fencer's own category (scored on the joined N), requiring at least one category-mate behind the medallist?</div>
+<div class="tw"><table>
+<thead><tr><th>Option</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><b>Yes — category medal bonus at N ≥ 8, at least one category-mate beaten</b><span class="rec">recommended</span></td><td>Older medallists gain the most from the biggest joins. Nobody loses. It goes in the same new engine version as the flat table.</td></tr>
+<tr><td>Yes, but for every joined bracket regardless of N</td><td>Joining is always rewarded, with no specific push toward 8+ (gold 29.47 at N = 5 against 31.37 at N = 9).</td></tr>
+<tr><td>Multiplier for joined N ≥ 8</td><td>Simple, but mostly pays the younger top finishers.</td></tr>
+<tr><td>No — §8 plus the table only</td><td>Joining beats staying apart, but a small join beats a big one for weaker fencers.</td></tr>
+</tbody></table></div>
+
+<h2 id="round2">7 · Round 2 — §8 on today's engine (for reference)</h2>
+<p>Joined V1+V2 bracket of 7; V2 fencers finish 3rd and 7th. Engine <code>SPWS_FIELD_SCALED_V1_2026_2027</code> (mp 50, slope 10, DE round 10, podium 3/2/1). Points = place + DE + podium, computed with <code>fn_score_by_engine</code> on LOCAL.</p>
+<div class="tw"><table>
+<thead><tr><th>Fencer</th><th class="n">Piste</th><th class="n">In category</th><th class="n">§8 joined</th><th class="n">Split</th><th class="n">Category place, N=7</th><th class="n">Better of §8 and split</th></tr></thead>
+<tbody>
+<tr><td>A · V1</td><td class="n">1</td><td class="n">1/5</td><td class="n">75.29</td><td class="n">68.61</td><td class="n">75.29</td><td class="n">75.29</td></tr>
+<tr><td>B · V1</td><td class="n">2</td><td class="n">2/5</td><td class="n">49.91</td><td class="n">43.91</td><td class="n">49.91</td><td class="n">49.91</td></tr>
+<tr class="old"><td>X · V2 gold</td><td class="n">3</td><td class="n">1/2</td><td class="n down">28.53</td><td class="n">31.34</td><td class="n">75.29</td><td class="n">31.34</td></tr>
+<tr><td>C · V1</td><td class="n">4</td><td class="n">3/5</td><td class="n down">18.79</td><td class="n">23.18</td><td class="n">28.53</td><td class="n">23.18</td></tr>
+<tr><td>D · V1</td><td class="n">5</td><td class="n">4/5</td><td class="n down">5.68</td><td class="n">14.08</td><td class="n">18.79</td><td class="n">14.08</td></tr>
+<tr><td>E · V1</td><td class="n">6</td><td class="n">5/5</td><td class="n">3.14</td><td class="n">1.00</td><td class="n">5.68</td><td class="n">3.14</td></tr>
+<tr class="old"><td>Y · V2 silver</td><td class="n">7</td><td class="n">2/2</td><td class="n down">1.00</td><td class="n">8.56</td><td class="n">49.91</td><td class="n">8.56</td></tr>
+<tr class="sum"><td colspan="3">Total</td><td class="n">182.34</td><td class="n">190.68</td><td class="n">303.39</td><td class="n">205.50</td></tr>
+</tbody></table></div>
+<p>With today's engine, both V2 medallists lose points by joining under §8 (31.34 → 28.53 and 8.56 → 1.00). That is the problem the flat table removes.</p>
+
+<h2 id="today">8 · How joined brackets are scored today</h2>
+<div class="tw"><table>
+<thead><tr><th>Organizer</th><th>Path</th><th>Filed under</th><th>Place stored</th><th>N stored</th></tr></thead>
+<tbody>
+<tr><td>SPWS (PPW/MPW)</td><td><code>Flow.INGEST_DOMESTIC</code> → <code>Commit</code></td><td>One tournament per V-cat</td><td>Renumbered 1..N in the slice (<code>_rerank_places</code>)</td><td>Slice row count</td></tr>
+<tr><td>EVF</td><td><code>evf_sync.py::_ingest_evf_results</code></td><td>EVF's category</td><td>EVF's place</td><td>EVF's <code>entry</code></td></tr>
+<tr><td>PZSz</td><td><code>CommitPzszSenior</code></td><td>One SENIOR tournament</td><td>Source place</td><td>Full source field</td></tr>
+</tbody></table></div>
+<p><b>Is §8 what we do for EVF?</b> In how we handle it, yes: we never split EVF brackets. In the scores it produces, no: EVF publishes per category. All 23 competitions at Jabłonna 2026 are single-category with places 1..N and <code>entry</code> = N. The first-score lock already exists (ADR-097), and SPWS-2026-2027 is unlocked.</p>
+
+<h2 id="design">9 · Design points that survive any R1 answer</h2>
+<div class="card"><span class="lb">Library and dropdown</span>
+Each joined-category approach is a registered entry (code, Polish label, rule text), mirroring <code>tbl_scoring_engine</code>, with one FK per season. It appears as a dropdown next to the engine selector in the Season scoring editor and is read-only once locked. The split stays in the library for earlier seasons and future use. Naming (D1) follows once R1 is settled.</div>
+<div class="card"><span class="lb">Lock</span>
+The approach is governed by the ADR-097 lock in the four places listed for <code>enum_default_ranking_mode</code>. <code>fn_revise_and_rescore_season</code> refuses to change it, because split rows have lost their joined places.</div>
+<div class="card"><span class="lb">Storage and scope</span>
+Every fencer stays in their own V-cat tournament. Under §8 a row keeps its joined place, and every sibling stores the joined N. SPWS-organized events only; EVF and FIE paths are untouched.</div>
+
+<h2 id="side">10 · Side finding — out of scope</h2>
+<div class="card warn"><span class="lb">Queued as a separate task</span>
+EVF events ingested through <code>INGEST_DOMESTIC</code> get the PPW renumbering on the matched subset. LOCAL <code>PEW6efs-V2-M-EPEE-2025-2026</code> stores ATANASSOW 1st of 16; EVF has him 2nd of 38.</div>
+
+<h2 id="steps">11 · Implementation outline (RED before GREEN)</h2>
+<ol>
+<li><b>Workdir.</b> Worktree <code>../SPWSranklist-claude-joined-category-policy</code> on <code>claude/joined-category-policy</code> from <code>origin/main</code>; move this plan into it; ADR draft via <code>new-adr</code> for sign-off before code.</li>
+<li><b>Joined-category approach.</b> pgTAP RED → migration GREEN (registry, per-season seed, export, import guard, trigger, revision refusal; <code>plpgsql-check</code>). Then pytest RED → GREEN: <code>python/pipeline/joined_categories.py</code> with the split owning <code>_rerank_places</code> byte-identically, and <code>Commit</code>/<code>_commit_recompute</code> calling the season's approach.</li>
+<li><b>New engine version</b> (if R1 keeps the table and/or R2 adds the category medal bonus). pgTAP RED on the N = 1–3 values and on the category-medal podium for domestic joined slices of N ≥ 8 → a new released engine function registered in <code>tbl_scoring_engine</code> → re-point SPWS-2026-2027 before its first score.</li>
+<li><b>Admin UI.</b> vitest RED → GREEN: dropdown in <code>ScoringConfigEditor.svelte</code>, the <code>App.svelte</code> fetch, <code>types.ts</code>, PL/EN locale keys; <code>svelte-check</code>.</li>
+<li><b>Documentation</b> per §13; <code>python3 tools/docs-search/ingest.py</code>; <code>scripts/refresh-graph.sh</code>.</li>
+</ol>
+
+<h2 id="done">12 · Definition of done</h2>
+<ul class="gate">
+<li><code>scripts/preflight.sh</code> exits 0 (after <code>./scripts/reset-dev.sh</code>).</li>
+<li>LOCAL end-to-end: the 7-fencer example ingested into SPWS-2026-2027 reproduces the §8 column. A separate 2-fencer bracket scores 2 and 1.</li>
+<li>Admin editor in the browser pane: the dropdown is editable on 2026/27 and read-only on a locked season, and a save after the lock is rejected by the server.</li>
+</ul>
+
+<h2 id="coherence">13 · Documentation coherence gate</h2>
+<ul class="gate">
+<li><b>Documentation coherence gate complete</b><br>
+Impact: <code>domain</code>, <code>configuration</code>, <code>architecture</code><br>
+Canonical docs affected: <code>doc/handbook/subsystems/scoring-and-ranking.html</code>, the ingestion subsystem page under <code>doc/handbook/subsystems/</code>, <code>doc/governance/index.html</code> (specification and RTM entries)<br>
+ADR impact: <code>new</code> (per-season joined-category approach; new engine version if the table is kept); <code>amend</code> ADR-049 and ADR-097<br>
+Operational impact: none — no workflow changes<br>
+Source-map / last-verified updated: yes</li>
+<li>Present tense throughout; no implementation history appended to current pages.</li>
+</ul>
+
+<footer>
+Source evidence: <code>fn_score_by_engine</code> / <code>fn_score_spws_field_scaled_v1_2026_2027</code> and <code>fn_public_scoring_params('SPWS-2026-2027')</code> on LOCAL; small-bracket figures from <code>doc/plans/raport-stawki-ponizej-4-design-2026-09-22.html</code> (PROD probe, 22 Sep 2026); <code>python/pipeline/plugins/ingest.py</code>; <code>python/scrapers/evf_sync.py</code>; <code>python/pipeline/plugins/pzsz_commit.py</code>; <code>supabase/migrations/20260919000005_scoring_governance_lock.sql</code>; <code>supabase/migrations/20260919000007_ranking_schema_v2.sql</code>; <code>frontend/src/components/ScoringConfigEditor.svelte</code>. EVF API probe (event 87), 27 Sep 2026.
+</footer>
+</div>
+</body>
+</html>

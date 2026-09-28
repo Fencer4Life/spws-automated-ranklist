@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Plan — the 2026/2027 scoring engine</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:72ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+td.up{color:var(--green);font-weight:600}
+td.down{color:var(--coral);font-weight:600}
+td.flat{background:var(--amber-bg)}
+tr.rec td{background:var(--green-bg)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:6px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.t-new{background:var(--green-bg);color:var(--green)}
+.t-amend{background:var(--amber-bg);color:var(--amber)}
+.t-check{background:var(--navy-soft);color:var(--navy)}
+.t-sup{background:var(--coral-bg);color:var(--coral)}
+.formula{overflow-x:auto;margin:10px 0;padding:12px 16px;background:#101b29;color:#eef5ff;border-radius:9px;font:13px/1.7 var(--mono);white-space:pre}
+.reg{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:var(--serif);font-size:16.5px;line-height:1.65}
+.reg h4{font-family:var(--serif);font-size:18px;margin:0 0 10px}
+.reg ol{padding-left:24px;margin:0}
+.reg ol ol{list-style:lower-alpha;margin:6px 0}
+.reg li{margin:6px 0}
+.variant{display:block;margin:6px 0 2px;padding:8px 12px;border-radius:8px;background:var(--amber-bg);font-size:15px}
+.variant b.v{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+ol.opts{padding-left:22px}
+ol.opts li{margin:10px 0}
+ul.gate{list-style:none;padding-left:0}
+ul.gate li{padding:4px 0}
+ul.gate li:before{content:"☐ ";font-family:var(--mono);color:var(--muted)}
+.ruleblock{white-space:pre-wrap;font-family:var(--serif);font-size:16px;line-height:1.62;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:10px;padding:16px 20px;margin:10px 0;overflow-wrap:anywhere}
+.copybar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.copybtn{min-height:36px;padding:6px 14px;border:1px solid var(--navy);border-radius:8px;background:var(--navy);color:#fff;font:700 14px var(--sans);cursor:pointer}
+.copymsg{font-size:13px;color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Brainstorm · 28 September 2026 · round 10 · design complete</p>
+<h1>The 2026/2027 scoring engine: from the points table to the Ranklist</h1>
+<p class="dek">The formula in <a href="tabela-punktacji-propozycja-2026-09-27.html">the points table</a> is the new §8. Round 5 records Q4b: large brackets are scored by the pure EVF algorithm, and the rules make no promise that joining always pays. §8 now states the switch in words. The switch starts at a bracket of 32 (Q4c). Round 7 records Q2, Q5b, Q9 and Q10. <a href="#par8">§3</a> gives the whole rule text as one Polish block to copy. Round 8 closes Q9b with your wording of point 14; the design has no open questions.</p>
+
+<nav class="toc"><ol>
+<li><a href="#q11">Q11 decided — points table 1–64: SPWS 1–31, EVF 32–64</a></li>
+<li><a href="#decided">Decisions so far</a></li>
+<li><a href="#clock">The clock — the season locks on its first scored result</a></li>
+<li><a href="#par8">Tekst przepisów — jeden blok, i objaśnienie</a></li>
+<li><a href="#design">What the decisions mean for the system</a></li>
+<li><a href="#q4b">Q4b and Q4c decided — EVF from a bracket of 32</a></li>
+<li><a href="#q9b">Q9b decided — A: a PPW/MPW start inside the ranking's own window</a></li>
+<li><a href="#queue">Questions still to come</a></li>
+<li><a href="#inventory">Inventory — ADRs, documentation, code and tests</a></li>
+<li><a href="#status">Commit status</a></li>
+<li><a href="#coherence">Documentation coherence gate</a></li>
+</ol></nav>
+
+<h2 id="q11">Q11 decided — the points table runs 1–64: SPWS 1–31, EVF 32–64 <span class="tag t-new">decided</span></h2>
+<div class="card locked"><span class="lb">Recorded — Q11 = A with EVF rows to 64 (28 Sep)</span>
+<ul>
+<li><b>Grid.</b> <a href="tabela-punktacji-propozycja-2026-09-27.html">The points table</a> is a 64 × 64 grid:
+<ul>
+<li>rows 1–3 hold the flat table;</li>
+<li>rows 4–31 the SPWS formula;</li>
+<li>rows 32–64 EVF values, shaded purple.</li>
+</ul>
+Rows 65–300 are cut, and the CSV exports the same 64 × 64.</li>
+<li><b>Above 64.</b> The calculator still accepts any field up to 300 and scores it with EVF; a bracket of 100 gives its winner 161.8. „Pokaż wynik z kalkulatora” says so for fields above 64 instead of searching for a missing row.</li>
+<li><b>Medal table.</b> It is complete at K = 1–31. The category medal applies only to brackets of 4–31, so K never exceeds 31, and the old "extra row from the calculator" special case is removed. The medal table no longer highlights a row for a bracket of 32 or more, where the medal does not apply.</li>
+<li><b>Verified in the browser:</b>
+<ul>
+<li>N = 31 winner scores 150.8; N = 32 winner 128.6; N = 64 winner 146.0, all EVF from 32.</li>
+<li>Row classes are correct: rows 1–3 small, 4–31 plain, 32–64 EVF.</li>
+<li>The medal table's last row is K = 31: 40.8 / 22.0 / 9.4.</li>
+<li>The page does not scroll sideways.</li>
+</ul></li>
+<li><b>Point 15</b> in the rule block (§3) now reads:
+<p lang="pl" style="font-family:var(--serif);margin:6px 0 0">„15. Współczynniki rangi zawodów dla PPW, MPW, PPS, MPS, PEW, MEW, MSW i PSW oraz tabelę premii medalowych zawiera Załącznik nr 1. Załącznik zawiera również tabelę punktów dla stawek od 1 do 64 zawodników: od 1 do 31 zawodników według ust. 4–7, a od 32 do 64 zawodników według algorytmu EVF (ust. 12). W stawkach liczących więcej niż 64 zawodników oraz w zawodach międzynarodowych punkty oblicza się według ust. 12.”</p></li>
+</ul></div>
+
+<h2 id="decided">1 · Decisions so far</h2>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Decision</th><th>Recorded as</th></tr></thead>
+<tbody>
+<tr><td>Q1</td><td>Engine by type. PSW goes with the international types.</td><td>
+<ul style="margin:0;padding-left:18px">
+<li><b>PPW, MPW</b> → the new engine.</li>
+<li><b>PPS, MPS</b> (PZSz senior) → the new engine, as one bracket with no age split. Everyone's category is "senior", so K = N and m = place.</li>
+<li><b>PEW, MEW, MSW, PSW</b> → <code>EVF_CLASSIC_V1_2025_2026</code>.</li>
+</ul></td></tr>
+<tr><td>Q2</td><td>Delete <code>SPWS_FIELD_SCALED_V1_2026_2027</code> permanently.</td><td>The migration drops the strategy function, its dispatcher branch and its registry row. It also removes the <code>scoring.ts</code> branch, its tests and every reference in scripts. <code>fn_backfill_scoring_engines</code> is replaced in the same migration because it still names the code.</td></tr>
+<tr><td>Q3</td><td>K and m as explicit columns, written at ingestion and overwritten by re-ingest or on-demand recompute.</td><td>Two new result columns.</td></tr>
+<tr><td>Q4</td><td>log₂N, 3.5, 13/7/3 and the N ≤ 3 table are engine constants, not settings.</td><td>Fixed by the engine version; only the per-type coefficient stays editable until the lock. The cap of 31 disappears (see Q4b).</td></tr>
+<tr><td>Q4c</td><td>The new engine has three ranges inside one released strategy: N ≤ 3 table; 4–31 place + medal; 32+ a call to <code>fn_score_evf_classic_v1_2025_2026</code> with the season's EVF parameters.</td><td>Exactly as written. A bracket of 32 is scored by EVF.</td></tr>
+<tr><td>Q4b</td><td>Make no promise that joining always pays. From 32 onwards the pure EVF algorithm scores the bracket. Losing 16–38 points when a bracket crosses the line is accepted, and §8 says so in words.</td><td>
+<ul style="margin:0;padding-left:18px">
+<li><b>The new engine has three ranges, by the size of the whole bracket.</b> N ≤ 3 uses the flat table. Mid-size brackets use premia za liczebność + zawodnicy poniżej + premia medalowa. Large brackets use <code>EVF_CLASSIC_V1_2025_2026</code> on the whole bracket: joined place and joined N, with no category split and no category medal.</li>
+<li><b>In the large range the result equals the EVF engine exactly.</b> It uses the season's EVF parameters (base 50, podium 3/2/1, DE 10), the same numbers PEW, MEW, MSW and PSW use. Those stay season settings, as they are today.</li>
+<li><b>The cap of 31 is no longer needed.</b> In the mid range at most 30 fencers can be below anyone, so "3.5 for each fencer below" needs no limit.</li>
+</ul></td></tr>
+<tr><td>Q5</td><td>Drilldown and CSV name the new components.</td><td>Labels <b>„Za liczebność”</b>, <b>„Zawodnicy poniżej w stawce”</b>, <b>„Premia medalowa”</b>. The engine's parameters are shown read-only in Admin.</td></tr>
+<tr><td>Q6</td><td>The calculator toggle compares our points with the pure EVF algorithm.</td><td>SPWS (the new engine) vs EVF (<code>EVF_CLASSIC_V1_2025_2026</code>).</td></tr>
+<tr><td>Q7</td><td>No second dropdown. Each engine is paired with its own isolated, named module for joined brackets, both the legacy one and the new one.</td><td>Two named modules, each paired with one engine; see <a href="#modules">§4</a>.</td></tr>
+<tr><td>Q8</td><td>Ties confirmed, precisely: fencers of one category sharing a place share the category place, and the next fencer takes place n + 2, not n + 1.</td><td>§8 ust. 5 as worded in §3. The category place is 1 + the number of own-category fencers with a strictly better place, so the sequence runs 1, 2, 3, 3, 5.<br><b>One consequence of your own wording, added to ust. 5:</b> a fencer tied with you does not have a worse result. So "fencers below" counts only strictly worse places, not N − p. Two fencers tied 3rd of 10 each get 6 × 3.5, not 7 × 3.5. Without ties the two counts are identical.</td></tr>
+<tr><td>Q5b</td><td>New explicit columns. When a column is not used by the assigned engine, it holds a value that says "not used", not NULL.</td><td>
+<ul style="margin:0;padding-left:18px">
+<li><b>Marker.</b> The value <b>−1</b> means "not used by the engine or range that scored this result", in every component column and in K and m. Every real value is 0 or more (K and m: 1 or more), so −1 cannot be mistaken for a score. A <code>CHECK</code> on each column allows only real values or −1. The UI and CSV show −1 as <i>„nie dotyczy”</i>.</li>
+<li><b>Why not NaN.</b> Checked on LOCAL: Postgres sorts <code>NaN</code> above every number (<code>'NaN' &gt; 100</code> is true), so a descending sort would put it first. <code>to_json</code> also turns it into the string <code>"NaN"</code>.</li>
+<li><b>Which range scored the result.</b> Each result records it: <i>tabela</i> (N ≤ 3), <i>miejsce + medal</i> (4–31) or <i>algorytm EVF</i> (32+ and international). The UI picks its labels from that.</li>
+<li><b>History.</b> Existing 2023/24–2025/26 rows get −1 in the new columns.</li>
+</ul></td></tr>
+<tr><td>Q9</td><td>Anyone who fences PPW or MPW, including foreign and previously unranked fencers, becomes a regular ranked fencer. PPS, MPS, EVF and FIE starts never admit anyone. The only way into the ranking is PPW or MPW.</td><td>
+<ul style="margin:0;padding-left:18px">
+<li><b>Inside a PPW or MPW bracket</b> every participant counts in N, in "fencers below" and in K. This matches domestic ingestion today: stage 0 files every domestic participant (ADR-050). A test re-verifies it.</li>
+<li><b>This changes the ranking.</b> Today <code>fn_ranking_full</code> admits anyone with any scored result of a ranked type (<code>all_fencers = DISTINCT fid FROM eligible</code>). A fencer with only EVF or PZSz results appears in it now; under Q9 they will not.</li>
+<li><b>Where the rule lives.</b> A per-season rule in the Season Scoring Rules (<code>entry_types: ["PPW","MPW"]</code>) for 2026/27, so earlier seasons keep their published rankings. It locks with the rest of the configuration.</li>
+<li>Which PPW/MPW start counts: one in the ranked season, or in the carried previous season in rolling mode; any weapon (<a href="#q9b">Q9b = A</a>).</li>
+</ul></td></tr>
+<tr><td>Q10</td><td>Give the rule text as one block; placement is decided after the board.</td><td><a href="#par8">§3</a>: one numbered Polish block with a copy button, covering scoring, joined brackets, PZSz, international events, the EVF algorithm, categories and ranking entry.</td></tr>
+<tr><td>§8 ust. 8</td><td>Added: on moving to a new age category, the fencer keeps the points earned in the previous one.</td><td><b>The Ranklist already does this.</b> Carried-over results are attributed by the fencer's category in the <i>ranked</i> season, not the season they were earned in (<code>fn_ranking_full_event_code_matching</code> line 363, <code>fn_ranking_full_event_fk_matching</code> line 483, <code>origin/main</code>). Nothing to build; a pgTAP assertion pins it (§8, tests).</td></tr>
+</tbody></table></div>
+
+<h2 id="clock">2 · The clock — the season locks on its first scored result</h2>
+<div class="card warn"><span class="lb">Verified 27 Sep 2026 on CERT and PROD via <code>scripts/cloud-sql.sh</code></span>
+<p><b>Current state:</b> SPWS-2026-2027 is unlocked on both environments, with 0 tournaments and 0 results. Both assign it <code>SPWS_FIELD_SCALED_V1_2026_2027</code>.</p>
+<p><b>What could score first:</b> <code>PEW1f</code> (19 Sep) and <code>PPW1</code> (26 Sep) have been fenced but not ingested. The daily <code>evf-sync.yml</code> will ingest PEW1f into CERT once EVF publishes it.</p>
+<p><b>Recommendation:</b></p>
+<ul>
+<li>Promote no 2026/27 result to PROD until the new engine is there.</li>
+<li>Hold PPW1.</li>
+<li>If CERT locks first, one privileged revision (ADR-097) repairs it.</li>
+</ul>
+</div>
+
+<h2 id="par8">3 · Tekst przepisów — jeden blok, i objaśnienie</h2>
+<p>This is the whole rule text as one Polish block, as asked in Q10. Copy it with the button; where it goes in the regulation is decided after the board. Point 14 is your wording plus the season window from Q9b = A.</p>
+<div class="copybar"><button class="copybtn" type="button" id="copyRules">Kopiuj tekst przepisów</button><span class="copymsg" id="copyMsg" aria-live="polite"></span></div>
+<pre class="ruleblock" id="rulesPl" lang="pl">Zasady punktacji zawodów i wejścia do rankingu SPWS od sezonu 2026/2027 — projekt
+
+1. Zawody w danej broni i płci mogą być rozgrywane w stawce łączonej, obejmującej zawodników dwóch lub więcej kategorii wiekowych. Stawka łączona jest jednym turniejem z jedną klasyfikacją końcową.
+
+2. Punkty rankingowe przyznaje się według miejsca zajętego w klasyfikacji końcowej całej stawki. Stawki łączonej nie rozdziela się na kategorie wiekowe, a miejsc nie numeruje się od nowa w obrębie kategorii.
+
+3. Sposób obliczania punktów zależy od liczby zawodników sklasyfikowanych w stawce (N):
+   1) N od 1 do 3 — zgodnie z ust. 7;
+   2) N od 4 do 31 — zgodnie z ust. 4–6;
+   3) N równe 32 lub większe — zgodnie z ust. 8.
+
+4. W stawce liczącej od 4 do 31 zawodników punkty zawodnika są sumą trzech składników, pomnożoną przez współczynnik rangi zawodów:
+   1) premia za liczebność — log₂N punktów; otrzymuje ją każdy sklasyfikowany zawodnik, także zajmujący ostatnie miejsce;
+   2) punkty za zawodników poniżej w stawce — 3,5 punktu za każdego zawodnika z gorszym wynikiem w stawce, bez względu na jego kategorię wiekową;
+   3) premia medalowa w kategorii wiekowej — za zajęcie 1., 2. lub 3. miejsca wśród zawodników własnej kategorii wiekowej w stawce: odpowiednio 13 × ∛K, 7 × ∛K lub 3 × ∛K punktu, gdzie K oznacza liczbę zawodników własnej kategorii wiekowej w stawce.
+
+5. Premia medalowa nie przysługuje za ostatnie miejsce we własnej kategorii wiekowej. Premię za 1. miejsce przyznaje się, gdy K &gt; 1, za 2. miejsce — gdy K &gt; 2, a za 3. miejsce — gdy K &gt; 3.
+
+6. Miejsce zawodnika we własnej kategorii wiekowej ustala się według kolejności miejsc zajętych w stawce przez zawodników tej kategorii. Zawodnicy tej samej kategorii sklasyfikowani ex aequo zajmują w kategorii to samo miejsce, a kolejny zawodnik tej kategorii zajmuje miejsce dalsze o liczbę zawodników sklasyfikowanych ex aequo: po dwóch zawodnikach na miejscu n kolejny zajmuje miejsce n + 2, a nie n + 1. Zawodnik sklasyfikowany ex aequo nie jest zawodnikiem z gorszym wynikiem w rozumieniu ust. 4 pkt 2.
+
+7. W stawce liczącej od 1 do 3 zawodników punkty wynoszą N − miejsce + 1, pomnożone przez współczynnik rangi zawodów: w stawce trzech zawodników 3, 2 i 1 punkt, w stawce dwóch — 2 i 1, a zawodnik startujący sam otrzymuje 1 punkt.
+
+8. W stawce liczącej 32 lub więcej zawodników punkty oblicza się algorytmem EVF (ust. 12) dla całej stawki, według miejsca zajętego w stawce i liczby jej zawodników. Premii medalowej w kategorii wiekowej nie stosuje się. Przekroczenie liczby 31 zawodników w stawce zmienia sposób obliczania punktów i może zmniejszyć punkty części zawodników stawki.
+
+9. Zawody rozgrywane w jednej kategorii wiekowej punktuje się według ust. 3–8. W takim turnieju K = N, a miejsce w kategorii jest miejscem w turnieju.
+
+10. W zawodach Polskiego Związku Szermierczego w kategorii seniorów (PPS, MPS) weterani startują jako seniorzy, w jednej stawce, bez podziału na kategorie wiekowe. Punkty oblicza się według ust. 3–9 jak w turnieju jednej kategorii, a N oznacza liczbę wszystkich sklasyfikowanych zawodników.
+
+11. Punkty za zawody międzynarodowe EVF i FIE (PEW, MEW, MSW, PSW) oblicza się algorytmem EVF (ust. 12), według miejsca i liczby zawodników kategorii opublikowanych przez organizatora, pomnożone przez współczynnik rangi zawodów.
+
+12. Algorytm EVF: punkty są sumą punktów za miejsce, premii za wygrane rundy eliminacji bezpośrednich i premii za podium, pomnożoną przez współczynnik rangi zawodów:
+   1) punkty za miejsce — 50 − 49 × ln(miejsce) / ln(N); zawodnik startujący sam otrzymuje 50 punktów;
+   2) premia za wygrane rundy eliminacji bezpośrednich — 10 punktów za rundę; liczba rund wynosi ⌊log₂N⌋ − ⌈log₂(miejsce)⌉, powiększone o 1, gdy N nie jest potęgą liczby 2, lecz nie mniej niż 0;
+   3) premia za podium — za 1., 2. i 3. miejsce w stawce odpowiednio 9 × ∛N, 6 × ∛N i 3 × ∛N punktu.
+
+13. Wynik zawodnika zalicza się do rankingu jego kategorii wiekowej, ustalonej na podstawie roku urodzenia. Przy przejściu do nowej kategorii wiekowej zawodnik przechodzi wraz z dorobkiem punktowym z poprzedniej kategorii wiekowej.
+
+14. Do rankingu wchodzi zawodnik, który wystartował w zawodach PPW lub MPW w sezonie objętym rankingiem lub w sezonie poprzednim, z którego ranking przenosi wyniki. Każdy uczestnik zawodów PPW i MPW, także zawodnik zagraniczny, jest zawodnikiem rankingowym. Wyniki zawodów PPS, MPS oraz zawodów międzynarodowych EVF i FIE zalicza się do rankingu wyłącznie zawodnikom rankingowym; start w tych zawodach nie wprowadza zawodnika do rankingu.
+
+15. Współczynniki rangi zawodów dla PPW, MPW, PPS, MPS, PEW, MEW, MSW i PSW oraz tabelę premii medalowych zawiera Załącznik nr 1. Załącznik zawiera również tabelę punktów dla stawek od 1 do 64 zawodników: od 1 do 31 zawodników według ust. 4–7, a od 32 do 64 zawodników według algorytmu EVF (ust. 12). W stawkach liczących więcej niż 64 zawodników oraz w zawodach międzynarodowych punkty oblicza się według ust. 12.</pre>
+<p style="font-size:13.5px;color:var(--muted)">Point 15 promises the coefficients in Załącznik nr 1. The annex today has only a slider, so it gains a coefficient table read from the season's settings (piece C). The EVF values in point 12 (50, 10, 9/6/3) are the season's EVF settings for 2026/27.</p>
+
+<h3>Objaśnienie dla zawodników</h3>
+<div lang="pl">
+<p><b>Trzy zakresy wielkości stawki.</b> Sposób liczenia punktów zależy od liczby zawodników w całej stawce:</p>
+<ul>
+<li><b>do 3 zawodników</b> — punkty z prostej tabeli: 3, 2, 1;</li>
+<li><b>od 4 do 31 zawodników</b> — premia za liczebność, punkty za zawodników poniżej w stawce i premia medalowa w swojej kategorii;</li>
+<li><b>od 32 zawodników</b> — algorytm EVF dla całej stawki, bez premii medalowej w kategorii.</li>
+</ul>
+<p><b>Łączenie kategorii w stawkach do 31 zawodników.</b> Dopóki stawka łączona liczy od 4 do 31 zawodników, żaden z trzech składników nie zmniejsza się, gdy do turnieju dołącza inna kategoria:</p>
+<ul>
+<li><b>Premia za liczebność</b> rośnie razem z liczbą zawodników.</li>
+<li><b>Liczba zawodników poniżej w stawce</b> nie maleje. Zawodnik z innej kategorii, który zajmie miejsce wyżej, przesuwa Twoje miejsce o jedno w dół, ale zwiększa też N o jeden, więc liczba zawodników poniżej Ciebie pozostaje taka sama. Zawodnik, który zajmie miejsce niżej, dodaje Ci 3,5 punktu.</li>
+<li><b>Premia medalowa</b> zależy tylko od Twojej kategorii (K) i Twojego miejsca w niej (m). Tych liczb nie zmienia to, kto jeszcze startuje w stawce.</li>
+</ul>
+<p><b>Stawki od 32 zawodników.</b> Gdy stawka osiągnie 32 zawodników, punkty liczy się algorytmem EVF, tak jak w zawodach międzynarodowych. Premia medalowa w kategorii wtedy nie przysługuje. Dołączenie kolejnych zawodników do stawki liczącej 31 zawodników może więc zmniejszyć punkty części uczestników. Na przykład zwycięzca stawki 31 zawodników ma 150,8 punktu, a zwycięzca stawki 32 zawodników — 128,6.</p>
+<p><b>Przykład.</b> W jednej stawce startuje 10 zawodników: dwóch z V1, czterech z V2 i czterech z V3. Współczynnik rangi wynosi 1,0. Kolumna „Osobno” pokazuje punkty tego samego zawodnika w turnieju wyłącznie jego kategorii.</p>
+<div class="tw"><table>
+<thead><tr><th>Miejsce</th><th>Kat.</th><th>W kategorii</th><th class="n">Za liczebność</th><th class="n">Poniżej w stawce</th><th class="n">Medal</th><th class="n">Łącznie</th><th class="n">Osobno</th><th class="n">Zysk</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>V1</td><td>1. z 2</td><td class="n">3,3</td><td class="n">9 × 3,5 = 31,5</td><td class="n">16,4</td><td class="n"><b>51,2</b></td><td class="n">2,0</td><td class="n up">+49,2</td></tr>
+<tr><td>2</td><td>V2</td><td>1. z 4</td><td class="n">3,3</td><td class="n">8 × 3,5 = 28,0</td><td class="n">20,6</td><td class="n"><b>52,0</b></td><td class="n">33,1</td><td class="n up">+18,8</td></tr>
+<tr><td>3</td><td>V2</td><td>2. z 4</td><td class="n">3,3</td><td class="n">7 × 3,5 = 24,5</td><td class="n">11,1</td><td class="n"><b>38,9</b></td><td class="n">20,1</td><td class="n up">+18,8</td></tr>
+<tr><td>4</td><td>V1</td><td>2. z 2</td><td class="n">3,3</td><td class="n">6 × 3,5 = 21,0</td><td class="n">—</td><td class="n"><b>24,3</b></td><td class="n">1,0</td><td class="n up">+23,3</td></tr>
+<tr><td>5</td><td>V3</td><td>1. z 4</td><td class="n">3,3</td><td class="n">5 × 3,5 = 17,5</td><td class="n">20,6</td><td class="n"><b>41,5</b></td><td class="n">33,1</td><td class="n up">+8,3</td></tr>
+<tr><td>6</td><td>V2</td><td>3. z 4</td><td class="n">3,3</td><td class="n">4 × 3,5 = 14,0</td><td class="n">4,8</td><td class="n"><b>22,1</b></td><td class="n">10,3</td><td class="n up">+11,8</td></tr>
+<tr><td>7</td><td>V3</td><td>2. z 4</td><td class="n">3,3</td><td class="n">3 × 3,5 = 10,5</td><td class="n">11,1</td><td class="n"><b>24,9</b></td><td class="n">20,1</td><td class="n up">+4,8</td></tr>
+<tr><td>8</td><td>V3</td><td>3. z 4</td><td class="n">3,3</td><td class="n">2 × 3,5 = 7,0</td><td class="n">4,8</td><td class="n"><b>15,1</b></td><td class="n">10,3</td><td class="n up">+4,8</td></tr>
+<tr><td>9</td><td>V2</td><td>4. z 4</td><td class="n">3,3</td><td class="n">1 × 3,5 = 3,5</td><td class="n">—</td><td class="n"><b>6,8</b></td><td class="n">2,0</td><td class="n up">+4,8</td></tr>
+<tr><td>10</td><td>V3</td><td>4. z 4</td><td class="n">3,3</td><td class="n">0</td><td class="n">—</td><td class="n"><b>3,3</b></td><td class="n">2,0</td><td class="n up">+1,3</td></tr>
+</tbody></table></div>
+<p>Przykłady odczytu tabeli:</p>
+<ul>
+<li>Zwycięzca V1 zajął 1. miejsce w stawce. W turnieju tylko swojej kategorii, czyli w stawce dwóch zawodników, dostałby 2 punkty. W stawce łączonej dostaje 51,2.</li>
+<li>Drugi zawodnik V1 zajął ostatnie miejsce w swojej kategorii, więc premia medalowa mu nie przysługuje. Mimo to ma 24,3 punktu, bo sześciu zawodników w stawce uzyskało gorszy wynik.</li>
+<li>Złoto wśród czterech zawodników swojej kategorii daje zawsze 20,6 punktu premii, bez względu na to, czy w stawce jest 4, 10 czy 25 zawodników.</li>
+</ul>
+</div>
+
+<h2 id="design">4 · What the decisions mean for the system</h2>
+<h3>Engine per tournament type in 2026/2027</h3>
+<div class="tw"><table>
+<thead><tr><th>Types</th><th>Engine</th><th>Joined-bracket module</th><th>N</th><th>Place</th><th>K</th><th>m</th><th class="n">Coefficient</th></tr></thead>
+<tbody>
+<tr><td>PPW, MPW</td><td>new SPWS engine</td><td>the new module</td><td>whole joined bracket</td><td>place in the joined bracket</td><td>entries of own category in it</td><td>place among them</td><td class="n">1.0 / 1.2</td></tr>
+<tr><td>PPS, MPS</td><td>new SPWS engine</td><td>the new module (everyone's category is "senior")</td><td>whole senior field</td><td>place in the senior bracket</td><td>= N</td><td>= place</td><td class="n">1.1 / 1.3</td></tr>
+<tr><td>PEW, MEW, MSW, PSW</td><td><code>EVF_CLASSIC_V1_2025_2026</code></td><td>none — the bracket is taken as published</td><td>published field</td><td>published place</td><td>not used</td><td>not used</td><td class="n">1.0 / 1.3 / 1.4 / 1.1</td></tr>
+</tbody></table></div>
+<p>The coefficients are PROD's current 2026/27 values. They remain season settings, editable until the lock.</p>
+
+<h3 id="modules">Two named joined-bracket modules, each paired with its engine (Q7)</h3>
+<div class="tw"><table>
+<thead><tr><th>Module</th><th>Paired with</th><th>What it does with a joined bracket</th></tr></thead>
+<tbody>
+<tr><td><code>PER_CATEGORY_RENUMBER</code><br><i>Rozdzielenie na kategorie i numeracja od nowa</i></td><td><code>EVF_CLASSIC_V1_2025_2026</code> (domestic types, seasons up to 2025/26)</td><td>Today's behaviour, byte-identical. It splits the bracket per V-cat, renumbers places 1..K within each category, and stores N = the category's size (ADR-049). It is moved out of <code>ingest.py</code> unchanged and used when older seasons are re-ingested or recomputed.</td></tr>
+<tr><td><code>JOINED_BRACKET_CATEGORY_PLACE</code><br><i>Miejsce w stawce łączonej i miejsce w kategorii</i></td><td>the new SPWS engine</td><td>It keeps the joined place and the joined N. Each fencer is still filed under their own V-cat, and it writes K (entries of the fencer's scoring category in the bracket) and m (place among them, ties shared). For PZSz the scoring category is "senior" for everyone, so K = N and m = place.</td></tr>
+</tbody></table></div>
+<p><b>How they are paired.</b></p>
+<ul>
+<li>A Python registry, <code>python/pipeline/joined_brackets/</code>, maps each engine code to exactly one module.</li>
+<li>Ingestion and <code>RECOMPUTE_DOMESTIC</code> look up the module through the engine assigned to the tournament's type.</li>
+<li>A test fails if any active engine in <code>tbl_scoring_engine</code> has no module.</li>
+<li>The module's name and label are shown next to the engine in Admin, read-only.</li>
+<li>The registry table stays metadata only, as ADR-097 requires. It gains a display column naming the module, never a function reference.</li>
+</ul>
+
+<h3>The rest of the changes</h3>
+<ul>
+<li><b>Engine assignment moves from the season to the season's type rows</b> (<code>tbl_scoring_type_config</code>). Those rows already hold the multiplier and minimum field, are locked, are exported and imported, and are snapshotted in revisions. "One engine per season" becomes "one engine per type per season". Nothing is chosen at calculation time.</li>
+<li><b>The new engine has three ranges inside one released strategy:</b> N ≤ 3 table; 4–31 place + medal; 32+ a call to <code>fn_score_evf_classic_v1_2025_2026</code> with the season's EVF parameters. The switch is part of the engine version, not a setting.</li>
+<li><b>Results</b> gain K, m, the three new components and a record of the method that scored them: <i>tabela</i>, <i>miejsce + medal</i> or <i>algorytm EVF</i>. <code>fn_calc_tournament_scores</code> passes N, place, K and m to the engine assigned to the type. Whatever that method does not use is written as −1 (Q5b), both the new columns under EVF and the EVF columns under the new formula. Nothing is left NULL.</li>
+<li><b>Ranking entry</b> (Q9): from 2026/27 the Season Scoring Rules carry <code>entry_types: ["PPW","MPW"]</code>. <code>fn_ranking_full</code> admits only fencers with a PPW or MPW start in the ranking's own window: the ranked season, plus the carried previous season in rolling mode (Q9b = A). Their PPS, MPS, EVF and FIE results then count as today. Seasons without the key keep today's behaviour.</li>
+<li><b>Admin</b>: each type row has an engine dropdown. The new engine's parameters and paired module are shown read-only. EVF classic's own parameters stay editable until the lock, and so does the coefficient.</li>
+<li><b>Results UI</b>: drilldown and CSV show „Za liczebność”, „Zawodnicy poniżej w stawce”, „Premia medalowa” for new-engine results. Place is shown as place/N plus the category place, for example "3/10 · 2. w kat. z 4".</li>
+<li><b>Public pages</b>: the annex becomes the signed-off table. The calculator and its WordPress copy mirror it. The toggle compares SPWS with EVF classic.</li>
+</ul>
+
+<h2 id="q4b">5 · Q4b and Q4c decided — EVF from a bracket of 32 <span class="tag t-new">decided</span></h2>
+<div class="card locked"><span class="lb">Recorded</span>
+<p>The new engine has three ranges inside one released strategy:</p>
+<ul>
+<li><b>N ≤ 3</b> — the flat table.</li>
+<li><b>4–31</b> — place + medal.</li>
+<li><b>32+</b> — a call to <code>fn_score_evf_classic_v1_2025_2026</code> with the season's EVF parameters. It uses the joined place and joined N, with no category split and no category medal.</li>
+</ul>
+<p>The rules make no promise that joining always pays. §8 ust. 7 states the switch in words, and the fencers' explanation gives a worked number. The cap of 31 is dropped, because at N ≤ 31 no fencer has more than 30 fencers below them.</p></div>
+
+<h3>What the switch does at the boundary (single category, coefficient 1.0)</h3>
+<div class="tw"><table>
+<thead><tr><th>Place</th><th class="n">N = 31, new formula</th><th class="n">N = 32, EVF</th><th class="n">Difference</th></tr></thead>
+<tbody>
+<tr><td>1st</td><td class="n">150.8</td><td class="n">128.6</td><td class="n down">−22.2</td></tr>
+<tr><td>2nd</td><td class="n">128.4</td><td class="n">99.2</td><td class="n down">−29.2</td></tr>
+<tr><td>3rd</td><td class="n">112.4</td><td class="n">74.0</td><td class="n down">−38.4</td></tr>
+<tr><td>4th</td><td class="n">99.5</td><td class="n">60.4</td><td class="n down">−39.1</td></tr>
+<tr><td>8th</td><td class="n">85.5</td><td class="n">40.6</td><td class="n down">−44.9</td></tr>
+<tr><td>16th</td><td class="n">57.5</td><td class="n">20.8</td><td class="n down">−36.7</td></tr>
+<tr><td>24th</td><td class="n">29.5</td><td class="n">5.1</td><td class="n down">−24.4</td></tr>
+<tr><td>31st</td><td class="n">5.0</td><td class="n">1.4</td><td class="n down">−3.5</td></tr>
+</tbody></table></div>
+<p style="font-size:13.5px;color:var(--muted)">When a 32nd fencer joins a bracket of 31, everyone already in it loses between 3.5 and 44.9 points; the 32nd fencer scores 1.0.</p>
+
+<h3>Where it will apply</h3>
+<ul>
+<li><b>Domestic brackets fenced as one category:</b> in three seasons none exceeded 19 fencers.</li>
+<li><b>Joined brackets:</b> if every category of a weapon and gender fenced together, 18 of 124 event brackets would reach 32 or more; the largest would be 56.</li>
+<li><b>PZSz senior (PPS, MPS):</b> no results are stored on PROD yet. The share is measured on the first ingested event, PPS1s (3 Oct).</li>
+</ul>
+<p>Next: <a href="tabela-punktacji-propozycja-2026-09-27.html">the points table</a> is regenerated, with rows from 32 up showing EVF values and the calculator scoring those brackets with EVF.</p>
+<h2 id="q9b">6 · Q9b decided — A: a PPW/MPW start inside the ranking's own window <span class="tag t-new">decided</span></h2>
+<div class="card locked"><span class="lb">Recorded — Q9b = A (confirmed 28 Sep)</span>
+<p>A fencer enters a ranking through a PPW or MPW start in one of two places. The first is the ranked season itself. The second is the previous season, when the ranking carries results over from it (rolling mode). That is the same window the ranking already uses for points (<code>current_eligible</code> + <code>carried_eligible</code> in <code>fn_ranking_full_*</code>).</p>
+<p>Your point 14 had no time limit, so a literal reading would have meant "any start, ever". Point 14 therefore gains the window clause, and the rest of your wording is unchanged:</p>
+<p lang="pl" style="font-family:var(--serif)">„14. Do rankingu wchodzi zawodnik, który wystartował w zawodach PPW lub MPW <b>w sezonie objętym rankingiem lub w sezonie poprzednim, z którego ranking przenosi wyniki</b>. Każdy uczestnik zawodów PPW i MPW, także zawodnik zagraniczny, jest zawodnikiem rankingowym. Wyniki zawodów PPS, MPS oraz zawodów międzynarodowych EVF i FIE zalicza się do rankingu wyłącznie zawodnikom rankingowym; start w tych zawodach nie wprowadza zawodnika do rankingu.”</p>
+<p><b>What it means in practice:</b></p>
+<ul>
+<li>A fencer whose last PPW was in 2024/25 is not in the 2026/27 ranking, even with EVF results.</li>
+<li>A PPW or MPW start in 2025/26 admits them to the rolling 2026/27 ranking, but not to the non-rolling one.</li>
+<li>The text sets no weapon limit, so a PPW start in any weapon admits the fencer to the rankings of every weapon they have results in.</li>
+</ul></div>
+
+<h2 id="queue">7 · Next</h2>
+<p>No design questions remain. Next:</p>
+<ul>
+<li>The design is written as the ADR-103 draft for your review and sign-off.</li>
+<li>Then comes the implementation plan in <code>doc/plans/</code>, RED before GREEN, ending at <code>scripts/preflight.sh</code> exit 0.</li>
+<li>The plan's first step is the worktree and the commit of the design pages (§9).</li>
+</ul>
+
+<h2 id="inventory">8 · Inventory — ADRs, documentation, code and tests that must support this</h2>
+<p>Built from <code>origin/main</code> 967446ff with the docs-search index, <code>git grep</code> and the migrations. The graph holds no nodes for these SQL functions, so they were read directly. The actions assume every decision in §1 and §6.</p>
+
+<h3>ADRs</h3>
+<div class="tw"><table>
+<thead><tr><th>ADR</th><th>Action</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>New ADR-103 — the 2026/2027 SPWS engine and the new §8</td><td><span class="tag t-new">new</span></td><td>The formula and its four inputs; engine per type; K and m stored at ingestion; engine and joined-bracket module pairing; field-scaled removed.</td></tr>
+<tr><td><a href="../adr/097-scoring-governance-lock-and-privileged-revision.html">ADR-097</a> governance lock</td><td><span class="tag t-amend">amend</span></td><td>The engine moves to the governed per-type rows. A revision can change it per type.</td></tr>
+<tr><td><a href="../adr/102-published-pages-share-one-scoring-module.html">ADR-102</a> one scoring module</td><td><span class="tag t-amend">amend</span></td><td>The module gains the new engine and loses field-scaled. Public parameters are per type. The toggle compares SPWS with EVF.</td></tr>
+<tr><td><a href="../adr/092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> annex, Załącznik nr 1</td><td><span class="tag t-amend">amend</span></td><td>The content becomes the signed-off table. The open item about lifting <code>noindex</code> on adoption comes due.</td></tr>
+<tr><td><a href="../adr/085-points-calculator-temporary-static-page.html">ADR-085</a> calculator</td><td><span class="tag t-amend">amend</span></td><td>The joined-bracket input and the new meaning of the toggle.</td></tr>
+<tr><td><a href="../adr/049-joint-pool-split-flag.html">ADR-049</a> joint-pool split and renumber</td><td><span class="tag t-amend">amend</span></td><td>Renumbering becomes the named module <code>PER_CATEGORY_RENUMBER</code>, paired with EVF classic.</td></tr>
+<tr><td><a href="../adr/024-combined-category-splitting.html">ADR-024</a> combined category splitting</td><td><span class="tag t-sup">partly superseded</span></td><td>For types on the new engine.</td></tr>
+<tr><td><a href="../adr/069-participant-count-url-validator.html">ADR-069</a> participant-count HALT gate</td><td><span class="tag t-amend">amend</span></td><td>Under the new module the stored N is the joined count.</td></tr>
+<tr><td><a href="../adr/100-pzsz-senior-result-ingestion.html">ADR-100</a> PZSz senior ingestion</td><td><span class="tag t-amend">amend</span></td><td>PPS and MPS are scored by the new engine with K = N and m = place.</td></tr>
+<tr><td><a href="../adr/066-min-participants-ingestion-gate.html">ADR-066</a> minimum-participant gate</td><td><span class="tag t-check">review</span></td><td>A lone fencer now scores 1 point. The gate must read the joined N.</td></tr>
+<tr><td><a href="../adr/056-vcat-from-birthyear.html">ADR-056</a> V-cat from birth year</td><td><span class="tag t-check">relied on</span></td><td>It defines "own category", and therefore K and m.</td></tr>
+<tr><td><a href="../adr/073-plugin-rule-engine-architecture.html">ADR-073</a> / <a href="../adr/050-unified-ingestion-pipeline.html">ADR-050</a> pipeline</td><td><span class="tag t-check">touched</span></td><td><code>Commit</code> and <code>RECOMPUTE_DOMESTIC</code> call the paired module.</td></tr>
+<tr><td><a href="../adr/042-carryover-engine-dispatcher.html">ADR-042</a> / <a href="../adr/045-engine-selector-default-flip.html">045</a> dispatcher precedent</td><td><span class="tag t-check">pattern</span></td><td>Static <code>CASE</code> plus <code>ELSE RAISE</code>, reused.</td></tr>
+<tr><td><a href="../adr/083-server-enforced-authorization.html">ADR-083</a> anon allowlist</td><td><span class="tag t-check">touched</span></td><td><code>fn_public_scoring_params</code> changes shape. Both allowlists must change in the same commit.</td></tr>
+<tr><td>ADR-036 amendment (bootstrap ordering)</td><td><span class="tag t-check">relied on</span></td><td><code>fn_backfill_scoring_engines</code> names the field-scaled code and is called again from <code>seed_post_backfill.sql</code>, so it is replaced in the same migration.</td></tr>
+<tr><td><a href="../adr/098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> ranking schema v2</td><td><span class="tag t-amend">amend</span></td><td>The Season Scoring Rules gain <code>entry_types</code>, and <code>fn_ranking_full</code> gains the entry gate (Q9). Seasons without the key are unchanged.</td></tr>
+<tr><td><a href="../adr/101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> public ranking UI</td><td><span class="tag t-check">review</span></td><td>Fencers with only EVF or PZSz results leave the 2026/27 ranking. The UI needs no change, but the handbook must say so.</td></tr>
+<tr><td><a href="../adr/038-evf-intake-polish-only.html">ADR-038</a></td><td><span class="tag t-check">unchanged</span></td><td>The EVF intake path is unchanged.</td></tr>
+</tbody></table></div>
+
+<h3>Canonical documentation</h3>
+<div class="tw"><table>
+<thead><tr><th>Page</th><th>What changes</th></tr></thead>
+<tbody>
+<tr><td><code>doc/handbook/subsystems/scoring-and-ranking.html</code></td><td>Formula, engines per type, paired modules, invariants, components.</td></tr>
+<tr><td><code>doc/handbook/domain/competition-and-ranking.html</code></td><td>The new §8, joined brackets, K and m, PZSz senior as one bracket.</td></tr>
+<tr><td><code>doc/handbook/subsystems/ingestion.html</code></td><td>The two joined-bracket modules and when each runs.</td></tr>
+<tr><td><code>doc/handbook/product/product-surfaces.html</code></td><td>The two static pages.</td></tr>
+<tr><td><code>doc/handbook/reference/security-posture.html</code></td><td>The changed public function.</td></tr>
+<tr><td><code>doc/governance/</code> specification, RTM, Appendix C, <code>documentation-inventory.html</code></td><td>FR rows, test IDs, ADR registry, pgTAP total.</td></tr>
+<tr><td><code>doc/adr/index.html</code>, <code>doc/tools/WP-instrukcja-wgrania.txt</code></td><td>New ADR; WordPress upload note.</td></tr>
+</tbody></table></div>
+
+<h3>Code</h3>
+<div class="tw"><table>
+<thead><tr><th>Area</th><th>Files</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td>SQL — engine and schema</td><td>new <code>supabase/migrations/2026092x_spws_place_medal_engine.sql</code></td><td>New registry row and strategy with (N, p, K, m) and its constants. Dispatcher with K and m. Engine column on <code>tbl_scoring_type_config</code>. <code>tbl_result</code> gains K, m, the three components and the scoring method, with −1 for "not used", a <code>CHECK</code> per column, and −1 backfilled into history. <code>fn_resolve_scoring_params</code> resolves per type. <code>fn_calc_tournament_scores</code>, <code>fn_preview_tournament_score</code>, <code>fn_public_scoring_params</code>. 2026/27 assigned per type behind the §11 gate. Field-scaled dropped; <code>fn_backfill_scoring_engines</code> replaced.</td></tr>
+<tr><td>SQL — governed fields</td><td><code>fn_export_scoring_config</code>, <code>fn_import_scoring_config</code>, <code>fn_guard_scoring_config_write</code>, <code>fn_apply_scoring_config_write</code>, <code>fn_revise_and_rescore_season</code>, revision snapshot (template <code>20260919000007</code>)</td><td>Engine per type, locked like the rest.</td></tr>
+<tr><td>Python — joined-bracket modules</td><td>new <code>python/pipeline/joined_brackets/</code> (<code>per_category_renumber.py</code>, <code>joined_bracket_category_place.py</code>, registry)</td><td>The two named modules and the engine pairing. <code>_rerank_places</code> moves here unchanged.</td></tr>
+<tr><td>Python — ingestion</td><td><code>python/pipeline/plugins/ingest.py</code> (<code>Commit</code>, <code>_commit_recompute</code>), <code>python/pipeline/stages.py</code>, <code>python/pipeline/engine/rulebook.py</code>, <code>python/pipeline/plugins/post_commit.py</code>, <code>python/pipeline/plugins/pzsz_commit.py</code></td><td>Call the paired module. Write K and m.</td></tr>
+<tr><td>SQL — ranking</td><td><code>fn_ranking_full_event_code_matching</code>, <code>fn_ranking_full_event_fk_matching</code>, the Season Scoring Rules canonicalizer, the 2026/27 <code>json_ranking_rules</code></td><td>Q9 entry gate driven by <code>entry_types</code>.</td></tr>
+<tr><td>Every reader of score components</td><td><code>vw_score*</code> views, <code>python/pipeline/export_seed.py</code>, <code>python/tools/build_scorecards.py</code>, <code>frontend/src/lib/export.ts</code>, <code>DrilldownModal.svelte</code></td><td>Show −1 as „nie dotyczy”, never add it to anything, and label components by scoring method.</td></tr>
+<tr><td>Frontend — module and pages</td><td><code>frontend/src/lib/scoring.ts</code>, <code>frontend/scripts/build-scoring-pages.mjs</code>, <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code> → <code>frontend/public/tabela-punktacji.html</code>, <code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code> → <code>frontend/public/kalkulator-punktow.html</code> + <code>doc/tools/WP-kalkulator-punktow-za-wynik-spws.html</code></td><td>The new engine in the module, with field-scaled removed. Both pages rebuilt from the signed-off table.</td></tr>
+<tr><td>Frontend — app</td><td><code>ScoringConfigEditor.svelte</code>, <code>SeasonManagerWizard.svelte</code>, <code>App.svelte</code>, <code>types.ts</code>, <code>export.ts</code>, <code>DrilldownModal.svelte</code>, locales</td><td>Engine per type, a read-only parameter and module panel, and the new component labels.</td></tr>
+<tr><td>Scripts</td><td><code>scripts/check-scoring-migration-preflight.sh</code>, <code>scripts/local-fixture-ppw1-2026-2027.sh</code>, <code>scripts/preflight.sh</code></td><td>Target engine and a joined PPW1 fixture.</td></tr>
+</tbody></table></div>
+
+<h3>Tests (RED before GREEN)</h3>
+<div class="tw"><table>
+<thead><tr><th>Suite</th><th>What it pins</th></tr></thead>
+<tbody>
+<tr><td><code>supabase/tests/80_season_scoring_contract.sql</code></td><td>New strategy values: the N = 8 row 53.5 … 3.0, the 10-fencer example, N = 1–3, and the switch: N = 31 on the new formula, N = 32 identical to <code>EVF_CLASSIC</code> with the season's EVF parameters and no category medal. EVF classic untouched (SS26.HIST). 2026/27 assigned per type. Field-scaled gone.</td></tr>
+<tr><td><code>supabase/tests/02_scoring_engine.sql</code>, <code>82_published_page_params.sql</code>, <code>52_security_posture.sql</code> + <code>scripts/check-security-posture.sh</code></td><td>Dispatcher, per-type public parameters, the allowlist pair.</td></tr>
+<tr><td><code>frontend/tests/scoring.test.ts</code>, <code>assets.test.ts</code>, <code>ScoringConfigEditor.test.ts</code></td><td>Parity with SQL, identity of the three page copies, and the read-only panel plus the lock.</td></tr>
+<tr><td><code>python/tests/</code></td><td>Every active engine has exactly one module. Joined V1+V2+V3 fixture: places kept, K and m written, points as in §3. Ties: category places 1, 2, 3, 3, 5, with a tied fencer not counted below. Byte-identical output from <code>PER_CATEGORY_RENUMBER</code>. PZSz: K = N.</td></tr>
+<tr><td><code>supabase/tests/</code> ranking</td><td>Point 13: a fencer moving from V1 to V2 carries their previous-season points into the V2 ranking, which pins existing behaviour. Point 14: an EVF-only fencer is absent from the 2026/27 ranking but present in 2025/26. A foreigner from a PPW bracket is ranked. A 2025/26 PPW start admits the fencer to the rolling 2026/27 ranking but not the non-rolling one. A last PPW in 2024/25 admits them to neither.</td></tr>
+<tr><td><code>supabase/tests/</code> storage</td><td>No NULL in any component, K or m column. −1 exactly where the scoring method does not use a value. The <code>CHECK</code>s reject any other negative number.</td></tr>
+</tbody></table></div>
+
+<h2 id="status">9 · Commit status</h2>
+<div class="card warn"><span class="lb">Nothing committed yet</span>
+<p>The session is in plan mode, which blocks commits. The first step after it ends:</p>
+<ul>
+<li>A worktree <code>../SPWSranklist-claude-scoring-engine-2026-2027</code> on <code>claude/scoring-engine-2026-2027</code>, cut from <code>origin/main</code>.</li>
+<li>One commit of the four design pages.</li>
+</ul>
+<p>The current branch <code>claude/docs-search-rag</code> is 67 commits behind main, so it is the wrong base.</p></div>
+
+<h2 id="coherence">10 · Documentation coherence gate</h2>
+<ul class="gate">
+<li>ADR-103 drafted and signed off before code. ADR-097, 098, 102, 092, 085, 049, 069 and 100 amended. Appendix C registry updated.</li>
+<li>Handbook pages in §8 rewritten in present tense; superseded prose archived, not appended.</li>
+<li>Specification and RTM rows plus the pgTAP total updated; <code>scripts/check_docs.py</code> passes.</li>
+<li><code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code> run before every commit.</li>
+<li><code>scripts/preflight.sh</code> exits 0 — the definition of done.</li>
+</ul>
+
+<footer>Sources: <code>origin/main</code> 967446ff; CERT and PROD read-only via <code>scripts/cloud-sql.sh</code> on 27 Sep 2026; domestic results of three seasons (<code>domestic.csv</code>, 487 tournaments); docs-search index. Formula: <a href="tabela-punktacji-propozycja-2026-09-27.html">tabela-punktacji-propozycja-2026-09-27.html</a>. Earlier rounds: <a href="joined-category-policy-2026-09-27.html">joined-category policy</a>, <a href="joined-bracket-scoring-engine-analysis-2026-09-27.html">engine analysis</a>.</footer>
+</div>
+<script>
+(function () {
+  var btn = document.getElementById('copyRules'), msg = document.getElementById('copyMsg'), pre = document.getElementById('rulesPl');
+  if (!btn || !pre) return;
+  btn.addEventListener('click', function () {
+    var text = pre.innerText;
+    var done = function () { msg.textContent = 'Skopiowano do schowka.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+    } else { fallback(); }
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      msg.textContent = 'Tekst zaznaczony — skopiuj skrótem Ctrl+C / Cmd+C.';
+    }
+  });
+})();
+</script>
+</body>
+</html>
