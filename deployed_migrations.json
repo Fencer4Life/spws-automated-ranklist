@@ -193,8 +193,8 @@
     "schema_fingerprint": "265d7822495442d0f05270750b462742"
   },
   "prod": {
-    "last_updated": "2026-09-28T17:58:44Z",
-    "last_sha": "523b6d1b5171668cba4c07faebcdc9bdc61f5193",
+    "last_updated": "2026-09-28T20:17:20Z",
+    "last_sha": "18bdebeba116c2b9f419e4fcd15de2c3c9e6c937",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -379,8 +379,10 @@
       "20260924000001_ftl_export_true_rank.sql",
       "20260925000001_identity_lookup_folds_names.sql",
       "20260926000001_ftl_export_rank_points.sql",
-      "20260928000001_spws_place_medal_engine.sql"
+      "20260928000001_spws_place_medal_engine.sql",
+      "20260928000002_admin_ranking_rules_validation.sql",
+      "20260928000003_spws_2026_2027_ranking_buckets.sql"
     ],
-    "schema_fingerprint": "38a4769825fdcbd826b79515d39c9488"
+    "schema_fingerprint": "265d7822495442d0f05270750b462742"
   }
 }
