@@ -80,6 +80,10 @@ async function bundleModule() {
     platform: 'browser',
     write: false,
     legalComments: 'none',
+    // esbuild names the source in a comment relative to its working directory.
+    // Pinned to the repository root, the bundle is the same bytes whether this
+    // runs from the root (as preflight does) or from frontend/.
+    absWorkingDir: ROOT,
   })
   return result.outputFiles[0].text.trimEnd()
 }
