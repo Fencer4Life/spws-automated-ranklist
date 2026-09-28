@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="103-spws-place-medal-engine-per-type.md">
+<meta name="adr-source-sha256" content="1f6a03fbdbdc23daa0f8593a4886634e54f54df3db212f1b007116475cc39574">
+<title>ADR-103 · SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 103</p><h1>SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)</dd></div><div><dt>Date</dt><dd class="">2026-09-28</dd></div><div><dt>Source</dt><dd class=""><code>103-spws-place-medal-engine-per-type.md</code></dd></div><div><dt>Length</dt><dd class="">114 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)
+<strong>Date:</strong> 2026-09-28
+<strong>Amends:</strong> <a href="097-scoring-governance-lock-and-privileged-revision.html">ADR-097</a> (the engine is governed per tournament type, not only per season), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (the Season Scoring Rules gain <code>entry_types</code>), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the shared module gains the new engine and loses field-scaled; public parameters are per type), <a href="092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> (annex content becomes the 64 × 64 table), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> (calculator gains the joined mode; the toggle compares SPWS with EVF classic), <a href="049-joint-pool-split-flag.html">ADR-049</a> (renumbering becomes the named module <code>PER_CATEGORY_RENUMBER</code>), <a href="069-participant-count-url-validator.html">ADR-069</a> (the count check compares the joined N), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (PPS/MPS are scored by the new engine with K = N, m = place)
+<strong>Supersedes:</strong> <a href="024-combined-category-splitting.html">ADR-024</a> in part — for tournament types assigned the new engine, a joined bracket is no longer split and renumbered per category.
+<strong>Relates to:</strong> <a href="042-carryover-engine-dispatcher.html">ADR-042</a> and <a href="045-engine-selector-default-flip.html">ADR-045</a> (the static <code>CASE … ELSE RAISE</code> dispatcher pattern, reused), <a href="056-vcat-from-birthyear.html">ADR-056</a> (a fencer's own category defines K and m), <a href="066-min-participants-ingestion-gate.html">ADR-066</a> (the minimum-field gate reads the joined N), <a href="083-server-enforced-authorization.html">ADR-083</a> (the anon allowlist pair), the ADR-036 amendment (bootstrap ordering: the assignment function is called again from <code>supabase/seed_post_backfill.sql</code>)
+<strong>Source:</strong> <code>doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html</code> §3; design <code>doc/plans/scoring-engine-2026-2027-brainstorm-2026-09-27.html</code> round 10; signed-off table <code>doc/plans/tabela-punktacji-propozycja-2026-09-27.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-28-pps-and-mps-stay-on-evf-classic">Amendment (2026-09-28 — PPS and MPS stay on EVF classic)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-one-new-released-strategy-with-three-ranges">1 · One new released strategy with three ranges</a></li><li class="depth-3"><a href="#2-the-engine-is-assigned-per-tournament-type">2 · The engine is assigned per tournament type</a></li><li class="depth-3"><a href="#3-spws-field-scaled-v1-2026-2027-is-deleted">3 · `SPWS_FIELD_SCALED_V1_2026_2027` is deleted</a></li><li class="depth-3"><a href="#4-joined-bracket-modules-are-paired-with-engines">4 · Joined-bracket modules are paired with engines</a></li><li class="depth-3"><a href="#5-storage-explicit-components-1-for-not-used">5 · Storage — explicit components, −1 for &quot;not used&quot;</a></li><li class="depth-3"><a href="#6-ranking-entry-through-ppw-or-mpw">6 · Ranking entry through PPW or MPW</a></li><li class="depth-3"><a href="#7-public-pages">7 · Public pages</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-28-pps-and-mps-stay-on-evf-classic">Amendment (2026-09-28 — PPS and MPS stay on EVF classic)</h2>
+<p>Reviewing the per-type editor mockup on 28 September 2026, the user assigned the PZSz senior types PPS and MPS to <code>EVF_CLASSIC_V1_2025_2026</code> for 2026/2027, not to the new engine. Only PPW and MPW use <code>SPWS_PLACE_MEDAL_V1_2026_2027</code>. §2 is corrected in place; the rest of this record stands.</p>
+<ul>
+<li>A PZSz senior field is scored as <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> scored it before this record: the full original field as N, the original place, EVF classic's place points, DE rounds and podium, times the type's coefficient.</li>
+<li><code>CommitPzszSenior</code> still writes K = N, m = place and b, and the review queue still keeps b (§4). EVF classic does not read them. They are facts about a field that is never stored, so a later season that scores these types by place can use them.</li>
+<li>The ranking-entry gate (§6) is unchanged: PPS and MPS never admitted a fencer to the ranking.</li>
+<li>On the public pages the coefficient table shows PPS and MPS under EVF, and the annex offers no PPS or MPS shortcut on its coefficient slider, because its table is the SPWS engine's.</li>
+<li>Tests: SE27.TYPE.02, SE27.TYPE.04 and SE27.CALC.01 pin the corrected assignment; SE27.ING.05 pins K, m and b under both engines.</li>
+</ul>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The board redefines §8 for 2026/2027: a joined bracket — fencers of two or more age categories fenced as one tournament — is scored by place in the whole bracket, not split per category. On the engine assigned in September (<code>SPWS_FIELD_SCALED_V1_2026_2027</code>), scoring the whole bracket makes 42–47% of joined configurations lose points, so older categories have no reason to join.</p>
+<p>The signed-off formula scores only quantities a joining category cannot reduce: the size of the field, the fencers with a worse result, and a medal within one's own category. Up to 31 fencers no participant loses by joining. From 32 fencers the board prefers the EVF algorithm and accepts the drop at the boundary, which the rules state in words (§8 ust. 8).</p>
+<p>The formula needs more than today's strategy contract passes. The contract carries two inputs (N, place). The new formula needs five: N, the place p, the number of fencers of one's own category in the bracket (K), the place among them (m), and the number of fencers strictly below (b). It must not reach international results, where EVF publishes per category. The board also limits ranking entry to fencers who start in PPW or MPW (§8 ust. 14).</p>
+<p>Verified on 27 Sep 2026 via <code>scripts/cloud-sql.sh</code>: SPWS-2026-2027 is unlocked on CERT and PROD, with 0 tournaments and 0 results, and assigned the field-scaled engine. No PPS or MPS result is stored on PROD.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-one-new-released-strategy-with-three-ranges">1 · One new released strategy with three ranges</h3>
+<p><code>fn_score_spws_place_medal_v1_2026_2027(n, place, k, m, below, mp_value, de_round, podium_gold, podium_silver, podium_bronze)</code> is registered as <code>SPWS_PLACE_MEDAL_V1_2026_2027</code>, label „SPWS — miejsce w stawce i premia medalowa (od sezonu 2026/2027)”. The range is chosen by the size of the whole bracket:</p>
+<ul>
+<li><strong>N ≤ 3 — TABLE:</strong> N − p + 1.</li>
+<li><strong>4 ≤ N ≤ 31 — PLACE_MEDAL:</strong> log₂N + 3.5 × b + medal. The medal is 13, 7 or 3 × ∛K for m = 1, 2 or 3, only when K &gt; m.</li>
+<li><strong>N ≥ 32 — EVF_CLASSIC:</strong> <code>fn_score_evf_classic_v1_2025_2026</code> on the joined place and joined N, with the season's EVF settings (base, DE round, podium coefficients). No category medal.</li>
+</ul>
+<p>log₂N, 3.5, 13/7/3, the N ≤ 3 table and the switch at 32 are part of the engine version, not settings. Only the per-type coefficient stays a season setting. The result is multiplied by it and rounded once, from the raw components, exactly as before.</p>
+<p>A place is &quot;strictly below&quot; only if it is worse: a fencer tied with you does not count (§8 ust. 6). The category place is 1 + the number of own-category fencers with a strictly better place, so ties run 1, 2, 3, 3, 5.</p>
+<h3 id="2-the-engine-is-assigned-per-tournament-type">2 · The engine is assigned per tournament type</h3>
+<p><code>tbl_scoring_type_config</code> gains <code>id_scoring_engine</code>. A type row that names an engine uses it; a type row with NULL uses the season's engine, <code>tbl_season.id_scoring_engine</code>, which stays the season default. <code>fn_resolve_scoring_params</code> resolves the engine from the tournament's type, and still raises &quot;Unknown scoring engine&quot; when neither is assigned. Nothing is chosen at calculation time.</p>
+<p>For 2026/2027: PPW and MPW use the new engine; PPS, MPS, PEW, MEW, MSW and PSW use EVF classic (as amended 2026-09-28; the signed-off text also put PPS and MPS on the new engine). The season default becomes the new engine, and all eight type rows are set explicitly. Earlier seasons keep NULL type rows and their EVF classic season engine, which is their current scoring.</p>
+<p>The assignment is governed like every other scoring field (ADR-097). <code>fn_export_scoring_config</code> reports <code>type_engines</code> (the resolved engine per type). <code>fn_import_scoring_config</code> rejects a change to it once the season is locked. <code>fn_apply_scoring_config_write</code> writes it, so the privileged revision can change it, and the revision snapshot records it. The ingestion pipeline reads the assignment through <code>fn_get_type_engine(id_season, type)</code>, which raises when nothing is assigned.</p>
+<p>The dispatcher stays a static <code>CASE … ELSE RAISE</code>. It gains K, m and b, which EVF classic ignores, and returns a breakdown type (<code>typ_score_breakdown</code>) naming the method that scored the result.</p>
+<h3 id="3-spws-field-scaled-v1-2026-2027-is-deleted">3 · <code>SPWS_FIELD_SCALED_V1_2026_2027</code> is deleted</h3>
+<p>Its function, dispatcher branch, registry row, <code>scoring.ts</code> branch and tests are removed. It never scored anything: 0 revisions and 0 results on CERT and PROD. <code>fn_backfill_scoring_engines</code> named it and is called again from <code>supabase/seed_post_backfill.sql</code>, so it is replaced in the same migration by a version that performs the 2026/2027 per-type assignment. The §11 gate is kept: it refuses to reassign a season that already holds scored results.</p>
+<h3 id="4-joined-bracket-modules-are-paired-with-engines">4 · Joined-bracket modules are paired with engines</h3>
+<p><code>python/pipeline/joined_brackets/</code> holds two named modules and a registry that maps each engine code to exactly one module:</p>
+<ul>
+<li><strong><code>PER_CATEGORY_RENUMBER</code> ↔ EVF classic.</strong> Today's behaviour, byte-identical: split the bracket per category, dense-renumber places 1..K, store N = the category's size (ADR-049). <code>_rerank_places</code> moves here unchanged.</li>
+<li><strong><code>JOINED_BRACKET_CATEGORY_PLACE</code> ↔ the new engine.</strong> Keep the joined place and the joined N; file each fencer under their own category's tournament as today; write K, m and b.</li>
+</ul>
+<p>Ingestion (<code>Commit</code>) and <code>RECOMPUTE_DOMESTIC</code> use the module of the engine assigned to the tournament's type. <code>CommitPzszSenior</code> writes K = N, m = place and b from the full senior field, whatever the engine. The review queue keeps b so a later approval can write it. <code>tbl_scoring_engine</code> stays metadata only (ADR-097). It gains a display column naming the paired module, never a function reference.</p>
+<h3 id="5-storage-explicit-components-1-for-not-used">5 · Storage — explicit components, −1 for &quot;not used&quot;</h3>
+<p><code>tbl_result</code>, and its mirror <code>tbl_result_draft</code>, gain:</p>
+<ul>
+<li><strong>Inputs written at ingestion:</strong>
+<ul>
+<li><code>int_category_count</code> (K);</li>
+<li><code>int_category_place</code> (m);</li>
+<li><code>int_below_count</code> (b).</li>
+</ul>
+</li>
+<li><strong>Outputs written by scoring:</strong>
+<ul>
+<li><code>num_field_pts</code>, <code>num_below_pts</code> and <code>num_medal_bonus</code>;</li>
+<li><code>enum_score_method</code> (TABLE, PLACE_MEDAL or EVF_CLASSIC).</li>
+</ul>
+</li>
+</ul>
+<p><strong>−1 means &quot;not used&quot;</strong> by the method that scored the result, in every component column and in K, m and b. A <code>CHECK</code> on each column admits only real values or −1 (K and m ≥ 1; the rest ≥ 0). NULL is never written into a scored row, and NaN is never used: Postgres sorts <code>'NaN'</code> above every number and <code>to_json</code> turns it into a string. Under EVF_CLASSIC the three new components are −1. Under PLACE_MEDAL the three EVF components are −1. Under TABLE the table points are stored in <code>num_place_pts</code> (the points for the place) and every other component is −1. A method column that is NULL means the row has not been scored yet, like <code>ts_points_calc</code>. History is backfilled with −1 and EVF_CLASSIC.</p>
+<p><code>int_below_count</code> is stored, not derived. It depends on fencers who are not in the fencer's own tournament row set: other categories of a joined bracket, and the unstored senior field of a PZSz bracket.</p>
+<h3 id="6-ranking-entry-through-ppw-or-mpw">6 · Ranking entry through PPW or MPW</h3>
+<p>The Season Scoring Rules gain <code>entry_types</code>, a top-level key of <code>json_ranking_rules</code> read in both rule schemas. From 2026/2027 it is <code>[&quot;PPW&quot;,&quot;MPW&quot;]</code>. <code>fn_ranking_full_event_code_matching</code> and <code>fn_ranking_full_event_fk_matching</code> then admit only fencers with a result of those types in the ranking's window: the ranked season, plus the carried previous season in rolling mode, in any weapon. Their PPS, MPS, EVF and FIE results count as today. Seasons without the key are unchanged.</p>
+<h3 id="7-public-pages">7 · Public pages</h3>
+<p><code>frontend/src/lib/scoring.ts</code> implements the new engine (five inputs) and EVF classic; field-scaled is removed. <code>fn_public_scoring_params</code> returns one row per tournament type — engine code and label, coefficient, and the season's EVF settings — and its grant stays in both anon allowlists. The annex becomes the signed-off 64 × 64 table (1–3 flat, 4–31 SPWS, 32–64 EVF) with a complete medal table for K = 1–31 and the per-type coefficients. The calculator gains the joined mode, and its toggle compares SPWS with EVF classic. The temporary board preview (ADR-085 amendment of 2026-09-28) is deleted in the same release.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Rewrite the field-scaled strategy in place.</strong> Rejected: released strategies are immutable, and the name would describe a formula it no longer is.</li>
+<li><strong>One engine for every type.</strong> Rejected: EVF points would rise by 25–32%, and small EVF categories would fall to 1–3 points.</li>
+<li><strong>Derive K, m and b from stored rows.</strong> Rejected: they are wrong whenever a bracket fencer is not stored with the fencer's own rows — a category fencer excluded at ingestion, another category of a joined bracket, or the senior field of a PZSz bracket. Explicit columns also make drilldown and audit exact.</li>
+<li><strong>NULL or NaN for &quot;not used&quot;.</strong> Rejected at the user's request for a value that says &quot;not used&quot;. NaN also sorts above every number in Postgres and serialises as the string &quot;NaN&quot;.</li>
+<li><strong>A cap of 31, or a taper, instead of the EVF switch.</strong> The board chose the EVF switch at 32 and accepted a documented drop at the boundary.</li>
+<li><strong>A second policy dropdown next to the engine.</strong> Rejected: the engine and its joined-bracket module are one choice.</li>
+<li><strong>Move the engine entirely onto the type rows and drop the season engine.</strong> Rejected for now: the season engine is read by the revision table, the wizard and every existing test; keeping it as the default for NULL type rows changes nothing for earlier seasons.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Joining is safe only up to 31 fencers.</strong> Crossing 31 → 32 costs existing fencers 3.5–44.9 points, and §8 ust. 8 says so.</li>
+<li><strong>The ranking loses some fencers.</strong> Fencers with only EVF, FIE or PZSz results leave the 2026/2027 full ranking. Earlier seasons keep their published rankings. The PPW view is unaffected, since every row in it is a PPW start.</li>
+<li><strong>Every reader of score components must handle −1.</strong> It labels components by method and never adds −1 to anything: <code>vw_score</code>, <code>fn_fencer_scores_rolling_*</code>, <code>export.ts</code> (the drilldown export, where −1 reads „nie dotyczy”), <code>DrilldownModal.svelte</code> (which shows the final score only), <code>export_seed.py</code> and <code>build_scorecards.py</code>.</li>
+<li><strong>The Admin editor edits the assignment as the screen shows it.</strong> Each type card carries an engine selector showing the type's resolved engine and names that engine's joined-bracket module; two read-only panels list each engine's fixed rules (mockup <code>doc/mockups/se27_scoring_config_per_type.html</code>, revision 2, approved 2026-09-28). A save sends every card's engine as <code>type_engines</code>. Because the apply compares each against the resolved engine after <code>engine_code</code>, an unchanged form pins nothing, and changing only the season default moves no type the screen shows. The engine registry is readable by <code>authenticated</code> only, so the list loads when an admin signs in. SE27.UI.02–09.</li>
+<li><strong>The anon surface changes shape, not size.</strong> <code>fn_public_scoring_params</code> keeps its name and argument, so the allowlists are unchanged. The pgTAP total and Appendix D move.</li>
+<li><strong>CERT may need one privileged revision.</strong> If CERT scores a 2026/2027 result before this lands (the daily <code>evf-sync.yml</code> may ingest PEW1f), the migration's gate refuses the silent switch. One privileged revision (ADR-097), run with the board's reference, reaches the new assignment.</li>
+<li><strong>New files:</strong>
+<ul>
+<li><code>supabase/migrations/20260928000001_spws_place_medal_engine.sql</code>;</li>
+<li><code>supabase/tests/83_spws_place_medal_engine.sql</code>;</li>
+<li><code>python/pipeline/joined_brackets/</code>.</li>
+</ul>
+</li>
+<li><strong>Deleted:</strong> <code>fn_score_spws_field_scaled_v1_2026_2027</code>, the field-scaled registry row, <code>frontend/public/tabela-punktacji-projekt-2026-2027.html</code> and its SE27.PREVIEW tests.</li>
+<li><strong>Joint-pool siblings (ADR-049 <code>bool_joint_pool_split</code>) are not joined across listings.</strong> Each parsed listing is one bracket for N, K, m and b. No 2026/2027 event has used a joint pool; if one does, it is a separate decision.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="102-published-pages-share-one-scoring-module.html">← ADR-102: The Published Pages Share One Scoring Module and Read Season Parameters</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>103-spws-place-medal-engine-per-type.md</code> · source SHA-256 <code>1f6a03fbdbdc23daa0f8593a4886634e54f54df3db212f1b007116475cc39574</code></footer>
+</div></body></html>

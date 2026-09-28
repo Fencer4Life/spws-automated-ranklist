@@ -2,10 +2,15 @@
 
 **Status:** Accepted (drafted in [doc/plans/ranking-schema-v2-2026-09-19.html](../plans/ranking-schema-v2-2026-09-19.html) §04, signed off 2026-09-19). Implemented and verified on LOCAL: `fn_ranking_rules_canonical`, `fn_ranking_full` and its two per-engine bodies (`supabase/migrations/20260919000008_ranking_full.sql`) plus the `default_ranking_mode` governed field (`supabase/migrations/20260919000007_ranking_schema_v2.sql`). 1100 pgTAP assertions pass, and a manual comparison against the real `SPWS-2024-2025` and `SPWS-2025-2026` seed data confirms `fn_ranking_full` agrees with `fn_ranking_ppw`/`fn_ranking_kadra` exactly across every weapon/gender/category combination that has results, except V0 — where the difference is `fn_ranking_kadra`'s own documented early return, not a defect (see Consequences).
 **Date:** 2026-09-19
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the Season Scoring Rules gain `entry_types`).
 **Amends:** [ADR-006](006-jsonb-ranking-rules.md) (the bucket schema it introduced gains a versioned successor, `schema_version: 2`, coexisting with the original shape rather than replacing it)
 **Extends:** [ADR-042](042-carryover-engine-dispatcher.md), [ADR-045](045-engine-selector-default-flip.md) (the per-season dispatch pattern, applied a fourth time)
 **Relates to:** [ADR-021](021-imew-biennial-carry-over.md) (the rules-based carry-over eligibility this ADR's code reproduces unchanged, never re-derives), [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the governance lock gains one more governed field), [ADR-096](096-no-bracket-stubs-before-results.md) (the duplicated-logic drift class this ADR's design deliberately avoids), the design doc's own [§06](../plans/versioned-season-scoring-and-pzsz-ranking-design.html#ranking)
 **Source:** `supabase/migrations/20260919000007_ranking_schema_v2.sql`, `supabase/migrations/20260919000008_ranking_full.sql`
+
+## Amendment (2026-09-28 — `entry_types`)
+
+[ADR-103](103-spws-place-medal-engine-per-type.md) adds `entry_types`, a top-level key of `json_ranking_rules` read in both schemas. When it is present, `fn_ranking_full_event_code_matching` and `fn_ranking_full_event_fk_matching` admit only fencers with a result of one of those types in the ranking's window — the ranked season, plus the carried previous season in rolling mode — in any weapon. SPWS-2026-2027 sets `["PPW","MPW"]`. Seasons without the key are unchanged.
 
 ## Context
 

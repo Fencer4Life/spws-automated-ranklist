@@ -33,9 +33,14 @@
 -- constants (§04, reversed 19 September 2026). The whole point of the cutover is
 -- that a pre-lock Admin edit reaches the engine, the calculator and the annex
 -- alike, so these assertions compare the published surface to the season's own
--- stored row rather than to literals. base_slope and de_round are the TWO
--- UNRELATED TENS §04 insists on naming apart: base points per bracket round, and
--- points per DE round won.
+-- stored row rather than to literals.
+--
+-- ONE ROW PER TOURNAMENT TYPE (ADR-103, 2026-09-28)
+-- -----------------------------------------------------------------------------
+-- The engine is assigned per tournament type, so the surface returns one row
+-- per type: its engine, its coefficient, and the season's EVF settings, which
+-- EVF classic and the new engine's range from 32 both read. base_slope left the
+-- surface with SPWS_FIELD_SCALED_V1_2026_2027, the only engine that read it.
 -- =============================================================================
 
 BEGIN;
@@ -49,10 +54,11 @@ SELECT plan(9);
 -- -----------------------------------------------------------------------------
 CREATE FUNCTION pg_temp.params_of(p_season_code TEXT)
 RETURNS TABLE (
+  type_code     TEXT,
   engine_code   TEXT,
   engine_label  TEXT,
+  multiplier    NUMERIC,
   mp_value      NUMERIC,
-  base_slope    NUMERIC,
   de_round      NUMERIC,
   podium_gold   NUMERIC,
   podium_silver NUMERIC,
@@ -62,13 +68,13 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   RETURN QUERY EXECUTE
-    'SELECT engine_code, engine_label, mp_value, base_slope, de_round,
+    'SELECT type_code, engine_code, engine_label, multiplier, mp_value, de_round,
             podium_gold, podium_silver, podium_bronze
        FROM fn_public_scoring_params($1)'
     USING p_season_code;
 EXCEPTION
-  WHEN undefined_function OR undefined_table THEN
-    RETURN QUERY SELECT NULL::TEXT, NULL::TEXT, NULL::NUMERIC, NULL::NUMERIC,
+  WHEN undefined_function OR undefined_table OR undefined_column THEN
+    RETURN QUERY SELECT NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::NUMERIC, NULL::NUMERIC,
                         NULL::NUMERIC, NULL::NUMERIC, NULL::NUMERIC, NULL::NUMERIC;
 END;
 $$;
@@ -129,13 +135,14 @@ SELECT ok(
 );
 
 -- =============================================================================
--- SS26.CALC.05 — 2026/2027 reports the field-scaled engine
+-- SS26.CALC.05 — 2026/2027 reports its PPW engine
 -- =============================================================================
--- The annex is pinned to this season (§08), so this is the pin's contract.
+-- The annex is pinned to this season (§08) and shows the PPW engine, so this is
+-- the pin's contract. SE27.CALC.01 asserts every type.
 SELECT is(
-  (SELECT engine_code FROM pg_temp.params_of('SPWS-2026-2027')),
-  'SPWS_FIELD_SCALED_V1_2026_2027',
-  'SS26.CALC.05: SPWS-2026-2027 reports its assigned field-scaled engine'
+  (SELECT engine_code FROM pg_temp.params_of('SPWS-2026-2027') WHERE type_code = 'PPW'),
+  'SPWS_PLACE_MEDAL_V1_2026_2027',
+  'SS26.CALC.05: SPWS-2026-2027 reports the place-and-medal engine for PPW'
 );
 
 -- =============================================================================
@@ -144,26 +151,30 @@ SELECT is(
 -- Not literals. This is what makes "a pre-lock Admin edit reaches all three
 -- surfaces" (§08) a mechanically checked property.
 SELECT is(
-  (SELECT ROW(p.mp_value, p.podium_gold, p.podium_silver, p.podium_bronze)::TEXT
+  (SELECT string_agg(DISTINCT ROW(p.mp_value, p.podium_gold, p.podium_silver, p.podium_bronze)::TEXT, ';')
      FROM pg_temp.params_of('SPWS-2026-2027') p),
   (SELECT ROW(c.int_mp_value::NUMERIC, c.int_podium_gold::NUMERIC,
               c.int_podium_silver::NUMERIC, c.int_podium_bronze::NUMERIC)::TEXT
      FROM tbl_scoring_config c
      JOIN tbl_season s ON s.id_season = c.id_season
     WHERE s.txt_code = 'SPWS-2026-2027'),
-  'SS26.CALC.06: published base and podium equal that season''s stored config row'
+  'SS26.CALC.06: every type publishes the base and podium of that season''s stored config row'
 );
 
 -- =============================================================================
--- SS26.CALC.07 — the two tens are reported separately
+-- SS26.CALC.07 — de_round is published; base_slope is not
 -- =============================================================================
--- §04: base_slope (base points per bracket round) and de_round (points per DE
--- round won) coincide at 10 today and are NOT the same quantity. Reporting one
--- value for both would let a future change to either silently move the other.
+-- §04 named two unrelated tens: base_slope (base points per bracket round) and
+-- de_round (points per DE round won). Only SPWS_FIELD_SCALED_V1_2026_2027 read
+-- base_slope, and it was deleted on 2026-09-28 (ADR-103 §3). de_round still
+-- feeds EVF classic.
 SELECT is(
-  (SELECT ROW(p.base_slope, p.de_round)::TEXT FROM pg_temp.params_of('SPWS-2026-2027') p),
-  ROW(10::NUMERIC, 10::NUMERIC)::TEXT,
-  'SS26.CALC.07: base_slope and de_round are reported as separate parameters'
+  (SELECT ROW(string_agg(DISTINCT p.de_round::TEXT, ';'),
+              (SELECT bool_and(pg_get_function_result(f.oid) NOT LIKE '%base_slope%')
+                 FROM pg_proc f WHERE f.proname = 'fn_public_scoring_params'))::TEXT
+     FROM pg_temp.params_of('SPWS-2026-2027') p),
+  ROW('10', TRUE)::TEXT,
+  'SS26.CALC.07: every type publishes de_round 10, and base_slope is no longer published'
 );
 
 -- =============================================================================
@@ -178,6 +189,21 @@ SELECT is(
   'SS26.CALC.08: an unknown season code yields no row rather than raising'
 );
 
+-- The active season's engine per type, from the resolver the scorer uses;
+-- NULL while fn_get_type_engine does not exist.
+CREATE FUNCTION pg_temp.active_type_engines() RETURNS TEXT
+LANGUAGE plpgsql AS $$
+DECLARE v TEXT;
+BEGIN
+  EXECUTE $q$
+    SELECT string_agg(t || '=' || fn_get_type_engine(s.id_season, t), ',' ORDER BY t)
+      FROM tbl_season s, unnest(ARRAY['MEW','MPS','MPW','MSW','PEW','PPS','PPW','PSW']) t
+     WHERE s.bool_active$q$ INTO v;
+  RETURN v;
+EXCEPTION WHEN undefined_function THEN
+  RETURN NULL;
+END $$;
+
 -- =============================================================================
 -- SS26.CALC.09 — omitting the season code yields the ACTIVE season
 -- =============================================================================
@@ -186,13 +212,10 @@ SELECT is(
 -- serves both, so the calculator does not need a second round trip to discover
 -- which season is active — which matters for a static page on GitHub Pages.
 SELECT is(
-  (SELECT engine_code FROM pg_temp.params_of(NULL)),
-  (SELECT se.txt_code
-     FROM tbl_season s
-     JOIN tbl_scoring_engine se ON se.id_engine = s.id_scoring_engine
-    WHERE s.bool_active
-    LIMIT 1),
-  'SS26.CALC.09: a NULL season code resolves to the active season'
+  (SELECT COALESCE(string_agg(type_code || '=' || engine_code, ',' ORDER BY type_code), 'no rows')
+     FROM pg_temp.params_of(NULL)),
+  COALESCE(pg_temp.active_type_engines(), 'no resolver'),
+  'SS26.CALC.09: a NULL season code resolves to the active season, type by type'
 );
 
 SELECT * FROM finish();

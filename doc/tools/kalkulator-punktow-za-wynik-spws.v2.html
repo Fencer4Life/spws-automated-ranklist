@@ -69,6 +69,14 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;bac
      border:2px solid var(--card);box-shadow:0 1px 3px rgba(0,0,0,.3)}
 input[type=range]:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:8px}
 
+/* ---- stawka łączona ---- */
+.joined{display:flex;align-items:center;gap:10px;min-height:48px;font-size:14.5px;font-weight:600;cursor:pointer;user-select:none}
+.joined input{width:20px;height:20px;margin:0;accent-color:var(--red);cursor:pointer}
+.joined-fields{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.joined-fields[hidden]{display:none}
+.joined-fields p{margin:0;font-size:13px;color:var(--muted)}
+.joined-fields .field{padding:0;border:none}
+
 /* ---- wynik ---- */
 .result{background:var(--card);border:1px solid var(--line);border-radius:13px;
         padding:20px 14px;text-align:center;margin:16px 0}
@@ -171,11 +179,25 @@ footer{margin-top:22px;font-size:12px;color:var(--muted);text-align:center}
 <section class="fields">
   <div class="field">
     <label for="fN" data-i18n="lblN">Liczba startujących</label>
-    <input type="number" id="fN" inputmode="numeric" min="2" max="1000" step="1" value="7">
+    <input type="number" id="fN" inputmode="numeric" min="1" max="300" step="1" value="7">
   </div>
   <div class="field">
     <label for="fM" data-i18n="lblM">Zajęte miejsce</label>
-    <input type="number" id="fM" inputmode="numeric" min="1" max="1000" step="1" value="3">
+    <input type="number" id="fM" inputmode="numeric" min="1" max="300" step="1" value="3">
+  </div>
+  <div class="field">
+    <label class="joined" for="fJ"><input type="checkbox" id="fJ" autocomplete="off" aria-controls="joinedFields"><span data-i18n="lblJ">Stawka łączona</span></label>
+    <div class="joined-fields" id="joinedFields" hidden>
+      <p data-i18n="joinedHint">W stawce łączonej walczy kilka kategorii wiekowych. Liczba startujących i miejsce dotyczą całej stawki; premia medalowa zależy od Twojej kategorii.</p>
+      <div class="field">
+        <label for="fK" data-i18n="lblK">Zawodnicy Twojej kategorii w stawce (K)</label>
+        <input type="number" id="fK" inputmode="numeric" min="1" max="300" step="1" value="4">
+      </div>
+      <div class="field">
+        <label for="fC" data-i18n="lblC">Miejsce w Twojej kategorii</label>
+        <input type="number" id="fC" inputmode="numeric" min="1" max="300" step="1" value="1">
+      </div>
+    </div>
   </div>
   <div class="field">
     <label for="fW" data-i18n="lblW">Współczynnik rangi zawodów</label>
@@ -244,75 +266,155 @@ var SPWSScoring = (() => {
   var scoring_exports = {};
   __export(scoring_exports, {
     CLASSIC_ENGINE: () => CLASSIC_ENGINE,
-    FIELD_SCALED_ENGINE: () => FIELD_SCALED_ENGINE,
-    deBonus: () => deBonus,
-    engineBase: () => engineBase,
+    PLACE_MEDAL: () => PLACE_MEDAL,
+    PLACE_MEDAL_ENGINE: () => PLACE_MEDAL_ENGINE,
+    deRoundsWon: () => deRoundsWon,
+    medalBonus: () => medalBonus,
+    placeMedalMethod: () => placeMedalMethod,
     podiumBonus: () => podiumBonus,
     scoreComponents: () => scoreComponents
   });
   var CLASSIC_ENGINE = "EVF_CLASSIC_V1_2025_2026";
-  var FIELD_SCALED_ENGINE = "SPWS_FIELD_SCALED_V1_2026_2027";
+  var PLACE_MEDAL_ENGINE = "SPWS_PLACE_MEDAL_V1_2026_2027";
+  var PLACE_MEDAL = {
+    /** N <= tableUpTo scores N - place + 1. */
+    tableUpTo: 3,
+    /** From this bracket size the engine is EVF classic. */
+    evfFrom: 32,
+    /** Points for each fencer with a worse result in the bracket. */
+    perBelow: 3.5,
+    /** Gold, silver, bronze within the own category, times the cube root of K. */
+    medal: [13, 7, 3]
+  };
   function round2(value) {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   }
   function isPowerOfTwo(n) {
     return (n & n - 1) === 0;
   }
-  function engineBase(engineCode, n, mpValue, baseSlope) {
-    if (engineCode === CLASSIC_ENGINE) return mpValue;
-    if (engineCode === FIELD_SCALED_ENGINE) {
-      return Math.min(mpValue, baseSlope * Math.log2(Math.max(2, n)));
-    }
-    throw new Error(
-      `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`
-    );
+  function invalid(message) {
+    return new Error(`Invalid scoring input: ${message}`);
   }
   function assertScoringInput(n, place) {
     if (!Number.isFinite(n) || !Number.isFinite(place)) {
-      throw new Error("Invalid scoring input: entries and place must be numbers.");
+      throw invalid("entries and place must be numbers.");
     }
-    if (n < 1) {
-      throw new Error(`Invalid scoring input: a field of ${n} has no results.`);
-    }
-    if (place < 1) {
-      throw new Error(`Invalid scoring input: place ${place} is below first.`);
-    }
+    if (n < 1) throw invalid(`a field of ${n} has no results.`);
+    if (place < 1) throw invalid(`place ${place} is below first.`);
     if (place > n) {
-      throw new Error(
-        `Invalid scoring input: place ${place} exceeds the field of ${n}. A place larger than the field is corrupt data, not a weak result.`
+      throw invalid(
+        `place ${place} exceeds the field of ${n}. A place larger than the field is corrupt data, not a weak result.`
       );
     }
   }
-  function deBonus(n, place, deRound) {
+  function deRoundsWon(n, place) {
     if (n <= 1) return 0;
-    const rounds = Math.max(
+    return Math.max(
       0,
       Math.floor(Math.log2(n)) - Math.ceil(Math.log2(place)) + (isPowerOfTwo(n) ? 0 : 1)
     );
-    return rounds * deRound;
   }
   function podiumBonus(n, place, gold, silver, bronze) {
     const coefficient = place === 1 ? gold : place === 2 ? silver : place === 3 ? bronze : 0;
     return coefficient * 3 * Math.cbrt(n);
   }
-  function scoreComponents(params, engineCode, n, place, multiplier) {
-    const base = engineBase(engineCode, n, params.mpValue, params.baseSlope);
+  function medalBonus(categoryPlace, categoryCount) {
+    if (categoryPlace > 3 || categoryCount <= categoryPlace) return 0;
+    return PLACE_MEDAL.medal[categoryPlace - 1] * Math.cbrt(categoryCount);
+  }
+  function placeMedalMethod(n) {
+    if (n <= PLACE_MEDAL.tableUpTo) return "TABLE";
+    if (n >= PLACE_MEDAL.evfFrom) return "EVF_CLASSIC";
+    return "PLACE_MEDAL";
+  }
+  function evfClassic(params, n, place) {
+    const mp = params.mpValue;
+    const rounds = deRoundsWon(n, place);
+    return {
+      method: "EVF_CLASSIC",
+      placePoints: n === 1 ? mp : mp - (mp - 1) * (Math.log(place) / Math.log(n)),
+      deRounds: rounds,
+      deBonus: rounds * params.deRound,
+      podiumBonus: podiumBonus(n, place, params.podiumGold, params.podiumSilver, params.podiumBronze),
+      fieldPoints: null,
+      belowCount: null,
+      belowPoints: null,
+      medalBonus: null
+    };
+  }
+  function placeMedal(params, n, place, position) {
+    const method = placeMedalMethod(n);
+    if (method === "TABLE") {
+      return {
+        method,
+        placePoints: n - place + 1,
+        deRounds: null,
+        deBonus: null,
+        podiumBonus: null,
+        fieldPoints: null,
+        belowCount: null,
+        belowPoints: null,
+        medalBonus: null
+      };
+    }
+    if (method === "EVF_CLASSIC") return evfClassic(params, n, place);
+    const { categoryCount: k, categoryPlace: m, belowCount: b } = position;
+    if (!(k >= 1 && k <= n)) {
+      throw invalid(`a bracket of ${n} needs the own category's fencer count K between 1 and ${n}, got ${k}.`);
+    }
+    if (!(m >= 1 && m <= k && m <= place)) {
+      throw invalid(`category place m ${m} must be between 1 and K = ${k} and not better than place ${place}.`);
+    }
+    if (!(b >= 0 && b <= n - place)) {
+      throw invalid(`${b} fencers below place ${place} of ${n} is impossible.`);
+    }
+    return {
+      method,
+      placePoints: null,
+      deRounds: null,
+      deBonus: null,
+      podiumBonus: null,
+      fieldPoints: Math.log2(n),
+      belowCount: b,
+      belowPoints: PLACE_MEDAL.perBelow * b,
+      medalBonus: medalBonus(m, k)
+    };
+  }
+  function scoreComponents(params, engineCode, n, place, multiplier, position) {
+    if (engineCode !== CLASSIC_ENGINE && engineCode !== PLACE_MEDAL_ENGINE) {
+      throw new Error(
+        `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`
+      );
+    }
     assertScoringInput(n, place);
-    const placePoints = n === 1 ? base : base - (base - 1) * (Math.log(place) / Math.log(n));
-    const de = deBonus(n, place, params.deRound);
-    const podium = podiumBonus(
+    const raw = engineCode === CLASSIC_ENGINE ? evfClassic(params, n, place) : placeMedal(
+      params,
       n,
       place,
-      params.podiumGold,
-      params.podiumSilver,
-      params.podiumBronze
+      position ?? { categoryCount: n, categoryPlace: place, belowCount: n - place }
     );
+    const parts = [
+      raw.placePoints,
+      raw.deBonus,
+      raw.podiumBonus,
+      raw.fieldPoints,
+      raw.belowPoints,
+      raw.medalBonus
+    ];
+    const rawTotal = parts.reduce((sum, v) => sum + (v ?? 0), 0);
+    const r2 = (v) => v === null ? null : round2(v);
     return {
-      base: round2(base),
-      placePoints: round2(placePoints),
-      deBonus: round2(de),
-      podiumBonus: round2(podium),
-      finalScore: round2((placePoints + de + podium) * multiplier)
+      method: raw.method,
+      placePoints: r2(raw.placePoints),
+      deRounds: raw.deRounds,
+      deBonus: r2(raw.deBonus),
+      podiumBonus: r2(raw.podiumBonus),
+      fieldPoints: r2(raw.fieldPoints),
+      belowCount: raw.belowCount,
+      belowPoints: r2(raw.belowPoints),
+      medalBonus: r2(raw.medalBonus),
+      rawTotal,
+      finalScore: round2(rawTotal * multiplier)
     };
   }
   return __toCommonJS(scoring_exports);
@@ -325,11 +427,13 @@ var SPWSScoring = (() => {
  * przeliczała go kiedyś własnym kodem; trzy kopie zdążyły się rozjechać
  * (tabela punktacji zaczynała od 4 startujących, kalkulator od 1).
  *
- * Liczby — podstawa i mnożniki podium — NIE są tu zaszyte. Pochodzą
- * z konfiguracji sezonu (fn_public_scoring_params), więc zmiana ustawień
- * w panelu administracyjnym przed pierwszym punktowanym wynikiem sezonu
- * jest widoczna także tutaj. Po zamknięciu sezonu przestają się zmieniać
- * i strona zamarza razem z silnikiem.
+ * Stałe silnika SPWS — log₂N, 3,5 pkt za każdego zawodnika poniżej,
+ * premia medalowa 13/7/3 × ∛K, tabela do 3 startujących i przełączenie na
+ * EVF od 32 — należą do modułu, nie do tej strony. Z konfiguracji sezonu
+ * (fn_public_scoring_params, jeden wiersz na rodzaj zawodów) przychodzą
+ * ustawienia EVF: maksimum za miejsce, punkty za rundę i mnożniki podium.
+ * Zmiana tych ustawień w panelu administracyjnym przed pierwszym
+ * punktowanym wynikiem sezonu jest widoczna także tutaj.
  * ------------------------------------------------------------------ */
 const SPWS_ENV_NODE = document.getElementById('spws-env');
 function spwsEndpoint(){
@@ -339,8 +443,12 @@ function spwsEndpoint(){
   return url && key ? {url: url.replace(/\/+$/, ''), key: key} : null;
 }
 
+// Ustawienia EVF są wspólne dla całego sezonu; bierzemy je z wiersza
+// Pucharu Polski Weteranów, żeby nie zależeć od kolejności wierszy.
+const PARAMS_TYPE = 'PPW';
+
 // Parametry aktywnego sezonu. null dopóki nie wczytane — dopóki tak jest,
-// parts() zwraca null i strona pokazuje swój własny komunikat, zamiast
+// score() zwraca null i strona pokazuje swój własny komunikat, zamiast
 // liczyć ze starych, zaszytych stałych.
 let SPWS_PARAMS = null;
 let SPWS_PARAMS_ERROR = null;
@@ -358,12 +466,13 @@ async function loadScoringParams(){
     if (!response.ok) throw new Error('HTTP ' + response.status);
     const rows = await response.json();
     if (!rows || !rows.length) throw new Error('brak aktywnego sezonu');
-    const r = rows[0];
+    const r = rows.find(row => row.type_code === PARAMS_TYPE);
+    if (!r) throw new Error('brak parametrów ' + PARAMS_TYPE);
     SPWS_PARAMS = {
       engineCode: r.engine_code, engineLabel: r.engine_label,
-      mpValue: Number(r.mp_value), baseSlope: Number(r.base_slope),
-      deRound: Number(r.de_round), podiumGold: Number(r.podium_gold),
-      podiumSilver: Number(r.podium_silver), podiumBronze: Number(r.podium_bronze)
+      mpValue: Number(r.mp_value), deRound: Number(r.de_round),
+      podiumGold: Number(r.podium_gold), podiumSilver: Number(r.podium_silver),
+      podiumBronze: Number(r.podium_bronze)
     };
     SPWS_PARAMS_ERROR = null;
   } catch (e) {
@@ -372,28 +481,26 @@ async function loadScoringParams(){
 }
 
 // Ten przełącznik EVF/SPWS porównuje dwa silniki dla CZŁOWIEKA patrzącego na
-// stronę. Nie jest tym, czym system wybiera silnik: sezon ma przypisany
-// dokładnie jeden i nic nie wybiera algorytmu w chwili liczenia.
-function spwsEngineFor(alg){
-  return alg === 'evf' ? SPWSScoring.CLASSIC_ENGINE : SPWSScoring.FIELD_SCALED_ENGINE;
-}
-
-function parts(place, n, alg){
+// stronę. Nie jest tym, czym system wybiera silnik: każdy rodzaj zawodów ma
+// w sezonie przypisany dokładnie jeden i nic nie wybiera algorytmu w chwili
+// liczenia.
+//
+// W stawce łączonej EVF nie liczy stawki jako całości: dzieli ją na kategorie
+// i numeruje miejsca od nowa. Porównanie EVF idzie więc po K i miejscu we
+// własnej kategorii, tak jak policzyłby to ten algorytm.
+function score(q, w, a){
   if (!SPWS_PARAMS) return null;
   try {
-    const c = SPWSScoring.scoreComponents(SPWS_PARAMS, spwsEngineFor(alg), n, place, 1);
-    return {base: c.base, place: c.placePoints, rounds: c.deBonus, podium: c.podiumBonus};
+    if (a === 'evf'){
+      return q.joined
+        ? SPWSScoring.scoreComponents(SPWS_PARAMS, SPWSScoring.CLASSIC_ENGINE, q.k, q.c, w)
+        : SPWSScoring.scoreComponents(SPWS_PARAMS, SPWSScoring.CLASSIC_ENGINE, q.n, q.m, w);
+    }
+    // b: zawodnicy z gorszym wynikiem w stawce. Kalkulator zakłada brak remisów.
+    return SPWSScoring.scoreComponents(SPWS_PARAMS, SPWSScoring.PLACE_MEDAL_ENGINE, q.n, q.m, w,
+      {categoryCount: q.k, categoryPlace: q.c, belowCount: q.n - q.m});
   } catch (e) {
     return null;   // miejsce spoza stawki to błędne dane, nie słaby wynik
-  }
-}
-
-function total(place, n, w, alg){
-  if (!SPWS_PARAMS) return null;
-  try {
-    return SPWSScoring.scoreComponents(SPWS_PARAMS, spwsEngineFor(alg), n, place, w).finalScore;
-  } catch (e) {
-    return null;
   }
 }
 
@@ -405,39 +512,61 @@ const T = {
     lang:'pl-PL', htmlLang:'pl',
     docTitle:'Kalkulator punktów za wynik — SPWS',
     title:'Kalkulator punktów za wynik',
-    dek:'Ile punktów do rankingu daje zajęte miejsce. Zmiana dotyczy stawek poniżej 32 osób.',
+    dek:'Ile punktów do rankingu daje zajęte miejsce.',
     lblN:'Liczba startujących', lblM:'Zajęte miejsce', lblW:'Współczynnik rangi zawodów',
+    lblJ:'Stawka łączona',
+    joinedHint:'W stawce łączonej walczy kilka kategorii wiekowych. Liczba startujących i miejsce dotyczą całej stawki; premia medalowa zależy od Twojej kategorii.',
+    lblK:'Zawodnicy Twojej kategorii w stawce (K)', lblC:'Miejsce w Twojej kategorii',
     unit:'pkt', showAll:'Punkty za wszystkie miejsca', hideAll:'Zwiń listę miejsc',
     thPlace:'Miejsce', thPts:'Punkty',
     howTitle:'Jak to policzono', foot:'Stowarzyszenie Polskich Weteranów Szermierki',
-    noteSpws:'Propozycja SPWS — podstawa zależna od liczby startujących.',
+    noteSpws:'SPWS — punktacja od sezonu 2026/2027: miejsce w stawce i premia medalowa.',
     noteEvf:'Algorytm EVF',
-    sub:(m,n,w)=>`${m}. miejsce na ${n} startujących · ranga ${w}`,
+    sub:(q,w)=> q.joined
+      ? `${q.m}. miejsce na ${q.n} startujących · ${q.c}. w kategorii liczącej ${q.k} · ranga ${w}`
+      : `${q.m}. miejsce na ${q.n} startujących · ranga ${w}`,
     errPlace:(n)=>`Zajęte miejsce nie może być większe niż liczba startujących (${n}).`,
-    errN:'Podaj liczbę startujących od 2 do 1000.',
-    bBase:'Podstawa za 1. miejsce', bPlace:'Punkty za miejsce', bRounds:'Bonus za wygrane rundy', bPodium:'Bonus za podium',
+    errN:'Podaj liczbę startujących od 1 do 300.',
+    errJoined:'Sprawdź dane: miejsce w kategorii ≤ K ≤ liczba startujących, a poniżej Ciebie musi zmieścić się reszta Twojej kategorii.',
+    loading:'Wczytywanie parametrów sezonu…',
+    failed:(e)=>'Nie udało się pobrać parametrów sezonu: ' + e,
+    bTable:'Stawka do 3 startujących: N − miejsce + 1',
+    bField:'Za liczebność (log₂N)', bBelow:(b)=>`Zawodnicy poniżej w stawce (${b} × 3,5)`, bMedal:'Premia medalowa',
+    bPlace:'Punkty za miejsce', bRounds:'Bonus za wygrane rundy', bPodium:'Bonus za podium',
     bSum:'Razem', bRank:'× ranga', bTotal:'Wynik',
-    howSpws:'Propozycja SPWS zmienia w algorytmie EVF jedną rzecz: podstawa za pierwsze miejsce nie jest już stałą 50, tylko wynosi 10 punktów za każdą rundę drabinki, nie więcej niż 50 — czyli 10 przy dwóch startujących, 20 przy czterech, 30 przy ośmiu, 40 przy szesnastu i 50 od trzydziestu dwóch w górę. Wszystko pozostałe zostaje bez zmian: skala logarytmiczna miejsc, 10 punktów za każdą wygraną rundę i bonus za podium 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca. Od 32 startujących wynik jest identyczny z dzisiejszym.',
-    howEvf:'Punkty za miejsce według skali logarytmicznej z maksimum 50, plus 10 punktów za każdą wygraną rundę bezpośredniej eliminacji, plus bonus za podium 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca.'
+    howSpws:'Stawka do 3 startujących: 3, 2 i 1 punkt. Stawka od 4 do 31: log₂N za liczebność stawki, 3,5 punktu za każdego zawodnika z gorszym wynikiem w stawce, dowolnej kategorii, oraz premia medalowa 13·∛K, 7·∛K i 3·∛K za 1., 2. i 3. miejsce we własnej kategorii liczącej K zawodników — o ile ktoś z tej kategorii zajął niższe miejsce. Zawodnik ex aequo z Tobą nie jest „poniżej”. Stawka od 32 startujących: algorytm EVF dla całej stawki, bez premii medalowej.',
+    howEvf:'Punkty za miejsce według skali logarytmicznej z maksimum 50, plus 10 punktów za każdą wygraną rundę bezpośredniej eliminacji, plus bonus za podium 3·∛N, 6·∛N i 9·∛N dla trzeciego, drugiego i pierwszego miejsca.',
+    howEvfJoined:'W stawce łączonej algorytm EVF liczy każdą kategorię osobno: N to liczba zawodników Twojej kategorii (K), a miejsce — miejsce w niej.'
   },
   en: {
     lang:'en-GB', htmlLang:'en',
     docTitle:'Result points calculator — SPWS',
     title:'Result points calculator',
-    dek:'How many ranking points a finishing place is worth. Only fields below 32 change.',
+    dek:'How many ranking points a finishing place is worth.',
     lblN:'Number of entries', lblM:'Finishing place', lblW:'Competition rank coefficient',
+    lblJ:'Joined bracket',
+    joinedHint:'In a joined bracket several age categories fence together. The number of entries and the place refer to the whole bracket; the medal bonus depends on your own category.',
+    lblK:'Entries of your category in the bracket (K)', lblC:'Place within your category',
     unit:'pts', showAll:'Points for every place', hideAll:'Hide the list of places',
     thPlace:'Place', thPts:'Points',
     howTitle:'How this was calculated', foot:'Polish Veterans Fencing Association',
-    noteSpws:'SPWS proposal — base depends on the number of entries.',
+    noteSpws:'SPWS — scoring from season 2026/2027: place in the bracket and a medal bonus.',
     noteEvf:'EVF algorithm',
-    sub:(m,n,w)=>`${ord(m)} place out of ${n} entries · rank ${w}`,
+    sub:(q,w)=> q.joined
+      ? `${ord(q.m)} place out of ${q.n} entries · ${ord(q.c)} in a category of ${q.k} · rank ${w}`
+      : `${ord(q.m)} place out of ${q.n} entries · rank ${w}`,
     errPlace:(n)=>`The finishing place cannot be greater than the number of entries (${n}).`,
-    errN:'Enter a number of entries between 2 and 1000.',
-    bBase:'Base for 1st place', bPlace:'Place points', bRounds:'Round bonus', bPodium:'Podium bonus',
+    errN:'Enter a number of entries between 1 and 300.',
+    errJoined:'Check the inputs: category place ≤ K ≤ number of entries, and the rest of your category must fit below you.',
+    loading:'Loading season parameters…',
+    failed:(e)=>'Season parameters unavailable: ' + e,
+    bTable:'Field of up to 3: N − place + 1',
+    bField:'Field size (log₂N)', bBelow:(b)=>`Fencers below in the bracket (${b} × 3.5)`, bMedal:'Medal bonus',
+    bPlace:'Place points', bRounds:'Round bonus', bPodium:'Podium bonus',
     bSum:'Subtotal', bRank:'× rank', bTotal:'Result',
-    howSpws:'The SPWS proposal changes one thing in the EVF algorithm: the base for first place is no longer a flat 50 but 10 points for every round of the bracket, capped at 50 — that is 10 for two entries, 20 for four, 30 for eight, 40 for sixteen and 50 from thirty-two upwards. Everything else stays as it is: the logarithmic place scale, 10 points per direct-elimination round won, and a podium bonus of 3·∛N, 6·∛N and 9·∛N for third, second and first place. From 32 entries up the result is identical to today.',
-    howEvf:'Place points on a logarithmic scale with a maximum of 50, plus 10 points for every direct-elimination round won, plus a podium bonus of 3·∛N, 6·∛N and 9·∛N for third, second and first place.'
+    howSpws:'A field of up to 3: 3, 2 and 1 points. A field of 4 to 31: log₂N for the size of the field, 3.5 points for each fencer with a worse result in the bracket, of any category, and a medal bonus of 13·∛K, 7·∛K and 3·∛K for 1st, 2nd and 3rd place within your own category of K fencers — provided someone of that category finished lower. A fencer tied with you is not “below”. A field of 32 or more: the EVF algorithm for the whole bracket, with no medal bonus.',
+    howEvf:'Place points on a logarithmic scale with a maximum of 50, plus 10 points for every direct-elimination round won, plus a podium bonus of 3·∛N, 6·∛N and 9·∛N for third, second and first place.',
+    howEvfJoined:'In a joined bracket the EVF algorithm scores each category separately: N is the number of fencers of your category (K), and the place is your place within it.'
   }
 };
 
@@ -471,24 +600,36 @@ function read(){
   const n = parseInt($('fN').value, 10);
   const m = parseInt($('fM').value, 10);
   const w = parseFloat($('fW').value);
-  return {n, m, w};
+  const joined = $('fJ').checked;
+  // Poza stawką łączoną kategoria to cała stawka: K = N, miejsce w niej = miejsce.
+  const k = joined ? parseInt($('fK').value, 10) : n;
+  const c = joined ? parseInt($('fC').value, 10) : m;
+  return {n, m, w, joined, k, c};
 }
 
 function render(){
   const t = T[lang];
-  const {n, m, w} = read();
-  $('wVal').textContent = fmt(w);
+  const q = read();
+  $('wVal').textContent = fmt(q.w);
   $('algoNote').textContent = alg === 'evf' ? t.noteEvf : t.noteSpws;
-  $('fM').max = Number.isFinite(n) ? n : 1000;
+  $('fM').max = Number.isFinite(q.n) ? Math.min(q.n, 300) : 300;
+  $('joinedFields').hidden = !q.joined;
+  // Lista wszystkich miejsc zakłada jedną kategorię; w stawce łączonej każde
+  // miejsce ma własne K, więc listy nie ma.
+  $('btnAll').hidden = q.joined;
+  if (q.joined && !$('allPanel').hidden){ $('allPanel').hidden = true; setToggleLabel(); }
 
-  const nBad = !Number.isFinite(n) || n < 2 || n > 1000;
-  const mBad = !nBad && (!Number.isFinite(m) || m < 1 || m > n);
+  const nBad = !Number.isFinite(q.n) || q.n < 1 || q.n > 300;
+  const mBad = !nBad && (!Number.isFinite(q.m) || q.m < 1 || q.m > q.n);
+  const jBad = !nBad && !mBad && q.joined && !(
+    Number.isFinite(q.k) && Number.isFinite(q.c) && q.k >= 1 && q.k <= q.n
+    && q.c >= 1 && q.c <= q.k && q.c <= q.m && (q.n - q.m) >= (q.k - q.c));
 
-  if (nBad || mBad){
+  if (nBad || mBad || jBad){
     $('out').textContent = '—';
     $('outSub').textContent = '';
     $('warn').hidden = false;
-    $('warn').textContent = nBad ? t.errN : t.errPlace(n);
+    $('warn').textContent = nBad ? t.errN : mBad ? t.errPlace(q.n) : t.errJoined;
     $('allBody').innerHTML = '';
     $('breakdown').innerHTML = '';
     $('howText').textContent = '';
@@ -496,53 +637,58 @@ function render(){
   }
   $('warn').hidden = true;
 
-  const v = total(m, n, w, alg);
-  $('out').textContent = fmt(v);
-  $('outUnit').textContent = t.unit;
-  $('outSub').textContent = t.sub(m, n, fmt(w));
-
-  renderBreakdown(m, n, w);
-  renderAll(m, n, w);
-}
-
-function renderBreakdown(m, n, w){
-  const t = T[lang], p = parts(m, n, alg);
-  // Dopóki parametry sezonu nie są wczytane, parts() zwraca null. To nie jest
+  const r = score(q, q.w, alg);
+  // Dopóki parametry sezonu nie są wczytane, score() zwraca null. To nie jest
   // błąd wejścia — to brak liczb, którymi w ogóle wolno liczyć. Strona mówi to
   // wprost, zamiast wracać do zaszytych stałych albo się wysypać przy starcie.
-  if (p === null){
+  if (r === null){
+    $('out').textContent = '—';
+    $('outSub').textContent = '';
     $('breakdown').innerHTML = '';
-    $('out').textContent = '\u2014';
-    $('howText').textContent = SPWS_PARAMS_ERROR
-      ? (lang === 'en' ? 'Season parameters unavailable: ' + SPWS_PARAMS_ERROR
-                       : 'Nie udalo sie pobrac parametrow sezonu: ' + SPWS_PARAMS_ERROR)
-      : (lang === 'en' ? 'Loading season parameters...'
-                       : 'Wczytywanie parametrow sezonu...');
     $('allBody').innerHTML = '';
+    $('howText').textContent = SPWS_PARAMS_ERROR ? t.failed(SPWS_PARAMS_ERROR) : t.loading;
     return;
   }
-  const sum = p.place + (p.rounds || 0) + p.podium;
-  // „Razem" liczone ze składników JUŻ ZAOKRĄGLONYCH, żeby kolumna zgadzała się
-  // dla kogoś, kto ją dodaje na kartce; „Wynik" idzie z wartości dokładnych
-  const r2 = v => Math.round(v * 100) / 100;
-  const shown = r2(p.place) + r2(p.rounds || 0) + r2(p.podium);   // podstawa NIE wchodzi do sumy — jest wejściem do punktów za miejsce
-  const rows = [[t.bPlace, fmt2(p.place)]];
-  if (p.rounds) rows.push([t.bRounds, fmt2(p.rounds)]);   // zero rund — bez pustego wiersza
-  if (p.podium) rows.push([t.bPodium, fmt2(p.podium)]);   // poza podium — bez pustego wiersza
-  rows.push([t.bSum, fmt2(shown)], [t.bRank, fmt(w)]);
-  $('breakdown').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')
-    + `<dt class="tot">${t.bTotal}</dt><dd class="tot">${fmt(sum * w)}</dd>`;
-  const bazaTxt = (lang === 'pl'
-    ? 'Podstawa za pierwsze miejsce przy tej stawce: ' + fmt2(p.base) + ' pkt. '
-    : 'Base for first place at this field size: ' + fmt2(p.base) + ' pts. ');
-  $('howText').textContent = bazaTxt + (alg === 'evf' ? t.howEvf : t.howSpws);
+  $('out').textContent = fmt(r.rawTotal * q.w);
+  $('outUnit').textContent = t.unit;
+  $('outSub').textContent = t.sub(q, fmt(q.w));
+
+  renderBreakdown(r, q);
+  renderAll(q);
 }
 
-function renderAll(m, n, w){
+function renderBreakdown(r, q){
+  const t = T[lang];
+  const rows = [];
+  if (r.method === 'TABLE'){
+    rows.push([t.bTable, r.placePoints]);
+  } else if (r.method === 'PLACE_MEDAL'){
+    rows.push([t.bField, r.fieldPoints], [t.bBelow(r.belowCount), r.belowPoints]);
+    if (r.medalBonus) rows.push([t.bMedal, r.medalBonus]);   // bez medalu — bez pustego wiersza
+  } else {
+    rows.push([t.bPlace, r.placePoints]);
+    if (r.deBonus) rows.push([t.bRounds, r.deBonus]);         // zero rund — bez pustego wiersza
+    if (r.podiumBonus) rows.push([t.bPodium, r.podiumBonus]); // poza podium — bez pustego wiersza
+  }
+  // „Razem" liczone ze składników JUŻ ZAOKRĄGLONYCH (moduł zwraca je z dwoma
+  // miejscami, jak zapisuje je baza), żeby kolumna zgadzała się dla kogoś,
+  // kto ją dodaje na kartce; „Wynik" idzie z wartości dokładnych.
+  const shown = rows.reduce((sum, row) => sum + row[1], 0);
+  $('breakdown').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${fmt2(v)}</dd>`).join('')
+    + `<dt>${t.bSum}</dt><dd>${fmt2(shown)}</dd><dt>${t.bRank}</dt><dd>${fmt(q.w)}</dd>`
+    + `<dt class="tot">${t.bTotal}</dt><dd class="tot">${fmt(r.rawTotal * q.w)}</dd>`;
+  $('howText').textContent = alg === 'evf'
+    ? t.howEvf + (q.joined ? ' ' + t.howEvfJoined : '')
+    : t.howSpws;
+}
+
+function renderAll(q){
+  if (q.joined){ $('allBody').innerHTML = ''; return; }
   let html = '';
-  for (let i = 1; i <= n; i++){
-    html += `<tr${i === m ? ' class="me" id="meRow"' : ''}><td class="pl">${i}</td>`
-          + `<td>${(v => v === null ? '\u2014' : fmt(v))(total(i, n, w, alg))}</td></tr>`;
+  for (let i = 1; i <= q.n; i++){
+    const r = score({n: q.n, m: i, joined: false, k: q.n, c: i}, q.w, alg);
+    html += `<tr${i === q.m ? ' class="me" id="meRow"' : ''}><td class="pl">${i}</td>`
+          + `<td>${r === null ? '—' : fmt(r.rawTotal * q.w)}</td></tr>`;
   }
   $('allBody').innerHTML = html;
   if (!$('allPanel').hidden) scrollToMe(false);
@@ -612,7 +758,8 @@ document.querySelectorAll('input[name=alg]').forEach(r =>
     if (!r.checked) return;
     alg = r.value; store(); render();
   }));
-['fN','fM','fW'].forEach(id => $(id).addEventListener('input', render));
+['fN','fM','fW','fK','fC'].forEach(id => $(id).addEventListener('input', render));
+$('fJ').addEventListener('change', render);
 
 $('btnAll').addEventListener('click', () => {
   const panel = $('allPanel');

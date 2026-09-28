@@ -2,7 +2,12 @@
 
 **Status:** Accepted; implemented LOCAL/CERT/PROD 2026-04-30. Backfill executed on all three; ingester contract enforced by pytest.
 **Date:** 2026-04-30
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`).
 **Relates to:** ADR-024 (Combined Category Splitting), ADR-038 (per-cat field count), ADR-047 (V-cat invariant trigger), ADR-048 (Source-vs-DB audit). Supersedes the "Joint-pool reference field — also deferred" subsection of ADR-048.
+
+## Amendment (2026-09-28 — renumbering is a named module)
+
+[ADR-103](103-spws-place-medal-engine-per-type.md) moves the per-category split and dense renumbering (`_rerank_places`) unchanged into `python/pipeline/joined_brackets/` as the module `PER_CATEGORY_RENUMBER`, paired with EVF classic. It runs only for tournament types on that engine. Types on the new engine use `JOINED_BRACKET_CATEGORY_PLACE`, which keeps the joined place and the joined N.
 
 ## Context
 

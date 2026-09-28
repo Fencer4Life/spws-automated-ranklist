@@ -94,6 +94,9 @@ def _commit_with(source_kind, source_url):
     ctx.data["matches"] = fv["V2"]
     ctx.data["final_vcats"] = fv
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     db.find_or_create_tournament.return_value = 201
     db.ingest_results.return_value = {"ok": True}
     plugin = Commit()
@@ -152,6 +155,9 @@ class TestFromUrlCarriesResultsUrl:
         from python.pipeline import ingest_cli
 
         db = MagicMock()
+        # ADR-103: the engine these fixtures assume, so Commit files brackets
+        # with the classic PER_CATEGORY_RENUMBER module.
+        db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
         db.find_event_by_code.return_value = {
             "id_event": 1,
             "txt_code": "PPW3-2025-2026",
@@ -233,6 +239,9 @@ class TestStagingMentionsUrl:
         ctx.data["event"] = {"id_event": 7, "txt_code": "PPW3-2025-2026"}
         ctx.data["_source_decisions"] = source_decisions
         db = MagicMock()
+        # ADR-103: the engine these fixtures assume, so Commit files brackets
+        # with the classic PER_CATEGORY_RENUMBER module.
+        db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
         db.fetch_cert_rows_for_event.return_value = []
         db.fetch_fencer_db.return_value = []
         svc = Services(db=db, config={"staging_dir": str(tmp_path)})

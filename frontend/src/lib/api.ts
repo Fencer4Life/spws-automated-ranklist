@@ -12,6 +12,7 @@ import type {
   AgeCategory,
   RankingRules,
   ScoringConfig,
+  ScoringEngineOption,
   Organizer,
   CreateEventParams,
   UpdateEventParams,
@@ -315,20 +316,27 @@ export async function fetchScoringConfig(seasonId: number): Promise<ScoringConfi
 }
 
 // SS26.LOCK.01/§05: released scoring-engine codes for ScoringConfigEditor's
-// engine selector. Fetched once (called from App.svelte at admin-view mount),
+// engine selectors. Fetched once (called from App.svelte at admin-view mount),
 // never hardcoded — a third released engine then needs no frontend redeploy.
 // tbl_scoring_engine has a plain "Public read" RLS policy (20260919000005),
 // matching every other reference/lookup table in this codebase.
-export async function fetchScoringEngines(): Promise<{ code: string, label: string }[]> {
+//
+// select('*') rather than a column list, deliberately: the release deploys the
+// pages BEFORE it migrates PROD, so for a few minutes this build talks to a
+// database without txt_joined_bracket_module (ADR-103 §4). Naming that column
+// would fail the whole query and empty every engine selector; '*' returns the
+// row either way, and the card then shows no module until the migration lands.
+export async function fetchScoringEngines(): Promise<ScoringEngineOption[]> {
   const { data, error } = await getClient()
     .from('tbl_scoring_engine')
-    .select('txt_code, txt_label')
+    .select('*')
     .eq('bool_active', true)
     .order('id_engine')
   if (error || !data) return []
-  return (data as { txt_code: string, txt_label: string }[]).map((row) => ({
+  return (data as { txt_code: string, txt_label: string, txt_joined_bracket_module?: string | null }[]).map((row) => ({
     code: row.txt_code,
     label: row.txt_label,
+    module: row.txt_joined_bracket_module ?? null,
   }))
 }
 

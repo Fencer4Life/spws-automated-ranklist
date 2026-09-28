@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Progress — 2026/27 scoring engine</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:860px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,32px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:70ch}
+h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:32px 0 10px;padding-top:16px;border-top:1px solid var(--line)}
+a{color:var(--navy)}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.q{border-left:4px solid var(--navy)}
+.rec{border-left:4px solid var(--green)}
+.warn{border-left:4px solid var(--amber)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.ok{color:var(--green);font-weight:700}
+.wait{color:var(--amber);font-weight:700}
+ul,ol{padding-left:22px}
+li{margin:4px 0}
+footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Progress · 28 September 2026 · SPWS 2026/2027 scoring engine</p>
+<h1>All nine plan steps are built on LOCAL; the release waits for your go</h1>
+<p class="dek">Plan steps 1–9 are done and committed on the branch, step 7 as the mockup you approved (A). Nothing is pushed, and PROD is unchanged.</p>
+
+<h2>Where things stand</h2>
+<ul>
+<li><b>Branch</b> <code>claude/scoring-engine-2026-2027</code>, local only. Commits: <code>848c1836</code> ADR-103 · <code>60d18b95</code> database engine · <code>f61429a3</code> pipeline modules · <code>70932880</code> exact cube root · <code>1b8afd4d</code> scoring module and pages · <code>02af2305</code> page generator independent of the working directory · <code>0ed2e575</code> PPS and MPS on EVF classic · <code>c9ad58f2</code> step 7, the Admin editor and the drilldown export · the documentation commit that carries this page.</li>
+<li><b>PROD</b> still serves the board preview at <code>/tabela-punktacji-projekt-2026-2027.html</code> and the old annex and calculator. They change only when you give the release go.</li>
+<li><b>On hold, as agreed:</b> PPW1 ingestion and every 2026/27 promotion to PROD.</li>
+<li><b>Gate:</b> <code>scripts/preflight.sh</code> exits 0. All 15 gates pass: ruff, basedpyright, the ADR and doc renders, <code>check_docs</code>, pytest, vitest (996), pgTAP (1165), coherence, spec-sync, the anon allowlist, svelte-check, the published-pages check and <code>git diff --check</code>. <code>postgrestools</code> on the migration reports no errors, only lock-safety warnings.</li>
+</ul>
+
+<h2>What is built</h2>
+<div class="tw"><table>
+<thead><tr><th>Step</th><th>What it does now</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>1–3 Database</td><td>The place-and-medal engine; the engine per tournament type (PPW and MPW new; PPS, MPS, PEW, MEW, MSW and PSW EVF classic — PPS and MPS moved back to EVF classic at your instruction, ADR-103 amendment); K, m, b, the new components and the method on every result, −1 where unused; field-scaled deleted; ranking entry through PPW/MPW.</td><td class="ok">pgTAP 1165 of 1165</td></tr>
+<tr><td>4–5 Pipeline</td><td>The two joined-bracket modules, chosen by the engine of the type, in ingestion, recompute and PZSz.</td><td class="ok">pytest green</td></tr>
+<tr><td>6 Browser module</td><td><code>scoring.ts</code> implements both engines and matches SQL to the cent.</td><td class="ok">40 parity tests</td></tr>
+<tr><td>8 Public pages</td><td>The annex is rebuilt from the signed-off table: 64 × 64, the medal table to K = 31, the worked example and each type's coefficient. The calculator takes N up to 300, has a joined mode and an SPWS/EVF toggle. The board preview is deleted.</td><td class="ok">Browser-checked on LOCAL</td></tr>
+<tr><td>9 Documentation</td><td>Handbook (scoring, domain, ingestion, recompute, flows, product surfaces, frontend, security, codebase map, glossary), spec §8, §8.6.6, §9.5.2 and Appendix D, the RTM and the WordPress upload guide.</td><td class="ok">check_docs, coherence and spec-sync pass</td></tr>
+<tr><td>7 Admin editor and drilldown export</td><td>Each type card has its coefficient, an engine selector and the joined-bracket module that engine implies; two read-only panels list each engine&rsquo;s fixed rules; the EVF base value&rsquo;s hint names the types it feeds. A save sends the engine every card shows. The drilldown export has N, K, m, b, the method and every component, in Polish with the calculator&rsquo;s names, and &bdquo;nie dotyczy&rdquo; for −1.</td><td class="ok">SE27.UI.02–09; browser-checked on LOCAL</td></tr>
+</tbody></table></div>
+
+<h2>The pages, checked against the signed-off table</h2>
+<ul>
+<li>Annex row N = 8: 53.5 · 38.0 · 26.5 · 17.0 · 13.5 · 10.0 · 6.5 · 3.0. Winners at N = 31, 32 and 64: 150.8, 128.6 and 146.0. Worked example: 51.2 · 52.0 · 38.9 · 24.3 · 41.5 · 22.1 · 24.9 · 15.1 · 6.8 · 3.3. All match.</li>
+<li>The per-type coefficient table reads the season configuration. The MPW chip sets 1.2, and the N = 8 winner becomes 64.2.</li>
+<li>Calculator: SPWS 8/3 = 26.5 and EVF 8/3 = 40.1. The joined example (N 10, place 3, K 4, 2nd in the category) is 38.9. N = 300 works and 301 is refused.</li>
+<li>At 375 px neither page scrolls sideways. The console shows no errors in either language.</li>
+</ul>
+
+<h2>End-to-end on LOCAL, with the PPW1 fixture</h2>
+<p>The fixture copies last season&rsquo;s 23 PPW1 brackets (85 placements) onto PPW1-2026-2027 and scores them with the new engine, from ingestion data to ranking.</p>
+<ul>
+<li>All 85 are scored in one revision: 20 by the small-field table (brackets of 1–3) and 65 by place-and-medal. Every row has K, m and b, and −1 sits exactly in the components its method does not use.</li>
+<li>The N = 8 V2 men&rsquo;s épée bracket stores 53.50 · 38.00 · 26.50 · 17.00 · 13.50 · 10.00 · 6.50 · 3.00, the signed-off row. A walkover stores 1.00 instead of last season&rsquo;s 59.00.</li>
+<li>Both the domestic ranking and the full ranking show the same top four for V2 men&rsquo;s épée. The drilldown&rsquo;s data source returns K, m, b, the new components and the method.</li>
+<li>Across the event, 3298.88 points under last season&rsquo;s engine become 1354.64 (−58.9%). Eight walkovers account for much of it; every bracket is below 32.</li>
+<li>Step 7, run again on the fixture. The V2 men&rsquo;s épée leader&rsquo;s drilldown export lists last season&rsquo;s carried results with their EVF components and &bdquo;nie dotyczy&rdquo; in the new columns. It lists PPW1-2026-2027 (N 8, 4th) as K 8, m 4, b 4, &bdquo;Za liczebność&rdquo; 3, &bdquo;Zawodnicy poniżej w stawce&rdquo; 14, &bdquo;Premia medalowa&rdquo; 0, total 17 — the signed-off row. The rows were read in the page before the file would have been written, so nothing was downloaded.</li>
+<li>In the Admin editor on LOCAL, 2026/27 shows PPW and MPW on SPWS 2026/2027 and the other six on EVF klasyczny, with both panels. Saving PPS on SPWS stored exactly that one change; saving it back restored it. With the fixture&rsquo;s first score, every selector is disabled.</li>
+<li>LOCAL was reset afterwards (<code>./scripts/reset-dev.sh</code>), so the fixture and its lock are gone.</li>
+</ul>
+
+<h2>Three things I changed that you should know about</h2>
+<div class="card warn">
+<span class="lb">The Admin engine list was empty after signing in, since 19 September</span>
+<p>The engine registry is readable only by a signed-in admin, but the app fetched it once when the page loaded, before anyone signs in. So the season&rsquo;s engine selector showed nothing unless the browser still held an earlier session, and every public visitor made a request that could only be refused. Found while checking step 7 in the browser. The list now loads when an admin signs in, and a new test (SE27.UI.09) pins it. The server-side lock never depended on it.</p>
+</div>
+<div class="card warn">
+<span class="lb">A parity defect in the new SQL, fixed</span>
+<p>The strategy computed ∛K as <code>POWER(K, 1.0/3)</code>. In Postgres, 1.0/3 stops at twenty digits, so ∛8 came out as 1.999…. On a tie at the final rounding the database went down where your signed-off table goes up. The example is N = 8, 3rd of 8, at a 0.75 coefficient: 19.87 instead of 19.88. The strategy now uses the exact cube root, and a new test (SE27.ENG.14) pins it. No stored score was affected, because the engine has not scored anything yet. With today's coefficients (1, 1.2, 2) the case cannot arise.</p>
+</div>
+<div class="card warn">
+<span class="lb">An RTM row I had broken earlier, repaired</span>
+<p>During the database step, an edit meant for the SE27.ING test row landed in the FR-139 requirement row. FR-139 then had an extra column, and SE27.ING still read "Planned". Both rows are correct again.</p>
+</div>
+
+<h2>Your change of 28 September: PPS and MPS on EVF classic</h2>
+<ul>
+<li>Built on LOCAL: the migration assigns 2026/2027 PPW and MPW to the SPWS engine and the six other types to EVF classic. SE27.TYPE.02, TYPE.04 and CALC.01 pinned it first (RED, then GREEN), and SE27.ING.05 now proves a PZSz result keeps K, m and b under either engine.</li>
+<li>A PZSz senior field is scored as it was before ADR-103: the full field as N, the original place and EVF classic. The coefficients are PROD&rsquo;s own, PPS × 1.1 and MPS × 1.3, and the migration does not touch them.</li>
+<li>ADR-103 carries a dated amendment, and ADR-100&rsquo;s note, FR-137, spec §8.1.4 and Appendix C, and the handbook are corrected. On the annex, PPS and MPS show under EVF, and its coefficient slider offers PPW and MPW only.</li>
+<li>Observed while checking (read-only): PROD holds the coefficients set on 21 September (MEW 1.3, MSW 1.4, PSW 1.1, PPS 1.1, MPS 1.3), while CERT still holds the older defaults (MEW and PSW 2.0, MSW 1.2, PPS and MPS 1.0). Both are unlocked with nothing scored. If PPW1 is ingested on CERT first, CERT scores with CERT&rsquo;s values; this matters only for the types that differ, not for PPW or MPW.</li>
+</ul>
+
+<h2>What waits for you</h2>
+<div class="card q">
+<span class="lb">1 · Release — a separate go</span>
+<p>Before the push I run the scoring preflight against CERT and PROD. The push itself goes only from the integration checkout (<code>integration/main:main</code>) and deploys CERT and PROD. It also replaces the live annex and calculator and removes the board preview.</p>
+</div>
+<div class="card q">
+<span class="lb">2 · Later — ADR-102's status</span>
+<p>ADR-102 is still a Draft, and ADR-103 amends it. I will ask that as its own question once the release is decided.</p>
+</div>
+
+<footer>Sources: branch <code>claude/scoring-engine-2026-2027</code>; <code>supabase/migrations/20260928000001_spws_place_medal_engine.sql</code>; <code>frontend/src/lib/scoring.ts</code>; <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>; <code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code>; plan <a href="scoring-engine-2026-2027-implementation-plan-2026-09-28.html">scoring-engine-2026-2027-implementation-plan-2026-09-28.html</a>.</footer>
+</div>
+</body>
+</html>

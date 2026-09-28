@@ -233,15 +233,21 @@ class DbConnector:
         RECOMPUTE_DOMESTIC (no source fetch, no re-match).
 
         Returns [{id_fencer, place, enum_age_category, int_birth_year, weapon,
-        gender, date, id_tournament}]. Empty if the event has no committed
-        tournaments yet. Reuses `fetch_birth_years_batch` so the BY is always the
-        governed value. weapon/gender/date carry the source tournament's
+        gender, date, id_tournament, participant_count, url_results,
+        below_count}]. Empty if the event has no committed tournaments yet.
+        Reuses `fetch_birth_years_batch` so the BY is always the governed value.
+        weapon/gender/date carry the source tournament's
         enum_weapon/enum_gender/dt_tournament so Commit can re-partition by
-        (weapon, gender, governed-V-cat) on recompute (Step C).
+        (weapon, gender, governed-V-cat) on recompute (Step C). The stored N,
+        listing URL and count of fencers below let the joined-bracket module
+        keep a joined bracket whole across a recompute (ADR-103 §4).
         """
         tr = (
             self._sb.table("tbl_tournament")
-            .select("id_tournament,enum_weapon,enum_gender,enum_age_category,dt_tournament")
+            .select(
+                "id_tournament,enum_weapon,enum_gender,enum_age_category,dt_tournament,"
+                "int_participant_count,url_results"
+            )
             .eq("id_event", id_event)
             .execute()
         )
@@ -253,7 +259,7 @@ class DbConnector:
         # (never-live-run) query got wrong.
         rr = (
             self._sb.table("tbl_result")
-            .select("id_fencer,int_place,id_tournament")
+            .select("id_fencer,int_place,id_tournament,int_below_count")
             .in_("id_tournament", list(tmeta))
             .execute()
         )
@@ -270,6 +276,9 @@ class DbConnector:
                 "gender": tmeta[r["id_tournament"]].get("enum_gender"),
                 "date": tmeta[r["id_tournament"]].get("dt_tournament"),
                 "id_tournament": r.get("id_tournament"),
+                "participant_count": tmeta[r["id_tournament"]].get("int_participant_count"),
+                "url_results": tmeta[r["id_tournament"]].get("url_results"),
+                "below_count": r.get("int_below_count"),
             }
             for r in rows
         ]
@@ -555,6 +564,18 @@ class DbConnector:
             "id_tournament", tournament_id
         ).execute()
 
+    def get_type_engine(self, id_season: int | None, tourn_type: str | None) -> str:
+        """The scoring engine assigned to a tournament type in a season
+        (ADR-103 §2) — the type row's engine, or the season's. Resolved by
+        `fn_get_type_engine`, which raises when the type is unconfigured or
+        nothing is assigned; the error propagates, so ingestion stops rather
+        than guess a joined-bracket module.
+        """
+        resp = self._sb.rpc(
+            "fn_get_type_engine", {"p_id_season": id_season, "p_type": tourn_type}
+        ).execute()
+        return resp.data
+
     def queue_pzsz_match_review(
         self,
         id_tournament: int,
@@ -562,12 +583,15 @@ class DbConnector:
         place: int,
         id_candidate_fencer: int | None,
         confidence: float | None,
+        below_count: int,
     ) -> int:
         """Queue one uncertain PZSz senior match for Admin review (ADR-100).
 
         No tbl_result row is written -- fn_queue_pzsz_match_review holds the
         candidate for a human decision (fn_approve_pzsz_match_review /
-        fn_reject_pzsz_match_review).
+        fn_reject_pzsz_match_review). `below_count` is the number of the full
+        senior field with a worse place (ADR-103 §4): the approval writes it,
+        because the unmatched field is never stored.
         """
         resp = self._sb.rpc(
             "fn_queue_pzsz_match_review",
@@ -577,6 +601,7 @@ class DbConnector:
                 "p_int_place": place,
                 "p_id_candidate_fencer": id_candidate_fencer,
                 "p_num_confidence": confidence,
+                "p_int_below_count": below_count,
             },
         ).execute()
         return resp.data

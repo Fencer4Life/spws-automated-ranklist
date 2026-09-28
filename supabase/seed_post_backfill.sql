@@ -135,6 +135,11 @@ $fix_guildford$;
 -- are served by the call inside it. Idempotent.
 SELECT fn_backfill_scoring_engines();
 
+-- The 2026/2027 engine (2026-09-28, ADR-103 §6): the Season Scoring Rules gain
+-- entry_types. The rules arrive with the seed dump, after the migration's own
+-- call ran against an empty tbl_scoring_config. Idempotent.
+SELECT fn_backfill_ranking_entry_types();
+
 -- Tournament 380 (PEW3-V2-M-SABRE-2025-2026, Munich Dec 6 2025): the v2 ingest
 -- recorded int_participant_count=2 (POL-only count) instead of the true field
 -- size of 25 (verified against fencingworldwide.com/en/912306-2025/results/).
@@ -355,3 +360,12 @@ SELECT fn_prune_unclaimed_evf_skeletons();
 -- then reinstates the stub rows. Same function, same predicate, so the two
 -- paths cannot drift.
 SELECT fn_prune_bracket_stubs();
+
+-- =============================================================================
+-- Score method of history — after every rescore above (ADR-103 §5)
+-- =============================================================================
+-- Migration 20260928000001 names EVF_CLASSIC on every scored result, but on a
+-- fresh bootstrap it runs before this dump loads. The rescores above already
+-- write the method for the tournaments they touch; this names it on any scored
+-- row they did not. Same function as the migration's, so the two cannot drift.
+SELECT fn_backfill_score_method();

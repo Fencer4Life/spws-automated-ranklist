@@ -54,6 +54,9 @@ def _rmatch(id_fencer, place, name, by, weapon="EPEE", gender="W"):
 
 def _db():
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     # find_or_create_tournament returns a distinct id per V-cat so tests can
     # assert each ingest_results call is keyed to its own tournament.
     db.find_or_create_tournament.side_effect = [201, 202, 203, 204]
