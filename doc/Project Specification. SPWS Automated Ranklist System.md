@@ -176,11 +176,11 @@ Development phases POC, MVP, and Go-to-PROD are preserved in the archived [devel
 ## 8. Detailed Scoring Mathematics
 
 > **Scoring method:** Originally developed by **British Veterans Fencing (BVF)** and adopted by the **European Veterans Fencing (EVF)** ranking system. The same method is used by the Polish Veterans Fencing Association (SPWS) for domestic and international rankings.
-> These formulas are faithfully reproduced by the scoring engine (`fn_calc_tournament_scores`).
+> These formulas are faithfully reproduced by the scoring engine (`fn_calc_tournament_scores`). Each tournament type is scored by the engine assigned to it for the season (§8.1.4): EVF classic (§8.1.1–§8.1.3) or, from SPWS-2026-2027, the SPWS place-and-medal engine (§8.1.5).
 
 ### 8.1 Per-Tournament Score Components
 
-A fencer's total points at a single tournament are the sum of three independent components:
+Under **EVF classic** (`EVF_CLASSIC_V1_2025_2026`), a fencer's total points at a single tournament are the sum of three independent components:
 
 $$\text{Total} = \text{PlacePoints} + \text{DE\_Bonus} + \text{PodiumBonus}$$
 
@@ -237,6 +237,22 @@ and `int_podium_bronze` (§8.6.1); the $3 \times \sqrt[3]{N}$ term is fixed in t
 > by 3, 2 and 1 for the first three places. The implementation matches it exactly —
 > see `supabase/migrations/20250305000002_jsonb_ranking_rules.sql:107`.
 
+#### 8.1.4 Engine per Tournament Type
+
+The engine is assigned per tournament type and season (`tbl_scoring_type_config.id_scoring_engine`; NULL means the season's engine) and is governed by the scoring lock like every other scoring field. SPWS-2026-2027: PPW, MPW, PPS and MPS → `SPWS_PLACE_MEDAL_V1_2026_2027`; PEW, MEW, MSW and PSW → `EVF_CLASSIC_V1_2025_2026`. Earlier seasons are EVF classic throughout. A released strategy is immutable; a formula change is a new engine version. [ADR-103](adr/103-spws-place-medal-engine-per-type.md).
+
+#### 8.1.5 SPWS Place-and-Medal Engine (2026/2027)
+
+Three ranges by the size $N$ of the whole bracket — a joined bracket counts every category in it:
+
+| Range | Points before the multiplier | Method |
+|-------|------------------------------|--------|
+| $N \le 3$ | $N - place + 1$ | `TABLE` |
+| $4 \le N \le 31$ | $\log_2 N + 3.5 \times b + \text{Medal}(m, K)$ | `PLACE_MEDAL` |
+| $N \ge 32$ | EVF classic (§8.1.1–§8.1.3) on the joined place and $N$; no category medal | `EVF_CLASSIC` |
+
+$K$ is the number of fencers of the fencer's own category in the bracket; $m = 1 +$ own-category fencers with a strictly better place (ties run 1, 2, 3, 3, 5); $b$ is the number of fencers of any category with a strictly worse place — a tied fencer is not below. $\text{Medal}(m, K) = 13, 7, 3 \times \sqrt[3]{K}$ for $m = 1, 2, 3$ when $K > m$, otherwise 0. In a single-category bracket $K = N$, $m = place$ and $b = N - place$. These numbers are engine constants, not settings; only the type multiplier (§8.4) applies on top. Every component is stored rounded to two decimals, with −1 where the method does not use it, together with the method; the final score is rounded once, $\text{ROUND}(\sum \text{components} \times multiplier, 2)$. Crossing from 31 to 32 fencers switches the bracket to EVF classic, which lowers most places; the board accepted that documented drop.
+
 ### 8.2 Tournament Multipliers
 
 Tournament types and their multipliers are defined in §8.4 Tournament Type Taxonomy.
@@ -291,7 +307,7 @@ Where $J$ is defined in `json_ranking_rules` (default 3; see §8.6.6) and the in
 
 ### 8.4 Tournament Type Taxonomy
 
-The Excel reveals a structured tournament classification not fully documented previously. Multipliers apply to the **total** tournament score (PlacePoints + DE_Bonus + PodiumBonus). All multipliers are configurable via `tbl_scoring_config` — PPW and PEW default to 1.0 but are stored as explicit columns to allow future adjustment without code changes.
+The Excel reveals a structured tournament classification not fully documented previously. Multipliers apply to the **total** tournament score — the sum of the engine's components (§8.1). All multipliers are configurable via `tbl_scoring_config` — PPW and PEW default to 1.0 but are stored as explicit columns to allow future adjustment without code changes.
 
 | Code | Full Name | Type | Multiplier | Config Column | Count per Season |
 |------|-----------|------|-----------|---------------|-----------------|
@@ -301,6 +317,7 @@ The Excel reveals a structured tournament classification not fully documented pr
 | MEW | Mistrzostwa Europy Weteranów (European Veterans Championship) | International | **2.0** | `num_mew_multiplier` | 0 or 1 (odd years only) |
 | MSW | Mistrzostwa Świata Weteranów (FIE Veterans World Championships) | International | **2.0** | `num_msw_multiplier` | 1 (yearly, Oct/Nov) |
 | PSW | Puchar Świata Weteranów (FIE Veterans World Cup) | International | **2.0** | `num_psw_multiplier` | variable — not yet held; future |
+| PPS / MPS | Puchar / Mistrzostwa Polski Seniorów (PZSz senior field, from 2026/2027) | Domestic senior | **1.0** | `num_pps_multiplier` / `num_mps_multiplier` | variable / 1 |
 
 > MSW and PSW are included in the international ranking pool via `json_ranking_rules` (§8.6.6); see [ADR-008](adr/008-psw-msw-international-pool.md) for rationale.
 
@@ -437,6 +454,8 @@ The top-level keys `"domestic"` and `"international"` correspond to `fn_ranking_
 | `types` | string array | yes | Tournament type codes from `enum_tournament_type` — e.g. `["PPW"]`, `["PEW","MEW","MSW"]` |
 | `best` | integer | one of `best`/`always` | Take the top N results (by `num_final_score` DESC) from this bucket per fencer |
 | `always` | boolean | one of `best`/`always` | Include **all** results of these types regardless of score — equivalent to `best = ∞` |
+
+**Ranking entry (`entry_types`, SPWS-2026-2027 onwards):** an optional top-level array of tournament types, `["PPW", "MPW"]` for 2026/2027. When present, `fn_ranking_full` admits a fencer only with a result of one of those types in the ranking's window — the ranked season, plus the previous season when rolling — in any weapon; an admitted fencer scores from every bucket as usual. When absent, nobody is gated. [ADR-103](adr/103-spws-place-medal-engine-per-type.md) §6.
 
 Each fencer's ranking total = sum of selected scores across all buckets. Multipliers are already embedded in `num_final_score` at tournament-score-calculation time — they do not appear in the bucket rules. When multiple tournament types are listed in the same bucket (e.g. `["PEW","MEW","MSW"]`), results from all listed types compete together and the top N are selected from the combined pool.
 
@@ -1185,12 +1204,12 @@ The GitHub Actions pipeline must be robust against transient and permanent failu
 
 ### 9.5.2 Scoring Engine Function
 
-`fn_calc_tournament_scores(p_tournament_id)` computes all four point columns (`num_place_pts`, `num_de_bonus`, `num_podium_bonus`, `num_final_score`) for every result row in a tournament, then sets `enum_import_status = 'SCORED'`.
+`fn_calc_tournament_scores(p_tournament_id)` resolves the engine of the tournament's type (§8.1.4), dispatches each result through `fn_score_by_engine` and stores every component (`num_place_pts`, `num_de_bonus`, `num_podium_bonus`, `num_field_pts`, `num_below_pts`, `num_medal_bonus`; −1 where unused), `enum_score_method` and `num_final_score`, then sets `enum_import_status = 'SCORED'`. It holds no formula of its own.
 
 > **Implementation:** See `supabase/migrations/` for the authoritative SQL. Key implementation notes:
 > - Uses `LN()` (natural log) — any logarithmic base works because the ratio `log(place)/log(N)` is base-independent.
 > - `N` is read from `tbl_tournament.int_participant_count`, not recounted from result rows.
-> - Multiplier resolved via `CASE` on `enum_type` from `tbl_scoring_config` (not the denormalized `tbl_tournament.num_multiplier` cache column).
+> - Multiplier and engine resolved per type from `tbl_scoring_type_config` via `fn_resolve_scoring_params` (not the denormalized `tbl_tournament.num_multiplier` cache column); K, m and b are read from the result row as ingestion wrote them.
 > - `ROUND(value, 2)` requires `::NUMERIC` cast since `LN()`, `POWER()`, `CEIL()`, `FLOOR()` return `double precision`.
 > - Minimum-participant validation is an import-time concern, not a scoring-engine concern.
 
@@ -1527,7 +1546,7 @@ The full Requirements Traceability Matrix (functional + non-functional requireme
 ## Appendix D — Test Baseline
 
 <!-- CI coherence check (Gate 3) reads the pgTAP total from this line -->
-- pgTAP total: 1141 assertions (+9 SS26.CALC.01-09 in `supabase/tests/82_published_page_params.sql`, design step 8 (published-page cutover, migration `20260920000003`): `fn_public_scoring_params` is the parameter surface the two published static pages -- the points calculator and the ADR-092 scoring-table annex -- compute from. A score RPC was rejected: the annex renders up to 300x300 cells and re-renders on every rank-coefficient change, so a round trip per value, or a ~1 MB grid per change, is not viable; the formula therefore lives in exactly two places, `frontend/src/lib/scoring.ts` and the SQL strategies, pinned by 27 Vitest parity cases whose expectations are derived from `fn_score_by_engine` rather than guessed. CALC.05/06 pin that the published numbers ARE the season's stored `tbl_scoring_config` row and not literals, which is what makes a pre-lock Admin edit reach the engine, the calculator and the annex alike; once the season locks they stop moving and all three freeze together, so neither page needs a freezing mechanism of its own. CALC.07 pins `base_slope` and `de_round` as SEPARATE parameters -- two unrelated tens that merely coincide at 10. CALC.09 pins a NULL season code resolving to the active season, so the calculator needs no second round trip while the annex passes `SPWS-2026-2027` explicitly and stays pinned to it. `fn_preview_tournament_score` stays revoked from anon: it takes an `id_tournament`, which neither page has. The grant landed in both allowlist copies at once -- `52_security_posture.sql` and `scripts/check-security-posture.sh` -- which is the drift that blocked a PROD deploy on 2026-09-12.)
+- pgTAP total: 1165 assertions (+35 SE27.ENG/TYPE/CALC/STORE/RANK in `supabase/tests/83_spws_place_medal_engine.sql` and +1 SE27.STORE.08 in `81_pzsz_senior_ingestion.sql` for the 2026/2027 place-and-medal engine, migration `20260928000001` ([ADR-103](adr/103-spws-place-medal-engine-per-type.md)); −12 in `80_season_scoring_contract.sql`, where the field-scaled SS26.NEW assertions retire with that engine. Previously 1141: +9 SS26.CALC.01-09 in `supabase/tests/82_published_page_params.sql`, design step 8 (published-page cutover, migration `20260920000003`): `fn_public_scoring_params` is the parameter surface the two published static pages -- the points calculator and the ADR-092 scoring-table annex -- compute from. A score RPC was rejected: the annex renders up to 300x300 cells and re-renders on every rank-coefficient change, so a round trip per value, or a ~1 MB grid per change, is not viable; the formula therefore lives in exactly two places, `frontend/src/lib/scoring.ts` and the SQL strategies, pinned by 27 Vitest parity cases whose expectations are derived from `fn_score_by_engine` rather than guessed. CALC.05/06 pin that the published numbers ARE the season's stored `tbl_scoring_config` row and not literals, which is what makes a pre-lock Admin edit reach the engine, the calculator and the annex alike; once the season locks they stop moving and all three freeze together, so neither page needs a freezing mechanism of its own. CALC.07 pins `base_slope` and `de_round` as SEPARATE parameters -- two unrelated tens that merely coincide at 10. CALC.09 pins a NULL season code resolving to the active season, so the calculator needs no second round trip while the annex passes `SPWS-2026-2027` explicitly and stays pinned to it. `fn_preview_tournament_score` stays revoked from anon: it takes an `id_tournament`, which neither page has. The grant landed in both allowlist copies at once -- `52_security_posture.sql` and `scripts/check-security-posture.sh` -- which is the drift that blocked a PROD deploy on 2026-09-12.)
 
 | Suite | Count | Files | Location |
 |-------|-------|-------|----------|
