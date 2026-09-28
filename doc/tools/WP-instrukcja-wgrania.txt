@@ -1,7 +1,7 @@
 KALKULATOR PUNKTOW SPWS - JAK WGRAC NA STRONE WORDPRESS
 =======================================================
 Plik: WP-kalkulator-punktow-za-wynik-spws.html
-Wielkosc: okolo 37 KB. Data przygotowania: 15 sierpnia 2026.
+Wielkosc: okolo 52 KB. Data przygotowania: 28 wrzesnia 2026.
 
 
 CO TO JEST
@@ -12,11 +12,19 @@ a caly wzor punktowy jest w nim zawarty; liczenie odbywa sie w przegladarce
 osoby, ktora otworzy strone.
 
 UWAGA - ZMIANA OD WRZESNIA 2026. Kalkulator potrzebuje juz POLACZENIA
-Z INTERNETEM. Liczby, na ktorych liczy - podstawa za pierwsze miejsce
-i mnozniki podium - nie sa w nim zaszyte na sztywno. Pobiera je z
-konfiguracji aktualnego sezonu, dzieki czemu zawsze pokazuje to samo,
-co system rankingowy, a zmiana ustawien przed pierwszym punktowanym
-wynikiem sezonu jest widoczna takze tutaj.
+Z INTERNETEM. Ustawienia algorytmu EVF - maksimum za miejsce, punkty
+za wygrana runde i mnozniki podium - nie sa w nim zaszyte na sztywno.
+Pobiera je z konfiguracji aktualnego sezonu, dzieki czemu zawsze
+pokazuje to samo, co system rankingowy, a zmiana ustawien przed
+pierwszym punktowanym wynikiem sezonu jest widoczna takze tutaj.
+
+OD SEZONU 2026/2027 kalkulator liczy punktacje SPWS: stawka do 3
+zawodnikow dostaje 3, 2 i 1 punkt; stawka od 4 do 31 - premie za
+liczebnosc, 3,5 punktu za kazdego zawodnika ponizej w stawce i premie
+medalowa we wlasnej kategorii; stawka od 32 - algorytm EVF. Ma tez
+pole wyboru "Stawka laczona" dla turniejow, w ktorych walczy kilka
+kategorii wiekowych naraz. Przelacznik SPWS/EVF pozwala porownac oba
+algorytmy.
 
 Bez internetu strona sie otworzy i da sie ja przeczytac, ale zamiast
 wyniku pokaze komunikat o braku parametrow sezonu. Tak ma byc: lepiej
@@ -63,11 +71,13 @@ wp-includes). Adres skroci sie wtedy do:
 
 KROK 2 - SPRAWDZENIE
 --------------------
-Otworz ten adres na telefonie. Powinienes zobaczyc logo SPWS, trzy pola
-i duza liczbe pod nimi. Sprawdzian: przy 7 startujacych i 3 miejscu,
-przy wspolczynniku rangi 1,0 i wybranym SPWS, wynik ma wynosic
+Otworz ten adres na telefonie. Powinienes zobaczyc logo SPWS, pola
+liczby startujacych i miejsca, pole wyboru "Stawka laczona", suwak
+rangi i duza liczbe pod nimi. Sprawdzian: przy 7 startujacych i 3
+miejscu, przy wspolczynniku rangi 1,0, bez stawki laczonej i przy
+wybranym SPWS, wynik ma wynosic
 
-    28,5
+    22,5
 
 Jesli wynik sie zgadza - plik dziala poprawnie.
 
@@ -117,8 +127,11 @@ oraz WP-kalkulator-punktow-za-wynik-spws.html (kopia do wgrania na strone).
 Trzecia kopia lezy w frontend/public/kalkulator-punktow.html i jedzie na
 GitHub Pages razem z ranklista.
 
-Przy kazdej zmianie trzeba odswiezyc wszystkie trzy, inaczej zaczna sie
-rozjezdzac; pilnuje tego test 8.88 w zestawie testow frontendu.
+Wzor punktowy wpisuje do nich skrypt frontend/scripts/build-scoring-pages.mjs
+(z pliku frontend/src/lib/scoring.ts) i on tez kopiuje wersje robocza
+do obu pozostalych miejsc. Recznie ich sie nie poprawia; zgodnosc
+wszystkich trzech pilnuja testy 8.88 i SE27.PAGE w zestawie testow
+frontendu.
 
 Poprzednia wersja formuly (z pokretlami k i p, porzucona 16 sierpnia 2026)
 lezy w doc/archive/ pod nazwa kalkulator-punktow-za-wynik-spws-formula-k-p.html.
