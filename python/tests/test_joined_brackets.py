@@ -250,10 +250,15 @@ class TestJoinedBracketCategoryPlace:
 
 
 class TestPzszSenior:
-    def test_rows_and_queue_carry_k_m_b(self):
-        """SE27.ING.05 a senior bracket is one category to the engine: K = the
-        full field, m = the original place, b from the full field — for written
-        rows and for a queued review alike."""
+    # PPS and MPS are scored by EVF classic in 2026/2027 (ADR-103 §2 as amended
+    # 2026-09-28), which does not read K, m and b. They are written anyway, as
+    # facts about the field: the unmatched senior field is never stored, so b
+    # could not be recounted if a later season scores these types by place.
+    @pytest.mark.parametrize("engine", [CLASSIC, PLACE_MEDAL])
+    def test_rows_and_queue_carry_k_m_b(self, engine):
+        """SE27.ING.05 a senior bracket is one category: K = the full field,
+        m = the original place, b from the full field — for written rows and
+        for a queued review alike, whatever the engine."""
         parsed = _parsed(range(1, 13))
         parsed.gender = "M"
         ctx = _ctx({}, parsed, ttype_code="PPS1e-2026-2027")
@@ -264,7 +269,7 @@ class TestPzszSenior:
             ),
         ]
         ctx.data["matches"] = matches
-        db = _db(PLACE_MEDAL)
+        db = _db(engine)
         db.find_or_create_tournament.side_effect = [601]
         _run(CommitPzszSenior(), ctx, db)
         (_, rows), kwargs = db.ingest_results.call_args

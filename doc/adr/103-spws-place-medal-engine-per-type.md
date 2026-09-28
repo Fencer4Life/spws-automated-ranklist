@@ -1,11 +1,21 @@
 # ADR-103: SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW
 
-**Status:** Accepted (signed off 2026-09-28)
+**Status:** Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)
 **Date:** 2026-09-28
 **Amends:** [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the engine is governed per tournament type, not only per season), [ADR-098](098-ranking-schema-v2-and-generalized-ranking-rpc.md) (the Season Scoring Rules gain `entry_types`), [ADR-102](102-published-pages-share-one-scoring-module.md) (the shared module gains the new engine and loses field-scaled; public parameters are per type), [ADR-092](092-scoring-table-annex-bilingual-static-page.md) (annex content becomes the 64 × 64 table), [ADR-085](085-points-calculator-temporary-static-page.md) (calculator gains the joined mode; the toggle compares SPWS with EVF classic), [ADR-049](049-joint-pool-split-flag.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`), [ADR-069](069-participant-count-url-validator.md) (the count check compares the joined N), [ADR-100](100-pzsz-senior-result-ingestion.md) (PPS/MPS are scored by the new engine with K = N, m = place)
 **Supersedes:** [ADR-024](024-combined-category-splitting.md) in part — for tournament types assigned the new engine, a joined bracket is no longer split and renumbered per category.
 **Relates to:** [ADR-042](042-carryover-engine-dispatcher.md) and [ADR-045](045-engine-selector-default-flip.md) (the static `CASE … ELSE RAISE` dispatcher pattern, reused), [ADR-056](056-vcat-from-birthyear.md) (a fencer's own category defines K and m), [ADR-066](066-min-participants-ingestion-gate.md) (the minimum-field gate reads the joined N), [ADR-083](083-server-enforced-authorization.md) (the anon allowlist pair), the ADR-036 amendment (bootstrap ordering: the assignment function is called again from `supabase/seed_post_backfill.sql`)
 **Source:** `doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html` §3; design `doc/plans/scoring-engine-2026-2027-brainstorm-2026-09-27.html` round 10; signed-off table `doc/plans/tabela-punktacji-propozycja-2026-09-27.html`
+
+## Amendment (2026-09-28 — PPS and MPS stay on EVF classic)
+
+Reviewing the per-type editor mockup on 28 September 2026, the user assigned the PZSz senior types PPS and MPS to `EVF_CLASSIC_V1_2025_2026` for 2026/2027, not to the new engine. Only PPW and MPW use `SPWS_PLACE_MEDAL_V1_2026_2027`. §2 is corrected in place; the rest of this record stands.
+
+- A PZSz senior field is scored as [ADR-100](100-pzsz-senior-result-ingestion.md) scored it before this record: the full original field as N, the original place, EVF classic's place points, DE rounds and podium, times the type's coefficient.
+- `CommitPzszSenior` still writes K = N, m = place and b, and the review queue still keeps b (§4). EVF classic does not read them. They are facts about a field that is never stored, so a later season that scores these types by place can use them.
+- The ranking-entry gate (§6) is unchanged: PPS and MPS never admitted a fencer to the ranking.
+- On the public pages the coefficient table shows PPS and MPS under EVF, and the annex offers no PPS or MPS shortcut on its coefficient slider, because its table is the SPWS engine's.
+- Tests: SE27.TYPE.02, SE27.TYPE.04 and SE27.CALC.01 pin the corrected assignment; SE27.ING.05 pins K, m and b under both engines.
 
 ## Context
 
@@ -35,7 +45,7 @@ A place is "strictly below" only if it is worse: a fencer tied with you does not
 
 `tbl_scoring_type_config` gains `id_scoring_engine`. A type row that names an engine uses it; a type row with NULL uses the season's engine, `tbl_season.id_scoring_engine`, which stays the season default. `fn_resolve_scoring_params` resolves the engine from the tournament's type, and still raises "Unknown scoring engine" when neither is assigned. Nothing is chosen at calculation time.
 
-For 2026/2027: PPW, MPW, PPS and MPS use the new engine; PEW, MEW, MSW and PSW use EVF classic. The season default becomes the new engine, and all eight type rows are set explicitly. Earlier seasons keep NULL type rows and their EVF classic season engine, which is their current scoring.
+For 2026/2027: PPW and MPW use the new engine; PPS, MPS, PEW, MEW, MSW and PSW use EVF classic (as amended 2026-09-28; the signed-off text also put PPS and MPS on the new engine). The season default becomes the new engine, and all eight type rows are set explicitly. Earlier seasons keep NULL type rows and their EVF classic season engine, which is their current scoring.
 
 The assignment is governed like every other scoring field (ADR-097). `fn_export_scoring_config` reports `type_engines` (the resolved engine per type). `fn_import_scoring_config` rejects a change to it once the season is locked. `fn_apply_scoring_config_write` writes it, so the privileged revision can change it, and the revision snapshot records it. The ingestion pipeline reads the assignment through `fn_get_type_engine(id_season, type)`, which raises when nothing is assigned.
 
@@ -52,7 +62,7 @@ Its function, dispatcher branch, registry row, `scoring.ts` branch and tests are
 - **`PER_CATEGORY_RENUMBER` ↔ EVF classic.** Today's behaviour, byte-identical: split the bracket per category, dense-renumber places 1..K, store N = the category's size (ADR-049). `_rerank_places` moves here unchanged.
 - **`JOINED_BRACKET_CATEGORY_PLACE` ↔ the new engine.** Keep the joined place and the joined N; file each fencer under their own category's tournament as today; write K, m and b.
 
-Ingestion (`Commit`) and `RECOMPUTE_DOMESTIC` use the module of the engine assigned to the tournament's type. `CommitPzszSenior` writes K = N, m = place and b from the full senior field. The review queue keeps b so a later approval can write it. `tbl_scoring_engine` stays metadata only (ADR-097). It gains a display column naming the paired module, never a function reference.
+Ingestion (`Commit`) and `RECOMPUTE_DOMESTIC` use the module of the engine assigned to the tournament's type. `CommitPzszSenior` writes K = N, m = place and b from the full senior field, whatever the engine. The review queue keeps b so a later approval can write it. `tbl_scoring_engine` stays metadata only (ADR-097). It gains a display column naming the paired module, never a function reference.
 
 ### 5 · Storage — explicit components, −1 for "not used"
 

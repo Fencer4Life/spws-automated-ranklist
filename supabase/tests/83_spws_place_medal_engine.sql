@@ -91,11 +91,13 @@ EXCEPTION WHEN undefined_function OR undefined_column OR undefined_table
   RETURN NULL;
 END $$;
 
--- The eight types and the engine FR-137 assigns to each in 2026/2027.
+-- The eight types and the engine FR-137 assigns to each in 2026/2027. PPS and
+-- MPS stay on EVF classic (ADR-103 amendment, 2026-09-28): only PPW and MPW
+-- move to the new engine.
 CREATE FUNCTION pg_temp.expected_2026_2027_engines() RETURNS TEXT LANGUAGE sql AS $$
-  SELECT 'MEW=EVF_CLASSIC_V1_2025_2026,MPS=SPWS_PLACE_MEDAL_V1_2026_2027,'
+  SELECT 'MEW=EVF_CLASSIC_V1_2025_2026,MPS=EVF_CLASSIC_V1_2025_2026,'
       || 'MPW=SPWS_PLACE_MEDAL_V1_2026_2027,MSW=EVF_CLASSIC_V1_2025_2026,'
-      || 'PEW=EVF_CLASSIC_V1_2025_2026,PPS=SPWS_PLACE_MEDAL_V1_2026_2027,'
+      || 'PEW=EVF_CLASSIC_V1_2025_2026,PPS=EVF_CLASSIC_V1_2025_2026,'
       || 'PPW=SPWS_PLACE_MEDAL_V1_2026_2027,PSW=EVF_CLASSIC_V1_2025_2026';
 $$;
 
@@ -240,7 +242,7 @@ SELECT is(
               FROM tbl_season s2, unnest(ARRAY['MEW','MPS','MPW','MSW','PEW','PPS','PPW','PSW']) t2
              WHERE s2.txt_code = 'SPWS-2025-2026')$$),
   pg_temp.expected_2026_2027_engines(),
-  'SE27.TYPE.02 2026/2027 puts PPW, MPW, PPS, MPS on the new engine and PEW, MEW, MSW, PSW on EVF classic; 2025/2026 stays classic');
+  'SE27.TYPE.02 2026/2027 puts PPW and MPW on the new engine and PPS, MPS, PEW, MEW, MSW, PSW on EVF classic; 2025/2026 stays classic');
 
 -- SE27.TYPE.03 — a locked season refuses a change of a type's engine (ADR-097).
 SELECT throws_like(
