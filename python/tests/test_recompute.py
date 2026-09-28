@@ -20,6 +20,9 @@ from python.pipeline.plugins.recompute import LoadCommitted
 
 def _db(event_results, by_map=None):
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     db.fetch_event_results.return_value = event_results
     db.fetch_birth_years_batch.return_value = by_map or {
         r["id_fencer"]: r["int_birth_year"] for r in event_results

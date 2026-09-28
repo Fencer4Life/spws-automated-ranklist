@@ -38,6 +38,9 @@ def _m(id_fencer, place, by, weapon="EPEE", gender="M"):
 
 def _db(existing_tournaments=None):
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     db.find_or_create_tournament.side_effect = range(300, 360)
     db.ingest_results.return_value = {"ok": True}
     db.fetch_event_tournaments.return_value = existing_tournaments or []
