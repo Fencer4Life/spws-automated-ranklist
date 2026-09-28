@@ -2,6 +2,11 @@
 
 **Status:** Accepted
 **Date:** 2026-04-05 (Go-to-PROD)
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (superseded in part — types on the new engine no longer split joined brackets).
+
+## Amendment (2026-09-28 — superseded in part)
+
+For tournament types assigned `SPWS_PLACE_MEDAL_V1_2026_2027` ([ADR-103](103-spws-place-medal-engine-per-type.md)), a joined bracket is no longer split and renumbered per category: every fencer keeps the joined place and the joined N, and K, m and b are stored with the result. The splitting described here remains in force for types on EVF classic.
 
 ## Context
 

@@ -2,9 +2,14 @@
 
 **Status:** Accepted (drafted in [doc/plans/pzsz-senior-result-ingestion-2026-09-19.html](../plans/pzsz-senior-result-ingestion-2026-09-19.html) §03, signed off 2026-09-20). Implemented and verified on LOCAL: `enum_age_category.SENIOR`, `tbl_result`'s CHECK constraint, `tbl_pzsz_match_review` + its three RPCs (`supabase/migrations/20260920000001_add_senior_enum.sql`, `20260920000002_pzsz_senior_result_ingestion.sql`); `Flow.INGEST_PZSZ_SENIOR`, `ResolveFencers`'s `PZSZ_SENIOR` intake, `CommitPzszSenior`, `derive_tourn_type_from_event_code`'s PPS/MPS branches, `_organizer_for_event`'s PZSz recognition (`python/pipeline/engine/flows.py`, `rulebook.py`, `plugins/resolve_fencers.py`, `plugins/pzsz_commit.py`, `stages.py`, `db_connector.py`, `ingest_cli.py`). 1123 pgTAP assertions and 1284 pytest cases pass; a live LOCAL run against a real PZSz event (`PPS1e-2026-2027`) and a real veteran fencer confirms the whole chain end-to-end, including the approve/reject RPCs.
 **Date:** 2026-09-20
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (PPS and MPS are scored by the new engine).
 **Extends:** [ADR-056](056-vcat-from-birthyear.md)'s revision (`enum_source_age_category` "trust the splitter" rule — reused unchanged, for a second, unrelated reason for divergence)
 **Relates to:** [ADR-098](098-ranking-schema-v2-and-generalized-ranking-rpc.md) (PZSz results feed the `evf_fie`/`pzsz`-aggregating `evf_plus_total` once a season's Season Scoring Rules name a PZSz bucket — not yet true for the real active season), [ADR-099](099-ranking-publication-boundary.md) (no interaction: this ADR never touches ranking read paths), [ADR-036](036-prod-export-local-mirror.md) (not triggered here — this step's schema changes are pure `ALTER TYPE`/new-table, no seeded-row backfill)
 **Source:** `supabase/migrations/20260920000001_add_senior_enum.sql`, `supabase/migrations/20260920000002_pzsz_senior_result_ingestion.sql`, `python/pipeline/engine/flows.py`, `python/pipeline/engine/rulebook.py`, `python/pipeline/plugins/resolve_fencers.py`, `python/pipeline/plugins/pzsz_commit.py`, `python/pipeline/stages.py`, `python/pipeline/db_connector.py`, `python/pipeline/ingest_cli.py`
+
+## Amendment (2026-09-28 — PPS and MPS on the new engine)
+
+From 2026/2027, PPS and MPS are scored by `SPWS_PLACE_MEDAL_V1_2026_2027` ([ADR-103](103-spws-place-medal-engine-per-type.md)) as one bracket with no age split: K = N and m = place. `CommitPzszSenior` computes b, the fencers strictly below, from the full senior field. The review queue keeps b, so a later approval writes it with the result. Fields of 32 or more are scored by EVF classic, the engine's third range.
 
 ## Context
 

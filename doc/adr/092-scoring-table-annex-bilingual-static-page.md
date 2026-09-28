@@ -2,9 +2,14 @@
 
 **Status:** Accepted (proposed 2026-09-11, signed off 2026-09-11)
 **Date:** 2026-09-11
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the annex becomes the signed-off 64 × 64 table).
 **Amends:** [ADR-015](015-m8-ui-design-decisions.md) §1 (App Navigation — Sidebar Drawer) — the drawer gains a **fourth** entry, again an external link rather than a view switch; §§2–9 untouched. [ADR-085](085-points-calculator-temporary-static-page.md) — its *Tests* consequence only: plan test 8.84 pins the drawer's entry list as an equality, so a fourth entry necessarily extends that assertion. ADR-085 §§1–3 — the calculator's publication mechanism, its status as an exception and its expiry condition — are untouched.
 **Relates to:** [ADR-085](085-points-calculator-temporary-static-page.md) §2, which requires any further standalone page to carry its own decision — this is that decision; [ADR-011](011-artifact-release-pipeline.md) (the page rides the existing Pages artifact, unchanged); [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (the eventual WordPress destination); [ADR-079](079-event-self-registration-identity.md) and [ADR-007](007-shadow-dom-deferred.md) (`register.html`, built as a custom element through `vite.config.ce.ts` — deliberately *not* the mechanism used here)
 **Source:** `doc/plans/tabela-punktacji-2026-09-11.html` §6
+
+## Amendment (2026-09-28 — the annex becomes the signed-off 64 × 64 table)
+
+[ADR-103](103-spws-place-medal-engine-per-type.md) replaces the annex content with the signed-off table: rows 1–3 flat, rows 4–31 the SPWS formula, rows 32–64 EVF values, a complete medal table for K = 1–31, and the per-type coefficients read from the season. The address, the bilingual CSS switch and the `noindex` rule of §4 are unchanged.
 
 ## Context
 
