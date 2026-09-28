@@ -2,9 +2,14 @@
 
 **Status:** Accepted (signed off 2026-08-15; §2 amended 2026-09-28)
 **Date:** 2026-08-15
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the joined mode and the SPWS/EVF toggle).
 **Amends:** [ADR-015](015-m8-ui-design-decisions.md) §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (frontend built once in CI and deployed to GitHub Pages — unchanged; the page rides the same artifact), [ADR-079](079-event-self-registration-identity.md) and [ADR-007](007-shadow-dom-deferred.md) (`register.html`, the existing standalone page, built through `vite.config.ce.ts` as a custom element — deliberately *not* the mechanism used here)
 **Source:** `doc/plans/kalkulator-w-menu-ranklisty-2026-08-15.html` §4
+
+## Amendment (2026-09-28 — the joined mode and the SPWS/EVF toggle)
+
+[ADR-103](103-spws-place-medal-engine-per-type.md) gives the calculator a joined-bracket mode („Stawka łączona”, with K and m) and makes its toggle compare the new SPWS engine with EVF classic. The board preview recorded in the amendment below is deleted in the same release.
 
 ## Amendment (2026-09-28 — a third, time-limited page: the board preview of the 2026/2027 engine)
 

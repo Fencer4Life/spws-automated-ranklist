@@ -2,9 +2,14 @@
 
 **Status:** Accepted (drafted in [doc/plans/scoring-governance-lock-2026-09-19.html](../plans/scoring-governance-lock-2026-09-19.html) §04, signed off 2026-09-19). Implemented and verified on LOCAL: SS26.LOCK.01–12 (`supabase/migrations/20260919000005_scoring_governance_lock.sql`) and SS26.REVISION.01–08 (`supabase/migrations/20260919000006_scoring_privileged_revision.sql`) both land, 1086 pgTAP assertions and the full frontend suite pass, and a manual `fn_revise_and_rescore_season` run against a LOCAL fixture moved a stored score end to end.
 **Date:** 2026-09-19
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the engine is governed per tournament type).
 **Extends:** [ADR-042](042-carryover-engine-dispatcher.md), [ADR-045](045-engine-selector-default-flip.md) (the dispatcher pattern those two established for carry-over, extended here to the scoring engine)
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (deny-by-default grants; `tbl_scoring_engine`'s RLS policy and this ADR's own new functions follow the same explicit-grant discipline), the design doc's own [§12 "Proposed ADR A"](../plans/versioned-season-scoring-and-pzsz-ranking-design.html)
 **Source:** `supabase/migrations/20260919000005_scoring_governance_lock.sql`, `supabase/migrations/20260919000006_scoring_privileged_revision.sql`
+
+## Amendment (2026-09-28 — the engine is governed per tournament type)
+
+[ADR-103](103-spws-place-medal-engine-per-type.md) moves the engine assignment onto the per-type rows of `tbl_scoring_type_config`. A type row names its engine or, when NULL, uses the season's engine (`tbl_season.id_scoring_engine`), which remains the season default. The assignment is governed like every other field here: `fn_export_scoring_config` reports `type_engines`, `fn_import_scoring_config` rejects a change once the season is locked, `fn_apply_scoring_config_write` writes it, and a revision snapshot records it. A revision row's `id_engine` keeps the season default.
 
 ## Context
 

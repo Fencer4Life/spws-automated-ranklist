@@ -4,24 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="069-participant-count-url-validator.md">
-<meta name="adr-source-sha256" content="2c4af3bfe2341dcab1a938a73ecdd7d1d7ed28d2a4f146c8dc4dac0481e4ed1d">
+<meta name="adr-source-sha256" content="cd45bbd0e1ba6a671d9a4301a8108309d42561c24883c6e79441005a8d1d7c7d">
 <title>ADR-069 · Per-tournament participant-count URL validator (HALT gate)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 069</p><h1>Per-tournament participant-count URL validator (HALT gate)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; implemented LOCAL 2026-06-04.</dd></div><div><dt>Date</dt><dd class="">2026-06-04 <strong>Relates to:</strong> ADR-049 (joint-pool split + its 2026-06-04 per-V-cat amendment), ADR-052 (URL→data validation), ADR-038 (per-cat field count), ADR-024 (combined category splitting).</dd></div><div><dt>Source</dt><dd class=""><code>069-participant-count-url-validator.md</code></dd></div><div><dt>Length</dt><dd class="">84 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; implemented LOCAL 2026-06-04.</dd></div><div><dt>Date</dt><dd class="">2026-06-04 <strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (the count check compares the joined N). <strong>Relates to:</strong> ADR-049 (joint-pool split + its 2026-06-04 per-V-cat amendment), ADR-052 (URL→data validation), ADR-038 (per-cat field count), ADR-024 (combined category splitting).</dd></div><div><dt>Source</dt><dd class=""><code>069-participant-count-url-validator.md</code></dd></div><div><dt>Length</dt><dd class="">89 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted; implemented LOCAL 2026-06-04.
 <strong>Date:</strong> 2026-06-04
+<strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (the count check compares the joined N).
 <strong>Relates to:</strong> ADR-049 (joint-pool split + its 2026-06-04 per-V-cat amendment),
 ADR-052 (URL→data validation), ADR-038 (per-cat field count), ADR-024 (combined
 category splitting).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
-  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-28-the-joined-n">Amendment (2026-09-28 — the joined N)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-28-the-joined-n">Amendment (2026-09-28 — the joined N)</h2>
+<p>Under <code>JOINED_BRACKET_CATEGORY_PLACE</code> (<a href="103-spws-place-medal-engine-per-type.html">ADR-103</a>), every category tournament of a joined bracket stores the joined N as its participant count, so the count check compares the whole bracket, not one category's slice.</p>
+</section>
+<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Two failure classes corrupt <code>int_participant_count</code>, which <code>fn_calc_tournament_scores</code>
 reads directly:</p>
 <ul>
@@ -101,5 +105,5 @@ passes; no-URL warns; fetch-error warns; <code>has_halt</code> helper.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="068-ftl-www-host-and-session-cache.html">← ADR-068: FTL www-host normalization + cached non-rolling session</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="070-resolve-fencers-auto-resolution.html">→ ADR-070: ResolveFencers auto-resolution (merged Stage-0 ⊕ Stage-6, runs early), no human review gate</a></nav>
-<footer class="foot">Generated from <code>069-participant-count-url-validator.md</code> · source SHA-256 <code>2c4af3bfe2341dcab1a938a73ecdd7d1d7ed28d2a4f146c8dc4dac0481e4ed1d</code></footer>
+<footer class="foot">Generated from <code>069-participant-count-url-validator.md</code> · source SHA-256 <code>cd45bbd0e1ba6a671d9a4301a8108309d42561c24883c6e79441005a8d1d7c7d</code></footer>
 </div></body></html>
