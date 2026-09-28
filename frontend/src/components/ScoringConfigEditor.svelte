@@ -19,7 +19,7 @@
         <div class="field-row">
           <label for="mp_value">{t('sc_mp_value')}</label>
           <input id="mp_value" type="number" data-field="mp_value" bind:value={draft.mp_value} disabled={readonly} />
-          <span class="hint">{t('sc_mp_hint')}</span>
+          <span class="hint" data-field="mp-hint">{evfHint()}</span>
         </div>
         <div class="field-row">
           <label for="ppw_total_rounds">{t('sc_expected_rounds')}</label>
@@ -33,6 +33,7 @@
               <option value={eng.code}>{eng.label}</option>
             {/each}
           </select>
+          <span class="hint">{t('sc_scoring_engine_hint')}</span>
         </div>
       </div>
     {/if}
@@ -64,7 +65,7 @@
     {/if}
   </div>
 
-  <!-- Section 3: Tournament multipliers -->
+  <!-- Section 3: Tournament types — engine and coefficient (ADR-103 §2) -->
   <div class="config-section">
     <div class="config-section-header" role="button" tabindex="0" onclick={() => toggleSection('mult')} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('mult') } }}>
       <span class="section-icon">&#128202;</span>
@@ -74,47 +75,40 @@
     {#if !collapsedSections.mult}
       <div class="config-section-body">
         <div class="mult-grid">
-          <div class="mult-card">
-            <div><span class="type-badge domestic">PPW</span></div>
-            <input type="number" step="0.0001" data-field="ppw_multiplier" bind:value={draft.ppw_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_ppw_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge domestic">MPW</span></div>
-            <input type="number" step="0.0001" data-field="mpw_multiplier" bind:value={draft.mpw_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_mpw_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge international">PEW</span></div>
-            <input type="number" step="0.0001" data-field="pew_multiplier" bind:value={draft.pew_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_pew_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge international">MEW</span></div>
-            <input type="number" step="0.0001" data-field="mew_multiplier" bind:value={draft.mew_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_mew_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge international">MSW</span></div>
-            <input type="number" step="0.0001" data-field="msw_multiplier" bind:value={draft.msw_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_msw_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge international">PSW</span></div>
-            <input type="number" step="0.0001" data-field="psw_multiplier" bind:value={draft.psw_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_psw_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge pzs">PPS</span></div>
-            <input type="number" step="0.0001" data-field="pps_multiplier" bind:value={draft.pps_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_pps_label')}</div>
-          </div>
-          <div class="mult-card">
-            <div><span class="type-badge pzs">MPS</span></div>
-            <input type="number" step="0.0001" data-field="mps_multiplier" bind:value={draft.mps_multiplier} disabled={readonly} />
-            <div class="card-label">{t('sc_mps_label')}</div>
-          </div>
+          {#each TYPE_CARDS as card (card.type)}
+            {@const module = moduleOf(card)}
+            <div class="mult-card">
+              <div><span class="type-badge {card.badge}">{card.type}</span></div>
+              <input type="number" step="0.0001" data-field="{card.type.toLowerCase()}_multiplier" bind:value={draft[card.field]} disabled={readonly} />
+              <select
+                data-field="type-engine-{card.type}"
+                aria-label={t('sc_type_engine_label', { type: card.type })}
+                value={engineOf(card.type)}
+                onchange={(e) => setTypeEngine(card.type, (e.target as HTMLSelectElement).value)}
+                disabled={readonly}
+              >
+                {#each scoringEngines as eng}
+                  <option value={eng.code}>{shortEngineLabel(eng)}</option>
+                {/each}
+              </select>
+              <div class="module" data-field="type-module-{card.type}"><b>{module.code}</b>{module.text}</div>
+              <div class="card-label">{t(card.labelKey)}</div>
+            </div>
+          {/each}
         </div>
+
+        {#each scoringEngines.filter((eng) => ENGINE_RULES[eng.code]) as eng (eng.code)}
+          <div class="ro-panel" data-field="engine-panel-{eng.code}">
+            <h4>{eng.code} <span class="ro-tag">{t('sc_ro_tag')}</span></h4>
+            <table>
+              <tbody>
+                {#each ENGINE_RULES[eng.code](eng) as row}
+                  <tr><td>{row.label}</td><td>{row.text}</td></tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/each}
       </div>
     {/if}
   </div>
@@ -300,9 +294,10 @@
 </div>
 
 <script lang="ts">
-  import type { ScoringConfig, RankingBucket, RankingRules } from '../lib/types'
+  import type { ScoringConfig, ScoringEngineOption, RankingRules, TournamentType } from '../lib/types'
   import { CARRYOVER_ENGINE_VALUES } from '../lib/types'
-  import { t } from '../lib/locale.svelte'
+  import { CLASSIC_ENGINE, PLACE_MEDAL, PLACE_MEDAL_ENGINE } from '../lib/scoring'
+  import { getLocale, t } from '../lib/locale.svelte'
 
   let {
     config,
@@ -319,7 +314,7 @@
     // SS26.LOCK.01/§05: released scoring-engine codes for the new selector
     // below, fetched once by the caller (App.svelte) — never hardcoded here,
     // so a third released engine needs no frontend redeploy.
-    scoringEngines?: { code: string, label: string }[]
+    scoringEngines?: ScoringEngineOption[]
     onsave?: (config: ScoringConfig) => void
     oncancel?: () => void
     // Part 4 (ADR-044): fires on every draft edit so a parent wizard can capture
@@ -347,6 +342,141 @@
   // button stays enabled and the guard lives in handleSave instead.
   let showLockedNotice = $state(false)
 
+  // ADR-103 §2: the engine each type card shows. Seeded from the exported
+  // type_engines, which are RESOLVED, so a type absent from it (a config that
+  // predates per-type engines, or a wizard's static default) shows — and
+  // follows — the season default until its own selector is changed.
+  // Same one-time-snapshot rationale as `draft` above.
+  // svelte-ignore state_referenced_locally
+  let typeEngines: Partial<Record<TournamentType, string>> = $state({ ...(config.type_engines ?? {}) })
+
+  type MultiplierField =
+    | 'ppw_multiplier' | 'mpw_multiplier' | 'pps_multiplier' | 'mps_multiplier'
+    | 'pew_multiplier' | 'mew_multiplier' | 'msw_multiplier' | 'psw_multiplier'
+
+  interface TypeCard {
+    type: TournamentType
+    badge: 'domestic' | 'pzs' | 'international'
+    field: MultiplierField
+    labelKey: string
+    // A type whose bracket is never split names no joined-bracket module,
+    // whatever its engine: PZSz is one senior bracket (K = N, m = place), and
+    // an international result arrives already per category from its publisher.
+    fixedModuleKey?: string
+  }
+
+  // Card order of the approved mockup (se27_scoring_config_per_type.html):
+  // the two SPWS types, the two PZSz types, then the international circuit.
+  const TYPE_CARDS: TypeCard[] = [
+    { type: 'PPW', badge: 'domestic', field: 'ppw_multiplier', labelKey: 'sc_ppw_label' },
+    { type: 'MPW', badge: 'domestic', field: 'mpw_multiplier', labelKey: 'sc_mpw_label' },
+    { type: 'PPS', badge: 'pzs', field: 'pps_multiplier', labelKey: 'sc_pps_label', fixedModuleKey: 'sc_module_none_pzs' },
+    { type: 'MPS', badge: 'pzs', field: 'mps_multiplier', labelKey: 'sc_mps_label', fixedModuleKey: 'sc_module_none_pzs' },
+    { type: 'PEW', badge: 'international', field: 'pew_multiplier', labelKey: 'sc_pew_label', fixedModuleKey: 'sc_module_none_evf' },
+    { type: 'MEW', badge: 'international', field: 'mew_multiplier', labelKey: 'sc_mew_label', fixedModuleKey: 'sc_module_none_evf' },
+    { type: 'MSW', badge: 'international', field: 'msw_multiplier', labelKey: 'sc_msw_label', fixedModuleKey: 'sc_module_none_fie' },
+    { type: 'PSW', badge: 'international', field: 'psw_multiplier', labelKey: 'sc_psw_label', fixedModuleKey: 'sc_module_none_org' },
+  ]
+
+  function engineOf(type: TournamentType): string {
+    return typeEngines[type] ?? draft.engine_code ?? ''
+  }
+
+  function setTypeEngine(type: TournamentType, code: string) {
+    typeEngines = { ...typeEngines, [type]: code }
+  }
+
+  /** A locale string, or '' when the locale has no entry for that key. */
+  function tOptional(key: string, vars?: Record<string, string | number>): string {
+    const text = t(key, vars)
+    return text === key ? '' : text
+  }
+
+  // The per-type selector uses the short name of the mockup; an engine released
+  // after this build has none, and falls back to its own tbl_scoring_engine label.
+  function shortEngineLabel(eng: ScoringEngineOption): string {
+    return tOptional(`sc_engine_short_${eng.code}`) || eng.label
+  }
+
+  // ADR-103 §4: an engine is paired with exactly one joined-bracket module,
+  // named on its tbl_scoring_engine row.
+  function moduleOf(card: TypeCard): { code: string, text: string } {
+    if (card.fixedModuleKey) return { code: '—', text: t(card.fixedModuleKey) }
+    const module = scoringEngines.find((eng) => eng.code === engineOf(card.type))?.module
+    if (!module) return { code: '—', text: '' }
+    return { code: module, text: tOptional(`sc_module_${module}`) }
+  }
+
+  function joinAnd(items: string[]): string {
+    if (items.length < 2) return items.join('')
+    return items.slice(0, -1).join(', ') + t('sc_and') + items[items.length - 1]
+  }
+
+  // Which results the EVF base value and podium fields actually feed: every
+  // type on EVF classic, and the 32-and-over range of every type on the
+  // 2026/2027 engine. Derived from the cards, so a season up to 2025/2026 —
+  // every type on EVF classic — does not claim a range it never had.
+  function evfHint(): string {
+    const whole = TYPE_CARDS.filter((c) => engineOf(c.type) === CLASSIC_ENGINE).map((c) => c.type)
+    const from32 = TYPE_CARDS.filter((c) => engineOf(c.type) === PLACE_MEDAL_ENGINE).map((c) => c.type)
+    const parts: string[] = []
+    if (whole.length) parts.push(whole.join(', '))
+    if (from32.length) parts.push(t('sc_mp_hint_from32', { from: PLACE_MEDAL.evfFrom, types: joinAnd(from32) }))
+    return t('sc_mp_hint', { types: parts.join(t('sc_also')) })
+  }
+
+  function decimal(value: number): string {
+    return getLocale() === 'pl' ? String(value).replace('.', ',') : String(value)
+  }
+
+  // The fixed rules of each known engine, shown read-only beside the settings
+  // that feed them. Nothing here is a setting: EVF classic's scale, its 10
+  // points per elimination round and its podium scaling are fixed in SQL, and
+  // the 2026/2027 engine's ranges and constants come from scoring.ts's
+  // PLACE_MEDAL — the same constants the pages and the SQL strategy use.
+  // Functions, so the text follows a language switch.
+  const ENGINE_RULES: Record<string, (eng: ScoringEngineOption) => { label: string, text: string }[]> = {
+    [CLASSIC_ENGINE]: (eng) => [
+      { label: t('sc_ro_classic_place_label'), text: t('sc_ro_classic_place') },
+      { label: t('sc_ro_classic_de_label'), text: t('sc_ro_classic_de') },
+      { label: t('sc_ro_classic_podium_label'), text: t('sc_ro_classic_podium') },
+      { label: t('sc_ro_module'), text: withModule(eng, t('sc_ro_classic_module')) },
+    ],
+    [PLACE_MEDAL_ENGINE]: (eng) => [
+      { label: t('sc_ro_range', { from: 1, to: PLACE_MEDAL.tableUpTo }), text: t('sc_ro_pm_table') },
+      {
+        label: t('sc_ro_range', { from: PLACE_MEDAL.tableUpTo + 1, to: PLACE_MEDAL.evfFrom - 1 }),
+        text: t('sc_ro_pm_mid', { per: decimal(PLACE_MEDAL.perBelow), medal: PLACE_MEDAL.medal.join(' / ') }),
+      },
+      { label: t('sc_ro_range_from', { from: PLACE_MEDAL.evfFrom }), text: t('sc_ro_pm_evf') },
+      { label: t('sc_ro_module'), text: withModule(eng, t('sc_ro_pm_module')) },
+    ],
+  }
+
+  function withModule(eng: ScoringEngineOption, text: string): string {
+    return eng.module ? `${eng.module} — ${text}` : text
+  }
+
+  /**
+   * The config this form stands for — what Save, the wizard's live capture and
+   * the JSON export all send. `type_engines` carries the engine each card
+   * SHOWS: fn_apply_scoring_config_write writes a type only when that differs
+   * from its resolved engine after `engine_code` is applied, so an unchanged
+   * form pins nothing and a new season default never silently moves a type
+   * the admin can see on screen. With no per-type entry at all it is omitted,
+   * and every type keeps following the season default.
+   */
+  function currentConfig(): ScoringConfig {
+    const types = Object.keys(typeEngines).length ? { ...typeEngines } : undefined
+    return {
+      ...draft,
+      ranking_rules: draftRules,
+      carryover_engine: draft.carryover_engine,
+      engine_code: draft.engine_code,
+      type_engines: types,
+    }
+  }
+
   function engineLabel(engine: string): string {
     if (engine === 'EVENT_FK_MATCHING') return t('sc_engine_opt_fk')
     if (engine === 'EVENT_CODE_MATCHING') return t('sc_engine_opt_code')
@@ -366,7 +496,7 @@
   // button still works for the standalone edit-config flow). Reads draft +
   // draftRules so the effect re-runs on any change; onchange defaults to a no-op.
   $effect(() => {
-    onchange({ ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine })
+    onchange(currentConfig())
   })
 
   let collapsedSections: Record<string, boolean> = $state({
@@ -440,15 +570,14 @@
       showLockedNotice = true
       return
     }
-    // Include `carryover_engine` so App.svelte's handler can patch
+    // Includes `carryover_engine` so App.svelte's handler can patch
     // tbl_season.enum_carryover_engine separately from tbl_scoring_config
     // (instant flip, no migration).
-    const updated: ScoringConfig = { ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine, engine_code: draft.engine_code }
-    onsave(updated)
+    onsave(currentConfig())
   }
 
   function handleExport() {
-    const json = JSON.stringify({ ...draft, ranking_rules: draftRules, carryover_engine: draft.carryover_engine }, null, 2)
+    const json = JSON.stringify(currentConfig(), null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -676,6 +805,73 @@
     font-size: 11px;
     color: #888;
     margin-top: 4px;
+  }
+  /* ADR-103 §2: each card's engine and the joined-bracket module it implies
+     (mockup se27_scoring_config_per_type.html, revision 2). */
+  .mult-card select {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #fff;
+  }
+  .module {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #374151;
+    background: #f3f4f6;
+    border-radius: 4px;
+    padding: 3px 6px;
+    text-align: left;
+  }
+  .module b {
+    display: block;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b7280;
+  }
+  /* The engines' fixed rules: read-only by construction (no inputs inside). */
+  .ro-panel {
+    border: 2px solid #c7d2fe;
+    background: #eef2ff;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-top: 10px;
+  }
+  .ro-panel h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-family: ui-monospace, Menlo, monospace;
+    overflow-wrap: anywhere;
+  }
+  .ro-panel table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12.5px;
+  }
+  .ro-panel td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #dbe1fb;
+    vertical-align: top;
+  }
+  .ro-panel td:first-child {
+    white-space: nowrap;
+    color: #4b5563;
+  }
+  .ro-tag {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 1px 7px;
+    margin-left: 6px;
   }
 
   /* Pool labels */

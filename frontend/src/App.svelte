@@ -290,7 +290,7 @@
     CalendarEvent,
     TournamentType,
   } from './lib/types'
-  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, FencerWithAliases, EuropeanEventType, CarryoverEngine, SkeletonByKind, IdentityProposal } from './lib/types'
+  import type { Organizer, ScoringConfig, MatchCandidate, CreateEventParams, UpdateEventParams, Tournament, FencerListItem, FencerWithAliases, EuropeanEventType, CarryoverEngine, SkeletonByKind, IdentityProposal, ScoringEngineOption } from './lib/types'
   import {
     initClient,
     fetchSeasons,
@@ -519,11 +519,11 @@
   let organizers: Organizer[] = $state([])
   let scoringConfig: ScoringConfig | null = $state(null)
   let editingScoringSeasonId: number | null = $state(null)
-  // SS26.LOCK.01/§05: released scoring-engine codes, fetched once at app init
-  // (public read, tbl_scoring_engine) and passed down to every
+  // SS26.LOCK.01/§05: released scoring-engine codes, passed down to every
   // ScoringConfigEditor mount (SeasonManager's standalone editor + the
-  // SeasonManagerWizard step-2 editor) rather than hardcoded.
-  let scoringEngines: { code: string, label: string }[] = $state([])
+  // SeasonManagerWizard step-2 editor) rather than hardcoded. Loaded when an
+  // admin session exists (SE27.UI.09, effect below), not in init().
+  let scoringEngines: ScoringEngineOption[] = $state([])
   // Part 1 (ADR-044 amend): two independent +EVF flags. Ranklist defaults OFF
   // (SPWS lost the national-team appointment); Calendar defaults ON (richer view).
   let showEvfToggleRanklist = $state(false)
@@ -579,6 +579,18 @@
     if (isAdmin) { startAdminTimer() } else { stopAdminTimer() }
   })
 
+  // SE27.UI.09: tbl_scoring_engine is readable by `authenticated` only (policy
+  // "Admin read scoring engines"). init() runs anonymous on every page load, so
+  // fetching there left an admin who signed in on the open page with no engine
+  // in any selector until a reload — and cost every public visitor a 401. The
+  // list loads when a session exists: an in-page sign-in or a restored one.
+  $effect(() => {
+    if (!isAdmin) return
+    fetchScoringEngines()
+      .then((engines) => { scoringEngines = engines })
+      .catch(() => { scoringEngines = [] })
+  })
+
   function initDemo() {
     seasons = MOCK_SEASONS
     selectedSeasonId = MOCK_SEASONS[0].id_season
@@ -596,7 +608,6 @@
     try {
       await refreshActiveSeason().catch(() => {}) // best-effort: may fail for anon
       seasons = await fetchSeasons()
-      scoringEngines = await fetchScoringEngines().catch(() => [])
       const active = seasons.find((s) => s.bool_active)
       if (active) {
         selectedSeasonId = active.id_season

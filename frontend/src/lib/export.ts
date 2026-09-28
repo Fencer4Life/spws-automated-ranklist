@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import type { RankingPpwRow, RankingFullRow, ScoreRow, RankingMode } from './types'
+import { t } from './locale.svelte'
 
 function triggerDownload(wb: XLSX.WorkBook, filename: string): void {
   XLSX.writeFile(wb, filename, { bookType: 'ods' })
@@ -34,6 +35,17 @@ export function exportRankingFull(rows: RankingFullRow[], title: string): void {
   triggerDownload(wb, `${title}.ods`)
 }
 
+/**
+ * One stored score component as a cell. ADR-103 (FR-140) stores -1 for a
+ * component the result's method does not use, so -1 is never points: it reads
+ * „nie dotyczy”. NULL, or a payload that predates the column, stays empty.
+ */
+function component(value: number | null | undefined): number | string {
+  if (value == null) return ''
+  const n = Number(value)
+  return n === -1 ? t('export_not_applicable') : n
+}
+
 export function exportDrilldown(
   fencerName: string,
   scores: ScoreRow[],
@@ -44,17 +56,27 @@ export function exportDrilldown(
       ? scores.filter((s) => s.enum_type === 'PPW' || s.enum_type === 'MPW')
       : scores
 
+  // SE27.UI.08: the headers follow the UI language — the export reaches
+  // fencers — and name each component as the calculator does. In English they
+  // keep the names this export has always used.
   const data = filtered.map((s) => ({
-    Tournament: s.txt_tournament_code,
-    Date: s.dt_tournament ?? '',
-    Type: s.enum_type,
-    Place: s.int_place,
-    Participants: s.int_participant_count ?? '',
-    Multiplier: s.num_multiplier != null ? Number(s.num_multiplier) : '',
-    'Place Pts': s.num_place_pts != null ? Number(s.num_place_pts) : '',
-    'DE Bonus': s.num_de_bonus != null ? Number(s.num_de_bonus) : '',
-    'Podium Bonus': s.num_podium_bonus != null ? Number(s.num_podium_bonus) : '',
-    'Final Score': s.num_final_score != null ? Number(s.num_final_score) : '',
+    [t('export_col_tournament')]: s.txt_tournament_code,
+    [t('export_col_date')]: s.dt_tournament ?? '',
+    [t('export_col_type')]: s.enum_type,
+    [t('export_col_place')]: s.int_place,
+    [t('export_col_participants')]: s.int_participant_count ?? '',
+    [t('export_col_category_count')]: component(s.int_category_count),
+    [t('export_col_category_place')]: component(s.int_category_place),
+    [t('export_col_below_count')]: component(s.int_below_count),
+    [t('export_col_multiplier')]: s.num_multiplier != null ? Number(s.num_multiplier) : '',
+    [t('export_col_method')]: s.enum_score_method ? t(`export_method_${s.enum_score_method}`) : '',
+    [t('export_col_place_pts')]: component(s.num_place_pts),
+    [t('export_col_de_bonus')]: component(s.num_de_bonus),
+    [t('export_col_podium_bonus')]: component(s.num_podium_bonus),
+    [t('export_col_field_pts')]: component(s.num_field_pts),
+    [t('export_col_below_pts')]: component(s.num_below_pts),
+    [t('export_col_medal_bonus')]: component(s.num_medal_bonus),
+    [t('export_col_final_score')]: s.num_final_score != null ? Number(s.num_final_score) : '',
   }))
 
   const ws = XLSX.utils.json_to_sheet(data)
