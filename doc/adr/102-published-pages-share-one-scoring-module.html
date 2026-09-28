@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="102-published-pages-share-one-scoring-module.md">
-<meta name="adr-source-sha256" content="12efed77bd4fe5b128625929948323d73ed58d4a40df725c41a83ade41ef5881">
+<meta name="adr-source-sha256" content="ee1c2c6a0fad3d90d1f1f46988486e63fb22ec3511aa160561f5efc1eb9283b3">
 <title>ADR-102 · The Published Pages Share One Scoring Module and Read Season Parameters</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 102</p><h1>The Published Pages Share One Scoring Module and Read Season Parameters</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-20; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-20 <strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (the module gains the new engine and loses field-scaled; public parameters are per type).</dd></div><div><dt>Source</dt><dd class=""><code>102-published-pages-share-one-scoring-module.md</code></dd></div><div><dt>Length</dt><dd class="">164 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-20; awaiting sign-off)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-20; signed off 2026-09-28, with the open items resolved as recommended)</dd></div><div><dt>Date</dt><dd class="">2026-09-20 <strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (the module gains the new engine and loses field-scaled; public parameters are per type).</dd></div><div><dt>Source</dt><dd class=""><code>102-published-pages-share-one-scoring-module.md</code></dd></div><div><dt>Length</dt><dd class="">167 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-20; signed off 2026-09-28, with the open items resolved as recommended)
 <strong>Date:</strong> 2026-09-20
 <strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (the module gains the new engine and loses field-scaled; public parameters are per type).
 <strong>Supersedes:</strong> <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §3 (Expiry condition) — its <em>intent</em> is fulfilled and its <em>mechanism</em> is reversed: the calculator is driven by the ranklist scoring engine as §3 required, but it is <strong>kept at its address</strong> rather than removed, and plan test 8.88 is kept rather than deleted. §§1–2 (publication mechanism, exception-not-pattern) are untouched and still bind.
@@ -155,15 +155,18 @@ arithmetic is unchanged by this ADR; only its visibility is new.</li>
 <li><strong>ADR-092's <code>robots</code> meta.</strong> The annex still carries <code>noindex, nofollow</code> as the only thing
 keeping an unadopted regulation draft out of search results (ADR-092 §4). Adoption is a
 deliberate act and is not part of this change. <strong>Recommendation:</strong> leave it, and lift it in
-the same change that adopts the annex.</li>
+the same change that adopts the annex. <strong>Signed off 2026-09-28 as recommended:</strong> the annex
+keeps <code>noindex, nofollow</code> until the change that adopts it.</li>
 <li><strong>ADR-085 §2 — &quot;no other static page is expected to be published this way&quot;.</strong> There are now
 two, and both are generated. <strong>Recommendation:</strong> treat §2 as still binding for <em>new</em> pages and
 revisit it only if a third is proposed. <strong>2026-09-28:</strong> a third was proposed — a time-limited,
 self-contained board preview of the 2026/2027 engine — and is recorded as a dated amendment to
-<a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §2.</li>
+<a href="085-points-calculator-temporary-static-page.html">ADR-085</a> §2. <strong>Closed 2026-09-28:</strong> that page
+was deleted in the release of ADR-103, as the amendment's expiry required, so two pages remain
+and §2 binds for new pages.</li>
 </ol>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="101-ranking-ppw-public-ui-and-publication-boundary.html">← ADR-101: The public ranking switch is Ranking / PPW; publication capability is read, not re-decided, by the UI</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="103-spws-place-medal-engine-per-type.html">→ ADR-103: SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW</a></nav>
-<footer class="foot">Generated from <code>102-published-pages-share-one-scoring-module.md</code> · source SHA-256 <code>12efed77bd4fe5b128625929948323d73ed58d4a40df725c41a83ade41ef5881</code></footer>
+<footer class="foot">Generated from <code>102-published-pages-share-one-scoring-module.md</code> · source SHA-256 <code>ee1c2c6a0fad3d90d1f1f46988486e63fb22ec3511aa160561f5efc1eb9283b3</code></footer>
 </div></body></html>

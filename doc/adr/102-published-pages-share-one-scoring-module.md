@@ -1,6 +1,6 @@
 # ADR-102: The Published Pages Share One Scoring Module and Read Season Parameters
 
-**Status:** Draft (proposed 2026-09-20; awaiting sign-off)
+**Status:** Accepted (proposed 2026-09-20; signed off 2026-09-28, with the open items resolved as recommended)
 **Date:** 2026-09-20
 **Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the module gains the new engine and loses field-scaled; public parameters are per type).
 **Supersedes:** [ADR-085](085-points-calculator-temporary-static-page.md) §3 (Expiry condition) — its *intent* is fulfilled and its *mechanism* is reversed: the calculator is driven by the ranklist scoring engine as §3 required, but it is **kept at its address** rather than removed, and plan test 8.88 is kept rather than deleted. §§1–2 (publication mechanism, exception-not-pattern) are untouched and still bind.
@@ -156,9 +156,12 @@ allowlist in the same change: `supabase/tests/52_security_posture.sql` and
 1. **ADR-092's `robots` meta.** The annex still carries `noindex, nofollow` as the only thing
    keeping an unadopted regulation draft out of search results (ADR-092 §4). Adoption is a
    deliberate act and is not part of this change. **Recommendation:** leave it, and lift it in
-   the same change that adopts the annex.
+   the same change that adopts the annex. **Signed off 2026-09-28 as recommended:** the annex
+   keeps `noindex, nofollow` until the change that adopts it.
 2. **ADR-085 §2 — "no other static page is expected to be published this way".** There are now
    two, and both are generated. **Recommendation:** treat §2 as still binding for *new* pages and
    revisit it only if a third is proposed. **2026-09-28:** a third was proposed — a time-limited,
    self-contained board preview of the 2026/2027 engine — and is recorded as a dated amendment to
-   [ADR-085](085-points-calculator-temporary-static-page.md) §2.
+   [ADR-085](085-points-calculator-temporary-static-page.md) §2. **Closed 2026-09-28:** that page
+   was deleted in the release of ADR-103, as the amendment's expiry required, so two pages remain
+   and §2 binds for new pages.
