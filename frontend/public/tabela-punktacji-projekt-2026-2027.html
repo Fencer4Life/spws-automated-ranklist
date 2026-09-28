@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tabela punktacji — sezon 2026/2027</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#e3f2e9;--amber:#7a5209;--amber-bg:#fbefd4;--coral:#9e3a29;--coral-bg:#f9e2dd;
+ --navy-soft:#e4ecf7;--head:#173f70;--head-ink:#fff;--rowhead:#eaf1fa;--zebra:#fafbfd;--na:#eef1f5;--na-ink:#a5afba;
+ --evf:#5b3f8f;--evf-bg:#efe9f8;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;--navy:#7aa5da;--navy-soft:#1e2c40;
+  --green:#a8e0c0;--green-bg:#1d3a2b;--amber:#f0cd80;--amber-bg:#3a2d10;--coral:#f0a595;--coral-bg:#43221b;
+  --head:#22406a;--head-ink:#eef5ff;--rowhead:#1e2c40;--zebra:#1d2735;--na:#161e29;--na-ink:#4d5b6e;
+  --evf:#c7b3ee;--evf-bg:#2a2140}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
+a{color:var(--navy)}
+button,input{font:inherit}
+.wrap{width:min(1800px,calc(100% - 32px));margin:0 auto;padding:28px 0 56px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(26px,4.4vw,40px);line-height:1.15;margin:8px 0;font-weight:600;max-width:1000px}
+.lead{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:90ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:0 0 10px;line-height:1.25}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:18px}
+.grid>*{min-width:0}
+.grid.solo{grid-template-columns:minmax(0,760px)}
+.card[hidden]{display:none}
+.card,.section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.section{margin-top:18px}
+.note{color:var(--muted);font-size:14px}
+.tw{overflow-x:auto}
+.formula{overflow-x:auto;margin:12px 0 0;padding:12px 16px;background:#101b29;color:#eef5ff;border-radius:9px;font:13px/1.7 var(--mono);white-space:pre}
+table.rules{width:100%;border-collapse:collapse;font-size:14.5px;margin:10px 0}
+table.rules th,table.rules td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+table.rules thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+table.rules tbody th{font-weight:700}
+table.rules code{font-family:var(--mono);font-size:13px;background:var(--navy-soft);padding:1px 5px;border-radius:4px;white-space:nowrap}
+table.rules tr.joined th,table.rules tr.joined td{background:var(--navy-soft);border-top:2px dashed var(--navy);border-bottom:2px dashed var(--navy)}
+table.rules tr.joined th{box-shadow:inset 5px 0 0 var(--navy)}
+table.rules tr.joined code{background:var(--card)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--navy);color:var(--card);font:700 10.5px/1.4 var(--mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;vertical-align:2px}
+.rules-legend{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin:4px 0 0;padding:10px 12px;border-left:5px solid var(--navy);background:var(--navy-soft);border-radius:0 6px 6px 0;font-size:14px}
+.rules-legend>span:last-child{flex:1 1 280px}
+.calc{display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:12px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{color:var(--muted);font-size:13px;font-weight:700}
+.field input[type=number]{min-height:42px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.field.wide{grid-column:1/-1}
+.hidden-check{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.toggle{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;user-select:none}
+.toggle input{width:19px;height:19px;margin:0;accent-color:var(--navy);cursor:pointer}
+.toggle:has(input:checked){border-color:var(--navy);border-bottom-left-radius:0;border-bottom-right-radius:0;background:var(--navy-soft)}
+.joined-block{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:12px;margin-top:-12px;padding:12px;border:1px solid var(--navy);border-top:none;border-radius:0 0 8px 8px;background:var(--navy-soft)}
+.joined-block[hidden]{display:none}
+.joined-block p{grid-column:1/-1;margin:0;color:var(--muted);font-size:13.5px}
+.joined-block .field input[type=number]{background:var(--card)}
+.rank{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--navy-soft)}
+.rank input{flex:1}
+.rank span{min-width:3em;font:700 15px var(--mono);text-align:right}
+.result{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-top:16px;padding:16px;border-left:5px solid var(--navy);background:var(--navy-soft);border-radius:8px}
+.result strong{font-size:clamp(32px,6vw,50px);line-height:1;font-variant-numeric:tabular-nums}
+.result .desc{flex-basis:100%;color:var(--muted);font-size:14px}
+.result.err{border-left-color:var(--coral);background:var(--coral-bg)}
+dl.bd{display:grid;grid-template-columns:1fr auto;gap:5px 18px;margin:12px 0 0;font-size:14px}
+dl.bd dt{color:var(--muted)}
+dl.bd dd{margin:0;font-family:var(--mono);font-weight:700;text-align:right}
+dl.bd .total{padding-top:6px;border-top:1px solid var(--line);color:var(--ink);font-weight:800}
+dl.bd .cmp{color:var(--muted);font-weight:500}
+dl.bd .gain{color:var(--green);font-weight:800}
+/* tabela premii medalowych */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--navy-soft);font:600 12.5px var(--mono);color:var(--navy)}
+.medal-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+ul.rule{margin:6px 0 10px;padding-left:20px;font-size:14px}
+table.medals{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:13.5px;font-variant-numeric:tabular-nums}
+table.medals thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;padding:4px 6px;vertical-align:bottom}
+table.medals thead th:first-child{text-align:left}
+table.medals td,table.medals th[scope=row]{padding:4px 6px;text-align:center}
+table.medals th[scope=row]{text-align:left;font-family:var(--mono);color:var(--muted);font-weight:700;white-space:nowrap}
+table.medals .mh{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
+table.medals .mv{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+table.medals .mi{flex:none;display:block}
+table.medals td.none{color:var(--na-ink)}
+table.medals tr.cur th,table.medals tr.cur td{box-shadow:inset 0 2px 0 var(--navy),inset 0 -2px 0 var(--navy)}
+table.medals td.curm{outline:2px solid var(--coral);outline-offset:-2px;font-weight:900}
+.example-line{margin-top:10px;padding:10px 12px;border-left:4px solid var(--green);background:var(--green-bg);border-radius:6px;font-size:14px}
+/* pełna tabela */
+.toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:12px 0}
+.btn{min-height:38px;padding:7px 12px;border:1px solid var(--navy);border-radius:8px;color:#fff;background:var(--navy);font-weight:700;cursor:pointer}
+.btn.sec{color:var(--navy);background:transparent}
+.status{color:var(--muted);font-size:13px}
+.shell{max-height:74vh;overflow:auto;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+#tbl{border-collapse:separate;border-spacing:0;font-size:11px;font-variant-numeric:tabular-nums}
+caption{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#tbl th,#tbl td{min-width:58px;height:28px;padding:5px 7px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+#tbl thead th{position:sticky;top:0;z-index:4;background:var(--head);color:var(--head-ink);font-weight:800}
+#tbl thead th:first-child{left:0;z-index:6;min-width:104px;text-align:left}
+#tbl tbody th{position:sticky;left:0;z-index:3;min-width:104px;background:var(--rowhead);color:var(--navy);text-align:left;font-weight:800}
+#tbl tbody tr:nth-child(even) td{background:var(--zebra)}
+#tbl tbody tr.small td{background:var(--amber-bg)}
+#tbl tbody tr.small th{color:var(--amber)}
+#tbl tbody tr.evf td{background:var(--evf-bg)}
+#tbl tbody tr.evf th{color:var(--evf)}
+#tbl td.na{color:var(--na-ink);background:var(--na)!important;text-align:center}
+#tbl td.medal{font-weight:800}
+#tbl th.tenth,#tbl td.tenth{border-right:2px solid var(--muted)}
+#tbl tr.sel td,#tbl tr.sel th{box-shadow:inset 0 2px 0 var(--coral),inset 0 -2px 0 var(--coral)}
+#tbl td.selc{color:#fff;background:var(--coral)!important;font-weight:900}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;color:var(--muted);font-size:12px}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px;border:1px solid var(--line);background:var(--card)}
+.legend .l-small::before{background:var(--amber-bg)}
+.legend .l-evf::before{background:var(--evf-bg)}
+dl.bd .loss{color:var(--coral);font-weight:800}
+.ranges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 0}
+.ranges div{padding:10px 12px;border-radius:8px;border:1px solid var(--line);font-size:14px}
+.ranges b{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+.ranges .r-small{background:var(--amber-bg)}
+.ranges .r-mid{background:var(--card)}
+.ranges .r-evf{background:var(--evf-bg)}
+@media (max-width:700px){.ranges{grid-template-columns:1fr}}
+.legend .l-na::before{background:var(--na)}
+table.ex{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+table.ex th,table.ex td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+table.ex th:nth-child(-n+3),table.ex td:nth-child(-n+3){text-align:left}
+table.ex thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+table.ex td.gain{color:var(--green);font-weight:700}
+footer{margin-top:20px;color:var(--muted);font-size:12px;text-align:center}
+.lang-switch{display:flex;justify-content:flex-end;margin:0 0 10px}
+.lang-switch label{min-width:46px;padding:6px 12px;border:1px solid var(--line);background:var(--card);color:var(--muted);font:700 13px var(--mono);text-align:center;cursor:pointer}
+.lang-switch label:first-of-type{border-radius:8px 0 0 8px}
+.lang-switch label:last-of-type{border-radius:0 8px 8px 0;border-left:none}
+#langPl:checked ~ main .lang-switch label[for=langPl],#langEn:checked ~ main .lang-switch label[for=langEn]{background:var(--navy);border-color:var(--navy);color:#fff}
+#langPl:checked ~ main .en{display:none}
+#langEn:checked ~ main .pl{display:none}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.calc,.joined-block{grid-template-columns:1fr}}
+@media print{@page{size:A4 landscape;margin:8mm}.toolbar .btn,.lang-switch{display:none}.shell{max-height:none}}
+</style>
+</head>
+<body>
+<input class="hidden-check" type="radio" name="lang" id="langPl" checked>
+<input class="hidden-check" type="radio" name="lang" id="langEn">
+<main class="wrap">
+  <nav class="lang-switch" aria-label="język / language"><label for="langPl" lang="pl">PL</label><label for="langEn" lang="en">EN</label></nav>
+
+  <header>
+    <p class="eyebrow"><span class="pl">Sezon 2026/2027</span><span class="en">Season 2026/2027</span></p>
+    <h1><span class="pl">Tabela punktacji</span><span class="en">Scoring table</span></h1>
+  </header>
+
+  <!-- ============ ZASADA OBLICZEŃ ============ -->
+  <section class="section" aria-labelledby="rulesTitle">
+    <h2 id="rulesTitle"><span class="pl">Zasada działania punktacji</span><span class="en">How the scoring works</span></h2>
+    <p><span class="pl">Sposób liczenia punktów zależy od liczby zawodników w całej stawce.</span><span class="en">How points are calculated depends on the number of fencers in the whole bracket.</span></p>
+    <div class="ranges">
+      <div class="r-small"><b>N ≤ 3</b><span class="pl">Tabela: N − miejsce + 1 (3, 2, 1).</span><span class="en">Table: N − place + 1 (3, 2, 1).</span></div>
+      <div class="r-mid"><b>N = 4–31</b><span class="pl">Suma trzech składników z tabeli poniżej.</span><span class="en">Sum of the three parts below.</span></div>
+      <div class="r-evf"><b>N ≥ 32</b><span class="pl">Algorytm EVF dla całej stawki, jak w zawodach międzynarodowych. Bez premii medalowej w kategorii.</span><span class="en">EVF algorithm for the whole bracket, as in international events. No category medal bonus.</span></div>
+    </div>
+    <p><span class="pl">W stawce od 4 do 31 zawodników punkty zawodnika są sumą trzech składników:</span><span class="en">In a bracket of 4 to 31 fencers, a fencer's points are the sum of three parts:</span></p>
+    <div class="tw"><table class="rules">
+      <thead><tr><th><span class="pl">Składnik</span><span class="en">Part</span></th><th><span class="pl">Ile daje</span><span class="en">What it pays</span></th><th><span class="pl">Kto otrzymuje</span><span class="en">Who gets it</span></th></tr></thead>
+      <tbody>
+        <tr><th>1 · <span class="pl">Premia za liczebność</span><span class="en">Field bonus</span></th>
+            <td><code>log₂N</code></td>
+            <td><span class="pl">Każdy zawodnik turnieju, także ostatni</span><span class="en">Every fencer in the bracket, including the last</span></td></tr>
+        <tr><th>2 · <span class="pl">Liczba zawodników poniżej w stawce</span><span class="en">Fencers below in the bracket</span></th>
+            <td><span class="pl"><code>3,5</code> pkt za każdego zawodnika z gorszym wynikiem w stawce, dowolnej kategorii</span><span class="en"><code>3.5</code> points for each fencer with a worse result in the bracket, of any category</span></td>
+            <td><span class="pl">Każdy oprócz ostatniego</span><span class="en">Everyone except the last</span></td></tr>
+        <tr class="joined"><th>3 · <span class="pl">Premia medalowa w swojej kategorii</span><span class="en">Medal in your category</span> <span class="tag"><span class="pl">stawka łączona</span><span class="en">joined bracket</span></span></th>
+            <td><span class="pl">złoto <code>13 × ∛K</code>, srebro <code>7 × ∛K</code>, brąz <code>3 × ∛K</code></span><span class="en">gold <code>13 × ∛K</code>, silver <code>7 × ∛K</code>, bronze <code>3 × ∛K</code></span></td>
+            <td><span class="pl">Trzej pierwsi każdej kategorii w turnieju — o ile ktoś w kategorii osiągnął gorszy wynik</span><span class="en">The first three of each category in the bracket — provided someone in the category achieved a worse result</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="rules-legend">
+      <span class="tag"><span class="pl">stawka łączona</span><span class="en">joined bracket</span></span>
+      <span><span class="pl">Przy stawkach łączonych N to liczba zawodników w stawce łączonej, a K — liczba zawodników w Twojej kategorii wiekowej. W turnieju jednej kategorii K = N, więc premia medalowa liczy się od całej stawki.</span><span class="en">In joined brackets N is the number of fencers in the whole joined bracket and K the number of fencers in your own age category. In a single-category bracket K = N, so the medal bonus is based on the whole field.</span></span>
+    </div>
+<div class="formula"><span class="pl">stawka N ≤ 3:      punkty = N − miejsce + 1
+stawka N = 4–31:   wynik  = (liczebność + zawodnicy poniżej + medal) × współczynnik rangi
+stawka N ≥ 32:     wynik  = (50 − 49 × ln(miejsce) / ln N  +  10 × wygrane rundy eliminacji
+                             +  podium 3 / 2 / 1 × 3 × ∛N) × współczynnik rangi      — algorytm EVF
+
+c: 13 za złoto, 7 za srebro, 3 za brąz we własnej kategorii
+K: liczba zawodników własnej kategorii w turnieju (w turnieju jednej kategorii K = N)</span><span class="en">field N ≤ 3:       points = N − place + 1
+field N = 4–31:    result = (field + fencers below + medal) × rank coefficient
+field N ≥ 32:      result = (50 − 49 × ln(place) / ln N  +  10 × DE rounds won
+                             +  podium 3 / 2 / 1 × 3 × ∛N) × rank coefficient      — EVF algorithm
+
+c: 13 for gold, 7 for silver, 3 for bronze in own category
+K: entries of the fencer's own category in the bracket (single-category bracket: K = N)</span></div>
+  </section>
+
+  <section class="grid solo" id="calcGrid">
+    <!-- ============ KALKULATOR ============ -->
+    <article class="card">
+      <h2><span class="pl">Kalkulator wyniku</span><span class="en">Result calculator</span></h2>
+      <p class="note"><span class="pl">Podaj liczbę zawodników i zajęte miejsce. Suwak współczynnika rangi przelicza również tabele poniżej.</span><span class="en">Enter the number of entries and the place. The rank slider also recalculates the tables below.</span></p>
+      <div class="calc">
+        <div class="field"><label for="inN"><span class="pl">Liczba zawodników w turnieju (N)</span><span class="en">Entries in the bracket (N)</span></label><input id="inN" type="number" min="1" max="300" value="10" inputmode="numeric"></div>
+        <div class="field"><label for="inP"><span class="pl">Miejsce w turnieju</span><span class="en">Place in the bracket</span></label><input id="inP" type="number" min="1" max="300" value="1" inputmode="numeric"></div>
+        <label class="toggle" for="joinedToggle"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock medalCard"><span class="pl">Stawka łączona</span><span class="en">Joined bracket</span></label>
+        <div class="joined-block" id="joinedBlock" hidden>
+          <p><span class="pl">W stawce łączonej w jednym turnieju walczy kilka kategorii wiekowych. N i miejsce dotyczą całej stawki; premia medalowa zależy od liczebności Twojej kategorii (K) i Twojego miejsca w niej.</span><span class="en">In a joined bracket several age categories fence in one competition. N and the place refer to the whole bracket; the medal bonus depends on the size of your own category (K) and your place within it.</span></p>
+          <div class="field"><label for="inK"><span class="pl">Zawodnicy własnej kategorii w turnieju (K)</span><span class="en">Entries of your own category (K)</span></label><input id="inK" type="number" min="1" max="300" value="4" inputmode="numeric"></div>
+          <div class="field"><label for="inM"><span class="pl">Miejsce we własnej kategorii</span><span class="en">Place within your own category</span></label><input id="inM" type="number" min="1" max="300" value="1" inputmode="numeric"></div>
+        </div>
+        <div class="field wide"><label for="inR"><span class="pl">Współczynnik rangi zawodów</span><span class="en">Competition rank coefficient</span></label><div class="rank"><input id="inR" type="range" min="1" max="3" step="0.1" value="1"><span id="rVal">1,0</span></div></div>
+      </div>
+      <div class="result" id="resBox" aria-live="polite"><strong id="resVal">—</strong><span><span class="pl">pkt</span><span class="en">pts</span></span><span class="desc" id="resDesc"></span></div>
+      <dl class="bd" id="bd"></dl>
+    </article>
+
+    <!-- ============ PREMIE MEDALOWE ============ -->
+    <article class="card" id="medalCard" aria-labelledby="medalTitle" hidden>
+      <h2 id="medalTitle"><span class="pl">Premiowanie miejsc medalowych przy dzieleniu stawki łączonej na składowe kategorie wiekowe</span><span class="en">Medal bonuses when a joined bracket is divided into its age categories</span></h2>
+      <p class="note"><span class="pl">W turnieju połączonym premia zależy od <b>K</b> — liczebności Twojej kategorii — a nie od <b>N</b>, czyli liczebności całej stawki połączonej. Premię nalicza się za miejsca 1, 2 i 3 osobno w każdej z połączonych kategorii. Nie przysługuje ona za zajęcie ostatniego miejsca we własnej kategorii, czyli premia za:</span><span class="en">In a joined bracket the bonus depends on <b>K</b> — the size of your category — not on <b>N</b>, the size of the whole joined bracket. Places 1, 2 and 3 earn the bonus separately in each of the joined categories. It is not paid for finishing last within your own category, so the bonus for:</span></p>
+      <ul class="rule">
+        <li><span class="pl"><b>1. miejsce</b> jest naliczana tylko wtedy, gdy K &gt; 1,</span><span class="en"><b>1st place</b> is paid only if K &gt; 1,</span></li>
+        <li><span class="pl"><b>2. miejsce</b> — tylko wtedy, gdy K &gt; 2,</span><span class="en"><b>2nd place</b> only if K &gt; 2,</span></li>
+        <li><span class="pl"><b>3. miejsce</b> — tylko wtedy, gdy K &gt; 3.</span><span class="en"><b>3rd place</b> only if K &gt; 3.</span></li>
+      </ul>
+      <p class="note"><span class="pl">Pierwsze miejsce wywalczone wśród czterech zawodników swojej kategorii jest warte tyle samo, niezależnie od tego, ile kategorii połączono w stawce. Wartości przeliczają się wraz z suwakiem współczynnika rangi zawodów (domyślnie 1,0). Premia medalowa dotyczy stawek od 4 do 31 zawodników; w stawce od 32 zawodników punkty liczy algorytm EVF.</span><span class="en">A first place won among four fencers of your own category is worth the same however many categories were joined in the bracket. The values follow the competition rank slider (1.0 by default). The medal bonus applies to brackets of 4 to 31 fencers; from 32 fencers the EVF algorithm scores the bracket.</span></p>
+      <div class="medal-head"><span class="chip"><span class="pl">premia = c × ∛K × współczynnik</span><span class="en">bonus = c × ∛K × coefficient</span></span><span class="chip" id="rankChip">× 1,0</span></div>
+      <div class="tw"><table class="medals" id="medalTbl">
+        <thead></thead>
+        <tbody></tbody>
+      </table></div>
+      <div class="example-line" id="medalExample"></div>
+      <p class="note" style="margin-top:8px"><span class="pl">„—” oznacza, że dane miejsce jest ostatnim w kategorii i premia nie przysługuje. Obramowany wiersz odpowiada danym z kalkulatora.</span><span class="en">"—" means that place is the last in the category, so no bonus is paid. The outlined row matches the calculator's inputs.</span></p>
+    </article>
+  </section>
+
+  <!-- ============ PEŁNA TABELA ============ -->
+  <section class="section" aria-labelledby="tTitle">
+    <h2 id="tTitle"><span class="pl">Pełna tabela: turniej jednej kategorii, stawka 1–64, miejsca 1–64</span><span class="en">Full table: single-category bracket, fields 1–64, places 1–64</span></h2>
+    <p class="note"><span class="pl">Wiersz to liczba zawodników w stawce, kolumna — zajęte miejsce. Wiersze 1–3 to stawki poniżej 4 zawodników z uproszczoną punktacją, a wiersze 32–64 — stawki liczone algorytmem EVF. Stawki powyżej 64 zawodników również liczy algorytm EVF; ich punkty podaje kalkulator. Pogrubione są miejsca medalowe. Tabela uwzględnia współczynnik rangi z kalkulatora.</span><span class="en">The row is the number of entries, the column the place. Rows 1–3 are fields below 4 entries with the simplified points; rows 32–64 are fields scored with the EVF algorithm. Fields above 64 are EVF too; the calculator gives their points. Medal places are in bold. The table applies the rank coefficient set in the calculator.</span></p>
+    <div class="toolbar">
+      <div><button class="btn" type="button" id="locate"><span class="pl">Pokaż wynik z kalkulatora</span><span class="en">Show the calculator's result</span></button> <button class="btn sec" type="button" id="csv"><span class="pl">Pobierz CSV</span><span class="en">Download CSV</span></button></div>
+      <span class="status" id="status" role="status"></span>
+    </div>
+    <div class="shell" id="shell" tabindex="0">
+      <table id="tbl"><caption>Tabela punktów rankingowych — propozycja</caption><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+    </div>
+    <div class="legend"><span><span class="pl">wartość punktowa</span><span class="en">points</span></span><span class="l-small"><span class="pl">stawka 1–3 (uproszczona)</span><span class="en">field 1–3 (simplified)</span></span><span class="l-evf"><span class="pl">stawka 32–64 (algorytm EVF)</span><span class="en">field 32–64 (EVF algorithm)</span></span><span class="l-na"><span class="pl">miejsce niemożliwe</span><span class="en">place not possible</span></span></div>
+  </section>
+
+  <!-- ============ PRZYKŁAD ============ -->
+  <section class="section" aria-labelledby="exTitle">
+    <h2 id="exTitle"><span class="pl">Przykład: V1 × 2, V2 × 4, V3 × 4 w jednym turnieju (N = 10)</span><span class="en">Example: V1 × 2, V2 × 4, V3 × 4 in one bracket (N = 10)</span></h2>
+    <p class="note"><span class="pl">Jedna z możliwych kolejności. „Osobno” to punkty tego samego zawodnika w turnieju wyłącznie jego kategorii (V1: stawka 2, V2 i V3: stawka 4). Punkty porównuje się w obrębie kategorii — każda ma własny ranking. Uwzględniono współczynnik rangi z kalkulatora.</span><span class="en">One possible finishing order. "Apart" is the same fencer's points in a bracket of their category only (V1: field 2, V2 and V3: field 4). Points are compared within a category — each has its own ranking. The calculator's rank coefficient is applied.</span></p>
+    <div class="tw"><table class="ex" id="exTbl"><thead><tr><th><span class="pl">Miejsce</span><span class="en">Place</span></th><th><span class="pl">Kategoria</span><span class="en">Category</span></th><th><span class="pl">W kategorii</span><span class="en">In category</span></th><th><span class="pl">Liczebność</span><span class="en">Field</span></th><th><span class="pl">Poniżej w stawce</span><span class="en">Below</span></th><th><span class="pl">Medal</span><span class="en">Medal</span></th><th><span class="pl">Połączony</span><span class="en">Joined</span></th><th><span class="pl">Osobno</span><span class="en">Apart</span></th><th><span class="pl">Zysk</span><span class="en">Gain</span></th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <footer><span class="pl">Projekt — nieprzyjęty. Stawka do 3 zawodników: 3, 2, 1. Stawka 4–31: premia za liczebność log₂N, 3,5 pkt za każdego zawodnika z gorszym wynikiem w stawce, premie medalowe 13 / 7 / 3 × ∛K za miejsca 1–3 we własnej kategorii, jeżeli K jest większe od miejsca. Stawka od 32: algorytm EVF. Analiza: joined-bracket-scoring-engine-analysis-2026-09-27.html.</span><span class="en">Draft — not adopted. Field of up to 3: 3, 2, 1. Field of 4–31: field bonus log₂N, 3.5 points for each fencer with a worse result in the bracket, medal bonuses 13 / 7 / 3 × ∛K for places 1–3 within the own category when K exceeds the place. Field of 32+: EVF algorithm. Analysis: joined-bracket-scoring-engine-analysis-2026-09-27.html.</span></footer>
+</main>
+
+<script>
+'use strict';
+// ---- Proponowany algorytm. Jedno źródło prawdy dla kalkulatora, obu tabel i przykładu.
+// Trzy zakresy: N ≤ 3 tabela; 4–31 trzy składniki; N ≥ 32 algorytm EVF (EVF_CLASSIC_V1_2025_2026).
+const P = {field: 1, perBelow: 3.5, medal: [13, 7, 3], smallBelow: 4, evfFrom: 32};
+// Parametry algorytmu EVF sezonu 2026/2027 — te same co dla PEW, MEW, MSW i PSW.
+const EVF = {mp: 50, deRound: 10, podium: [3, 2, 1]};
+// Kalkulator przyjmuje stawki do 300; tabela pokazuje 1–64 (1–31 SPWS, 32–64 algorytm EVF).
+// Premia medalowa dotyczy stawek 4–31, więc K nie przekracza 31 — tabela premii jest kompletna.
+const MAXN = 300, TABLE_N = 64, MEDAL_ROWS = 31;
+
+// Premia medalowa: miejsce m we własnej kategorii liczącej K zawodników; tylko m ≤ 3 i K > m.
+function medalBonus(m, K) { return (m <= 3 && K > m) ? P.medal[m - 1] * Math.cbrt(K) : 0; }
+
+// Algorytm EVF: punkty za miejsce + wygrane rundy eliminacji + premia za podium całej stawki.
+function evfParts(N, p) {
+  const place = N === 1 ? EVF.mp : EVF.mp - (EVF.mp - 1) * Math.log(p) / Math.log(N);
+  const pow2 = (N & (N - 1)) === 0;
+  const rounds = N <= 1 ? 0 : Math.max(0, Math.floor(Math.log2(N)) - Math.ceil(Math.log2(p)) + (pow2 ? 0 : 1));
+  const podium = (p <= 3 ? EVF.podium[p - 1] : 0) * 3 * Math.cbrt(N);
+  return {place, rounds, de: rounds * EVF.deRound, podium, total: place + rounds * EVF.deRound + podium};
+}
+
+function score(N, p, K, m) {
+  if (!(N >= 1 && p >= 1 && p <= N)) return null;
+  if (K === undefined) { K = N; m = p; }
+  if (N < P.smallBelow) return {range: 'small', total: N - p + 1};
+  if (N >= P.evfFrom) return {range: 'evf', ...evfParts(N, p)};
+  const below = N - p;                                   // zawodnicy z gorszym wynikiem
+  const field = P.field * Math.log2(N);
+  const belowPts = P.perBelow * below;
+  const medal = medalBonus(m, K);
+  return {range: 'mid', field, below, belowPts, medal, total: field + belowPts + medal};
+}
+
+const $ = id => document.getElementById(id);
+let lang = 'pl';
+const T = {
+  pl: {corner: 'Stawka ↓<br>Miejsce →', prep: 'Przygotowywanie tabeli…', prog: (a, b) => `Obliczono wiersze do ${a} z ${b}…`,
+       ready: r => `Tabela gotowa · współczynnik rangi ${r}`, na: p => `Miejsce ${p}: niemożliwe`, cell: (p, n) => `${p}. miejsce / stawka ${n}`,
+       desc: (p, n, k, m, j) => j ? `${p}. miejsce w turnieju ${n} zawodników · ${m}. miejsce we własnej kategorii liczącej ${k}` : `${p}. miejsce w stawce ${n} zawodników`,
+       err: j => j ? 'Sprawdź dane: miejsce w kategorii ≤ K ≤ N, a poniżej zawodnika musi zmieścić się reszta jego kategorii.' : 'Sprawdź dane: stawka od 1 do 300, miejsce od 1 do N.',
+       small: 'Stawka poniżej 4: N − miejsce + 1', field: 'Premia za liczebność (log₂N)', below: n => `Zawodnicy poniżej w stawce: ${n} × 3,5`,
+       medal: (m, k, paid, j) => paid ? `Premia medalowa (${['złoto', 'srebro', 'brąz'][m - 1]}${j ? `, K = ${k}` : ''})`
+         : j ? (m <= 3 ? 'Premia medalowa (brak: ostatnie miejsce w kategorii)' : 'Premia medalowa (poza podium kategorii)') : 'Premia medalowa (poza podium)',
+       sub: 'Razem przed mnożnikiem', tot: 'Wynik końcowy', cmp: 'Algorytm EVF, to samo miejsce i stawka',
+       evfPlace: 'Algorytm EVF (stawka od 32) — punkty za miejsce', evfDe: n => `Wygrane rundy eliminacji: ${n} × 10`,
+       evfPod: 'Premia za podium stawki (3 / 2 / 1 × 3 × ∛N)', evfNoMedal: 'Premia medalowa w kategorii — nie dotyczy (stawka od 32)',
+       apart: (k, m) => `Ten sam wynik w turnieju tylko Twojej kategorii (stawka ${k}, ${m}. miejsce)`, gain: 'Różnica względem startu osobno',
+       csvH: 'stawka', csvP: p => `miejsce ${p}`, csvN: r => `tabela-punktacji-propozycja-13-7-3-wsp-${r}.csv`,
+       none: 'ostatnie miejsce w kategorii — premia nie przysługuje', med: ['złoto', 'srebro', 'brąz', '4.'],
+       exLine: (g, r) => `Złoto wśród 4 zawodników swojej kategorii = 13 × ∛4 × ${r} = <b>${g} pkt</b> — tyle samo w stawce 4, 10 czy 25 zawodników.`,
+       extraRow: 'z kalkulatora', beyond: n => `Stawka powyżej ${n} zawodników — poza tabelą; punkty (algorytm EVF) podaje kalkulator.`},
+  en: {corner: 'Entries ↓<br>Place →', prep: 'Preparing the table…', prog: (a, b) => `Rows computed up to ${a} of ${b}…`,
+       ready: r => `Table ready · rank coefficient ${r}`, na: p => `Place ${p}: not possible`, cell: (p, n) => `place ${p} / field of ${n}`,
+       desc: (p, n, k, m, j) => j ? `place ${p} in a bracket of ${n} · place ${m} in own category of ${k}` : `place ${p} in a field of ${n}`,
+       err: j => j ? 'Check the inputs: category place ≤ K ≤ N, and the rest of the category must fit below the fencer.' : 'Check the inputs: field from 1 to 300, place from 1 to N.',
+       small: 'Field below 4: N − place + 1', field: 'Field bonus (log₂N)', below: n => `Fencers below in the bracket: ${n} × 3.5`,
+       medal: (m, k, paid, j) => paid ? `Medal bonus (${['gold', 'silver', 'bronze'][m - 1]}${j ? `, K = ${k}` : ''})`
+         : j ? (m <= 3 ? 'Medal bonus (none: last in category)' : 'Medal bonus (off the category podium)') : 'Medal bonus (off the podium)',
+       sub: 'Subtotal', tot: 'Result', cmp: 'EVF algorithm, same place and field',
+       evfPlace: 'EVF algorithm (field of 32+) — place points', evfDe: n => `DE rounds won: ${n} × 10`,
+       evfPod: 'Bracket podium bonus (3 / 2 / 1 × 3 × ∛N)', evfNoMedal: 'Category medal bonus — not applicable (field of 32+)',
+       apart: (k, m) => `Same result in a bracket of your category only (field ${k}, place ${m})`, gain: 'Difference vs fencing apart',
+       csvH: 'entries', csvP: p => `place ${p}`, csvN: r => `scoring-table-proposal-13-7-3-rank-${r}.csv`,
+       none: 'last place in the category — no bonus', med: ['gold', 'silver', 'bronze', '4th'],
+       exLine: (g, r) => `Gold among 4 fencers of your category = 13 × ∛4 × ${r} = <b>${g} pts</b> — the same in a field of 4, 10 or 25.`,
+       extraRow: 'from calculator', beyond: n => `Field above ${n} — outside the table; the calculator gives the points (EVF algorithm).`}
+};
+const t = () => T[lang];
+const num = (v, d) => { const s = Math.abs(v).toFixed(d); return (v < 0 ? '-' : '') + (lang === 'pl' ? s.replace('.', ',') : s); };
+const rank = () => parseFloat($('inR').value);
+
+function inputs() {
+  const joined = $('joinedToggle').checked;
+  const N = parseInt($('inN').value, 10), p = parseInt($('inP').value, 10), r = rank();
+  const K = joined ? parseInt($('inK').value, 10) : N, m = joined ? parseInt($('inM').value, 10) : p;
+  const ok = N >= 1 && N <= MAXN && p >= 1 && p <= N && K >= 1 && K <= N && m >= 1 && m <= K && p >= m && (N - p) >= (K - m) && r >= 1 && r <= 3;
+  return {joined, N, p, K, m, r, ok};
+}
+
+function renderCalc() {
+  const v = inputs();
+  $('rVal').textContent = num(v.r, 1);
+  $('rankChip').textContent = '× ' + num(v.r, 1);
+  $('joinedBlock').hidden = !v.joined;
+  $('medalCard').hidden = !v.joined;
+  $('calcGrid').classList.toggle('solo', !v.joined);
+  const box = $('resBox');
+  if (!v.ok) { box.classList.add('err'); $('resVal').textContent = '—'; $('resDesc').textContent = t().err(v.joined); $('bd').innerHTML = ''; return; }
+  box.classList.remove('err');
+  const s = score(v.N, v.p, v.K, v.m);
+  $('resVal').textContent = num(s.total * v.r, 1);
+  $('resDesc').textContent = t().desc(v.p, v.N, v.K, v.m, v.joined);
+  let rows;
+  if (s.range === 'small') {
+    rows = [[t().small, num(s.total, 2)]];
+  } else if (s.range === 'evf') {
+    rows = [[t().evfPlace, num(s.place, 2)], [t().evfDe(s.rounds), num(s.de, 2)], [t().evfPod, num(s.podium, 2)]];
+    if (v.joined) rows.push([t().evfNoMedal, '—', 'cmp']);
+    rows.push([t().sub, num(s.total, 2)]);
+  } else {
+    rows = [[t().field, num(s.field, 2)], [t().below(s.below), num(s.belowPts, 2)], [t().medal(v.m, v.K, s.medal > 0, v.joined), num(s.medal, 2)], [t().sub, num(s.total, 2)]];
+  }
+  rows.push([t().tot, num(s.total * v.r, 2), 'total']);
+  if (v.joined) {
+    const apart = score(v.K, v.m).total * v.r, gain = s.total * v.r - apart;
+    rows.push([t().apart(v.K, v.m), num(apart, 2), 'cmp'], [t().gain, (gain >= 0 ? '+' : '') + num(gain, 2), gain >= 0 ? 'gain' : 'loss']);
+  } else if (s.range !== 'evf') {
+    rows.push([t().cmp, num(evfParts(v.N, v.p).total * v.r, 2), 'cmp']);
+  }
+  $('bd').innerHTML = rows.map(([a, b, c]) => `<dt class="${c || ''}">${a}</dt><dd class="${c || ''}">${b}</dd>`).join('');
+}
+
+// Medal z numerem miejsca: złoty 1, srebrny 2, brązowy 3 (SVG, bez emoji — wygląda tak samo na każdym telefonie).
+const MEDAL_INK = [{disc: '#e3b52a', rim: '#9c7008', ink: '#4a3500'},
+                   {disc: '#cdd5de', rim: '#76818e', ink: '#28303b'},
+                   {disc: '#cf8c50', rim: '#87501f', ink: '#3b1f08'}];
+function medalIcon(m, h) {
+  const c = MEDAL_INK[m - 1];
+  return `<svg class="mi" width="${Math.round(h * 0.8)}" height="${h}" viewBox="0 0 24 30" aria-hidden="true">`
+    + `<path d="M5 0h6l4 11H9z" fill="#b8322a"/><path d="M19 0h-6l-4 11h6z" fill="#1f4f8f"/>`
+    + `<circle cx="12" cy="19.5" r="9.5" fill="${c.disc}" stroke="${c.rim}" stroke-width="1.6"/>`
+    + `<circle cx="12" cy="19.5" r="6.8" fill="none" stroke="${c.rim}" stroke-width=".8" opacity=".55"/>`
+    + `<text x="12" y="23.4" text-anchor="middle" font-family="Georgia,serif" font-size="10.5" font-weight="700" fill="${c.ink}">${m}</text></svg>`;
+}
+
+function medalRow(k, r, v, extra) {
+  let cells = '';
+  for (let m = 1; m <= 3; m++) {
+    const val = medalBonus(m, k);
+    const cur = v.ok && v.N < P.evfFrom && v.K === k && v.m === m ? ' curm' : '';
+    if (val > 0) {
+      cells += `<td class="${cur.trim()}"><span class="mv">${medalIcon(m, 20)}${num(val * r, 1)}</span></td>`;
+    } else {
+      cells += `<td class="none${cur}" title="${t().none}">—</td>`;
+    }
+  }
+  const curRow = v.ok && v.N < P.evfFrom && v.K === k ? ' class="cur"' : '';
+  const label = extra ? `${k} <span style="font-weight:400">· ${t().extraRow}</span>` : k;
+  return `<tr${curRow}><th scope="row">${label}</th>${cells}</tr>`;
+}
+
+function renderMedals() {
+  const r = rank(), v = inputs();
+  let h = '';
+  for (let k = 1; k <= MEDAL_ROWS; k++) h += medalRow(k, r, v, false);
+  $('medalTbl').querySelector('thead').innerHTML = '<tr><th scope="col">K</th>'
+    + [1, 2, 3].map(m => `<th scope="col"><span class="mh">${medalIcon(m, 30)}<span>${t().med[m - 1]}</span></span></th>`).join('') + '</tr>';
+  $('medalTbl').querySelector('tbody').innerHTML = h;
+  $('medalExample').innerHTML = t().exLine(num(medalBonus(1, 4) * r, 1), num(r, 1));
+}
+
+function renderHead() {
+  let h = `<tr><th scope="col">${t().corner}</th>`;
+  for (let p = 1; p <= TABLE_N; p++) h += `<th scope="col" class="${p % 10 === 0 ? 'tenth' : ''}">${p}</th>`;
+  $('thead').innerHTML = h + '</tr>';
+}
+
+let token = 0, ready = false;
+async function renderTable() {
+  const my = ++token, r = rank(), body = $('tbody'), st = $('status');
+  ready = false; body.innerHTML = ''; st.textContent = t().prep;
+  for (let a = 1; a <= TABLE_N; a += 12) {
+    if (my !== token) return;
+    const b = Math.min(TABLE_N, a + 11);
+    let html = '';
+    for (let n = a; n <= b; n++) {
+      html += `<tr id="r-${n}" class="${n < P.smallBelow ? 'small' : n >= P.evfFrom ? 'evf' : ''}"><th scope="row">${n}</th>`;
+      for (let p = 1; p <= TABLE_N; p++) {
+        const ten = p % 10 === 0 ? ' tenth' : '';
+        if (p > n) { html += `<td class="na${ten}" aria-label="${t().na(p)}">—</td>`; continue; }
+        const s = score(n, p);
+        const med = (s.range === 'mid' && s.medal > 0) || (s.range === 'evf' && p <= 3) ? ' medal' : '';
+        html += `<td id="c-${n}-${p}" class="${(med + ten).trim()}" title="${t().cell(p, n)}">${num(s.total * r, 1)}</td>`;
+      }
+      html += '</tr>';
+    }
+    body.insertAdjacentHTML('beforeend', html);
+    st.textContent = t().prog(b, TABLE_N);
+    await new Promise(res => requestAnimationFrame(res));
+  }
+  if (my !== token) return;
+  ready = true; st.textContent = t().ready(num(r, 1)); highlight(false);
+}
+
+function highlight(scroll) {
+  document.querySelectorAll('#tbl .sel').forEach(e => e.classList.remove('sel'));
+  document.querySelectorAll('#tbl .selc').forEach(e => e.classList.remove('selc'));
+  const v = inputs();
+  if (!v.ok || !ready || v.joined) return;
+  if (v.N > TABLE_N) { if (scroll) $('status').textContent = t().beyond(TABLE_N); return; }
+  const row = $(`r-${v.N}`), cell = $(`c-${v.N}-${v.p}`);
+  if (!row || !cell) return;
+  row.classList.add('sel'); cell.classList.add('selc');
+  if (scroll) cell.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+}
+
+function renderExample() {
+  const r = rank();
+  const order = [['V1', 1, 2], ['V2', 1, 4], ['V2', 2, 4], ['V1', 2, 2], ['V3', 1, 4], ['V2', 3, 4], ['V3', 2, 4], ['V3', 3, 4], ['V2', 4, 4], ['V3', 4, 4]];
+  let h = '';
+  order.forEach(([cat, m, k], i) => {
+    const p = i + 1, s = score(10, p, k, m), a = score(k, m).total;
+    h += `<tr><td>${p}</td><td>${cat}</td><td>${t().med[m - 1]} (${m}/${k})</td><td>${num(s.field * r, 1)}</td><td>${num(s.belowPts * r, 1)}</td>`
+       + `<td>${s.medal > 0 ? num(s.medal * r, 1) : '—'}</td><td><b>${num(s.total * r, 1)}</b></td><td>${num(a * r, 1)}</td><td class="gain">+${num((s.total - a) * r, 1)}</td></tr>`;
+  });
+  $('exTbl').querySelector('tbody').innerHTML = h;
+}
+
+function csv() {
+  const r = rank(), q = v => `"${String(v).split('"').join('""')}"`, lines = [];
+  const head = [t().csvH]; for (let p = 1; p <= TABLE_N; p++) head.push(t().csvP(p));
+  lines.push(head.map(q).join(';'));
+  for (let n = 1; n <= TABLE_N; n++) {
+    const row = [n]; for (let p = 1; p <= TABLE_N; p++) row.push(p <= n ? num(score(n, p).total * r, 1) : '');
+    lines.push(row.map(q).join(';'));
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'}));
+  a.download = t().csvN(r.toFixed(1).replace('.', '-')); a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function live() { renderCalc(); renderMedals(); renderExample(); highlight(false); }
+function all() { renderHead(); live(); renderTable(); }
+
+document.querySelectorAll('input[name=lang]').forEach(el => el.addEventListener('change', () => {
+  if (!el.checked) return; lang = el.id === 'langEn' ? 'en' : 'pl'; document.documentElement.lang = lang; all();
+}));
+['inN', 'inP', 'inK', 'inM'].forEach(id => $(id).addEventListener('input', live));
+$('joinedToggle').addEventListener('change', live);
+$('inR').addEventListener('input', live);
+$('inR').addEventListener('change', renderTable);
+$('locate').addEventListener('click', () => highlight(true));
+$('csv').addEventListener('click', csv);
+
+try { all(); } catch (e) {
+  $('status').textContent = 'Strona nie wystartowała / The page failed to start: ' + (e && e.message ? e.message : String(e));
+}
+</script>
+</body>
+</html>
