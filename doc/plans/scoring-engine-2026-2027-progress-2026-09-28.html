@@ -62,7 +62,7 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-si
 <div class="tw"><table>
 <thead><tr><th>Step</th><th>What it does now</th><th>Evidence</th></tr></thead>
 <tbody>
-<tr><td>1–3 Database</td><td>The place-and-medal engine; the engine per tournament type (PPW, MPW, PPS, MPS new; PEW, MEW, MSW, PSW EVF classic); K, m, b, the new components and the method on every result, −1 where unused; field-scaled deleted; ranking entry through PPW/MPW.</td><td class="ok">pgTAP 1165 of 1165</td></tr>
+<tr><td>1–3 Database</td><td>The place-and-medal engine; the engine per tournament type (PPW and MPW new; PPS, MPS, PEW, MEW, MSW and PSW EVF classic — PPS and MPS moved back to EVF classic at your instruction, ADR-103 amendment); K, m, b, the new components and the method on every result, −1 where unused; field-scaled deleted; ranking entry through PPW/MPW.</td><td class="ok">pgTAP 1165 of 1165</td></tr>
 <tr><td>4–5 Pipeline</td><td>The two joined-bracket modules, chosen by the engine of the type, in ingestion, recompute and PZSz.</td><td class="ok">pytest green</td></tr>
 <tr><td>6 Browser module</td><td><code>scoring.ts</code> implements both engines and matches SQL to the cent.</td><td class="ok">40 parity tests</td></tr>
 <tr><td>8 Public pages</td><td>The annex is rebuilt from the signed-off table: 64 × 64, the medal table to K = 31, the worked example and each type's coefficient. The calculator takes N up to 300, has a joined mode and an SPWS/EVF toggle. The board preview is deleted.</td><td class="ok">Browser-checked on LOCAL</td></tr>
@@ -101,10 +101,18 @@ footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-si
 <p>During the database step, an edit meant for the SE27.ING test row landed in the FR-139 requirement row. FR-139 then had an extra column, and SE27.ING still read "Planned". Both rows are correct again.</p>
 </div>
 
+<h2>Your change of 28 September: PPS and MPS on EVF classic</h2>
+<ul>
+<li>Built on LOCAL: the migration assigns 2026/2027 PPW and MPW to the SPWS engine and the six other types to EVF classic. SE27.TYPE.02, TYPE.04 and CALC.01 pinned it first (RED, then GREEN), and SE27.ING.05 now proves a PZSz result keeps K, m and b under either engine.</li>
+<li>A PZSz senior field is scored as it was before ADR-103: the full field as N, the original place and EVF classic. The coefficients are PROD&rsquo;s own, PPS × 1.1 and MPS × 1.3, and the migration does not touch them.</li>
+<li>ADR-103 carries a dated amendment, and ADR-100&rsquo;s note, FR-137, spec §8.1.4 and Appendix C, and the handbook are corrected. On the annex, PPS and MPS show under EVF, and its coefficient slider offers PPW and MPW only.</li>
+<li>Observed while checking (read-only): PROD holds the coefficients set on 21 September (MEW 1.3, MSW 1.4, PSW 1.1, PPS 1.1, MPS 1.3), while CERT still holds the older defaults (MEW and PSW 2.0, MSW 1.2, PPS and MPS 1.0). Both are unlocked with nothing scored. If PPW1 is ingested on CERT first, CERT scores with CERT&rsquo;s values; this matters only for the types that differ, not for PPW or MPW.</li>
+</ul>
+
 <h2>What waits for you</h2>
 <div class="card q">
 <span class="lb">1 · Step 7 — the editor mockup</span>
-<p>The A/B question is in <a href="../mockups/se27_scoring_config_per_type.html">se27_scoring_config_per_type.html</a>. The Admin editor, the drilldown labels („Za liczebność”, „Zawodnicy poniżej w stawce”, „Premia medalowa”, −1 shown as „nie dotyczy”) and the CSV export follow from your answer. So does the LOCAL end-to-end run with the PPW1 fixture, because it includes the drilldown.</p>
+<p>Revision 2 of the mockup — PPS and MPS on EVF klasyczny, and EVF klasyczny&rsquo;s fixed rules shown beside its settings — and its A/B question are in <a href="../mockups/se27_scoring_config_per_type.html">se27_scoring_config_per_type.html</a>. The Admin editor, the drilldown labels („Za liczebność”, „Zawodnicy poniżej w stawce”, „Premia medalowa”, −1 shown as „nie dotyczy”) and the CSV export follow from your answer. So does the LOCAL end-to-end run with the PPW1 fixture, because it includes the drilldown.</p>
 </div>
 <div class="card q">
 <span class="lb">2 · Release — a separate go</span>
