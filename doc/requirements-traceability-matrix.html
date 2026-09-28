@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="1854b8a87d28813d339f22502c1f0d0253e3241a4f71d4788e528c042d9666ca">
+<meta name="doc-source-sha256" content="4c5e726b6818075463946d5db5cfb41a3d666937f2971f178c5e2d5ee1ec54d1">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>273 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>274 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1169,7 +1169,7 @@
 <section class="section-card detail"><h2 id="versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</h2>
 <p>Acceptance IDs for <a href="plans/versioned-season-scoring-and-pzsz-ranking-design.html">doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html</a>. Registered here <strong>before</strong> production code, as §10 of that design requires: every implementation test carries a stable <code>SS26.*</code> identifier and is traceable from the moment it is written, not once it passes.</p>
 <p>These do not yet map to user-facing FR rows. The design's §13 places FR changes (FR-11–19, FR-28, FR-34–38, FR-59, FR-61, FR-64–68, FR-111, plus new requirements for explicit engines, the governance lock and PZSz scoring) in the <strong>implementation</strong> change, not in the design or contract-test commits. Until the behaviour ships, the handbook remains truthful about the deployed system and this table carries the traceability.</p>
-<p>Status vocabulary here is narrower than the FR table's: <strong>Landed</strong> means the assertions exist and pass; <strong>RED (intended)</strong> means they exist and fail because the objects they name are not built yet — the TDD precondition, not a defect; <strong>Planned</strong> means the IDs are reserved and the assertions are not written.</p>
+<p>Status vocabulary here is narrower than the FR table's: <strong>Landed</strong> means the assertions exist and pass; <strong>RED (intended)</strong> means they exist and fail because the objects they name are not built yet — the TDD precondition, not a defect; <strong>Planned</strong> means the IDs are reserved and the assertions are not written. <strong>Retired</strong> means the assertions were deleted with the object they tested; the row names the successor.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -1207,7 +1207,7 @@
 <td>The field-scaled engine: N=1 scores 19 where the classic engine scores 59; N=32 is the exact crossover where the two engines agree; the base caps at <code>mpValue</code>; 34th of 107 scores on the full field; <code>place &gt; N</code>, <code>place &lt; 1</code> and <code>N &lt; 1</code> are rejected rather than scored; no podium bonus survives an out-of-range place; monotonicity in both place and field size.</td>
 <td>pgTAP</td>
 <td>same</td>
-<td><strong>Landed</strong> (2026-09-19)</td>
+<td><strong>Retired</strong> (2026-09-28, ADR-103 §3: the engine was deleted before it scored a result; successor SE27.ENG.*)</td>
 </tr>
 <tr>
 <td>SS26.PARITY.01–04</td>
@@ -1397,39 +1397,46 @@
 </thead>
 <tbody>
 <tr>
-<td>SE27.ENG.01–12</td>
-<td>The new strategy: N = 1, 2, 3 give N − p + 1; the N = 8 row 53.50 … 3.00; the 10-fencer joined example 51.2 … 3.3; no medal for the last of a category; a tie at 3rd of 10 counts 6 below, not 7; N = 31 winner 150.79; N = 32 equals EVF classic exactly, with no medal; an unknown engine raises; field-scaled absent from registry, dispatcher and catalogue; EVF classic unchanged.</td>
+<td>SE27.ENG.01–13</td>
+<td>The new strategy: N = 1, 2, 3 give N − p + 1; the N = 8 row 53.50 … 3.00; the 10-fencer joined example 51.2 … 3.3; no medal for the last of a category; a tie at 3rd of 10 counts 6 below, not 7; N = 31 winner 150.79; N = 32 equals EVF classic exactly, with no medal; an unknown engine raises; field-scaled absent from registry, dispatcher and catalogue; EVF classic unchanged through the dispatcher; a 4–31 bracket without K, m and below raises.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/83_spws_place_medal_engine.sql</code></td>
-<td>Planned</td>
+<td><strong>Landed</strong> (2026-09-28)</td>
 </tr>
 <tr>
 <td>SE27.TYPE.01–05</td>
 <td>The engine column on type rows; 2026/2027 assigned per FR-137 and older seasons on EVF classic; the lock rejects a change once scored; export/import round-trip <code>type_engines</code>; a revision snapshot carries it.</td>
 <td>pgTAP</td>
 <td>same</td>
-<td>Planned</td>
+<td><strong>Landed</strong> (2026-09-28)</td>
 </tr>
 <tr>
-<td>SE27.STORE.01–06</td>
-<td>The new columns exist; no NULL in a scored row's component, K, m or below column; −1 exactly where the method does not use a value; the CHECKs reject −2 and −0.5; history backfilled; the method matches the range that scored the row.</td>
+<td>SE27.STORE.01–07</td>
+<td>The new columns exist; no NULL in a scored row's component, K, m, below or method column; −1 exactly where the method does not use a value; the CHECKs reject −2, −0.5 and a category place of 0; history backfilled; the method matches the range that scored the row; the stored joined example scores 51.2 … 3.3 end to end.</td>
 <td>pgTAP</td>
 <td>same</td>
-<td>Planned</td>
+<td><strong>Landed</strong> (2026-09-28)</td>
+</tr>
+<tr>
+<td>SE27.STORE.08</td>
+<td>An approved PZSz review writes K = the senior field, m = the original place and the count below the queue kept.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/81_pzsz_senior_ingestion.sql</code></td>
+<td><strong>Landed</strong> (2026-09-28)</td>
 </tr>
 <tr>
 <td>SE27.RANK.01–05</td>
-<td>An EVF-only fencer is absent from 2026/2027 but present in 2025/2026; a foreigner from a PPW bracket is ranked; a 2025/2026 PPW start admits to the rolling 2026/2027 ranking only; a last PPW in 2024/2025 admits to neither; a V1 → V2 move carries points into V2.</td>
+<td>An EVF-only fencer is absent from 2026/2027 (seasons without <code>entry_types</code> keep SS26.RANK.*); a foreigner from a PPW bracket is ranked; a 2025/2026 PPW start admits to the rolling 2026/2027 ranking only; a last PPW in 2024/2025 admits to neither; a V1 → V2 move carries points into V2.</td>
 <td>pgTAP</td>
 <td>same</td>
-<td>Planned</td>
+<td><strong>Landed</strong> (2026-09-28)</td>
 </tr>
 <tr>
 <td>SE27.CALC.01–04</td>
-<td><code>fn_public_scoring_params</code> reports engine and coefficient per type for 2026/2027, is anon-executable, and stays in both allowlists.</td>
+<td><code>fn_public_scoring_params</code> reports engine and coefficient per type for 2026/2027, every row carries the season's EVF settings, and it is anon-executable and stays in both allowlists. SS26.CALC.05–07 and .09 are re-pointed at the per-type shape in <code>82_published_page_params.sql</code>.</td>
 <td>pgTAP</td>
 <td>same + <code>52_security_posture.sql</code></td>
-<td>Planned</td>
+<td><strong>Landed</strong> (2026-09-28)</td>
 </tr>
 <tr>
 <td>SE27.ING.01–09</td>
@@ -1472,5 +1479,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>1854b8a87d28813d339f22502c1f0d0253e3241a4f71d4788e528c042d9666ca</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4c5e726b6818075463946d5db5cfb41a3d666937f2971f178c5e2d5ee1ec54d1</code></footer>
 </div></body></html>

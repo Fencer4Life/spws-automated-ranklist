@@ -9,17 +9,22 @@
 #
 # WHY THIS EXISTS.
 #
-# SPWS-2026-2027 is the first season assigned SPWS_FIELD_SCALED_V1_2026_2027 and
-# it holds no results yet, so on LOCAL the new engine had nothing real to score.
+# SPWS-2026-2027 is the first season whose PPW brackets are scored by
+# SPWS_PLACE_MEDAL_V1_2026_2027 (ADR-103), and it holds no results yet, so on
+# LOCAL the new engine had nothing real to score.
 # This copies the 23 PPW1 brackets and 85 placements of PPW1-2025-2026 onto the
 # already-existing PPW1-2026-2027 calendar row and scores them with the new
 # engine, so the ranklist, drilldown, export and calculator can all be exercised
 # against realistic data before the real results arrive.
 #
 # PPW1 is an unusually good probe for this change. Its fields run from 1 to 11
-# competitors, every one of them below the N = 32 crossover where the two
-# engines converge, so EVERY bracket scores differently. Six of the 23 are
-# one-competitor walkovers — the ADR-066 case that §04 re-prices from 59 to 19.
+# competitors, every one of them below the N = 32 switch to EVF classic, so
+# EVERY bracket scores differently. Eight of the 23 are one-competitor walkovers —
+# the ADR-066 case the table (N <= 3) re-prices from 59 to 1.
+#
+# The copied brackets were already split per category last season, so each is
+# written as ONE category: K = N, m = the place among the stored rows, and the
+# fencers below counted from the stored places (ties are not below).
 #
 # THIS IS TEST DATA AND IT MUST NEVER LEAVE LOCAL.
 #
@@ -39,7 +44,10 @@
 # SPWS-2026-2027 holds scored results, so probe SSP-06 of
 # scripts/check-scoring-migration-preflight.sh changes its answer for LOCAL.
 # That is correct: the season is already assigned the intended engine, which is
-# the condition §11 actually requires, and the probe reports it that way.
+# the condition §11 actually requires, and the probe reports it that way. It
+# also LOCKS LOCAL's SPWS-2026-2027 (ADR-097), and --remove does not unlock it:
+# supabase/tests/83_spws_place_medal_engine.sql needs it unlocked, so reset
+# LOCAL before running pgTAP again.
 # =============================================================================
 
 set -uo pipefail
@@ -150,10 +158,17 @@ BEGIN
     INSERT INTO tbl_result (
       id_fencer, id_tournament, int_place, enum_fencer_age_category,
       enum_source_age_category, txt_scraped_name, num_match_confidence,
-      enum_match_method)
+      enum_match_method, int_category_count, int_category_place, int_below_count)
     SELECT r.id_fencer, v_new_t, r.int_place, v_t.enum_age_category,
            v_t.enum_age_category, r.txt_scraped_name, r.num_match_confidence,
-           r.enum_match_method
+           r.enum_match_method,
+           v_t.int_participant_count,
+           1 + (SELECT count(*) FROM tbl_result b
+                 WHERE b.id_tournament = v_t.id_tournament AND b.int_place < r.int_place),
+           LEAST(v_t.int_participant_count - r.int_place,
+                 v_t.int_participant_count
+                 - (SELECT count(*) FROM tbl_result b
+                     WHERE b.id_tournament = v_t.id_tournament AND b.int_place <= r.int_place))
       FROM tbl_result r
      WHERE r.id_tournament = v_t.id_tournament;
     GET DIAGNOSTICS v_n = ROW_COUNT;
@@ -188,7 +203,7 @@ SELECT
   regexp_replace(t.txt_code, '-2026-2027\$', '')       AS bracket,
   t.int_participant_count                             AS n,
   old.num_final_score                                 AS classic_2025_26,
-  new.num_final_score                                 AS field_scaled_2026_27,
+  new.num_final_score                                 AS spws_2026_27,
   ROUND(new.num_final_score - old.num_final_score, 2) AS delta,
   ROUND(100 * (new.num_final_score - old.num_final_score) / NULLIF(old.num_final_score, 0), 1) AS pct
 FROM tbl_tournament t
@@ -217,7 +232,7 @@ SELECT (SELECT count(*) FROM brackets)                                AS bracket
        (SELECT count(*) FROM brackets WHERE n = 1)                    AS walkovers,
        (SELECT count(*) FROM placements)                              AS placements,
        ROUND((SELECT sum(old_score) FROM placements), 2)              AS classic_total,
-       ROUND((SELECT sum(new_score) FROM placements), 2)              AS field_scaled_total,
+       ROUND((SELECT sum(new_score) FROM placements), 2)              AS spws_2026_27_total,
        ROUND(100 * ((SELECT sum(new_score) FROM placements)
                   - (SELECT sum(old_score) FROM placements))
              / NULLIF((SELECT sum(old_score) FROM placements), 0), 1) AS pct;

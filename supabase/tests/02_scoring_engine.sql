@@ -27,6 +27,13 @@
 --      checking — that the engine honours config — and cannot drift. The literal
 --      values live in 2.0, in one place.
 --
+-- PER-TYPE ENGINES (2026-09-28, ADR-103)
+-- -----------------------------------------------------------------------------
+-- The active season assigns its engine per tournament type: PPW and MPW use
+-- SPWS_PLACE_MEDAL_V1_2026_2027, PEW, PSW and MSW use EVF classic. The EVF
+-- mechanics below (place points, DE rounds, podium) are therefore exercised on
+-- PEW, and the PPW/MPW pair exercises the new engine. Test 2.0 pins both.
+--
 -- Fencers are created by this file (see the convention in
 -- doc/handbook/reference/test-and-traceability.html). Do not reintroduce
 -- lookups by surname: SELECT ... INTO silently binds the first row when two
@@ -74,12 +81,19 @@ BEGIN
   VALUES ('SCORE-TEST-EVT', 'Scoring Test Event', v_season, v_org, 'PLANNED');
   SELECT id_event INTO v_event FROM tbl_event WHERE txt_code = 'SCORE-TEST-EVT';
 
-  -- Tournament A: PPW, N=24 (non-power-of-2, c=1)
+  -- Tournament A: PEW, N=24 (EVF classic; non-power-of-2, c=1)
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
+    enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
+    enum_import_status)
+  VALUES (v_event, 'SCORE-PEW-N24', 'Test PEW N=24', 'PEW',
+    'EPEE', 'M', 'V2', '2024-10-01', 24, 'IMPORTED');
+
+  -- Tournament A2: PPW, N=24 (the 2026/2027 engine; pairs with MPW for 2.7)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
     enum_import_status)
   VALUES (v_event, 'SCORE-PPW-N24', 'Test PPW N=24', 'PPW',
-    'EPEE', 'M', 'V2', '2024-10-01', 24, 'IMPORTED');
+    'FOIL', 'M', 'V2', '2024-10-01', 24, 'IMPORTED');
 
   -- Tournament B: MPW, N=24 (for multiplier test)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
@@ -95,12 +109,12 @@ BEGIN
   VALUES (v_event, 'SCORE-PPW-N1', 'Test PPW N=1', 'PPW',
     'EPEE', 'M', 'V2', '2024-12-01', 1, 'IMPORTED');
 
-  -- Tournament D: N=16 (power-of-2, c=0)
+  -- Tournament D: PEW N=16 (EVF classic; power-of-2, c=0)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
     enum_import_status)
-  VALUES (v_event, 'SCORE-PPW-N16', 'Test PPW N=16', 'PPW',
-    'EPEE', 'M', 'V2', '2025-01-01', 16, 'IMPORTED');
+  VALUES (v_event, 'SCORE-PEW-N16', 'Test PEW N=16', 'PEW',
+    'SABRE', 'M', 'V2', '2025-01-01', 16, 'IMPORTED');
 
   -- Tournament E: PSW, N=24 (multiplier read from the active season's config)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
@@ -116,10 +130,10 @@ BEGIN
   VALUES (v_event, 'SCORE-MSW-N24', 'Test MSW N=24', 'MSW',
     'EPEE', 'M', 'V2', '2025-03-01', 24, 'IMPORTED');
 
-  SELECT id_tournament INTO v_tourn_ppw FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
+  SELECT id_tournament INTO v_tourn_ppw FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
   SELECT id_tournament INTO v_tourn_mpw FROM tbl_tournament WHERE txt_code = 'SCORE-MPW-N24';
   SELECT id_tournament INTO v_tourn_n1  FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N1';
-  SELECT id_tournament INTO v_tourn_n16 FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N16';
+  SELECT id_tournament INTO v_tourn_n16 FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N16';
   SELECT id_tournament INTO v_tourn_psw FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
   SELECT id_tournament INTO v_tourn_msw FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
@@ -140,7 +154,7 @@ BEGIN
   SELECT id_fencer INTO v_fencer4 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-4';
   SELECT id_fencer INTO v_fencer5 FROM tbl_fencer WHERE txt_surname = 'SC-FENCER-5';
 
-  -- Insert results for PPW N=24: places 1,2,3,4,24
+  -- Insert results for PEW N=24: places 1,2,3,4,24
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
     (v_fencer1, v_tourn_ppw, 1),
     (v_fencer2, v_tourn_ppw, 2),
@@ -148,13 +162,6 @@ BEGIN
     (v_fencer4, v_tourn_ppw, 4),
     (v_fencer5, v_tourn_ppw, 24);
 
-  -- Insert results for MPW N=24: same fencers, same places (for multiplier comparison)
-  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
-    (v_fencer1, v_tourn_mpw, 1),
-    (v_fencer2, v_tourn_mpw, 2),
-    (v_fencer3, v_tourn_mpw, 3),
-    (v_fencer4, v_tourn_mpw, 4),
-    (v_fencer5, v_tourn_mpw, 24);
 
   -- Insert result for N=1: single fencer
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
@@ -168,7 +175,7 @@ BEGIN
     (v_fencer4, v_tourn_n16, 4),
     (v_fencer5, v_tourn_n16, 16);
 
-  -- Insert results for PSW N=24: places 1,2 (for PSW multiplier comparison with PPW)
+  -- Insert results for PSW N=24: places 1,2 (for PSW multiplier comparison with PEW)
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES
     (v_fencer1, v_tourn_psw, 1),
     (v_fencer2, v_tourn_psw, 2);
@@ -180,12 +187,42 @@ BEGIN
 END;
 $setup$;
 
+-- PPW and MPW N=24, the same five placements, on the 2026/2027 engine. One
+-- category, so K = 24, m = the place and 24 - place fencers are below. Written
+-- through EXECUTE with a plain fallback so that, before the engine migration,
+-- the file still runs and fails by name rather than aborting here.
+DO $setup_new$
+DECLARE v_t TEXT; v_place INT; v_i INT := 0;
+BEGIN
+  FOREACH v_t IN ARRAY ARRAY['SCORE-PPW-N24', 'SCORE-MPW-N24'] LOOP
+    v_i := 0;
+    FOREACH v_place IN ARRAY ARRAY[1, 2, 3, 4, 24] LOOP
+      v_i := v_i + 1;
+      BEGIN
+        EXECUTE 'INSERT INTO tbl_result (id_fencer, id_tournament, int_place, int_category_count,
+                   int_category_place, int_below_count)
+                 SELECT f.id_fencer, t.id_tournament, $1, 24, $1, 24 - $1
+                   FROM tbl_fencer f, tbl_tournament t
+                  WHERE f.txt_surname = $2 AND t.txt_code = $3'
+          USING v_place, 'SC-FENCER-' || v_i, v_t;
+      EXCEPTION WHEN undefined_column THEN
+        INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+        SELECT f.id_fencer, t.id_tournament, v_place
+          FROM tbl_fencer f, tbl_tournament t
+         WHERE f.txt_surname = 'SC-FENCER-' || v_i AND t.txt_code = v_t;
+      END;
+    END LOOP;
+  END LOOP;
+END;
+$setup_new$;
+
 -- ===== RUN SCORING ENGINE =====
 -- Score all test tournaments
+SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-MPW-N24';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N1';
-SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N16';
+SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N16';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PSW-N24';
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
@@ -201,34 +238,50 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 -- If this test fails, an admin has changed the active season's scoring rules.
 -- That is not necessarily a bug — but every expectation in this file must then
 -- be recomputed deliberately, and the governance rule set re-checked.
--- Extended 2026-09-19: the active season's ASSIGNED SCORING ENGINE is now one
--- of the values this file's arithmetic depends on, so it belongs in the config
--- contract rather than being left implicit. The base is no longer a fixed 50:
--- under SPWS_FIELD_SCALED_V1_2026_2027 it is min(mpValue, baseSlope*log2(max(2,N))),
--- so expectations below are derived per field size. If this assertion fails
--- because the active season was moved to a different engine, every base-dependent
--- expectation in this file must be recomputed deliberately — which is exactly
--- what the contract is for.
+-- Extended 2026-09-19 and 2026-09-28: the engines are values this file's
+-- arithmetic depends on, so they belong in the contract. The season default is
+-- the 2026/2027 engine, and each type used below resolves as ADR-103 assigns
+-- it: PPW and MPW to the new engine, PEW, PSW and MSW to EVF classic. If the
+-- active season moves to other engines, every expectation below must be
+-- recomputed deliberately — which is exactly what the contract is for.
+CREATE FUNCTION pg_temp.type_engines_used() RETURNS TEXT
+LANGUAGE plpgsql AS $$
+DECLARE v TEXT;
+BEGIN
+  EXECUTE $q$
+    SELECT string_agg(t || '=' || fn_get_type_engine(s.id_season, t), ',' ORDER BY t)
+      FROM tbl_season s, unnest(ARRAY['MPW','MSW','PEW','PPW','PSW']) t
+     WHERE s.bool_active$q$ INTO v;
+  RETURN v;
+EXCEPTION WHEN undefined_function THEN
+  RETURN NULL;
+END $$;
+
 SELECT results_eq(
   $$SELECT int_mp_value, int_podium_gold, int_podium_silver, int_podium_bronze,
            num_ppw_multiplier::NUMERIC(10,4), num_mpw_multiplier::NUMERIC(10,4),
+           num_pew_multiplier::NUMERIC(10,4),
            num_psw_multiplier::NUMERIC(10,4), num_msw_multiplier::NUMERIC(10,4),
-           int_ppw_total_rounds, e.txt_code
+           int_ppw_total_rounds, e.txt_code, pg_temp.type_engines_used()
       FROM tbl_scoring_config c
       JOIN tbl_season s ON s.id_season = c.id_season
       JOIN tbl_scoring_engine e ON e.id_engine = s.id_scoring_engine
      WHERE s.bool_active$$,
   $$VALUES (50, 3, 2, 1,
             1.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
+            1.0000::NUMERIC(10,4),
             2.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
-            5, 'SPWS_FIELD_SCALED_V1_2026_2027')$$,
-  '2.0 Config contract: active season scoring config and engine match this file''s assumptions'
+            5, 'SPWS_PLACE_MEDAL_V1_2026_2027',
+            'MPW=SPWS_PLACE_MEDAL_V1_2026_2027,MSW=EVF_CLASSIC_V1_2025_2026,'
+            || 'PEW=EVF_CLASSIC_V1_2025_2026,PPW=SPWS_PLACE_MEDAL_V1_2026_2027,'
+            || 'PSW=EVF_CLASSIC_V1_2025_2026')$$,
+  '2.0 Config contract: active season scoring config and engines match this file''s assumptions'
 );
 
 -- ---------------------------------------------------------------------------
--- 2.1  fn_calc_tournament_scores: N=24 PPW → point columns populated
+-- 2.1  fn_calc_tournament_scores: N=24 PEW (EVF classic) → point columns populated
 -- ---------------------------------------------------------------------------
--- For N=24, place=1, MP=50, PPW multiplier=1.0:
+-- For N=24, place=1, MP=50, PEW multiplier=1.0:
 --   PlacePoints = 50 (1st place always gets MP)
 --   DE_rounds = floor(ln(24)/ln(2)) - ceil(ln(1)/ln(2)) + 1 = 4 - 0 + 1 = 5
 --   DE_bonus = 5 rounds × 10 pts/round = 50 (fixed formula, matches Excel "Bonus za rundę = 10")
@@ -243,22 +296,20 @@ SELECT ok(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  '2.1 All four point columns populated for scored PPW N=24 tournament'
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+  '2.1 All four point columns populated for scored PEW N=24 tournament'
 );
 
--- 1st place receives the full BASE, which under the active season's
--- field-scaled engine depends on the field: B(24) = min(50, 10*log2(24)) = 45.85.
--- It was a flat 50 under the classic engine, and is 50 again for any field of
--- 32 or more, where the curve reaches the cap.
+-- 1st place receives the full base, the season's mp_value of 50, under EVF
+-- classic whatever the size of the field.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  45.85::NUMERIC,
-  '2.1b 1st place gets the field-scaled base B(24) = 45.85 place points'
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+  50.00::NUMERIC,
+  '2.1b 1st place gets the EVF classic base of 50 place points'
 );
 
 -- Verify last place (24th of 24) gets 0 place points (ln(24)/ln(24) = 1, so 50 - 49*1 = 1)
@@ -268,28 +319,26 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-5'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-5'),
   1.00::NUMERIC,
   '2.1c Last place (24th of 24) gets 1.00 place points'
 );
 
 -- ---------------------------------------------------------------------------
--- 2.2  Edge case: N=1 → the walkover, re-priced by the field-scaled engine
+-- 2.2  Edge case: N=1 → the walkover, scored by the 2026/2027 table
 -- ---------------------------------------------------------------------------
--- The max(2, N) guard stops log2(1) = 0 producing a base of zero, so a
--- one-competitor bracket inherits the N=2 base of 10 rather than the classic
--- flat 50. The whole result moves from 50+0+9 = 59 to 10+0+9 = 19. This is a
--- live case, not a hypothetical: ADR-066 records that six of seven FOIL brackets
--- in PPW2-2025-2026 had a single competitor and that the lone entrant does earn
--- points by walkover. The reduction is the intended shape of a curve whose
--- purpose is that small fields are worth less.
+-- Up to three fencers the PPW engine scores N − place + 1 (§8 ust. 7), so a
+-- one-competitor bracket earns 1 point where EVF classic gave 50+0+9 = 59. A
+-- live case: ADR-066 records six of seven FOIL brackets in PPW2-2025-2026 as
+-- single-competitor. The table stores its points in num_place_pts; the DE bonus
+-- is not used by the table and holds −1 (ADR-103 §5).
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    WHERE t.txt_code = 'SCORE-PPW-N1'),
-  10.00::NUMERIC,
-  '2.2a N=1: the walkover receives the N=2 base of 10, not the classic 50'
+  1.00::NUMERIC,
+  '2.2a N=1: the walkover scores 1.00 by the table, not the classic 59'
 );
 
 SELECT is(
@@ -297,8 +346,8 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    WHERE t.txt_code = 'SCORE-PPW-N1'),
-  0.00::NUMERIC,
-  '2.2b N=1: DE bonus is 0'
+  -1.00::NUMERIC,
+  '2.2b N=1: the DE bonus is −1, not used by the table'
 );
 
 -- ---------------------------------------------------------------------------
@@ -323,7 +372,7 @@ BEGIN
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality)
   VALUES ('TESTOWY', 'Extra', 'PL') RETURNING id_fencer INTO v_fencer;
 
-  SELECT id_tournament INTO v_tourn FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
+  SELECT id_tournament INTO v_tourn FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
 
   INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
   VALUES (v_fencer, v_tourn, 25);
@@ -332,7 +381,7 @@ $test_place_gt_n$;
 
 SELECT throws_like(
   $$SELECT fn_calc_tournament_scores(id_tournament)
-      FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24'$$,
+      FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24'$$,
   '%Invalid scoring input%',
   '2.3 place > N: scoring raises instead of writing a silent zero'
 );
@@ -344,13 +393,13 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  45.85::NUMERIC,
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+  50.00::NUMERIC,
   '2.3b a rejected rescore leaves the previously scored rows untouched'
 );
 
 -- Remove the corrupt row so the rest of this file scores a valid tournament;
--- 2.10 re-scores SCORE-PPW-N24 and would otherwise inherit the rejection.
+-- 2.10 re-scores SCORE-PEW-N24 and would otherwise inherit the rejection.
 DELETE FROM tbl_result r
  USING tbl_fencer f
  WHERE f.id_fencer = r.id_fencer AND f.txt_surname = 'TESTOWY';
@@ -365,7 +414,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N16' AND f.txt_surname = 'SC-FENCER-1'),
+   WHERE t.txt_code = 'SCORE-PEW-N16' AND f.txt_surname = 'SC-FENCER-1'),
   40.00::NUMERIC,
   '2.4 Power-of-2 N=16: 1st place DE bonus = 4 rounds × 10 = 40'
 );
@@ -380,7 +429,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   50.00::NUMERIC,
   '2.5 Non-power-of-2 N=24: 1st place DE bonus = 5 rounds × 10 = 50'
 );
@@ -395,7 +444,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   (SELECT ROUND(3 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6a 1st place podium bonus = gold(3) * bonus_per_round'
 );
@@ -405,7 +454,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-2'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-2'),
   (SELECT ROUND(2 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6b 2nd place podium bonus = silver(2) * bonus_per_round'
 );
@@ -415,7 +464,7 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-3'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-3'),
   (SELECT ROUND(1 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6c 3rd place podium bonus = bronze(1) * bonus_per_round'
 );
@@ -425,26 +474,25 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-4'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-4'),
   0.00::NUMERIC,
   '2.6d 4th place gets 0 podium bonus'
 );
 
 -- ---------------------------------------------------------------------------
--- 2.7  Multiplier: PPW uses 1.0, MPW uses 1.2
+-- 2.7  Multiplier: PPW uses 1.0, MPW uses 1.2 — on the 2026/2027 engine
 -- ---------------------------------------------------------------------------
 -- Same fencer, same N=24, same place: PPW (mult=1.0) vs MPW (mult=1.2).
--- Components (place_pts, de_bonus, podium_bonus) should be identical.
--- Final scores differ by multiplier (rounding applied at the end).
+-- The engine's components (field, fencers below, medal) should be identical;
+-- final scores differ by the multiplier (rounding applied at the end). N=24
+-- place 1: log2 24 + 23 × 3.5 + 13 × ∛24 = 4.58 + 80.5 + 37.50 = 122.58.
 SELECT ok(
   (SELECT
-    -- Components must be identical between PPW and MPW for the same fencer/place/N
-    ppw.num_place_pts = mpw.num_place_pts
-    AND ppw.num_de_bonus = mpw.num_de_bonus
-    AND ppw.num_podium_bonus = mpw.num_podium_bonus
-    -- MPW final_score must be greater than PPW final_score (1.2 > 1.0)
+    ppw.num_field_pts = mpw.num_field_pts
+    AND ppw.num_below_pts = mpw.num_below_pts
+    AND ppw.num_medal_bonus = mpw.num_medal_bonus
+    AND ppw.num_final_score = 122.58
     AND mpw.num_final_score > ppw.num_final_score
-    -- The ratio should be very close to 1.2
     AND ABS(mpw.num_final_score / ppw.num_final_score - 1.2) < 0.01
    FROM
     (SELECT r.* FROM tbl_result r
@@ -456,7 +504,7 @@ SELECT ok(
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
      WHERE t.txt_code = 'SCORE-MPW-N24' AND f.txt_surname = 'SC-FENCER-1') mpw
   ),
-  '2.7 MPW has same components as PPW but final_score scaled by 1.2 multiplier'
+  '2.7 MPW has the same components as PPW on the 2026/2027 engine, final_score scaled by 1.2'
 );
 
 -- ---------------------------------------------------------------------------
@@ -468,7 +516,7 @@ SELECT ok(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   '2.8 ts_points_calc set to recent timestamp after scoring'
 );
 
@@ -476,7 +524,7 @@ SELECT ok(
 -- 2.9  After scoring: tournament enum_import_status = SCORED
 -- ---------------------------------------------------------------------------
 SELECT is(
-  (SELECT enum_import_status::TEXT FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24'),
+  (SELECT enum_import_status::TEXT FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24'),
   'SCORED',
   '2.9 Tournament enum_import_status = SCORED after scoring'
 );
@@ -485,21 +533,21 @@ SELECT is(
 -- 2.10  Scoring reads multiplier from tbl_scoring_config, not tbl_tournament
 -- ---------------------------------------------------------------------------
 -- Change the cached multiplier on the tournament row (should NOT affect scoring)
-UPDATE tbl_tournament SET num_multiplier = 999.0 WHERE txt_code = 'SCORE-PPW-N24';
-UPDATE tbl_tournament SET enum_import_status = 'IMPORTED' WHERE txt_code = 'SCORE-PPW-N24';
+UPDATE tbl_tournament SET num_multiplier = 999.0 WHERE txt_code = 'SCORE-PEW-N24';
+UPDATE tbl_tournament SET enum_import_status = 'IMPORTED' WHERE txt_code = 'SCORE-PEW-N24';
 
 -- Re-score
-SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PPW-N24';
+SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
 
--- Final score should still use 1.0 (from scoring config), not 999.0
+-- Final score should still use PEW's 1.0 (from scoring config), not 999.0
 SELECT ok(
   (SELECT r.num_final_score = ROUND(
     (r.num_place_pts + r.num_de_bonus + r.num_podium_bonus) * 1.0, 2)
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-   WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  '2.10 Scoring uses multiplier from tbl_scoring_config (1.0), not tbl_tournament (999.0)'
+   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
+  '2.10 Scoring uses the PEW multiplier from tbl_scoring_config (1.0), not tbl_tournament (999.0)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -516,7 +564,7 @@ BEGIN
   FROM tbl_result r
   JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
   JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-  WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1';
+  WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1';
 
   -- Change MP value in scoring config
   SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
@@ -527,7 +575,7 @@ BEGIN
   FROM tbl_result r
   JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
   JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-  WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1';
+  WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1';
 
   IF v_score_before <> v_score_after THEN
     RAISE EXCEPTION 'Score changed from % to % after config update', v_score_before, v_score_after;
@@ -712,7 +760,8 @@ SELECT throws_ok(
 -- ---------------------------------------------------------------------------
 -- 2.19  PSW tournament uses num_psw_multiplier (2.0)
 -- ---------------------------------------------------------------------------
--- Same fencer, same N=24, same place: PPW (mult=1.0) vs PSW (mult=2.0).
+-- Same fencer, same N=24, same place, both EVF classic: PEW (mult=1.0) vs
+-- PSW (mult=2.0).
 -- Components (place_pts, de_bonus, podium_bonus) should be identical.
 -- Final scores differ by multiplier (rounding applied at the end).
 SELECT ok(
@@ -722,20 +771,20 @@ SELECT ok(
     AND ppw.num_podium_bonus = psw.num_podium_bonus
     AND psw.num_final_score > ppw.num_final_score
     AND ABS(psw.num_final_score / ppw.num_final_score
-            - (SELECT num_psw_multiplier FROM tbl_scoring_config c
+            - (SELECT num_psw_multiplier / num_pew_multiplier FROM tbl_scoring_config c
                  JOIN tbl_season s ON s.id_season = c.id_season
                 WHERE s.bool_active)) < 0.01
    FROM
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
+     WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
      WHERE t.txt_code = 'SCORE-PSW-N24' AND f.txt_surname = 'SC-FENCER-1') psw
   ),
-  '2.19 PSW has same components as PPW, final_score scaled by the configured PSW multiplier'
+  '2.19 PSW has same components as PEW, final_score scaled by the configured PSW multiplier'
 );
 
 -- ---------------------------------------------------------------------------
@@ -749,20 +798,20 @@ SELECT ok(
     AND ppw.num_podium_bonus = msw.num_podium_bonus
     AND msw.num_final_score > ppw.num_final_score
     AND ABS(msw.num_final_score / ppw.num_final_score
-            - (SELECT num_msw_multiplier FROM tbl_scoring_config c
+            - (SELECT num_msw_multiplier / num_pew_multiplier FROM tbl_scoring_config c
                  JOIN tbl_season s ON s.id_season = c.id_season
                 WHERE s.bool_active)) < 0.01
    FROM
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-     WHERE t.txt_code = 'SCORE-PPW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
+     WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1') ppw,
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
      WHERE t.txt_code = 'SCORE-MSW-N24' AND f.txt_surname = 'SC-FENCER-1') msw
   ),
-  '9.85 MSW has same components as PPW, final_score scaled by the configured MSW multiplier'
+  '9.85 MSW has same components as PEW, final_score scaled by the configured MSW multiplier'
 );
 
 -- ---------------------------------------------------------------------------
@@ -795,7 +844,7 @@ SELECT lives_ok(
 SELECT ok(
   (SELECT enum_import_status = 'SCORED'
    FROM tbl_tournament
-   WHERE txt_code = 'SCORE-PPW-N24'),
+   WHERE txt_code = 'SCORE-PEW-N24'),
   '9.92 After fn_calc_tournament_scores, enum_import_status = SCORED'
 );
 

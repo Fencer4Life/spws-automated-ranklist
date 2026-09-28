@@ -60,12 +60,14 @@ run_sql() {
   fi
 }
 
-# The season the field-scaled engine is being introduced for. The migration must
-# not switch this season's engine if it already holds scored results.
+# The season the 2026/2027 place-and-medal engine is introduced for (ADR-103).
+# The migration must not switch this season's engine if it already holds scored
+# results; 20260928000001 aborts outright if they were scored by the deleted
+# SPWS_FIELD_SCALED_V1_2026_2027.
 TARGET_SEASON="${SCORING_TARGET_SEASON:-SPWS-2026-2027}"
 # The engine that season is meant to end up on. SSP-06 treats scored results as
 # safe when they were produced by this engine, and only as a blocker otherwise.
-TARGET_ENGINE="${SCORING_TARGET_ENGINE:-SPWS_FIELD_SCALED_V1_2026_2027}"
+TARGET_ENGINE="${SCORING_TARGET_ENGINE:-SPWS_PLACE_MEDAL_V1_2026_2027}"
 
 # -----------------------------------------------------------------------------
 # One query, one JSON array of probes. Kept as a single statement so it runs
@@ -205,6 +207,15 @@ p09 AS (
            ' min_ppw=' || c.int_min_participants_ppw || ' min_evf=' || c.int_min_participants_evf,
            ' | ' ORDER BY s.txt_code), '(no scoring config rows)') AS detail
     FROM tbl_season s JOIN tbl_scoring_config c ON c.id_season = s.id_season
+),
+-- SSP-10 — ADR-103 §5: every stored component must be a real value (>= 0) or
+-- -1. 20260928000001 adds those CHECKs, and one negative row aborts it.
+p10 AS (
+  SELECT count(*) AS n
+    FROM tbl_result r
+   WHERE (r.num_place_pts < 0 AND r.num_place_pts <> -1)
+      OR (r.num_de_bonus < 0 AND r.num_de_bonus <> -1)
+      OR (r.num_podium_bonus < 0 AND r.num_podium_bonus <> -1)
 )
 SELECT json_agg(x ORDER BY x.code) AS probes FROM (
   SELECT 'SSP-01' AS code,
@@ -252,6 +263,12 @@ SELECT json_agg(x ORDER BY x.code) AS probes FROM (
   UNION ALL
   SELECT 'SSP-09', 'INFO',
          'per-season values the normalized type policy must migrate EXACTLY -- ' || p09.detail FROM p09
+  UNION ALL
+  SELECT 'SSP-10', CASE WHEN p10.n = 0 THEN 'PASS' ELSE 'FAIL' END,
+         p10.n || ' tbl_result row(s) with a negative component other than -1'
+           || CASE WHEN p10.n = 0 THEN ' — the ADR-103 CHECKs can be added safely'
+                   ELSE ' — the ADR-103 CHECKs WOULD ABORT; repair these rows first' END
+    FROM p10
 ) x;
 SQLEOF
 

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mockup — engine per tournament type</title>
+<style>
+:root{--ink:#1f2937;--muted:#6b7280;--line:#ddd;--paper:#f4f6f9;--navy:#173f70;--green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.5}
+.page{max-width:900px;margin:0 auto;padding:24px 16px 60px}
+.eyebrow{font:11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+h1{font-family:"Iowan Old Style",Charter,Georgia,serif;font-size:26px;margin:0 0 6px;font-weight:600}
+.dek{font-family:"Iowan Old Style",Charter,Georgia,serif;font-style:italic;color:var(--muted);margin:0 0 18px}
+h2{font-family:"Iowan Old Style",Charter,Georgia,serif;font-size:19px;margin:30px 0 8px}
+.note{font-size:13px;color:var(--muted);margin:6px 0 12px}
+/* app editor styles, copied from ScoringConfigEditor.svelte */
+.config-banner{background:#4a90d9;color:#fff;padding:10px 16px;border-radius:6px 6px 0 0;font-weight:600;font-size:14px}
+.config-banner.locked{background:#6b7280}
+.config-editor{background:#fff;border:1px solid #ddd;border-radius:0 0 6px 6px;padding:14px}
+.config-info{background:#e1f0ff;border:1px solid #b3d4f0;border-radius:6px;padding:10px 14px;font-size:13px;color:#1a6fbf;margin-bottom:14px}
+.config-info.lock{background:#f3f4f6;border-color:#d1d5db;color:#374151}
+.config-section{background:#fafbfc;border:1px solid #e0e0e0;border-radius:6px;margin-bottom:12px;overflow:hidden}
+.config-section-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f0f2f5;border-bottom:1px solid #e0e0e0;font-size:13px;font-weight:700;color:#444}
+.config-section-body{padding:12px 14px}
+.field-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.field-row label{flex:0 0 200px;font-size:13px;color:#555;text-align:right}
+.field-row input{width:100px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font:13px monospace;background:#fff}
+select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12.5px;background:#fff;max-width:100%}
+.hint{font-size:11px;color:#999;font-style:italic}
+.mult-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:720px){.mult-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.mult-card{background:#fff;border:1px solid #e0e0e0;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.mult-card input{width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font:13px monospace}
+.mult-card select{width:100%}
+.type-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.type-badge.domestic{background:#dbeafe;color:#1e40af}
+.type-badge.international{background:#fde68a;color:#92400e}
+.type-badge.pzs{background:#fee2e2;color:#991b1b}
+.card-label{font-size:11px;color:#888}
+.module{font-size:11px;color:#374151;background:#f3f4f6;border-radius:4px;padding:3px 6px}
+.module b{font-family:ui-monospace,Menlo,monospace;font-size:10px;font-weight:600;display:block;color:#6b7280}
+.ro-panel{border:2px solid #c7d2fe;background:#eef2ff;border-radius:6px;padding:10px 14px;margin-top:10px}
+.ro-panel h4{margin:0 0 6px;font-size:13px}
+.ro-panel table{border-collapse:collapse;width:100%;font-size:12.5px}
+.ro-panel td{padding:4px 6px;border-bottom:1px solid #dbe1fb;vertical-align:top}
+.ro-panel td:first-child{white-space:nowrap;color:#4b5563}
+.ro-tag{display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;font-weight:700;border-radius:8px;padding:1px 7px;margin-left:6px}
+.config-readonly input,.config-readonly select{background:#f3f4f6;color:#6b7280}
+.callout{border-left:4px solid var(--navy);background:#fff;border-radius:6px;padding:10px 14px;margin:10px 0}
+.q{border-left-color:var(--navy)}
+.rec{border-left-color:var(--green)}
+.alt{border-left-color:#cbd5e1}
+.tag{display:inline-block;font:10px ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:4px;background:var(--green-bg);color:var(--green);margin-left:6px}
+ul{padding-left:20px}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Mockup · ADR-103 plan step 2 · 28 September 2026 · awaiting approval</p>
+<h1>Scoring configuration: an engine per tournament type</h1>
+<p class="dek">What changes in the Admin scoring editor (ScoringConfigEditor.svelte) when each tournament type carries its own engine. Everything not shown here — ranking buckets, carry-over, intake thresholds — stays as it is.</p>
+
+<h2>A · Season 2026/2027, before its first scored result</h2>
+<p class="note">Changed from today: the season engine becomes the <i>default</i>; each type card gains an engine selector and names its joined-bracket module; a read-only panel lists the new engine's constants. The EVF value and podium fields keep working: they feed EVF classic and the new engine's 32+ range.</p>
+
+<div class="config-banner">Konfiguracja punktacji — SPWS-2026-2027</div>
+<div class="config-editor">
+  <div class="config-info">Zmiany są możliwe do chwili policzenia pierwszego wyniku sezonu.</div>
+
+  <div class="config-section">
+    <div class="config-section-header">⚙ Parametry bazowe</div>
+    <div class="config-section-body">
+      <div class="field-row"><label>Wartość bazowa EVF (mp)</label><input value="50"><span class="hint">algorytm EVF — PEW, MEW, MSW, PSW oraz stawki od 32</span></div>
+      <div class="field-row"><label>Silnik domyślny sezonu</label>
+        <select><option selected>SPWS — miejsce w stawce i premia medalowa (od sezonu 2026/2027)</option><option>EVF klasyczny (do sezonu 2025/2026)</option></select>
+        <span class="hint">dla typów bez własnego silnika</span></div>
+    </div>
+  </div>
+
+  <div class="config-section">
+    <div class="config-section-header">🏆 Premia za podium EVF</div>
+    <div class="config-section-body">
+      <div class="field-row"><label>Złoto / srebro / brąz</label><input value="3" style="width:60px"><input value="2" style="width:60px"><input value="1" style="width:60px"><span class="hint">× 3 × ∛N</span></div>
+    </div>
+  </div>
+
+  <div class="config-section">
+    <div class="config-section-header">📊 Typy zawodów — silnik i współczynnik</div>
+    <div class="config-section-body">
+      <div class="mult-grid">
+        <div class="mult-card"><div><span class="type-badge domestic">PPW</span></div><input value="1.0000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Stawka łączona: miejsce w stawce i w kategorii</div></div>
+        <div class="mult-card"><div><span class="type-badge domestic">MPW</span></div><input value="1.2000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Stawka łączona: miejsce w stawce i w kategorii</div></div>
+        <div class="mult-card"><div><span class="type-badge pzs">PPS</span></div><input value="1.1000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Jedna stawka seniorów: K = N</div></div>
+        <div class="mult-card"><div><span class="type-badge pzs">MPS</span></div><input value="1.3000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Jedna stawka seniorów: K = N</div></div>
+        <div class="mult-card"><div><span class="type-badge international">PEW</span></div><input value="1.0000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez EVF</div></div>
+        <div class="mult-card"><div><span class="type-badge international">MEW</span></div><input value="1.3000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez EVF</div></div>
+        <div class="mult-card"><div><span class="type-badge international">MSW</span></div><input value="1.4000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez FIE</div></div>
+        <div class="mult-card"><div><span class="type-badge international">PSW</span></div><input value="1.1000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez organizatora</div></div>
+      </div>
+
+      <div class="ro-panel">
+        <h4>SPWS_PLACE_MEDAL_V1_2026_2027 <span class="ro-tag">stałe silnika — tylko do odczytu</span></h4>
+        <table>
+          <tr><td>Stawka 1–3</td><td>N − miejsce + 1 (3, 2, 1)</td></tr>
+          <tr><td>Stawka 4–31</td><td>premia za liczebność log₂N + 3,5 pkt za każdego zawodnika z gorszym wynikiem w stawce + premia medalowa 13 / 7 / 3 × ∛K za miejsca 1–3 w kategorii, gdy K &gt; miejsce</td></tr>
+          <tr><td>Stawka od 32</td><td>algorytm EVF dla całej stawki (wartość bazowa i podium powyżej), bez premii medalowej</td></tr>
+          <tr><td>Moduł stawki łączonej</td><td>JOINED_BRACKET_CATEGORY_PLACE — miejsce i N całej stawki; K, m i liczba zawodników poniżej zapisane przy wyniku</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2>B · The same season after its first scored result</h2>
+<p class="note">Every field is disabled and a save is refused server-side (ADR-097). The per-type engines are read-only like the coefficients; changing them afterwards needs the audited revision procedure.</p>
+<div class="config-banner locked">Konfiguracja punktacji — SPWS-2026-2027 · zablokowana</div>
+<div class="config-editor config-readonly">
+  <div class="config-info lock">🔒 Konfiguracja zablokowana od 2026-10-03 (pierwszy policzony wynik). Zmiana wymaga audytowanej procedury rewizji.</div>
+  <div class="config-section">
+    <div class="config-section-header">📊 Typy zawodów — silnik i współczynnik</div>
+    <div class="config-section-body">
+      <div class="mult-grid">
+        <div class="mult-card"><div><span class="type-badge domestic">PPW</span></div><input value="1.0000" disabled><select disabled><option>SPWS 2026/2027</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Stawka łączona</div></div>
+        <div class="mult-card"><div><span class="type-badge international">PEW</span></div><input value="1.0000" disabled><select disabled><option>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii EVF</div></div>
+        <div class="mult-card"><div><span class="type-badge pzs">PPS</span></div><input value="1.1000" disabled><select disabled><option>SPWS 2026/2027</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>K = N</div></div>
+        <div class="mult-card"><div><span class="type-badge international">MSW</span></div><input value="1.4000" disabled><select disabled><option>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii FIE</div></div>
+      </div>
+      <p class="hint" style="margin:8px 0 0">(Pozostałe cztery typy — jak wyżej, zablokowane.)</p>
+    </div>
+  </div>
+</div>
+
+<h2>C · What it writes</h2>
+<ul>
+<li>Each type's engine is sent as <code>type_engines</code> in the same save the coefficients use (<code>fn_import_scoring_config</code>). The season default stays <code>engine_code</code>.</li>
+<li>The screen shows each type's resolved engine. A save writes a type's engine only when it changes that type's resolved engine, so resending an unchanged form never pins a type that inherits the season default.</li>
+<li>Seasons up to 2025/2026 show EVF classic on every type and "Rozdzielenie na kategorie" (<code>PER_CATEGORY_RENUMBER</code>) as the module.</li>
+</ul>
+
+<h2>Question</h2>
+<div class="callout q"><b>Do you approve this mockup for the Admin editor (plan step 7)?</b></div>
+<div class="callout rec"><b>A · Approve as shown</b><span class="tag">Recommended</span><p style="margin:6px 0 0">It changes only the multiplier section and one base-field label, keeps every lock behaviour already tested (SS26.LOCK.11–12), and adds the read-only panel the design asked for (§4 "Admin"). Step 7 then implements it with Vitest first.</p></div>
+<div class="callout alt"><b>B · Approve with changes</b><p style="margin:6px 0 0">Name them; I revise this page and ask again. Steps 3–6 and 8 continue meanwhile — they do not touch the editor.</p></div>
+<p><b>How to answer:</b> reply <b>A</b> or <b>B</b> with the changes.</p>
+</div>
+</body>
+</html>
