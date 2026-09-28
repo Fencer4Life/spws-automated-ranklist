@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analysis — Scoring engine for joined brackets</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ --chart-surface:#fcfcfb;--series-1:#2a78d6;--series-2:#eb6834;--grid:#e6e5e0;--axis:#52514e;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;
+  --chart-surface:#1a1a19;--series-1:#3987e5;--series-2:#d95926;--grid:#383835;--axis:#c3c2b7}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:900px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:72ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:22px 0}
+.toc:before{content:"Reading order";display:block;margin-bottom:8px;font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.toc ol{margin:0;padding-left:20px}
+.toc a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hl td{background:var(--amber-bg)}
+tr.sum td{font-weight:600;border-top:2px solid var(--line)}
+td.down{color:var(--coral);font-weight:600}
+td.up{color:var(--green);font-weight:600}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.formula{font-family:var(--mono);font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0;overflow-x:auto;white-space:pre}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-family:var(--serif);font-size:26px;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.panel{background:var(--chart-surface);border:1px solid var(--line);border-radius:10px;padding:10px 10px 4px;position:relative}
+.panel h4{margin:0 0 4px;font-size:13px;font-weight:600;color:var(--ink)}
+.panel svg{width:100%;height:auto;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.12);display:none;white-space:nowrap}
+ul.gate{list-style:none;padding-left:0}
+ul.gate li{padding:4px 0}
+ul.gate li:before{content:"☐ ";font-family:var(--mono);color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Analysis · 27 September 2026 · three seasons of PROD-identical data · awaiting decisions E1, E2 and E3</p>
+<h1>A scoring engine under which every fencer gains from every join</h1>
+<p class="dek">Today's engine and every variant of §8 we discussed make joining cost points for between a fifth and a half of the fencers involved. A different construction, built only from quantities that a joiner cannot take away, makes every join a gain for everyone. It keeps ordinary brackets within about five points of today.</p>
+
+<div class="card warn"><span class="lb">Time-critical</span>
+PROD, read-only, 27 September: <code>SPWS-2026-2027</code> is <b>unlocked, with 0 results</b>, on engine <code>SPWS_FIELD_SCALED_V1_2026_2027</code>. PPW1 was held on 26 September. <b>Ingesting its results scores them and locks the season</b> (ADR-097). After that, changing the engine needs the privileged revision, and changing the joined-category approach needs a re-ingest. If you want the engine below for 2026/2027, hold PPW1 ingestion until this is decided.</div>
+
+<nav class="toc"><ol start="0">
+<li><a href="#basics">The basics, on a 10-fencer bracket — decision E2</a> · <a href="#inflation">limiting inflation — decision E3</a></li>
+<li><a href="#q">The question, and a correction</a></li>
+<li><a href="#data">What three seasons of data show</a></li>
+<li><a href="#today">Today's engine and its scoring table</a></li>
+<li><a href="#why">Why today's engine cannot make everyone gain</a></li>
+<li><a href="#principle">The principle: score only what a joiner cannot take away</a></li>
+<li><a href="#engine">The proposed engine</a></li>
+<li><a href="#evidence">Evidence: exhaustive check and three seasons replayed</a></li>
+<li><a href="#example">Your 7-fencer example under the proposed engine</a></li>
+<li><a href="#costs">Costs and risks</a></li>
+<li><a href="#e1">Decision E1 (open)</a></li>
+<li><a href="#impl">What implementing it involves</a></li>
+<li><a href="#method">Method and reproducibility</a></li>
+</ol></nav>
+
+<h2 id="basics">0 · The basics, on a 10-fencer bracket</h2>
+<p>A fencer's points are the sum of three parts. Each part does one job, and none of them can go down when another category joins the bracket.</p>
+<div class="tw"><table>
+<thead><tr><th>Part</th><th>What it pays</th><th>Who gets it</th><th>Its job</th></tr></thead>
+<tbody>
+<tr><td><b>1 · Field</b></td><td>2 × log₂N</td><td>Every fencer in the bracket, including the last</td><td>A bigger bracket is worth more to everyone in it.</td></tr>
+<tr><td><b>2 · Fencers beaten</b></td><td>3 points for each fencer who finished below you on the piste, of any category (counted up to 31)</td><td>Everyone except the last</td><td>The place on the piste counts. Every place higher is worth 3 more.</td></tr>
+<tr><td><b>3 · Medal in your category</b></td><td>gold 27 × ∛N, silver 15 × ∛N, bronze 6 × ∛N</td><td>The first three of <b>each</b> category in the bracket</td><td>Winning your category is the big reward, and it grows with the size of the bracket.</td></tr>
+</tbody></table></div>
+
+<div class="card locked"><span class="lb">Your question: which medals get a bonus?</span>
+<b>All three — gold, silver and bronze — in every category of the bracket.</b> The bonus follows the medal handed out at the ceremony. A bracket joining three categories can therefore pay up to nine medal bonuses, three per category. What decides the medal is your place among your own category. What decides its size is N, the whole bracket.</div>
+
+<div class="card"><span class="lb">How "58 / 32 / 13 at N = 10" is calculated</span>
+The medal bonus is a fixed weight multiplied by the cube root of N, where N is the size of the <b>whole</b> joined bracket, not of your category.
+<div class="formula" style="margin:10px 0">gold   = 27 × ∛N        at N = 10:  27 × 2.154 = 58.17
+silver = 15 × ∛N                    15 × 2.154 = 32.32
+bronze =  6 × ∛N                     6 × 2.154 = 12.93</div>
+The cube root grows slowly: doubling the bracket raises every medal by 26%. Gold is worth 42.9 at N = 4, 54.0 at N = 8, 68.0 at N = 16 and 85.7 at N = 32. Today's podium bonus uses the same cube-root curve (3 × ∛N times 3 / 2 / 1). Only the weights are larger here, for the reason given below the next table.</div>
+
+<div class="card open"><span class="lb">Must someone be behind you to get the medal bonus?</span>
+<b>Yes — but under the recommended rule (E2), anyone on the piste, not necessarily someone from your own category.</b> Your medal is decided inside your category. The bonus is paid only if at least one fencer of any category finished below you. Four cases in the 10-fencer bracket:
+<ul style="margin:8px 0 0">
+<li><b>V1 silver of 2, finished 4th</b>: beat 6 fencers → silver bonus <b>32.32</b>. Under the §6 rule (a category-mate behind you) he would get nothing, because the other V1 finished ahead.</li>
+<li><b>V1 silver of 2, finished last (10th)</b>: beat nobody → <b>no bonus</b> under either rule.</li>
+<li><b>A lone V4, the only one in the bracket, finished 9th</b>: gold of a one-fencer category, beat 1 fencer → gold bonus <b>58.17</b>, 67.81 in total. Under the §6 rule: nothing, since he has no category-mate at all.</li>
+<li><b>The same lone V4, finished last</b>: beat nobody → <b>no bonus</b>, 6.64 in total.</li>
+</ul>
+The third case is the most generous one the rule allows. A lone older fencer who comes, joins and beats a single fencer collects a full gold bonus. That is the strongest possible pull to join for exactly the categories that fence alone today. But it pays more than a 3rd place on the piste in another category (the V2 silver, 59.96). If that is too generous, one variant keeps the incentive while shrinking the lone-fencer case: scale the medal by the category's size as well. That is the "moderate" variant in §9 item 5.</div>
+
+<h3>Why 27 / 15 / 6 — and what half of that would do</h3>
+<p><b>The weights are a calibration, not a principle.</b> The property "nobody loses by joining" holds for <i>any</i> positive weights. 27 / 15 / 6 are what makes an ordinary bracket score most like today's engine (least squares over the 1,550 real results in brackets of 4 or more, then rounded).</p>
+<p>They are that large because today's engine is steep at the top. At N = 8 the gap from 1st to 4th is 57 points, while the gap from 4th to 8th is only 20. The "fencers beaten" part adds the same 3 points for every place, so it can supply only 9 of those 57. The medal has to supply the rest. The weights decide one policy question: <b>how much is winning your category worth compared with each place on the piste?</b> At 27 × ∛8 = 54, an N = 8 gold is worth as much as 18 places. Halved, it is worth 9.</p>
+<div class="tw"><table>
+<thead><tr><th>N</th><th>Engine</th><th class="n">1st</th><th class="n">2nd</th><th class="n">3rd</th><th class="n">4th</th><th class="n">5th</th><th class="n">6th</th><th class="n">7th</th><th class="n">8th</th><th class="n">last</th></tr></thead>
+<tbody>
+<tr><td rowspan="4">8</td><td>today</td><td class="n">78.0</td><td class="n">52.3</td><td class="n">30.7</td><td class="n">20.7</td><td class="n">7.6</td><td class="n">5.0</td><td class="n">2.9</td><td class="n">1.0</td><td class="n">1.0</td></tr>
+<tr class="hl"><td>medals 27 / 15 / 6</td><td class="n">81.0</td><td class="n">54.0</td><td class="n">33.0</td><td class="n">18.0</td><td class="n">15.0</td><td class="n">12.0</td><td class="n">9.0</td><td class="n">6.0</td><td class="n">6.0</td></tr>
+<tr><td>half: 13.5 / 7.5 / 3</td><td class="n">54.0</td><td class="n">39.0</td><td class="n">27.0</td><td class="n">18.0</td><td class="n">15.0</td><td class="n">12.0</td><td class="n">9.0</td><td class="n">6.0</td><td class="n">6.0</td></tr>
+<tr><td>half, refitted (field 1, 5.5 per fencer)</td><td class="n">68.5</td><td class="n">51.0</td><td class="n">36.5</td><td class="n">25.0</td><td class="n">19.5</td><td class="n">14.0</td><td class="n">8.5</td><td class="n">3.0</td><td class="n">3.0</td></tr>
+<tr><td rowspan="4">16</td><td>today</td><td class="n">102.7</td><td class="n">75.4</td><td class="n">52.1</td><td class="n">40.5</td><td class="n">27.4</td><td class="n">24.8</td><td class="n">22.6</td><td class="n">20.8</td><td class="n">1.0</td></tr>
+<tr class="hl"><td>medals 27 / 15 / 6</td><td class="n">121.0</td><td class="n">87.8</td><td class="n">62.1</td><td class="n">44.0</td><td class="n">41.0</td><td class="n">38.0</td><td class="n">35.0</td><td class="n">32.0</td><td class="n">8.0</td></tr>
+<tr><td>half: 13.5 / 7.5 / 3</td><td class="n">87.0</td><td class="n">68.9</td><td class="n">54.6</td><td class="n">44.0</td><td class="n">41.0</td><td class="n">38.0</td><td class="n">35.0</td><td class="n">32.0</td><td class="n">8.0</td></tr>
+<tr><td>half, refitted (field 1, 5.5 per fencer)</td><td class="n">120.5</td><td class="n">99.9</td><td class="n">83.1</td><td class="n">70.0</td><td class="n">64.5</td><td class="n">59.0</td><td class="n">53.5</td><td class="n">48.0</td><td class="n">4.0</td></tr>
+</tbody></table></div>
+<div class="tw"><table>
+<thead><tr><th>Measure</th><th class="n">27 / 15 / 6</th><th class="n">Half</th><th class="n">Half, refitted</th></tr></thead>
+<tbody>
+<tr><td>Typical distance from today's points (RMSE, 1,550 real results)</td><td class="n">5.0</td><td class="n">12.5</td><td class="n">9.4</td></tr>
+<tr><td>Changes of leader, 85 real sub-rankings, no joining</td><td class="n">1</td><td class="n">4</td><td class="n">4</td></tr>
+<tr><td>Rank correlation with today (mean Spearman)</td><td class="n">0.981</td><td class="n">0.973</td><td class="n">0.984</td></tr>
+<tr><td>Mean gain from joining to 8 (J8 replay)</td><td class="n">+22.5</td><td class="n">+16.9</td><td class="n">+23.0</td></tr>
+<tr><td>Anyone worse off by joining</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>Lone V4 who beats one fencer, N = 10</td><td class="n">67.8</td><td class="n">38.7</td><td class="n">37.9</td></tr>
+<tr><td>Your 10-fencer bracket, V1-a / V2-a / V3-a (the three golds)</td><td class="n">91.8 / 88.8 / 79.8</td><td class="n">62.7 / 59.7 / 50.7</td><td class="n">—</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>Half, nothing else changed</b>, cuts every medallist's points by about a third. The winner of 8 gets 54 instead of today's 78, while places 4 and below are untouched. The whole scale drops, and 4 of 85 rankings change leader.</li>
+<li><b>Half, refitted</b>, makes up for it by paying 5.5 per fencer beaten. The top stays near today's level, but the table becomes much flatter below it: 8th of 16 earns 48 instead of today's 20.8. The medal matters less and the place on the piste matters more.</li>
+<li><b>Either version makes the lone-fencer case less generous</b> (about 38 instead of 68). This is the strongest argument for going lower.</li>
+</ul>
+<p><b>Recommendation: keep 27 / 15 / 6</b> if the aim is that an ordinary bracket should look like today. Choose the <b>refitted half</b> if the board wants a flatter table, where a place on the piste counts for more than a category medal. Plain half is the weakest choice: it lowers the scale without changing the shape.</p>
+
+<h3 id="inflation">Limiting the inflation — a better way than halving (decision E3)</h3>
+<p><b>Some inflation cannot be avoided.</b> If every fencer gains when brackets join, the total must rise when brackets join. The pull to join <i>is</i> the extra points. What can be chosen is how large the extra is and where it comes from: <b>earned</b> (by beating more fencers) or <b>given</b> (because the bracket grew).</p>
+<p>In the report's version, half of the extra comes from the medal growing with the joined bracket. A category's gold is worth more because <i>other</i> categories turned up. That part is given, not earned, and it is also what makes the lone-fencer case so generous. Halving the weights shrinks it but keeps it growing with other categories. The better fix is to <b>size the medal by the fencer's own category</b>: a gold won against three category-mates is worth the same whether or not other categories joined. Joining then pays mostly through beating more fencers.</p>
+<div class="tw"><table>
+<thead><tr><th>Calibration</th><th class="n">Extra from joining to 8: field / beaten / medal</th><th class="n">Joining to 8, vs same engine unjoined</th><th class="n">Everyone joined, vs same engine unjoined</th><th class="n">Distance from today (RMSE)</th><th class="n">Leader changes (of 85)</th><th class="n">Lone V4 beating one, N = 10</th></tr></thead>
+<tbody>
+<tr><td><b>A</b> · report: medals 27/15/6 × ∛N, 3 per fencer, field 2</td><td class="n">11% / 39% / <b>49%</b></td><td class="n">+98%</td><td class="n">+215%</td><td class="n">5.0</td><td class="n">1</td><td class="n">67.8</td></tr>
+<tr><td><b>B</b> · plain half: medals 13.5/7.5/3 × ∛N, 3 per fencer, field 2</td><td class="n">15% / 52% / 33%</td><td class="n">+94%</td><td class="n">+233%</td><td class="n">12.5</td><td class="n">4</td><td class="n">38.7</td></tr>
+<tr class="hl"><td><b>C</b> · medals 27/15/6 × ∛(own category), <b>3.5</b> per fencer, field <b>1</b></td><td class="n">8% / <b>62%</b> / 30%</td><td class="n"><b>+75%</b></td><td class="n"><b>+189%</b></td><td class="n"><b>4.6</b></td><td class="n"><b>1</b></td><td class="n">33.8</td></tr>
+<tr><td><b>D</b> · half on own category: 13.5/7.5/3 × ∛(own category), <b>5.5</b> per fencer, field 0.5</td><td class="n">3% / <b>84%</b> / 13%</td><td class="n">+91%</td><td class="n">+273%</td><td class="n">9.3</td><td class="n">4</td><td class="n">20.7</td></tr>
+</tbody></table></div>
+<p>"Vs same engine unjoined" compares the three seasons replayed with categories joined against the same seasons as fenced, under the same engine. It measures the joining inflation itself. All four keep the property: 0 of 766,480 configurations lose, and 0 of 2009 fencers in the replays. Plain half looks cheap against today's totals (+30% when joining to 8) only because it lowers every medal, joined or not: unjoined, it is already 33% below today.</p>
+
+<h3>The same brackets under C and D</h3>
+<div class="tw"><table>
+<thead><tr><th>Bracket</th><th>Engine</th><th class="n">1st</th><th class="n">2nd</th><th class="n">3rd</th><th class="n">4th</th><th class="n">5th</th><th class="n">6th</th><th class="n">7th</th><th class="n">8th</th></tr></thead>
+<tbody>
+<tr><td rowspan="4">N = 8, one category</td><td>today</td><td class="n">78.0</td><td class="n">52.3</td><td class="n">30.7</td><td class="n">20.7</td><td class="n">7.6</td><td class="n">5.0</td><td class="n">2.9</td><td class="n">1.0</td></tr>
+<tr class="hl"><td>C</td><td class="n">81.5</td><td class="n">54.0</td><td class="n">32.5</td><td class="n">17.0</td><td class="n">13.5</td><td class="n">10.0</td><td class="n">6.5</td><td class="n">3.0</td></tr>
+<tr><td>D</td><td class="n">67.0</td><td class="n">49.5</td><td class="n">35.0</td><td class="n">23.5</td><td class="n">18.0</td><td class="n">12.5</td><td class="n">7.0</td><td class="n">1.5</td></tr>
+<tr><td>B (plain half)</td><td class="n">54.0</td><td class="n">39.0</td><td class="n">27.0</td><td class="n">18.0</td><td class="n">15.0</td><td class="n">12.0</td><td class="n">9.0</td><td class="n">6.0</td></tr>
+</tbody></table></div>
+<div class="tw"><table>
+<thead><tr><th>Your 10-fencer bracket</th><th class="n">V1-a gold, 1st</th><th class="n">V2-a gold, 2nd</th><th class="n">V2-b silver, 3rd</th><th class="n">V1-b silver, 4th</th><th class="n">V3-a gold, 5th</th><th class="n">V2-c bronze, 6th</th><th class="n">V3-b silver, 7th</th><th class="n">V3-c bronze, 8th</th><th class="n">V2-d, 9th</th><th class="n">V3-d, 10th</th></tr></thead>
+<tbody>
+<tr><td>A (report)</td><td class="n">91.8</td><td class="n">88.8</td><td class="n">60.0</td><td class="n">57.0</td><td class="n">79.8</td><td class="n">31.6</td><td class="n">48.0</td><td class="n">25.6</td><td class="n">9.6</td><td class="n">6.6</td></tr>
+<tr class="hl"><td>C</td><td class="n">68.8</td><td class="n">74.2</td><td class="n">51.6</td><td class="n">43.2</td><td class="n">63.7</td><td class="n">26.8</td><td class="n">37.6</td><td class="n">19.8</td><td class="n">6.8</td><td class="n">3.3</td></tr>
+<tr><td>D</td><td class="n">68.2</td><td class="n">67.1</td><td class="n">52.1</td><td class="n">44.1</td><td class="n">50.6</td><td class="n">28.4</td><td class="n">30.1</td><td class="n">17.4</td><td class="n">7.2</td><td class="n">1.7</td></tr>
+</tbody></table></div>
+<p>Under C the overall winner, V1-a, earns less than the runner-up, V2-a (68.8 against 74.2). V1-a's gold was won against one V1 fencer; V2-a's against three V2 fencers. The two sit in different rankings, and within every category the order of points still follows the order on the piste. A published results sheet should show points per category, not as one list.</p>
+
+<div class="card open"><span class="lb">Decision E3 — calibration (open). You chose "half" on 27 September.</span>
+<b>Recommendation: C.</b> It does what halving was meant to do, without its side effects:
+<ul style="margin:8px 0 0">
+<li><b>The lone-fencer windfall halves</b> (67.8 → 33.8), about as much as plain half (38.7).</li>
+<li><b>Winning still pays</b>: at N = 8, 1st is 27.5 ahead of 2nd (plain half: 15; today: 25.7).</li>
+<li><b>The joining inflation is the lowest of the four</b> (+75% when joining to 8, +189% when all join), and 62% of it is earned by beating fencers.</li>
+<li><b>Ordinary brackets stay the closest to today</b> of any calibration tested (RMSE 4.6, 1 leader change in 85 rankings).</li>
+</ul>
+<b>D</b> is "half" done the better way, and the choice if every place on the piste should count more than the podium. It pays 5.5 per fencer beaten, earns 84% of its joining gain by beating fencers, and cuts the lone-fencer case to 20.7. The cost is the highest inflation when many categories join (5.5 × many fencers) and 4 leader changes. <b>B</b>, plain half, is not recommended: it lowers every result by a third without changing the shape.</div>
+
+<h3>What each part is worth, by bracket size</h3>
+<div class="tw"><table>
+<thead><tr><th class="n">N</th><th class="n">Field (everyone)</th><th class="n">Per fencer beaten</th><th class="n">Gold</th><th class="n">Silver</th><th class="n">Bronze</th><th class="n">Today: winner / podium gold</th></tr></thead>
+<tbody>
+<tr><td class="n">4</td><td class="n">4.0</td><td class="n">3</td><td class="n">42.9</td><td class="n">23.8</td><td class="n">9.5</td><td class="n">54.3 / 14.3</td></tr>
+<tr><td class="n">8</td><td class="n">6.0</td><td class="n">3</td><td class="n">54.0</td><td class="n">30.0</td><td class="n">12.0</td><td class="n">78.0 / 18.0</td></tr>
+<tr class="hl"><td class="n">10</td><td class="n">6.6</td><td class="n">3</td><td class="n">58.2</td><td class="n">32.3</td><td class="n">12.9</td><td class="n">92.6 / 19.4</td></tr>
+<tr><td class="n">16</td><td class="n">8.0</td><td class="n">3</td><td class="n">68.0</td><td class="n">37.8</td><td class="n">15.1</td><td class="n">102.7 / 22.7</td></tr>
+<tr><td class="n">32</td><td class="n">10.0</td><td class="n">3</td><td class="n">85.7</td><td class="n">47.6</td><td class="n">19.0</td><td class="n">128.6 / 28.6</td></tr>
+</tbody></table></div>
+<p>The medal is about three times today's podium bonus because it takes over two jobs of today's engine. Today the top of the table earns its lead from three sources: the steep start of the place curve, the DE-round bonus and the podium. None of those may depend on the overall place any more (§4). So the medal carries the premium for the top, and "fencers beaten" carries the rest of the order.</p>
+
+<h3>Your bracket: V1 × 2, V2 × 4, V3 × 4, N = 10</h3>
+<p>One plausible finishing order. At N = 10, field = 6.64 and the medals are gold 58.17, silver 32.32 and bronze 12.93.</p>
+<div class="tw"><table>
+<thead><tr><th class="n">Piste</th><th>Fencer</th><th>In category</th><th class="n">Field</th><th class="n">Beaten</th><th class="n">Medal</th><th class="n">Total</th><th class="n">Alone in own category</th><th class="n">Gain</th><th class="n">Today + §8 (gain)</th></tr></thead>
+<tbody>
+<tr><td class="n">1</td><td>V1-a</td><td>V1 gold</td><td class="n">6.64</td><td class="n">27</td><td class="n">58.17</td><td class="n"><b>91.81</b></td><td class="n">2.00</td><td class="n up">+89.81</td><td class="n">92.61 (+90.61)</td></tr>
+<tr><td class="n">2</td><td>V2-a</td><td>V2 gold</td><td class="n">6.64</td><td class="n">24</td><td class="n">58.17</td><td class="n"><b>88.81</b></td><td class="n">55.86</td><td class="n up">+32.95</td><td class="n">66.45 (+12.16)</td></tr>
+<tr><td class="n">3</td><td>V2-b</td><td>V2 silver</td><td class="n">6.64</td><td class="n">21</td><td class="n">32.32</td><td class="n"><b>59.96</b></td><td class="n">33.81</td><td class="n up">+26.15</td><td class="n">44.31 (+14.29)</td></tr>
+<tr class="hl"><td class="n">4</td><td>V1-b</td><td>V1 silver</td><td class="n">6.64</td><td class="n">18</td><td class="n">32.32*</td><td class="n"><b>56.96*</b></td><td class="n">1.00</td><td class="n up">+55.96</td><td class="n">33.82 (+32.82)</td></tr>
+<tr><td class="n">5</td><td>V3-a</td><td>V3 gold</td><td class="n">6.64</td><td class="n">15</td><td class="n">58.17</td><td class="n"><b>79.81</b></td><td class="n">55.86</td><td class="n up">+23.95</td><td class="n down">20.70 (−33.59)</td></tr>
+<tr><td class="n">6</td><td>V2-c</td><td>V2 bronze</td><td class="n">6.64</td><td class="n">12</td><td class="n">12.93</td><td class="n"><b>31.57</b></td><td class="n">16.52</td><td class="n up">+15.05</td><td class="n">18.15 (+8.44)</td></tr>
+<tr><td class="n">7</td><td>V3-b</td><td>V3 silver</td><td class="n">6.64</td><td class="n">9</td><td class="n">32.32</td><td class="n"><b>47.96</b></td><td class="n">33.81</td><td class="n up">+14.15</td><td class="n down">15.99 (−14.03)</td></tr>
+<tr><td class="n">8</td><td>V3-c</td><td>V3 bronze</td><td class="n">6.64</td><td class="n">6</td><td class="n">12.93</td><td class="n"><b>25.57</b></td><td class="n">16.52</td><td class="n up">+9.05</td><td class="n">14.12 (+4.42)</td></tr>
+<tr><td class="n">9</td><td>V2-d</td><td>V2 4th</td><td class="n">6.64</td><td class="n">3</td><td class="n">—</td><td class="n"><b>9.64</b></td><td class="n">4.00</td><td class="n up">+5.64</td><td class="n">2.47 (+1.47)</td></tr>
+<tr><td class="n">10</td><td>V3-d</td><td>V3 4th</td><td class="n">6.64</td><td class="n">0</td><td class="n">—</td><td class="n"><b>6.64</b></td><td class="n">4.00</td><td class="n up">+2.64</td><td class="n">1.00 (0)</td></tr>
+</tbody></table></div>
+<p>"Alone in own category" is the same engine applied to the category fenced on its own. V1 has 2 fencers, so the flat table applies (2 and 1). V2 and V3 have 4 each. * V1-b's medal depends on decision E2 below.</p>
+
+<h3>How to read it</h3>
+<ul>
+<li><b>Everyone gains</b>, from +2.64 for the last to +89.81 for the winner. Under today's engine with §8, the V3 gold and silver lose 33.59 and 14.03 by joining.</li>
+<li><b>Place counts.</b> The V2 gold (2nd on the piste) earns 88.81 and the V3 gold (5th) earns 79.81. The 9-point gap is 3 places × 3 points.</li>
+<li><b>The winner's total is close to today's.</b> V1-a earns 91.81 (6.64 + 27 + 58.17). Today the winner of 10 earns 92.61 (33.2 place + 40 DE + 19.4 podium). The total is about the same; only its make-up differs.</li>
+<li><b>A medal can outweigh a higher place, but only across categories.</b> The V3 gold (5th, 79.81) earns more than the V2 silver (3rd, 59.96). They sit in different rankings: the V3 gold is compared with other V3 fencers, the V2 silver with other V2 fencers. Within any one category, the order on the piste and the order of points always agree.</li>
+</ul>
+
+<h3>Decision E2 — when is a medal bonus paid? (open)</h3>
+<p>§6 proposed paying a medal bonus only if at least one <b>category-mate</b> finished behind the medallist. Your bracket shows the flaw. V1-b wins the V1 silver and finishes 4th on the piste, beating six fencers. Because V1 has only two fencers, the rule gives him no medal bonus: 24.64, less than the V3 bronze medallist who finished 8th (25.57).</p>
+<div class="tw"><table>
+<thead><tr><th>Rule for paying a medal bonus</th><th class="n">V1-b (silver of 2, 4th of 10)</th><th class="n">A lone V4 who finishes last</th><th class="n">Mean gain, J8 replay</th><th>Nobody loses?</th></tr></thead>
+<tbody>
+<tr class="hl"><td><b>You beat at least one fencer on the piste</b><span class="rec">recommended</span></td><td class="n">56.96</td><td class="n">no bonus</td><td class="n">+22.5</td><td>Yes, 0 of 766,480</td></tr>
+<tr><td>At least one category-mate finished behind you (§6)</td><td class="n down">24.64</td><td class="n">no bonus</td><td class="n">+18.8</td><td>Yes</td></tr>
+<tr><td>Always</td><td class="n">56.96</td><td class="n down">full gold bonus, having beaten nobody</td><td class="n">+22.7</td><td>Yes</td></tr>
+</tbody></table></div>
+<p><b>Recommendation: pay the bonus to every category medallist who beat at least one fencer on the piste.</b> It fixes V1-b, still refuses a medal bonus to someone who beat nobody, and like the others it never lets a join cost anyone points. Once earned, the bonus cannot be lost by more fencers joining, because fencers beaten can only grow.</p>
+
+<h2 id="q">1 · The question, and a correction</h2>
+<p><b>The question.</b> How should the engine change so that every fencer gains when brackets are joined, and fencers are motivated to ask for more joining every time?</p>
+<p><b>The correction.</b> In round 4 I wrote that "points follow the medals". That was wrong. In a joined bracket, the medals of each category go to that category's highest finishers, but points must still reflect the place on the piste. A category gold won in 3rd place overall must earn more than a category gold won in 7th or 12th place. This analysis keeps both: a medal bonus for the category medal, and points that depend on the place.</p>
+
+<h2 id="data">2 · What three seasons of data show</h2>
+<p>Domestic results (PPW + MPW) of 2023/24, 2024/25 and 2025/26, excluding rejected tournaments. The LOCAL copy matches PROD exactly: 194 / 148 / 145 brackets and 843 / 608 / 558 results.</p>
+<div class="stats">
+<div class="stat"><b>2009</b><span>results in 487 brackets</span></div>
+<div class="stat"><b>256</b><span>brackets with N &lt; 4 (49–59% per season)</span></div>
+<div class="stat"><b>100%</b><span>of women's V3 and V4 brackets had N &lt; 4</span></div>
+<div class="stat"><b>1</b><span>joined bracket in three seasons (PPW2 2025/26, women's épée V0+V1+V2 = 8)</span></div>
+</div>
+<div class="tw"><table>
+<thead><tr><th>Season</th><th class="n">N=1</th><th class="n">N=2</th><th class="n">N=3</th><th class="n">4–7</th><th class="n">8–15</th><th class="n">16+</th><th class="n">Share of brackets N&lt;4</th><th class="n">Share of results N&lt;4</th></tr></thead>
+<tbody>
+<tr><td>2023/24</td><td class="n">41</td><td class="n">28</td><td class="n">26</td><td class="n">66</td><td class="n">33</td><td class="n">0</td><td class="n">49.0%</td><td class="n">20.8%</td></tr>
+<tr><td>2024/25</td><td class="n">38</td><td class="n">21</td><td class="n">16</td><td class="n">49</td><td class="n">24</td><td class="n">0</td><td class="n">50.7%</td><td class="n">21.1%</td></tr>
+<tr><td>2025/26</td><td class="n">37</td><td class="n">28</td><td class="n">21</td><td class="n">38</td><td class="n">20</td><td class="n">1</td><td class="n">59.3%</td><td class="n">28.0%</td></tr>
+</tbody></table></div>
+<h3>What joining could achieve</h3>
+<p>For each event, weapon and gender, the sum of all categories is the largest bracket that joining could produce.</p>
+<ul>
+<li><b>Men:</b> 63 such groups, median 25 fencers (7–56). Every men's group would reach at least 7.</li>
+<li><b>Women:</b> 61 groups, median 5 (1–19). 20 groups stay below 4 even fully joined; 21 reach 8 or more.</li>
+<li>Of the 256 small brackets, 222 sit in a group that reaches 4 when joined and <b>150 in a group that reaches 8</b>. Together they hold 314 of the 459 small-bracket results.</li>
+</ul>
+<p>Joining is therefore available for most small brackets, but in practice it happened once.</p>
+
+<h2 id="today">3 · Today's engine and its scoring table</h2>
+<p><code>SPWS_FIELD_SCALED_V1_2026_2027</code>, with mp 50, slope 10, DE round 10, podium 3/2/1, PPW ×1.0 and MPW ×1.2:</p>
+<div class="formula">base(N)   = min(50, 10·log₂N)
+place     = base − (base − 1) · ln p / ln N
+DE bonus  = 10 · max(0, ⌊log₂N⌋ − ⌈log₂p⌉ + [N not a power of 2])
+podium    = (3, 2, 1 for p = 1, 2, 3) · 3·∛N
+points    = (place + DE + podium) · type multiplier</div>
+<div class="tw"><table>
+<thead><tr><th>N</th><th class="n">1st</th><th class="n">2nd</th><th class="n">3rd</th><th class="n">4th</th><th class="n">5th</th><th class="n">6th</th><th class="n">7th</th><th class="n">8th</th><th class="n">9th</th><th class="n">12th</th><th class="n">last</th></tr></thead>
+<tbody>
+<tr><td>4</td><td class="n">54.3</td><td class="n">30.0</td><td class="n">9.7</td><td class="n">1.0</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="n">1.0</td></tr>
+<tr><td>8</td><td class="n">78.0</td><td class="n">52.3</td><td class="n">30.7</td><td class="n">20.7</td><td class="n">7.6</td><td class="n">5.0</td><td class="n">2.9</td><td class="n">1.0</td><td></td><td></td><td class="n">1.0</td></tr>
+<tr><td>16</td><td class="n">102.7</td><td class="n">75.4</td><td class="n">52.1</td><td class="n">40.5</td><td class="n">27.4</td><td class="n">24.8</td><td class="n">22.6</td><td class="n">20.8</td><td class="n">9.1</td><td class="n">5.0</td><td class="n">1.0</td></tr>
+</tbody></table></div>
+<p>Two features of this table matter here:</p>
+<ul>
+<li><b>Only the top benefits from a bigger field.</b> The winner earns 54 → 78 → 103 → 129 as N goes 4 → 8 → 16 → 32. The middle finisher earns about 21 at every size from 8 to 48, and last place always earns 1.</li>
+<li><b>Several points depend on overall position.</b> Place points fall with ln p, the DE bonus drops a round when p crosses 4, 8 or 16, and the podium goes only to overall places 1–3. Losing the round of 16 at N = 16 costs 11.7 points (8th: 20.8, 9th: 9.1).</li>
+</ul>
+
+<h2 id="why">4 · Why today's engine cannot make everyone gain</h2>
+<p>When a fencer from another category joins and finishes <b>ahead</b> of you, your overall place drops by one while N rises by one. Every term of today's engine that depends on overall place — the ln p curve, the DE round thresholds, the overall podium — can then fall, and the small increase in N does not make up for it. For a winner overtaken by a stronger joiner, the whole winner's premium is lost.</p>
+<p>That holds for every variant we discussed, including my round-4 idea. The check covers every joined size N ≤ 40, every category size, every category place and every possible overall place: 123,410 configurations.</p>
+<div class="tw"><table>
+<thead><tr><th>Variant</th><th class="n">Configurations where joining costs points</th><th class="n">Worst loss</th><th class="n">One more fencer does not raise your points</th></tr></thead>
+<tbody>
+<tr><td>§8 on today's engine</td><td class="n">46.6%</td><td class="n down">−99.4</td><td class="n">47.4%</td></tr>
+<tr><td>§8 + flat table for N &lt; 4 (R1)</td><td class="n">44.8%</td><td class="n down">−99.4</td><td class="n">47.4%</td></tr>
+<tr><td>§8 + table + category medal at N ≥ 8 (R2, round 4)</td><td class="n">42.0%</td><td class="n down">−68.7</td><td class="n">46.3%</td></tr>
+</tbody></table></div>
+<div class="card warn"><span class="lb">The general rule behind this</span>
+Any bonus tied to a threshold of <b>overall</b> position — the podium places 1–3, "last 8" and other DE rounds, or a steep curve on the place itself — is taken away by a stronger joiner. No tuning of today's formula fixes this. A top-heavy curve on overall place and "every join is a gain" cannot both hold.</div>
+
+<h2 id="principle">5 · The principle: score only what a joiner cannot take away</h2>
+<p>When one more fencer joins the bracket, three quantities can only stay the same or grow, wherever the joiner finishes:</p>
+<div class="tw"><table>
+<thead><tr><th>Quantity</th><th>Joiner finishes ahead of you</th><th>Joiner finishes behind you</th></tr></thead>
+<tbody>
+<tr><td><b>N</b> — the size of the joined bracket</td><td>+1</td><td>+1</td></tr>
+<tr><td><b>b</b> — fencers who finished behind you (b = N − p)</td><td>unchanged</td><td>+1</td></tr>
+<tr><td><b>m</b> — your place within your own category</td><td>unchanged (the joiner is from another category)</td><td>unchanged</td></tr>
+</tbody></table></div>
+<div class="card locked"><span class="lb">Consequence</span>
+If points are a sum of one term growing with N, one growing with b, and a medal bonus fixed by m and growing with N, then <b>no join can lower anyone's points</b>. As long as the N term grows strictly, <b>every join raises everyone's points</b>. That is exactly the property you asked for, and it holds for any finishing order, not just typical ones. Place still matters: within one bracket, a better place means a larger b.</div>
+
+<h2 id="engine">6 · The proposed engine</h2>
+<p>This is the additive form fitted to today's engine on the 1,550 real results in brackets of 4 or more, then rounded to numbers that are easy to state.</p>
+<div class="formula">field     = 2 · log₂N                    every fencer in the bracket
+beaten    = 3 · min(b, 31)               3 points per fencer who finished behind you
+medal     = (27, 15, 6) · ∛N             your gold / silver / bronze in YOUR category,
+                                          only if a category-mate finished behind you
+                                          (E2 in §0 recommends: if you beat anyone on the piste)
+points    = (field + beaten + medal) · type multiplier
+N &lt; 4     → flat table: N − p + 1       (decision R1, domestic types only)</div>
+<p>N and p are those of the bracket as fenced (joined N, place on the piste). m is the place among the fencer's own category. In an ordinary one-category bracket m = p, and the formula is just field + beaten + podium.</p>
+<div class="card"><span class="lb">Draft wording for the regulation (Polish)</span>
+Punkty za wynik to suma trzech składników: premii za liczebność turnieju (2 × log₂ liczby zawodników), 3 punktów za każdego zawodnika sklasyfikowanego niżej (najwyżej 31) oraz premii medalowej za miejsca 1–3 w swojej kategorii wiekowej, przyznawanej, jeżeli w tej kategorii ktoś został sklasyfikowany niżej. W turnieju połączonym liczebność oznacza liczbę wszystkich zawodników turnieju.</div>
+
+<h3>What changes for an ordinary bracket</h3>
+<div class="tw"><table>
+<thead><tr><th>N</th><th>Engine</th><th class="n">1st</th><th class="n">2nd</th><th class="n">3rd</th><th class="n">4th</th><th class="n">5th</th><th class="n">6th</th><th class="n">7th</th><th class="n">8th</th><th class="n">9th</th><th class="n">12th</th><th class="n">last</th></tr></thead>
+<tbody>
+<tr><td rowspan="2">4</td><td>today</td><td class="n">54.3</td><td class="n">30.0</td><td class="n">9.7</td><td class="n">1.0</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="n">1.0</td></tr>
+<tr class="hl"><td>proposed</td><td class="n">55.9</td><td class="n">33.8</td><td class="n">16.5</td><td class="n">4.0</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="n">4.0</td></tr>
+<tr><td rowspan="2">8</td><td>today</td><td class="n">78.0</td><td class="n">52.3</td><td class="n">30.7</td><td class="n">20.7</td><td class="n">7.6</td><td class="n">5.0</td><td class="n">2.9</td><td class="n">1.0</td><td></td><td></td><td class="n">1.0</td></tr>
+<tr class="hl"><td>proposed</td><td class="n">81.0</td><td class="n">54.0</td><td class="n">33.0</td><td class="n">18.0</td><td class="n">15.0</td><td class="n">12.0</td><td class="n">9.0</td><td class="n">6.0</td><td></td><td></td><td class="n">6.0</td></tr>
+<tr><td rowspan="2">16</td><td>today</td><td class="n">102.7</td><td class="n">75.4</td><td class="n">52.1</td><td class="n">40.5</td><td class="n">27.4</td><td class="n">24.8</td><td class="n">22.6</td><td class="n">20.8</td><td class="n">9.1</td><td class="n">5.0</td><td class="n">1.0</td></tr>
+<tr class="hl"><td>proposed</td><td class="n">121.0</td><td class="n">87.8</td><td class="n">62.1</td><td class="n">44.0</td><td class="n">41.0</td><td class="n">38.0</td><td class="n">35.0</td><td class="n">32.0</td><td class="n">29.0</td><td class="n">20.0</td><td class="n">8.0</td></tr>
+</tbody></table></div>
+<ul>
+<li>The podium keeps its separation: 81 / 54 / 33 at N = 8 against today's 78 / 52 / 31.</li>
+<li>Below the podium, points fall by an even 3 per place instead of in DE-round steps. The 11.7-point cliff between 8th and 9th of 16 becomes 3 points.</li>
+<li>Last place earns more in a bigger bracket: 4 at N = 4, 6 at N = 8, 8 at N = 16, 10 at N = 32.</li>
+<li>The winner of a large field earns more than today: 121 at N = 16 and 189 at N = 32, against 103 and 129. The cap at 31 fencers beaten holds the winner of 48 to 202.</li>
+</ul>
+
+<h2 id="evidence">7 · Evidence: exhaustive check and three seasons replayed</h2>
+<h3>Exhaustive check</h3>
+<p>Every joined size up to 64, every category size, category place and feasible overall place: 766,480 configurations and 1,441,440 one-more-fencer steps.</p>
+<ul>
+<li><b>Joining costs points: 0 cases.</b></li>
+<li><b>One more fencer does not raise your points: 5 cases</b>, all inside the flat table (N ≤ 3), where a joiner who finishes ahead leaves N − p + 1 unchanged. The points stay equal; nobody loses.</li>
+</ul>
+
+<h3>The three seasons replayed with categories joined</h3>
+<p>Each event × weapon × gender is re-fenced two ways. <b>J8</b> merges adjacent categories, oldest first, just until each bracket reaches 8. <b>All</b> puts every category in one bracket. The joined finishing order is unknown, so each is replayed under several orders, always keeping each category's own order: younger categories all ahead (worst for the older), older all ahead (worst for the younger), interleaved by category percentile, and 200 random merges. "Worse off" compares each fencer's points joined against their points apart under the same engine.</p>
+<div class="tw"><table>
+<thead><tr><th>Engine</th><th>Joining</th><th class="n">Worse off: young / old / interleaved</th><th class="n">Worse off, 200 random (mean)</th><th class="n">Worst</th><th class="n">Mean gain</th></tr></thead>
+<tbody>
+<tr><td rowspan="2">§8 + table (R1)</td><td>J8</td><td class="n">446 / 499 / 408 of 2009</td><td class="n">465</td><td class="n down">−70.0</td><td class="n">+6.2</td></tr>
+<tr><td>All</td><td class="n">736 / 748 / 610</td><td class="n">680</td><td class="n down">−95.2</td><td class="n">+6.3</td></tr>
+<tr><td rowspan="2">§8 + table + medal ≥ 8 (R2)</td><td>J8</td><td class="n">408 / 452 / 181</td><td class="n">311*</td><td class="n down">−47.3</td><td class="n">+9.3</td></tr>
+<tr><td>All</td><td class="n">613 / 636 / 227</td><td class="n">438*</td><td class="n down">−60.7</td><td class="n">+12.0</td></tr>
+<tr class="hl"><td rowspan="2">Proposed, medal on joined N</td><td>J8</td><td class="n up">0 / 0 / 0</td><td class="n up">0</td><td class="n">0</td><td class="n up">+18.8</td></tr>
+<tr class="hl"><td>All</td><td class="n up">0 / 0 / 0</td><td class="n up">0</td><td class="n">0</td><td class="n up">+45.6</td></tr>
+<tr><td rowspan="2">Proposed, medal on the category's own size</td><td>J8</td><td class="n up">0 / 0 / 0</td><td class="n up">0</td><td class="n">0</td><td class="n up">+14.3</td></tr>
+<tr><td>All</td><td class="n up">0 / 0 / 0</td><td class="n up">0</td><td class="n">0</td><td class="n up">+37.1</td></tr>
+</tbody></table></div>
+<p>* R2 random-merge figures come from a separate run of 200 merges with a different random seed.</p>
+
+<h3>Mean gain from J8 by category (interleaved order)</h3>
+<div class="tw"><table>
+<thead><tr><th>Engine</th><th class="n">FV0</th><th class="n">FV1</th><th class="n">FV2</th><th class="n">FV3</th><th class="n">FV4</th><th class="n">MV0</th><th class="n">MV1</th><th class="n">MV2</th><th class="n">MV3</th><th class="n">MV4</th></tr></thead>
+<tbody>
+<tr><td>§8 + table (R1)</td><td class="n">+18.5</td><td class="n">+13.3</td><td class="n">+9.7</td><td class="n">+11.0</td><td class="n">+11.2</td><td class="n">+7.3</td><td class="n">+5.4</td><td class="n">+1.9</td><td class="n">+4.2</td><td class="n">+5.8</td></tr>
+<tr><td>… fencers worse off</td><td class="n down">17</td><td class="n down">19</td><td class="n down">27</td><td class="n">0</td><td class="n">0</td><td class="n down">40</td><td class="n down">62</td><td class="n down">80</td><td class="n down">96</td><td class="n down">67</td></tr>
+<tr class="hl"><td>Proposed, medal on joined N</td><td class="n">+29.2</td><td class="n">+26.6</td><td class="n">+22.3</td><td class="n">+13.9</td><td class="n">+23.5</td><td class="n">+20.7</td><td class="n">+16.6</td><td class="n">+10.1</td><td class="n">+19.7</td><td class="n">+29.2</td></tr>
+<tr><td>… fencers worse off</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td><td class="n up">0</td></tr>
+</tbody></table></div>
+<p>Under §8 the men's categories carry most of the losses. That is where large categories absorb small ones and their middle finishers get overtaken. Under the proposed engine, every category gains, the older men's categories among the most.</p>
+
+<h3>The same fencer as the bracket grows</h3>
+<div class="legend"><span><i style="background:var(--series-1)"></i>Proposed engine</span><span><i style="background:var(--series-2)"></i>Today's engine + §8 + table</span></div>
+<div class="charts" id="charts"></div>
+<p style="font-size:13px;color:var(--muted)">Values are also in the table below. The horizontal axis is the joined bracket size N; each panel has its own vertical scale.</p>
+<div class="tw"><table>
+<thead><tr><th>Case</th><th>Engine</th><th class="n">Values by joined N</th></tr></thead>
+<tbody>
+<tr><td rowspan="2">V1 winner of 8, every joiner finishes ahead (N 8 → 10 → 12 → 16 → 24)</td><td>today + §8</td><td class="n">78.0 → 44.3 → 23.3 → 9.1 → 5.9</td></tr>
+<tr class="hl"><td>proposed</td><td class="n">81.0 → 85.8 → 90.0 → 97.0 → 108.1</td></tr>
+<tr><td rowspan="2">V4 gold of 2, finishes just ahead of his category-mate (N 2 → 5 → 8 → 12 → 25)</td><td>today + §8 + table</td><td class="n">2.0 → 14.1 → 2.9 → 2.2 → 1.6</td></tr>
+<tr class="hl"><td>proposed</td><td class="n">2.0 → 53.8 → 63.0 → 72.0 → 91.2</td></tr>
+<tr><td rowspan="2">V4 silver of 2, last overall (N 2 → 5 → 8 → 12 → 25)</td><td>today + §8 + table</td><td class="n">1.0 → 1.0 → 1.0 → 1.0 → 1.0</td></tr>
+<tr class="hl"><td>proposed</td><td class="n">1.0 → 4.6 → 6.0 → 7.2 → 9.3</td></tr>
+</tbody></table></div>
+
+<h2 id="example">8 · Your 7-fencer example under the proposed engine</h2>
+<p>Joined V1 + V2, N = 7. The V2 fencers finish 3rd and 7th and receive the V2 gold and silver.</p>
+<div class="tw"><table>
+<thead><tr><th>Fencer</th><th class="n">Piste</th><th class="n">Category</th><th class="n">Apart, today + table</th><th class="n">Joined, §8 + table</th><th class="n">Apart, proposed</th><th class="n">Joined, proposed</th><th class="n">Gain from joining, proposed</th></tr></thead>
+<tbody>
+<tr><td>A · V1</td><td class="n">1</td><td class="n">1 / 5</td><td class="n">68.61</td><td class="n">75.29</td><td class="n">62.81</td><td class="n">75.26</td><td class="n up">+12.45</td></tr>
+<tr><td>B · V1</td><td class="n">2</td><td class="n">2 / 5</td><td class="n">43.91</td><td class="n">49.91</td><td class="n">39.29</td><td class="n">49.31</td><td class="n up">+10.02</td></tr>
+<tr class="hl"><td>X · V2 gold</td><td class="n">3</td><td class="n">1 / 2</td><td class="n">2.00</td><td class="n">28.53</td><td class="n">2.00</td><td class="n">69.26</td><td class="n up">+67.26</td></tr>
+<tr><td>C · V1</td><td class="n">4</td><td class="n">3 / 5</td><td class="n">23.18</td><td class="n down">18.79</td><td class="n">20.90</td><td class="n">26.09</td><td class="n up">+5.19</td></tr>
+<tr><td>D · V1</td><td class="n">5</td><td class="n">4 / 5</td><td class="n">14.08</td><td class="n down">5.68</td><td class="n">7.64</td><td class="n">11.61</td><td class="n up">+3.97</td></tr>
+<tr><td>E · V1</td><td class="n">6</td><td class="n">5 / 5</td><td class="n">1.00</td><td class="n">3.14</td><td class="n">4.64</td><td class="n">8.61</td><td class="n up">+3.97</td></tr>
+<tr class="hl"><td>Y · V2 silver</td><td class="n">7</td><td class="n">2 / 2</td><td class="n">1.00</td><td class="n">1.00</td><td class="n">1.00</td><td class="n">5.61</td><td class="n up">+4.61</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>Everyone gains</b>, including C and D, who lose points under §8.</li>
+<li><b>Place still counts.</b> X (gold, 3rd on the piste) earns 69.26. Had she finished 6th, the lowest a gold of 2 can finish here (just ahead of her category-mate), she would earn 60.26: 9 points less, for 3 fewer fencers beaten.</li>
+<li><b>Y, the silver medallist, earns no medal bonus.</b> She finished behind her only category-mate, so the guard in §6 applies. Joining still pays her +4.61.</li>
+</ul>
+
+<h2 id="costs">9 · Costs and risks</h2>
+<div class="card warn"><span class="lb">1 · Points grow with joining, by design</span>
+Measured against the three seasons as fenced under today's engine without the table, total points are −14% with no joining (the table cuts small brackets), <b>+56%</b> with J8 and <b>+156%</b> with every category joined. With the medal tied to the category's own size instead: +39% and +124%. Each ranking compares fencers of one category only, so within a season the order is decided by who joins and wins, not by the scale. The scale matters in three places: the combined Kadra ranking (item 2), comparisons with carried-over results from 2025/26, and any published "points" figure people compare across seasons.</div>
+<div class="card warn"><span class="lb">2 · EVF results must stay on today's engine</span>
+One engine scores every tournament type in a season. Applied to EVF results (median N 8, often 20–40), the proposed engine raises their mean by <b>32%</b> (25% with the cap), against +4–5% for domestic results as fenced. That would shift the combined national-team ranking toward EVF results. The proposed engine should apply to <b>PPW and MPW only</b>, with international types kept on <code>SPWS_FIELD_SCALED_V1_2026_2027</code>. The same goes for the flat table: several MEW and MSW brackets store a small N (median 3), and the table would cut them to 1–3 points.</div>
+<div class="card"><span class="lb">3 · DE rounds stop being scored as steps</span>
+Today a fencer who reaches the last 8 earns a DE round bonus that a 9th place does not. The proposed engine replaces those steps with 3 points per fencer beaten. This is not optional: any step tied to overall position is lost to a stronger joiner (§4).</div>
+<div class="card"><span class="lb">4 · Continuity with the seasons as fenced</span>
+Re-scoring 2023/24–2025/26 unchanged (no joining) with the proposed engine instead of today's engine + table, using best 4 PPW + MPW: 85 sub-rankings, mean Spearman rank correlation <b>0.981</b> (lowest 0.83), <b>1</b> change of leader, <b>2</b> changes to a top-3, and 215 of 656 fencers move at least one position. Ordinary brackets stay close to today (RMSE 5.0 points on 1,550 results).</div>
+<div class="card"><span class="lb">5 · Medal scaled by joined N or by the category's own size</span>
+Scaling the medal by the <b>joined N</b> gives the strongest pull: a V4 gold of 2 earns 53.8 at N = 5 and 91.2 at N = 25. Scaling by the <b>category's own size</b> keeps the medal proportional to the contest within the category (41.7 → 46.3 over the same range), with less inflation. Both variants leave nobody worse off. Only the first makes a bigger join clearly better than a small one for the medallists of small categories, which is the goal you set.</div>
+<div class="card"><span class="lb">6 · The medal guard</span>
+Without any condition, a lone V4 in a joined bracket of 25 would collect a medal bonus of about 79 points even after beating nobody. The condition in §6 (a category-mate behind you) blocks that, but it also denies the bonus to a silver medallist of a two-fencer category who beat six others. Decision E2 in §0 replaces it with "you beat at least one fencer on the piste". All three variants keep the property.</div>
+
+<h2 id="e1">10 · Decision E1 (open)</h2>
+<div class="card open"><span class="lb">Question</span>
+Which scoring construction should 2026/2027 use for domestic brackets?</div>
+<div class="tw"><table>
+<thead><tr><th>Option</th><th>Every fencer gains from every join?</th><th>Pull toward bigger joins</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><b>Proposed engine, medal scaled by joined N, cap 31, PPW/MPW only, with the table below 4</b><span class="rec">recommended</span></td><td>Yes: 0 of 766,480 configurations, 0 of 2009 fencers in every replay</td><td>Strong; strongest for small-category medallists</td><td>Ordinary brackets within 5 points of today. Needs per-type engines (item 2) and §8 whole-bracket storage.</td></tr>
+<tr><td>Proposed engine, medal scaled by the category's own size</td><td>Yes</td><td>Moderate</td><td>Less inflation; the medal reflects only the contest within the category.</td></tr>
+<tr><td>§8 + table + category medal at N ≥ 8 (round 4, R2)</td><td>No: 9–32% of fencers worse off</td><td>Weak</td><td>Superseded by this analysis.</td></tr>
+<tr><td>§8 + table (R1)</td><td>No: 20–37% worse off</td><td>Weak</td><td>Cheapest; keeps today's engine.</td></tr>
+</tbody></table></div>
+<p><b>Recommendation: the first option.</b> It is the only construction that meets the requirement as you stated it: every fencer gains from every join, and more joining is always worth more, whatever the finishing order. The alternatives do not reach it by tuning; the obstacle is structural (§4). Its costs are real but bounded. It needs a new engine version for domestic types, a points scale that grows when brackets are joined, and a regulation text the board has to adopt.</p>
+
+<h2 id="impl">11 · What implementing it involves</h2>
+<ul>
+<li><b>A new released engine version</b> (working name <code>SPWS_FIELD_BEATEN_MEDAL_V1_2026_2027</code>). Its function needs the category place m and the category size k as well as N and p. <code>fn_calc_tournament_scores</code> derives both for a joined slice: m is the rank of the row's place inside its own tournament and k is the tournament's row count. For every other tournament m = p and k = N.</li>
+<li><b>Engine per tournament type.</b> Today one engine per season scores every type. This needs either an engine per type in <code>tbl_scoring_type_config</code>, or an engine version that keeps the V1 formula for international types. That is an ADR-level choice.</li>
+<li><b>§8 whole-bracket storage</b> from the joined-category plan: every sibling stores the joined N, and each row keeps its place on the piste. Without it, the engine never sees a joined bracket.</li>
+<li><b>Governance.</b> 2026/27 is unlocked, so the switch is an ordinary pre-lock change, provided it lands before PPW1 is scored. The public calculator and Załącznik nr 1 follow the engine automatically (ADR-102) and would need the category inputs for joined brackets.</li>
+<li><b>Board adoption</b> of the three-part rule and the flat table, replacing the current point table in the regulation.</li>
+</ul>
+
+<h2 id="method">12 · Method and reproducibility</h2>
+<ul>
+<li><b>Data.</b> LOCAL domestic results of the three seasons, verified identical in bracket and result counts to the PROD figures of the 22 September small-bracket report. The PROD lock state was read with <code>scripts/cloud-sql.sh prod</code> (read-only, 27 September).</li>
+<li><b>Engine port.</b> A Python port of <code>fn_score_spws_field_scaled_v1_2026_2027</code>, checked against the database function (for example 7 fencers: 75.29 / 49.91 / 28.53 / 18.79 / 5.68 / 3.14 / 1.00).</li>
+<li><b>Fit.</b> Least squares against today's engine over the 1,550 real results in brackets of 4 or more, by grid search followed by random refinement, then rounded to 2 / 3 / (27, 15, 6).</li>
+<li><b>Replays.</b> Categories merged as described in §7. Each category's internal order is always preserved; the interleaving between categories is the unknown that the orders and random merges cover.</li>
+<li><b>Ranking comparison.</b> Best 4 PPW + MPW (×1.2) per season × weapon × gender × category, the rule in force for 2024/25 and 2025/26.</li>
+<li><b>Scripts.</b> The analysis scripts are in this session's scratchpad (<code>engine.py</code>, <code>props.py</code>, <code>sim.py</code>, <code>report_numbers.py</code>, <code>examples.py</code>). If this goes to the board, they should be committed as a re-runnable tool, the same way the small-bracket report generator was.</li>
+</ul>
+
+<footer>
+Source evidence: <code>fn_score_spws_field_scaled_v1_2026_2027</code>, <code>fn_score_de_bonus</code>, <code>fn_score_podium_bonus</code>, <code>fn_calc_tournament_scores</code> (LOCAL definitions); <code>tbl_scoring_config</code> multipliers and ranking rules; domestic <code>tbl_result</code> 2023/24–2025/26 (LOCAL, identical counts to PROD); PROD <code>tbl_season</code> lock state for <code>SPWS-2026-2027</code>. Related plan: <a href="joined-category-policy-2026-09-27.html">joined-category-policy-2026-09-27.html</a>.
+</footer>
+</div>
+
+<script>
+(function(){
+  var panels = [
+    {t:"V1 winner of 8 — every joiner finishes ahead", x:[8,10,12,16,24], a:[81.0,85.8,90.0,97.0,108.1], b:[78.0,44.3,23.3,9.1,5.9], ymax:120},
+    {t:"V4 gold of 2 — just ahead of his category-mate", x:[2,5,8,12,25], a:[2.0,53.8,63.0,72.0,91.2], b:[2.0,14.1,2.9,2.2,1.6], ymax:100},
+    {t:"V4 silver of 2 — last overall", x:[2,5,8,12,25], a:[1.0,4.6,6.0,7.2,9.3], b:[1,1,1,1,1], ymax:12}
+  ];
+  var host = document.getElementById("charts");
+  var W=280,H=190,L=34,R=10,T=10,B=26, NS="http://www.w3.org/2000/svg";
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  panels.forEach(function(p){
+    var box=document.createElement("div");box.className="panel";
+    var h=document.createElement("h4");h.textContent=p.t;box.appendChild(h);
+    var tip=document.createElement("div");tip.className="tip";box.appendChild(tip);
+    var svg=el("svg",{viewBox:"0 0 "+W+" "+H,role:"img","aria-label":p.t});
+    var x0=p.x[0],x1=p.x[p.x.length-1];
+    var sx=function(v){return L+(v-x0)/(x1-x0)*(W-L-R);};
+    var sy=function(v){return T+(1-v/p.ymax)*(H-T-B);};
+    for(var i=0;i<=4;i++){var v=p.ymax*i/4,y=sy(v);
+      svg.appendChild(el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:"var(--grid)","stroke-width":1}));
+      var tx=el("text",{x:L-6,y:y+4,"text-anchor":"end","font-size":10,fill:"var(--axis)"});tx.textContent=Math.round(v);svg.appendChild(tx);}
+    p.x.forEach(function(v,i){var last=i===p.x.length-1;var tx=el("text",{x:last?W-R:sx(v),y:H-8,"text-anchor":last?"end":"middle","font-size":10,fill:"var(--axis)"});tx.textContent=(i===0?"N = ":"")+v;svg.appendChild(tx);});
+    [["b","var(--series-2)","Today + §8 + table"],["a","var(--series-1)","Proposed"]].forEach(function(s){
+      var d=p[s[0]].map(function(v,i){return (i?"L":"M")+sx(p.x[i]).toFixed(1)+" "+sy(v).toFixed(1);}).join(" ");
+      svg.appendChild(el("path",{d:d,fill:"none",stroke:s[1],"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      p[s[0]].forEach(function(v,i){
+        var c=el("circle",{cx:sx(p.x[i]),cy:sy(v),r:4,fill:s[1],stroke:"var(--chart-surface)","stroke-width":2});
+        var hit=el("circle",{cx:sx(p.x[i]),cy:sy(v),r:11,fill:"transparent"});
+        hit.addEventListener("mouseenter",function(){tip.textContent=s[2]+" · N="+p.x[i]+": "+v.toFixed(1);tip.style.display="block";
+          tip.style.left=Math.min(sx(p.x[i])/W*box.clientWidth,box.clientWidth-150)+"px";tip.style.top=(sy(v)/H*box.clientWidth*H/W+4)+"px";});
+        hit.addEventListener("mouseleave",function(){tip.style.display="none";});
+        svg.appendChild(c);svg.appendChild(hit);
+      });
+    });
+    box.appendChild(svg);host.appendChild(box);
+  });
+})();
+</script>
+</body>
+</html>
