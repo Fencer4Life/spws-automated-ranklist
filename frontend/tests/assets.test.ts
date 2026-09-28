@@ -73,3 +73,59 @@ describe('scoring table annex (ADR-092)', () => {
     expect(enRadio).toBeLessThan(main)
   })
 })
+
+// SE27.PREVIEW.01–03 — the board preview of the proposed 2026/2027 engine
+// (ADR-085 §2, amended 2026-09-28). The third static page, and the only one
+// that reads no season parameters: no engine implements its formula yet, so it
+// computes everything in the page. It is not in the drawer, and it is deleted —
+// with these tests — in the change that releases that engine.
+// See doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html, Step A.
+//
+// Loaded through import.meta.glob rather than a ?raw import, so a missing file
+// fails 01 as an assertion instead of failing this whole file to load and
+// taking 8.88 and 8.94–8.96 down with it.
+const publicPages = import.meta.glob<string>('../public/*.html', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+const publishedFiles = new Set(
+  Object.keys(import.meta.glob('../public/*')).map((p) => p.replace('../public/', '')),
+)
+const PREVIEW = '../public/tabela-punktacji-projekt-2026-2027.html'
+const preview = publicPages[PREVIEW] ?? ''
+
+describe('board preview of the 2026/2027 engine (ADR-085 §2 amendment)', () => {
+  // SE27.PREVIEW.01 — the address given to the board must actually ship.
+  it('ships the preview page', () => {
+    expect(Object.keys(publicPages)).toContain(PREVIEW)
+    expect(preview.length).toBeGreaterThan(1000)
+  })
+
+  // SE27.PREVIEW.02 — an unadopted proposal must not be found by search and
+  // read as the rule in force; same reasoning as 8.95.
+  it('keeps the unadopted proposal out of search engines', () => {
+    expect(preview).toContain('name="robots"')
+    expect(preview).toMatch(/content="noindex,\s*nofollow"/)
+  })
+
+  // SE27.PREVIEW.03 — self-contained: no database, no network, no credential
+  // (the release workflow injects keys only into the two parameter-reading
+  // pages), and no relative link to a file Pages does not publish — the
+  // source page links a doc/plans/ analysis that would 404 here.
+  it('is self-contained', () => {
+    // An empty string passes every negative assertion below.
+    expect(preview.length).toBeGreaterThan(1000)
+    expect(preview).not.toMatch(/\bfetch\s*\(/)
+    expect(preview).not.toMatch(/XMLHttpRequest|sendBeacon|WebSocket/)
+    expect(preview).not.toContain('spws-env')
+    expect(preview).not.toMatch(/supabase/i)
+    expect(preview).not.toMatch(/eyJ[A-Za-z0-9_-]{10,}/)
+    const relative = [...preview.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/g)]
+      .map((m) => m[1])
+      .filter((url) => !/^(#|[a-z][a-z0-9+.-]*:)/i.test(url))
+    for (const url of relative) {
+      expect(publishedFiles).toContain(url.split(/[?#]/)[0].replace(/^\.\//, ''))
+    }
+  })
+})
