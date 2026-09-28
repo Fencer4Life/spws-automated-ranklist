@@ -16,7 +16,7 @@
 -- plus immutable strategies, and these assertions are what proves the 2025/2026
 -- numbers survived that surgery byte for byte.
 --
--- SS26.DB.*, SS26.NEW.* and SS26.PARITY.* are RED on purpose. They name objects
+-- SS26.DB.* and SS26.PARITY.* are RED on purpose. They name objects
 -- that do not exist yet — the engine registry, the season's engine assignment,
 -- the two immutable strategies, the preview facade. They fail with a value of
 -- NULL or an "undefined function" error, which is the intended reason. They go
@@ -57,7 +57,7 @@ BEGIN;
 -- session_replication_role so audit and status triggers stay live.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(83);
+SELECT plan(71);
 
 -- -----------------------------------------------------------------------------
 -- Canonical error contracts. Named here because the tests pin them, so the
@@ -175,10 +175,9 @@ SELECT results_eq(
   'SS26.HIST.03 classic N=24 last place = (1.00, 0.00, 0.00) -> 1.00'
 );
 
--- SS26.HIST.04 — the walkover, pinned on the CLASSIC side of the §04
--- re-pricing. SS26.NEW.01 pins the same bracket at 19.00 under the field-scaled
--- engine; the pair is what makes the 59 -> 19 change deliberate and visible
--- rather than something that falls out of a division-by-zero guard.
+-- SS26.HIST.04 — the walkover, pinned on the CLASSIC side. SE27.ENG.01 pins
+-- the same bracket at 1.00 under the 2026/2027 engine; the pair is what makes
+-- the 59 -> 1 change deliberate and visible.
 SELECT results_eq(
   $$SELECT * FROM pg_temp.comp('SS26-PPW-N1', 1)$$,
   $$VALUES (50.00::NUMERIC, 0.00::NUMERIC, 9.00::NUMERIC, 59.00::NUMERIC)$$,
@@ -246,14 +245,20 @@ SELECT has_column('public', 'tbl_season', 'id_scoring_engine',
 SELECT has_function('public', 'fn_score_evf_classic_v1_2025_2026',
   ARRAY['integer','integer','numeric','numeric','numeric','numeric','numeric','numeric'],
   'SS26.DB.03a classic strategy exists with the uniform dispatcher signature');
-SELECT has_function('public', 'fn_score_spws_field_scaled_v1_2026_2027',
-  ARRAY['integer','integer','numeric','numeric','numeric','numeric','numeric','numeric'],
-  'SS26.DB.03b field-scaled strategy exists with the uniform dispatcher signature');
+-- SS26.DB.03b — the 2026/2027 strategy takes K, m and the count below as well
+-- (ADR-103 §1); the field-scaled strategy it replaced is gone (ADR-103 §3).
+SELECT ok(
+  EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+           WHERE n.nspname = 'public' AND p.proname = 'fn_score_spws_place_medal_v1_2026_2027'
+             AND pg_get_function_identity_arguments(p.oid) LIKE
+                 'p_n integer, p_place integer, p_k integer, p_m integer, p_below integer, %')
+  AND NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'fn_score_spws_field_scaled_v1_2026_2027'),
+  'SS26.DB.03b the place-and-medal strategy exists with (n, place, k, m, below, …); field-scaled is gone');
 
 -- SS26.DB.04 — an unrecognised engine fails closed, exactly as the carry-over
 -- dispatcher's ELSE RAISE EXCEPTION 'Unknown carryover engine' already does.
 SELECT throws_like(
-  $$SELECT fn_score_by_engine('NO_SUCH_ENGINE_V9', 16, 1, 50, 10, 10, 3, 2, 1)$$,
+  $$SELECT fn_score_by_engine('NO_SUCH_ENGINE_V9', 16, 1, 16, 1, 15, 50, 10, 3, 2, 1)$$,
   '%Unknown scoring engine%',
   'SS26.DB.04 an unrecognised engine raises instead of scoring'
 );
@@ -276,128 +281,11 @@ SELECT throws_like(
 );
 
 -- =============================================================================
--- SS26.NEW — the field-scaled engine. RED until §11 step 2.
--- =============================================================================
--- Pass-through helper: yields the engine's own numbers, or NULL when the engine
--- does not exist yet. It performs no arithmetic, so it cannot mask a wrong
--- implementation — only a missing one.
-CREATE FUNCTION pg_temp.nw(p_n INT, p_place INT, p_mult NUMERIC DEFAULT 1.0)
-RETURNS TABLE (place_pts NUMERIC, de NUMERIC, podium NUMERIC, final NUMERIC)
-LANGUAGE plpgsql AS $$
-DECLARE c RECORD;
-BEGIN
-  SELECT * INTO c FROM fn_score_spws_field_scaled_v1_2026_2027(
-    p_n, p_place, 50::NUMERIC, 10::NUMERIC, 10::NUMERIC, 3::NUMERIC, 2::NUMERIC, 1::NUMERIC);
-  RETURN QUERY SELECT c.num_place_pts, c.num_de_bonus, c.num_podium_bonus,
-                      ROUND((c.num_place_pts + c.num_de_bonus + c.num_podium_bonus) * p_mult, 2);
-EXCEPTION WHEN undefined_function OR undefined_column OR undefined_table THEN
-  RETURN QUERY SELECT NULL::NUMERIC, NULL::NUMERIC, NULL::NUMERIC, NULL::NUMERIC;
-END $$;
-
--- SS26.NEW.01 — the re-priced walkover. 50 + 0 + 9 = 59 becomes 10 + 0 + 9 = 19,
--- because max(2, N) gives the one-competitor bracket the N=2 base of 10. §04
--- requires this pinned explicitly so it cannot regress silently.
-SELECT results_eq(
-  $$SELECT * FROM pg_temp.nw(1, 1)$$,
-  $$VALUES (10.00::NUMERIC, 0.00::NUMERIC, 9.00::NUMERIC, 19.00::NUMERIC)$$,
-  'SS26.NEW.01 field-scaled N=1 = (10.00, 0.00, 9.00) -> 19.00, where the classic engine scores 59.00'
-);
-
--- SS26.NEW.02 — at N=32 the base reaches mpValue (10 x log2(32) = 50), so the
--- two engines agree exactly. This is the upper boundary of the entire
--- difference between them.
-SELECT is(
-  (SELECT final FROM pg_temp.nw(32, 1)),
-  128.57::NUMERIC,
-  'SS26.NEW.02 field-scaled N=32 place 1 -> 128.57, identical to the classic engine'
-);
-
--- SS26.NEW.03 — one competitor fewer and they diverge: base 49.54, not 50.
--- Pins 32 as an exact crossover rather than an approximate one.
-SELECT is(
-  (SELECT final FROM pg_temp.nw(31, 1)),
-  127.81::NUMERIC,
-  'SS26.NEW.03 field-scaled N=31 place 1 -> 127.81, strictly below the classic 128.27'
-);
-
--- SS26.NEW.04 — the cap holds above the crossover: the base never exceeds
--- mpValue however large the field.
-SELECT is(
-  (SELECT place_pts FROM pg_temp.nw(1000, 1)),
-  50.00::NUMERIC,
-  'SS26.NEW.04 field-scaled base caps at mpValue for a 1000-entry field'
-);
-
--- SS26.NEW.05 — the §07 PZSz case: a known veteran 34th of a 107-strong senior
--- field, scored on the original place against the full field. Above the
--- crossover, so both engines agree at 23.02.
-SELECT is(
-  (SELECT final FROM pg_temp.nw(107, 34)),
-  23.02::NUMERIC,
-  'SS26.NEW.05 field-scaled 34th of 107 -> 23.02 (full field, original place)'
-);
-
--- SS26.NEW.06 — a place larger than the field is corrupt data. Zero is the one
--- value that hides it: it sorts to the bottom and reads as an ordinary weak
--- result. The present function scores it as 0; the new engine must raise.
-SELECT throws_like(
-  $$SELECT fn_score_spws_field_scaled_v1_2026_2027(107, 120, 50, 10, 10, 3, 2, 1)$$,
-  '%Invalid scoring input%',
-  'SS26.NEW.06 place > N raises instead of scoring a silent zero'
-);
-
--- SS26.NEW.07
-SELECT throws_like(
-  $$SELECT fn_score_spws_field_scaled_v1_2026_2027(16, 0, 50, 10, 10, 3, 2, 1)$$,
-  '%Invalid scoring input%',
-  'SS26.NEW.07 place < 1 raises');
-
--- SS26.NEW.08
-SELECT throws_like(
-  $$SELECT fn_score_spws_field_scaled_v1_2026_2027(0, 1, 50, 10, 10, 3, 2, 1)$$,
-  '%Invalid scoring input%',
-  'SS26.NEW.08 N < 1 raises');
-
--- SS26.NEW.09 — closes the live leak in §04: num_podium_bonus carries no
--- place > N guard, only WHEN place = 1/2/3, so N=2 with place=3 awards a bronze
--- podium bonus for a place that does not exist in the bracket while its place
--- points correctly collapse to zero. Rejection must reach the podium term too.
-SELECT throws_like(
-  $$SELECT fn_score_spws_field_scaled_v1_2026_2027(2, 3, 50, 10, 10, 3, 2, 1)$$,
-  '%Invalid scoring input%',
-  'SS26.NEW.09 no podium bonus survives an out-of-range place (N=2, place=3)'
-);
-
--- SS26.NEW.10 — the engine-independent invariant, asserted on the new engine so
--- the refactor cannot quietly change it.
-SELECT is(
-  (SELECT place_pts FROM pg_temp.nw(16, 16)),
-  1.00::NUMERIC,
-  'SS26.NEW.10 last place scores exactly 1.00 place point under the field-scaled base'
-);
-
--- SS26.NEW.11 — monotonicity: place points strictly decrease as place worsens.
-SELECT ok(
-  (SELECT (SELECT place_pts FROM pg_temp.nw(16, 1))
-        > (SELECT place_pts FROM pg_temp.nw(16, 2))
-      AND (SELECT place_pts FROM pg_temp.nw(16, 2))
-        > (SELECT place_pts FROM pg_temp.nw(16, 3))
-      AND (SELECT place_pts FROM pg_temp.nw(16, 3))
-        > (SELECT place_pts FROM pg_temp.nw(16, 16))),
-  'SS26.NEW.11 field-scaled place points decrease strictly as place worsens'
-);
-
--- SS26.NEW.12 — the base is monotonically non-decreasing in field size, which
--- is the stated purpose of the curve: small fields are worth less.
-SELECT ok(
-  (SELECT (SELECT place_pts FROM pg_temp.nw(2, 1))
-        < (SELECT place_pts FROM pg_temp.nw(16, 1))
-      AND (SELECT place_pts FROM pg_temp.nw(16, 1))
-        < (SELECT place_pts FROM pg_temp.nw(32, 1))
-      AND (SELECT place_pts FROM pg_temp.nw(32, 1))
-        = (SELECT place_pts FROM pg_temp.nw(107, 1))),
-  'SS26.NEW.12 the field-scaled base grows with N and then holds flat at the cap'
-);
+-- SS26.NEW.01-12 (the field-scaled engine) were retired on 2026-09-28 together
+-- with SPWS_FIELD_SCALED_V1_2026_2027 itself (ADR-103 §3). The engine never
+-- scored a result; its successor is pinned by 83_spws_place_medal_engine.sql
+-- (SE27.ENG.*), and place > N / N < 1 rejection by 02_scoring_engine 2.3 and
+-- SE27.ENG.13.
 
 -- =============================================================================
 -- SS26.PARITY — preview and persistence are one implementation. RED until §11
@@ -867,7 +755,7 @@ BEGIN
 
   BEGIN
     PERFORM fn_import_scoring_config(jsonb_build_object(
-      'id_season', v_season, 'engine_code', 'SPWS_FIELD_SCALED_V1_2026_2027'));
+      'id_season', v_season, 'engine_code', 'SPWS_PLACE_MEDAL_V1_2026_2027'));
     v_failures := v_failures || 'engine_code=NOT_REJECTED; ';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM NOT LIKE '%locked%' THEN v_failures := v_failures || 'engine_code=OTHER:' || SQLERRM || '; '; END IF;
@@ -900,8 +788,10 @@ DECLARE
   v_locked_past BOOLEAN; v_locked_future BOOLEAN;
 BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  -- EVF classic by code: this fixture writes no K, m or count below, which
+  -- the 2026/2027 engine requires for a bracket of 4-31 (SE27.ENG.13).
   SELECT id_engine INTO v_engine FROM tbl_scoring_engine
-   WHERE bool_active ORDER BY ts_created DESC, id_engine DESC LIMIT 1;
+   WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026';
 
   INSERT INTO tbl_season (txt_code, dt_start, dt_end, id_scoring_engine)
     VALUES ('SS26-LOCK03-PAST', '2010-01-01', '2010-12-31', v_engine)
@@ -1091,9 +981,10 @@ SELECT is(pg_temp.lock10_unique_active_revision(), 'REJECTED',
 -- fn_calc_tournament_scores), exactly like a real season's first score.
 -- Plain fn_create_season (unlike fn_create_season_with_skeletons) never
 -- assigns id_scoring_engine -- LIVE DEFECT 2 in 20260919000004 fixed that
--- gap only for the wizard's own creation path -- so this helper assigns the
--- same newest-active-engine default by hand, or fn_calc_tournament_scores
--- would raise "Unknown scoring engine" before the fixture even exists.
+-- gap only for the wizard's own creation path -- so this helper assigns an
+-- engine by hand, or fn_calc_tournament_scores would raise "Unknown scoring
+-- engine" before the fixture even exists. EVF classic by code: the fixture
+-- writes no K, m or count below, and REVISION.05 needs a podium bonus.
 CREATE FUNCTION pg_temp.revision_build_season(
   p_code TEXT, p_dt_start DATE, p_dt_end DATE, p_tourn_type TEXT
 ) RETURNS INT
@@ -1110,8 +1001,7 @@ BEGIN
 
   UPDATE tbl_season SET id_scoring_engine = (
     SELECT se.id_engine FROM tbl_scoring_engine se
-     WHERE se.bool_active
-     ORDER BY se.ts_created DESC, se.id_engine DESC LIMIT 1
+     WHERE se.txt_code = 'EVF_CLASSIC_V1_2025_2026'
   ) WHERE id_season = v_season;
 
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
@@ -1568,7 +1458,7 @@ SELECT throws_like(
 -- Shared fixture helper: one tournament (one event) plus one result, exact
 -- score set directly rather than computed by fn_calc_tournament_scores --
 -- these tests are about bucket AGGREGATION, not the scoring formula (already
--- covered by SS26.NEW/SS26.HIST), so a literal num_final_score is deliberate.
+-- covered by SS26.HIST and SE27.ENG), so a literal num_final_score is deliberate.
 --
 -- enum_status = 'COMPLETED', not the column's own 'PLANNED' default: every
 -- scratch season fn_create_season builds defaults to enum_carryover_engine
