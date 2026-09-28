@@ -74,58 +74,58 @@ describe('scoring table annex (ADR-092)', () => {
   })
 })
 
-// SE27.PREVIEW.01–03 — the board preview of the proposed 2026/2027 engine
-// (ADR-085 §2, amended 2026-09-28). The third static page, and the only one
-// that reads no season parameters: no engine implements its formula yet, so it
-// computes everything in the page. It is not in the drawer, and it is deleted —
-// with these tests — in the change that releases that engine.
-// See doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html, Step A.
+// SE27.PAGE.01–03 — the published pages carry the 2026/2027 engine (ADR-103
+// §7, FR-142). build-scoring-pages.mjs --check, a preflight gate, proves the
+// generated block is byte for byte the current src/lib/scoring.ts; these
+// assertions say what that block must contain and how each page reads its
+// season parameters. The browser half of SE27.PAGE.03 — the annex renders
+// 64 x 64 with rows 32–64 on EVF, the joined mode works, nothing scrolls
+// sideways at 375 px — is checked in the browser, not here.
 //
-// Loaded through import.meta.glob rather than a ?raw import, so a missing file
-// fails 01 as an assertion instead of failing this whole file to load and
-// taking 8.88 and 8.94–8.96 down with it.
-const publicPages = import.meta.glob<string>('../public/*.html', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-})
-const publishedFiles = new Set(
-  Object.keys(import.meta.glob('../public/*')).map((p) => p.replace('../public/', '')),
-)
-const PREVIEW = '../public/tabela-punktacji-projekt-2026-2027.html'
-const preview = publicPages[PREVIEW] ?? ''
+// The board preview that stood in for these pages (SE27.PREVIEW.01–03, ADR-085
+// §2 as amended 2026-09-28) was deleted with its tests in this change, as that
+// amendment requires.
+const MODULE_BLOCK = /\/\* === SPWS-SCORING-MODULE:BEGIN[\s\S]*?\/\* === SPWS-SCORING-MODULE:END === \*\//
+const PAGES: [string, string][] = [
+  ['calculator', published],
+  ['annex', tablePublished],
+]
 
-describe('board preview of the 2026/2027 engine (ADR-085 §2 amendment)', () => {
-  // SE27.PREVIEW.01 — the address given to the board must actually ship.
-  it('ships the preview page', () => {
-    expect(Object.keys(publicPages)).toContain(PREVIEW)
-    expect(preview.length).toBeGreaterThan(1000)
+describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
+  for (const [name, html] of PAGES) {
+    // SE27.PAGE.01 — the formula is the shared module, now with the new engine;
+    // the retired field-scaled engine and its base_slope are gone everywhere.
+    it(`SE27.PAGE.01 ${name}: carries the generated module of both engines, not the retired one`, () => {
+      const block = html.match(MODULE_BLOCK)?.[0] ?? ''
+      expect(block.length).toBeGreaterThan(1000)
+      expect(block).toContain('"SPWS_PLACE_MEDAL_V1_2026_2027"')
+      expect(block).toContain('"EVF_CLASSIC_V1_2025_2026"')
+      expect(html).not.toMatch(/FIELD_SCALED|baseSlope|base_slope/)
+    })
+
+    // SE27.PAGE.02 — fn_public_scoring_params returns one row per type, ordered
+    // by type code, so rows[0] is MEW. A page takes its row by type, never by
+    // position, and keeps the #spws-env the release workflow fills in.
+    it(`SE27.PAGE.02 ${name}: reads the per-type parameters by type, not by position`, () => {
+      expect(html).toContain('id="spws-env"')
+      expect(html).toContain('fn_public_scoring_params')
+      expect(html).toMatch(/row\.type_code === /)
+      expect(html).not.toMatch(/rows\[0\]/)
+    })
+  }
+
+  // SE27.PAGE.03 (structure) — FR-142's shape for each page.
+  it('SE27.PAGE.03 annex: 64 x 64, the medal table complete to K = 31, pinned to 2026/2027', () => {
+    expect(tablePublished).toContain('const TABLE_N = 64;')
+    expect(tablePublished).toContain('const MEDAL_ROWS = 31;')
+    expect(tablePublished).toContain("const SEASON_CODE = 'SPWS-2026-2027';")
+    expect(tablePublished).toContain('id="coefBody"')
   })
 
-  // SE27.PREVIEW.02 — an unadopted proposal must not be found by search and
-  // read as the rule in force; same reasoning as 8.95.
-  it('keeps the unadopted proposal out of search engines', () => {
-    expect(preview).toContain('name="robots"')
-    expect(preview).toMatch(/content="noindex,\s*nofollow"/)
-  })
-
-  // SE27.PREVIEW.03 — self-contained: no database, no network, no credential
-  // (the release workflow injects keys only into the two parameter-reading
-  // pages), and no relative link to a file Pages does not publish — the
-  // source page links a doc/plans/ analysis that would 404 here.
-  it('is self-contained', () => {
-    // An empty string passes every negative assertion below.
-    expect(preview.length).toBeGreaterThan(1000)
-    expect(preview).not.toMatch(/\bfetch\s*\(/)
-    expect(preview).not.toMatch(/XMLHttpRequest|sendBeacon|WebSocket/)
-    expect(preview).not.toContain('spws-env')
-    expect(preview).not.toMatch(/supabase/i)
-    expect(preview).not.toMatch(/eyJ[A-Za-z0-9_-]{10,}/)
-    const relative = [...preview.matchAll(/\b(?:href|src)\s*=\s*["']([^"']+)["']/g)]
-      .map((m) => m[1])
-      .filter((url) => !/^(#|[a-z][a-z0-9+.-]*:)/i.test(url))
-    for (const url of relative) {
-      expect(publishedFiles).toContain(url.split(/[?#]/)[0].replace(/^\.\//, ''))
+  it('SE27.PAGE.03 calculator: any field up to 300, a joined mode, and the SPWS/EVF toggle', () => {
+    expect(published).toMatch(/id="fN"[^>]*max="300"/)
+    for (const id of ['fJ', 'fK', 'fC', 'algSpws', 'algEvf']) {
+      expect(published).toContain(`id="${id}"`)
     }
   })
 })
