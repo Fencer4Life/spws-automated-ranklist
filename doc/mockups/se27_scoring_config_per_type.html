@@ -58,12 +58,17 @@ ul{padding-left:20px}
 </head>
 <body>
 <div class="page">
-<p class="eyebrow">Mockup · ADR-103 plan step 2 · 28 September 2026 · awaiting approval</p>
+<p class="eyebrow">Mockup · ADR-103 plan step 2 · revision 2 · 28 September 2026 · awaiting approval</p>
 <h1>Scoring configuration: an engine per tournament type</h1>
 <p class="dek">What changes in the Admin scoring editor (ScoringConfigEditor.svelte) when each tournament type carries its own engine. Everything not shown here — ranking buckets, carry-over, intake thresholds — stays as it is.</p>
 
+<h2>What changed in revision 2</h2>
+<div class="callout rec"><b>1 · PPS and MPS are on EVF klasyczny.</b><p style="margin:6px 0 0">Your change, made in the system as well as on this page: the 2026/2027 assignment is now PPW and MPW on the SPWS engine, and PPS, MPS, PEW, MEW, MSW and PSW on EVF klasyczny. ADR-103 records it as an amendment of 28 September. A PZSz senior field is scored as before ADR-103 — the full field as N and the original place — and still stores K, m and b, which EVF klasyczny does not read. Coefficients are unchanged: PPS × 1.1000 and MPS × 1.3000.</p></div>
+<div class="callout rec"><b>2 · &ldquo;Is this all there is&rdquo; for EVF klasyczny?</b><p style="margin:6px 0 0">Of the settings, yes. EVF klasyczny has four adjustable numbers: the base value (50) and the gold, silver and bronze podium coefficients (3, 2, 1), plus each type&rsquo;s coefficient. Everything else in its formula is fixed by the engine and has no field: the logarithmic place scale, 10 points per elimination round won, and the podium scaling × 3 × ∛N. Revision 1 listed the SPWS engine&rsquo;s fixed rules but not these; a second read-only panel below now lists them.</p></div>
+<p class="note">The coefficients shown are PROD&rsquo;s for SPWS-2026-2027, read on 28 September (set on 21 September). CERT still holds the earlier defaults — PPS and MPS 1.0, MEW and PSW 2.0, MSW 1.2 — so the two environments differ until one of them is changed.</p>
+
 <h2>A · Season 2026/2027, before its first scored result</h2>
-<p class="note">Changed from today: the season engine becomes the <i>default</i>; each type card gains an engine selector and names its joined-bracket module; a read-only panel lists the new engine's constants. The EVF value and podium fields keep working: they feed EVF classic and the new engine's 32+ range.</p>
+<p class="note">Changed from today: the season engine becomes the <i>default</i>; each type card gains an engine selector and names its joined-bracket module; two read-only panels list each engine's fixed rules. The EVF value and podium fields keep working: they feed EVF classic and the new engine's 32+ range.</p>
 
 <div class="config-banner">Konfiguracja punktacji — SPWS-2026-2027</div>
 <div class="config-editor">
@@ -72,7 +77,7 @@ ul{padding-left:20px}
   <div class="config-section">
     <div class="config-section-header">⚙ Parametry bazowe</div>
     <div class="config-section-body">
-      <div class="field-row"><label>Wartość bazowa EVF (mp)</label><input value="50"><span class="hint">algorytm EVF — PEW, MEW, MSW, PSW oraz stawki od 32</span></div>
+      <div class="field-row"><label>Wartość bazowa EVF (mp)</label><input value="50"><span class="hint">algorytm EVF — PPS, MPS, PEW, MEW, MSW, PSW oraz stawki od 32 w PPW i MPW</span></div>
       <div class="field-row"><label>Silnik domyślny sezonu</label>
         <select><option selected>SPWS — miejsce w stawce i premia medalowa (od sezonu 2026/2027)</option><option>EVF klasyczny (do sezonu 2025/2026)</option></select>
         <span class="hint">dla typów bez własnego silnika</span></div>
@@ -92,12 +97,22 @@ ul{padding-left:20px}
       <div class="mult-grid">
         <div class="mult-card"><div><span class="type-badge domestic">PPW</span></div><input value="1.0000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Stawka łączona: miejsce w stawce i w kategorii</div></div>
         <div class="mult-card"><div><span class="type-badge domestic">MPW</span></div><input value="1.2000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Stawka łączona: miejsce w stawce i w kategorii</div></div>
-        <div class="mult-card"><div><span class="type-badge pzs">PPS</span></div><input value="1.1000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Jedna stawka seniorów: K = N</div></div>
-        <div class="mult-card"><div><span class="type-badge pzs">MPS</span></div><input value="1.3000"><select><option selected>SPWS 2026/2027</option><option>EVF klasyczny</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Jedna stawka seniorów: K = N</div></div>
+        <div class="mult-card"><div><span class="type-badge pzs">PPS</span></div><input value="1.1000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Jedna stawka seniorów, bez podziału</div></div>
+        <div class="mult-card"><div><span class="type-badge pzs">MPS</span></div><input value="1.3000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Jedna stawka seniorów, bez podziału</div></div>
         <div class="mult-card"><div><span class="type-badge international">PEW</span></div><input value="1.0000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez EVF</div></div>
         <div class="mult-card"><div><span class="type-badge international">MEW</span></div><input value="1.3000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez EVF</div></div>
         <div class="mult-card"><div><span class="type-badge international">MSW</span></div><input value="1.4000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez FIE</div></div>
         <div class="mult-card"><div><span class="type-badge international">PSW</span></div><input value="1.1000"><select><option>SPWS 2026/2027</option><option selected>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii publikowane przez organizatora</div></div>
+      </div>
+
+      <div class="ro-panel">
+        <h4>EVF_CLASSIC_V1_2025_2026 <span class="ro-tag">stałe silnika — tylko do odczytu</span></h4>
+        <table>
+          <tr><td>Punkty za miejsce</td><td>mp − (mp − 1) × ln(miejsce) / ln N; przy N = 1 zawodnik otrzymuje mp (wartość bazowa powyżej)</td></tr>
+          <tr><td>Rundy eliminacji</td><td>10 pkt za każdą wygraną rundę eliminacji bezpośredniej</td></tr>
+          <tr><td>Premia za podium</td><td>złoto / srebro / brąz (powyżej) × 3 × ∛N</td></tr>
+          <tr><td>Moduł stawki łączonej</td><td>PER_CATEGORY_RENUMBER — stawka dzielona na kategorie, miejsca numerowane od 1 w każdej; turnieje PZSz nie są dzielone (jedna stawka seniorów)</td></tr>
+        </table>
       </div>
 
       <div class="ro-panel">
@@ -124,7 +139,7 @@ ul{padding-left:20px}
       <div class="mult-grid">
         <div class="mult-card"><div><span class="type-badge domestic">PPW</span></div><input value="1.0000" disabled><select disabled><option>SPWS 2026/2027</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>Stawka łączona</div></div>
         <div class="mult-card"><div><span class="type-badge international">PEW</span></div><input value="1.0000" disabled><select disabled><option>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii EVF</div></div>
-        <div class="mult-card"><div><span class="type-badge pzs">PPS</span></div><input value="1.1000" disabled><select disabled><option>SPWS 2026/2027</option></select><div class="module"><b>JOINED_BRACKET_CATEGORY_PLACE</b>K = N</div></div>
+        <div class="mult-card"><div><span class="type-badge pzs">PPS</span></div><input value="1.1000" disabled><select disabled><option>EVF klasyczny</option></select><div class="module"><b>—</b>Jedna stawka seniorów</div></div>
         <div class="mult-card"><div><span class="type-badge international">MSW</span></div><input value="1.4000" disabled><select disabled><option>EVF klasyczny</option></select><div class="module"><b>—</b>Wyniki kategorii FIE</div></div>
       </div>
       <p class="hint" style="margin:8px 0 0">(Pozostałe cztery typy — jak wyżej, zablokowane.)</p>
@@ -137,12 +152,13 @@ ul{padding-left:20px}
 <li>Each type's engine is sent as <code>type_engines</code> in the same save the coefficients use (<code>fn_import_scoring_config</code>). The season default stays <code>engine_code</code>.</li>
 <li>The screen shows each type's resolved engine. A save writes a type's engine only when it changes that type's resolved engine, so resending an unchanged form never pins a type that inherits the season default.</li>
 <li>Seasons up to 2025/2026 show EVF classic on every type and "Rozdzielenie na kategorie" (<code>PER_CATEGORY_RENUMBER</code>) as the module.</li>
+<li>PZSz (PPS, MPS) is never split, whatever the engine: a result stores the full senior field as N and the original place, plus K = N, m = place and b. Their cards therefore name no module.</li>
 </ul>
 
 <h2>Question</h2>
-<div class="callout q"><b>Do you approve this mockup for the Admin editor (plan step 7)?</b></div>
-<div class="callout rec"><b>A · Approve as shown</b><span class="tag">Recommended</span><p style="margin:6px 0 0">It changes only the multiplier section and one base-field label, keeps every lock behaviour already tested (SS26.LOCK.11–12), and adds the read-only panel the design asked for (§4 "Admin"). Step 7 then implements it with Vitest first.</p></div>
-<div class="callout alt"><b>B · Approve with changes</b><p style="margin:6px 0 0">Name them; I revise this page and ask again. Steps 3–6 and 8 continue meanwhile — they do not touch the editor.</p></div>
+<div class="callout q"><b>Do you approve revision 2 of this mockup for the Admin editor (plan step 7)?</b></div>
+<div class="callout rec"><b>A · Approve as shown</b><span class="tag">Recommended</span><p style="margin:6px 0 0">It includes both of your points: PPS and MPS on EVF klasyczny, and EVF klasyczny&rsquo;s fixed rules visible beside its settings. It changes only the multiplier section and one base-field label, keeps every lock behaviour already tested (SS26.LOCK.11–12), and adds the read-only panels. Step 7 then implements it with Vitest first, including the ranking CSV columns and „nie dotyczy” for −1.</p></div>
+<div class="callout alt"><b>B · Approve with changes</b><p style="margin:6px 0 0">Name them; I revise this page and ask again.</p></div>
 <p><b>How to answer:</b> reply <b>A</b> or <b>B</b> with the changes.</p>
 </div>
 </body>
