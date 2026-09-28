@@ -199,7 +199,7 @@
 {/if}
 
 <script lang="ts">
-  import type { ScoringConfig, EuropeanEventType, CarryoverEngine, Season, SkeletonByKind } from '../lib/types'
+  import type { ScoringConfig, EuropeanEventType, CarryoverEngine, Season, SkeletonByKind, ScoringEngineOption } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import ScoringConfigEditor from './ScoringConfigEditor.svelte'
 
@@ -217,14 +217,14 @@
   let {
     open = false,
     seasons = [] as Season[],
-    scoringEngines = [] as { code: string, label: string }[],
+    scoringEngines = [] as ScoringEngineOption[],
     onclose = () => {},
     onloadpriorconfig = (_dtStart: string): Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }> => Promise.resolve({ priorConfig: null, priorCode: null, priorBreakdown: null }),
     oncommit = (_payload: CommitPayload): Promise<string | null> => Promise.resolve(null),
   }: {
     open?: boolean
     seasons?: Season[]
-    scoringEngines?: { code: string, label: string }[]
+    scoringEngines?: ScoringEngineOption[]
     onclose?: () => void
     onloadpriorconfig?: (dtStart: string) => Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }>
     oncommit?: (payload: CommitPayload) => Promise<string | null>

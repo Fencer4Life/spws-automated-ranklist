@@ -1,7 +1,12 @@
+import type { ScoreMethod } from './scoring'
+
 export type WeaponType = 'EPEE' | 'FOIL' | 'SABRE'
 export type GenderType = 'M' | 'F'
 export type AgeCategory = 'V0' | 'V1' | 'V2' | 'V3' | 'V4'
 export type TournamentType = 'PPW' | 'MPW' | 'PEW' | 'MEW' | 'MSW' | 'PSW' | 'PPS' | 'MPS'
+// The range of an engine that scored a result (enum_score_method, ADR-103).
+// Defined beside the formula it names; re-exported so callers import types here.
+export type { ScoreMethod }
 
 export interface RankingBucket {
   types: string[]
@@ -152,6 +157,16 @@ export interface ScoreRow {
   txt_location: string | null
   bool_carried_over?: boolean
   txt_source_season_code?: string
+  // ADR-103 (FR-140): the bracket position and components a result was scored
+  // from. -1 marks a component its method does not use; NULL (or absent, on a
+  // payload that predates these columns) means it has not been scored.
+  int_category_count?: number | null
+  int_category_place?: number | null
+  int_below_count?: number | null
+  num_field_pts?: number | null
+  num_below_pts?: number | null
+  num_medal_bonus?: number | null
+  enum_score_method?: ScoreMethod | null
 }
 
 export interface TournamentDetail {
@@ -332,12 +347,26 @@ export interface ScoringConfig {
   scoring_admin_locked?: boolean
   scoring_locked_at?: string | null
   // tbl_scoring_engine.txt_code for the season's current id_scoring_engine —
-  // distinct from `carryover_engine` above (ADR-045), never conflated.
+  // distinct from `carryover_engine` above (ADR-045), never conflated. Since
+  // ADR-103 it is the season DEFAULT: a type without its own engine uses it.
   engine_code?: string
+  // ADR-103 §2: the resolved engine code of every tournament type. Exported
+  // resolved, so an unchanged resend compares equal and pins nothing; the
+  // server writes a type only when the sent code changes its resolved engine.
+  type_engines?: Partial<Record<TournamentType, string>>
   // SS26.UIHIST (design step 7, ADR-098): the season's configured landing
   // view, read by the public ranklist page to pick its initial mode for a
   // FULL-publication season (a PPW_ONLY season always forces 'PPW' instead).
   default_ranking_mode?: 'PPW' | 'RANKING'
+}
+
+// One released row of tbl_scoring_engine, as the Admin scoring editor lists
+// it. `module` is txt_joined_bracket_module (ADR-103 §4); absent while a
+// deployed page still talks to a database without that column.
+export interface ScoringEngineOption {
+  code: string
+  label: string
+  module?: string | null
 }
 
 export type ImportStatus = 'PLANNED' | 'PENDING' | 'IMPORTED' | 'SCORED' | 'REJECTED'
