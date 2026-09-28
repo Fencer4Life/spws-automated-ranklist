@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="103-spws-place-medal-engine-per-type.md">
-<meta name="adr-source-sha256" content="b6f7a79bd59a50715d3ffddc232f7b017ff10a72fa85f1131aac3652aef654f6">
+<meta name="adr-source-sha256" content="1f6a03fbdbdc23daa0f8593a4886634e54f54df3db212f1b007116475cc39574">
 <title>ADR-103 · SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 103</p><h1>SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)</dd></div><div><dt>Date</dt><dd class="">2026-09-28</dd></div><div><dt>Source</dt><dd class=""><code>103-spws-place-medal-engine-per-type.md</code></dd></div><div><dt>Length</dt><dd class="">113 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)</dd></div><div><dt>Date</dt><dd class="">2026-09-28</dd></div><div><dt>Source</dt><dd class=""><code>103-spws-place-medal-engine-per-type.md</code></dd></div><div><dt>Length</dt><dd class="">114 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)
 <strong>Date:</strong> 2026-09-28
 <strong>Amends:</strong> <a href="097-scoring-governance-lock-and-privileged-revision.html">ADR-097</a> (the engine is governed per tournament type, not only per season), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (the Season Scoring Rules gain <code>entry_types</code>), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the shared module gains the new engine and loses field-scaled; public parameters are per type), <a href="092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> (annex content becomes the 64 × 64 table), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> (calculator gains the joined mode; the toggle compares SPWS with EVF classic), <a href="049-joint-pool-split-flag.html">ADR-049</a> (renumbering becomes the named module <code>PER_CATEGORY_RENUMBER</code>), <a href="069-participant-count-url-validator.html">ADR-069</a> (the count check compares the joined N), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (PPS/MPS are scored by the new engine with K = N, m = place)
@@ -101,7 +101,8 @@
 <ul>
 <li><strong>Joining is safe only up to 31 fencers.</strong> Crossing 31 → 32 costs existing fencers 3.5–44.9 points, and §8 ust. 8 says so.</li>
 <li><strong>The ranking loses some fencers.</strong> Fencers with only EVF, FIE or PZSz results leave the 2026/2027 full ranking. Earlier seasons keep their published rankings. The PPW view is unaffected, since every row in it is a PPW start.</li>
-<li><strong>Every reader of score components must handle −1.</strong> It labels components by method and never adds −1 to anything: <code>vw_score</code>, <code>fn_fencer_scores_rolling_*</code>, <code>export.ts</code>, <code>DrilldownModal.svelte</code>, <code>export_seed.py</code> and <code>build_scorecards.py</code>.</li>
+<li><strong>Every reader of score components must handle −1.</strong> It labels components by method and never adds −1 to anything: <code>vw_score</code>, <code>fn_fencer_scores_rolling_*</code>, <code>export.ts</code> (the drilldown export, where −1 reads „nie dotyczy”), <code>DrilldownModal.svelte</code> (which shows the final score only), <code>export_seed.py</code> and <code>build_scorecards.py</code>.</li>
+<li><strong>The Admin editor edits the assignment as the screen shows it.</strong> Each type card carries an engine selector showing the type's resolved engine and names that engine's joined-bracket module; two read-only panels list each engine's fixed rules (mockup <code>doc/mockups/se27_scoring_config_per_type.html</code>, revision 2, approved 2026-09-28). A save sends every card's engine as <code>type_engines</code>. Because the apply compares each against the resolved engine after <code>engine_code</code>, an unchanged form pins nothing, and changing only the season default moves no type the screen shows. The engine registry is readable by <code>authenticated</code> only, so the list loads when an admin signs in. SE27.UI.02–09.</li>
 <li><strong>The anon surface changes shape, not size.</strong> <code>fn_public_scoring_params</code> keeps its name and argument, so the allowlists are unchanged. The pgTAP total and Appendix D move.</li>
 <li><strong>CERT may need one privileged revision.</strong> If CERT scores a 2026/2027 result before this lands (the daily <code>evf-sync.yml</code> may ingest PEW1f), the migration's gate refuses the silent switch. One privileged revision (ADR-097), run with the board's reference, reaches the new assignment.</li>
 <li><strong>New files:</strong>
@@ -117,5 +118,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="102-published-pages-share-one-scoring-module.html">← ADR-102: The Published Pages Share One Scoring Module and Read Season Parameters</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>103-spws-place-medal-engine-per-type.md</code> · source SHA-256 <code>b6f7a79bd59a50715d3ffddc232f7b017ff10a72fa85f1131aac3652aef654f6</code></footer>
+<footer class="foot">Generated from <code>103-spws-place-medal-engine-per-type.md</code> · source SHA-256 <code>1f6a03fbdbdc23daa0f8593a4886634e54f54df3db212f1b007116475cc39574</code></footer>
 </div></body></html>
