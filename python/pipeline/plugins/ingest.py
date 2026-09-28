@@ -13,6 +13,13 @@ from __future__ import annotations
 
 from python.pipeline.core.contract import Context, PluginKind, Services
 from python.pipeline.ir import SourceKind
+from python.pipeline.joined_brackets import (
+    PER_CATEGORY_RENUMBER,
+    BracketField,
+    JoinedBracketModule,
+    RowPlan,
+    module_for,
+)
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import ensure_pctx, get_pctx, run_stage
 from python.pipeline.stages import vcat_for_age
@@ -311,10 +318,11 @@ class Commit(BasePlugin):
     participant_count)`. The RPC deletes-then-inserts that tournament's rows and
     re-scores it in one transaction, so re-running the flow is idempotent (BR-6).
 
-    `participant_count` is the bracket's OWN committed-row count — per the ADR-049
-    amendment (2026-06-04) each V-cat slice is scored on its own field size, never
-    the summed physical pool, so the per-bracket loop produces the correct count
-    for combined/joint pools for free.
+    How a joined listing is filed is decided by the joined-bracket module paired
+    with the engine of the tournament's type (ADR-103 §4, `joined_brackets`):
+    under EVF classic each V-cat slice is renumbered 1..K and scored on its own
+    row count (ADR-049 amendment 2026-06-04); under the 2026/2027 engine every
+    slice keeps the joined place and the joined N and writes K, m and b.
 
     Skips entirely when an inline remediation marked the artifact unrankable
     (`_skip_commit`). RECOMPUTE_DOMESTIC has no source parse and no per-bracket
@@ -390,30 +398,34 @@ class Commit(BasePlugin):
         # dispatch. None for XML/EVF/file → fn_find_or_create_tournament preserves.
         url_results = _url_results_for(parsed)
 
+        module = self._module(db, event, ttype)
+        # The whole listing, matched or not: its size is the joined N and its
+        # places decide the fencers below (ADR-103 §5).
+        field = BracketField.from_places(r.place for r in parsed.results)
+
         written: list[dict] = []
         held: list[str] = []
         for vcat in sorted(final_vcats.keys()):
-            kept = [m for m in final_vcats[vcat] if getattr(m, "id_fencer", None) is not None]
+            members = final_vcats[vcat]
+            kept = [m for m in members if getattr(m, "id_fencer", None) is not None]
             if not kept:
                 continue
-            # Renumber to bracket-relative places 1..N (ADR-049 amend / ADR-014/022):
-            # the whole-pool place a combined pool carries is not this slice's place.
-            places = _rerank_places(kept)
-            rows = [self._row(m, place=p) for m, p in zip(kept, places, strict=True)]
+            plan = module.plan_category([m.place for m in kept], [m.place for m in members], field)
+            rows = [self._row(m, r) for m, r in zip(kept, plan.rows, strict=True)]
             if commit_cats is not None and vcat not in commit_cats:
                 held.append(vcat)  # set aside — owned by another listing
                 continue
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype, url_results=url_results
             )
-            db.ingest_results(tournament_id, rows, participant_count=len(rows))
+            db.ingest_results(tournament_id, rows, participant_count=plan.participant_count)
             written.append(
                 {
                     "vcat": vcat,
                     "weapon": weapon,
                     "gender": gender,
                     "id_tournament": tournament_id,
-                    "n": len(rows),
+                    "n": plan.participant_count,
                 }
             )
 
@@ -452,6 +464,7 @@ class Commit(BasePlugin):
         # rather than pass ttype=None into tbl_tournament's NOT NULL column.
         ttype = self._tournament_type(pctx, event) or self._existing_type(existing)
         matches = ctx.get("matches") or []
+        module = self._module(db, event, ttype)
 
         groups: dict[tuple, list] = {}
         for m in matches:
@@ -466,22 +479,29 @@ class Commit(BasePlugin):
         written: list[dict] = []
         written_ids: set = set()
         for (weapon, gender, vcat), rows_m in groups.items():
-            # Re-running the pipeline must SELF-HEAL stored places: renumber each
-            # (weapon,gender,V-cat) bracket to 1..N (ADR-049 amend / ADR-014/022).
-            places = _rerank_places(rows_m)
-            rows = [self._row(m, place=p) for m, p in zip(rows_m, places, strict=True)]
+            # Re-running the pipeline must SELF-HEAL stored places. Under EVF
+            # classic each (weapon, gender, V-cat) bracket is renumbered 1..N
+            # (ADR-049 amend / ADR-014/022); under the 2026/2027 engine the
+            # joined place, N and b are kept and K, m follow the new V-cats.
+            if module.name == PER_CATEGORY_RENUMBER:
+                plan = module.plan_category(
+                    [m.place for m in rows_m], [], BracketField.from_places(())
+                )
+            else:
+                plan = self._plan_joined_recompute(module, rows_m, groups, (weapon, gender, vcat))
+            rows = [self._row(m, r) for m, r in zip(rows_m, plan.rows, strict=True)]
             date = _iso_date(rows_m[0].tournament_date)
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype
             )
-            db.ingest_results(tournament_id, rows, participant_count=len(rows))
+            db.ingest_results(tournament_id, rows, participant_count=plan.participant_count)
             written.append(
                 {
                     "vcat": vcat,
                     "weapon": weapon,
                     "gender": gender,
                     "id_tournament": tournament_id,
-                    "n": len(rows),
+                    "n": plan.participant_count,
                 }
             )
             written_ids.add(tournament_id)
@@ -510,6 +530,48 @@ class Commit(BasePlugin):
         self.report(ctx, "COMMIT", **ctx.get("committed"))
 
     @staticmethod
+    def _module(db, event, ttype) -> JoinedBracketModule:
+        """The joined-bracket module of the engine assigned to this type in the
+        event's season (ADR-103 §4). Fails closed: `fn_get_type_engine` raises
+        when nothing is assigned, and `module_for` refuses an unknown engine."""
+        engine = db.get_type_engine((event or {}).get("id_season"), ttype)
+        return module_for(engine, ttype)
+
+    @staticmethod
+    def _plan_joined_recompute(module, rows_m, groups, key):
+        """Recompute one category tournament under the joined module.
+
+        Its rows must come from ONE joined bracket: two listings' places and N
+        are not comparable. K and m are recounted over the stored rows of that
+        bracket in the new category; N and b are read back as stored.
+        """
+        weapon, gender, vcat = key
+        brackets = {(m.bracket_key, m.bracket_size) for m in rows_m}
+        if len(brackets) != 1:
+            raise ValueError(
+                f"Recompute would merge two joined brackets into {weapon}/{gender}/{vcat}: "
+                f"{sorted(str(b) for b in brackets)}. Their places and N are not comparable."
+            )
+        bracket_key, size = next(iter(brackets))
+        bracket_rows = [
+            m
+            for (w, g, _v), ms in groups.items()
+            if (w, g) == (weapon, gender)
+            for m in ms
+            if (m.bracket_key, m.bracket_size) == (bracket_key, size)
+        ]
+        field = BracketField.stored(
+            size=size or 0,
+            places=[m.place for m in bracket_rows],
+            below={
+                m.place: m.below_count
+                for m in bracket_rows
+                if m.below_count is not None and m.below_count >= 0
+            },
+        )
+        return module.plan_category([m.place for m in rows_m], [m.place for m in rows_m], field)
+
+    @staticmethod
     def _existing_tournaments(db, event_id) -> list:
         fn = getattr(db, "fetch_event_tournaments", None)
         if not callable(fn):
@@ -530,19 +592,18 @@ class Commit(BasePlugin):
                 return t["enum_type"]
         return None
 
-    def _row(self, m, place=None) -> dict:
-        # `place` overrides m.place with the BRACKET-relative rank (1..N) computed
-        # by _rerank_places. A combined pool carries each fencer's WHOLE-POOL place;
-        # once split per V-cat, the stored int_place must be renumbered within the
-        # slice or the drilldown shows nonsensical fractions (4/3, 7/3) AND the
-        # scoring engine zeroes any fencer whose place exceeds the smaller field
-        # size (`int_place > v_n -> 0`). See ADR-049 amend / ADR-014/022.
+    def _row(self, m, plan: RowPlan) -> dict:
+        # `plan.place` is what the module decided to store: the bracket-relative
+        # rank 1..K under PER_CATEGORY_RENUMBER (a split slice must not keep its
+        # whole-pool place — ADR-049 amend / ADR-014/022), the joined place under
+        # JOINED_BRACKET_CATEGORY_PLACE. K, m and b are added only when used.
         return {
             "id_fencer": m.id_fencer,
-            "int_place": m.place if place is None else place,
+            "int_place": plan.place,
             "txt_scraped_name": m.scraped_name,
             "num_confidence": m.confidence,
             "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
+            **plan.columns(),
         }
 
     @staticmethod
@@ -552,30 +613,6 @@ class Commit(BasePlugin):
         code = (pctx.event_code if pctx else None) or (event or {}).get("txt_code")
         derived = derive_tourn_type_from_event_code(code) if code else None
         return derived or (event or {}).get("enum_type")
-
-
-def _rerank_places(matches: list) -> list[int]:
-    """Dense-rank a bracket's fencers by their original place, returned aligned to
-    the input order. Each V-cat slice of a combined pool is its OWN tournament, so
-    `int_place` is bracket-relative (1..N): the whole-pool place a combined pool
-    carries must be renumbered within the slice (ADR-049 amend / ADR-014/022).
-
-    Dense rank (not a plain ordinal) so a genuine shared place inside the slice
-    stays tied with no gaps — overall {1,4,4,7} -> bracket {1,2,2,3}. Caller passes
-    only the rows it will persist (id_fencer not None), so the result is contiguous
-    over the kept fencers.
-    """
-    order = sorted(range(len(matches)), key=lambda i: (matches[i].place is None, matches[i].place))
-    out = [0] * len(matches)
-    rank = 0
-    prev = None
-    for pos, i in enumerate(order):
-        p = matches[i].place
-        if pos == 0 or p != prev:
-            rank += 1
-            prev = p
-        out[i] = rank
-    return out
 
 
 def _iso_date(d) -> str | None:

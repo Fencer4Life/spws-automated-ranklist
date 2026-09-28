@@ -211,6 +211,9 @@ def _formatter_svc(tmp_path, cert_rows=None):
     from python.pipeline.core.contract import Services
 
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     db.fetch_cert_rows_for_event.return_value = cert_rows or []
     return Services(db=db, config={"staging_dir": str(tmp_path)})
 
@@ -367,6 +370,9 @@ class TestEventScopedFire:
         from python.pipeline import ingest_cli
 
         db = MagicMock()
+        # ADR-103: the engine these fixtures assume, so Commit files brackets
+        # with the classic PER_CATEGORY_RENUMBER module.
+        db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
         db.find_event_by_code.return_value = {
             "id_event": 1,
             "txt_code": "PPW3-2025-2026",
@@ -582,6 +588,9 @@ def _run_formatter(
     if schedule_skips is not None:
         ctx.data["_schedule_skips"] = schedule_skips
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     db.fetch_cert_rows_for_event.return_value = []
     db.fetch_fencer_db.return_value = fencer_db or []
     svc = Services(db=db, config={"staging_dir": str(tmp_path)})
@@ -868,6 +877,9 @@ class TestSourceDecisionsRendering:
         ctx.data["event"] = {"id_event": 7, "txt_code": "PPW3-2025-2026"}
         ctx.data["_source_decisions"] = source_decisions
         db = MagicMock()
+        # ADR-103: the engine these fixtures assume, so Commit files brackets
+        # with the classic PER_CATEGORY_RENUMBER module.
+        db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
         db.fetch_cert_rows_for_event.return_value = []
         db.fetch_fencer_db.return_value = []
         svc = Services(db=db, config={"staging_dir": str(tmp_path)})

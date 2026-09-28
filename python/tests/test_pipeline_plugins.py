@@ -61,6 +61,9 @@ def _fencer(id_, surname, first, by, gender="M"):
 
 def _make_db(fencer_db):
     db = MagicMock()
+    # ADR-103: the engine these fixtures assume, so Commit files brackets
+    # with the classic PER_CATEGORY_RENUMBER module.
+    db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
     db.fetch_fencer_db.return_value = fencer_db
     db.fetch_birth_years_batch.return_value = {
         f["id_fencer"]: f["int_birth_year"] for f in fencer_db
@@ -242,6 +245,9 @@ class TestCommitGenderDefault:
         )
         ctx.set("final_vcats", {"V1": [m]})
         db = MagicMock()
+        # ADR-103: the engine these fixtures assume, so Commit files brackets
+        # with the classic PER_CATEGORY_RENUMBER module.
+        db.get_type_engine.return_value = "EVF_CLASSIC_V1_2025_2026"
         db.find_or_create_tournament.return_value = 999
 
         plugin = Commit()

@@ -194,7 +194,7 @@
 {/if}
 
 <script lang="ts">
-  import type { Season, ScoringConfig, EuropeanEventType, CarryoverEngine, SkeletonByKind, CalendarEvent } from '../lib/types'
+  import type { Season, ScoringConfig, EuropeanEventType, CarryoverEngine, SkeletonByKind, CalendarEvent, ScoringEngineOption } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import ScoringConfigEditor from './ScoringConfigEditor.svelte'
   import SeasonManagerWizard from './SeasonManagerWizard.svelte'
@@ -218,7 +218,7 @@
     onfetchevf = (_id: number): Promise<{ ranklist: boolean, calendar: boolean }> => Promise.resolve({ ranklist: false, calendar: true }),
     onscoringconfig = (_id: number) => {},
     scoringConfig = null as ScoringConfig | null,
-    scoringEngines = [] as { code: string, label: string }[],
+    scoringEngines = [] as ScoringEngineOption[],
     scoringSeasonId = null as number | null,
     onsavescoring = (_c: ScoringConfig) => {},
     onclosescoring = () => {},
@@ -238,7 +238,7 @@
     onfetchevf?: (id: number) => Promise<{ ranklist: boolean, calendar: boolean }>
     onscoringconfig?: (id: number) => void
     scoringConfig?: ScoringConfig | null
-    scoringEngines?: { code: string, label: string }[]
+    scoringEngines?: ScoringEngineOption[]
     scoringSeasonId?: number | null
     onsavescoring?: (config: ScoringConfig) => void
     onclosescoring?: () => void

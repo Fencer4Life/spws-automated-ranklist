@@ -2,9 +2,14 @@
 
 **Status:** Accepted; implemented LOCAL 2026-06-04.
 **Date:** 2026-06-04
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the count check compares the joined N).
 **Relates to:** ADR-049 (joint-pool split + its 2026-06-04 per-V-cat amendment),
 ADR-052 (URL→data validation), ADR-038 (per-cat field count), ADR-024 (combined
 category splitting).
+
+## Amendment (2026-09-28 — the joined N)
+
+Under `JOINED_BRACKET_CATEGORY_PLACE` ([ADR-103](103-spws-place-medal-engine-per-type.md)), every category tournament of a joined bracket stores the joined N as its participant count, so the count check compares the whole bracket, not one category's slice.
 
 ## Context
 

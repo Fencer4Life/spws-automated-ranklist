@@ -1,87 +1,79 @@
 // =============================================================================
-// SS26.CALC / SS26.PARITY — the shared scoring formula module
+// SE27.UI / SS26.CALC — the shared scoring formula module
 // =============================================================================
-// doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html §08 and §11
-// step 8. Written BEFORE src/lib/scoring.ts exists, per §10.
+// ADR-102 (one browser-side module, generated into the published pages) and
+// ADR-103 (the 2026/2027 engine, SPWS_PLACE_MEDAL_V1_2026_2027).
 //
 // WHY THIS MODULE EXISTS
 // -----------------------------------------------------------------------------
-// §08: the formula is currently written THREE times in browser JavaScript —
-// kalkulator-punktow-za-wynik-spws.v2.html (fN/rundy/parts/total), its
-// byte-identical WordPress copy, and Tabela-punktacji-SPWS_2026-2027.html
-// (firstPlaceBase/wonRounds/scoreParts/totalScore). They already disagree: the
-// annex floors at MIN_PARTICIPANTS = 4, the calculator accepts N = 1. This module
-// is the one implementation all three collapse into.
-//
-// Per-cell and whole-grid score RPCs were rejected for the annex, which renders
-// up to 300 x 300 cells and re-renders on every rank-coefficient change. So the
-// formula lives in exactly two places — here and the SQL strategies — and these
-// tests are the pin between them.
+// The scoring-table annex renders up to 64 x 64 cells and re-renders on every
+// coefficient change, so per-cell and whole-grid score RPCs were rejected. The
+// formula therefore lives in exactly two places — here and the SQL strategies —
+// and these tests are the pin between them.
 //
 // EVERY EXPECTATION BELOW WAS DERIVED FROM THE DATABASE, NOT GUESSED
 // -----------------------------------------------------------------------------
-// Produced by calling fn_score_by_engine directly against the local stack with
-// the 2026/2027 configuration (mp_value 50, base_slope 10, de_round 10, podium
-// 3/2/1) and rounding exactly as fn_preview_tournament_score does. If any value
+// Produced by calling fn_score_by_engine against the local stack with the
+// 2026/2027 EVF settings (mp_value 50, de_round 10, podium 3/2/1) and rounding
+// exactly as fn_calc_tournament_scores does: each component to two decimals,
+// and the final once, from the unrounded sum times the coefficient. If a value
 // here disagrees with SQL, that is a parity defect and this file is the alarm.
 //
 // TWO PROPERTIES WORTH READING THE TABLE FOR
 // -----------------------------------------------------------------------------
-//   * N = 1 scores 59.00 classic and 19.00 field-scaled (§04, decided 19 Sep
-//     2026). ADR-066 records six of seven FOIL brackets in PPW2-2025-2026 as
-//     single-competitor, so this re-prices published results deliberately.
-//   * From N = 32 upward the two engines are IDENTICAL, because
-//     10 x log2(32) = 50. The entire difference is confined to fields below 32.
+//   * The new engine has three ranges: a table up to N = 3, place-and-medal
+//     from 4 to 31, and EVF classic from 32 — where the two engines agree to
+//     the cent, because the new engine IS the classic one there.
+//   * In a joined bracket, N is the whole bracket while the medal reads K and
+//     m of the fencer's own category; b counts every fencer below in the
+//     bracket, of any category (ADR-103 §5).
 // =============================================================================
 
 import { describe, it, expect } from 'vitest'
 import {
   CLASSIC_ENGINE,
-  FIELD_SCALED_ENGINE,
+  PLACE_MEDAL_ENGINE,
+  medalBonus,
+  placeMedalMethod,
   scoreComponents,
+  type BracketPosition,
+  type ScoreMethod,
   type ScoringParams,
 } from '../src/lib/scoring'
 
-// The 2026/2027 stored configuration, as fn_public_scoring_params publishes it.
+// The 2026/2027 stored configuration, as fn_public_scoring_params publishes the
+// PPW row. The engine code here is data; scoreComponents takes the engine to
+// run as its own argument.
 const PARAMS: ScoringParams = {
-  engineCode: FIELD_SCALED_ENGINE,
-  engineLabel: 'SPWS (skalowany stawką)',
+  engineCode: PLACE_MEDAL_ENGINE,
+  engineLabel: 'SPWS — miejsce w stawce i premia medalowa (od sezonu 2026/2027)',
   mpValue: 50,
-  baseSlope: 10,
   deRound: 10,
   podiumGold: 3,
   podiumSilver: 2,
   podiumBronze: 1,
 }
 
-// engine, n, place -> [placePts, deBonus, podiumBonus, final] at multiplier 1.
-const GOLDEN: [string, number, number, [number, number, number, number]][] = [
-  [CLASSIC_ENGINE, 1, 1, [50.0, 0.0, 9.0, 59.0]],
-  [CLASSIC_ENGINE, 2, 1, [50.0, 10.0, 11.34, 71.34]],
-  [CLASSIC_ENGINE, 2, 2, [1.0, 0.0, 7.56, 8.56]],
-  [CLASSIC_ENGINE, 8, 3, [24.11, 10.0, 6.0, 40.11]],
-  [CLASSIC_ENGINE, 16, 1, [50.0, 40.0, 22.68, 112.68]],
-  [CLASSIC_ENGINE, 24, 1, [50.0, 50.0, 25.96, 125.96]],
-  [CLASSIC_ENGINE, 31, 17, [9.57, 0.0, 0.0, 9.57]],
-  [CLASSIC_ENGINE, 32, 1, [50.0, 50.0, 28.57, 128.57]],
-  [CLASSIC_ENGINE, 107, 34, [13.02, 10.0, 0.0, 23.02]],
-  [CLASSIC_ENGINE, 1000, 500, [5.92, 10.0, 0.0, 15.92]],
-  [FIELD_SCALED_ENGINE, 1, 1, [10.0, 0.0, 9.0, 19.0]],
-  [FIELD_SCALED_ENGINE, 2, 1, [10.0, 10.0, 11.34, 31.34]],
-  [FIELD_SCALED_ENGINE, 2, 2, [1.0, 0.0, 7.56, 8.56]],
-  [FIELD_SCALED_ENGINE, 8, 3, [14.68, 10.0, 6.0, 30.68]],
-  [FIELD_SCALED_ENGINE, 16, 1, [40.0, 40.0, 22.68, 102.68]],
-  [FIELD_SCALED_ENGINE, 24, 1, [45.85, 50.0, 25.96, 121.81]],
-  [FIELD_SCALED_ENGINE, 31, 17, [9.49, 0.0, 0.0, 9.49]],
-  [FIELD_SCALED_ENGINE, 32, 1, [50.0, 50.0, 28.57, 128.57]],
-  [FIELD_SCALED_ENGINE, 107, 34, [13.02, 10.0, 0.0, 23.02]],
-  [FIELD_SCALED_ENGINE, 1000, 500, [5.92, 10.0, 0.0, 15.92]],
+// EVF classic: n, place -> [placePts, deBonus, podiumBonus, final] at 1.0.
+// Unchanged from the 2025/2026 pin: the released strategy is immutable.
+const CLASSIC_GOLDEN: [number, number, [number, number, number, number]][] = [
+  [1, 1, [50.0, 0.0, 9.0, 59.0]],
+  [2, 1, [50.0, 10.0, 11.34, 71.34]],
+  [2, 2, [1.0, 0.0, 7.56, 8.56]],
+  [8, 3, [24.11, 10.0, 6.0, 40.11]],
+  [16, 1, [50.0, 40.0, 22.68, 112.68]],
+  [24, 1, [50.0, 50.0, 25.96, 125.96]],
+  [31, 17, [9.57, 0.0, 0.0, 9.57]],
+  [32, 1, [50.0, 50.0, 28.57, 128.57]],
+  [107, 34, [13.02, 10.0, 0.0, 23.02]],
+  [1000, 500, [5.92, 10.0, 0.0, 15.92]],
 ]
 
-describe('SS26.PARITY — the shared module reproduces the SQL engines exactly', () => {
-  for (const [engine, n, place, [pp, de, pod, final]] of GOLDEN) {
-    it(`${engine} at N=${n} place=${place}`, () => {
-      const c = scoreComponents(PARAMS, engine, n, place, 1)
+describe('SS26.PARITY — EVF classic reproduces the released SQL strategy', () => {
+  for (const [n, place, [pp, de, pod, final]] of CLASSIC_GOLDEN) {
+    it(`${CLASSIC_ENGINE} at N=${n} place=${place}`, () => {
+      const c = scoreComponents(PARAMS, CLASSIC_ENGINE, n, place, 1)
+      expect(c.method).toBe('EVF_CLASSIC')
       expect(c.placePoints).toBe(pp)
       expect(c.deBonus).toBe(de)
       expect(c.podiumBonus).toBe(pod)
@@ -90,64 +82,169 @@ describe('SS26.PARITY — the shared module reproduces the SQL engines exactly',
   }
 })
 
-describe('SS26.CALC — the two engines differ only below N = 32', () => {
-  // 10 * log2(32) = 50, so the field-scaled base reaches mp_value at 32 and the
-  // min() clamps it there for every larger field.
-  it('agrees with the classic engine for every N >= 32', () => {
-    for (const n of [32, 33, 64, 107, 256, 1000]) {
-      for (const place of [1, 2, 3, Math.ceil(n / 2), n]) {
-        const classic = scoreComponents(PARAMS, CLASSIC_ENGINE, n, place, 1)
-        const scaled = scoreComponents(PARAMS, FIELD_SCALED_ENGINE, n, place, 1)
-        expect(scaled.finalScore, `N=${n} place=${place}`).toBe(classic.finalScore)
-      }
+// The place-and-medal engine, one row per SQL call:
+// n, place, [K, m, b], method, then the stored components (null = SQL's -1)
+// [place, de, podium, field, below, medal] and the final at 1.0.
+type Row = [
+  number,
+  number,
+  BracketPosition,
+  ScoreMethod,
+  [number | null, number | null, number | null, number | null, number | null, number | null],
+  number,
+]
+const pos = (categoryCount: number, categoryPlace: number, belowCount: number): BracketPosition => ({
+  categoryCount,
+  categoryPlace,
+  belowCount,
+})
+
+const PLACE_MEDAL_GOLDEN: Row[] = [
+  // §8 ust. 7 — a bracket of one, two or three: N - place + 1.
+  [1, 1, pos(1, 1, 0), 'TABLE', [1.0, null, null, null, null, null], 1.0],
+  [2, 1, pos(2, 1, 1), 'TABLE', [2.0, null, null, null, null, null], 2.0],
+  [2, 2, pos(2, 2, 0), 'TABLE', [1.0, null, null, null, null, null], 1.0],
+  [3, 2, pos(3, 2, 1), 'TABLE', [2.0, null, null, null, null, null], 2.0],
+  // 4 to 31 — log2 N + 3.5 x fencers below + 13/7/3 x cbrt K.
+  [4, 1, pos(4, 1, 3), 'PLACE_MEDAL', [null, null, null, 2.0, 10.5, 20.64], 33.14],
+  [8, 3, pos(8, 3, 5), 'PLACE_MEDAL', [null, null, null, 3.0, 17.5, 6.0], 26.5],
+  [16, 1, pos(16, 1, 15), 'PLACE_MEDAL', [null, null, null, 4.0, 52.5, 32.76], 89.26],
+  [24, 1, pos(24, 1, 23), 'PLACE_MEDAL', [null, null, null, 4.58, 80.5, 37.5], 122.58],
+  [31, 1, pos(31, 1, 30), 'PLACE_MEDAL', [null, null, null, 4.95, 105.0, 40.84], 150.79],
+  [31, 17, pos(31, 17, 14), 'PLACE_MEDAL', [null, null, null, 4.95, 49.0, 0.0], 53.95],
+  // A joined bracket of 10: place 2 overall, first of four in the category.
+  [10, 2, pos(4, 1, 8), 'PLACE_MEDAL', [null, null, null, 3.32, 28.0, 20.64], 51.96],
+  // Last of a category of two earns no medal (§8 ust. 5: only while K > m).
+  [10, 4, pos(2, 2, 6), 'PLACE_MEDAL', [null, null, null, 3.32, 21.0, 0.0], 24.32],
+  // Tied third overall: second in the category, 6 strictly below (§8 ust. 6).
+  [10, 3, pos(4, 2, 6), 'PLACE_MEDAL', [null, null, null, 3.32, 21.0, 11.11], 35.43],
+  // §8 ust. 8 — from 32, EVF classic on the joined place and N.
+  [32, 1, pos(32, 1, 31), 'EVF_CLASSIC', [50.0, 50.0, 28.57, null, null, null], 128.57],
+  [107, 34, pos(107, 34, 73), 'EVF_CLASSIC', [13.02, 10.0, 0.0, null, null, null], 23.02],
+  [1000, 500, pos(1000, 500, 500), 'EVF_CLASSIC', [5.92, 10.0, 0.0, null, null, null], 15.92],
+]
+
+describe('SE27.UI — the place-and-medal engine reproduces the SQL strategy', () => {
+  for (const [n, place, position, method, parts, final] of PLACE_MEDAL_GOLDEN) {
+    const { categoryCount: k, categoryPlace: m, belowCount: b } = position
+    it(`N=${n} place=${place} K=${k} m=${m} b=${b} -> ${method}`, () => {
+      const c = scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, n, place, 1, position)
+      expect(c.method).toBe(method)
+      expect([
+        c.placePoints,
+        c.deBonus,
+        c.podiumBonus,
+        c.fieldPoints,
+        c.belowPoints,
+        c.medalBonus,
+      ]).toEqual(parts)
+      expect(c.finalScore).toBe(final)
+    })
+  }
+
+  it('reads a single-category bracket as K = N, m = place, b = N - place', () => {
+    // The annex grid and the calculator's default mode have no joined bracket.
+    for (const [n, place] of [
+      [8, 3],
+      [24, 1],
+      [31, 17],
+    ]) {
+      const implicit = scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, n, place, 1)
+      const explicit = scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, n, place, 1, pos(n, place, n - place))
+      expect(implicit).toEqual(explicit)
     }
   })
 
-  it('differs below N = 32, and the walkover is the largest gap', () => {
-    const classic = scoreComponents(PARAMS, CLASSIC_ENGINE, 1, 1, 1)
-    const scaled = scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 1, 1, 1)
-    expect(classic.finalScore).toBe(59.0)
-    expect(scaled.finalScore).toBe(19.0)
+  it('switches range at 3/4 and 31/32', () => {
+    expect([3, 4, 31, 32].map(placeMedalMethod)).toEqual([
+      'TABLE',
+      'PLACE_MEDAL',
+      'PLACE_MEDAL',
+      'EVF_CLASSIC',
+    ])
+  })
+
+  it('awards the medal only while the category is larger than the place', () => {
+    expect(medalBonus(1, 1)).toBe(0)
+    expect(medalBonus(3, 3)).toBe(0)
+    expect(medalBonus(4, 20)).toBe(0)
+    expect(medalBonus(1, 8)).toBe(26)
   })
 })
 
-describe('SS26.CALC — the final score rounds once, from unrounded components', () => {
-  // SQL: ROUND((place + de + podium) * multiplier, 2), where the components
-  // inside the sum are NOT the rounded ones. Summing rounded components first
-  // would drift, so the module must round in the same order.
-  it('matches SQL at a non-unit multiplier', () => {
-    expect(scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 8, 3, 1.5).finalScore).toBe(46.02)
-    expect(scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 8, 3, 0.75).finalScore).toBe(23.01)
-    expect(scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 8, 3, 2.0).finalScore).toBe(61.36)
+describe('SE27.UI — from N = 32 the two engines agree', () => {
+  it('scores exactly as EVF classic for every N >= 32', () => {
+    for (const n of [32, 33, 64, 107, 256, 1000]) {
+      for (const place of [1, 2, 3, Math.ceil(n / 2), n]) {
+        const classic = scoreComponents(PARAMS, CLASSIC_ENGINE, n, place, 1)
+        const medal = scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, n, place, 1)
+        expect(medal, `N=${n} place=${place}`).toEqual(classic)
+      }
+    }
   })
 })
 
-describe('SS26.CALC — invalid input is rejected, never scored as zero', () => {
-  // §04, decided 19 September 2026: a place greater than the field is corrupt
-  // data, and zero is the one value that hides it — it sorts to the bottom and
-  // reads as an ordinary weak result. SQL raises; this module throws.
-  it('throws when place exceeds the field', () => {
-    expect(() => scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 8, 9, 1)).toThrow(
-      /exceeds the field/i,
+describe('SE27.UI — the final score rounds once, from unrounded components', () => {
+  // SQL: ROUND(sum of the unrounded components x coefficient, 2). Summing the
+  // rounded components first would drift, so the module rounds in that order.
+  it('matches SQL at a non-unit coefficient', () => {
+    const at = (r: number) => scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, 8, 3, r).finalScore
+    expect(at(1.5)).toBe(39.75)
+    expect(at(2.0)).toBe(53.0)
+    expect(at(1.2)).toBe(31.8)
+  })
+
+  it('rounds a tie up on a perfect-cube category, as SQL does (SE27.ENG.14)', () => {
+    // 26.5 x 0.75 = 19.875. The cube root of 8 is exactly 2 on both sides.
+    expect(scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, 8, 3, 0.75).finalScore).toBe(19.88)
+  })
+})
+
+describe('SE27.UI — invalid input is rejected, never scored as zero', () => {
+  // A place greater than the field is corrupt data, and zero is the one value
+  // that hides it — it sorts to the bottom and reads as a weak result. SQL
+  // raises with the same meaning; this module throws.
+  for (const engine of [CLASSIC_ENGINE, PLACE_MEDAL_ENGINE]) {
+    it(`${engine}: throws when place exceeds the field`, () => {
+      expect(() => scoreComponents(PARAMS, engine, 8, 9, 1)).toThrow(/exceeds the field/i)
+    })
+
+    it(`${engine}: throws on a place below 1 and on an empty field`, () => {
+      expect(() => scoreComponents(PARAMS, engine, 8, 0, 1)).toThrow(/invalid scoring input/i)
+      expect(() => scoreComponents(PARAMS, engine, 0, 1, 1)).toThrow(/invalid scoring input/i)
+    })
+  }
+
+  it('does not award a podium bonus for a place outside the field', () => {
+    // N = 2 place 3 once earned a bronze bonus for a place that cannot exist.
+    expect(() => scoreComponents(PARAMS, CLASSIC_ENGINE, 2, 3, 1)).toThrow()
+  })
+
+  it('refuses a joined position the bracket cannot hold', () => {
+    const bad: BracketPosition[] = [
+      pos(11, 1, 5), // K larger than N
+      pos(4, 5, 5), // m larger than K
+      pos(4, 4, 5), // m better than the place overall
+      pos(4, 2, 8), // more fencers below than the places behind
+      pos(4, 2, -1), // -1, SQL's "not given"
+    ]
+    for (const p of bad) {
+      expect(() => scoreComponents(PARAMS, PLACE_MEDAL_ENGINE, 10, 3, 1, p), JSON.stringify(p)).toThrow(
+        /invalid scoring input/i,
+      )
+    }
+  })
+})
+
+describe('SE27.UI — an unknown engine fails closed', () => {
+  it('throws rather than silently choosing a default', () => {
+    expect(() => scoreComponents(PARAMS, 'SPWS_NOT_AN_ENGINE_V9', 8, 1, 1)).toThrow(
+      /unknown scoring engine/i,
     )
   })
 
-  it('throws on a place below 1 and on an empty field', () => {
-    expect(() => scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 8, 0, 1)).toThrow()
-    expect(() => scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 0, 1, 1)).toThrow()
-  })
-
-  it('does not award a podium bonus for a place outside the field', () => {
-    // The SQL writer had no place>N guard on num_podium_bonus, so N=2 place=3
-    // awarded a bronze bonus for a place that cannot exist. Rejecting the input
-    // closes that branch here too, rather than reproducing the leak.
-    expect(() => scoreComponents(PARAMS, FIELD_SCALED_ENGINE, 2, 3, 1)).toThrow()
-  })
-})
-
-describe('SS26.CALC — an unknown engine fails closed', () => {
-  it('throws rather than silently choosing a default', () => {
-    expect(() => scoreComponents(PARAMS, 'SPWS_NOT_AN_ENGINE_V9', 8, 1, 1)).toThrow(
+  it('no longer knows the retired field-scaled engine', () => {
+    expect(() => scoreComponents(PARAMS, 'SPWS_FIELD_SCALED_V1_2026_2027', 8, 1, 1)).toThrow(
       /unknown scoring engine/i,
     )
   })

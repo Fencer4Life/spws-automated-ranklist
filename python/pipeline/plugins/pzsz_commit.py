@@ -19,8 +19,14 @@ a per-V-cat bracket:
     directly, since a bracket with zero initially auto-matched rows (everyone
     queued for review) never calls `db.ingest_results` at all.
   - A matched veteran's `int_place` is their ORIGINAL scraped place, never
-    renumbered -- `Commit`'s own `_rerank_places` is a per-V-cat-split
+    renumbered -- the PER_CATEGORY_RENUMBER module is a per-V-cat-split
     concept and is never invoked here.
+  - The senior field is ONE category (ADR-103 §4): K = the full field, m =
+    the original place, and b = the fencers of the full field with a strictly
+    worse place. They are written whatever the engine -- EVF classic, which
+    scores PPS and MPS in 2026/2027, does not read them -- and b is kept on a
+    queued review, since the unmatched field is never stored and could not be
+    recounted at approval.
 
 A `PENDING` match (ResolveFencers's PZSZ_SENIOR intake: a fuzzy candidate
 found but too uncertain to auto-link) writes NO `tbl_result` row here --
@@ -76,6 +82,10 @@ class CommitPzszSenior(BasePlugin):
         season_end = pctx.season_end_year if pctx else None
         url_results = _url_results_for(parsed)
         full_n = len(parsed.results)
+        field_places = [r.place for r in parsed.results]
+
+        def below(place: int) -> int:
+            return sum(1 for p in field_places if p > place)
 
         tournament_id = db.find_or_create_tournament(
             event_id, weapon, gender, "SENIOR", date, ttype, url_results=url_results
@@ -101,6 +111,9 @@ class CommitPzszSenior(BasePlugin):
                         "num_confidence": m.confidence,
                         "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
                         "enum_source_age_category": vcat,
+                        "int_category_count": full_n,
+                        "int_category_place": m.place,
+                        "int_below_count": below(m.place),
                     }
                 )
             elif m.method == "PENDING":
@@ -111,6 +124,7 @@ class CommitPzszSenior(BasePlugin):
                         "int_place": m.place,
                         "id_candidate_fencer": candidate.get("id_fencer"),
                         "num_confidence": m.confidence,
+                        "int_below_count": below(m.place),
                     }
                 )
             # else: EXCLUDED (no candidate at all) — dropped, nothing written.
@@ -125,6 +139,7 @@ class CommitPzszSenior(BasePlugin):
                 q["int_place"],
                 q["id_candidate_fencer"],
                 q["num_confidence"],
+                q["int_below_count"],
             )
 
         ctx.set(

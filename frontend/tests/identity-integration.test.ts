@@ -13,7 +13,7 @@ vi.mock('../src/lib/api', () => ({
     { id_season: 1, txt_code: 'SPWS-2025-2026', dt_start: '2025-09-01', dt_end: '2026-06-30', bool_active: true },
   ]),
   // SS26.LOCK.01/§05 (governance lock, 2026-09-19) — released scoring-engine
-  // codes for ScoringConfigEditor's engine selector, fetched once in init().
+  // codes for ScoringConfigEditor's engine selectors, loaded once an admin signs in (SE27.UI.09).
   fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),
   fetchRankingKadra: vi.fn().mockResolvedValue([]),
