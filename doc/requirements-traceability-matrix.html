@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a4c35cbd537a27e505c260dd06beab794e256879dafed80682e8117f3ab6c989">
+<meta name="doc-source-sha256" content="d506fe8dfec190dc8b7445a1b145f7a26cf6e3236eaec88a752357b72882ca4c">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -439,10 +439,10 @@
 </tr>
 <tr>
 <td>FR-59</td>
-<td>App shell: sidebar drawer with Ranklista + Kalendarz view navigation, plus links to two standalone static pages. The points calculator (ADR-085, one-off exception; removed when the proposed formula becomes the live SPWS scoring). <strong>Amended 2026-09-11 (ADR-092):</strong> a <strong>fourth</strong> entry, „Tabela punktacji”, links Załącznik nr 1 to the national-team selection regulation — the scoring table for fields of 4–300 entries across places 1–300, published as <code>frontend/public/tabela-punktacji.html</code>. It is <strong>bilingual in one file, switched by CSS alone</strong>, so it stays readable and switchable with JavaScript disabled — the failure that made hosting necessary (messenger and iOS previews run no script, and the page computes its table in the browser). <code>?lang=</code> from the drawer is honoured as a hint, never a precondition, because the page is destined for WordPress where there is no drawer and no such parameter. Parity with the calculator was verified against source, not assumed: the scoring functions match line for line; the domain deliberately differs (<code>N≥4</code> vs <code>N≥2</code>). <code>noindex, nofollow</code> holds while the annex is unadopted and is load-bearing — the visible <em>Status: projekt</em> chip was removed 2026-09-11, so nothing else marks it a draft. Test 8.84 pins the entry list as an <strong>equality</strong>, so the fourth entry extends that assertion rather than loosening it; order is the property held.</td>
-<td>UC12, UC21, ADR-092</td>
-<td>8.27–8.37, 8.84–8.88, 8.90–8.96</td>
-<td>Covered (M8; calculator link 2026-08-15; scoring table 2026-09-11)</td>
+<td>App shell: sidebar drawer with Ranklista + Kalendarz view navigation, plus links to two standalone static pages. The points calculator (ADR-085, one-off exception; removed when the proposed formula becomes the live SPWS scoring). <strong>Amended 2026-09-11 (ADR-092):</strong> a <strong>fourth</strong> entry, „Tabela punktacji”, links Załącznik nr 1 to the national-team selection regulation — the scoring table for fields of 4–300 entries across places 1–300, published as <code>frontend/public/tabela-punktacji.html</code>. It is <strong>bilingual in one file, switched by CSS alone</strong>, so it stays readable and switchable with JavaScript disabled — the failure that made hosting necessary (messenger and iOS previews run no script, and the page computes its table in the browser). <code>?lang=</code> from the drawer is honoured as a hint, never a precondition, because the page is destined for WordPress where there is no drawer and no such parameter. Parity with the calculator was verified against source, not assumed: the scoring functions match line for line; the domain deliberately differs (<code>N≥4</code> vs <code>N≥2</code>). <code>noindex, nofollow</code> holds while the annex is unadopted and is load-bearing — the visible <em>Status: projekt</em> chip was removed 2026-09-11, so nothing else marks it a draft. Test 8.84 pins the entry list as an <strong>equality</strong>, so the fourth entry extends that assertion rather than loosening it; order is the property held. <strong>Amended 2026-09-28 (ADR-085 §2 amendment):</strong> a third static page, <code>frontend/public/tabela-punktacji-projekt-2026-2027.html</code>, is a time-limited board preview of the proposed 2026/2027 engine. It is <strong>not</strong> a drawer entry, so the drawer and 8.84 are unchanged. It is self-contained, reading no season parameters, and <code>noindex, nofollow</code>. It is deleted with SE27.PREVIEW.01–03 when that engine is released.</td>
+<td>UC12, UC21, ADR-092, ADR-085</td>
+<td>8.27–8.37, 8.84–8.88, 8.90–8.96, SE27.PREVIEW.01–03</td>
+<td>Covered (M8; calculator link 2026-08-15; scoring table 2026-09-11; board preview 2026-09-28)</td>
 </tr>
 <tr>
 <td>FR-60</td>
@@ -1387,5 +1387,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a4c35cbd537a27e505c260dd06beab794e256879dafed80682e8117f3ab6c989</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>d506fe8dfec190dc8b7445a1b145f7a26cf6e3236eaec88a752357b72882ca4c</code></footer>
 </div></body></html>
