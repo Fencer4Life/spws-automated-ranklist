@@ -82,10 +82,6 @@ class CommitPzszSenior(BasePlugin):
         season_end = pctx.season_end_year if pctx else None
         url_results = _url_results_for(parsed)
         full_n = len(parsed.results)
-        field_places = [r.place for r in parsed.results]
-
-        def below(place: int) -> int:
-            return sum(1 for p in field_places if p > place)
 
         tournament_id = db.find_or_create_tournament(
             event_id, weapon, gender, "SENIOR", date, ttype, url_results=url_results
@@ -111,9 +107,6 @@ class CommitPzszSenior(BasePlugin):
                         "num_confidence": m.confidence,
                         "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
                         "enum_source_age_category": vcat,
-                        "int_category_count": full_n,
-                        "int_category_place": m.place,
-                        "int_below_count": below(m.place),
                     }
                 )
             elif m.method == "PENDING":
@@ -124,7 +117,6 @@ class CommitPzszSenior(BasePlugin):
                         "int_place": m.place,
                         "id_candidate_fencer": candidate.get("id_fencer"),
                         "num_confidence": m.confidence,
-                        "int_below_count": below(m.place),
                     }
                 )
             # else: EXCLUDED (no candidate at all) — dropped, nothing written.
@@ -139,7 +131,6 @@ class CommitPzszSenior(BasePlugin):
                 q["int_place"],
                 q["id_candidate_fencer"],
                 q["num_confidence"],
-                q["int_below_count"],
             )
 
         ctx.set(

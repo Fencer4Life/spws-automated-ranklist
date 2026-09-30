@@ -321,8 +321,8 @@ class Commit(BasePlugin):
     How a joined listing is filed is decided by the joined-bracket module paired
     with the engine of the tournament's type (ADR-103 §4, `joined_brackets`):
     under EVF classic each V-cat slice is renumbered 1..K and scored on its own
-    row count (ADR-049 amendment 2026-06-04); under the 2026/2027 engine every
-    slice keeps the joined place and the joined N and writes K, m and b.
+    row count (ADR-049 amendment 2026-06-04); under the joined module every
+    slice keeps the joined place and the joined N.
 
     Skips entirely when an inline remediation marked the artifact unrankable
     (`_skip_commit`). RECOMPUTE_DOMESTIC has no source parse and no per-bracket
@@ -399,8 +399,7 @@ class Commit(BasePlugin):
         url_results = _url_results_for(parsed)
 
         module = self._module(db, event, ttype)
-        # The whole listing, matched or not: its size is the joined N and its
-        # places decide the fencers below (ADR-103 §5).
+        # The whole listing, matched or not: its size is the joined N.
         field = BracketField.from_places(r.place for r in parsed.results)
 
         written: list[dict] = []
@@ -542,8 +541,7 @@ class Commit(BasePlugin):
         """Recompute one category tournament under the joined module.
 
         Its rows must come from ONE joined bracket: two listings' places and N
-        are not comparable. K and m are recounted over the stored rows of that
-        bracket in the new category; N and b are read back as stored.
+        are not comparable. N is read back as stored.
         """
         weapon, gender, vcat = key
         brackets = {(m.bracket_key, m.bracket_size) for m in rows_m}
@@ -560,15 +558,7 @@ class Commit(BasePlugin):
             for m in ms
             if (m.bracket_key, m.bracket_size) == (bracket_key, size)
         ]
-        field = BracketField.stored(
-            size=size or 0,
-            places=[m.place for m in bracket_rows],
-            below={
-                m.place: m.below_count
-                for m in bracket_rows
-                if m.below_count is not None and m.below_count >= 0
-            },
-        )
+        field = BracketField.stored(size=size or 0, places=[m.place for m in bracket_rows])
         return module.plan_category([m.place for m in rows_m], [m.place for m in rows_m], field)
 
     @staticmethod
@@ -603,7 +593,6 @@ class Commit(BasePlugin):
             "txt_scraped_name": m.scraped_name,
             "num_confidence": m.confidence,
             "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
-            **plan.columns(),
         }
 
     @staticmethod

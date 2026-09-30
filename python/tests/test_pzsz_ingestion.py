@@ -318,8 +318,7 @@ class TestCommitPzszSenior:
 
     def test_pending_match_is_queued_not_written(self):
         """SS26.PZSZ.05 a PENDING match writes no tbl_result row -- it is
-        queued for review with its candidate and confidence carried over, and
-        (ADR-103 §4) the 95 fencers of the 107-strong field placed below 12th."""
+        queued for review with its candidate and confidence carried over."""
         matches = [
             _match(
                 None,
@@ -332,7 +331,7 @@ class TestCommitPzszSenior:
         ]
         db = _commit_db()
         _run_commit(_commit_ctx(matches, raw_pool_size=107), db)
-        db.queue_pzsz_match_review.assert_called_once_with(501, "Uncertain Name", 12, 55, 62.5, 95)
+        db.queue_pzsz_match_review.assert_called_once_with(501, "Uncertain Name", 12, 55, 62.5)
         db.ingest_results.assert_not_called()
 
     def test_excluded_match_is_dropped_entirely(self):

@@ -661,30 +661,15 @@ var SPWSScoring = (() => {
     CLASSIC_ENGINE: () => CLASSIC_ENGINE,
     JOINED: () => JOINED,
     JOINED_ENGINE: () => JOINED_ENGINE,
-    PLACE_MEDAL: () => PLACE_MEDAL,
-    PLACE_MEDAL_ENGINE: () => PLACE_MEDAL_ENGINE,
     deRoundsWon: () => deRoundsWon,
     joinedAlternatives: () => joinedAlternatives,
     joinedMethod: () => joinedMethod,
-    medalBonus: () => medalBonus,
-    placeMedalMethod: () => placeMedalMethod,
     podiumBonus: () => podiumBonus,
     scoreBracket: () => scoreBracket,
     scoreComponents: () => scoreComponents
   });
   var CLASSIC_ENGINE = "EVF_CLASSIC_V1_2025_2026";
-  var PLACE_MEDAL_ENGINE = "SPWS_PLACE_MEDAL_V1_2026_2027";
   var JOINED_ENGINE = "SPWS_EVF_JOINED_V1_2026_2027";
-  var PLACE_MEDAL = {
-    /** N <= tableUpTo scores N - place + 1. */
-    tableUpTo: 3,
-    /** From this bracket size the engine is EVF classic. */
-    evfFrom: 32,
-    /** Points for each fencer with a worse result in the bracket. */
-    perBelow: 3.5,
-    /** Gold, silver, bronze within the own category, times the cube root of K. */
-    medal: [13, 7, 3]
-  };
   var JOINED = {
     /** A bracket of up to this many fencers is a meeting: N - place + 1. */
     meetingUpTo: 3,
@@ -728,24 +713,11 @@ var SPWSScoring = (() => {
     const coefficient = place === 1 ? gold : place === 2 ? silver : place === 3 ? bronze : 0;
     return coefficient * 3 * Math.cbrt(n);
   }
-  function medalBonus(categoryPlace, categoryCount) {
-    if (categoryPlace > 3 || categoryCount <= categoryPlace) return 0;
-    return PLACE_MEDAL.medal[categoryPlace - 1] * Math.cbrt(categoryCount);
-  }
-  function placeMedalMethod(n) {
-    if (n <= PLACE_MEDAL.tableUpTo) return "TABLE";
-    if (n >= PLACE_MEDAL.evfFrom) return "EVF_CLASSIC";
-    return "PLACE_MEDAL";
-  }
   var NO_PARTS = {
     placePoints: null,
     deRounds: null,
     deBonus: null,
     podiumBonus: null,
-    fieldPoints: null,
-    belowCount: null,
-    belowPoints: null,
-    medalBonus: null,
     categorySteps: null,
     premium: null
   };
@@ -761,35 +733,8 @@ var SPWSScoring = (() => {
       deRounds: rounds,
       deBonus: rounds * params.deRound,
       podiumBonus: podiumBonus(n, place, params.podiumGold, params.podiumSilver, params.podiumBronze),
-      fieldPoints: null,
-      belowCount: null,
-      belowPoints: null,
-      medalBonus: null,
       categorySteps: null,
       premium: null
-    };
-  }
-  function placeMedal(params, n, place, position) {
-    const method = placeMedalMethod(n);
-    if (method === "TABLE") return meeting(n, place);
-    if (method === "EVF_CLASSIC") return evfClassic(params, n, place);
-    const { categoryCount: k, categoryPlace: m, belowCount: b } = position;
-    if (!(k >= 1 && k <= n)) {
-      throw invalid(`a bracket of ${n} needs the own category's fencer count K between 1 and ${n}, got ${k}.`);
-    }
-    if (!(m >= 1 && m <= k && m <= place)) {
-      throw invalid(`category place m ${m} must be between 1 and K = ${k} and not better than place ${place}.`);
-    }
-    if (!(b >= 0 && b <= n - place)) {
-      throw invalid(`${b} fencers below place ${place} of ${n} is impossible.`);
-    }
-    return {
-      ...NO_PARTS,
-      method,
-      fieldPoints: Math.log2(n),
-      belowCount: b,
-      belowPoints: PLACE_MEDAL.perBelow * b,
-      medalBonus: medalBonus(m, k)
     };
   }
   function joinedMethod(n, categorySteps = 0) {
@@ -819,40 +764,14 @@ var SPWSScoring = (() => {
     };
   }
   function scoreComponents(params, engineCode, n, place, multiplier, position) {
-    if (engineCode !== CLASSIC_ENGINE && engineCode !== PLACE_MEDAL_ENGINE && engineCode !== JOINED_ENGINE) {
+    if (engineCode !== CLASSIC_ENGINE && engineCode !== JOINED_ENGINE) {
       throw new Error(
         `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`
       );
     }
     assertScoringInput(n, place);
-    let raw;
-    if (engineCode === CLASSIC_ENGINE) {
-      raw = evfClassic(params, n, place);
-    } else if (engineCode === JOINED_ENGINE) {
-      if (position && !("categorySteps" in position)) {
-        throw invalid("the joined-bracket engine reads d (categorySteps), not a place-and-medal position.");
-      }
-      raw = joinedPlace(params, n, place, position?.categorySteps ?? 0);
-    } else {
-      if (position && !("categoryCount" in position)) {
-        throw invalid("the place-and-medal engine reads K, m and b, not d.");
-      }
-      raw = placeMedal(
-        params,
-        n,
-        place,
-        position ?? { categoryCount: n, categoryPlace: place, belowCount: n - place }
-      );
-    }
-    const parts = [
-      raw.placePoints,
-      raw.deBonus,
-      raw.podiumBonus,
-      raw.fieldPoints,
-      raw.belowPoints,
-      raw.medalBonus,
-      raw.premium
-    ];
+    const raw = engineCode === CLASSIC_ENGINE ? evfClassic(params, n, place) : joinedPlace(params, n, place, position?.categorySteps ?? 0);
+    const parts = [raw.placePoints, raw.deBonus, raw.podiumBonus, raw.premium];
     const rawTotal = parts.reduce((sum, v) => sum + (v ?? 0), 0);
     const r2 = (v) => v === null ? null : round2(v);
     return {
@@ -861,10 +780,6 @@ var SPWSScoring = (() => {
       deRounds: raw.deRounds,
       deBonus: r2(raw.deBonus),
       podiumBonus: r2(raw.podiumBonus),
-      fieldPoints: r2(raw.fieldPoints),
-      belowCount: raw.belowCount,
-      belowPoints: r2(raw.belowPoints),
-      medalBonus: r2(raw.medalBonus),
       categorySteps: raw.categorySteps,
       premium: r2(raw.premium),
       rawTotal,

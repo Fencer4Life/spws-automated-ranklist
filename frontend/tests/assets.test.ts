@@ -13,6 +13,12 @@ import source from '../../doc/tools/kalkulator-punktow-za-wynik-spws.v2.html?raw
 import wordpress from '../../doc/tools/WP-kalkulator-punktow-za-wynik-spws.html?raw'
 import tablePublished from '../public/tabela-punktacji.html?raw'
 import tableSource from '../../doc/tools/Tabela-punktacji-SPWS_2026-2027.html?raw'
+import scoringSource from '../src/lib/scoring.ts?raw'
+import typesSource from '../src/lib/types.ts?raw'
+import exportSource from '../src/lib/export.ts?raw'
+import editorSource from '../src/components/ScoringConfigEditor.svelte?raw'
+import plLocale from '../src/lib/locales/pl.json?raw'
+import enLocale from '../src/lib/locales/en.json?raw'
 
 describe('static tool assets (ADR-085)', () => {
   // 8.88 — the menu entry must point at a file that actually ships, and that
@@ -93,12 +99,13 @@ const PAGES: [string, string][] = [
 
 describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
   for (const [name, html] of PAGES) {
-    // SE27.PAGE.01 — the formula is the shared module, now with the new engine;
-    // the retired field-scaled engine and its base_slope are gone everywhere.
-    it(`SE27.PAGE.01 ${name}: carries the generated module of both engines, not the retired one`, () => {
+    // SE27.PAGE.01 — the formula is the shared module, with EVF classic and the
+    // joined engine; the retired field-scaled engine and its base_slope, and the
+    // removed place-and-medal engine (ADR-104), are gone everywhere.
+    it(`SE27.PAGE.01 ${name}: carries the generated module of both engines, not the retired ones`, () => {
       const block = html.match(MODULE_BLOCK)?.[0] ?? ''
       expect(block.length).toBeGreaterThan(1000)
-      expect(block).toContain('"SPWS_PLACE_MEDAL_V1_2026_2027"')
+      expect(html).not.toContain('SPWS_PLACE_MEDAL_V1_2026_2027')
       expect(block).toContain('"SPWS_EVF_JOINED_V1_2026_2027"')
       expect(block).toContain('"EVF_CLASSIC_V1_2025_2026"')
       expect(html).not.toMatch(/FIELD_SCALED|baseSlope|base_slope/)
@@ -142,4 +149,27 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
       expect(published).toContain(`id="${id}"`)
     }
   })
+})
+
+// JB27.CLEAN.06 (ADR-104 §1): the place-and-medal engine and its columns are
+// gone from the frontend — the shared module, the row type, the drill-down
+// export, the Admin editor, both locales and both published pages.
+const RETIRED = /PLACE_MEDAL|placeMedal|medalBonus|int_category_count|int_category_place|int_below_count|num_field_pts|num_below_pts|num_medal_bonus/
+describe('JB27.CLEAN.06 — the place-and-medal engine is gone from the frontend', () => {
+  const sources: [string, string][] = [
+    ['src/lib/scoring.ts', scoringSource],
+    ['src/lib/types.ts', typesSource],
+    ['src/lib/export.ts', exportSource],
+    ['src/components/ScoringConfigEditor.svelte', editorSource],
+    ['src/lib/locales/pl.json', plLocale],
+    ['src/lib/locales/en.json', enLocale],
+    ['public/kalkulator-punktow.html', published],
+    ['public/tabela-punktacji.html', tablePublished],
+  ]
+  for (const [path, text] of sources) {
+    it(`${path} names neither the engine nor its columns`, () => {
+      expect(text.length).toBeGreaterThan(100)
+      expect(text.match(RETIRED)?.[0] ?? null).toBeNull()
+    })
+  }
 })

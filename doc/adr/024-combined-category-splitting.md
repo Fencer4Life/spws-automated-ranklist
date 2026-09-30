@@ -2,7 +2,11 @@
 
 **Status:** Accepted
 **Date:** 2026-04-05 (Go-to-PROD)
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (superseded in part — types on the new engine no longer split joined brackets).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (superseded in part — types on the new engine no longer split joined brackets). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the new engine keeps joined brackets whole with a stored category order instead of K, m and b).
+
+## Amendment (2026-09-30 — the joined engine)
+
+For tournament types assigned `SPWS_EVF_JOINED_V1_2026_2027` ([ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md)) — PPW and MPW from 2026/2027 — a joined bracket is still not split and renumbered: every fencer keeps the joined place and the joined N, and each category tournament stores the listing's category order in `tbl_tournament.txt_joined_order` instead of K, m and b. The splitting described here remains in force for types on EVF classic.
 
 ## Amendment (2026-09-28 — superseded in part)
 

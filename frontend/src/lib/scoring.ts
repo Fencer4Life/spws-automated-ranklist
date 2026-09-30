@@ -2,16 +2,16 @@
 // The SPWS scoring formula — the single browser-side implementation
 // =============================================================================
 // doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html §08, step 8;
-// ADR-102 (one module, generated into the published pages), ADR-103 (the
-// place-and-medal engine, released and to be deleted) and the joined-bracket
-// engine locked on 30 September 2026
-// (doc/plans/joined-scoring-final-spec-2026-09-30.html), which replaces it.
+// ADR-102 (one module, generated into the published pages) and ADR-104 (the
+// joined-bracket engine locked on 30 September 2026,
+// doc/plans/joined-scoring-final-spec-2026-09-30.html, which replaced the
+// place-and-medal engine of ADR-103 before it scored a result).
 //
 // THE FORMULA LIVES IN EXACTLY TWO PLACES
 // -----------------------------------------------------------------------------
-// Here, and in the SQL strategies (fn_score_evf_classic_v1_2025_2026 /
-// fn_score_spws_place_medal_v1_2026_2027). The joined-bracket engine has no SQL
-// strategy yet; until it does, its pin is the spec's reference implementation.
+// Here, and in the SQL strategies (fn_score_evf_classic_v1_2025_2026 and the
+// joined engine's). The joined-bracket engine has no SQL strategy yet; until it
+// does, its pin is the spec's reference implementation.
 // A client-side implementation is
 // unavoidable because the scoring-table annex renders a 64 x 64 grid and
 // re-renders on every rank-coefficient change, so a per-cell RPC is not viable.
@@ -22,12 +22,10 @@
 // -----------------------------------------------------------------------------
 // mp_value, the DE round and the podium coefficients are SEASON CONFIGURATION
 // delivered by fn_public_scoring_params, one row per tournament type. They feed
-// EVF classic, and the 2026/2027 engine's range from 32. Everything else about
-// the 2026/2027 engine — log2 N, 3.5 per fencer below, the 13/7/3 medal, the
-// table up to 3 and the switch at 32 — belongs to the engine version, and is
-// therefore a constant here, exactly as it is in SQL. The same holds for the
-// joined-bracket engine: the meeting up to 3, the premium up to 15, 5% per
-// category step and the 1-point cap are constants of the engine version.
+// EVF classic and every bracket of 4 or more under the joined-bracket engine.
+// Everything else about the joined-bracket engine — the meeting up to 3, the
+// premium up to 15, 5% per category step and the 1-point cap — belongs to the
+// engine version, and is therefore a constant here, exactly as it is in SQL.
 //
 // WHY THE JOINED-BRACKET ENGINE SCORES A WHOLE BRACKET
 // -----------------------------------------------------------------------------
@@ -38,21 +36,8 @@
 // =============================================================================
 
 export const CLASSIC_ENGINE = 'EVF_CLASSIC_V1_2025_2026'
-export const PLACE_MEDAL_ENGINE = 'SPWS_PLACE_MEDAL_V1_2026_2027'
-/** The joined-bracket engine. Its SQL strategy and final code arrive with ADR-104. */
+/** The joined-bracket engine (ADR-104). */
 export const JOINED_ENGINE = 'SPWS_EVF_JOINED_V1_2026_2027'
-
-/** The constants of SPWS_PLACE_MEDAL_V1_2026_2027 (ADR-103 §1). Not settings. */
-export const PLACE_MEDAL = {
-  /** N <= tableUpTo scores N - place + 1. */
-  tableUpTo: 3,
-  /** From this bracket size the engine is EVF classic. */
-  evfFrom: 32,
-  /** Points for each fencer with a worse result in the bracket. */
-  perBelow: 3.5,
-  /** Gold, silver, bronze within the own category, times the cube root of K. */
-  medal: [13, 7, 3] as const,
-}
 
 /** The constants of the joined-bracket engine (spec A5). Not settings. */
 export const JOINED = {
@@ -70,7 +55,7 @@ export const JOINED = {
 const CATEGORY_STEPS_MAX = 4
 
 /** The range that scored a result — tbl_result.enum_score_method. */
-export type ScoreMethod = 'TABLE' | 'PLACE_MEDAL' | 'EVF_CLASSIC' | 'EVF_JOINED'
+export type ScoreMethod = 'TABLE' | 'EVF_CLASSIC' | 'EVF_JOINED'
 
 /** One tournament type's parameters, as fn_public_scoring_params publishes them. */
 export interface ScoringParams {
@@ -81,18 +66,6 @@ export interface ScoringParams {
   podiumGold: number
   podiumSilver: number
   podiumBronze: number
-}
-
-/**
- * Where a fencer stands in a joined bracket (ADR-103 §5): K fencers of the own
- * category, place m among them, and b fencers with a strictly worse place in
- * the whole bracket. Omitted, the bracket is one category: K = N, m = place,
- * b = N - place.
- */
-export interface BracketPosition {
-  categoryCount: number
-  categoryPlace: number
-  belowCount: number
 }
 
 /**
@@ -114,11 +87,6 @@ export interface ScoreComponents {
   deRounds: number | null
   deBonus: number | null
   podiumBonus: number | null
-  /** log2 N under PLACE_MEDAL. */
-  fieldPoints: number | null
-  belowCount: number | null
-  belowPoints: number | null
-  medalBonus: number | null
   /** d under EVF_JOINED. */
   categorySteps: number | null
   /** What EVF_JOINED adds to EVF, before the cap. */
@@ -185,33 +153,12 @@ export function podiumBonus(
   return coefficient * 3 * Math.cbrt(n)
 }
 
-/**
- * The 2026/2027 category medal: 13, 7 or 3 x the cube root of K for places
- * 1, 2 or 3 of the own category — only when K exceeds the place, so the last
- * of a category earns none (§8 ust. 5).
- */
-export function medalBonus(categoryPlace: number, categoryCount: number): number {
-  if (categoryPlace > 3 || categoryCount <= categoryPlace) return 0
-  return PLACE_MEDAL.medal[categoryPlace - 1] * Math.cbrt(categoryCount)
-}
-
-/** The range of the 2026/2027 engine that scores a bracket of n. */
-export function placeMedalMethod(n: number): ScoreMethod {
-  if (n <= PLACE_MEDAL.tableUpTo) return 'TABLE'
-  if (n >= PLACE_MEDAL.evfFrom) return 'EVF_CLASSIC'
-  return 'PLACE_MEDAL'
-}
-
 interface RawBreakdown {
   method: ScoreMethod
   placePoints: number | null
   deRounds: number | null
   deBonus: number | null
   podiumBonus: number | null
-  fieldPoints: number | null
-  belowCount: number | null
-  belowPoints: number | null
-  medalBonus: number | null
   categorySteps: number | null
   premium: number | null
 }
@@ -221,15 +168,11 @@ const NO_PARTS = {
   deRounds: null,
   deBonus: null,
   podiumBonus: null,
-  fieldPoints: null,
-  belowCount: null,
-  belowPoints: null,
-  medalBonus: null,
   categorySteps: null,
   premium: null,
 }
 
-/** N <= 3, under both 2026/2027 engines: N - place + 1. */
+/** N <= 3 under the joined-bracket engine: N - place + 1. */
 function meeting(n: number, place: number): RawBreakdown {
   return { ...NO_PARTS, method: 'TABLE', placePoints: n - place + 1 }
 }
@@ -243,42 +186,8 @@ function evfClassic(params: ScoringParams, n: number, place: number): RawBreakdo
     deRounds: rounds,
     deBonus: rounds * params.deRound,
     podiumBonus: podiumBonus(n, place, params.podiumGold, params.podiumSilver, params.podiumBronze),
-    fieldPoints: null,
-    belowCount: null,
-    belowPoints: null,
-    medalBonus: null,
     categorySteps: null,
     premium: null,
-  }
-}
-
-function placeMedal(
-  params: ScoringParams,
-  n: number,
-  place: number,
-  position: BracketPosition,
-): RawBreakdown {
-  const method = placeMedalMethod(n)
-  if (method === 'TABLE') return meeting(n, place)
-  if (method === 'EVF_CLASSIC') return evfClassic(params, n, place)
-
-  const { categoryCount: k, categoryPlace: m, belowCount: b } = position
-  if (!(k >= 1 && k <= n)) {
-    throw invalid(`a bracket of ${n} needs the own category's fencer count K between 1 and ${n}, got ${k}.`)
-  }
-  if (!(m >= 1 && m <= k && m <= place)) {
-    throw invalid(`category place m ${m} must be between 1 and K = ${k} and not better than place ${place}.`)
-  }
-  if (!(b >= 0 && b <= n - place)) {
-    throw invalid(`${b} fencers below place ${place} of ${n} is impossible.`)
-  }
-  return {
-    ...NO_PARTS,
-    method,
-    fieldPoints: Math.log2(n),
-    belowCount: b,
-    belowPoints: PLACE_MEDAL.perBelow * b,
-    medalBonus: medalBonus(m, k),
   }
 }
 
@@ -337,46 +246,23 @@ export function scoreComponents(
   n: number,
   place: number,
   multiplier: number,
-  position?: BracketPosition | JoinedPosition,
+  position?: JoinedPosition,
 ): ScoreComponents {
   // Engine first: an unknown engine is a programming error, not bad user input,
   // and should say so even when the place happens to be out of range too.
-  if (engineCode !== CLASSIC_ENGINE && engineCode !== PLACE_MEDAL_ENGINE && engineCode !== JOINED_ENGINE) {
+  if (engineCode !== CLASSIC_ENGINE && engineCode !== JOINED_ENGINE) {
     throw new Error(
       `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`,
     )
   }
   assertScoringInput(n, place)
 
-  let raw: RawBreakdown
-  if (engineCode === CLASSIC_ENGINE) {
-    raw = evfClassic(params, n, place)
-  } else if (engineCode === JOINED_ENGINE) {
-    if (position && !('categorySteps' in position)) {
-      throw invalid('the joined-bracket engine reads d (categorySteps), not a place-and-medal position.')
-    }
-    raw = joinedPlace(params, n, place, position?.categorySteps ?? 0)
-  } else {
-    if (position && !('categoryCount' in position)) {
-      throw invalid('the place-and-medal engine reads K, m and b, not d.')
-    }
-    raw = placeMedal(
-      params,
-      n,
-      place,
-      position ?? { categoryCount: n, categoryPlace: place, belowCount: n - place },
-    )
-  }
+  const raw: RawBreakdown =
+    engineCode === CLASSIC_ENGINE
+      ? evfClassic(params, n, place)
+      : joinedPlace(params, n, place, position?.categorySteps ?? 0)
 
-  const parts = [
-    raw.placePoints,
-    raw.deBonus,
-    raw.podiumBonus,
-    raw.fieldPoints,
-    raw.belowPoints,
-    raw.medalBonus,
-    raw.premium,
-  ]
+  const parts = [raw.placePoints, raw.deBonus, raw.podiumBonus, raw.premium]
   const rawTotal = parts.reduce<number>((sum, v) => sum + (v ?? 0), 0)
   const r2 = (v: number | null) => (v === null ? null : round2(v))
 
@@ -386,10 +272,6 @@ export function scoreComponents(
     deRounds: raw.deRounds,
     deBonus: r2(raw.deBonus),
     podiumBonus: r2(raw.podiumBonus),
-    fieldPoints: r2(raw.fieldPoints),
-    belowCount: raw.belowCount,
-    belowPoints: r2(raw.belowPoints),
-    medalBonus: r2(raw.medalBonus),
     categorySteps: raw.categorySteps,
     premium: r2(raw.premium),
     rawTotal,

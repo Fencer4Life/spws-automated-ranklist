@@ -233,14 +233,14 @@ class DbConnector:
         RECOMPUTE_DOMESTIC (no source fetch, no re-match).
 
         Returns [{id_fencer, place, enum_age_category, int_birth_year, weapon,
-        gender, date, id_tournament, participant_count, url_results,
-        below_count}]. Empty if the event has no committed tournaments yet.
+        gender, date, id_tournament, participant_count, url_results}]. Empty if
+        the event has no committed tournaments yet.
         Reuses `fetch_birth_years_batch` so the BY is always the governed value.
         weapon/gender/date carry the source tournament's
         enum_weapon/enum_gender/dt_tournament so Commit can re-partition by
-        (weapon, gender, governed-V-cat) on recompute (Step C). The stored N,
-        listing URL and count of fencers below let the joined-bracket module
-        keep a joined bracket whole across a recompute (ADR-103 §4).
+        (weapon, gender, governed-V-cat) on recompute (Step C). The stored N and
+        listing URL let the joined-bracket module keep a joined bracket whole
+        across a recompute (ADR-103 §4).
         """
         tr = (
             self._sb.table("tbl_tournament")
@@ -259,7 +259,7 @@ class DbConnector:
         # (never-live-run) query got wrong.
         rr = (
             self._sb.table("tbl_result")
-            .select("id_fencer,int_place,id_tournament,int_below_count")
+            .select("id_fencer,int_place,id_tournament")
             .in_("id_tournament", list(tmeta))
             .execute()
         )
@@ -278,7 +278,6 @@ class DbConnector:
                 "id_tournament": r.get("id_tournament"),
                 "participant_count": tmeta[r["id_tournament"]].get("int_participant_count"),
                 "url_results": tmeta[r["id_tournament"]].get("url_results"),
-                "below_count": r.get("int_below_count"),
             }
             for r in rows
         ]
@@ -583,15 +582,12 @@ class DbConnector:
         place: int,
         id_candidate_fencer: int | None,
         confidence: float | None,
-        below_count: int,
     ) -> int:
         """Queue one uncertain PZSz senior match for Admin review (ADR-100).
 
         No tbl_result row is written -- fn_queue_pzsz_match_review holds the
         candidate for a human decision (fn_approve_pzsz_match_review /
-        fn_reject_pzsz_match_review). `below_count` is the number of the full
-        senior field with a worse place (ADR-103 §4): the approval writes it,
-        because the unmatched field is never stored.
+        fn_reject_pzsz_match_review).
         """
         resp = self._sb.rpc(
             "fn_queue_pzsz_match_review",
@@ -601,7 +597,6 @@ class DbConnector:
                 "p_int_place": place,
                 "p_id_candidate_fencer": id_candidate_fencer,
                 "p_num_confidence": confidence,
-                "p_int_below_count": below_count,
             },
         ).execute()
         return resp.data

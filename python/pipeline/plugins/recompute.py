@@ -59,9 +59,8 @@ class LoadCommitted(BasePlugin):
                 gender=r.get("gender"),
                 tournament_date=r.get("date"),
                 # ADR-103 §4: what the joined-bracket module keeps across a
-                # recompute — the stored N, b and the listing the row came from.
+                # recompute — the stored N and the listing the row came from.
                 bracket_size=r.get("participant_count"),
-                below_count=r.get("below_count"),
                 bracket_key=r.get("url_results"),
             )
             for r in rows
