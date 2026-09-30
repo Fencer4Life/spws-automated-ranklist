@@ -33,6 +33,15 @@
 # precondition has exactly the same shape, so RUN THIS AGAINST CERT AND PROD
 # before the migration is promoted, not only against LOCAL.
 #
+# ADR-104 (30 September 2026) adds two more preconditions, one per migration:
+#
+#   4. 20260930000001 drops the place-and-medal columns and aborts unless every
+#      one of them holds -1, no row was scored PLACE_MEDAL and no revision names
+#      the engine (SSP-11).
+#   5. 20260930000003 moves SPWS-2026-2027's default, PPW and MPW to the joined
+#      engine and aborts if the season already holds a scored result or a
+#      scoring revision (SSP-06).
+#
 # This script only ever reads. It runs no DDL and writes no row.
 # =============================================================================
 
@@ -60,14 +69,15 @@ run_sql() {
   fi
 }
 
-# The season the 2026/2027 place-and-medal engine is introduced for (ADR-103).
-# The migration must not switch this season's engine if it already holds scored
-# results; 20260928000001 aborts outright if they were scored by the deleted
-# SPWS_FIELD_SCALED_V1_2026_2027.
+# The season the 2026/2027 joined engine is introduced for (ADR-104). The
+# engine migration must not switch this season's engine if it already holds a
+# scored result or a scoring revision (ADR-097 §11).
 TARGET_SEASON="${SCORING_TARGET_SEASON:-SPWS-2026-2027}"
 # The engine that season is meant to end up on. SSP-06 treats scored results as
 # safe when they were produced by this engine, and only as a blocker otherwise.
-TARGET_ENGINE="${SCORING_TARGET_ENGINE:-SPWS_PLACE_MEDAL_V1_2026_2027}"
+TARGET_ENGINE="${SCORING_TARGET_ENGINE:-SPWS_EVF_JOINED_V1_2026_2027}"
+# The engine ADR-104 removes; SSP-11 checks nothing was scored by it.
+REMOVED_ENGINE="SPWS_PLACE_MEDAL_V1_2026_2027"
 
 # -----------------------------------------------------------------------------
 # One query, one JSON array of probes. Kept as a single statement so it runs
@@ -89,8 +99,37 @@ else
     | jq -r '.[0].ok // false' 2>/dev/null)
 fi
 case "$HAS_ENGINE" in
-  t|true) ENGINE_LOOKUP="(SELECT e2.txt_code FROM tbl_season s2 LEFT JOIN tbl_scoring_engine e2 ON e2.id_engine = s2.id_scoring_engine WHERE s2.txt_code = '${TARGET_SEASON}')" ;;
-  *)      ENGINE_LOOKUP="NULL::TEXT" ;;
+  t|true)
+    ENGINE_LOOKUP="(SELECT e2.txt_code FROM tbl_season s2 LEFT JOIN tbl_scoring_engine e2 ON e2.id_engine = s2.id_scoring_engine WHERE s2.txt_code = '${TARGET_SEASON}')"
+    LOCK_LOOKUP="(SELECT s2.ts_scoring_locked_at IS NOT NULL OR s2.id_active_scoring_revision IS NOT NULL FROM tbl_season s2 WHERE s2.txt_code = '${TARGET_SEASON}')"
+    REVISIONS_NAMING_REMOVED="(SELECT count(*) FROM tbl_scoring_config_revision rv LEFT JOIN tbl_scoring_engine e3 ON e3.id_engine = rv.id_engine WHERE e3.txt_code = '${REMOVED_ENGINE}' OR rv.json_snapshot::TEXT LIKE '%${REMOVED_ENGINE}%')"
+    ;;
+  *)
+    ENGINE_LOOKUP="NULL::TEXT"
+    LOCK_LOOKUP="FALSE"
+    REVISIONS_NAMING_REMOVED="0"
+    ;;
+esac
+
+# SSP-11 reads the columns ADR-104's cleanup drops. They exist until that
+# migration lands and are gone afterwards, so probe first, exactly as for
+# tbl_scoring_engine above.
+HAS_RETIRED_SQL="SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tbl_result' AND column_name = 'int_category_count')"
+if [ "$TARGET" = "local" ]; then
+  HAS_RETIRED=$(run_sql "${HAS_RETIRED_SQL};")
+else
+  HAS_RETIRED=$(run_sql "${HAS_RETIRED_SQL} AS ok;" | jq -r '.[0].ok // false' 2>/dev/null)
+fi
+RETIRED_HOLDS_VALUE="(int_category_count <> -1 OR int_category_place <> -1 OR int_below_count <> -1 OR num_field_pts <> -1 OR num_below_pts <> -1 OR num_medal_bonus <> -1)"
+case "$HAS_RETIRED" in
+  t|true)
+    RETIRED_STATE="'present'"
+    RETIRED_VALUES="(SELECT count(*) FROM tbl_result WHERE ${RETIRED_HOLDS_VALUE}) + (SELECT count(*) FROM tbl_result_draft WHERE ${RETIRED_HOLDS_VALUE}) + (SELECT count(*) FROM tbl_pzsz_match_review WHERE int_below_count <> -1)"
+    ;;
+  *)
+    RETIRED_STATE="'gone'"
+    RETIRED_VALUES="0"
+    ;;
 esac
 
 read -r -d '' SQL <<SQLEOF
@@ -171,7 +210,8 @@ p05 AS (
 -- and the migration cannot disagree about what is safe.
 p06 AS (
   SELECT count(*) AS n,
-         ${ENGINE_LOOKUP} AS assigned
+         ${ENGINE_LOOKUP} AS assigned,
+         coalesce(${LOCK_LOOKUP}, FALSE) AS locked
     FROM tbl_tournament t
     JOIN tbl_event e  ON e.id_event  = t.id_event
     JOIN tbl_season s ON s.id_season = e.id_season
@@ -216,6 +256,17 @@ p10 AS (
    WHERE (r.num_place_pts < 0 AND r.num_place_pts <> -1)
       OR (r.num_de_bonus < 0 AND r.num_de_bonus <> -1)
       OR (r.num_podium_bonus < 0 AND r.num_podium_bonus <> -1)
+),
+-- SSP-11 — ADR-104 §1: the cleanup's guards. Every column it drops holds -1,
+-- no result or draft row was scored PLACE_MEDAL, and no revision names the
+-- removed engine. After the cleanup the columns are gone and only the method
+-- and revision counts remain meaningful.
+p11 AS (
+  SELECT ${RETIRED_STATE}::TEXT AS state,
+         ${RETIRED_VALUES} AS values_held,
+         (SELECT count(*) FROM tbl_result WHERE enum_score_method::TEXT = 'PLACE_MEDAL')
+         + (SELECT count(*) FROM tbl_result_draft WHERE enum_score_method::TEXT = 'PLACE_MEDAL') AS scored,
+         ${REVISIONS_NAMING_REMOVED} AS revisions
 )
 SELECT json_agg(x ORDER BY x.code) AS probes FROM (
   SELECT 'SSP-01' AS code,
@@ -246,12 +297,13 @@ SELECT json_agg(x ORDER BY x.code) AS probes FROM (
     FROM p05
   UNION ALL
   SELECT 'SSP-06',
-         CASE WHEN p06.n = 0 OR p06.assigned = '${TARGET_ENGINE}' THEN 'PASS' ELSE 'FAIL' END,
-         CASE WHEN p06.n = 0
-              THEN '${TARGET_SEASON} holds no scored result — its engine may still be assigned'
+         CASE WHEN (p06.n = 0 AND NOT p06.locked) OR p06.assigned = '${TARGET_ENGINE}' THEN 'PASS' ELSE 'FAIL' END,
+         CASE WHEN p06.n = 0 AND NOT p06.locked
+              THEN '${TARGET_SEASON} holds no scored result and no scoring revision — its engine may still be assigned'
               WHEN p06.assigned = '${TARGET_ENGINE}'
               THEN '${TARGET_SEASON} holds ' || p06.n || ' scored result(s), already under ${TARGET_ENGINE} — expected steady state, not a blocker'
-              ELSE '${TARGET_SEASON} already holds ' || p06.n || ' scored result(s) under ' || coalesce(p06.assigned, 'NO ENGINE')
+              ELSE '${TARGET_SEASON} already holds ' || p06.n || ' scored result(s) (locked: ' || p06.locked || ') under '
+                   || coalesce(p06.assigned, 'NO ENGINE')
                    || ' — §11 forbids switching its engine; deployment must stop'
          END FROM p06
   UNION ALL
@@ -269,6 +321,16 @@ SELECT json_agg(x ORDER BY x.code) AS probes FROM (
            || CASE WHEN p10.n = 0 THEN ' — the ADR-103 CHECKs can be added safely'
                    ELSE ' — the ADR-103 CHECKs WOULD ABORT; repair these rows first' END
     FROM p10
+  UNION ALL
+  SELECT 'SSP-11',
+         CASE WHEN p11.values_held = 0 AND p11.scored = 0 AND p11.revisions = 0 THEN 'PASS' ELSE 'FAIL' END,
+         'retired columns ' || p11.state || ', ' || p11.values_held || ' row(s) holding a value; '
+           || p11.scored || ' row(s) scored PLACE_MEDAL; ' || p11.revisions
+           || ' revision(s) naming ${REMOVED_ENGINE}'
+           || CASE WHEN p11.values_held = 0 AND p11.scored = 0 AND p11.revisions = 0
+                   THEN ' — the ADR-104 cleanup can run'
+                   ELSE ' — the ADR-104 cleanup WOULD ABORT' END
+    FROM p11
 ) x;
 SQLEOF
 

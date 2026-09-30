@@ -180,6 +180,10 @@ class StageMatchResult:
     # on INGEST.
     bracket_size: int | None = None
     bracket_key: str | None = None
+    # ADR-104 §3: the listing's stored category order, one digit per place.
+    # Recompute patches the digits of the places whose category moved. Unset
+    # (None) on INGEST and under EVF classic.
+    joined_order: str | None = None
 
 
 @dataclass

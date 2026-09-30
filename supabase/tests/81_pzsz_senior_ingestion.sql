@@ -43,11 +43,12 @@ BEGIN
 
   -- Plain fn_create_season (unlike fn_create_season_with_skeletons) never
   -- assigns id_scoring_engine -- same fixture workaround as
-  -- pg_temp.revision_build_season in 80_season_scoring_contract.sql.
+  -- pg_temp.revision_build_season in 80_season_scoring_contract.sql. PPS and
+  -- MPS are EVF classic (FR-137), named here rather than "the newest engine",
+  -- which since ADR-104 is the joined engine and needs a category order.
   UPDATE tbl_season SET id_scoring_engine = (
     SELECT se.id_engine FROM tbl_scoring_engine se
-     WHERE se.bool_active
-     ORDER BY se.ts_created DESC, se.id_engine DESC LIMIT 1
+     WHERE se.txt_code = 'EVF_CLASSIC_V1_2025_2026'
   ) WHERE id_season = v_season;
 
   UPDATE tbl_scoring_type_config SET num_multiplier = 1.0, int_min_participants = 1

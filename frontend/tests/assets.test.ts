@@ -143,11 +143,27 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
     expect(page).not.toMatch(/∛K|log₂N|3,5 pkt|3\.5 points|13 × ∛/)
   })
 
-  it('SE27.PAGE.03 calculator: any field up to 300, a joined mode, and the SPWS/EVF toggle', () => {
-    expect(published).toMatch(/id="fN"[^>]*max="300"/)
-    for (const id of ['fJ', 'fK', 'fC', 'algSpws', 'algEvf']) {
-      expect(published).toContain(`id="${id}"`)
+  // JB27.PAGE.01 (ADR-104 §8) — the calculator is rebuilt from the annex's
+  // tools: the calculator, the premium table and the simulator, with the same
+  // texts, following the ACTIVE season and computing only with the joined
+  // engine. The SPWS/EVF toggle and the K/m fields are gone, and so is the
+  // 64 x 64 table; the rules are a link to the annex, absolute so that the
+  // WordPress copy, uploaded alone, still reaches it. The browser half — PL
+  // and EN, 375 px, a clean console — is checked in the browser.
+  it('JB27.PAGE.01 calculator: the annex tools for the active season, no toggle, the rules linked', () => {
+    expect(published).toContain('const MAX_PARTICIPANTS = 300;')
+    expect(published).toContain('const SEASON_CODE = null;')
+    for (const id of ['participants', 'place', 'joinedToggle', 'ownCat', 'youngCat', 'typeChips',
+      'premiumTable', 'premiumN', 'simTable']) {
+      expect(published, id).toContain(`id="${id}"`)
     }
+    expect(published).toContain('r.engine_code !== SPWSScoring.JOINED_ENGINE')
+    for (const id of ['algSpws', 'algEvf', 'fK', 'fC', 'pointsTable', 'coefBody']) {
+      expect(published, id).not.toContain(`id="${id}"`)
+    }
+    expect(published).toContain(
+      'href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html"',
+    )
   })
 })
 

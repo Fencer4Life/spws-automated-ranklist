@@ -172,8 +172,33 @@ describe('exportDrilldown — components by method (SE27.UI.08)', () => {
       'Turniej', 'Data', 'Typ', 'Miejsce', 'Liczba zawodników (N)',
       'Współczynnik', 'Metoda',
       'Punkty za miejsce', 'Bonus za wygrane rundy', 'Bonus za podium',
+      'Różnica kategorii (d)', 'Premia w stawce łączonej', 'Obniżenie do ograniczenia',
       'Wynik',
     ])
+  })
+
+  // JB27.UI.03: a joined-bracket row adds up from its components — EVF, the
+  // premium for its d, minus what the cap took off — before the coefficient.
+  it('JB27.UI.03 a joined-bracket result shows its method, d, premium and cap reduction', () => {
+    const row = rowOf({
+      ...base,
+      txt_tournament_code: 'MPW1-V3-M-EPEE-2026-2027', enum_type: 'MPW', num_multiplier: 1.2,
+      int_participant_count: 9, int_place: 7, num_place_pts: 8.18, num_de_bonus: 10,
+      num_podium_bonus: -1, num_joined_premium: 1.43, num_cap_reduction: 0.56,
+      int_category_steps: 3, num_final_score: 22.85, enum_score_method: 'EVF_JOINED',
+    })
+    expect(row['Metoda']).toBe('EVF w stawce łączonej')
+    expect(row['Różnica kategorii (d)']).toBe(3)
+    expect(row['Premia w stawce łączonej']).toBe(1.43)
+    expect(row['Obniżenie do ograniczenia']).toBe(0.56)
+    expect(row['Wynik']).toBe(22.85)
+  })
+
+  it('JB27.UI.03 a classic result shows „nie dotyczy” for d, the premium and the cap', () => {
+    const row = rowOf({ ...base, num_joined_premium: -1, num_cap_reduction: -1, int_category_steps: -1 })
+    expect(row['Różnica kategorii (d)']).toBe('nie dotyczy')
+    expect(row['Premia w stawce łączonej']).toBe('nie dotyczy')
+    expect(row['Obniżenie do ograniczenia']).toBe('nie dotyczy')
   })
 
   it('an EVF classic result shows its method and its three components', () => {
@@ -212,6 +237,7 @@ describe('exportDrilldown — components by method (SE27.UI.08)', () => {
       'Tournament', 'Date', 'Type', 'Place', 'Participants',
       'Multiplier', 'Method',
       'Place Pts', 'DE Bonus', 'Podium Bonus',
+      'Category Difference (d)', 'Joined Premium', 'Cap Reduction',
       'Final Score',
     ])
     expect(row['DE Bonus']).toBe('n/a')

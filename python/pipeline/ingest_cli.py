@@ -313,7 +313,21 @@ def ingest_via_flow(
         )
         contexts.append(ctx)
     _fire_staging_report(event, contexts, db, notifier=notifier)  # ADR-075
+    _after_event_run(event, db, notifier)
     return contexts
+
+
+def _after_event_run(event, db, notifier) -> None:
+    """ADR-104 §7: once every listing of the event is committed, check how its
+    categories were joined against the scoring table's § 2. It stores the
+    verdict and reports a change on Telegram; it never fails the run, because
+    every listing is already scored as fenced."""
+    from python.pipeline.joined_brackets import joining_check
+
+    try:
+        joining_check.run_joining_check(db, notifier, event)
+    except Exception as e:
+        print(f"  (joining check skipped: {e})")
 
 
 def _run_parsed_through_flow(
@@ -712,6 +726,7 @@ def ingest_event_from_url(
     )  # ADR-075
     if send_telegram:
         _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
+    _after_event_run(event, db, notifier)
     return contexts
 
 

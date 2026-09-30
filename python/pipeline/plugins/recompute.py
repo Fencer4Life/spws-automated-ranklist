@@ -62,6 +62,7 @@ class LoadCommitted(BasePlugin):
                 # recompute — the stored N and the listing the row came from.
                 bracket_size=r.get("participant_count"),
                 bracket_key=r.get("url_results"),
+                joined_order=r.get("joined_order"),
             )
             for r in rows
         ]

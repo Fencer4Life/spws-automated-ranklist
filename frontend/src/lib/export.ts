@@ -70,6 +70,9 @@ export function exportDrilldown(
     [t('export_col_place_pts')]: component(s.num_place_pts),
     [t('export_col_de_bonus')]: component(s.num_de_bonus),
     [t('export_col_podium_bonus')]: component(s.num_podium_bonus),
+    [t('export_col_category_steps')]: component(s.int_category_steps),
+    [t('export_col_joined_premium')]: component(s.num_joined_premium),
+    [t('export_col_cap_reduction')]: component(s.num_cap_reduction),
     [t('export_col_final_score')]: s.num_final_score != null ? Number(s.num_final_score) : '',
   }))
 

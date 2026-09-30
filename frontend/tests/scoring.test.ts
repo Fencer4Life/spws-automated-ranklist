@@ -196,6 +196,49 @@ describe('SE27.JOIN — the joined-bracket engine reproduces the spec, Part C', 
   })
 })
 
+// JB27.UI.01 — row for row what fn_score_joined_bracket stores (pgTAP 85,
+// JB27.ENG.05, CAP.02 and ORD.02b): every row of a joined bracket of 4-15 is
+// EVF_JOINED, the youngest with d = 0 and a premium of 0; the cap reduction is
+// stored where the cap applies, 0 where it does not bite, and nowhere else.
+describe('JB27.UI.01 — the method, d and cap reduction match the SQL engine', () => {
+  const methods = (order: string) => [...new Set(scoreBracket(PARAMS, cats(order), 1).map(l => l.method))]
+
+  it('scores every row of a joined bracket of 4-15 EVF_JOINED, and nothing else', () => {
+    expect(methods('343344')).toEqual(['EVF_JOINED'])
+    expect(methods('121321323')).toEqual(['EVF_JOINED'])
+    expect(methods('22122203222222213')).toEqual(['EVF_CLASSIC'])
+    expect(methods('22222')).toEqual(['EVF_CLASSIC'])
+    expect(methods('304')).toEqual(['TABLE'])
+  })
+
+  it('gives the youngest category d = 0 and a premium of 0', () => {
+    const first = scoreBracket(PARAMS, cats('343344'), 1)[0]
+    expect([first.method, first.categorySteps, first.premium, first.finalScore]).toEqual([
+      'EVF_JOINED',
+      0,
+      0,
+      96.35,
+    ])
+    const youngest = scoreComponents(PARAMS, JOINED_ENGINE, 6, 1, 1, { categorySteps: 0, joined: true })
+    expect([youngest.method, youngest.premium, youngest.finalScore]).toEqual(['EVF_JOINED', 0, 96.35])
+    expect(joinedMethod(4, 0, true)).toBe('EVF_JOINED')
+    expect(joinedMethod(16, 0, true)).toBe('EVF_CLASSIC')
+    expect(joinedMethod(3, 0, true)).toBe('TABLE')
+  })
+
+  it('reports the cap reduction as SQL stores it', () => {
+    const reduction = (order: string, coefficient: number) =>
+      scoreBracket(PARAMS, cats(order), coefficient).map(l => l.capReduction)
+    const c2b = reduction('22222222222323', 1)
+    expect([c2b[11], c2b[13]]).toEqual([0.38, 0.62])
+    expect(c2b.filter((_, i) => i !== 11 && i !== 13).every(r => r === 0)).toBe(true)
+    expect(reduction('010210312', 1.2)[6]).toBe(0.56)
+    expect(reduction('22122203222222213', 1).every(r => r === null)).toBe(true)
+    expect(reduction('22222', 1).every(r => r === null)).toBe(true)
+    expect(reduction('30', 1).every(r => r === null)).toBe(true)
+  })
+})
+
 describe('SE27.JOIN — one place, without the cap', () => {
   it('pays 5% per step above 20 EVF points and d points below', () => {
     const second = scoreComponents(PARAMS, JOINED_ENGINE, 6, 2, 1, { categorySteps: 1 })
@@ -262,6 +305,12 @@ describe('SE27.JOIN — one place, without the cap', () => {
         /invalid scoring input/i,
       )
     }
+  })
+
+  it('refuses d > 0 outside a joined bracket, as the SQL strategy does', () => {
+    expect(() =>
+      scoreComponents(PARAMS, JOINED_ENGINE, 8, 2, 1, { categorySteps: 1, joined: false }),
+    ).toThrow(/invalid scoring input/i)
   })
 
   it('refuses a bracket without fencers or with a category outside V0-V4', () => {

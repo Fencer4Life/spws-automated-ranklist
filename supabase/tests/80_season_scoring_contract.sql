@@ -246,18 +246,24 @@ SELECT has_column('public', 'tbl_season', 'id_scoring_engine',
 SELECT has_function('public', 'fn_score_evf_classic_v1_2025_2026',
   ARRAY['integer','integer','numeric','numeric','numeric','numeric','numeric','numeric'],
   'SS26.DB.03a classic strategy exists with the uniform dispatcher signature');
--- SS26.DB.03b — neither withdrawn 2026/2027 strategy remains: field-scaled
--- (ADR-103 §3) and place-and-medal (ADR-104 §1) never scored a result.
+-- SS26.DB.03b — the 2026/2027 strategy takes d and the joined flag after N and
+-- the place (ADR-104 §2); neither withdrawn 2026/2027 strategy remains:
+-- field-scaled (ADR-103 §3) and place-and-medal (ADR-104 §1) never scored a
+-- result.
 SELECT ok(
-  NOT EXISTS (SELECT 1 FROM pg_proc
+  EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+           WHERE n.nspname = 'public' AND p.proname = 'fn_score_spws_evf_joined_v1_2026_2027'
+             AND pg_get_function_identity_arguments(p.oid) LIKE
+                 'p_n integer, p_place integer, p_category_steps integer, p_joined boolean, %')
+  AND NOT EXISTS (SELECT 1 FROM pg_proc
                WHERE proname IN ('fn_score_spws_field_scaled_v1_2026_2027',
                                  'fn_score_spws_place_medal_v1_2026_2027')),
-  'SS26.DB.03b the field-scaled and place-and-medal strategies are gone');
+  'SS26.DB.03b the joined strategy exists with (n, place, d, joined, …); field-scaled and place-and-medal are gone');
 
 -- SS26.DB.04 — an unrecognised engine fails closed, exactly as the carry-over
 -- dispatcher's ELSE RAISE EXCEPTION 'Unknown carryover engine' already does.
 SELECT throws_like(
-  $$SELECT fn_score_by_engine('NO_SUCH_ENGINE_V9', 16, 1, 50, 10, 3, 2, 1)$$,
+  $$SELECT fn_score_by_engine('NO_SUCH_ENGINE_V9', 16, 1, 0, FALSE, 50, 10, 3, 2, 1)$$,
   '%Unknown scoring engine%',
   'SS26.DB.04 an unrecognised engine raises instead of scoring'
 );
