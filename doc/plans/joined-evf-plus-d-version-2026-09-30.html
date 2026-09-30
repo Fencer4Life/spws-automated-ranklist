@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>EVF plus d version</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1060px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:78ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:16.5px;margin:24px 0 4px}
+h3+p{margin:2px 0 6px;color:var(--muted);font-size:14.5px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.grid td,table.ex td{white-space:nowrap}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--mono);font-size:12.5px}
+td.muted{color:var(--muted)}
+td.neg{color:var(--coral);font-weight:600}
+td.pos{color:var(--green)}
+td.warn{color:var(--amber);font-weight:600}
+tr.big td,tr.hit td{background:var(--hit)}
+tr.off td{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+tr.grp td{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--navy-soft);text-decoration:none}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:0 6px;border-radius:4px}
+.c0{background:#e8e0f7;color:#4b2d86}.c1{background:var(--navy-soft);color:var(--navy)}.c2{background:#dff1f1;color:#1d5d5d}
+.c3{background:var(--green-bg);color:var(--green)}.c4{background:var(--amber-bg);color:var(--amber)}
+@media (prefers-color-scheme:dark){.c0{background:#2c2342;color:#c9b6f0}.c2{background:#173535;color:#9fdada}}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warnc{border-left:4px solid var(--coral)}
+.rules{border-left:4px solid var(--navy)}
+.rules ol{margin:6px 0 0;padding-left:22px}
+.rules li{margin:6px 0}
+.rules ol ol{list-style:lower-alpha}
+.rules ol.z{list-style:none;padding-left:0}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.ok{color:var(--green);font-weight:600}.no{color:var(--coral);font-weight:600}
+.legend{font-size:13.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.stat b{display:block;font-family:var(--serif);font-size:24px;font-weight:600}
+.stat span{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:4px;margin-right:6px}
+.tag.ok{background:var(--green-bg);color:var(--green)}.tag.ex{background:var(--amber-bg);color:var(--amber)}.tag.no{background:var(--navy-soft);color:var(--muted)}
+tr.d3 td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+.was{font-size:11px;color:var(--muted)}
+.new{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:var(--amber-bg);color:var(--amber);padding:0 6px;border-radius:4px;margin-left:4px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Version · 30 September 2026 · EVF + d for every joined bracket · weak points on three seasons of real data</p>
+<h1>New version, EVF + d: the rules, and where they are weak on three seasons of real data</h1>
+<p class="dek">This page records the version you chose and tests it on every PPW and MPW of 2023/24–2025/26. The rule holds all four principles. The weak points it shows are about money, not rule logic. Compared with what the same fencers were actually paid in those seasons, the top places of small categories get less. The categories of 4+ carry every loss. Both effects grow if younger categories are stronger, as they usually are.</p>
+
+<div class="card locked"><span class="lb">Decided</span>
+<ul>
+<li><b>Scoring:</b> every joined bracket of 4–15 scores EVF + d, capped at 1 point under the fencer placed ahead. This replaces clauses 3a–3d; the place-ahead lift and 3d are gone.</li>
+<li><b>Joining:</b> a small category at the young end whose only neighbour has 4+ fencers joins it anyway, with the same rule and no 3d.</li>
+<li><b>Z5 removed</b>, as you asked. The rule states it anyway: the premium is exactly d, at most 4.</li>
+<li>No +1 for last place. No tie clause: every place is fenced off.</li>
+<li><b>Still open:</b> how to score a weapon and gender that has only 1–3 fencers in total (§6).</li>
+</ul></div>
+
+<h2>1 · Reguła punktacji</h2>
+<div class="card rules" lang="pl"><span class="lb">Reguła punktacji</span>
+<p>Stawka to wszyscy zawodnicy jednej listy wyników. N to liczba zawodników w stawce, a p to miejsce w stawce. Każde miejsce jest rozstrzygnięte walką, więc w stawce nie ma miejsc ex aequo.</p>
+<ol>
+<li><b>Stawka 1–3 zawodników:</b> N − p + 1 pkt, czyli 3, 2, 1.</li>
+<li><b>Stawka jednej kategorii wiekowej albo stawka 16 i więcej zawodników:</b> punkty EVF za miejsce w stawce.</li>
+<li><b>Stawka łączona 4–15 zawodników:</b> zawodnik dostaje punkty EVF za miejsce w całej stawce <b>plus d pkt</b>, gdzie d to różnica między jego kategorią a najmłodszą kategorią w stawce. Przykład: w stawce z V0 zawodnik V1 ma d = 1, a zawodnik V4 ma d = 4; najmłodsza kategoria ma d = 0. Nikt nie dostaje więcej niż zawodnik, który zajął miejsce przed nim, minus 1 pkt.</li>
+<li>Wynik mnoży się przez współczynnik rangi zawodów (PPW 1,0; MPW 1,2).</li>
+</ol>
+<p>Punkty EVF = 50 − 49 · ln p / ln N + 10 · liczba wygranych rund eliminacji + premia za podium (3 / 2 / 1 · 3 · ∛N).</p></div>
+
+<h2>2 · Zasady łączenia kategorii</h2>
+<div class="card rules" lang="pl"><span class="lb">Zasady łączenia</span>
+<ol>
+<li>Kategoria, w której startuje <b>mniej niż 4 zawodników</b>, jest automatycznie łączona z sąsiednią kategorią wiekową, czyli z najbliższą kategorią obecną na zawodach w tej broni i płci.</li>
+<li>W jednej stawce łączy się <b>najwyżej 2 kategorie</b>.</li>
+<li><b>Więcej niż 2 kategorie</b> (3, 4 lub 5) łączy się tylko wtedy, gdy jest to nieuniknione, czyli gdy inaczej nie da się połączyć wszystkich kategorii poniżej 4 zawodników albo stawka miałaby mniej niż 4 zawodników.</li>
+<li>Kategoria z co najmniej 4 zawodnikami może startować osobno.</li>
+<li>Kategoria z co najmniej 4 zawodnikami może być w stawce łączonej <b>tylko najmłodszą kategorią</b>.
+<p><b>Wyjątek:</b> jeśli najmłodsza kategoria obecna w tej broni i płci ma mniej niż 4 zawodników i nawet razem z kolejnymi kategoriami poniżej 4 zawodników nie osiąga 4, łączy się je z najbliższą starszą kategorią, także gdy ma ona 4 lub więcej zawodników.</p></li>
+<li>Jeśli w całej broni i płci startuje <b>mniej niż 4 zawodników</b>, wszystkie obecne kategorie tworzą jedną stawkę.</li>
+</ol></div>
+
+<h2>3 · Zasady, które reguła ma spełniać</h2>
+<div class="card rules" lang="pl"><span class="lb">Zasady</span>
+<ol class="z">
+<li><b>Z1.</b> Zawodnicy najmłodszej kategorii dostają czyste punkty EVF. Większa stawka sama daje im więcej punktów.</li>
+<li><b>Z2.</b> Kategoria, która ma 1–3 zawodników, nigdy nie traci na łączeniu w porównaniu z turniejem samej swojej kategorii. Zapłacić może tylko kategoria, która ma co najmniej 4 zawodników i mogłaby startować osobno.</li>
+<li><b>Z3.</b> Nikt nie dostaje więcej punktów niż ktokolwiek, kto zajął miejsce przed nim.</li>
+<li><b>Z4.</b> Nikt nie ma tyle samo punktów co zawodnik na miejscu przed nim. Ma zawsze co najmniej 1 pkt mniej.</li>
+</ol></div>
+<p class="legend">Z2 says "nigdy nie traci" rather than "zawsze zyskuje". Older categories of 1–3 always gain. The youngest category of 1–3 gains too, except in last place, where it gets the same as alone, as it did before. The wording on the brainstorm page ("zawsze zyskuje") was too strong for that case.</p>
+<div class="tw"><table>
+<thead><tr><th>Principle</th><th>Real joined brackets of 4–15, 2023/24–2025/26 (109 brackets, every order)</th></tr></thead>
+<tbody>
+<tr><td lang="pl">Z1</td><td class="ok">Kept: no youngest result is ever changed or capped</td></tr>
+<tr><td lang="pl">Z2</td><td class="ok">Kept: 260 older and 154 youngest fencers of 1–3 never below their own bracket. The categories of 4+ pay: the youngest in 40.2% of their results, the older ones in exception brackets in 38.8%.</td></tr>
+<tr><td lang="pl">Z3</td><td class="ok">Kept</td></tr>
+<tr><td lang="pl">Z4</td><td class="ok">Kept: smallest gap 1.00</td></tr>
+</tbody></table></div>
+
+<h2>4 · Weak points on the real data</h2>
+<p class="legend">Method: each real joined bracket, grouped as in §2, is scored in every distinct finishing order that keeps each category's own real order, so every point goes to a real fencer. History stores places only within each category, so the joined order is unknown. Orders are counted as equally likely, and then with younger categories stronger: a fencer one category younger is 1.5 or 2 times as likely to be placed ahead. "Paid then" is what the same fencer received in 2023/24–2025/26: EVF classic on their own category, checked against the scores stored in LOCAL.</p>
+
+<h3>W1 · The top places of small categories get less than they were paid before</h3>
+<p>In 2023/24–2025/26, a fencer alone in their category scored 59.00 for simply being there, a winner of 2 scored 71.34, and a winner of 3 scored 82.98. In 2026/27 a bracket of 1–3 pays 3 / 2 / 1, and joining makes up only part of the difference.</p>
+<div class="tw"><table>
+<thead><tr><th>Older category of 1–3</th><th class="r">Results</th><th class="r">Paid then</th><th class="r">EVF + d, orders equal</th><th class="r">EVF + d, younger 2× stronger</th></tr></thead>
+<tbody>
+<tr><td>Alone in category (1 of 1)</td><td class="r">64</td><td class="r">59.00</td><td class="r neg">38.7</td><td class="r neg">25.3</td></tr>
+<tr><td>Winner of 2</td><td class="r">41</td><td class="r">71.34</td><td class="r neg">59.0</td><td class="r neg">44.6</td></tr>
+<tr><td>Second of 2</td><td class="r">41</td><td class="r">8.56</td><td class="r pos">16.7</td><td class="r pos">10.8</td></tr>
+<tr><td>Winner of 3</td><td class="r">38</td><td class="r">82.98</td><td class="r neg">72.4</td><td class="r neg">60.8</td></tr>
+<tr><td>Second of 3</td><td class="r">38</td><td class="r">37.74</td><td class="r neg">30.9</td><td class="r neg">22.8</td></tr>
+<tr><td>Third of 3</td><td class="r">38</td><td class="r">5.33</td><td class="r pos">8.9</td><td class="r pos">5.7</td></tr>
+<tr><td><b>All older results of 1–3</b></td><td class="r">260</td><td class="r"></td><td class="r neg">−7.7 on average; 59.7% below</td><td class="r neg">−17.5 on average; 75.8% below</td></tr>
+</tbody></table></div>
+<p>The youngest categories of 1–3 lose on average only if orders are equal: −7.2 per result, 59.8% below. If younger categories are stronger they gain: +7.2, 32.5% below. For older categories, the change mostly ends the 59.00 for a lone fencer and the 71.34 for winning among two. For example, a lone V4 fencer joined with V3 in a bracket of 8 scores 99.00 for 1st, 28.33 for 4th and 2.00 for last, where the old pay was 59.00 whatever the result.</p>
+<p class="legend">This comes from the 3 / 2 / 1 table for small brackets, which is part of the released 2026/27 design, not from EVF + d. Measured against that table, as Z2 does, every one of these fencers gains.</p>
+
+<h3>W2 · The best fencer of a small category scores about half of what a category winner scores elsewhere</h3>
+<ul>
+<li>The winner of a category of 4+ that fences alone scores EVF for 1st place: on average 97.7, and never less than 84.29 (173 such categories in history).</li>
+<li>The best fencer of an older category of 1–3 in a joined bracket scores 53.5 on average (orders equal), or 40.3 if younger categories are 2× stronger. In 26–43% of cases they score under 25.</li>
+<li>In one category's season ranking, winning your category is therefore worth about half as much at an event where your category was small. The fencer cannot influence that.</li>
+<li>The place-ahead rule lifted this to 62.1 on average (orders equal). EVF + d gives it up in exchange for small, even premiums.</li>
+</ul>
+
+<h3>W3 · Categories of 4+ carry every loss</h3>
+<ul>
+<li><b>74 real fencers</b> in 180 fencer-events would expect a lower score than in their own category fencing alone (orders equal).</li>
+<li><b>Youngest category of 4+</b>: below its own bracket in 40.2% of its results; 13.2 points lost on average when below, at most 68.1.</li>
+<li><b>Older category of 4+</b> in the 24 exception brackets: below in 38.8%; 15.0 lost on average, at most 71.2.</li>
+<li>The largest expected losses per fencer-event are for 2nd places:
+<ul>
+<li>V3 in GP3-2023-2024 and GP6-2023-2024 Sabre M: −14.7;</li>
+<li>V1 in MPW-2023-2024 Foil M and PPW2-2025-2026 Sabre M: −13.7.</li>
+</ul></li>
+</ul>
+<p class="legend">This is by design (Z2). It is listed because these are real fencers, and they will see the difference.</p>
+
+<h3>W4 · The equal-orders figures favour older categories</h3>
+<div class="tw"><table>
+<thead><tr><th></th><th class="r">Orders equal</th><th class="r">Younger 1.5× stronger</th><th class="r">Younger 2× stronger</th></tr></thead>
+<tbody>
+<tr><td>Youngest 4+ below its own bracket</td><td class="r">40.2%</td><td class="r">30.4%</td><td class="r">24.4%</td></tr>
+<tr><td>Older 4+ (exception brackets) below its own bracket</td><td class="r">38.8%</td><td class="r neg">46.0%</td><td class="r neg">50.9%</td></tr>
+<tr><td>Older 4+: average loss when below</td><td class="r">15.0</td><td class="r">16.2</td><td class="r">17.2</td></tr>
+<tr><td>Best fencer of an older category of 1–3: average score</td><td class="r">53.5</td><td class="r neg">45.4</td><td class="r neg">40.3</td></tr>
+<tr><td>— scoring under 25</td><td class="r">26.4%</td><td class="r">36.2%</td><td class="r">42.6%</td></tr>
+<tr><td>Older results of 1–3 below what was paid then</td><td class="r">59.7%</td><td class="r"></td><td class="r neg">75.8%</td></tr>
+<tr><td>Real fencers with an expected loss</td><td class="r">74</td><td class="r">74</td><td class="r">72</td></tr>
+</tbody></table></div>
+<p>If younger categories are stronger, the loss moves away from the youngest category of 4+ and onto the older categories of 4+ in exception brackets. The older small categories also score less, though still more than the table. The real strength gap is not known: history stores places per category only. That includes the one joint pool in the data, PPW2-2025-2026 Epee F. The first 2026/27 events will give real joined orders to re-run this check on.</p>
+
+<h3>W5 · d depends on who else came</h3>
+<p>Of the 381 older results in real joined brackets, d is 1 in 250, 2 in 98, 3 in 21 and 4 in 12. The same V3 fencer at the same place in the same size of bracket gets + 1 or + 2, depending on whether V2 came. The effect is at most 3 points.</p>
+
+<h3>W6 · The youngest small category in last place gets nothing extra</h3>
+<p>A youngest category of 1–3 finishing last scores exactly what it would alone: 17.5% of its results with orders equal, 5.6% if younger categories are 2× stronger. This is the case "+1 for last" would have covered, and you chose not to add it.</p>
+
+<h3>W7 · History has repeated places</h3>
+<p>Seven categories in the data carry a place held by two fencers, all in épée:</p>
+<ul>
+<li>GP1-2023-2024 M V0 (place 4), GP5-2023-2024 M V0 (3), GP6-2023-2024 M V0 (6);</li>
+<li>MPW-2023-2024 M V1 (10), MPW-2024-2025 F V1 (2), PPW1-2024-2025 F V1 (2), PPW2-2024-2025 M V1 (8).</li>
+</ul>
+<p>The rule assumes every place is fenced off. If a joined result arrives with a repeated place, ingestion should stop and ask for the fenced order rather than guess who was placed ahead.</p>
+
+<h3>W8 · A joined bracket of 16+ gets no + d</h3>
+<p>Once in three seasons, PPW3-2025-2026 Sabre M, the joining forms a bracket of 17 (V0 1 + V1 2 + V2 12 + V3 2). It scores plain EVF: the older fencers get no + d, and a V2 fencer placed behind a younger one can score below their own bracket.</p>
+
+<h3>W9 · A weapon with 1–3 fencers still uses the table</h3>
+<p>20 cases, 40 fencers, all women's foil and sabre. This is the open question in §6.</p>
+
+<h2>5 · What it does well</h2>
+<div class="card locked"><ul>
+<li><b>One clause</b> for every joined bracket, with no chains and no lifts. Each score needs only the fencer's place, their d, and the score one place ahead.</li>
+<li>Z1–Z4 hold on every real bracket and every order tested. The premium is at most 4.</li>
+<li>No small category fences alone. The table is left only where the whole weapon has 1–3 fencers.</li>
+<li>Every category of 1–3 is at least as well off as fencing alone under the 2026/27 table.</li>
+</ul></div>
+
+<h2>6 · Question</h2>
+<div class="card open"><span class="lb">A whole weapon and gender has only 1–3 fencers: how to score it?</span>
+<p>Carried over unanswered from the previous page. It happened 20 times in three seasons, for 40 fencers, all women's foil and sabre. W1 adds context: in those seasons these fencers were paid 59.00, 71.34 or 82.98 for 1st place.</p>
+<ol>
+<li><b>Keep the table only for this case</b><span class="rec">recommended</span>: <span lang="pl">„Tabela 3 / 2 / 1 stosuje się tylko wtedy, gdy w całej broni i płci startuje mniej niż 4 zawodników.”</span> Why:
+<ul>
+<li>there is nobody to join;</li>
+<li>EVF has no value for a single fencer in the formula (ln 1 = 0). The 59.00 paid before is 50 plus the 1st-place podium bonus, a special case for N = 1;</li>
+<li>EVF for 2–3 fencers pays almost as much as a real bracket of 4.</li>
+</ul></li>
+<li><b>EVF for 2–3 fencers</b> (71.34 / 8.56 and 82.98 / 37.74 / 5.33, the old pay). A single fencer still needs its own value.</li>
+<li><b>Join women with men of the same weapon.</b> This removes the table completely. It needs a separate decision on mixed-gender bouts and on reading each gender's ranking from a mixed list.</li>
+</ol>
+<p>After this answer, the implementation plan can be rewritten for this version.</p></div>
+
+<footer>Models, in the session scratchpad:
+<ul>
+<li><code>evfd.py</code>: the rule;</li>
+<li><code>weak.py</code>: weak points W3–W6, with the strength model;</li>
+<li><code>weak2.py</code>: the comparison with the old pay (W1).</li>
+</ul>
+Real fencers and category places come from 2,009 PPW/MPW result rows, 2023/24–2025/26, exported from LOCAL. The old pay for brackets of 1–4 was checked against <code>tbl_result</code> in LOCAL. Related pages: <a href="joined-evf-plus-d-brainstorm-2026-09-30.html">EVF + d brainstorm</a>, <a href="joined-simplified-cap-2026-09-30.html">place-ahead rule (superseded)</a>.</footer>
+</div>
+</body>
+</html>
