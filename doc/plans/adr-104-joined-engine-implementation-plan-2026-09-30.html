@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ADR-104 implementation plan</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1060px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:80ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:16.5px;margin:22px 0 4px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--mono);font-size:12.5px}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warnc{border-left:4px solid var(--coral)}
+.rules{border-left:4px solid var(--navy)}
+.card ol,.card ul{margin:6px 0 0;padding-left:22px}
+.card li{margin:5px 0}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:4px}
+.tag.done{background:var(--green-bg);color:var(--green)}
+.tag.open{background:var(--amber-bg);color:var(--amber)}
+.tag.del{background:var(--coral-bg);color:var(--coral)}
+.tag.keep{background:var(--navy-soft);color:var(--navy)}
+pre.code{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.5;white-space:pre;margin:10px 0}
+.legend{font-size:13.5px;color:var(--muted)}
+.adr{background:var(--card);border:1px dashed var(--navy);border-radius:10px;padding:6px 20px 14px;margin:14px 0}
+.adr h3{margin-top:18px}
+.gate{font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Implementation plan · 30 September 2026 · revision 2, after your answers · D0, D1, D3 and D4 decided · D2 spelled out and open</p>
+<h1>ADR-104: remove the place-and-medal engine, then add the joined-bracket engine</h1>
+<p class="dek">This plan first deletes everything the place-and-medal engine added that nothing will ever use, and only then adds the rule locked on 30 September. That rule reaches the database, ingestion, the Admin editor, the drilldown and both public pages. The work runs RED before GREEN, is done when <code>scripts/preflight.sh</code> exits 0, and ships only on your explicit go.</p>
+
+<div class="card locked"><span class="lb">The plan in nine lines</span>
+<ol>
+<li><b>Step 0, immediately after approval:</b> your two wording changes in the annex's W skrócie.</li>
+<li><b>Cleanup first (D0).</b> One migration deletes the place-and-medal strategy and every column and parameter it added. No row in any environment holds a value in them. The migration refuses to run if one ever does.</li>
+<li><b>Then the new engine.</b> A second migration adds <code>SPWS_EVF_JOINED_V1_2026_2027</code> for PPW, MPW and the 2026/27 default.</li>
+<li><b>The cap reads the whole bracket.</b> Every category tournament of a listing stores the listing's category order (D1), and the scoring reads the cap from it.</li>
+<li><b>Ingestion refuses a joined listing it cannot score:</b> one with a repeated place, or with a fencer who has no category.</li>
+<li><b>The joining check is automatic</b>, with no sign-off (D2). After every event run it compares the fenced brackets with § 2, stores the verdict, and sends a Telegram message on a mismatch.</li>
+<li><b>The points calculator is rebuilt in line with the annex.</b></li>
+<li><b>No 2026/27 ingestion before the release</b> (D3). CERT's coefficients are aligned to PROD's (D4).</li>
+<li><b>Two commits, each green on its own:</b> the cleanup, then the engine. They ship together.</li>
+</ol></div>
+
+<div class="card"><span class="lb">Contents</span>
+<ol>
+<li><a href="#s0">Step 0 — your wording changes</a></li>
+<li><a href="#s1">Where things stand (verified 30 Sep)</a></li>
+<li><a href="#s2">Decisions</a></li>
+<li><a href="#s3">The cleanup: what goes and what stays</a></li>
+<li><a href="#s4">The new engine, exactly</a></li>
+<li><a href="#s5">The automatic joining check</a></li>
+<li><a href="#s6">Planning gate</a></li>
+<li><a href="#s7">ADR-104 draft</a></li>
+<li><a href="#s8">Acceptance tests, written first</a></li>
+<li><a href="#s9">Scenario walk-throughs</a></li>
+<li><a href="#s10">Steps, RED before GREEN</a></li>
+<li><a href="#s11">Release, the season lock and risks</a></li>
+<li><a href="#s12">Verification</a></li>
+<li><a href="#s13">Documentation coherence gate</a></li>
+</ol></div>
+
+<h2 id="s0">0 · Step 0 — your wording changes (first thing after approval)</h2>
+<p>These go in <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>. <code>build-scoring-pages.mjs</code> then copies them to <code>frontend/public/tabela-punktacji.html</code>, and the review copy is rebuilt.</p>
+<div class="tw"><table>
+<thead><tr><th>Where in W skrócie</th><th>Now</th><th>After</th></tr></thead>
+<tbody>
+<tr><td>The N = 1–3 card</td><td>Spotkanie, nie zawody. Punkty: N − miejsce + 1, czyli 3, 2 i 1.</td><td><b>Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</b><br><i>EN: We avoid brackets of one, two or three fencers at all costs.</i></td></tr>
+<tr><td>Point 2 of the list</td><td>Stawka 1–3 zawodników to spotkanie: 3, 2 i 1 pkt.</td><td><b>Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</b><br><i>EN: the same.</i></td></tr>
+</tbody></table></div>
+<p class="legend">§ 1 (the definition of a meeting) and § 3 ust. 1 (N − place + 1) stay, so a bracket of 1–3 that does happen still has a written score. The rebuilt calculator carries the same two sentences.</p>
+
+<h2 id="s1">1 · Where things stand (verified 30 Sep, read-only)</h2>
+<div class="tw"><table>
+<thead><tr><th>Fact</th><th class="r">LOCAL</th><th class="r">CERT</th><th class="r">PROD</th></tr></thead>
+<tbody>
+<tr><td>SPWS-2026-2027 locked</td><td class="r">no</td><td class="r">no</td><td class="r">no</td></tr>
+<tr><td>2026/27 results · scored</td><td class="r">0 · 0</td><td class="r">0 · 0</td><td class="r">0 · 0</td></tr>
+<tr><td>Results, all seasons</td><td class="r">2,811</td><td class="r">2,811</td><td class="r">2,811</td></tr>
+<tr><td>Results with a value (not −1) in K, m or b</td><td class="r">0</td><td class="r">0</td><td class="r">0</td></tr>
+<tr><td>Results with a value in field / below / medal points</td><td class="r">0</td><td class="r">0</td><td class="r">0</td></tr>
+<tr><td>Results scored PLACE_MEDAL · revisions naming the engine</td><td class="r">0 · 0</td><td class="r">0 · 0</td><td class="r">0 · 0</td></tr>
+<tr><td>Draft results with a value in those columns</td><td class="r">0 of 0</td><td class="r">0 of 256</td><td class="r">0 of 0</td></tr>
+<tr><td>PZSz review rows with a value in b</td><td class="r">0 of 0</td><td class="r">0 of 0</td><td class="r">0 of 0</td></tr>
+<tr><td>Results carrying a method (all EVF_CLASSIC)</td><td class="r">2,811</td><td class="r">2,811</td><td class="r">2,811</td></tr>
+</tbody></table></div>
+<p><b>Seed dumps:</b> none of the 21 seed files names any of these columns, so dropping them cannot break a LOCAL reset.</p>
+<p><b>Already done, uncommitted, in this worktree:</b></p>
+<ul>
+<li>The annex rewrite.</li>
+<li><code>scoring.ts</code> with <code>JOINED_ENGINE</code>, <code>joinedAlternatives</code> and <code>scoreBracket</code>, and 89 passing tests.</li>
+</ul>
+<p><b>Branch:</b> <code>claude/scoring-engine-2026-2027</code> at <code>81c9570c</code>, which is already in <code>origin/main</code> (<code>346e5b6e</code>).</p>
+<p><b>This plan replaces</b> <code>doc/plans/scoring-engine-evf-joined-implementation-plan-2026-09-29.html</code>.</p>
+
+<h2 id="s2">2 · Decisions</h2>
+<div class="card locked"><span class="lb">D0 · Delete what the place-and-medal engine added — decided 30 Sep</span>
+<p>Everything the engine added that nothing will ever use is deleted, before the new engine is introduced. §3 lists each item and why it goes or stays.</p>
+<p><b>Why it is safe:</b></p>
+<ul>
+<li>Every one of those columns holds only −1 in all three environments.</li>
+<li>No seed file names them.</li>
+<li>Every reader is changed in the same release.</li>
+<li>The cleanup migration starts with a guard: it aborts, and changes nothing, if any row holds a value in a column it would drop. So it can never delete data silently.</li>
+</ul></div>
+<div class="card locked"><span class="lb">D1 · A — decided 30 Sep</span>
+<p>Each category tournament of a listing stores the listing's category order in <code>tbl_tournament.txt_joined_order</code>, and the writer scores the whole bracket from it.</p></div>
+<div class="card open"><span class="lb">D2 · A bracket that does not follow § 2 — spelled out in §5; still open</span>
+<p>Both options are fully automatic. Nobody signs anything off, and scoring never waits.</p>
+<ul>
+<li><b>A.</b> Score each listing as fenced, store the check, and send a Telegram message on a mismatch. <span class="rec">recommended</span></li>
+<li><b>B.</b> Also split a listing automatically when it joined more categories than § 2 allows.</li>
+</ul>
+<p>Reject with "D2: B" to choose B.</p></div>
+<div class="card locked"><span class="lb">D3 · A — decided 30 Sep</span>
+<p>Every 2026/27 ingestion on CERT and PROD is held until the release is verified. That includes PPS1s (3 Oct) and MSW (9 Oct).</p></div>
+<div class="card locked"><span class="lb">D4 · A — decided 30 Sep</span>
+<p>PROD's coefficients are the intended ones: MEW 1.3, MPS 1.3, MPW 1.2, MSW 1.4, PEW 1, PPS 1.1, PPW 1 and PSW 1.1. CERT is aligned through the Admin editor before the release; that write to CERT runs on your go at step 11. LOCAL follows at its next reset.</p></div>
+<div class="card locked"><span class="lb">Decided earlier</span>
+<ul>
+<li>Delete the place-and-medal engine (29 Sep).</li>
+<li>Rebuild the points calculator in line with the annex, with no SPWS/EVF toggle (29 Sep, and again 30 Sep).</li>
+</ul></div>
+
+<h2 id="s3">3 · The cleanup: what goes and what stays</h2>
+<p>This is everything <code>supabase/migrations/20260928000001_spws_place_medal_engine.sql</code> and its code added.</p>
+<div class="tw"><table>
+<thead><tr><th>Item</th><th>Fate</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>fn_score_spws_place_medal_v1_2026_2027</code>, its registry row and its dispatcher branch</td><td><span class="tag del">delete</span></td><td>This is the engine itself. The registry row is deleted only if nothing names it; otherwise it is marked inactive (scenario 10).</td></tr>
+<tr><td><code>tbl_result</code> and <code>tbl_result_draft</code>: <code>int_category_count</code> (K), <code>int_category_place</code> (m), <code>int_below_count</code> (b)</td><td><span class="tag del">delete</span></td><td>Only the place-and-medal formula read them. The new engine needs the order, not K, m or b. All hold −1.</td></tr>
+<tr><td>The same tables: <code>num_field_pts</code>, <code>num_below_pts</code>, <code>num_medal_bonus</code></td><td><span class="tag del">delete</span></td><td>The engine's outputs. All hold −1.</td></tr>
+<tr><td>Their seven CHECKs, and the PLACE_MEDAL arm of <code>chk_result_components_match_method</code></td><td><span class="tag del">delete</span></td><td>They go with the columns. The method CHECK is rewritten for TABLE and EVF_CLASSIC.</td></tr>
+<tr><td><code>tbl_pzsz_match_review.int_below_count</code>, its CHECK, and the sixth parameter of <code>fn_queue_pzsz_match_review</code></td><td><span class="tag del">delete</span></td><td>This was b for PZSz senior fields, kept "for a later season" that no longer comes. PPS and MPS stay on EVF classic. All review rows hold −1.</td></tr>
+<tr><td>The PLACE_MEDAL value of <code>enum_score_method</code>, and three fields of <code>typ_score_breakdown</code></td><td><span class="tag del">delete</span></td><td>No row holds PLACE_MEDAL. Both types are recreated without them.</td></tr>
+<tr><td>The K, m, b and component columns of <code>vw_score</code> and <code>fn_fencer_scores_rolling_*</code></td><td><span class="tag del">delete</span></td><td>The view and functions are recreated without them, with their grants restored as before.</td></tr>
+<tr><td>Python:
+<ul>
+<li>K, m and b in <code>RowPlan</code> and <code>BracketField</code>;</li>
+<li><code>below_count</code> in <code>types.py</code>, <code>recompute.py</code> and <code>db_connector.py</code>;</li>
+<li>K, m and b in <code>pzsz_commit.py</code>;</li>
+<li>their lines in <code>export_seed.py</code>.</li>
+</ul></td><td><span class="tag del">delete</span></td><td>Readers and writers of the deleted columns.</td></tr>
+<tr><td>TypeScript:
+<ul>
+<li><code>PLACE_MEDAL</code>, <code>BracketPosition</code>, <code>medalBonus</code> and <code>placeMedalMethod</code> in <code>scoring.ts</code>;</li>
+<li>six fields in <code>types.ts</code>;</li>
+<li>six export columns in <code>export.ts</code>;</li>
+<li>their locale keys;</li>
+<li>the PLACE_MEDAL panel of <code>ScoringConfigEditor.svelte</code>.</li>
+</ul></td><td><span class="tag del">delete</span></td><td>They mirror the deleted engine and columns.</td></tr>
+<tr><td>Tests: <code>supabase/tests/83_spws_place_medal_engine.sql</code> (35 assertions) and the place-and-medal cases in <code>02</code>, <code>80</code>, <code>81</code>, <code>82</code>, <code>test_joined_brackets.py</code>, <code>scoring.test.ts</code>, <code>export.test.ts</code> and <code>ScoringConfigEditor.test.ts</code></td><td><span class="tag del">delete</span></td><td>They pin the deleted formula. SE27.RANK.01–05 move out of 83 unchanged.</td></tr>
+<tr><td><code>tbl_scoring_type_config.id_scoring_engine</code>, <code>fn_get_type_engine</code>, the per-type resolve, and <code>type_engines</code> in export, import and apply</td><td><span class="tag keep">keep</span></td><td>The new engine is assigned per type in exactly this way.</td></tr>
+<tr><td><code>tbl_scoring_engine.txt_joined_bracket_module</code> and the two module names</td><td><span class="tag keep">keep</span></td><td>The new engine pairs with <code>JOINED_BRACKET_CATEGORY_PLACE</code>.</td></tr>
+<tr><td>The <code>enum_score_method</code> column</td><td><span class="tag keep">keep</span></td><td>All 2,811 results carry EVF_CLASSIC in it. The new engine adds EVF_JOINED.</td></tr>
+<tr><td><code>json_ranking_rules.entry_types</code> and the ranking entry gate (FR-141)</td><td><span class="tag keep">keep</span></td><td>Not tied to the engine: a fencer still enters the ranking through PPW or MPW.</td></tr>
+<tr><td><code>fn_public_scoring_params</code> (one row per type)</td><td><span class="tag keep">keep</span></td><td>Both pages read it.</td></tr>
+</tbody></table></div>
+<p><b>The interim state between the two migrations.</b> The cleanup moves the 2026/27 default, PPW and MPW to EVF classic, so that the registry row can go. The engine migration moves them to the new engine. Both run in the same deploy. The interim exists only inside that deploy, and in the first commit's tests, where it is a consistent state.</p>
+
+<h2 id="s4">4 · The new engine, exactly</h2>
+<pre class="code">per bracket: N, the joined order (one category digit per place), the season's EVF settings, the type coefficient
+per row:     d = the digit at the row's place − the youngest digit in the order
+
+N ≤ 3                                   → N − p + 1                           method TABLE
+one category in the order, or N ≥ 16    → EVF(N, p)                           method EVF_CLASSIC
+joined, 4 ≤ N ≤ 15 (every row)          → method EVF_JOINED
+    premium  = max(EVF · (1 + 0.05 · d), EVF + d) − EVF      (0 when d = 0)
+    raw      = EVF + premium
+    capped_p = min(raw_p, capped_(p−1) − 1)                    walked from place 1 down
+    cap reduction = raw − capped
+final = ROUND(capped × type coefficient, 2)                     rounded once, after the cap</pre>
+<ul>
+<li><b>The strategy</b> <code>fn_score_spws_evf_joined_v1_2026_2027(n, place, d, joined, mp, de_round, gold, silver, bronze)</code> is one row at a time and IMMUTABLE, with no cap. Its EVF part calls <code>fn_score_evf_classic_v1_2025_2026</code>.</li>
+<li><b>The chain</b> <code>fn_score_joined_bracket(engine, order, mp, de_round, gold, silver, bronze)</code> returns every place:
+<ul>
+<li>category, d, the EVF parts, the premium;</li>
+<li>raw, the cap reduction and the capped value.</li>
+</ul>
+The writer, the preview and pgTAP all call it, so the cap lives in one SQL function. <code>scoreBracket</code> mirrors it.</li>
+<li><b>New result columns</b>, NOT NULL DEFAULT −1, each with a CHECK allowing only ≥ 0 or −1:
+<ul>
+<li><code>num_joined_premium</code>;</li>
+<li><code>num_cap_reduction</code>, stored as a positive amount;</li>
+<li><code>int_category_steps</code> (d).</li>
+</ul></li>
+<li><b>The joined order</b>, <code>txt_joined_order</code>, goes on <code>tbl_tournament</code> and <code>tbl_tournament_draft</code>. Its CHECK allows only digits 0–4, with length N. It is required for tournaments of a type on the new engine.</li>
+</ul>
+
+<h2 id="s5">5 · The automatic joining check (D2)</h2>
+<p><b>Why a mismatch can happen at all:</b></p>
+<ul>
+<li>The organiser forms the brackets on the day.</li>
+<li>A joined bracket needs one fenced order, so the system can score only what was fenced.</li>
+<li>§ 2 is the organiser's rule. The check measures whether the organiser followed it.</li>
+</ul>
+<h3>What runs, in both options, with no human step</h3>
+<ol>
+<li><b>When it runs.</b> At the end of each event run (<code>python/pipeline/ingest_cli.py</code>, the path <code>ingest-event.yml</code> takes) and after each recompute of a PPW or MPW event. Running at the end of the run, not after each listing, avoids false alarms from a half-ingested event.</li>
+<li><b>What it reads.</b> For each weapon and gender, the stored orders of the event's listings. They give every category's exact size, including fencers who were never stored, and which categories fenced together.</li>
+<li><b>What it compares.</b> <code>plan_brackets(sizes)</code>, a port of the spec's A14 <code>brackets()</code> into <code>python/pipeline/joined_brackets/</code>, gives § 2's grouping, which is compared with the fenced one.</li>
+<li><b>What it stores.</b> The verdict per event, weapon and gender goes in a new table, <code>tbl_joining_check</code>: the fenced grouping, § 2's grouping, match or not, and when.</li>
+<li><b>When it alerts.</b> Only when the verdict changes, to a mismatch or back, the pipeline sends one message to the existing alert chat through <code>TelegramNotifier</code> (<code>python/pipeline/notifications.py</code>). The scores are already final.</li>
+</ol>
+<h3>What a mismatch looks like (made-up line-ups)</h3>
+<div class="tw"><table>
+<thead><tr><th>Fenced</th><th>§ 2 would give</th><th>Message</th></tr></thead>
+<tbody>
+<tr><td>V2 (5) + V3 (5) together</td><td>V2 alone, V3 alone (V3 has 4+ and is not the youngest, ust. 5)</td><td>„PPW2-2026-2027 szabla M: fenced V2+V3 (10); § 2: V2 (5) | V3 (5). Scored as fenced.”</td></tr>
+<tr><td>V3 (5) alone, V4 (2) alone</td><td>V3 + V4 (7) (ust. 1)</td><td>„… fenced V3 (5) | V4 (2); § 2: V3+V4 (7). V4 scored as a meeting.”</td></tr>
+<tr><td>V0 (3) + V1 (7) + V2 (6) together</td><td>V0 + V1 (10), V2 alone (the exception reaches only V1)</td><td>„… fenced V0+V1+V2 (16); § 2: V0+V1 (10) | V2 (6). Scored as fenced.”</td></tr>
+</tbody></table></div>
+<h3>The options</h3>
+<ol type="A">
+<li><b>Score every listing as fenced, and check and alert as above.</b> <span class="rec">recommended</span>
+<ul>
+<li>Scores stay true to the bouts fenced.</li>
+<li>Every deviation is recorded and reported automatically, so the board can take it up with the organiser.</li>
+<li>Nothing waits.</li>
+</ul></li>
+<li><b>Also re-bracket automatically where the listing allows it.</b>
+<ul>
+<li>A listing that joined more than § 2 allows is split into § 2's brackets. Each gets its own N and the relative order of its fencers in the listing. For example, V2 5 + V3 5 fenced together would be scored as two brackets of 5.</li>
+<li>It works in one direction only: categories fenced apart that § 2 would have joined have no common order, so they stay as fenced.</li>
+<li>The split order is an estimate. A V3 fencer who lost a bout to a V2 fencer in that listing is ranked as if that bout never happened.</li>
+<li>It adds an event-level re-filing step and its tests.</li>
+</ul></li>
+<li><b>No check.</b> Deviations go unnoticed.</li>
+</ol>
+
+<h2 id="s6">6 · Planning gate — requirements, mockups, owning pages</h2>
+<div class="tw"><table>
+<thead><tr><th>FR</th><th>Change</th><th>Tests</th></tr></thead>
+<tbody>
+<tr><td>FR-137</td><td>PPW, MPW and the 2026/27 default use <code>SPWS_EVF_JOINED_V1_2026_2027</code>; the other six types use EVF classic.</td><td>JB27.TYPE.*</td></tr>
+<tr><td>FR-138</td><td>Superseded: the place-and-medal engine is deleted.</td><td>JB27.CLEAN.*</td></tr>
+<tr><td>FR-139</td><td><code>JOINED_BRACKET_CATEGORY_PLACE</code> pairs with the new engine. It keeps the joined place and N, writes the order, and refuses repeated places and uncategorised fencers. It no longer writes K, m or b.</td><td>JB27.ING.*</td></tr>
+<tr><td>FR-140</td><td>The components become the EVF parts, <code>num_joined_premium</code>, <code>num_cap_reduction</code> and <code>int_category_steps</code>. The methods are TABLE, EVF_CLASSIC and EVF_JOINED. K, m, b and the three place-and-medal components are gone.</td><td>JB27.CLEAN.*, JB27.STORE.*, JB27.UI.03</td></tr>
+<tr><td>FR-142</td><td>The annex is the 30 Sep rewrite. The calculator is rebuilt in line with it.</td><td>JB27.PAGE.*</td></tr>
+<tr><td><b>FR-143</b> (new)</td><td>The engine as in §4.</td><td>JB27.ENG.*, JB27.CAP.*</td></tr>
+<tr><td><b>FR-144</b> (new)</td><td>The stored joined order. The cap is scored from it, and a contradiction is refused.</td><td>JB27.ORD.*, JB27.PRE.01</td></tr>
+<tr><td><b>FR-145</b> (new)</td><td>The automatic joining check: verdict stored, Telegram message on a change.</td><td>JB27.JOIN.*</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>Admin editor mockup</b> (<code>doc/mockups/se27_scoring_config_per_type.html</code>): only the new engine's read-only panel text changes. You see it before any Svelte change.</li>
+<li><b>Drilldown mockup</b> (<code>m10_drilldown_rolling.html</code>): only the labels change.</li>
+<li><b>Public pages:</b> the annex is the approved page. The calculator reuses its tools block.</li>
+</ul>
+<p><b>Owning pages:</b> <code>doc/handbook/subsystems/scoring-and-ranking.html</code>, <code>doc/handbook/domain/competition-and-ranking.html</code>, <code>doc/handbook/domain/glossary.html</code>, <code>doc/handbook/subsystems/ingestion.html</code>, <code>doc/handbook/subsystems/identity-and-recompute.html</code>, <code>doc/handbook/architecture/end-to-end-flows.html</code>, <code>doc/handbook/product/product-surfaces.html</code>, <code>doc/handbook/reference/codebase-map.html</code>, and <code>doc/handbook/reference/security-posture.html</code> (checked). Governance: the specification (§8, Appendix C, Appendix D), the RTM, <code>doc/governance/documentation-inventory.html</code>.</p>
+
+<h2 id="s7">7 · ADR-104 draft <span class="tag open">Proposed — awaiting your sign-off</span></h2>
+<div class="adr">
+<h3>ADR-104: SPWS 2026/2027 — the place-and-medal engine and its columns are removed; EVF with a joined-bracket premium and a whole-bracket cap replaces it</h3>
+<p><b>Supersedes:</b> ADR-103 §1 (the strategy) and §5 (K, m, b and the three components); the ADR-103 amendment's retention of K, m and b for PZSz.</p>
+<p><b>Amends:</b></p>
+<ul>
+<li>ADR-103 §2 (the assignment), §4 (the module), §7 (the pages);</li>
+<li>ADR-102 (the module);</li>
+<li>ADR-092 (the annex);</li>
+<li>ADR-085 (the calculator).</li>
+</ul>
+<p><b>Relates to:</b> ADR-097, ADR-042 and ADR-045, ADR-049, the ADR-036 amendment, ADR-083, ADR-100 (PZSz stays on EVF classic).</p>
+<h3>Context</h3>
+<ul>
+<li><b>The released engine never scored a result.</b> It moved single-category scoring away from EVF: 53.5 points for the winner of 8, where EVF gives 98.00.</li>
+<li><b>Its columns are empty.</b> Every column it added holds only −1 in every environment (verified 30 Sep).</li>
+<li><b>The locked rule</b> (<code>doc/plans/joined-scoring-final-spec-2026-09-30.html</code>):
+<ul>
+<li>it keeps EVF for single-category brackets and for brackets of 16+;</li>
+<li>it treats 1–3 fencers as a meeting;</li>
+<li>it pays older categories of a joined bracket of 4–15 max(EVF × (1 + 0.05 · d), EVF + d);</li>
+<li>it caps everyone 1 point below the fencer directly ahead.</li>
+</ul></li>
+<li><b>The cap crosses categories.</b> Categories are stored as separate tournaments, and some fencers of a listing are never stored.</li>
+</ul>
+<h3>Decision</h3>
+<ol>
+<li><b>Cleanup first, in its own migration.</b>
+<ul>
+<li>It deletes the strategy, its branch, its registry row (or marks it inactive while something names it), the six result columns, the review column and parameter, the PLACE_MEDAL value and three breakdown fields.</li>
+<li>It recreates the readers without them.</li>
+<li>It starts with a guard that aborts if any of those columns holds a value.</li>
+</ul></li>
+<li><b>The new engine, in a second migration:</b> the strategy, the chain function, the registry row (<code>SPWS_EVF_JOINED_V1_2026_2027</code>, „SPWS — punkty EVF i premia w stawce łączonej (od sezonu 2026/2027)”, paired with <code>JOINED_BRACKET_CATEGORY_PLACE</code>), the three new columns, the joined order, and the replaced <code>fn_backfill_scoring_engines</code> with the §11 gate.</li>
+<li><b>The joined order is stored, not derived</b> (D1 A), and recompute patches it.</li>
+<li><b>Ingestion refuses</b> a joined listing with a repeated place, or with a fencer who has no category.</li>
+<li><b>The joining check is automatic</b> (D2): stored, and reported by Telegram, never blocking.</li>
+<li><b>Public pages:</b> both compute only with the new engine. <code>fn_public_scoring_params</code> is unchanged.</li>
+</ol>
+<h3>Alternatives considered</h3>
+<ol>
+<li><b>Keep K, m, b and the components "for later".</b> Rejected (D0): unused columns, readers and tests with no consumer.</li>
+<li><b>Edit the old strategy in place.</b> Rejected: released strategies are immutable.</li>
+<li><b>Cap within the category.</b> Rejected: the rule caps at the fencer directly ahead, of any category.</li>
+<li><b>Read sibling rows, or a separate bracket table.</b> Rejected in D1.</li>
+<li><b>A human sign-off on § 2 mismatches.</b> Rejected (D2): the check is automatic.</li>
+<li><b>Put the cap in the strategy.</b> Impossible: it needs the places above.</li>
+</ol>
+<h3>Consequences</h3>
+<ul>
+<li><b>Single-category brackets of 4+ and all brackets of 16+</b> score exactly EVF.</li>
+<li><b>Readers move to the new columns in the same release:</b> <code>vw_score</code>, the rolling functions, the drilldown export and the seed export.</li>
+<li><b>The PZSz review queue</b> goes back to its five-argument RPC.</li>
+<li><b>The operator must resolve pending matches</b> in a joined PPW or MPW listing before commit.</li>
+<li><b>New:</b> two migrations, <code>supabase/tests/85_spws_evf_joined_engine.sql</code>, <code>tbl_joining_check</code>, and <code>python/tests/test_joining_rules.py</code>.</li>
+<li><b>Deleted:</b> <code>supabase/tests/83_spws_place_medal_engine.sql</code>.</li>
+</ul>
+</div>
+
+<h2 id="s8">8 · Acceptance tests, written first</h2>
+<p>IDs land in the RTM, status Planned, before code. Expected values come from the spec's Part C and its reference implementation. The Vitest pins are re-derived from the LOCAL writer.</p>
+<div class="tw"><table>
+<thead><tr><th>ID</th><th>Suite</th><th>Asserts</th></tr></thead>
+<tbody>
+<tr><td colspan="3"><b>Cleanup (first commit)</b></td></tr>
+<tr><td>JB27.CLEAN.01</td><td>pgTAP</td><td>The place-and-medal function, dispatcher branch and registry row are absent. An unknown engine raises.</td></tr>
+<tr><td>JB27.CLEAN.02</td><td>pgTAP</td><td>The six result columns are absent from <code>tbl_result</code>, <code>tbl_result_draft</code> and <code>vw_score</code>, and <code>int_below_count</code> is absent from <code>tbl_pzsz_match_review</code>. The enum has no PLACE_MEDAL, and the breakdown type has no dropped field.</td></tr>
+<tr><td>JB27.CLEAN.03</td><td>pgTAP</td><td>History is intact: every scored result keeps its score and EVF_CLASSIC. The rolling functions return and are granted as before.</td></tr>
+<tr><td>JB27.CLEAN.04</td><td>pgTAP</td><td>The guard aborts the cleanup when a row holds a value in a column to drop (a fixture row with K = 3).</td></tr>
+<tr><td>JB27.CLEAN.05</td><td>pytest</td><td><code>pzsz_commit.py</code> and the review queue work with five parameters, and no Python path sends K, m or b.</td></tr>
+<tr><td>JB27.CLEAN.06</td><td>Vitest</td><td><code>scoring.ts</code>, <code>types.ts</code>, <code>export.ts</code> and the editor no longer name the engine or its columns.</td></tr>
+<tr><td colspan="3"><b>New engine (second commit)</b></td></tr>
+<tr><td>JB27.ENG.01–06</td><td>pgTAP</td><td>
+<ul>
+<li>Meeting 1 · 2, 1 · 3, 2, 1.</li>
+<li>A single category of 8 gives 98.00 … 1.00 (EVF_CLASSIC).</li>
+<li>Every single-category place of 4–15 equals EVF classic.</li>
+<li>From 16 the score is EVF (C4D).</li>
+<li>The premium: N = 6, d = 1 gives 65.04 and 2.00, with the two values equal at 20.</li>
+<li>An invalid d raises.</li>
+</ul></td></tr>
+<tr><td>JB27.CAP.01</td><td>pgTAP</td><td>All 17 Part C orders, through the writer, store the Part C finals, including MPW × 1.2.</td></tr>
+<tr><td>JB27.CAP.02</td><td>pgTAP</td><td>The reductions: C2B place 12 = 0.38 and place 14 = 0.62; C4B place 7 = 0.56. None in a single category or from 16.</td></tr>
+<tr><td>JB27.CAP.03</td><td>pgTAP</td><td>Every order of V3 3 + V4 3 and of V1 3 + V2 3 + V3 3:
+<ul>
+<li>the youngest scores EVF;</li>
+<li>each fencer scores at least 1 below the fencer ahead;</li>
+<li>a small category never scores below its meeting.</li>
+</ul></td></tr>
+<tr><td>JB27.CAP.04</td><td>pgTAP</td><td>The coefficient applies after the cap, and the score is rounded once.</td></tr>
+<tr><td>JB27.ORD.01–02</td><td>pgTAP</td><td>
+<ul>
+<li>The order's CHECK holds.</li>
+<li>The writer raises on a missing or contradicting order.</li>
+<li>Sibling tournaments scored separately agree with <code>fn_score_joined_bracket</code>.</li>
+</ul></td></tr>
+<tr><td>JB27.PRE.01</td><td>pgTAP</td><td>The preview returns the capped value (C4B place 7: 22.85).</td></tr>
+<tr><td>JB27.TYPE.01–04</td><td>pgTAP</td><td>
+<ul>
+<li>The assignment of each type.</li>
+<li>Older seasons untouched.</li>
+<li>The §11 gate raises a NOTICE on a scored season.</li>
+<li>Export and import round-trip, and the lock rejects a change.</li>
+</ul></td></tr>
+<tr><td>JB27.STORE.01–03</td><td>pgTAP</td><td>
+<ul>
+<li>The methods are TABLE, EVF_CLASSIC and EVF_JOINED.</li>
+<li>The new columns and CHECKs reject −2 and −0.5.</li>
+<li>The components match the method.</li>
+<li>A draft commit carries the order and the new columns.</li>
+</ul></td></tr>
+<tr><td>SE27.RANK.01–05</td><td>pgTAP</td><td>The ranking entry gate, unchanged, moved into file 85.</td></tr>
+<tr><td>JB27.ING.01–05</td><td>pytest</td><td>
+<ul>
+<li>The registry maps the new code to <code>JOINED_BRACKET_CATEGORY_PLACE</code>.</li>
+<li>The order includes every categorised fencer and is written to every sibling.</li>
+<li>A repeated place is refused with "ask for the fenced order", while a single-category tie is accepted.</li>
+<li>An uncategorised fencer is refused.</li>
+<li>Recompute patches the stored places' digits and keeps the rest.</li>
+</ul></td></tr>
+<tr><td>JB27.ING.06</td><td>pytest</td><td><code>PER_CATEGORY_RENUMBER</code> stays byte-identical on the 2025/26 fixtures.</td></tr>
+<tr><td>JB27.JOIN.01</td><td>pytest</td><td><code>plan_brackets</code> reproduces the ten C1 groupings, including both key-6 ties and both meetings.</td></tr>
+<tr><td>JB27.JOIN.02</td><td>pytest</td><td>The end-of-run check:
+<ul>
+<li>it stores the verdict;</li>
+<li>it sends one Telegram message when the verdict changes to a mismatch, and one when it changes back;</li>
+<li>it sends nothing on a repeat run;</li>
+<li>it never blocks the commit;</li>
+<li>it runs after a recompute too.</li>
+</ul></td></tr>
+<tr><td>JB27.UI.01–03</td><td>Vitest</td><td>
+<ul>
+<li><code>scoring.ts</code> matches the LOCAL writer for all of Part C (today's SE27.JOIN tests, renamed).</li>
+<li>The editor panel shows the new constants.</li>
+<li>The export shows d, the premium, the cap reduction and EVF_JOINED, with −1 as „nie dotyczy”.</li>
+</ul></td></tr>
+<tr><td>JB27.PAGE.01–02</td><td>Vitest + browser</td><td>
+<ul>
+<li><code>build-scoring-pages.mjs --check</code> passes, and the three calculator copies are identical.</li>
+<li>Both pages require the new engine.</li>
+<li>PL and EN work, the text reads with JavaScript off, nothing scrolls sideways at 375 px, and the console is clean.</li>
+</ul></td></tr>
+</tbody></table></div>
+
+<h2 id="s9">9 · Scenario walk-throughs</h2>
+<ol>
+<li><b>PPW1, a joined V3 3 + V4 3 foil listing.</b>
+<ul>
+<li>The module writes N = 6 and order <code>343344</code> to both tournaments.</li>
+<li>Each writer scores the whole bracket: 96.35, 65.04, 35.41, 22.09, 6.99 and 2.00.</li>
+<li>The end-of-run check finds the grouping matches § 2, so no message is sent.</li>
+</ul></li>
+<li><b>A single-category V2 listing of 8.</b> Order <code>22222222</code>, EVF_CLASSIC, 98.00 … 1.00.</li>
+<li><b>MPW, V0 3 + V1 3 + V2 2 + V3 1.</b> 7th place has a raw 19.60, capped at 19.04, so 22.85 at × 1.2.</li>
+<li><b>A joined listing of 17.</b> EVF_CLASSIC on the joined place, with no premium and no cap.</li>
+<li><b>A joined listing with two 3rd places.</b> Commit is refused, and the refusal asks for the fenced order.</li>
+<li><b>A joined listing with a pending match.</b> Commit is refused until the match is resolved.</li>
+<li><b>A birth-year correction moves a V3 fencer to V4.</b> Recompute patches the digit in every sibling's order, rescores both tournaments, and re-runs the check.</li>
+<li><b>The organiser fenced V2 5 + V3 5 together.</b> The listing is scored as fenced (D2 A). The verdict is stored and one Telegram message goes out. Nobody has to act for the scores to stand.</li>
+<li><b>PEW via evf-sync, or PPS1s.</b> Both run on EVF classic and are unaffected. A scored result would still lock the season, which is why D3 holds ingestion.</li>
+<li><b>The lock race: something is scored before the deploy.</b>
+<ul>
+<li>The cleanup leaves the assignment unchanged and marks the old engine inactive instead of deleting it. Anything still assigned to it fails closed ("Unknown scoring engine").</li>
+<li>The engine migration's backfill leaves the assignment and raises a NOTICE.</li>
+<li>On your go, one privileged revision per affected environment moves PPW and MPW to the new engine.</li>
+<li>The columns are still dropped, because the guard sees no values in them.</li>
+</ul></li>
+<li><b>An alias transfer or discard in a joined bracket.</b> The writer rescores from the stored order; the siblings stay correct.</li>
+<li><b>The Admin editor.</b> PPW and MPW show the new engine's panel; the other six show EVF classic. It is read-only after the first score.</li>
+<li><b>A fencer opens the calculator.</b> It follows the active season and shows the same tools and numbers as the annex.</li>
+</ol>
+
+<h2 id="s10">10 · Steps, RED before GREEN</h2>
+<ol start="0">
+<li><b>Step 0: your wording</b> (§0).</li>
+<li><b>Branch and commit the design.</b>
+<ul>
+<li><code>git switch -c claude/joined-engine-2026-2027 origin/main</code>, carrying the uncommitted work over.</li>
+<li>Commit the design pages, the spec and this plan after the docs ingest and the graph refresh.</li>
+<li>The modified <code>.pyc</code> is never staged.</li>
+</ul></li>
+<li><b>ADR and governance.</b>
+<ul>
+<li>Write ADR-104 from the signed-off draft (skill new-adr) and render it.</li>
+<li>Add dated amendment notes to ADR-103, 102, 092 and 085.</li>
+<li>Appendix C.</li>
+<li>RTM: FR-137–142 amended, FR-138 superseded, FR-143–145 added, every JB27 ID Planned.</li>
+<li>The Admin panel mockup, shown to you.</li>
+</ul></li>
+<li><b>Cleanup RED.</b>
+<ul>
+<li>JB27.CLEAN.01–04 in a new <code>supabase/tests/85_spws_evf_joined_engine.sql</code>.</li>
+<li>Delete <code>83_…</code>, moving SE27.RANK into 85.</li>
+<li>Strip the place-and-medal cases from 02, 80, 81 and 82.</li>
+<li>CLEAN.05–06 in pytest and Vitest.</li>
+</ul>
+Confirm RED after <code>./scripts/reset-dev.sh</code>.</li>
+<li><b>Cleanup GREEN.</b> Migration <code>&lt;date&gt;000001_remove_place_medal_engine.sql</code>, in this order:
+<ol>
+<li>the guard;</li>
+<li>the interim EVF classic assignment when 2026/27 holds no scored result;</li>
+<li>the dispatcher, the function, and the registry row or its deactivation;</li>
+<li>the columns and CHECKs;</li>
+<li>the review column and the five-argument <code>fn_queue_pzsz_match_review</code>, plus <code>fn_approve_pzsz_match_review</code>;</li>
+<li>the enum and the breakdown type;</li>
+<li><code>vw_score</code>, <code>fn_fencer_scores_rolling_*</code> (dropped, created, regranted), <code>fn_ingest_tournament_results</code>, <code>fn_commit_event_draft</code>, and the writer and preview without the dropped columns.</li>
+</ol>
+Also:
+<ul>
+<li>the Python and TypeScript removals from §3;</li>
+<li><code>scripts/local-fixture-ppw1-2026-2027.sh</code> without K, m and b;</li>
+<li><code>postgrestools check</code>;</li>
+<li>the anon allowlist pair (<code>52_security_posture.sql</code>, <code>scripts/check-security-posture.sh</code>) re-checked;</li>
+<li><code>scripts/preflight.sh</code> exits 0.</li>
+</ul>
+<b>Commit 1.</b></li>
+<li><b>Engine RED.</b> The JB27.ENG, CAP, ORD, PRE, TYPE and STORE tests in 85; JB27.ING and JOIN in pytest. Confirm RED.</li>
+<li><b>Engine GREEN.</b> Migration <code>&lt;date&gt;000002_spws_evf_joined_engine.sql</code>:
+<ul>
+<li>the EVF_JOINED enum value (in its own file if <code>ADD VALUE</code> cannot be used in the same transaction);</li>
+<li>the strategy, the chain and the registry row;</li>
+<li>the dispatcher;</li>
+<li>the new columns, the order columns and CHECKs;</li>
+<li>the writer and the preview;</li>
+<li><code>fn_ingest_tournament_results</code> with <code>p_joined_order</code>;</li>
+<li><code>fn_commit_event_draft</code>;</li>
+<li><code>vw_score</code> and the rolling functions with the new columns;</li>
+<li><code>tbl_joining_check</code> (service role only);</li>
+<li>the replaced backfill, also called from <code>supabase/seed_post_backfill.sql</code>.</li>
+</ul>
+Retarget <code>scripts/check-scoring-migration-preflight.sh</code> (<code>TARGET_ENGINE</code>, plus a probe for the guard's columns).</li>
+<li><b>Python.</b>
+<ul>
+<li><code>MODULE_BY_ENGINE</code>.</li>
+<li>The order and the two refusals in <code>Commit.run</code>.</li>
+<li>The digit patch in <code>_plan_joined_recompute</code>.</li>
+<li><code>fetch_event_results</code> returns the order, and <code>ingest_results</code> sends it.</li>
+<li><code>plan_brackets</code>, and the end-of-run check with <code>TelegramNotifier</code>, hooked in <code>ingest_cli.py</code> and the recompute plugin.</li>
+<li><code>export_seed.py</code>: export the order, skip the outputs.</li>
+<li>Ruff and BasedPyright.</li>
+</ul></li>
+<li><b>Shared module and Admin.</b>
+<ul>
+<li><code>scoring.ts</code>: EVF_JOINED for every row of a joined bracket, and a cap-reduction field. The Part C pins are re-derived from LOCAL.</li>
+<li>The editor panel, after you have seen the mockup.</li>
+<li><code>types.ts</code>, <code>export.ts</code> and the locales.</li>
+<li><code>npm run check</code>.</li>
+</ul></li>
+<li><b>Pages.</b>
+<ul>
+<li>Regenerate the annex.</li>
+<li>Rebuild <code>doc/tools/kalkulator-punktow-za-wynik-spws.v2.html</code> from the annex's tools block: calculator, premium table and simulator, the same texts including your W skrócie sentences, the active season and type chips, and a link to the annex for the rules. The SPWS/EVF toggle and the K/m fields go.</li>
+<li>The generator copies it to the published and WordPress files.</li>
+<li>Update <code>doc/tools/WP-instrukcja-wgrania.txt</code>.</li>
+</ul></li>
+<li><b>Documentation coherence</b> (§13).
+<ul>
+<li>The owning pages, in the present tense.</li>
+<li>Specification §8, Appendix C, and Appendix D: pgTAP 1176 − 35 (file 83) − the stripped cases + file 85.</li>
+<li><code>doc/claude/testing.md</code>, and the RTM set to Covered.</li>
+<li>Archive superseded prose.</li>
+</ul>
+<code>scripts/preflight.sh</code> exits 0. <b>Commit 2.</b></li>
+<li><b>Before the release, each on your go:</b>
+<ul>
+<li>align CERT's coefficients to PROD's through the Admin editor (D4);</li>
+<li>run the migration preflight read-only on LOCAL, CERT and PROD;</li>
+<li>run LOCAL end to end with the PPW1 fixture, then remove it.</li>
+</ul></li>
+<li><b>Release, on your go.</b>
+<ul>
+<li>Integrate from the registered integration checkout and push <code>integration/main:main</code>.</li>
+<li>Follow CI and Release to success.</li>
+<li>Verify read-only on CERT and PROD.</li>
+</ul></li>
+</ol>
+
+<h2 id="s11">11 · Release, the season lock and risks</h2>
+<ul>
+<li><b>D3:</b> every 2026/27 ingestion stays held until the release is verified. After it, PPW1 ingestion and the WordPress calculator upload each need their own go.</li>
+<li><b>Dropping columns.</b> The guard makes it fail closed. <code>pg_depend</code> on LOCAL found no view depending on <code>vw_score</code>. <code>./scripts/reset-dev.sh</code> and the full pgTAP suite prove the order.</li>
+<li><b>Recreated anon functions.</b> <code>fn_fencer_scores_rolling_*</code> must be regranted exactly as before. Both allowlist copies are checked by preflight.</li>
+<li><b>The Python/SQL signature change</b> (the five-argument review RPC). It is safe because no ingestion runs between the migration and the code deploy (D3).</li>
+<li><b>Stricter ingestion.</b> The two refusals name the place or the fencer. The fix is the fenced order, or a resolved match.</li>
+<li><b>False alarms from the joining check.</b> The check runs at the end of the event run, and messages go out only on a change of verdict.</li>
+<li><b>No new workflow and no new secret.</b> Telegram uses the existing <code>TELEGRAM_BOT_TOKEN</code> and <code>TELEGRAM_CHAT_ID</code>.</li>
+</ul>
+
+<h2 id="s12">12 · Verification</h2>
+<ul>
+<li><b><code>scripts/preflight.sh</code> exits 0 at both commits.</b> That is the definition of done.</li>
+<li><b>Per change, outside preflight:</b>
+<ul>
+<li><code>postgrestools check</code> on both migrations;</li>
+<li><code>scripts/refresh-graph.sh</code> and <code>python3 tools/docs-search/ingest.py</code> before each commit;</li>
+<li><code>npm run test:e2e</code>.</li>
+</ul></li>
+<li><b>Browser:</b> the annex, the calculator and the WordPress copy, against JB27.PAGE.02.</li>
+<li><b>After the deploy:</b> <code>scripts/cloud-sql.sh cert|prod</code>, read-only:
+<ul>
+<li>the engine per type;</li>
+<li>no PLACE_MEDAL, and none of the dropped columns;</li>
+<li>2026/27 unlocked;</li>
+<li>both pages computing.</li>
+</ul></li>
+</ul>
+
+<h2 id="s13">13 · Documentation coherence gate</h2>
+<div class="gate">☐ Documentation coherence gate complete
+Impact: domain | product | architecture | operations | configuration | reference
+Canonical docs affected: doc/handbook/subsystems/scoring-and-ranking.html, doc/handbook/domain/competition-and-ranking.html, doc/handbook/domain/glossary.html, doc/handbook/subsystems/ingestion.html, doc/handbook/subsystems/identity-and-recompute.html, doc/handbook/architecture/end-to-end-flows.html, doc/handbook/product/product-surfaces.html, doc/handbook/reference/codebase-map.html, doc/handbook/reference/security-posture.html (checked), doc/Project Specification. SPWS Automated Ranklist System.html, doc/requirements-traceability-matrix.html, doc/governance/documentation-inventory.html
+ADR impact: new (ADR-104) | amend (ADR-103 §2 §4 §7, ADR-102, ADR-092, ADR-085) | supersede (ADR-103 §1 §5 and its K/m/b retention)
+Operational impact: doc/tools/WP-instrukcja-wgrania.txt; doc/handbook/operations/operator-runbooks.html (the ingestion refusals and the joining-check message); privileged-revision procedure only if scenario 10 happens
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS required]
+Superseded prose archived rather than appended: yes</div>
+<p class="legend">The box stays unchecked until every field is resolved and the validator passes.</p>
+
+<footer>Sources:
+<ul>
+<li><code>supabase/migrations/20260928000001_spws_place_medal_engine.sql</code>: types L41, dispatcher L207, storage L369, review column L456, writer L471, preview L537, backfill L916, ingest RPC L1615, draft commit L1752, review RPCs L1929–2045;</li>
+<li><code>python/pipeline/joined_brackets/__init__.py</code>; <code>python/pipeline/plugins/ingest.py</code> L349–572; <code>python/pipeline/plugins/pzsz_commit.py</code> L110–145; <code>python/pipeline/plugins/recompute.py</code> L50–66; <code>python/pipeline/db_connector.py</code> L230–285 and L586–605;</li>
+<li><code>python/pipeline/notifications.py</code> (<code>TelegramNotifier</code>); <code>.github/workflows/ingest-event.yml</code> → <code>python/pipeline/ingest_cli.py</code>;</li>
+<li><code>frontend/src/lib/export.ts</code> L55–85; <code>ScoringConfigEditor.svelte</code> L425–470;</li>
+<li>LOCAL catalogue; and CERT and PROD read-only via <code>scripts/cloud-sql.sh</code>, 30 Sep 2026.</li>
+</ul></footer>
+</div>
+</body>
+</html>

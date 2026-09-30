@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Joined bracket bonus</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:60rem;margin:0 auto;padding:48px 24px 100px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);background:var(--surface-2);padding:.1em .4em;border-radius:5px;font-size:.85em;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,46px);line-height:1.1;margin:0 0 16px;text-wrap:balance;max-width:24ch}
+  .dek{font-size:20px;color:var(--muted);margin:0 0 24px;max-width:62ch}
+  .dek b{color:var(--ink)}
+  h2{font-family:var(--serif);font-weight:700;font-size:28px;line-height:1.15;margin:0 0 12px}
+  h3{font-size:19px;margin:22px 0 8px}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:48px 0 6px}
+  p{margin:0 0 14px;max-width:70ch}
+  ul,ol{margin:0 0 14px;padding-left:1.3em;max-width:72ch} li{margin:6px 0}
+  .formula{font-family:var(--mono);font-size:15px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 14px;margin:12px 0;overflow-x:auto;white-space:pre;line-height:1.7}
+  .tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:600px;font-variant-numeric:tabular-nums}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+  th{background:var(--surface-2);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  td:first-child,th:first-child{text-align:left}
+  tr:last-child td{border-bottom:0}
+  th.rec,td.rec{background:var(--good-soft)}
+  .bad{color:var(--danger);font-weight:700}
+  .ok{color:var(--good);font-weight:700}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .card.rec{border:2px solid var(--good)}
+  .card .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--muted);margin:0 0 6px}
+  .card.rec .tag{color:var(--good)}
+  .card ul{padding-left:1.1em;font-size:16px}
+  .note{border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;background:var(--warn-soft);padding:14px 18px;margin:16px 0}
+  .note .lede{font-weight:800;color:var(--warn);margin:0 0 6px}
+  .note>:last-child{margin-bottom:0}
+  .ask{border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);padding:18px 20px;margin:24px 0}
+  .ask .lede{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 8px}
+  .ask h2{font-size:24px}
+  .ask>:last-child{margin-bottom:0}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--line);font-size:13px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:600px){.wrap{padding:30px 16px 80px} body{font-size:17px} h2{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Scoring 2026/27 · brainstorm · EVF for every bracket, a bonus for joining</p>
+  <h1>EVF for single brackets, a medal bonus for joined ones: your rule, tested</h1>
+  <p class="dek">I understand the rule, and the rule gives single-category brackets <b>exact parity with EVF</b>. In joined brackets it misses its own goal, in two opposite directions. When older fencers finish behind the younger ones, which is the common case, <b>they score less than their category would alone</b>. When a medallist finishes just behind another category, <b>they can outscore the bracket winner</b>. Your rule with two guards added, and your bonus left exactly as you defined it, meets both goals. The page ends with one question.</p>
+
+  <div class="note">
+    <p class="lede">This replaces the constant-tuning question</p>
+    <p>With single brackets on pure EVF, the SPWS place-and-medal formula (log₂ N, points per fencer below, medal × ∛K) no longer scores any single bracket. The choice between A′, the ⁵√K set, D and C on the <a href="scoring-parameters-2026-27-brainstorm-2026-09-28.html">previous page</a> falls away. What is left to tune is the joined-bracket bonus.</p>
+  </div>
+
+  <p class="kicker">1 · Your rule, as I read it</p>
+  <h2>Three ranges, two kinds of bracket</h2>
+  <div class="formula">N = 1–3                 N − p + 1, the table, unchanged
+N ≥ 16                  EVF(N, p)
+N = 4–15, one category  EVF(N, p)                                   ← parity with EVF
+N = 4–15, joined        EVF(N, p)
+                        + medal[m] × ∛K + 3.5 × b   when m ≤ 3, m &lt; p and b ≥ 1
+                        + 2                          for the last fencer of the bracket
+
+medal = 13 / 7 / 3 for gold / silver / bronze of the fencer's own category</div>
+  <p>N is the whole bracket and p the place in it. K is the size of the fencer's own category, m the place within it, and b the number of fencers who finished below.</p>
+  <p><strong>"m &lt; p" means a fencer of another category finished ahead of this one.</strong> Your cases, in your words, each with the 3.5 points for every fencer with a worse score, of any category:</p>
+  <ul>
+    <li>the 1st gets plain EVF;</li>
+    <li>a 2nd from the 1st's category gets plain EVF;</li>
+    <li>a 2nd from another category gets EVF + gold (13 × ∛K) + 3.5 for every fencer with a worse score;</li>
+    <li>a 3rd from a new category gets EVF + gold (13 × ∛K) + 3.5 for every fencer with a worse score, and there must be at least one;</li>
+    <li>a 3rd from the 2nd's category gets EVF + silver (7 × ∛K) + 3.5 for every fencer with a worse score, and there must be at least one;</li>
+    <li>the last fencer of the joined bracket gets plain EVF + 2.</li>
+  </ul>
+  <p>Every figure on this page applies the bonus in full, medal plus 3.5 × b; the formula above shows it.</p>
+  <p>A fencer outside their category's medals (4th and lower, other than the last) gets plain EVF.</p>
+  <p><strong>Two cases your list does not name, filled in by the same logic:</strong></p>
+  <ul>
+    <li>A 3rd from the 1st's category, after a 2nd from another category, is silver in their own category, so they get silver + 3.5 × b.</li>
+    <li>If the 1st, 2nd and 3rd are all one category, no other category passed any of them, so all three get plain EVF, as in a single bracket.</li>
+  </ul>
+
+  <p class="kicker">2 · What the rule does</p>
+  <h2>Four brackets, compared with each category fenced alone</h2>
+  <p>"Alone" is what the fencer would score if their category had fenced by itself: EVF(K, m), or the table for a category of 1–3. Beating that figure is what makes joining worth it.</p>
+
+  <h3>Older fencers all finish behind the younger ones (7 younger + 8 older, N = 15)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Older fencer</th><th>overall place</th><th>alone (8 fencers)</th><th>your rule</th><th>change</th></tr>
+    <tr><td>category gold</td><td>8</td><td>98.0</td><td>72.9</td><td class="bad">−25.1</td></tr>
+    <tr><td>category silver</td><td>9</td><td>65.7</td><td>45.2</td><td class="bad">−20.5</td></tr>
+    <tr><td>category bronze</td><td>10</td><td>40.1</td><td>31.8</td><td class="bad">−8.3</td></tr>
+    <tr><td>category 4th</td><td>11</td><td>27.3</td><td>6.6</td><td class="bad">−20.7</td></tr>
+    <tr><td>category 8th, last</td><td>15</td><td>1.0</td><td>3.0</td><td class="ok">+2.0</td></tr>
+  </table></div>
+  <p>Every older fencer except the last scores less than if their category had fenced alone. In this case the rule is a reason not to join.</p>
+
+  <h3>The two categories alternate (older, younger, older…, N = 15)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Fencer</th><th>overall place</th><th>alone</th><th>your rule</th><th>for comparison</th></tr>
+    <tr><td>older gold, bracket winner</td><td>1</td><td>98.0</td><td>112.2</td><td>winner of a single bracket of 15: 112.2</td></tr>
+    <tr><td>younger gold</td><td>2</td><td>97.2</td><td class="bad">152.6</td><td>40.4 more than the bracket winner</td></tr>
+    <tr><td>older silver</td><td>3</td><td>65.7</td><td class="bad">113.5</td><td>more than the bracket winner</td></tr>
+    <tr><td>older 4th</td><td>7</td><td>27.3</td><td>24.8</td><td class="bad">−2.5 against alone</td></tr>
+  </table></div>
+
+  <h3>A younger category of 10 joined by an older category of 3 (N = 13)</h3>
+  <p>The older fencers, who alone would score from the table (3, 2, 1), get 93.8, 32.1 and 10.4. The younger category pays for it. Its 4th, pushed down to 5th, falls from 40.5 to 29.3; its 8th, pushed down to 10th, falls from 15.7 to 6.0. A younger category has little reason to accept that join.</p>
+
+  <h3>Across 20,000 random joined brackets</h3>
+  <p>Each simulated bracket has two categories and 4–15 fencers, with the younger category a little stronger on average. Under your rule:</p>
+  <ul>
+    <li><strong>35.1%</strong> of older fencers and <strong>11.9%</strong> of younger fencers score less than their category alone would have given them;</li>
+    <li>in 11.2% of cases a fencer scores more than the same category place earns in a single-category bracket of the same size, by up to <strong>+46.9</strong>.</li>
+  </ul>
+
+  <p class="kicker">3 · Why</p>
+  <h2>The bonus is largest where joining cost least</h2>
+  <p>The bonus grows with the fencers below, 3.5 × b. So it is largest when the medallist finished high, which is exactly when joining cost them least.</p>
+  <ul>
+    <li><strong>Older gold, 8th of 15.</strong> Joining cost 75.6 points of EVF: 98.0 alone against 22.4 for 8th of 15. The bonus gives back 50.5 (26.0 medal + 24.5 for 7 fencers below).</li>
+    <li><strong>Younger gold, 2nd of 15.</strong> Joining cost 14.9: 97.2 alone against 82.3 for 2nd of 15. The bonus pays 70.4 (24.9 medal + 45.5 for 13 below).</li>
+  </ul>
+  <p>The 3.5 × b term also counts a second time what EVF's place points already count. A category's 4th and lower get no bonus at all, however far other categories push them down.</p>
+
+  <p class="kicker">4 · Three rules</p>
+  <h2>As stated, as stated with two guards, or category place on the whole bracket</h2>
+  <div class="cards">
+    <div class="card rec">
+      <p class="tag">Rule 2 · your rule + two guards · recommended</p>
+      <div class="formula" style="white-space:normal">score = your rule, unchanged:<br>EVF(N, p) + medal[m] × ∛K + 3.5 × b for a medallist passed by another category; +2 for the last.<br>Then two guards: never below <em>alone</em>, never above EVF(N, m).</div>
+      <ul>
+        <li>For the board: "In a joined bracket no one scores less than their category would have scored alone, and no one scores more than their category place would score in a single-category bracket of the same size."</li>
+        <li>Your bonus stays exactly as you defined it: the medal, 3.5 per fencer with a worse score, and +2 for the last.</li>
+        <li>The place in the whole bracket still counts, through EVF(N, p).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="tag">Rule 1 · as stated</p>
+      <ul>
+        <li>EVF(N, p) + medal × ∛K + 3.5 × b for a medallist passed by another category; +2 for the last.</li>
+        <li>35% of older fencers lose by joining, and some medallists outscore the bracket winner (§2).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="tag">Rule 3 · category place on the whole bracket</p>
+      <ul>
+        <li>score = EVF(N, m): the fencer's place in their own category, scored as if the whole bracket were their category.</li>
+        <li>The simplest rule, and everyone gains by joining.</li>
+        <li>But the place in the whole bracket stops counting, although the board's §8 scores joined brackets by it. Small categories also get the full bracket's values: the winner of a category of 3 who finished 4th of 13 gets 111.2, the bracket winner's score.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="tablewrap"><table>
+    <tr><th>Case</th><th>alone</th><th>Rule 1 · as stated</th><th class="rec">Rule 2 · your rule + two guards</th><th>Rule 3 · EVF(N, m)</th></tr>
+    <tr><td>older gold, 8th of 15 (younger all ahead)</td><td>98.0</td><td class="bad">72.9</td><td class="rec">112.2 <small>(ceiling)</small></td><td>112.2</td></tr>
+    <tr><td>older silver, 9th of 15</td><td>65.7</td><td class="bad">45.2</td><td class="rec">82.3 <small>(ceiling)</small></td><td>82.3</td></tr>
+    <tr><td>older bronze, 10th of 15</td><td>40.1</td><td class="bad">31.8</td><td class="rec">57.5 <small>(ceiling)</small></td><td>57.5</td></tr>
+    <tr><td>older 4th, 11th of 15</td><td>27.3</td><td class="bad">6.6</td><td class="rec">27.3 <small>(floor)</small></td><td>44.9</td></tr>
+    <tr><td>older last, 15th of 15</td><td>1.0</td><td>3.0</td><td class="rec">3.0</td><td>22.4</td></tr>
+    <tr><td>younger gold, 2nd of 15 (alternating)</td><td>97.2</td><td class="bad">152.6</td><td class="rec">112.2 <small>(ceiling)</small></td><td>112.2</td></tr>
+    <tr><td>older gold of a category of 3, 4th of 13</td><td>3.0</td><td>93.8</td><td class="rec">93.8 <small>(your rule)</small></td><td class="bad">111.2</td></tr>
+    <tr><td>younger 4th of 10, pushed to 5th of 13</td><td>40.5</td><td class="bad">29.3</td><td class="rec">40.5 <small>(floor)</small></td><td>43.5</td></tr>
+    <tr><td colspan="5" style="text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)">20,000 random joined brackets</td></tr>
+    <tr><td>older fencers scoring less than alone</td><td></td><td class="bad">35.1%</td><td class="rec ok">0%</td><td class="ok">0%</td></tr>
+    <tr><td>younger fencers scoring less than alone</td><td></td><td class="bad">11.9%</td><td class="rec ok">0%</td><td class="ok">0%</td></tr>
+    <tr><td>average gain over alone, older / younger</td><td></td><td>+9.0 / +18.4</td><td class="rec">+11.4 / +17.8</td><td>+23.3 / +23.6</td></tr>
+    <tr><td>above the same category place in a single bracket of N</td><td></td><td class="bad">11.2%, up to +46.9</td><td class="rec">0.7%, up to +0.8 (the +2 for last)</td><td>never</td></tr>
+  </table></div>
+  <p>Under Rule 2, an older fencer outside the medals breaks even: they score what their category would have given them alone. If they should also gain, a flat bonus for every fencer of a joined bracket would do it, for example the +2 you gave the last. That is a setting, not a change of rule.</p>
+
+  <p class="kicker">5 · What changes</p>
+  <h2>A different engine, not new constants</h2>
+  <ul>
+    <li>For N = 4–15, single brackets move from the SPWS formula to EVF. The engine becomes EVF with a joined-bracket rule; the scoring annex, which today tabulates the SPWS formula for 4–31, becomes the EVF table plus the joined-bracket rule.</li>
+    <li>The inputs already exist. The scoring contract passes N, p, K, m and b for every result (ADR-103 §5). Rule 2's two guards need EVF(K, m), or the table for K ≤ 3, and EVF(N, m). All of them come from N, K and m.</li>
+    <li>This amends ADR-103 substantially (likely a new engine version), goes to the board, and lands before the first 2026/27 PPW result is scored.</li>
+  </ul>
+
+  <div class="ask">
+    <p class="lede">The question</p>
+    <h2>Which rule do we design further: Rule 2, Rule 1 or Rule 3?</h2>
+    <ul>
+      <li><strong>Rule 2 · your rule + two guards</strong> — your rule exactly as defined (EVF + medal × ∛K + 3.5 × b, +2 for the last), never below the category alone, never above the same category place in a single bracket of N.</li>
+      <li><strong>Rule 1 · as stated</strong> — EVF + medal × ∛K + 3.5 × b for a medallist passed by another category.</li>
+      <li><strong>Rule 3 · EVF(N, m)</strong> — category place scored on the whole bracket's size.</li>
+    </ul>
+    <p><strong>Recommendation: Rule 2.</strong></p>
+    <ul>
+      <li>It is your rule, bonus unchanged, with two guards.</li>
+      <li>It is the only one of the three that meets both of your goals and keeps the board's whole-bracket place.</li>
+      <li>Single brackets stay pure EVF.</li>
+      <li>No fencer of either category loses by joining, so older categories have a reason to join and younger ones no reason to refuse.</li>
+      <li>No joined fencer outscores what the same category place earns in a single bracket of the same size.</li>
+    </ul>
+    <p>Under Rule 1, a third of older fencers score less by joining; Rule 3 stops counting the place in the whole bracket.</p>
+    <p>The one case your list does not name — a 3rd from the 1st's category after a 2nd from another category — gets silver by the same logic: that fencer is silver in their own category. If it should be something else, say so with your answer.</p>
+  </div>
+
+  <p class="foot">joined-bracket-evf-bonus-brainstorm · 2026-09-29 · EVF classic as in frontend/src/lib/scoring.ts (base 50, 10 per DE round, podium 3/2/1 × 3 × ∛N) · medal 13 / 7 / 3 × ∛K, 3.5 per fencer below, +2 for last, as proposed · simulation: 20,000 brackets, N uniform 4–15, two categories split uniformly, strengths drawn from normal distributions with the younger category 0.7 standard deviations stronger</p>
+</div>
+</body>
+</html>

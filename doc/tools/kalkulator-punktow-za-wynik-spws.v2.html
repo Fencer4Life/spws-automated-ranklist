@@ -266,16 +266,22 @@ var SPWSScoring = (() => {
   var scoring_exports = {};
   __export(scoring_exports, {
     CLASSIC_ENGINE: () => CLASSIC_ENGINE,
+    JOINED: () => JOINED,
+    JOINED_ENGINE: () => JOINED_ENGINE,
     PLACE_MEDAL: () => PLACE_MEDAL,
     PLACE_MEDAL_ENGINE: () => PLACE_MEDAL_ENGINE,
     deRoundsWon: () => deRoundsWon,
+    joinedAlternatives: () => joinedAlternatives,
+    joinedMethod: () => joinedMethod,
     medalBonus: () => medalBonus,
     placeMedalMethod: () => placeMedalMethod,
     podiumBonus: () => podiumBonus,
+    scoreBracket: () => scoreBracket,
     scoreComponents: () => scoreComponents
   });
   var CLASSIC_ENGINE = "EVF_CLASSIC_V1_2025_2026";
   var PLACE_MEDAL_ENGINE = "SPWS_PLACE_MEDAL_V1_2026_2027";
+  var JOINED_ENGINE = "SPWS_EVF_JOINED_V1_2026_2027";
   var PLACE_MEDAL = {
     /** N <= tableUpTo scores N - place + 1. */
     tableUpTo: 3,
@@ -286,6 +292,17 @@ var SPWSScoring = (() => {
     /** Gold, silver, bronze within the own category, times the cube root of K. */
     medal: [13, 7, 3]
   };
+  var JOINED = {
+    /** A bracket of up to this many fencers is a meeting: N - place + 1. */
+    meetingUpTo: 3,
+    /** A joined bracket up to this size pays the premium; from one more, plain EVF. */
+    premiumUpTo: 15,
+    /** The premium per category step: EVF x (1 + perStep x d). */
+    perStep: 0.05,
+    /** Nobody scores more than the fencer directly ahead, minus this. */
+    capGap: 1
+  };
+  var CATEGORY_STEPS_MAX = 4;
   function round2(value) {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   }
@@ -327,6 +344,21 @@ var SPWSScoring = (() => {
     if (n >= PLACE_MEDAL.evfFrom) return "EVF_CLASSIC";
     return "PLACE_MEDAL";
   }
+  var NO_PARTS = {
+    placePoints: null,
+    deRounds: null,
+    deBonus: null,
+    podiumBonus: null,
+    fieldPoints: null,
+    belowCount: null,
+    belowPoints: null,
+    medalBonus: null,
+    categorySteps: null,
+    premium: null
+  };
+  function meeting(n, place) {
+    return { ...NO_PARTS, method: "TABLE", placePoints: n - place + 1 };
+  }
   function evfClassic(params, n, place) {
     const mp = params.mpValue;
     const rounds = deRoundsWon(n, place);
@@ -339,24 +371,14 @@ var SPWSScoring = (() => {
       fieldPoints: null,
       belowCount: null,
       belowPoints: null,
-      medalBonus: null
+      medalBonus: null,
+      categorySteps: null,
+      premium: null
     };
   }
   function placeMedal(params, n, place, position) {
     const method = placeMedalMethod(n);
-    if (method === "TABLE") {
-      return {
-        method,
-        placePoints: n - place + 1,
-        deRounds: null,
-        deBonus: null,
-        podiumBonus: null,
-        fieldPoints: null,
-        belowCount: null,
-        belowPoints: null,
-        medalBonus: null
-      };
-    }
+    if (method === "TABLE") return meeting(n, place);
     if (method === "EVF_CLASSIC") return evfClassic(params, n, place);
     const { categoryCount: k, categoryPlace: m, belowCount: b } = position;
     if (!(k >= 1 && k <= n)) {
@@ -369,37 +391,74 @@ var SPWSScoring = (() => {
       throw invalid(`${b} fencers below place ${place} of ${n} is impossible.`);
     }
     return {
+      ...NO_PARTS,
       method,
-      placePoints: null,
-      deRounds: null,
-      deBonus: null,
-      podiumBonus: null,
       fieldPoints: Math.log2(n),
       belowCount: b,
       belowPoints: PLACE_MEDAL.perBelow * b,
       medalBonus: medalBonus(m, k)
     };
   }
+  function joinedMethod(n, categorySteps = 0) {
+    if (n <= JOINED.meetingUpTo) return "TABLE";
+    if (categorySteps > 0 && n <= JOINED.premiumUpTo) return "EVF_JOINED";
+    return "EVF_CLASSIC";
+  }
+  function joinedAlternatives(evf, categorySteps) {
+    const byPercent = evf * (1 + JOINED.perStep * categorySteps);
+    const byPoints = evf + categorySteps;
+    return { byPercent, byPoints, candidate: Math.max(byPercent, byPoints) };
+  }
+  function joinedPlace(params, n, place, d) {
+    if (!(Number.isInteger(d) && d >= 0 && d <= CATEGORY_STEPS_MAX)) {
+      throw invalid(`category steps d must be a whole number from 0 to ${CATEGORY_STEPS_MAX}, got ${d}.`);
+    }
+    const method = joinedMethod(n, d);
+    if (method === "TABLE") return meeting(n, place);
+    const evf = evfClassic(params, n, place);
+    if (method === "EVF_CLASSIC") return evf;
+    const base = (evf.placePoints ?? 0) + (evf.deBonus ?? 0) + (evf.podiumBonus ?? 0);
+    return {
+      ...evf,
+      method,
+      categorySteps: d,
+      premium: joinedAlternatives(base, d).candidate - base
+    };
+  }
   function scoreComponents(params, engineCode, n, place, multiplier, position) {
-    if (engineCode !== CLASSIC_ENGINE && engineCode !== PLACE_MEDAL_ENGINE) {
+    if (engineCode !== CLASSIC_ENGINE && engineCode !== PLACE_MEDAL_ENGINE && engineCode !== JOINED_ENGINE) {
       throw new Error(
         `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`
       );
     }
     assertScoringInput(n, place);
-    const raw = engineCode === CLASSIC_ENGINE ? evfClassic(params, n, place) : placeMedal(
-      params,
-      n,
-      place,
-      position ?? { categoryCount: n, categoryPlace: place, belowCount: n - place }
-    );
+    let raw;
+    if (engineCode === CLASSIC_ENGINE) {
+      raw = evfClassic(params, n, place);
+    } else if (engineCode === JOINED_ENGINE) {
+      if (position && !("categorySteps" in position)) {
+        throw invalid("the joined-bracket engine reads d (categorySteps), not a place-and-medal position.");
+      }
+      raw = joinedPlace(params, n, place, position?.categorySteps ?? 0);
+    } else {
+      if (position && !("categoryCount" in position)) {
+        throw invalid("the place-and-medal engine reads K, m and b, not d.");
+      }
+      raw = placeMedal(
+        params,
+        n,
+        place,
+        position ?? { categoryCount: n, categoryPlace: place, belowCount: n - place }
+      );
+    }
     const parts = [
       raw.placePoints,
       raw.deBonus,
       raw.podiumBonus,
       raw.fieldPoints,
       raw.belowPoints,
-      raw.medalBonus
+      raw.medalBonus,
+      raw.premium
     ];
     const rawTotal = parts.reduce((sum, v) => sum + (v ?? 0), 0);
     const r2 = (v) => v === null ? null : round2(v);
@@ -413,9 +472,44 @@ var SPWSScoring = (() => {
       belowCount: raw.belowCount,
       belowPoints: r2(raw.belowPoints),
       medalBonus: r2(raw.medalBonus),
+      categorySteps: raw.categorySteps,
+      premium: r2(raw.premium),
       rawTotal,
       finalScore: round2(rawTotal * multiplier)
     };
+  }
+  function scoreBracket(params, categories, multiplier) {
+    if (categories.length === 0) throw invalid("a bracket has no fencers.");
+    for (const c of categories) {
+      if (!(Number.isInteger(c) && c >= 0 && c <= CATEGORY_STEPS_MAX)) {
+        throw invalid(`a category is a whole number from 0 (V0) to ${CATEGORY_STEPS_MAX} (V4), got ${c}.`);
+      }
+    }
+    const n = categories.length;
+    const youngest = Math.min(...categories);
+    const capApplies = new Set(categories).size > 1 && n > JOINED.meetingUpTo && n <= JOINED.premiumUpTo;
+    const lines = [];
+    let ahead = null;
+    categories.forEach((category, i) => {
+      const place = i + 1;
+      const c = scoreComponents(params, JOINED_ENGINE, n, place, multiplier, {
+        categorySteps: category - youngest
+      });
+      const capAt = capApplies && ahead !== null ? ahead - JOINED.capGap : null;
+      const total = capAt !== null && c.rawTotal > capAt ? capAt : c.rawTotal;
+      lines.push({
+        ...c,
+        place,
+        category,
+        uncappedTotal: c.rawTotal,
+        capAt,
+        capped: total < c.rawTotal,
+        rawTotal: total,
+        finalScore: round2(total * multiplier)
+      });
+      ahead = total;
+    });
+    return lines;
   }
   return __toCommonJS(scoring_exports);
 })();

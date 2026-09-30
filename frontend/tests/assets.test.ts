@@ -99,6 +99,7 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
       const block = html.match(MODULE_BLOCK)?.[0] ?? ''
       expect(block.length).toBeGreaterThan(1000)
       expect(block).toContain('"SPWS_PLACE_MEDAL_V1_2026_2027"')
+      expect(block).toContain('"SPWS_EVF_JOINED_V1_2026_2027"')
       expect(block).toContain('"EVF_CLASSIC_V1_2025_2026"')
       expect(html).not.toMatch(/FIELD_SCALED|baseSlope|base_slope/)
     })
@@ -115,11 +116,24 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
   }
 
   // SE27.PAGE.03 (structure) — FR-142's shape for each page.
-  it('SE27.PAGE.03 annex: 64 x 64, the medal table complete to K = 31, pinned to 2026/2027', () => {
+  // The annex was rewritten for the joined-bracket engine locked on 30 September
+  // 2026 (doc/plans/scoring-table-rewrite-plan-2026-09-30.html): the medal
+  // table gave way to the premium table and the bracket simulator.
+  it('SE27.PAGE.03 annex: 64 x 64, the premium table and the simulator, pinned to 2026/2027', () => {
     expect(tablePublished).toContain('const TABLE_N = 64;')
-    expect(tablePublished).toContain('const MEDAL_ROWS = 31;')
     expect(tablePublished).toContain("const SEASON_CODE = 'SPWS-2026-2027';")
     expect(tablePublished).toContain('id="coefBody"')
+    for (const id of ['premiumTable', 'premiumN', 'simTable', 'ownCat', 'youngCat']) {
+      expect(tablePublished).toContain(`id="${id}"`)
+    }
+    // It computes with the joined-bracket engine and refuses any other.
+    expect(tablePublished).toContain('r.engine_code !== SPWSScoring.JOINED_ENGINE')
+  })
+
+  it('SE27.PAGE.03 annex: describes no place-and-medal engine outside the shared module', () => {
+    const page = tablePublished.replace(MODULE_BLOCK, '')
+    expect(page).not.toMatch(/MEDAL_ROWS|PLACE_MEDAL|medalBonus|placeMedalMethod/)
+    expect(page).not.toMatch(/∛K|log₂N|3,5 pkt|3\.5 points|13 × ∛/)
   })
 
   it('SE27.PAGE.03 calculator: any field up to 300, a joined mode, and the SPWS/EVF toggle', () => {

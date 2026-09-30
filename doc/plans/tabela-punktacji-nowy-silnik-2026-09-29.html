@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Załącznik nr 1 — propozycja</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #153f73; --navy-2: #0d2f58; --blue-soft: #eaf2fb;
+      --paper: #f4f6f9; --card: #ffffff; --ink: #172231; --muted: #5d6a7c;
+      --line: #d9e0e8; --line-strong: #aebccc;
+      --accent: #b42332; --accent-soft: #fbecef;
+      --good: #17653d; --good-soft: #e3f2e9;
+      --small: #7a5209; --small-soft: #fbefd4;
+      --evf: #5b3f8f; --evf-soft: #efe9f8;
+      --na: #f1f3f6; --na-ink: #a5afba;
+      --shadow: 0 14px 40px rgba(18, 43, 72, .09);
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.55; }
+    a { color: var(--navy); text-underline-offset: 3px; }
+    button, input { font: inherit; }
+    .wrap { width: min(1400px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 56px; }
+
+    /* Language switch, as on the published page: pure CSS. The radios sit directly in BODY,
+       BEFORE MAIN, so the ~ combinator reaches text anywhere in the document. */
+    .lang-radio { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .lang-switch { display: flex; justify-content: flex-end; margin: 0 0 10px; }
+    .lang-switch label { min-width: 46px; padding: 7px 12px; border: 1px solid var(--line-strong); background: #fff; color: var(--muted); font: 700 13px var(--mono); text-align: center; cursor: pointer; user-select: none; }
+    .lang-switch label:first-of-type { border-radius: 8px 0 0 8px; }
+    .lang-switch label:last-of-type { border-radius: 0 8px 8px 0; border-left: none; }
+    #langPl:checked ~ main .lang-switch label[for="langPl"],
+    #langEn:checked ~ main .lang-switch label[for="langEn"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+    #langPl:focus-visible ~ main .lang-switch label[for="langPl"],
+    #langEn:focus-visible ~ main .lang-switch label[for="langEn"] { outline: 3px solid #79aee6; outline-offset: 2px; }
+    #langPl:checked ~ main .copy-en { display: none; }
+    #langEn:checked ~ main .copy-pl { display: none; }
+
+    .document-head { padding: clamp(24px, 5vw, 54px); color: #fff; background: linear-gradient(135deg, var(--navy-2), #2864a4); border-radius: 18px; box-shadow: var(--shadow); }
+    .eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .78; }
+    h1 { max-width: 970px; margin: 0; font-size: clamp(30px, 5vw, 54px); line-height: 1.08; letter-spacing: -.025em; }
+    .lead { max-width: 850px; margin: 18px 0 0; font-size: clamp(16px, 2vw, 20px); opacity: .9; }
+    .meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
+    .meta span { padding: 6px 10px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; font-size: 12px; font-weight: 700; }
+
+    .section, .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: 0 5px 18px rgba(18,43,72,.045); }
+    .section { margin-top: 20px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; margin-top: 20px; }
+    .grid > * { min-width: 0; }
+    .grid.solo { grid-template-columns: minmax(0, 760px); }
+    .card[hidden] { display: none; }
+    h2 { margin: 0 0 12px; color: var(--navy-2); font-size: clamp(22px, 3vw, 30px); line-height: 1.2; }
+    h3 { margin: 24px 0 8px; color: var(--navy-2); font-size: 18px; }
+    p { margin: 8px 0; max-width: 78ch; }
+    .note { color: var(--muted); font-size: 14px; }
+    code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radius: 4px; background: var(--blue-soft); white-space: nowrap; }
+    .tw { overflow-x: auto; }
+
+    .ranges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+    .ranges div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+    .ranges b { display: block; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; }
+    .ranges .r-small { background: var(--small-soft); }
+    .ranges .r-joined { background: var(--blue-soft); border: 2px dashed var(--navy); }
+    .ranges .r-evf { background: var(--evf-soft); }
+
+    table.rules { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14.5px; }
+    table.rules th, table.rules td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    table.rules thead th { color: var(--muted); font: 600 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    table.rules tbody th { font-weight: 700; }
+    table.rules td.num { font-family: var(--mono); font-weight: 700; text-align: right; white-space: nowrap; }
+    table.rules.joined tbody th { box-shadow: inset 5px 0 0 var(--navy); }
+    table.rules.joined { background: var(--blue-soft); border-radius: 8px; }
+    table.rules.joined td code { background: var(--card); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--navy); color: #fff; font: 700 10.5px/1.4 var(--mono); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; vertical-align: 3px; }
+    ul.cond { margin: 6px 0 10px; padding-left: 22px; }
+    ul.cond li { margin: 4px 0; }
+    .limit { margin: 12px 0; padding: 12px 14px; border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0; font-size: 14.5px; }
+    .promise { margin: 16px 0 0; padding: 14px 16px; border-left: 5px solid var(--good); background: var(--good-soft); border-radius: 0 8px 8px 0; }
+    .promise p { max-width: none; }
+    .promise b { color: var(--good); }
+    .formula { overflow-x: auto; margin: 14px 0 0; padding: 14px 16px; background: #101b29; color: #eef5ff; border-radius: 9px; font: 13px/1.75 var(--mono); white-space: pre; }
+
+    .calculator { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
+    .field { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; }
+    .field.wide { grid-column: 1 / -1; }
+    .field label { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .field input[type="number"] { width: 100%; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); }
+    .toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-weight: 700; cursor: pointer; user-select: none; }
+    .toggle input { width: 19px; height: 19px; margin: 0; accent-color: var(--navy); cursor: pointer; }
+    .toggle.on { border-color: var(--navy); border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: var(--blue-soft); }
+    .joined-block { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: -12px; padding: 12px; border: 1px solid var(--navy); border-top: none; border-radius: 0 0 8px 8px; background: var(--blue-soft); }
+    .joined-block[hidden] { display: none; }
+    .joined-block p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13.5px; }
+    .rank-control { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+    .rank-control input { flex: 1; min-width: 0; }
+    .rank-value { min-width: 3.2em; font: 700 16px var(--mono); text-align: right; }
+    .type-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .type-chips button { min-height: 32px; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--navy); font: 700 12.5px var(--mono); cursor: pointer; }
+    .type-chips button.on { border-color: var(--navy); background: var(--navy); color: #fff; }
+    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 8px; }
+    .result strong { font-size: clamp(34px, 6vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; }
+    .result .unit { font-weight: 800; }
+    .result .description { flex-basis: 100%; color: var(--muted); font-size: 14px; }
+    .breakdown { display: grid; grid-template-columns: 1fr auto; gap: 5px 18px; margin: 14px 0 0; font-size: 14px; }
+    .breakdown dt { color: var(--muted); }
+    .breakdown dd { margin: 0; font-family: var(--mono); font-weight: 700; text-align: right; }
+    .breakdown .total { padding-top: 7px; border-top: 1px solid var(--line); color: var(--ink); font-weight: 800; }
+    .breakdown .gain { color: var(--good); font-weight: 800; }
+    .warn { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--small-soft); color: var(--small); font-size: 14px; }
+
+    .card.married { background: var(--blue-soft); border: 2px dashed var(--navy); }
+    .card.married h2 .tag { font-size: 10.5px; }
+    .verdict { padding: 10px 12px; border-radius: 8px; background: var(--card); border-left: 5px solid var(--navy); font-weight: 700; }
+    .verdict.yes { border-left-color: var(--good); color: var(--good); }
+    .verdict.no { border-left-color: var(--muted); color: var(--muted); }
+    ol.ladder { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+    ol.ladder li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 12px; border-radius: 8px; background: var(--card); font-size: 14.5px; }
+    ol.ladder li b { font-family: var(--mono); }
+    ol.ladder li.you { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 800; }
+    ol.ladder .me { margin-left: 8px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: #fff; font: 700 11px/1.7 var(--mono); }
+
+    .table-section { margin-top: 20px; padding: 22px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+    .table-shell { max-height: 70vh; overflow: auto; border: 1px solid var(--line-strong); border-radius: 9px; background: #fff; margin-top: 12px; }
+    #pointsTable { border-collapse: separate; border-spacing: 0; font-size: 11px; font-variant-numeric: tabular-nums; }
+    #pointsTable th, #pointsTable td { min-width: 54px; height: 26px; padding: 4px 6px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    #pointsTable thead th { position: sticky; top: 0; z-index: 4; background: var(--navy); color: #fff; font-weight: 800; }
+    #pointsTable thead th:first-child { left: 0; z-index: 6; min-width: 100px; text-align: left; }
+    #pointsTable tbody th { position: sticky; left: 0; z-index: 3; min-width: 100px; background: var(--blue-soft); color: var(--navy-2); text-align: left; font-weight: 800; }
+    #pointsTable tbody tr.small td { background: var(--small-soft); }
+    #pointsTable tbody tr.small th { color: var(--small); }
+    #pointsTable tbody tr.big td { background: var(--evf-soft); }
+    #pointsTable tbody tr.big th { color: var(--evf); }
+    #pointsTable td.impossible { color: var(--na-ink); background: var(--na) !important; text-align: center; }
+    #pointsTable td.medal { font-weight: 800; }
+    #pointsTable td.selected-cell { color: #fff; background: var(--accent) !important; font-weight: 900; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line-strong); background: #fff; }
+    .legend .l-small::before { background: var(--small-soft); }
+    .legend .l-big::before { background: var(--evf-soft); }
+    .legend .l-na::before { background: var(--na); }
+
+    table.ex { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+    table.ex th, table.ex td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+    table.ex th:nth-child(-n+3), table.ex td:nth-child(-n+3) { text-align: left; }
+    table.ex thead th { color: var(--muted); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    table.ex td.gain { color: var(--good); font-weight: 700; }
+    table.ex td.tot { font-weight: 800; }
+    table.ex td.capped { color: var(--accent); }
+    footer { margin-top: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+
+    @media (max-width: 900px) {
+      .grid, .grid.solo, .ranges { grid-template-columns: 1fr; }
+      .calculator, .joined-block { grid-template-columns: 1fr; }
+      .wrap { width: min(100% - 16px, 1400px); padding-top: 8px; }
+      .document-head, .card, .section, .table-section { border-radius: 10px; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- The radios MUST stay here: directly in BODY, before MAIN. See .lang-switch in the stylesheet. -->
+  <input class="lang-radio" type="radio" name="lang" id="langPl" checked>
+  <input class="lang-radio" type="radio" name="lang" id="langEn">
+
+<main class="wrap">
+  <nav class="lang-switch" aria-label="język / language">
+    <label for="langPl" lang="pl">PL</label><label for="langEn" lang="en">EN</label>
+  </nav>
+
+  <header class="document-head">
+    <p class="eyebrow"><span class="copy-pl" lang="pl">Załącznik nr 1 · propozycja</span><span class="copy-en" lang="en">Annex 1 · proposal</span></p>
+    <h1><span class="copy-pl" lang="pl">Tabela punktacji Pucharu Polski Weteranów w szermierce</span><span class="copy-en" lang="en">Scoring Table of the Polish Veterans Fencing Cup</span></h1>
+    <p class="lead"><span class="copy-pl" lang="pl">Punkty rankingowe za miejsce zdobyte w stawce — sezon 2026/2027.</span><span class="copy-en" lang="en">Ranking points for a finishing place in a bracket — season 2026/2027.</span></p>
+    <div class="meta"><span><span class="copy-pl">Data: 29.09.2026</span><span class="copy-en">Date: 29.09.2026</span></span><span><span class="copy-pl">Projekt</span><span class="copy-en">Draft</span></span></div>
+  </header>
+
+  <!-- ============ W SKRÓCIE ============ -->
+  <section class="section" aria-labelledby="shortTitle">
+    <h2 id="shortTitle"><span class="copy-pl" lang="pl">W skrócie</span><span class="copy-en" lang="en">In short</span></h2>
+    <p><span class="copy-pl" lang="pl">Sposób liczenia zależy od liczby zawodników w całej stawce (<b>N</b>).</span><span class="copy-en" lang="en">How points are calculated depends on the number of fencers in the whole bracket (<b>N</b>).</span></p>
+    <div class="ranges">
+      <div class="r-small"><b>N ≤ 3</b><span class="copy-pl" lang="pl">Tabela: N − miejsce + 1 (3, 2, 1).</span><span class="copy-en" lang="en">Table: N − place + 1 (3, 2, 1).</span></div>
+      <div class="r-joined"><b>N = 4–15</b><span class="copy-pl" lang="pl">Algorytm EVF. W stawce łączonej dochodzi premia opisana niżej.</span><span class="copy-en" lang="en">EVF algorithm. A joined bracket adds the bonus described below.</span></div>
+      <div class="r-evf"><b>N ≥ 16</b><span class="copy-pl" lang="pl">Algorytm EVF dla całej stawki, także łączonej. Bez premii.</span><span class="copy-en" lang="en">EVF algorithm for the whole bracket, joined brackets included. No bonus.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ KALKULATOR + PREMIA ============ -->
+  <section class="grid" id="calcGrid" aria-label="Kalkulator i premie / Calculator and bonus">
+    <article class="card">
+      <h2><span class="copy-pl" lang="pl">Kalkulator wyniku</span><span class="copy-en" lang="en">Result calculator</span></h2>
+      <p class="note"><span class="copy-pl" lang="pl">Podaj liczbę zawodników i zajęte miejsce. W stawce łączonej podaj też liczebność swojej kategorii i miejsce w niej.</span><span class="copy-en" lang="en">Enter the number of fencers and the place. In a joined bracket, also enter the size of your category and your place in it.</span></p>
+      <div class="calculator">
+        <div class="field"><label for="n"><span class="copy-pl" lang="pl">Liczba zawodników w stawce (N)</span><span class="copy-en" lang="en">Fencers in the bracket (N)</span></label><input id="n" type="number" min="1" max="300" value="10" inputmode="numeric"></div>
+        <div class="field"><label for="p"><span class="copy-pl" lang="pl">Miejsce w stawce</span><span class="copy-en" lang="en">Place in the bracket</span></label><input id="p" type="number" min="1" max="300" value="5" inputmode="numeric"></div>
+        <label class="toggle on" id="joinedLabel" for="joined"><input type="checkbox" id="joined" checked> <span class="copy-pl" lang="pl">Stawka łączona</span><span class="copy-en" lang="en">Joined bracket</span></label>
+        <div class="joined-block" id="joinedBlock">
+          <p><span class="copy-pl" lang="pl">N i miejsce dotyczą całej stawki. K i miejsce w kategorii — Twojej kategorii wiekowej.</span><span class="copy-en" lang="en">N and the place refer to the whole bracket. K and the category place refer to your age category.</span></p>
+          <div class="field"><label for="k"><span class="copy-pl" lang="pl">Zawodnicy Twojej kategorii (K)</span><span class="copy-en" lang="en">Fencers of your category (K)</span></label><input id="k" type="number" min="1" max="300" value="4" inputmode="numeric"></div>
+          <div class="field"><label for="m"><span class="copy-pl" lang="pl">Miejsce w Twojej kategorii</span><span class="copy-en" lang="en">Place in your category</span></label><input id="m" type="number" min="1" max="300" value="1" inputmode="numeric"></div>
+        </div>
+        <div class="field wide">
+          <label for="rank"><span class="copy-pl" lang="pl">Współczynnik rangi zawodów</span><span class="copy-en" lang="en">Competition rank coefficient</span></label>
+          <div class="rank-control"><input id="rank" type="range" min="1" max="1.5" step="0.1" value="1"><span class="rank-value" id="rankValue">1,0</span></div>
+          <div class="type-chips"><button type="button" data-r="1" data-t="PPW"></button><button type="button" data-r="1.2" data-t="MPW"></button></div>
+        </div>
+      </div>
+      <div class="result" aria-live="polite"><strong id="resultValue">—</strong><span class="unit"><span class="copy-pl">pkt</span><span class="copy-en">pts</span></span><span class="description" id="resultDescription"></span></div>
+      <dl class="breakdown" id="breakdown"></dl>
+      <div class="warn" id="warn" hidden></div>
+    </article>
+
+    <article class="card married" id="weightsCard">
+      <h2><span class="copy-pl" lang="pl">Twoja premia</span><span class="copy-en" lang="en">Your bonus</span> <span class="tag"><span class="copy-pl" lang="pl">stawka łączona</span><span class="copy-en" lang="en">joined bracket</span></span></h2>
+      <p id="premSituation"></p>
+      <p class="verdict" id="premVerdict"></p>
+      <h3 id="ladderTitle"></h3>
+      <ol class="ladder" id="ladder"></ol>
+      <p class="note" id="ladderNote"></p>
+    </article>
+  </section>
+
+  <!-- ============ PEŁNA TABELA ============ -->
+  <section class="table-section" aria-labelledby="tableTitle">
+    <h2 id="tableTitle"><span class="copy-pl" lang="pl">Pełna tabela: turniej jednej kategorii, stawka 1–64, miejsca 1–64</span><span class="copy-en" lang="en">Full table: single-category bracket, fields 1–64, places 1–64</span></h2>
+    <p class="note"><span class="copy-pl" lang="pl">Wiersz to liczba zawodników w stawce, kolumna — zajęte miejsce. W turnieju jednej kategorii od 4 zawodników punkty są punktami algorytmu EVF. Wiersze 1–3 to stawki z uproszczoną punktacją. Stawka łączona od 4 do 15 zawodników dostaje dodatkowo premię — jej wartość podaje kalkulator. Pogrubione są miejsca medalowe; „—” oznacza miejsce niemożliwe dla danej stawki. Tabela uwzględnia współczynnik rangi z kalkulatora.</span><span class="copy-en" lang="en">The row is the number of fencers in the bracket, the column the place. In a single-category bracket of 4 or more, the points are the EVF algorithm's points. Rows 1–3 are brackets with the simplified points. A joined bracket of 4 to 15 also earns a bonus — the calculator gives its value. Medal places are in bold; a “—” marks a place that is not possible for that field. The table applies the rank coefficient set in the calculator.</span></p>
+    <div class="table-shell"><table id="pointsTable"><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table></div>
+    <div class="legend">
+      <span><span class="copy-pl" lang="pl">punkty EVF</span><span class="copy-en" lang="en">EVF points</span></span>
+      <span class="l-small"><span class="copy-pl" lang="pl">stawka 1–3 (uproszczona)</span><span class="copy-en" lang="en">field 1–3 (simplified)</span></span>
+      <span class="l-big"><span class="copy-pl" lang="pl">stawka 16–64 (EVF, także łączona, bez premii)</span><span class="copy-en" lang="en">field 16–64 (EVF, joined brackets too, no bonus)</span></span>
+      <span class="l-na"><span class="copy-pl" lang="pl">miejsce niemożliwe</span><span class="copy-en" lang="en">place not possible</span></span>
+    </div>
+  </section>
+
+  <!-- ============ PRZYKŁAD ============ -->
+  <section class="section" aria-labelledby="exampleTitle">
+    <h2 id="exampleTitle"><span class="copy-pl" lang="pl">Przykład: V1 × 2, V2 × 4, V3 × 4 w jednym turnieju (N = 10)</span><span class="copy-en" lang="en">Example: V1 × 2, V2 × 4, V3 × 4 in one bracket (N = 10)</span></h2>
+    <p class="note"><span class="copy-pl" lang="pl">Jedna z możliwych kolejności. „Osobno” to punkty tego samego zawodnika, gdyby jego kategoria walczyła sama (V1: stawka 2, V2 i V3: stawka 4). Punkty porównuje się w obrębie kategorii — każda ma własny ranking. Uwzględniono współczynnik rangi z kalkulatora.</span><span class="copy-en" lang="en">One possible finishing order. “Apart” is the same fencer's points if their category had fenced alone (V1: field 2, V2 and V3: field 4). Points are compared within a category — each has its own ranking. The calculator's rank coefficient is applied.</span></p>
+    <div class="tw"><table class="ex" id="exampleTable">
+      <thead><tr>
+        <th><span class="copy-pl" lang="pl">Miejsce</span><span class="copy-en" lang="en">Place</span></th>
+        <th><span class="copy-pl" lang="pl">Kategoria</span><span class="copy-en" lang="en">Category</span></th>
+        <th><span class="copy-pl" lang="pl">W kategorii</span><span class="copy-en" lang="en">In category</span></th>
+        <th>EVF</th>
+        <th><span class="copy-pl" lang="pl">Premia a</span><span class="copy-en" lang="en">Bonus a</span></th>
+        <th><span class="copy-pl" lang="pl">Premia b</span><span class="copy-en" lang="en">Bonus b</span></th>
+        <th><span class="copy-pl" lang="pl">Ostatni</span><span class="copy-en" lang="en">Last</span></th>
+        <th><span class="copy-pl" lang="pl">Razem</span><span class="copy-en" lang="en">Total</span></th>
+        <th><span class="copy-pl" lang="pl">Osobno</span><span class="copy-en" lang="en">Apart</span></th>
+        <th><span class="copy-pl" lang="pl">Zysk</span><span class="copy-en" lang="en">Gain</span></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <!-- ============ ZASADA ============ -->
+  <section class="section" aria-labelledby="rulesTitle" id="rulesSection">
+    <h2 id="rulesTitle"><span class="copy-pl" lang="pl">Zasada działania punktacji</span><span class="copy-en" lang="en">How the scoring works</span></h2>
+
+    <h3><span class="copy-pl" lang="pl">Algorytm EVF</span><span class="copy-en" lang="en">The EVF algorithm</span></h3>
+    <p><span class="copy-pl" lang="pl">Punkty zawodnika są sumą trzech składników.</span><span class="copy-en" lang="en">A fencer's points are the sum of three parts.</span></p>
+    <div class="tw"><table class="rules">
+      <thead><tr><th><span class="copy-pl" lang="pl">Składnik</span><span class="copy-en" lang="en">Part</span></th><th><span class="copy-pl" lang="pl">Ile daje</span><span class="copy-en" lang="en">What it pays</span></th><th><span class="copy-pl" lang="pl">Kto otrzymuje</span><span class="copy-en" lang="en">Who gets it</span></th></tr></thead>
+      <tbody>
+        <tr><th>1 · <span class="copy-pl" lang="pl">Punkty za miejsce</span><span class="copy-en" lang="en">Place points</span></th>
+            <td><span class="copy-pl" lang="pl">Od <code>50</code> pkt za 1. miejsce do <code>1</code> pkt za ostatnie. Punkty maleją najszybciej na początku listy, a wolniej na jej końcu.</span><span class="copy-en" lang="en">From <code>50</code> points for 1st place to <code>1</code> point for the last. Points fall fastest at the top of the list and more slowly towards its end.</span></td>
+            <td><span class="copy-pl" lang="pl">Każdy zawodnik</span><span class="copy-en" lang="en">Every fencer</span></td></tr>
+        <tr><th>2 · <span class="copy-pl" lang="pl">Wygrane rundy eliminacji</span><span class="copy-en" lang="en">Elimination rounds won</span></th>
+            <td><span class="copy-pl" lang="pl"><code>10</code> pkt za każdą rundę, którą zawodnik z tym miejscem wygrał w tabeli eliminacji bezpośredniej.</span><span class="copy-en" lang="en"><code>10</code> points for each round a fencer with this place won in the direct-elimination table.</span></td>
+            <td><span class="copy-pl" lang="pl">Każdy, kto wygrał co najmniej jedną rundę</span><span class="copy-en" lang="en">Everyone who won at least one round</span></td></tr>
+        <tr><th>3 · <span class="copy-pl" lang="pl">Podium</span><span class="copy-en" lang="en">Podium</span></th>
+            <td><span class="copy-pl" lang="pl"><code>3 × ∛N</code> pomnożone przez 3 za 1. miejsce, przez 2 za 2. miejsce i przez 1 za 3. miejsce.</span><span class="copy-en" lang="en"><code>3 × ∛N</code> multiplied by 3 for 1st place, by 2 for 2nd and by 1 for 3rd.</span></td>
+            <td><span class="copy-pl" lang="pl">Trzej pierwsi w stawce</span><span class="copy-en" lang="en">The first three in the bracket</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3><span class="copy-pl" lang="pl">Premia w stawce łączonej</span><span class="copy-en" lang="en">The joined-bracket bonus</span> <span class="tag"><span class="copy-pl" lang="pl">stawka łączona</span><span class="copy-en" lang="en">joined bracket</span></span></h3>
+    <p><span class="copy-pl" lang="pl">W stawce łączonej w jednym turnieju walczy kilka kategorii wiekowych. <b>N</b> i miejsce dotyczą całej stawki. <b>K</b> to liczba zawodników Twojej kategorii, a <b>miejsce w kategorii</b> — Twoje miejsce wśród nich.</span><span class="copy-en" lang="en">In a joined bracket several age categories fence in one competition. <b>N</b> and the place refer to the whole bracket. <b>K</b> is the number of fencers in your category, and the <b>category place</b> is your place among them.</span></p>
+    <p><span class="copy-pl" lang="pl">Premię dostajesz, gdy:</span><span class="copy-en" lang="en">You get the bonus when:</span></p>
+    <ul class="cond">
+      <li><span class="copy-pl" lang="pl">przed Tobą skończył turniej co najmniej jeden zawodnik <b>innej</b> kategorii wiekowej, i</span><span class="copy-en" lang="en">at least one fencer of <b>another</b> age category finished ahead of you, and</span></li>
+      <li><span class="copy-pl" lang="pl">za Tobą skończył turniej co najmniej jeden zawodnik, dowolnej kategorii.</span><span class="copy-en" lang="en">at least one fencer, of any category, finished behind you.</span></li>
+    </ul>
+    <div class="tw"><table class="rules joined">
+      <thead><tr><th><span class="copy-pl" lang="pl">Część premii</span><span class="copy-en" lang="en">Part of the bonus</span></th><th><span class="copy-pl" lang="pl">Ile daje</span><span class="copy-en" lang="en">What it pays</span></th></tr></thead>
+      <tbody>
+        <tr><th>a · <span class="copy-pl" lang="pl">Za miejsce w swojej kategorii</span><span class="copy-en" lang="en">For your place in your category</span></th>
+            <td><span class="copy-pl" lang="pl">waga × <code>∛K</code>. Waga: <code>44</code> za 1. miejsce w kategorii, <code>26</code> za 2., <code>13</code> za 3., <code>8</code> za 4., <code>4</code> za 5. i dalsze.</span><span class="copy-en" lang="en">weight × <code>∛K</code>. Weight: <code>44</code> for 1st place in the category, <code>26</code> for 2nd, <code>13</code> for 3rd, <code>8</code> for 4th, <code>4</code> for 5th and below.</span></td></tr>
+        <tr><th>b · <span class="copy-pl" lang="pl">Za zawodników za Tobą</span><span class="copy-en" lang="en">For the fencers behind you</span></th>
+            <td><span class="copy-pl" lang="pl"><code>3,5</code> pkt za każdego zawodnika z gorszym wynikiem w całej stawce, bez względu na kategorię.</span><span class="copy-en" lang="en"><code>3.5</code> points for each fencer with a worse result in the whole bracket, of any category.</span></td></tr>
+        <tr><th>c · <span class="copy-pl" lang="pl">Ostatnie miejsce w stawce</span><span class="copy-en" lang="en">Last place in the bracket</span></th>
+            <td><span class="copy-pl" lang="pl"><code>+3</code> pkt dla ostatniego zawodnika stawki łączonej. Części a i b go nie obejmują, bo nikt nie skończył za nim.</span><span class="copy-en" lang="en"><code>+3</code> points for the last fencer of a joined bracket. Parts a and b do not apply, because nobody finished behind them.</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="limit"><span class="copy-pl" lang="pl"><b>Ograniczenie.</b> Nie dostaniesz więcej punktów niż zawodnik Twojej kategorii, który w tym samym turnieju zajął lepsze miejsce od Ciebie.<br>
+      Przykład, stawka 15 zawodników, w tym 8 z V2: zawodnik V2 wygrywa turniej i dostaje 112,2 pkt — bez premii, bo nikt go nie wyprzedził. Drugi jest zawodnik V1. Drugi zawodnik V2 kończy na 3. miejscu; wyprzedził go zawodnik V1, więc z premią miałby 151,5 pkt, czyli więcej niż zawodnik V2, z którym przegrał. Dostaje 112,2 pkt.</span><span class="copy-en" lang="en"><b>Limit.</b> You never get more points than a fencer of your category who finished ahead of you in the same competition.<br>
+      Example, a bracket of 15 with 8 fencers from V2: a V2 fencer wins and gets 112.2 points — no bonus, because nobody finished ahead of them. A V1 fencer is 2nd. The second V2 fencer finishes 3rd; the V1 fencer finished ahead of them, so with the bonus they would have 151.5 points — more than the V2 fencer they lost to. They get 112.2 points.</span></div>
+
+    <h3><span class="copy-pl" lang="pl">Kto dostaje premię — przykłady</span><span class="copy-en" lang="en">Who gets the bonus — examples</span></h3>
+    <div class="tw"><table class="rules">
+      <thead><tr><th><span class="copy-pl" lang="pl">Sytuacja</span><span class="copy-en" lang="en">Situation</span></th><th><span class="copy-pl" lang="pl">Punkty</span><span class="copy-en" lang="en">Points</span></th></tr></thead>
+      <tbody>
+        <tr><th><span class="copy-pl" lang="pl">Zwycięzca turnieju</span><span class="copy-en" lang="en">The winner</span></th><td>EVF</td></tr>
+        <tr><th><span class="copy-pl" lang="pl">2. miejsce, ta sama kategoria co zwycięzca</span><span class="copy-en" lang="en">2nd place, same category as the winner</span></th><td>EVF</td></tr>
+        <tr><th><span class="copy-pl" lang="pl">2. miejsce, inna kategoria niż zwycięzca</span><span class="copy-en" lang="en">2nd place, a different category from the winner</span></th><td><span class="copy-pl" lang="pl">EVF + premia za 1. miejsce w kategorii + 3,5 pkt za każdego zawodnika za nim</span><span class="copy-en" lang="en">EVF + bonus for 1st place in the category + 3.5 points for each fencer behind</span></td></tr>
+        <tr><th><span class="copy-pl" lang="pl">3. miejsce, kategoria, której nie ma wśród dwóch pierwszych</span><span class="copy-en" lang="en">3rd place, a category not among the first two</span></th><td><span class="copy-pl" lang="pl">EVF + premia za 1. miejsce w kategorii + 3,5 pkt za każdego zawodnika za nim</span><span class="copy-en" lang="en">EVF + bonus for 1st place in the category + 3.5 points for each fencer behind</span></td></tr>
+        <tr><th><span class="copy-pl" lang="pl">3. miejsce, ta sama kategoria co 2. (zwycięzca z innej)</span><span class="copy-en" lang="en">3rd place, same category as 2nd (winner from another)</span></th><td><span class="copy-pl" lang="pl">EVF + premia za 2. miejsce w kategorii + 3,5 pkt za każdego zawodnika za nim</span><span class="copy-en" lang="en">EVF + bonus for 2nd place in the category + 3.5 points for each fencer behind</span></td></tr>
+        <tr><th><span class="copy-pl" lang="pl">3. miejsce, ta sama kategoria co zwycięzca (2. z innej)</span><span class="copy-en" lang="en">3rd place, same category as the winner (2nd from another)</span></th><td><span class="copy-pl" lang="pl">EVF + premia za 2. miejsce w kategorii + 3,5 pkt za każdego zawodnika za nim</span><span class="copy-en" lang="en">EVF + bonus for 2nd place in the category + 3.5 points for each fencer behind</span></td></tr>
+        <tr><th><span class="copy-pl" lang="pl">1., 2. i 3. miejsce z tej samej kategorii</span><span class="copy-en" lang="en">1st, 2nd and 3rd place from the same category</span></th><td><span class="copy-pl" lang="pl">EVF — nikt z innej kategorii ich nie wyprzedził</span><span class="copy-en" lang="en">EVF — nobody from another category finished ahead of them</span></td></tr>
+        <tr><th><span class="copy-pl" lang="pl">Ostatni w stawce</span><span class="copy-en" lang="en">Last in the bracket</span></th><td><span class="copy-pl" lang="pl">EVF + 3 pkt</span><span class="copy-en" lang="en">EVF + 3 points</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="note"><span class="copy-pl" lang="pl">Premia za 2. i 3. miejsce w tabeli przysługuje wtedy, gdy ktoś skończył turniej za zawodnikiem.</span><span class="copy-en" lang="en">The bonuses for 2nd and 3rd place in this table apply when someone finished behind the fencer.</span></p>
+
+    <div class="promise">
+      <p><span class="copy-pl" lang="pl"><b>Po co premia.</b> Łączenie kategorii ma się opłacać każdemu. W stawce łączonej od 4 do 15 zawodników nikt nie dostaje mniej punktów, niż dostałby, gdyby jego kategoria walczyła osobno, przy tej samej kolejności w kategorii. W turnieju jednej kategorii punkty są dokładnie takie jak w algorytmie EVF.</span><span class="copy-en" lang="en"><b>Why the bonus.</b> Joining categories should pay off for everyone. In a joined bracket of 4 to 15 fencers, nobody gets fewer points than if their category had fenced alone, in the same order within the category. In a single-category bracket, the points are exactly the EVF algorithm's.</span></p>
+      <p><span class="copy-pl" lang="pl">Od 16 zawodników stawka łączona jest liczona algorytmem EVF według miejsca w całej stawce, bez premii. Wtedy ta zasada nie obowiązuje.</span><span class="copy-en" lang="en">From 16 fencers, a joined bracket is scored by the EVF algorithm on the place in the whole bracket, with no bonus. The rule above does not apply then.</span></p>
+    </div>
+
+<div class="formula" aria-label="Wzór punktacji / Scoring formula"><span class="copy-pl" lang="pl">stawka N ≤ 3:            punkty = N − miejsce + 1
+
+stawka N ≥ 4:            wynik  = EVF × współczynnik rangi
+   EVF = 50 − 49 × ln(miejsce) / ln N  +  10 × wygrane rundy  +  podium 3 / 2 / 1 × 3 × ∛N
+
+stawka łączona, N = 4–15:
+   wynik = (EVF + w × ∛K + 3,5 × b) × współczynnik rangi    gdy przed Tobą jest ktoś z innej kategorii
+                                                             i ktoś skończył za Tobą
+   wynik = (EVF + 3) × współczynnik rangi                    dla ostatniego w stawce
+   wynik nie wyższy niż wynik zawodnika Twojej kategorii, który jest tuż przed Tobą
+
+w: 44 za 1. miejsce w kategorii, 26 za 2., 13 za 3., 8 za 4., 4 za 5. i dalsze
+K: liczba zawodników Twojej kategorii w stawce
+b: liczba zawodników z gorszym wynikiem w całej stawce</span><span class="copy-en" lang="en">bracket N ≤ 3:           points = N − place + 1
+
+bracket N ≥ 4:           result = EVF × rank coefficient
+   EVF = 50 − 49 × ln(place) / ln N  +  10 × DE rounds won  +  podium 3 / 2 / 1 × 3 × ∛N
+
+joined bracket, N = 4–15:
+   result = (EVF + w × ∛K + 3.5 × b) × rank coefficient    when someone of another category finished
+                                                            ahead of you and someone finished behind you
+   result = (EVF + 3) × rank coefficient                    for the last in the bracket
+   result no higher than that of the fencer of your category directly ahead of you
+
+w: 44 for 1st place in the category, 26 for 2nd, 13 for 3rd, 8 for 4th, 4 for 5th and below
+K: fencers of your category in the bracket
+b: fencers with a worse result in the whole bracket</span></div>
+
+    <h3 id="coefTitle"><span class="copy-pl" lang="pl">Współczynnik rangi zawodów w sezonie 2026/2027</span><span class="copy-en" lang="en">Competition rank coefficient in season 2026/2027</span></h3>
+    <p class="note"><span class="copy-pl" lang="pl">Wynik mnoży się przez współczynnik rangi zawodów. Premia w stawce łączonej dotyczy tylko zawodów krajowych, bo tylko w nich kategorie walczą razem.</span><span class="copy-en" lang="en">The result is multiplied by the competition rank coefficient. The joined-bracket bonus applies only to domestic competitions, because only there do categories fence together.</span></p>
+    <div class="tw"><table class="rules" aria-labelledby="coefTitle">
+      <thead><tr><th><span class="copy-pl" lang="pl">Zawody</span><span class="copy-en" lang="en">Competition</span></th><th><span class="copy-pl" lang="pl">Sposób liczenia</span><span class="copy-en" lang="en">How it is scored</span></th><th><span class="copy-pl" lang="pl">Współczynnik</span><span class="copy-en" lang="en">Coefficient</span></th></tr></thead>
+      <tbody>
+        <tr><th>PPW — <span class="copy-pl" lang="pl">Puchar Polski Weteranów</span><span class="copy-en" lang="en">Polish Veterans Cup</span></th><td><span class="copy-pl" lang="pl">EVF + premia w stawce łączonej</span><span class="copy-en" lang="en">EVF + joined-bracket bonus</span></td><td class="num"><span class="copy-pl">1,0</span><span class="copy-en">1.0</span></td></tr>
+        <tr><th>MPW — <span class="copy-pl" lang="pl">Mistrzostwa Polski Weteranów</span><span class="copy-en" lang="en">Polish Veterans Championships</span></th><td><span class="copy-pl" lang="pl">EVF + premia w stawce łączonej</span><span class="copy-en" lang="en">EVF + joined-bracket bonus</span></td><td class="num"><span class="copy-pl">1,2</span><span class="copy-en">1.2</span></td></tr>
+        <tr><th>PEW — <span class="copy-pl" lang="pl">Puchar Europy Weteranów</span><span class="copy-en" lang="en">European Veterans Cup</span></th><td>EVF</td><td class="num"><span class="copy-pl">1,0</span><span class="copy-en">1.0</span></td></tr>
+        <tr><th>MEW — <span class="copy-pl" lang="pl">Mistrzostwa Europy Weteranów</span><span class="copy-en" lang="en">European Veterans Championships</span></th><td>EVF</td><td class="num"><span class="copy-pl">1,3</span><span class="copy-en">1.3</span></td></tr>
+        <tr><th>MSW — <span class="copy-pl" lang="pl">Mistrzostwa Świata Weteranów</span><span class="copy-en" lang="en">World Veterans Championships</span></th><td>EVF</td><td class="num"><span class="copy-pl">1,4</span><span class="copy-en">1.4</span></td></tr>
+        <tr><th>PSW — <span class="copy-pl" lang="pl">Puchar Świata Weteranów</span><span class="copy-en" lang="en">Veterans World Cup</span></th><td>EVF</td><td class="num"><span class="copy-pl">1,1</span><span class="copy-en">1.1</span></td></tr>
+        <tr><th>PPS — <span class="copy-pl" lang="pl">Puchar Polski Seniorów</span><span class="copy-en" lang="en">Polish Senior Cup</span></th><td>EVF</td><td class="num"><span class="copy-pl">1,1</span><span class="copy-en">1.1</span></td></tr>
+        <tr><th>MPS — <span class="copy-pl" lang="pl">Mistrzostwa Polski Seniorów</span><span class="copy-en" lang="en">Polish Senior Championships</span></th><td>EVF</td><td class="num"><span class="copy-pl">1,3</span><span class="copy-en">1.3</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer><span class="copy-pl" lang="pl">Projekt załącznika do Regulaminu powoływania reprezentacji Polski weteranów w szermierce · sezon 2026/2027</span><span class="copy-en" lang="en">Draft annex to the Regulation on selecting the Polish veterans national fencing team · season 2026/2027</span></footer>
+</main>
+
+<script>
+'use strict';
+const EVF_MP = 50, EVF_DE = 10, PODIUM = [3, 2, 1];
+const W = [44, 26, 13, 8, 4], PER_BELOW = 3.5, LAST = 3, JOINED_UPTO = 15, TABLE_UPTO = 3;
+const byId = id => document.getElementById(id);
+
+/* ---- language: the page text switches in CSS; generated text reads the same radios ---- */
+const isEn = () => byId('langEn').checked;
+const T = (pl, en) => (isEn() ? en : pl);
+const fmt = (v, d = 2) => { const s = v.toFixed(d); return isEn() ? s : s.replace('.', ','); };
+const ord = n => { if (!isEn()) return `${n}.`; const t = n % 100, d = n % 10; return n + ((t >= 11 && t <= 13) ? 'th' : d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'); };
+const PTS = () => T('pkt', 'pts');
+
+const isPow2 = n => (n & (n - 1)) === 0;
+function rounds(n, p) { if (n <= 1) return 0; return Math.max(0, Math.floor(Math.log2(n)) - Math.ceil(Math.log2(p)) + (isPow2(n) ? 0 : 1)); }
+function evfParts(n, p) {
+  const place = n === 1 ? EVF_MP : EVF_MP - (EVF_MP - 1) * Math.log(p) / Math.log(n);
+  const r = rounds(n, p);
+  const pod = p <= 3 ? PODIUM[p - 1] * 3 * Math.cbrt(n) : 0;
+  return { place, r, de: r * EVF_DE, pod, total: place + r * EVF_DE + pod };
+}
+function single(n, p) { return n <= TABLE_UPTO ? n - p + 1 : evfParts(n, p).total; }
+function alone(k, m) { return single(k, m); }
+function weight(m) { return W[Math.min(m, W.length) - 1]; }
+/** Joined bracket, before the cap: EVF on the whole-bracket place + the bonus. */
+function joinedParts(n, p, k, m) {
+  if (n <= TABLE_UPTO) return { base: n - p + 1, a: 0, b: 0, last: 0, table: true };
+  const e = evfParts(n, p), below = n - p, passed = p - m >= 1;
+  const eligible = n <= JOINED_UPTO && passed && below >= 1;
+  return {
+    evf: e, base: e.total,
+    a: eligible ? weight(m) * Math.cbrt(k) : 0,
+    b: eligible ? PER_BELOW * below : 0,
+    last: n <= JOINED_UPTO && below === 0 ? LAST : 0,
+  };
+}
+const sum = j => j.base + j.a + j.b + j.last;
+
+/* ---- kalkulator / calculator ---- */
+function rank() { return parseFloat(byId('rank').value); }
+function clampInt(el, lo, hi) { let v = parseInt(el.value, 10); if (!Number.isFinite(v)) v = lo; return Math.min(hi, Math.max(lo, v)); }
+function calc() {
+  const r = rank();
+  byId('rankValue').textContent = fmt(r, 1);
+  document.querySelectorAll('.type-chips button').forEach(b => {
+    b.textContent = `${b.dataset.t} ${fmt(parseFloat(b.dataset.r), 1)}`;
+    b.classList.toggle('on', Math.abs(parseFloat(b.dataset.r) - r) < 1e-9);
+  });
+  const joined = byId('joined').checked;
+  byId('joinedLabel').classList.toggle('on', joined);
+  byId('joinedBlock').hidden = !joined;
+  byId('weightsCard').hidden = !joined;
+  byId('calcGrid').classList.toggle('solo', !joined);
+  const n = clampInt(byId('n'), 1, 300), p = clampInt(byId('p'), 1, 300);
+  const warn = byId('warn'); warn.hidden = true;
+  const bd = byId('breakdown'); bd.innerHTML = '';
+  const row = (t, v, cls = '') => { bd.insertAdjacentHTML('beforeend', `<dt class="${cls}">${t}</dt><dd class="${cls}">${v}</dd>`); };
+  const evfRows = e => { row(T('Punkty za miejsce', 'Place points'), fmt(e.place)); row(T(`Wygrane rundy (${e.r} × 10)`, `Elimination rounds won (${e.r} × 10)`), fmt(e.de)); row(T('Podium', 'Podium'), fmt(e.pod)); };
+  const totalLabel = T('Razem przed współczynnikiem', 'Total before the coefficient');
+  if (p > n) { byId('resultValue').textContent = '—'; byId('resultDescription').textContent = T('Miejsce nie może być dalsze niż liczba zawodników.', 'The place cannot exceed the number of fencers.'); drawPremium(null); markTable(null, null); return; }
+  if (!joined) {
+    const v = single(n, p);
+    byId('resultValue').textContent = fmt(v * r);
+    byId('resultDescription').textContent = n <= TABLE_UPTO ? T(`Stawka ${n}: uproszczona punktacja.`, `Bracket of ${n}: simplified points.`) : T('Turniej jednej kategorii: algorytm EVF.', 'Single-category bracket: EVF algorithm.');
+    if (n > TABLE_UPTO) evfRows(evfParts(n, p));
+    row(totalLabel, fmt(v), 'total');
+    markTable(n, p); return;
+  }
+  const k = clampInt(byId('k'), 1, 300), m = clampInt(byId('m'), 1, 300);
+  const problems = [];
+  if (k >= n) problems.push(T('W stawce łączonej K musi być mniejsze niż N — w stawce jest też ktoś z innej kategorii.', 'In a joined bracket K must be smaller than N — the bracket also has fencers of another category.'));
+  if (m > k) problems.push(T('Miejsce w kategorii nie może być dalsze niż K.', 'The place in your category cannot exceed K.'));
+  if (m > p) problems.push(T('Miejsce w kategorii nie może być dalsze niż miejsce w stawce.', 'The place in your category cannot be further down than the place in the bracket.'));
+  if (p - m > n - k) problems.push(T(`Przed Tobą jest ${p - m} zawodników innych kategorii, a w stawce jest ich tylko ${n - k}.`, `${p - m} fencers of other categories would be ahead of you, but the bracket has only ${n - k}.`));
+  if (k - m > n - p) problems.push(T(`Za Tobą musi być ${k - m} zawodników Twojej kategorii, a za Tobą jest tylko ${n - p} miejsc.`, `${k - m} fencers of your category must be behind you, but only ${n - p} places are behind you.`));
+  if (problems.length) { byId('resultValue').textContent = '—'; byId('resultDescription').textContent = T('Taki układ nie jest możliwy.', 'This combination is not possible.'); warn.hidden = false; warn.innerHTML = problems.join('<br>'); drawPremium(null); markTable(null, null); return; }
+  const j = joinedParts(n, p, k, m), v = sum(j), a0 = alone(k, m);
+  byId('resultValue').textContent = fmt(v * r);
+  let desc;
+  if (n <= TABLE_UPTO) desc = T(`Stawka ${n}: uproszczona punktacja.`, `Bracket of ${n}: simplified points.`);
+  else if (n > JOINED_UPTO) desc = T(`Stawka ${n} zawodników: algorytm EVF dla całej stawki, bez premii.`, `Bracket of ${n}: the EVF algorithm for the whole bracket, no bonus.`);
+  else if (j.a > 0) desc = T('Wyprzedził Cię ktoś z innej kategorii: EVF + premia.', 'Someone of another category finished ahead of you: EVF + bonus.');
+  else if (j.last > 0) desc = T('Ostatnie miejsce w stawce łączonej: EVF + 3 pkt.', 'Last place in a joined bracket: EVF + 3 points.');
+  else desc = T('Nikt z innej kategorii Cię nie wyprzedził: punkty EVF.', 'Nobody of another category finished ahead of you: EVF points.');
+  byId('resultDescription').textContent = desc;
+  if (!j.table) evfRows(j.evf);
+  if (j.a) row(T(`Premia a: ${weight(m)} × ∛${k}`, `Bonus a: ${weight(m)} × ∛${k}`), fmt(j.a));
+  if (j.b) row(T(`Premia b: 3,5 × ${n - p} za Tobą`, `Bonus b: 3.5 × ${n - p} behind you`), fmt(j.b));
+  if (j.last) row(T('Ostatnie miejsce w stawce', 'Last place in the bracket'), fmt(j.last));
+  row(totalLabel, fmt(v), 'total');
+  row(T(`Gdyby Twoja kategoria walczyła osobno (stawka ${k}, ${m}. miejsce)`, `If your category had fenced alone (field ${k}, ${ord(m)} place)`), fmt(a0));
+  if (n <= JOINED_UPTO) row(T('Zysk z łączenia', 'Gain from joining'), (v >= a0 ? '+' : '') + fmt(v - a0), 'gain');
+  if (j.a) { warn.hidden = false; warn.textContent = T('Jeśli zawodnik Twojej kategorii, który jest tuż przed Tobą, ma mniej punktów, dostajesz tyle co on (ograniczenie). Kalkulator nie zna jego wyniku, więc pokazuje wynik przed ograniczeniem.', 'If the fencer of your category directly ahead of you has fewer points, you get as many as they do (the limit). The calculator does not know their result, so it shows the result before the limit.'); }
+  drawPremium({ n, p, k, m, j }); markTable(null, null);
+}
+
+/* ---- Twoja premia / Your bonus ---- */
+function peoplePl(x) {
+  if (x === 0) return 'nie ma nikogo';
+  if (x === 1) return 'jest 1 zawodnik';
+  const d = x % 10, t = x % 100;
+  return d >= 2 && d <= 4 && !(t >= 12 && t <= 14) ? `są ${x} zawodnicy` : `jest ${x} zawodników`;
+}
+function drawPremium(s) {
+  const r = rank(), sit = byId('premSituation'), ver = byId('premVerdict');
+  const lt = byId('ladderTitle'), lad = byId('ladder'), ln = byId('ladderNote');
+  const clearLadder = () => { lt.textContent = ''; lad.innerHTML = ''; ln.textContent = ''; };
+  if (!s) { sit.textContent = T('Popraw dane w kalkulatorze — taki układ nie jest możliwy.', 'Correct the calculator inputs — this combination is not possible.'); ver.hidden = true; clearLadder(); return; }
+  const { n, p, k, m, j } = s, ahead = p - m, below = n - p;
+  if (isEn()) {
+    sit.innerHTML = `You are <b>${ord(m)} of ${k}</b> in your category and <b>${ord(p)} of ${n}</b> in the whole bracket. ` +
+      (ahead === 0 ? 'Nobody of another category finished ahead of you. ' : ahead === 1 ? '1 fencer of another category finished ahead of you. ' : `${ahead} fencers of other categories finished ahead of you. `) +
+      (below === 0 ? 'Nobody finished behind you.' : below === 1 ? '1 fencer finished behind you.' : `${below} fencers finished behind you.`);
+  } else {
+    sit.innerHTML = `Jesteś <b>${m}. z ${k}</b> w swojej kategorii i <b>${p}. z ${n}</b> w całej stawce. ` +
+      `Przed Tobą ${ahead === 0 ? 'nie ma nikogo z innej kategorii' : peoplePl(ahead) + (ahead === 1 ? ' innej kategorii' : ' innych kategorii')}. ` +
+      `Za Tobą ${peoplePl(below)}.`;
+  }
+  ver.hidden = false;
+  const say = (cls, text) => { ver.className = 'verdict ' + cls; ver.textContent = text; };
+  if (n <= TABLE_UPTO) { say('no', T('Stawka do 3 zawodników: tabela 3, 2, 1, bez premii.', 'Bracket of up to 3 fencers: the 3, 2, 1 table, no bonus.')); clearLadder(); return; }
+  if (n > JOINED_UPTO) { say('no', T('Stawka od 16 zawodników: algorytm EVF dla całej stawki, bez premii.', 'Bracket of 16 or more: the EVF algorithm for the whole bracket, no bonus.')); clearLadder(); return; }
+  if (below === 0) say('yes', T(`Ostatnie miejsce w stawce: dostajesz ${fmt(LAST * r, 1)} pkt więcej zamiast premii.`, `Last place in the bracket: you get ${fmt(LAST * r, 1)} points extra instead of a bonus.`));
+  else if (ahead === 0) say('no', T('Premia nie przysługuje: przed Tobą są tylko zawodnicy Twojej kategorii.', 'No bonus: only fencers of your own category finished ahead of you.'));
+  else say('yes', T(`Premia przysługuje: ${fmt(j.a * r, 1)} pkt za ${m}. miejsce w kategorii + ${fmt(j.b * r, 1)} pkt za zawodników za Tobą = ${fmt((j.a + j.b) * r, 1)} pkt.`,
+                    `Bonus applies: ${fmt(j.a * r, 1)} pts for ${ord(m)} place in the category + ${fmt(j.b * r, 1)} pts for the fencers behind you = ${fmt((j.a + j.b) * r, 1)} pts.`));
+  lt.textContent = T(`Ile daje miejsce w Twojej kategorii (K = ${k})`, `What each place in your category is worth (K = ${k})`);
+  const rows = [];
+  for (let place = 1; place <= Math.min(k, W.length - 1); place++) rows.push([T(`${place}. miejsce`, `${ord(place)} place`), place, place]);
+  if (k >= W.length) rows.push([k === W.length ? T(`${W.length}. miejsce`, `${ord(W.length)} place`) : T(`${W.length}.–${k}. miejsce`, `${ord(W.length)}–${ord(k)} place`), W.length, k]);
+  lad.innerHTML = rows.map(([label, from, to]) => {
+    const you = j.a > 0 && m >= from && m <= to;
+    return `<li class="${you ? 'you' : ''}"><span>${label}${you ? `<span class="me">${T('Ty', 'You')}</span>` : ''}</span><b>${fmt(weight(from) * Math.cbrt(k) * r, 1)} ${PTS()}</b></li>`;
+  }).join('');
+  ln.textContent = T('Do tego 3,5 pkt za każdego zawodnika za Tobą. Premia przysługuje tylko wtedy, gdy wyprzedził Cię ktoś z innej kategorii i ktoś skończył turniej za Tobą. Im liczniejsza Twoja kategoria, tym wyższa premia.',
+                     'Plus 3.5 points for each fencer behind you. The bonus applies only when someone of another category finished ahead of you and someone finished behind you. The bigger your category, the bigger the bonus.');
+}
+
+/* ---- pełna tabela / full table ---- */
+const MAXN = 64;
+function drawTable() {
+  const r = rank();
+  let head = `<tr><th>${T('Stawka \\ miejsce', 'Field \\ place')}</th>`;
+  for (let p = 1; p <= MAXN; p++) head += `<th>${p}</th>`;
+  byId('tableHead').innerHTML = head + '</tr>';
+  let body = '';
+  for (let n = 1; n <= MAXN; n++) {
+    const cls = n <= TABLE_UPTO ? 'small' : n > JOINED_UPTO ? 'big' : '';
+    body += `<tr class="${cls}"><th>N = ${n}</th>`;
+    for (let p = 1; p <= MAXN; p++) {
+      if (p > n) body += '<td class="impossible">—</td>';
+      else body += `<td class="${p <= 3 ? 'medal' : ''}" data-n="${n}" data-p="${p}">${fmt(single(n, p) * r)}</td>`;
+    }
+    body += '</tr>';
+  }
+  byId('tableBody').innerHTML = body;
+}
+function markTable(n, p) {
+  document.querySelectorAll('#pointsTable td.selected-cell').forEach(td => td.classList.remove('selected-cell'));
+  if (n && p && n <= MAXN) { const td = document.querySelector(`#pointsTable td[data-n="${n}"][data-p="${p}"]`); if (td) td.classList.add('selected-cell'); }
+}
+
+/* ---- przykład / example ---- */
+const ORDER = [['V1', 1, 2], ['V2', 1, 4], ['V2', 2, 4], ['V1', 2, 2], ['V3', 1, 4],
+               ['V2', 3, 4], ['V3', 2, 4], ['V3', 3, 4], ['V2', 4, 4], ['V3', 4, 4]];
+function drawExample() {
+  const r = rank(), n = ORDER.length, prev = {};
+  let h = '';
+  ORDER.forEach(([cat, m, k], i) => {
+    const p = i + 1, j = joinedParts(n, p, k, m), raw = sum(j);
+    const tot = Math.min(raw, prev[cat] ?? Infinity), capped = tot < raw - 1e-9; prev[cat] = tot;
+    const a0 = alone(k, m);
+    h += `<tr><td>${p}</td><td>${cat}</td><td>${T(`${m}. z ${k}`, `${ord(m)} of ${k}`)}</td><td>${fmt(j.base * r)}</td><td>${j.a ? fmt(j.a * r) : '—'}</td><td>${j.b ? fmt(j.b * r) : '—'}</td><td>${j.last ? fmt(j.last * r) : '—'}</td>` +
+         `<td class="tot ${capped ? 'capped' : ''}">${fmt(tot * r)}${capped ? ' *' : ''}</td><td>${fmt(a0 * r)}</td><td class="gain">+${fmt((tot - a0) * r)}</td></tr>`;
+  });
+  byId('exampleTable').querySelector('tbody').innerHTML = h;
+}
+
+function all() {
+  document.documentElement.lang = isEn() ? 'en' : 'pl';
+  document.title = T('Załącznik nr 1 — propozycja', 'Annex 1 — proposal');
+  calc(); drawTable(); drawExample();
+  const n = clampInt(byId('n'), 1, 300), p = clampInt(byId('p'), 1, 300);
+  if (!byId('joined').checked && p <= n) markTable(n, p);
+}
+['n', 'p', 'k', 'm'].forEach(id => byId(id).addEventListener('input', calc));
+byId('joined').addEventListener('change', calc);
+byId('rank').addEventListener('input', all);
+document.querySelectorAll('.lang-radio').forEach(el => el.addEventListener('change', all));
+document.querySelectorAll('.type-chips button').forEach(b => b.addEventListener('click', () => { byId('rank').value = b.dataset.r; all(); }));
+all();
+</script>
+</body>
+</html>
