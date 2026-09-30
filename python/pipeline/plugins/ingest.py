@@ -16,9 +16,11 @@ from python.pipeline.ir import SourceKind
 from python.pipeline.joined_brackets import (
     PER_CATEGORY_RENUMBER,
     BracketField,
+    CategoryPlan,
     JoinedBracketModule,
     RowPlan,
     module_for,
+    patch_order,
 )
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import ensure_pctx, get_pctx, run_stage
@@ -322,7 +324,9 @@ class Commit(BasePlugin):
     with the engine of the tournament's type (ADR-103 §4, `joined_brackets`):
     under EVF classic each V-cat slice is renumbered 1..K and scored on its own
     row count (ADR-049 amendment 2026-06-04); under the joined module every
-    slice keeps the joined place and the joined N.
+    slice keeps the joined place and the joined N, and every slice's tournament
+    receives the listing's category order (ADR-104 §3). The order is built, and
+    a listing that cannot be scored refused, before anything is written.
 
     Skips entirely when an inline remediation marked the artifact unrankable
     (`_skip_commit`). RECOMPUTE_DOMESTIC has no source parse and no per-bracket
@@ -401,6 +405,13 @@ class Commit(BasePlugin):
         module = self._module(db, event, ttype)
         # The whole listing, matched or not: its size is the joined N.
         field = BracketField.from_places(r.place for r in parsed.results)
+        # ADR-104 §§3-4: every categorised fencer, written or not, gives the
+        # order; a listed place with no category, or a repeated place in a
+        # joined listing, is refused here, before any write.
+        order = module.listing_order(
+            [(m.place, vcat) for vcat, members in final_vcats.items() for m in members],
+            [r.place for r in parsed.results],
+        )
 
         written: list[dict] = []
         held: list[str] = []
@@ -417,7 +428,7 @@ class Commit(BasePlugin):
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype, url_results=url_results
             )
-            db.ingest_results(tournament_id, rows, participant_count=plan.participant_count)
+            db.ingest_results(tournament_id, rows, **self._write_args(plan, order))
             written.append(
                 {
                     "vcat": vcat,
@@ -481,19 +492,23 @@ class Commit(BasePlugin):
             # Re-running the pipeline must SELF-HEAL stored places. Under EVF
             # classic each (weapon, gender, V-cat) bracket is renumbered 1..N
             # (ADR-049 amend / ADR-014/022); under the 2026/2027 engine the
-            # joined place, N and b are kept and K, m follow the new V-cats.
+            # joined place and N are kept and the order's digits follow the
+            # new V-cats (ADR-104 §3).
+            order = None
             if module.name == PER_CATEGORY_RENUMBER:
                 plan = module.plan_category(
                     [m.place for m in rows_m], [], BracketField.from_places(())
                 )
             else:
-                plan = self._plan_joined_recompute(module, rows_m, groups, (weapon, gender, vcat))
+                plan, order = self._plan_joined_recompute(
+                    module, rows_m, groups, (weapon, gender, vcat)
+                )
             rows = [self._row(m, r) for m, r in zip(rows_m, plan.rows, strict=True)]
             date = _iso_date(rows_m[0].tournament_date)
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype
             )
-            db.ingest_results(tournament_id, rows, participant_count=plan.participant_count)
+            db.ingest_results(tournament_id, rows, **self._write_args(plan, order))
             written.append(
                 {
                     "vcat": vcat,
@@ -537,29 +552,47 @@ class Commit(BasePlugin):
         return module_for(engine, ttype)
 
     @staticmethod
-    def _plan_joined_recompute(module, rows_m, groups, key):
+    def _write_args(plan: CategoryPlan, order: str | None) -> dict:
+        """The RPC's keyword arguments: the order only under the joined module,
+        so a classic write is the call it always was."""
+        args: dict = {"participant_count": plan.participant_count}
+        if order is not None:
+            args["joined_order"] = order
+        return args
+
+    @staticmethod
+    def _plan_joined_recompute(module, rows_m, groups, key) -> tuple[CategoryPlan, str]:
         """Recompute one category tournament under the joined module.
 
         Its rows must come from ONE joined bracket: two listings' places and N
-        are not comparable. N is read back as stored.
+        are not comparable. N is read back as stored, and so is the order,
+        whose digits are then patched to every stored fencer's current
+        category; places never stored keep theirs (ADR-104 §3).
         """
         weapon, gender, vcat = key
-        brackets = {(m.bracket_key, m.bracket_size) for m in rows_m}
+        brackets = {(m.bracket_key, m.bracket_size, m.joined_order) for m in rows_m}
         if len(brackets) != 1:
             raise ValueError(
                 f"Recompute would merge two joined brackets into {weapon}/{gender}/{vcat}: "
                 f"{sorted(str(b) for b in brackets)}. Their places and N are not comparable."
             )
-        bracket_key, size = next(iter(brackets))
-        bracket_rows = [
-            m
-            for (w, g, _v), ms in groups.items()
+        bracket = next(iter(brackets))
+        bracket_key, size, stored_order = bracket
+        if stored_order is None:
+            raise ValueError(
+                f"{weapon}/{gender}/{vcat} has no stored category order; the joined engine "
+                "cannot rescore it. Re-ingest the listing."
+            )
+        placed = [
+            (m.place, v)
+            for (w, g, v), ms in groups.items()
             if (w, g) == (weapon, gender)
             for m in ms
-            if (m.bracket_key, m.bracket_size) == (bracket_key, size)
+            if (m.bracket_key, m.bracket_size, m.joined_order) == bracket
         ]
-        field = BracketField.stored(size=size or 0, places=[m.place for m in bracket_rows])
-        return module.plan_category([m.place for m in rows_m], [m.place for m in rows_m], field)
+        field = BracketField.stored(size=size or 0, places=[p for p, _ in placed])
+        plan = module.plan_category([m.place for m in rows_m], [m.place for m in rows_m], field)
+        return plan, patch_order(stored_order, placed)
 
     @staticmethod
     def _existing_tournaments(db, event_id) -> list:
@@ -586,7 +619,7 @@ class Commit(BasePlugin):
         # `plan.place` is what the module decided to store: the bracket-relative
         # rank 1..K under PER_CATEGORY_RENUMBER (a split slice must not keep its
         # whole-pool place — ADR-049 amend / ADR-014/022), the joined place under
-        # JOINED_BRACKET_CATEGORY_PLACE. K, m and b are added only when used.
+        # JOINED_BRACKET_CATEGORY_PLACE.
         return {
             "id_fencer": m.id_fencer,
             "int_place": plan.place,

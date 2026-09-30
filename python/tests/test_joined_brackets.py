@@ -1,4 +1,4 @@
-"""SE27.ING / JB27.CLEAN — joined-bracket modules paired with scoring engines.
+"""SE27.ING / JB27.ING / JB27.CLEAN — joined-bracket modules paired with engines.
 
 A joined bracket is one listing fenced by two or more age categories. Which
 module files it is decided by the engine assigned to the tournament type
@@ -7,11 +7,10 @@ module files it is decided by the engine assigned to the tournament type
 - ``PER_CATEGORY_RENUMBER`` ↔ EVF classic: split per category, dense-renumber
   places 1..K, store the category's own size as N (ADR-049). Byte-identical to
   the behaviour before ADR-103.
-- ``JOINED_BRACKET_CATEGORY_PLACE``: keep the joined place and the joined N and
-  file each fencer under their own category's tournament. ADR-104 removed the
-  engine it was paired with and K, m and b with it; the joined engine pairs
-  with it again. Until then no released engine names it, so these tests reach
-  it through a test-only registry entry.
+- ``JOINED_BRACKET_CATEGORY_PLACE`` ↔ ``SPWS_EVF_JOINED_V1_2026_2027``: keep the
+  joined place and the joined N, file each fencer under their own category's
+  tournament, and write the listing's category order — one digit per place —
+  to every one of them, so the database scores the whole bracket from it.
 
 The database is mocked here (RPC-argument contract); the SQL side of the same
 contract is pinned by supabase/tests/85_spws_evf_joined_engine.sql.
@@ -46,7 +45,7 @@ from python.pipeline.types import Overrides, PipelineContext, StageMatchResult
 
 CLASSIC = "EVF_CLASSIC_V1_2025_2026"
 PLACE_MEDAL = "SPWS_PLACE_MEDAL_V1_2026_2027"  # removed by ADR-104
-JOINED = "TEST_JOINED_ENGINE"  # a test-only registry entry for the joined module
+JOINED = "SPWS_EVF_JOINED_V1_2026_2027"
 
 # The columns ADR-104 drops with the place-and-medal engine.
 RETIRED_KEYS = frozenset(
@@ -59,13 +58,6 @@ RETIRED_KEYS = frozenset(
         "num_medal_bonus",
     }
 )
-
-
-@pytest.fixture
-def joined_registry(monkeypatch):
-    """Pair the joined module with a test engine code: no released engine names
-    it between the ADR-104 cleanup and the joined engine."""
-    monkeypatch.setitem(MODULE_BY_ENGINE, JOINED, JOINED_BRACKET_CATEGORY_PLACE)
 
 
 # The signed-off 10-fencer example: categories by joined place.
@@ -147,8 +139,13 @@ class TestRegistry:
     def test_every_engine_has_exactly_one_module(self):
         """SE27.ING.01 each released engine maps to one module; the module names
         are the two values tbl_scoring_engine.txt_joined_bracket_module admits."""
-        assert MODULE_BY_ENGINE == {CLASSIC: PER_CATEGORY_RENUMBER}
+        assert MODULE_BY_ENGINE == {
+            CLASSIC: PER_CATEGORY_RENUMBER,
+            JOINED: JOINED_BRACKET_CATEGORY_PLACE,
+        }
         assert module_for(CLASSIC, "PPW").name == PER_CATEGORY_RENUMBER
+        # JB27.ING.01 the joined engine is filed by the joined module.
+        assert module_for(JOINED, "PPW").name == JOINED_BRACKET_CATEGORY_PLACE
 
     def test_unknown_engine_raises(self):
         """SE27.ING.01 an engine the pipeline does not know is refused, never
@@ -200,6 +197,11 @@ class TestPerCategoryRenumber:
             ],
             2,
         )
+        # JB27.ING.06 no order goes with a classic write: the call is unchanged.
+        assert [c.kwargs for c in db.ingest_results.call_args_list] == [
+            {"participant_count": 2},
+            {"participant_count": 2},
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +210,7 @@ class TestPerCategoryRenumber:
 
 
 class TestJoinedBracketCategoryPlace:
-    def test_joined_example_keeps_place_and_n(self, joined_registry):
+    def test_joined_example_keeps_place_and_n(self):
         """SE27.ING.03 the V1+V2+V3 bracket of 10: each category keeps the
         joined places and N = 10."""
         field = BracketField.from_places(range(1, 11))
@@ -216,14 +218,14 @@ class TestJoinedBracketCategoryPlace:
         assert plan.participant_count == 10
         assert [r.place for r in plan.rows] == [2, 3, 6, 9]
 
-    def test_a_place_outside_the_field_is_refused(self, joined_registry):
+    def test_a_place_outside_the_field_is_refused(self):
         """SE27.ING.04 a joined place beyond the listing is corrupt input."""
         with pytest.raises(ValueError, match="exceeds the bracket"):
             module_for(JOINED, "PPW").plan_category(
                 [12], [12], BracketField.from_places(range(1, 11))
             )
 
-    def test_commit_files_each_category_with_the_joined_bracket(self, joined_registry):
+    def test_commit_files_each_category_with_the_joined_bracket(self):
         """SE27.ING.03 Commit under the joined module writes the joined places
         and N = the whole listing in every category's tournament."""
         ids = iter(range(1, 100))
@@ -245,7 +247,7 @@ class TestJoinedBracketCategoryPlace:
 # ---------------------------------------------------------------------------
 
 
-def _rmatch(id_fencer, place, by, *, n=10, url="https://example.test/ppw1"):
+def _rmatch(id_fencer, place, by, *, n=10, url="https://example.test/ppw1", order=None):
     return StageMatchResult(
         scraped_name=str(id_fencer),
         place=place,
@@ -258,6 +260,7 @@ def _rmatch(id_fencer, place, by, *, n=10, url="https://example.test/ppw1"):
         tournament_date=date(2026, 10, 11),
         bracket_size=n,
         bracket_key=url,
+        joined_order=order,
     )
 
 
@@ -278,15 +281,16 @@ class TestRecompute:
         _run(Commit(), ctx, db)
         return db
 
-    def test_joined_recompute_keeps_places_and_n(self, joined_registry):
+    def test_joined_recompute_keeps_places_and_n(self):
         """SE27.ING.06 a birth-year relocation re-files a fencer but keeps the
         joined place and N."""
         # Born 1980 -> 47 in 2027 -> V1; born 1970 -> 57 -> V2.
+        order = "1122211111"
         matches = [
-            _rmatch(1, 1, 1980),
-            _rmatch(2, 2, 1980),
-            _rmatch(3, 3, 1970),
-            _rmatch(4, 5, 1970),
+            _rmatch(1, 1, 1980, order=order),
+            _rmatch(2, 2, 1980, order=order),
+            _rmatch(3, 3, 1970, order=order),
+            _rmatch(4, 5, 1970, order=order),
         ]
         db = self._recompute(matches, JOINED)
         written = sorted(_written(db).values(), key=lambda w: w[0][0]["int_place"])
@@ -303,12 +307,12 @@ class TestRecompute:
         assert n == 2
         assert [r["int_place"] for r in rows] == [1, 2]
 
-    def test_joined_recompute_refuses_to_merge_two_brackets(self, joined_registry):
+    def test_joined_recompute_refuses_to_merge_two_brackets(self):
         """SE27.ING.06 one category tournament cannot hold two joined brackets:
         their places and N are not comparable, so recompute stops."""
         matches = [
-            _rmatch(1, 1, 1970, url="https://example.test/a"),
-            _rmatch(2, 1, 1970, url="https://example.test/b"),
+            _rmatch(1, 1, 1970, url="https://example.test/a", order="2222222222"),
+            _rmatch(2, 1, 1970, url="https://example.test/b", order="2222222222"),
         ]
         with pytest.raises(ValueError, match="two joined brackets"):
             self._recompute(matches, JOINED)
@@ -320,24 +324,32 @@ class TestRecompute:
 
 
 class TestJoinedN:
-    def test_committed_count_is_the_whole_listing(self, joined_registry):
+    def test_committed_count_is_the_whole_listing(self):
         """SE27.ING.07 the participant count Commit records — the number the
         ADR-069 URL check compares — is the whole listing, not a slice."""
-        fv = {"V1": [_match(1, 1)], "V2": [_match(2, 2)]}
+        fv = {
+            "V1": [_match(1, 1), _match(None, 3, method="EXCLUDED")],
+            "V2": [
+                _match(2, 2),
+                _match(None, 4, method="EXCLUDED"),
+                _match(None, 5, method="EXCLUDED"),
+            ],
+        }
         db = _db(JOINED)
         ctx = _run(Commit(), _ctx(fv, _parsed([1, 2, 3, 4, 5])), db)
         assert {t["n"] for t in ctx.get("committed")["tournaments"]} == {5}
 
-    def test_unmatched_fencers_count_in_n(self, joined_registry):
-        """SE27.ING.08 a listed fencer who is not written (no match, no
-        category) still counts in N: the gate and the engine read the listing,
-        len(parsed.results), not the rows stored."""
-        fv = {"V2": [_match(1, 1), _match(None, 2, method="EXCLUDED")]}
+    def test_unmatched_fencers_count_in_n(self):
+        """SE27.ING.08 a listed fencer who is not written (no match) but has a
+        category still counts in N and in the order: the gate and the engine
+        read the listing, len(parsed.results), not the rows stored."""
+        fv = {"V2": [_match(1, 1), _match(None, 2, method="EXCLUDED"), _match(3, 3)]}
         db = _db(JOINED)
-        _run(Commit(), _ctx(fv, _parsed([1, 2, 3, 4])), db)
+        _run(Commit(), _ctx(fv, _parsed([1, 2, 3])), db)
         ((rows, n),) = _written(db).values()
-        assert n == 4
-        assert [r["int_place"] for r in rows] == [1]
+        assert n == 3
+        assert [r["int_place"] for r in rows] == [1, 3]
+        assert db.ingest_results.call_args.kwargs["joined_order"] == "222"
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +359,7 @@ class TestJoinedN:
 
 class TestInternational:
     @pytest.mark.parametrize("ttype", ["PEW", "MEW", "MSW", "PSW"])
-    def test_international_type_refuses_the_joined_module(self, ttype, joined_registry):
+    def test_international_type_refuses_the_joined_module(self, ttype):
         """SE27.ING.09 EVF and FIE publish per category; an international type
         assigned the joined module is refused rather than re-joined."""
         with pytest.raises(JoinedBracketNotAllowed):
@@ -446,3 +458,133 @@ class TestPlaceMedalRemoved:
             if key in path.read_text(encoding="utf-8")
         )
         assert offenders == []
+
+
+# ---------------------------------------------------------------------------
+# JB27.ING.02-05 — the listing's category order (ADR-104 §3, §4)
+# ---------------------------------------------------------------------------
+
+
+class TestJoinedOrder:
+    def test_order_holds_every_categorised_fencer_and_reaches_every_sibling(self):
+        """JB27.ING.02 the order has one digit per place of the listing — an
+        unmatched fencer with a category included — and every category's
+        tournament receives the same order and the joined N."""
+        ids = iter(range(1, 100))
+        fv = {
+            vcat: [_match(next(ids), p) for p in places] for vcat, places in sorted(EXAMPLE.items())
+        }
+        fv["V3"][1] = _match(None, 7, method="EXCLUDED")
+        db = _db(JOINED)
+        _run(Commit(), _ctx(fv, _parsed(range(1, 11))), db)
+        calls = {c.args[0]: c.kwargs for c in db.ingest_results.call_args_list}
+        assert calls == {
+            301: {"participant_count": 10, "joined_order": "1221323323"},
+            302: {"participant_count": 10, "joined_order": "1221323323"},
+            303: {"participant_count": 10, "joined_order": "1221323323"},
+        }
+
+    def test_a_joined_listing_with_a_repeated_place_is_refused(self):
+        """JB27.ING.03 two categories share place 2: nothing says which of the
+        two fenced ahead, so the listing is refused and nothing is written."""
+        fv = {"V1": [_match(1, 1), _match(2, 2)], "V2": [_match(3, 2), _match(4, 4)]}
+        db = _db(JOINED)
+        with pytest.raises(ValueError, match="fenced order"):
+            _run(Commit(), _ctx(fv, _parsed([1, 2, 2, 4])), db)
+        db.ingest_results.assert_not_called()
+
+    def test_a_tie_in_a_single_category_is_accepted(self):
+        """JB27.ING.03 a tie inside one category scores as EVF classic always
+        has: the order is that category's digit at every place."""
+        fv = {"V2": [_match(1, 1), _match(2, 2), _match(3, 3), _match(4, 3), _match(5, 5)]}
+        db = _db(JOINED)
+        _run(Commit(), _ctx(fv, _parsed([1, 2, 3, 3, 5])), db)
+        ((rows, n),) = _written(db).values()
+        assert n == 5
+        assert [r["int_place"] for r in rows] == [1, 2, 3, 3, 5]
+        assert db.ingest_results.call_args.kwargs["joined_order"] == "22222"
+
+    def test_a_fencer_without_a_category_is_refused(self):
+        """JB27.ING.04 place 3 has no category (a pending match or no birth
+        year): the order cannot be written, so the listing waits."""
+        fv = {"V2": [_match(1, 1), _match(2, 2)]}
+        db = _db(JOINED)
+        with pytest.raises(ValueError, match="no category"):
+            _run(Commit(), _ctx(fv, _parsed([1, 2, 3])), db)
+        db.ingest_results.assert_not_called()
+
+    def test_recompute_patches_only_the_stored_digits_that_moved(self):
+        """JB27.ING.05 after a birth-year correction the fencer at place 4
+        moves from V1 to V2: that digit changes, the digits of places never
+        stored stay, and both category tournaments get the patched order."""
+        order = "1221323323"
+        # Born 1980 -> 47 in 2027 -> V1; born 1970 -> 57 -> V2.
+        matches = [_rmatch(1, 1, 1980, order=order), _rmatch(2, 4, 1970, order=order)]
+        db = TestRecompute()._recompute(matches, JOINED)
+        calls = sorted(
+            ((c.args[1][0]["int_place"], c.kwargs) for c in db.ingest_results.call_args_list),
+            key=lambda x: x[0],
+        )
+        assert calls == [
+            (1, {"participant_count": 10, "joined_order": "1222323323"}),
+            (4, {"participant_count": 10, "joined_order": "1222323323"}),
+        ]
+
+    def test_the_connector_sends_the_order_to_the_rpc(self):
+        """JB27.ING.02 the order reaches fn_ingest_tournament_results as
+        p_joined_order; a classic write sends no such key."""
+        sb = MagicMock()
+        db = DbConnector(sb)
+        db.ingest_results(
+            301, [{"id_fencer": 1, "int_place": 1}], participant_count=10, joined_order="12"
+        )
+        db.ingest_results(302, [{"id_fencer": 2, "int_place": 1}], participant_count=2)
+        (first, second) = [c.args for c in sb.rpc.call_args_list]
+        assert first[1]["p_joined_order"] == "12"
+        assert "p_joined_order" not in second[1]
+
+    def test_the_recompute_fetch_reads_the_stored_order(self):
+        """JB27.ING.05 the recompute fetch returns each row's stored order."""
+        sb = MagicMock()
+        tournaments = MagicMock()
+        tournaments.data = [
+            {
+                "id_tournament": 1,
+                "enum_weapon": "EPEE",
+                "enum_gender": "M",
+                "enum_age_category": "V2",
+                "dt_tournament": "2026-10-11",
+                "int_participant_count": 4,
+                "url_results": "https://example.test/ppw1",
+                "txt_joined_order": "2322",
+            }
+        ]
+        results = MagicMock()
+        results.data = [{"id_fencer": 5, "int_place": 3, "id_tournament": 1}]
+        sb.table.return_value.select.return_value.eq.return_value.execute.return_value = tournaments
+        sb.table.return_value.select.return_value.in_.return_value.execute.return_value = results
+        db = DbConnector(sb)
+        db.fetch_birth_years_batch = MagicMock(return_value={5: 1970})
+        (row,) = db.fetch_event_results(9)
+        assert row["joined_order"] == "2322"
+
+
+# ---------------------------------------------------------------------------
+# JB27.STORE.04 — the seed export carries the input, never the outputs
+# ---------------------------------------------------------------------------
+
+
+class TestSeedExport:
+    def test_scoring_outputs_are_skipped_and_the_order_is_not(self):
+        """JB27.STORE.04 the premium, the cap reduction and d are recomputed by
+        the post-seed rescore, like every other scoring output, so the export
+        skips them; the order is an input and is exported with the tournament."""
+        from python.pipeline.export_seed import RESULT_SKIP_COLUMNS
+
+        assert {"num_joined_premium", "num_cap_reduction", "int_category_steps"} <= (
+            RESULT_SKIP_COLUMNS
+        )
+        assert "txt_joined_order" not in RESULT_SKIP_COLUMNS
+        assert {"num_final_score", "enum_score_method", "id_scoring_revision"} <= (
+            RESULT_SKIP_COLUMNS
+        )

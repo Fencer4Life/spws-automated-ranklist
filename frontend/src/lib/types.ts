@@ -160,6 +160,12 @@ export interface ScoreRow {
   // ADR-103 (FR-140): the method that scored the result. NULL (or absent, on a
   // payload that predates the column) means it has not been scored.
   enum_score_method?: ScoreMethod | null
+  // ADR-104 §6: EVF_JOINED's components, -1 under any other method. The
+  // premium and the cap reduction are before the coefficient; d is the steps
+  // from the youngest category of the bracket.
+  num_joined_premium?: number | null
+  num_cap_reduction?: number | null
+  int_category_steps?: number | null
 }
 
 export interface TournamentDetail {

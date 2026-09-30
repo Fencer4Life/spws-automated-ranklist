@@ -9,10 +9,9 @@
 //
 // THE FORMULA LIVES IN EXACTLY TWO PLACES
 // -----------------------------------------------------------------------------
-// Here, and in the SQL strategies (fn_score_evf_classic_v1_2025_2026 and the
-// joined engine's). The joined-bracket engine has no SQL strategy yet; until it
-// does, its pin is the spec's reference implementation.
-// A client-side implementation is
+// Here, and in the SQL strategies (fn_score_evf_classic_v1_2025_2026,
+// fn_score_spws_evf_joined_v1_2026_2027) with the whole-bracket cap in
+// fn_score_joined_bracket. A client-side implementation is
 // unavoidable because the scoring-table annex renders a 64 x 64 grid and
 // re-renders on every rank-coefficient change, so a per-cell RPC is not viable.
 // frontend/tests/scoring.test.ts is the pin between the two, with every
@@ -70,10 +69,13 @@ export interface ScoringParams {
 
 /**
  * Where a fencer stands for the joined-bracket engine: d, the category steps
- * from the youngest category present in the bracket (0-4). Omitted, d = 0.
+ * from the youngest category present in the bracket (0-4), and whether the
+ * bracket is joined (two or more categories). Omitted, d = 0; `joined`
+ * defaults to d > 0, since only a joined bracket has an older category.
  */
 export interface JoinedPosition {
   categorySteps: number
+  joined?: boolean
 }
 
 /**
@@ -191,10 +193,14 @@ function evfClassic(params: ScoringParams, n: number, place: number): RawBreakdo
   }
 }
 
-/** The range of the joined-bracket engine that scores a bracket of n at d. */
-export function joinedMethod(n: number, categorySteps = 0): ScoreMethod {
+/**
+ * The range of the joined-bracket engine that scores a place in a bracket of n:
+ * every row of a joined bracket of 4-15 is EVF_JOINED, the youngest category's
+ * with a premium of 0, exactly as fn_score_spws_evf_joined_v1_2026_2027 stores it.
+ */
+export function joinedMethod(n: number, categorySteps = 0, joined = categorySteps > 0): ScoreMethod {
   if (n <= JOINED.meetingUpTo) return 'TABLE'
-  if (categorySteps > 0 && n <= JOINED.premiumUpTo) return 'EVF_JOINED'
+  if (joined && n <= JOINED.premiumUpTo) return 'EVF_JOINED'
   return 'EVF_CLASSIC'
 }
 
@@ -212,11 +218,18 @@ export function joinedAlternatives(
   return { byPercent, byPoints, candidate: Math.max(byPercent, byPoints) }
 }
 
-function joinedPlace(params: ScoringParams, n: number, place: number, d: number): RawBreakdown {
+function joinedPlace(
+  params: ScoringParams,
+  n: number,
+  place: number,
+  d: number,
+  joined: boolean,
+): RawBreakdown {
   if (!(Number.isInteger(d) && d >= 0 && d <= CATEGORY_STEPS_MAX)) {
     throw invalid(`category steps d must be a whole number from 0 to ${CATEGORY_STEPS_MAX}, got ${d}.`)
   }
-  const method = joinedMethod(n, d)
+  if (d > 0 && !joined) throw invalid(`category steps d = ${d} need a joined bracket; a single category has d = 0.`)
+  const method = joinedMethod(n, d, joined)
   if (method === 'TABLE') return meeting(n, place)
   const evf = evfClassic(params, n, place)
   if (method === 'EVF_CLASSIC') return evf
@@ -257,10 +270,11 @@ export function scoreComponents(
   }
   assertScoringInput(n, place)
 
+  const d = position?.categorySteps ?? 0
   const raw: RawBreakdown =
     engineCode === CLASSIC_ENGINE
       ? evfClassic(params, n, place)
-      : joinedPlace(params, n, place, position?.categorySteps ?? 0)
+      : joinedPlace(params, n, place, d, position?.joined ?? d > 0)
 
   const parts = [raw.placePoints, raw.deBonus, raw.podiumBonus, raw.premium]
   const rawTotal = parts.reduce<number>((sum, v) => sum + (v ?? 0), 0)
@@ -290,6 +304,12 @@ export interface BracketLine extends ScoreComponents {
   capAt: number | null
   /** True when the cap lowered this score. */
   capped: boolean
+  /**
+   * How much the cap took off, before the coefficient, rounded to two decimals
+   * as tbl_result.num_cap_reduction stores it: 0 where it did not bite, null
+   * where no cap applies (SQL stores -1).
+   */
+  capReduction: number | null
 }
 
 /**
@@ -311,7 +331,8 @@ export function scoreBracket(
   }
   const n = categories.length
   const youngest = Math.min(...categories)
-  const capApplies = new Set(categories).size > 1 && n > JOINED.meetingUpTo && n <= JOINED.premiumUpTo
+  const joined = new Set(categories).size > 1
+  const capApplies = joined && n > JOINED.meetingUpTo && n <= JOINED.premiumUpTo
 
   const lines: BracketLine[] = []
   let ahead: number | null = null
@@ -319,6 +340,7 @@ export function scoreBracket(
     const place = i + 1
     const c = scoreComponents(params, JOINED_ENGINE, n, place, multiplier, {
       categorySteps: category - youngest,
+      joined,
     })
     const capAt = capApplies && ahead !== null ? ahead - JOINED.capGap : null
     const total = capAt !== null && c.rawTotal > capAt ? capAt : c.rawTotal
@@ -329,6 +351,7 @@ export function scoreBracket(
       uncappedTotal: c.rawTotal,
       capAt,
       capped: total < c.rawTotal,
+      capReduction: capApplies ? round2(c.rawTotal - total) : null,
       rawTotal: total,
       finalScore: round2(total * multiplier),
     })

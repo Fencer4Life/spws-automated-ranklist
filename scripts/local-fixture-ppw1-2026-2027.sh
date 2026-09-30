@@ -17,13 +17,15 @@
 # engine, so the ranklist, drilldown, export and calculator can all be exercised
 # against realistic data before the real results arrive.
 #
-# PPW1 is an unusually good probe for this change. Its fields run from 1 to 11
-# competitors, every one of them below the N = 32 switch to EVF classic, so
-# EVERY bracket scores differently. Eight of the 23 are one-competitor walkovers —
-# the ADR-066 case the table (N <= 3) re-prices from 59 to 1.
-#
-# The copied brackets were already split per category last season, so each is
-# written as ONE category.
+# What it can and cannot show. The copied brackets were already split per
+# category and renumbered last season, so each is written as ONE category, with
+# that category's digit at every place of its order (txt_joined_order, ADR-104
+# §3). A single category of 4 or more scores EVF classic under the new engine,
+# exactly as last season; only the brackets of 1-3 change, re-priced by the
+# table (N - place + 1). Eight of the 23 are one-competitor walkovers — the
+# ADR-066 case — which drop from 59 to 1. The joined premium and the cap need a
+# joined listing, which this copy cannot rebuild: pgTAP 85 (Part C) and the
+# real 2026/2027 ingestion exercise those.
 #
 # THIS IS TEST DATA AND IT MUST NEVER LEAVE LOCAL.
 #
@@ -136,15 +138,19 @@ BEGIN
   FOR v_t IN
     SELECT t.* FROM tbl_tournament t WHERE t.id_event = v_src_event ORDER BY t.txt_code
   LOOP
+    -- One category per bracket: its digit at every place of the order, which
+    -- the joined engine needs to score it (ADR-104 §3).
     INSERT INTO tbl_tournament (
       id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender,
-      enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+      enum_age_category, dt_tournament, int_participant_count, enum_import_status,
+      txt_joined_order)
     VALUES (
       v_dst_event,
       replace(v_t.txt_code, '2025-2026', '2026-2027'),
       v_t.txt_name || ' [LOCAL TEST FIXTURE]',
       v_t.enum_type, v_t.enum_weapon, v_t.enum_gender, v_t.enum_age_category,
-      v_dst_start, v_t.int_participant_count, 'IMPORTED')
+      v_dst_start, v_t.int_participant_count, 'IMPORTED',
+      repeat(substr(v_t.enum_age_category::TEXT, 2, 1), v_t.int_participant_count))
     RETURNING id_tournament INTO v_new_t;
     v_tourns := v_tourns + 1;
 

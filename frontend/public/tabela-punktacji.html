@@ -737,9 +737,9 @@ var SPWSScoring = (() => {
       premium: null
     };
   }
-  function joinedMethod(n, categorySteps = 0) {
+  function joinedMethod(n, categorySteps = 0, joined = categorySteps > 0) {
     if (n <= JOINED.meetingUpTo) return "TABLE";
-    if (categorySteps > 0 && n <= JOINED.premiumUpTo) return "EVF_JOINED";
+    if (joined && n <= JOINED.premiumUpTo) return "EVF_JOINED";
     return "EVF_CLASSIC";
   }
   function joinedAlternatives(evf, categorySteps) {
@@ -747,11 +747,12 @@ var SPWSScoring = (() => {
     const byPoints = evf + categorySteps;
     return { byPercent, byPoints, candidate: Math.max(byPercent, byPoints) };
   }
-  function joinedPlace(params, n, place, d) {
+  function joinedPlace(params, n, place, d, joined) {
     if (!(Number.isInteger(d) && d >= 0 && d <= CATEGORY_STEPS_MAX)) {
       throw invalid(`category steps d must be a whole number from 0 to ${CATEGORY_STEPS_MAX}, got ${d}.`);
     }
-    const method = joinedMethod(n, d);
+    if (d > 0 && !joined) throw invalid(`category steps d = ${d} need a joined bracket; a single category has d = 0.`);
+    const method = joinedMethod(n, d, joined);
     if (method === "TABLE") return meeting(n, place);
     const evf = evfClassic(params, n, place);
     if (method === "EVF_CLASSIC") return evf;
@@ -770,7 +771,8 @@ var SPWSScoring = (() => {
       );
     }
     assertScoringInput(n, place);
-    const raw = engineCode === CLASSIC_ENGINE ? evfClassic(params, n, place) : joinedPlace(params, n, place, position?.categorySteps ?? 0);
+    const d = position?.categorySteps ?? 0;
+    const raw = engineCode === CLASSIC_ENGINE ? evfClassic(params, n, place) : joinedPlace(params, n, place, d, position?.joined ?? d > 0);
     const parts = [raw.placePoints, raw.deBonus, raw.podiumBonus, raw.premium];
     const rawTotal = parts.reduce((sum, v) => sum + (v ?? 0), 0);
     const r2 = (v) => v === null ? null : round2(v);
@@ -795,13 +797,15 @@ var SPWSScoring = (() => {
     }
     const n = categories.length;
     const youngest = Math.min(...categories);
-    const capApplies = new Set(categories).size > 1 && n > JOINED.meetingUpTo && n <= JOINED.premiumUpTo;
+    const joined = new Set(categories).size > 1;
+    const capApplies = joined && n > JOINED.meetingUpTo && n <= JOINED.premiumUpTo;
     const lines = [];
     let ahead = null;
     categories.forEach((category, i) => {
       const place = i + 1;
       const c = scoreComponents(params, JOINED_ENGINE, n, place, multiplier, {
-        categorySteps: category - youngest
+        categorySteps: category - youngest,
+        joined
       });
       const capAt = capApplies && ahead !== null ? ahead - JOINED.capGap : null;
       const total = capAt !== null && c.rawTotal > capAt ? capAt : c.rawTotal;
@@ -812,6 +816,7 @@ var SPWSScoring = (() => {
         uncappedTotal: c.rawTotal,
         capAt,
         capped: total < c.rawTotal,
+        capReduction: capApplies ? round2(c.rawTotal - total) : null,
         rawTotal: total,
         finalScore: round2(total * multiplier)
       });
@@ -1251,7 +1256,10 @@ var SPWSScoring = (() => {
         const diff = l.finalScore - alone.finalScore;
         const table = l.method === 'TABLE';
         const evf = table ? null : score(n, l.place, 1, 0).rawTotal;
-        const alt = l.method === 'EVF_JOINED' ? SPWSScoring.joinedAlternatives(evf, l.categorySteps) : null;
+        // The youngest category is EVF_JOINED with d = 0, as SQL stores it; its
+        // two alternatives equal EVF, so they stay a dash, as in the approved annex.
+        const alt = l.method === 'EVF_JOINED' && l.categorySteps > 0
+          ? SPWSScoring.joinedAlternatives(evf, l.categorySteps) : null;
         return `<tr class="${l.capped ? 'capped' : ''}"${l.capped ? ` title="${t().simCapped}"` : ''}>`
           + `<td>${l.place}</td><td><span class="cat c${l.category}">V${l.category}</span></td>`
           + `<td>${table ? '—' : l.category - young}</td>`

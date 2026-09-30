@@ -29,12 +29,13 @@
 --
 -- PER-TYPE ENGINES (2026-09-28, ADR-103; 2026-09-30, ADR-104)
 -- -----------------------------------------------------------------------------
--- The active season assigns its engine per tournament type. ADR-104 removes
--- SPWS_PLACE_MEDAL_V1_2026_2027 before any result was scored with it, and the
--- cleanup migration leaves every type of the unscored 2026/2027 on EVF classic
--- until the joined engine lands. The EVF mechanics below (place points, DE
--- rounds, podium) are exercised on PEW; the PPW/MPW pair pins the coefficient.
--- Test 2.0 pins the assignment.
+-- The active season assigns its engine per tournament type: PPW and MPW use
+-- SPWS_EVF_JOINED_V1_2026_2027 (ADR-104), PEW, PSW and MSW use EVF classic.
+-- The joined engine scores a bracket from the category order its tournament
+-- stores, so every PPW and MPW fixture below carries one; each is a single
+-- category, where the joined engine IS EVF classic from 4 fencers. The EVF
+-- mechanics below (place points, DE rounds, podium) are exercised on PEW; the
+-- PPW/MPW pair pins the coefficient. Test 2.0 pins the assignment.
 --
 -- Fencers are created by this file (see the convention in
 -- doc/handbook/reference/test-and-traceability.html). Do not reintroduce
@@ -189,6 +190,15 @@ BEGIN
 END;
 $setup$;
 
+-- The joined engine's category order: one digit per place, all V2 here.
+DO $setup_order$
+BEGIN
+  EXECUTE $$UPDATE tbl_tournament SET txt_joined_order = repeat('2', int_participant_count)
+             WHERE txt_code IN ('SCORE-PPW-N24', 'SCORE-MPW-N24', 'SCORE-PPW-N1')$$;
+EXCEPTION WHEN undefined_column THEN NULL;  -- before the engine migration: fail by name below
+END;
+$setup_order$;
+
 -- PPW and MPW N=24, the same five placements.
 DO $setup_new$
 DECLARE v_t TEXT; v_place INT; v_i INT := 0;
@@ -229,11 +239,12 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 -- That is not necessarily a bug — but every expectation in this file must then
 -- be recomputed deliberately, and the governance rule set re-checked.
 -- Extended 2026-09-19 and 2026-09-28: the engines are values this file's
--- arithmetic depends on, so they belong in the contract. Since the ADR-104
--- cleanup (2026-09-30) the season default and every type used below resolve to
--- EVF classic, until the joined engine moves the default, PPW and MPW. If the
--- active season moves to other engines, every expectation below must be
--- recomputed deliberately — which is exactly what the contract is for.
+-- arithmetic depends on, so they belong in the contract. The season default
+-- is the 2026/2027 joined engine (ADR-104), and each type used below resolves
+-- as ADR-104 assigns it: PPW and MPW to the joined engine, PEW, PSW and MSW to
+-- EVF classic. If the active season moves to other engines, every expectation
+-- below must be recomputed deliberately — which is exactly what the contract
+-- is for.
 CREATE FUNCTION pg_temp.type_engines_used() RETURNS TEXT
 LANGUAGE plpgsql AS $$
 DECLARE v TEXT;
@@ -261,9 +272,9 @@ SELECT results_eq(
             1.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
             1.0000::NUMERIC(10,4),
             2.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
-            5, 'EVF_CLASSIC_V1_2025_2026',
-            'MPW=EVF_CLASSIC_V1_2025_2026,MSW=EVF_CLASSIC_V1_2025_2026,'
-            || 'PEW=EVF_CLASSIC_V1_2025_2026,PPW=EVF_CLASSIC_V1_2025_2026,'
+            5, 'SPWS_EVF_JOINED_V1_2026_2027',
+            'MPW=SPWS_EVF_JOINED_V1_2026_2027,MSW=EVF_CLASSIC_V1_2025_2026,'
+            || 'PEW=EVF_CLASSIC_V1_2025_2026,PPW=SPWS_EVF_JOINED_V1_2026_2027,'
             || 'PSW=EVF_CLASSIC_V1_2025_2026')$$,
   '2.0 Config contract: active season scoring config and engines match this file''s assumptions'
 );
@@ -315,19 +326,21 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- 2.2  Edge case: N=1 → the walkover, scored by EVF classic for now
+-- 2.2  Edge case: N=1 → the walkover, scored by the 2026/2027 table
 -- ---------------------------------------------------------------------------
--- Between the ADR-104 cleanup and the joined engine, PPW is scored by EVF
--- classic, so a one-competitor bracket earns 50 + 0 + 9 = 59 (SS26.HIST.04
--- pins the same bracket on the classic side). The joined engine scores it
--- N − place + 1 = 1 by the table; 2.2 moves with it.
+-- Up to three fencers the joined engine scores N − place + 1 (a meeting, not a
+-- competition), so a one-competitor bracket earns 1 point where EVF classic
+-- gave 50+0+9 = 59 (SS26.HIST.04 pins the classic side). A live case: ADR-066
+-- records six of seven FOIL brackets in PPW2-2025-2026 as single-competitor.
+-- The table stores its points in num_place_pts; the DE bonus is not used by
+-- the table and holds −1.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    WHERE t.txt_code = 'SCORE-PPW-N1'),
-  50.00::NUMERIC,
-  '2.2a N=1: the walkover scores 50.00 place points under EVF classic'
+  1.00::NUMERIC,
+  '2.2a N=1: the walkover scores 1.00 by the table, not the classic 59'
 );
 
 SELECT is(
@@ -335,8 +348,8 @@ SELECT is(
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    WHERE t.txt_code = 'SCORE-PPW-N1'),
-  0.00::NUMERIC,
-  '2.2b N=1: no DE round is won in a bracket of one'
+  -1.00::NUMERIC,
+  '2.2b N=1: the DE bonus is −1, not used by the table'
 );
 
 -- ---------------------------------------------------------------------------

@@ -35,6 +35,19 @@ def _default_run_recompute(id_event: int, *, db, svc=None) -> None:
         FlowParams(Flow.RECOMPUTE_DOMESTIC, id_event=id_event),
         svc=Services(db=db, config=cfg, notifier=svc.notifier),
     )
+    _check_joining(id_event, db=db, notifier=svc.notifier)
+
+
+def _check_joining(id_event: int, *, db, notifier) -> None:
+    """ADR-104 §7: a recompute can move a fencer between categories, so the
+    event's joining is checked against § 2 again. Reports only; never raises."""
+    from python.pipeline.joined_brackets import joining_check
+
+    try:
+        event = db.find_event_by_id(id_event) or {"id_event": id_event}
+        joining_check.run_joining_check(db, notifier, event)
+    except Exception as e:
+        print(f"  (joining check skipped for event {id_event}: {e})")
 
 
 def report_identity_overrides(db, *, notifier=None) -> int:
