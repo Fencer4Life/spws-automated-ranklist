@@ -5,7 +5,7 @@
 -- 20260920000002_pzsz_senior_result_ingestion.sql (design step 6, ADR-100,
 -- doc/plans/pzsz-senior-result-ingestion-2026-09-19.html).
 --
--- RTM: SS26.TYPE.06e-f, SS26.PZSZ.02/03/05/08/09, SE27.STORE.08. The remaining SS26.PZSZ IDs
+-- RTM: SS26.TYPE.06e-f, SS26.PZSZ.02/03/05/08/09. The remaining SS26.PZSZ IDs
 -- (parser reuse, exact/alias matching, skip, no-auto-create, URL validation)
 -- are pipeline/orchestration concerns tested in
 -- python/tests/test_pzsz_ingestion.py -- this file covers only what is
@@ -21,7 +21,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(13);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures. p_n offsets both the season code and its date range so every
@@ -170,8 +170,9 @@ DECLARE
 BEGIN
   SELECT s.out_event, s.out_fencer FROM pg_temp.pzsz_setup(p_n) s INTO v_event, out_fencer;
   out_tournament := pg_temp.pzsz_senior_tournament(v_event, p_n);
-  -- 34th of the 107-strong senior field: 73 fencers are below (ADR-103 §5).
-  out_review := fn_queue_pzsz_match_review(out_tournament, 'Scraped Name', 34, out_fencer, 62.5, 73);
+  -- 34th of the 107-strong senior field. The queue keeps no count of fencers
+  -- below since ADR-104 dropped K, m and b: five parameters, as ADR-100 built it.
+  out_review := fn_queue_pzsz_match_review(out_tournament, 'Scraped Name', 34, out_fencer, 62.5);
 END $rv$;
 
 CREATE FUNCTION pg_temp.pzsz05_queue_writes_pending() RETURNS TEXT
@@ -245,31 +246,6 @@ SELECT is((pg_temp.pzsz_approve_marks_status(7)).v_status, 'APPROVED',
   'SS26.PZSZ.05c approval marks the review APPROVED');
 SELECT is((pg_temp.pzsz_approve_marks_status(8)).v_place, 34,
   'SS26.PZSZ.03 the approved row keeps its original place (34), never renumbered');
-
--- SE27.STORE.08 -- an approved review writes what the 2026/2027 engine reads:
--- K = the full senior field, m = the original place, and the count below that
--- the queue kept, since the senior field itself is never stored (ADR-103 §5).
-CREATE FUNCTION pg_temp.pzsz_approve_writes_k_m_b() RETURNS TEXT
-LANGUAGE plpgsql AS $s08$
-DECLARE
-  v_tournament INT;
-  v_fencer     INT;
-  v_review     INT;
-  v_out        TEXT;
-BEGIN
-  SELECT out_tournament, out_fencer, out_review FROM pg_temp.pzsz_review_setup(9)
-    INTO v_tournament, v_fencer, v_review;
-  PERFORM fn_approve_pzsz_match_review(v_review, v_fencer);
-  EXECUTE 'SELECT ROW(int_category_count, int_category_place, int_below_count)::TEXT
-             FROM tbl_result WHERE id_tournament = $1 AND id_fencer = $2'
-     INTO v_out USING v_tournament, v_fencer;
-  RETURN v_out;
-EXCEPTION WHEN undefined_function OR undefined_column THEN
-  RETURN NULL;
-END $s08$;
-
-SELECT is(pg_temp.pzsz_approve_writes_k_m_b(), '(107,34,73)',
-  'SE27.STORE.08 an approved PZSz review writes K = 107, m = 34 and the queued 73 fencers below');
 
 CREATE FUNCTION pg_temp.pzsz_double_approve_raises() RETURNS TEXT
 LANGUAGE plpgsql AS $p05d$

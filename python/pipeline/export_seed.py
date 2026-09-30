@@ -497,13 +497,7 @@ def export_monolithic(ref: str, token: str) -> str:
         "num_podium_bonus",
         "num_final_score",
         "ts_points_calc",
-        # ADR-103 §5: the 2026/2027 engine's outputs, recomputed the same way.
-        # Its INPUTS (int_category_count, int_category_place, int_below_count)
-        # are exported: b counts fencers the dump does not hold, so it cannot
-        # be recomputed after the seed loads.
-        "num_field_pts",
-        "num_below_pts",
-        "num_medal_bonus",
+        # ADR-103 §5: the method that scored the row, recomputed the same way.
         "enum_score_method",
     }
     r_cols_data = [c for c in r_cols if c["name"] not in _R_SKIP]

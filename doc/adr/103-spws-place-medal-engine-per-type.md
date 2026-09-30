@@ -1,11 +1,21 @@
 # ADR-103: SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW
 
-**Status:** Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic)
+**Status:** Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic); superseded in part by ADR-104 on 2026-09-30 (§1, §5, K, m and b)
 **Date:** 2026-09-28
+**Amended by:** [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — superseded in part: §1, §5 and the K, m and b parts of §4 and of the amendment below; §2, §4 and §7 amended; §3 and §6 stand).
 **Amends:** [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the engine is governed per tournament type, not only per season), [ADR-098](098-ranking-schema-v2-and-generalized-ranking-rpc.md) (the Season Scoring Rules gain `entry_types`), [ADR-102](102-published-pages-share-one-scoring-module.md) (the shared module gains the new engine and loses field-scaled; public parameters are per type), [ADR-092](092-scoring-table-annex-bilingual-static-page.md) (annex content becomes the 64 × 64 table), [ADR-085](085-points-calculator-temporary-static-page.md) (calculator gains the joined mode; the toggle compares SPWS with EVF classic), [ADR-049](049-joint-pool-split-flag.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`), [ADR-069](069-participant-count-url-validator.md) (the count check compares the joined N), [ADR-100](100-pzsz-senior-result-ingestion.md) (PPS/MPS are scored by the new engine with K = N, m = place)
 **Supersedes:** [ADR-024](024-combined-category-splitting.md) in part — for tournament types assigned the new engine, a joined bracket is no longer split and renumbered per category.
 **Relates to:** [ADR-042](042-carryover-engine-dispatcher.md) and [ADR-045](045-engine-selector-default-flip.md) (the static `CASE … ELSE RAISE` dispatcher pattern, reused), [ADR-056](056-vcat-from-birthyear.md) (a fencer's own category defines K and m), [ADR-066](066-min-participants-ingestion-gate.md) (the minimum-field gate reads the joined N), [ADR-083](083-server-enforced-authorization.md) (the anon allowlist pair), the ADR-036 amendment (bootstrap ordering: the assignment function is called again from `supabase/seed_post_backfill.sql`)
 **Source:** `doc/plans/scoring-engine-2026-2027-implementation-plan-2026-09-28.html` §3; design `doc/plans/scoring-engine-2026-2027-brainstorm-2026-09-27.html` round 10; signed-off table `doc/plans/tabela-punktacji-propozycja-2026-09-27.html`
+
+## Amendment (2026-09-30 — superseded in part by ADR-104)
+
+[ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) removes `SPWS_PLACE_MEDAL_V1_2026_2027` before any result was scored with it — on 30 September 2026 LOCAL, CERT and PROD held no 2026/27 result, no revision naming it, and −1 in every K, m, b and component column — and replaces it with `SPWS_EVF_JOINED_V1_2026_2027`: EVF, with a premium for older categories in a joined bracket of 4–15 and a cap of 1 point below the fencer directly ahead.
+
+- **Superseded:** §1 (the place-and-medal strategy); §5 (K, m, b, `num_field_pts`, `num_below_pts` and `num_medal_bonus`, whose columns are dropped); the parts of §4 and of the amendment below that write K, m and b, including b in the PZSz review queue.
+- **Amended:** §2 — PPW, MPW and the 2026/27 default name the new engine; PPS, MPS, PEW, MEW, MSW and PSW stay on EVF classic. §4 — `JOINED_BRACKET_CATEGORY_PLACE` still keeps a joined bracket whole, and stores the listing's category order in `tbl_tournament.txt_joined_order` instead of K, m and b. §7 — the annex and the calculator compute with the new engine only; the calculator loses its SPWS/EVF toggle.
+- **Unchanged:** §3 (field-scaled stays deleted), §6 (ranking entry through PPW or MPW), the per-type engine assignment, `txt_joined_bracket_module` and `fn_public_scoring_params`.
+- **Tests:** `supabase/tests/83_spws_place_medal_engine.sql` is deleted with the engine; SE27.RANK.01–05 move unchanged into `supabase/tests/85_spws_evf_joined_engine.sql`; SE27.TYPE, SE27.STORE and SE27.CALC are retargeted to the new engine; SE27.ING.05 is retired.
 
 ## Amendment (2026-09-28 — PPS and MPS stay on EVF classic)
 

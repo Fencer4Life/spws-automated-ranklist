@@ -2,10 +2,14 @@
 
 **Status:** Accepted (signed off 2026-08-15; §2 amended 2026-09-28)
 **Date:** 2026-08-15
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the joined mode and the SPWS/EVF toggle).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the joined mode and the SPWS/EVF toggle). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the calculator is rebuilt in line with the annex, without the SPWS/EVF toggle).
 **Amends:** [ADR-015](015-m8-ui-design-decisions.md) §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (frontend built once in CI and deployed to GitHub Pages — unchanged; the page rides the same artifact), [ADR-079](079-event-self-registration-identity.md) and [ADR-007](007-shadow-dom-deferred.md) (`register.html`, the existing standalone page, built through `vite.config.ce.ts` as a custom element — deliberately *not* the mechanism used here)
 **Source:** `doc/plans/kalkulator-w-menu-ranklisty-2026-08-15.html` §4
+
+## Amendment (2026-09-30 — rebuilt in line with the annex)
+
+[ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) rebuilds the calculator from the annex's tools — the calculator, the premium table and the bracket simulator — computing only with `SPWS_EVF_JOINED_V1_2026_2027` and following the active season. The SPWS/EVF toggle and the K-and-m joined mode of the amendment below are removed. The publication mechanism of §§ 1–2 is unchanged.
 
 ## Amendment (2026-09-28 — the joined mode and the SPWS/EVF toggle)
 

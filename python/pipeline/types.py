@@ -175,11 +175,10 @@ class StageMatchResult:
     gender: str | None = None
     tournament_date: Any = None
     # RECOMPUTE_DOMESTIC under JOINED_BRACKET_CATEGORY_PLACE (ADR-103 §4): the
-    # stored joined N, the stored count of fencers below, and the listing the
-    # row came from. b counts fencers never stored, so recompute reads it back
-    # rather than recounting. Unset (None) on INGEST.
+    # stored joined N and the listing the row came from. N counts fencers never
+    # stored, so recompute reads it back rather than recounting. Unset (None)
+    # on INGEST.
     bracket_size: int | None = None
-    below_count: int | None = None
     bracket_key: str | None = None
 
 

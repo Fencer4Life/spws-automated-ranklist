@@ -312,9 +312,9 @@
 <script lang="ts">
   import type { ScoringConfig, ScoringEngineOption, RankingRules, TournamentType } from '../lib/types'
   import { CARRYOVER_ENGINE_VALUES } from '../lib/types'
-  import { CLASSIC_ENGINE, PLACE_MEDAL, PLACE_MEDAL_ENGINE } from '../lib/scoring'
+  import { CLASSIC_ENGINE } from '../lib/scoring'
   import { POOL_TYPES, rankingRulesProblems, sameRankingRules, type BucketProblem, type Pool } from '../lib/ranking-rules'
-  import { getLocale, t } from '../lib/locale.svelte'
+  import { t } from '../lib/locale.svelte'
 
   let {
     config,
@@ -424,33 +424,17 @@
     return { code: module, text: tOptional(`sc_module_${module}`) }
   }
 
-  function joinAnd(items: string[]): string {
-    if (items.length < 2) return items.join('')
-    return items.slice(0, -1).join(', ') + t('sc_and') + items[items.length - 1]
-  }
-
   // Which results the EVF base value and podium fields actually feed: every
-  // type on EVF classic, and the 32-and-over range of every type on the
-  // 2026/2027 engine. Derived from the cards, so a season up to 2025/2026 —
-  // every type on EVF classic — does not claim a range it never had.
+  // type on EVF classic. Derived from the cards, so the hint never claims a
+  // type another engine scores.
   function evfHint(): string {
     const whole = TYPE_CARDS.filter((c) => engineOf(c.type) === CLASSIC_ENGINE).map((c) => c.type)
-    const from32 = TYPE_CARDS.filter((c) => engineOf(c.type) === PLACE_MEDAL_ENGINE).map((c) => c.type)
-    const parts: string[] = []
-    if (whole.length) parts.push(whole.join(', '))
-    if (from32.length) parts.push(t('sc_mp_hint_from32', { from: PLACE_MEDAL.evfFrom, types: joinAnd(from32) }))
-    return t('sc_mp_hint', { types: parts.join(t('sc_also')) })
-  }
-
-  function decimal(value: number): string {
-    return getLocale() === 'pl' ? String(value).replace('.', ',') : String(value)
+    return t('sc_mp_hint', { types: whole.join(', ') })
   }
 
   // The fixed rules of each known engine, shown read-only beside the settings
   // that feed them. Nothing here is a setting: EVF classic's scale, its 10
-  // points per elimination round and its podium scaling are fixed in SQL, and
-  // the 2026/2027 engine's ranges and constants come from scoring.ts's
-  // PLACE_MEDAL — the same constants the pages and the SQL strategy use.
+  // points per elimination round and its podium scaling are fixed in SQL.
   // Functions, so the text follows a language switch.
   const ENGINE_RULES: Record<string, (eng: ScoringEngineOption) => { label: string, text: string }[]> = {
     [CLASSIC_ENGINE]: (eng) => [
@@ -458,15 +442,6 @@
       { label: t('sc_ro_classic_de_label'), text: t('sc_ro_classic_de') },
       { label: t('sc_ro_classic_podium_label'), text: t('sc_ro_classic_podium') },
       { label: t('sc_ro_module'), text: withModule(eng, t('sc_ro_classic_module')) },
-    ],
-    [PLACE_MEDAL_ENGINE]: (eng) => [
-      { label: t('sc_ro_range', { from: 1, to: PLACE_MEDAL.tableUpTo }), text: t('sc_ro_pm_table') },
-      {
-        label: t('sc_ro_range', { from: PLACE_MEDAL.tableUpTo + 1, to: PLACE_MEDAL.evfFrom - 1 }),
-        text: t('sc_ro_pm_mid', { per: decimal(PLACE_MEDAL.perBelow), medal: PLACE_MEDAL.medal.join(' / ') }),
-      },
-      { label: t('sc_ro_range_from', { from: PLACE_MEDAL.evfFrom }), text: t('sc_ro_pm_evf') },
-      { label: t('sc_ro_module'), text: withModule(eng, t('sc_ro_pm_module')) },
     ],
   }
 
