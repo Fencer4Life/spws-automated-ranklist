@@ -205,6 +205,23 @@ export async function fetchRankingRules(seasonId: number): Promise<RankingRules 
   return (data?.json_ranking_rules as RankingRules | null) ?? null
 }
 
+/**
+ * The season's coefficient per tournament type, for the ranklist's season
+ * rules (SR.API), from the public RPC the scoring table and the calculator
+ * read. null when the call fails: the rules then leave the line out.
+ */
+export async function fetchSeasonCoefficients(seasonCode: string): Promise<Record<string, number> | null> {
+  const { data, error } = await getClient().rpc('fn_public_scoring_params', {
+    p_season_code: seasonCode,
+  })
+  if (error || !Array.isArray(data)) return null
+  const coefficients: Record<string, number> = {}
+  for (const row of data as { type_code: string, multiplier: number | string }[]) {
+    coefficients[row.type_code] = Number(row.multiplier)
+  }
+  return coefficients
+}
+
 export async function fetchCalendarEvents(seasonId: number): Promise<CalendarEvent[]> {
   const { data, error } = await getClient()
     .from('vw_calendar')

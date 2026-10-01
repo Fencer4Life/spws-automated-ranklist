@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Season Rules Plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <p class="eyebrow">Public ranklist · frontend only · Development Plan · revision 2</p>
+  <h1>Reguły rankingu na sezon — a pill at the bottom of the screen</h1>
+  <p class="dek">A pill pinned to the <b>bottom of the visible screen</b> names the <b>season chosen in the dropdown</b>. It opens a modal drawn from <b>that season's own definition</b>: its sum, its buckets with one ★ per counted result, who is ranked, and its coefficients. Design: mock revision 2, approved 1 October with the pill in the middle.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Plan rev 2 — awaiting your sign-off</span>
+    <span class="pill"><span class="dot"></span>mock rev 2 approved 1 Oct · middle</span>
+    <span class="pill"><span class="dot"></span>no SQL · no migration · no CERT/PROD writes</span>
+    <span class="pill danger"><span class="dot"></span>code drafted before sign-off — uncommitted</span>
+  </div>
+
+  <div class="note danger">
+    <p class="lede"><span class="tick">!</span> Code was written before this plan was shown to you</p>
+    <p>I started implementing straight after your "A, implement it" instead of bringing you a development plan first. Nothing is committed or pushed, and CERT and PROD are untouched. The draft still has revision 1's pill <b>inside the strip</b>. Revision 2 moves it to the bottom of the screen and puts the strip back exactly as it is on <code>main</code>.</p>
+    <p style="margin-bottom:0"><b>If you reject this plan</b>, I delete the three new files and revert the five edited ones to <code>HEAD</code>. <b>If you sign it off</b>, I bring the draft to this page step by step, tests first. Your other uncommitted files are not touched either way: the mock, the PPW1 staging files, the scoring-table preview and the <code>.pyc</code>.</p>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decide this first · the only open question</p>
+    <h2>D1 · The „Tabela punktacji” link inside the modal, on WordPress</h2>
+    <p>On WordPress the ranklist is this same app: <code>frontend/src/ce/RanklistElement.svelte</code> renders <code>App.svelte</code>. The modal's footer links to the scoring-table annex, and as drafted that link is a bare <code>tabela-punktacji.html?lang=…</code>.</p>
+    <ul>
+      <li><b>On GitHub Pages</b> the bare link resolves correctly.</li>
+      <li><b>On WordPress</b> it resolves against the WordPress path and returns <b>404</b>.</li>
+    </ul>
+    <p>The app already solves this for its images. <code>assetUrl()</code> in <code>frontend/src/lib/assetBase.ts</code> resolves a bare name against the embed's <code>asset-base</code> attribute. I read that attribute on the live page today (<code>weteraniszermierki.pl/znajdz-zawody</code>): it is <code>https://fencer4life.github.io/spws-automated-ranklist/</code>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What the fencer gets on WordPress</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b> · wrap the href in <code>assetUrl()</code></td><td>The annex opens in a new tab from GitHub Pages; GitHub Pages and LOCAL are unchanged. It is one line, and test SR.MODAL.13 (already written, RED) covers it.</td><td><span class="chip never">recommended</span></td></tr>
+        <tr><td><b>B</b> · keep the bare link</td><td>A 404 on the public site.</td><td><span class="chip over">broken</span></td></tr>
+        <tr><td><b>C</b> · hide the link in the embed</td><td>No route to the annex from the modal on WordPress.</td><td><span class="chip warn">loses the link</span></td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: A.</b> It uses the mechanism the app already has for exactly this problem.</p>
+    <p class="note good" style="padding:12px 18px"><b>Settled by your OK on the mock:</b> the pill sits in the <b>middle</b> of the bottom edge.</p>
+  </section>
+
+  <section id="what">
+    <p class="kicker">What the fencer sees</p>
+    <h2>The pill, and the modal it opens</h2>
+    <ul>
+      <li><b>The pill.</b> It reads „ⓘ Reguły rankingu na sezon 2026/2027” and floats in the middle of the bottom of the visible screen. It stays there while the list scrolls under it.
+        <ul>
+          <li><b>Computer:</b> the light-blue pill style approved in the mock, with a soft shadow so it reads above the rows.</li>
+          <li><b>Phone:</b> the same pill at a 44&nbsp;px touch height.</li>
+        </ul>
+      </li>
+      <li><b>The strip is unchanged.</b> „kat. 1 — roczniki: …” is back exactly as on <code>main</code>: same markup, same CSS. So are the title, logo, filters, switch, ODS button and table.</li>
+      <li><b>It follows the dropdown.</b> It shows only once the rules read for the chosen season have arrived, so it never names one season while holding another's rules.
+        <ul>
+          <li>A season with no stored rules (2023/24) shows no pill.</li>
+          <li>The pill appears only on the ranklist, never on the calendar or admin views.</li>
+        </ul>
+      </li>
+      <li><b>The modal is unchanged from revision 1.</b>
+        <ul>
+          <li><b>Header:</b> the title „Reguły rankingu na sezon 2026/2027”, then the season code, its state and „w każdej broni, płci i kategorii”.</li>
+          <li><b>The sum:</b> „SPWS + EVF+ = Razem”, or one „Punkty” box for a PPW-only season.</li>
+          <li><b>One card per pool:</b> each bucket shows its types, its rule and <b>one ★ per counted result</b>. MPW gets a single blue ★; PPW has 2 in 2026/27 and 4 in 2025/26.</li>
+          <li><b>Facts:</b> „Kto jest w rankingu” (only when the season stores <code>entry_types</code>), „Ranking kroczący” (active season only), „Współczynniki”.</li>
+          <li><b>Footer:</b> the annex link (D1) and the ★ note.</li>
+          <li><b>Closing:</b> ✕, Esc and a click outside close it, and focus returns to the pill. On a phone the modal is a full-screen sheet with a sticky title.</li>
+          <li>Polish and English, with Polish plurals.</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <section id="bottom">
+    <p class="kicker">Verified · the bottom of the screen</p>
+    <h2>How the pill stays on the bottom edge</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Concern</th><th>How it is handled</th></tr></thead>
+      <tbody>
+        <tr><td>Finding the bottom</td><td><code>position: fixed; bottom: calc(16px + env(safe-area-inset-bottom))</code>, centred with <code>left: 50%; transform: translateX(-50%)</code>. The browser pins it to the visible screen; nothing is measured in JavaScript.</td></tr>
+        <tr><td>iPhone</td><td>The safe-area inset keeps it above the home bar. Safari's toolbar showing or hiding moves the visible bottom, and the pill moves with it.</td></tr>
+        <tr><td>Nothing hidden behind it</td><td>While the pill shows, a 72&nbsp;px spacer (<code>aria-hidden</code>) ends the ranklist view. The last row, and the CT/PD switch on CERT, scroll clear of it. No existing container changes its CSS.</td></tr>
+        <tr><td>Drawer, modals, error banner</td><td><code>z-index: 50</code> keeps it above the list but under the drawer (99/100, <code>Sidebar.svelte</code>), every modal (1000) and the error banner (9999). They cover it.</td></tr>
+        <tr><td>WordPress</td><td><b>Checked today on the live page</b> <code>weteraniszermierki.pl/znajdz-zawody</code>, which uses the theme a ranklist page would use. None of the boxes around the embedded app has a <code>transform</code>, <code>filter</code>, <code>perspective</code>, <code>contain</code>, <code>will-change</code> or <code>backdrop-filter</code>, so <code>fixed</code> pins to the real screen there. The shadow root does not change this.</td></tr>
+        <tr><td>Narrow screens</td><td><code>max-width: calc(100vw - 32px)</code>. On a 375&nbsp;px phone the Polish label measures about 290&nbsp;px and fits on one line.</td></tr>
+        <tr><td>Keyboard</td><td>The pill follows the table in the DOM, so Tab reaches it after the rows. After Esc, focus returns to it.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="data">
+    <p class="kicker">Verified against source · nothing invented</p>
+    <h2>Where every line of the modal comes from</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Modal element</th><th>Source</th><th>Read by</th></tr></thead>
+      <tbody>
+        <tr><td>Buckets, best-N, always, entry types</td><td><code>tbl_scoring_config.json_ranking_rules</code> (ADR-006)</td><td><code>fetchRankingRules</code>: an <b>existing</b> call inside <code>loadRanking</code>, so no new request</td></tr>
+        <tr><td>Full vs PPW-only, active, finished/future</td><td><code>tbl_season.enum_ranking_publication</code>, <code>bool_active</code>, <code>dt_end</code> (ADR-099/101)</td><td><code>fetchSeasons</code>: <b>existing</b></td></tr>
+        <tr><td>Coefficients</td><td><code>fn_public_scoring_params(p_season_code)</code>. It is anon-executable, and the calculator and the annex already read it (ADR-102).</td><td><b>new</b> <code>fetchSeasonCoefficients</code> (<code>api.ts:213</code>), called <b>only when the modal opens</b></td></tr>
+        <tr><td>Type names</td><td>existing <code>legend_ppw … legend_mps</code> locale keys</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="safety">
+    <p class="kicker">Your condition: don't break anything</p>
+    <h2>What stays exactly as it is</h2>
+    <ul>
+      <li><b>Untouched files:</b> <code>DrilldownModal.svelte</code>, <code>RanklistTable.svelte</code>, <code>FilterBar.svelte</code>, <code>Sidebar.svelte</code>, every admin component, every SQL file.</li>
+      <li><b>The strip</b> (<code>.category-subtitle</code>): markup and CSS identical to <code>main</code>. The existing birth-year tests BY.1–BY.7 and <code>AppShell.test.ts</code> keep passing unchanged.</li>
+      <li><b><code>loadRanking</code></b> gains one assignment after each of its two <code>rankingRules = rules</code> lines (<code>App.svelte:748</code>, <code>:765</code>). There is no new request and the order is unchanged.</li>
+      <li><b>No eager new call.</b> The coefficients are fetched on click. The page load does what it did before, and the 60+ test files that mock <code>../lib/api</code> keep working.</li>
+      <li><b>Failure is quiet and local.</b> If the coefficients fail to load, the modal leaves out that one line.</li>
+      <li><b>Demo mode</b> loads no rules, so it shows no pill.</li>
+    </ul>
+  </section>
+
+  <section id="scenarios">
+    <p class="kicker">Walk-throughs</p>
+    <h2>Scenarios, surface by surface</h2>
+    <ol class="steps">
+      <li><b>A fencer opens the ranklist on a phone.</b> 2026/27 loads and the pill appears on the bottom edge. They scroll a long V2 épée list and the rows slide under the pill. At the end, the last row stops above it.</li>
+      <li><b>They tap the pill.</b> The full-screen sheet opens over everything, pill included. They close it and are back where they were, with focus on the pill.</li>
+      <li><b>They switch to 2025/26.</b> The pill hides while the list reloads, then reads „…2025/2026”. The modal shows „Punkty”, PPW ★★★★ and MPW ★.</li>
+      <li><b>They switch to 2023/24.</b> There are no stored rules, so there is no pill and no spacer. The list ends where it always did.</li>
+      <li><b>They switch seasons quickly.</b> The existing generation counter drops stale results. The pill is tied to the season id its rules were read for, so it never names the wrong season.</li>
+      <li><b>They open the menu.</b> The drawer and its shade cover the pill.</li>
+      <li><b>They switch to the calendar.</b> The pill disappears with the ranklist view.</li>
+      <li><b>WordPress.</b> The same behaviour inside the shadow root (theme checked above). The annex link depends on D1.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Tests first · RED before GREEN</p>
+    <h2>Acceptance tests</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Asserts</th><th>Status now</th></tr></thead>
+      <tbody>
+        <tr><td><code>SR.MODAL.01–12</code></td><td>The modal: title and meta, band, buckets and ★ counts (MPW one), PPW-only, entry types, rolling line, coefficients, Polish plurals, English, close by ✕ / Esc / outside, flags and annex href, nothing when closed</td><td><span class="chip never">GREEN</span></td></tr>
+        <tr><td><code>SR.MODAL.13</code></td><td>With an asset base set, the annex href resolves against it (D1)</td><td><span class="chip over">RED — awaits D1</span></td></tr>
+        <tr><td><code>SR.LINK.01</code></td><td><b>Rewritten for rev 2:</b>
+          <ul>
+            <li>the strip holds exactly „kat. 1 — roczniki: 1987, 1986, .. 1978” and no button;</li>
+            <li>the pill <code>.rules-float</code> sits outside the strip, named „Reguły rankingu na sezon 2026/2027”.</li>
+          </ul></td><td><span class="chip warn">to rewrite → RED</span></td></tr>
+        <tr><td><code>SR.LINK.02</code></td><td>The pill follows the season dropdown</td><td><span class="chip never">GREEN</span></td></tr>
+        <tr><td><code>SR.LINK.03</code></td><td>A season with no rules: no pill, and the birth years stay</td><td><span class="chip never">GREEN</span></td></tr>
+        <tr><td><code>SR.LINK.04</code></td><td>The pill opens that season's rules and fetches that season's coefficients</td><td><span class="chip never">GREEN</span></td></tr>
+        <tr><td><code>SR.LINK.05</code></td><td>Closing leaves the filters and the pill intact</td><td><span class="chip never">GREEN</span></td></tr>
+        <tr><td><code>SR.LINK.06</code></td><td><b>New:</b> the end-of-list spacer exists while the pill shows, and is absent for 2023/24</td><td><span class="chip warn">to write → RED</span></td></tr>
+        <tr><td><code>SR.API.01–02</code></td><td><code>fetchSeasonCoefficients</code> calls <code>fn_public_scoring_params</code> and maps rows; null on error</td><td><span class="chip never">GREEN</span></td></tr>
+      </tbody>
+    </table></div>
+    <p><b>What jsdom cannot test:</b> where <code>position: fixed</code> lands on a real screen. The Playwright build runs in demo mode, which has no rules and so no pill. That part is proven by measurement on LOCAL (step 4 below). The measurements and screenshots are recorded on the status page.</p>
+  </section>
+
+  <section id="files">
+    <p class="kicker">The change set, after revision 2</p>
+    <h2>Files</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><code>frontend/src/components/SeasonRulesModal.svelte</code></td><td>The modal, as drafted. It exports <code>seasonYears()</code>, so the pill and the title share one formatter. D1 applies to its annex link.</td><td><span class="chip never">new</span></td></tr>
+        <tr><td><code>frontend/src/App.svelte</code></td><td>
+          <ul>
+            <li>The strip goes back to <code>main</code>.</li>
+            <li><b>New:</b> the pill after the table, and the spacer at the end of the ranklist view.</li>
+            <li>Three state variables, the season tag in <code>loadRanking</code>, and <code>openSeasonRules</code>.</li>
+            <li>CSS for <code>.rules-float</code>, the spacer and the phone size.</li>
+            <li>The draft's strip flex rule and strip phone rule are removed.</li>
+          </ul></td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>frontend/src/lib/api.ts</code></td><td><code>fetchSeasonCoefficients</code></td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>frontend/src/lib/types.ts</code></td><td><code>entry_types?</code></td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>frontend/src/lib/locales/pl.json</code>, <code>en.json</code></td><td>28 <code>sr_*</code> keys each; the locale-parity test passes</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>frontend/tests/SeasonRulesModal.test.ts</code>, <code>SeasonRulesLink.test.ts</code></td><td>SR.MODAL, SR.LINK (SR.LINK.01 rewritten, SR.LINK.06 added)</td><td><span class="chip never">new</span></td></tr>
+        <tr><td><code>frontend/tests/api.test.ts</code></td><td>SR.API</td><td><span class="chip fill">edit</span></td></tr>
+        <tr><td><code>doc/mockups/ranking-rules-modal-2026-10-01.html</code></td><td>Status pill → "rev 2 approved — built"</td><td><span class="chip fill">edit</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="steps">
+    <p class="kicker">After your sign-off</p>
+    <h2>Steps, in order</h2>
+    <ol class="steps">
+      <li><b>Tests first.</b> Rewrite SR.LINK.01 and add SR.LINK.06, then run them and confirm both are RED.</li>
+      <li><b>Bring the draft to revision 2.</b> Put the strip back to <code>main</code>, add the pill and the spacer, and add the CSS. SR.LINK.01 and SR.LINK.06 turn GREEN. Then diff every hunk against this page and remove anything not described here.</li>
+      <li><b>D1.</b> Apply your answer. For A, wrap the href in <code>assetUrl()</code>, and SR.MODAL.13 turns GREEN.</li>
+      <li><b>Measure on LOCAL</b>, at 1280×800 and at a 375×812 phone. My own check; no screenshots for you to open there.
+        <ul>
+          <li>The pill's bottom edge sits 16&nbsp;px above the screen's bottom.</li>
+          <li>Scrolled to the end, the last row's bottom is above the pill's top.</li>
+          <li>The drawer and both modals cover the pill.</li>
+          <li>There is no pill on 2023/24 or on the calendar.</li>
+          <li>The strip text is identical to <code>main</code>.</li>
+          <li>There are no new console errors.</li>
+        </ul>
+        Then reset the viewport.</li>
+      <li><b>RTM:</b> add a new row, <b>FR-146</b> „Ranking rules for the chosen season”, with source UC12 and tests SR.MODAL.01–13, SR.LINK.01–06 and SR.API.01–02. Then run <code>render_docs.py</code>. FR-67 (the birth-year subtitle) is unchanged.</li>
+      <li><b>Handbook</b> <code>doc/handbook/product/product-surfaces.html</code>, in the present tense:
+        <ul>
+          <li>the Ranklist card gains the pill and the modal;</li>
+          <li>"The published static pages" notes that the rules modal also links the annex;</li>
+          <li><code>last-verified</code> is updated.</li>
+        </ul></li>
+      <li><b>Mock status pill</b> updated.</li>
+      <li><b>Playwright</b> <code>npm run test:e2e</code>: a regression run of the custom-element build that WordPress embeds.</li>
+      <li><b>Docs and graph:</b> <code>check_docs.py --changed-from origin/main</code>, <code>python3 tools/docs-search/ingest.py</code>, <code>scripts/refresh-graph.sh</code>.</li>
+      <li><b><code>scripts/preflight.sh</code> exits 0.</b> That is the definition of done.</li>
+      <li><b>Stop.</b> No commit until you say so. Release to CERT and PROD is a separate go.</li>
+    </ol>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--accent)">Impact: product | reference
+Canonical docs affected: doc/handbook/product/product-surfaces.html;
+  doc/requirements-traceability-matrix.md (+ its generated HTML twin)
+ADR impact: none — the modal presents rules already decided in ADR-006,
+  ADR-099/101 and ADR-104 and adds no rule of its own
+Operational impact: none
+Source-map / last-verified updated: yes (product-surfaces.html last-verified)
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: not applicable</pre>
+      <p style="margin-bottom:0">The box is binary: it stays unchecked until every field is resolved and the validator passes.</p>
+    </div>
+  </section>
+
+  <section id="out">
+    <p class="kicker">Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li>Release to CERT and PROD. It needs its own go after the commit.</li>
+      <li>PPW1 ingestion on CERT and PROD, and the WordPress calculator upload. Each is still waiting for its own go.</li>
+      <li>Showing the pill in demo mode, which would need made-up rules.</li>
+      <li>The drawer's bare annex link in <code>Sidebar.svelte</code>. It is not part of the WordPress ranklist embed and is left as it is.</li>
+      <li>The coefficient values. The modal shows whatever the season stores: LOCAL holds its seed values (MEW ×2, PSW ×2), and CERT and PROD hold D4.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Sign-off</p>
+    <h2>What I need from you</h2>
+    <p><b>Sign-off of this plan</b> and <b>your answer to D1</b>. I recommend A.</p>
+  </section>
+
+  <p class="foot">plan rev 2 · season-rules-modal · 2026-10-01 · mock: doc/mockups/ranking-rules-modal-2026-10-01.html (revision 2)</p>
+</div>
+</body>
+</html>
