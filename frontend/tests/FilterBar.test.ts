@@ -7,6 +7,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import FilterBar from '../src/components/FilterBar.svelte'
 
+// The view switch reads Ranking | PPW, Ranking first (ADR-101's own order;
+// UX proposal A, doc/mockups/ranklist-controls-ux-2026-10-01.html), so tests
+// find its buttons by label rather than by position.
+const modeBtn = (c: HTMLElement, label: 'PPW' | 'Ranking') =>
+  Array.from(c.querySelectorAll<HTMLButtonElement>('.toggle-btn')).find((b) => b.textContent?.trim() === label)!
+
 describe('FilterBar', () => {
   // 11.7 — Season dropdown renders when seasons prop provided
   it('11.7: renders season dropdown as first filter when seasons provided', () => {
@@ -43,10 +49,10 @@ describe('FilterBar', () => {
    * design's own definition of done treats the internal name, not just the
    * display label, as part of the "Ranking/PPW" contract.
    */
-  it('SS26.UI: the scope toggle is labelled PPW / Ranking', () => {
+  it('SS26.UI / UX.LIST.01: the scope toggle reads Ranking | PPW, Ranking first', () => {
     const { container } = render(FilterBar, { props: { showEvfToggle: true } })
     expect([...container.querySelectorAll('.toggle-btn')].map((b) => b.textContent!.trim()))
-      .toEqual(['PPW', 'Ranking'])
+      .toEqual(['Ranking', 'PPW'])
   })
 
   // 6.10 — PPW/Ranking toggle hidden by default (showEvfToggle=false)
@@ -59,9 +65,8 @@ describe('FilterBar', () => {
   // 6.10 — PPW/Ranking toggle, PPW default when showEvfToggle=true
   it('PPW is active by default when showEvfToggle is true', () => {
     const { container } = render(FilterBar, { props: { showEvfToggle: true } })
-    const btns = container.querySelectorAll('.toggle-btn')
-    expect(btns[0].classList.contains('active')).toBe(true)
-    expect(btns[1].classList.contains('active')).toBe(false)
+    expect(modeBtn(container, 'PPW').classList.contains('active')).toBe(true)
+    expect(modeBtn(container, 'Ranking').classList.contains('active')).toBe(false)
   })
 
   // SS26.UI: V0 no longer disables Ranking mode (design step 7 removes the
@@ -70,8 +75,7 @@ describe('FilterBar', () => {
   // while SPWS and PZSz can contribute.")
   it('SS26.UI: does not disable the Ranking button when category is V0', () => {
     const { container } = render(FilterBar, { props: { category: 'V0', showEvfToggle: true } })
-    const rankingBtn = container.querySelectorAll('.toggle-btn')[1] as HTMLButtonElement
-    expect(rankingBtn.disabled).toBe(false)
+    expect(modeBtn(container, 'Ranking').disabled).toBe(false)
   })
 
   // SS26.UI: V0 no longer force-flips mode back to PPW.
@@ -101,9 +105,46 @@ describe('FilterBar', () => {
     const { container } = render(FilterBar, {
       props: { category: 'V0', showEvfToggle: true, onfilterchange: handler },
     })
-    const rankingBtn = container.querySelectorAll('.toggle-btn')[1] as HTMLButtonElement
-    rankingBtn.click()
+    modeBtn(container, 'Ranking').click()
     const call = handler.mock.calls[handler.mock.calls.length - 1][0]
     expect(call.mode).toBe('RANKING')
+  })
+
+  // ── UX proposal A: the view switch and ODS sit together at the right end ──
+
+  it('UX.LIST.02 — the switch, then the ODS button, form the last group of the filter row', () => {
+    const { container } = render(FilterBar, { props: { showEvfToggle: true } })
+    const row = container.querySelector('.filter-row')!
+    const tools = row.lastElementChild!
+    expect(tools.classList.contains('view-tools')).toBe(true)
+    const kids = Array.from(tools.children)
+    expect(kids[0].querySelector('.toggle-btn')).not.toBeNull()
+    expect(kids[kids.length - 1].classList.contains('ods-btn')).toBe(true)
+  })
+
+  it('UX.LIST.03 — the ODS button says ODS, explains itself, and still exports', async () => {
+    const onexport = vi.fn()
+    const { container } = render(FilterBar, { props: { showEvfToggle: true, onexport } })
+    const ods = container.querySelector<HTMLButtonElement>('.view-tools .ods-btn')!
+    expect(ods.textContent?.trim()).toBe('ODS')
+    expect(ods.querySelector('svg')).not.toBeNull()
+    expect(ods.title).toMatch(/ODS/)
+    expect(container.textContent).not.toContain('⎙')
+    await fireEvent.click(ods)
+    expect(onexport).toHaveBeenCalledOnce()
+  })
+
+  it('UX.LIST.04 — the switch reports the selected view', () => {
+    const { container } = render(FilterBar, { props: { showEvfToggle: true, mode: 'RANKING' } })
+    expect(modeBtn(container, 'Ranking').getAttribute('aria-pressed')).toBe('true')
+    expect(modeBtn(container, 'PPW').getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('UX.LIST.05 — without the switch, the ODS button keeps its place at the right end', () => {
+    const { container } = render(FilterBar)
+    const tools = container.querySelector('.filter-row')!.lastElementChild!
+    expect(tools.classList.contains('view-tools')).toBe(true)
+    expect(tools.querySelector('.toggle-btn')).toBeNull()
+    expect(tools.querySelector('.ods-btn')).not.toBeNull()
   })
 })

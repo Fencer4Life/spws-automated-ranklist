@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Drilldown: points order, greyed uncounted — plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+.wrap code{overflow-wrap:anywhere}
+.mock[data-view="PPW"] .only-ranking{display:none !important}
+.mock[data-view="RANKING"] .only-ppw{display:none !important}
+.mock[data-view="PPW"] .m-grid{grid-template-columns:1fr}
+.m-tg span{cursor:pointer;user-select:none}.m-tg span:not(.on):hover{background:#eef3fa}
+.tryit{display:inline-block;background:#4a90d9;color:#fff;font:700 13px system-ui,sans-serif;border-radius:6px;padding:4px 10px;margin:0 0 4px}
+.m-panel{background:#f3f6fb;border:1px solid #d9e2ee;border-radius:10px;padding:2px 10px 4px;margin:6px 0 16px;box-shadow:0 1px 2px rgba(16,34,64,.07),0 6px 18px rgba(16,34,64,.12),inset 0 1px 0 #fff}
+.m-panel .m-t th{border-bottom-color:#d9e2ee}
+.m-panel .m-t td{border-bottom-color:#e3e9f2}
+.m-panel .m-t tr:last-child td{border-bottom:0}
+.m-panel .m-t tr.off td{background:#e1e3e6;border-bottom-color:#d3d6db}
+.m-panel.cards{padding:6px 10px}
+.m-panel.cards .c{background:#fff}.m-panel.cards .c.car{background:#f5f4f2}.m-panel.cards .c.off{background:#e1e3e6}
+.mock{background:#fff;color:#333;border-radius:10px;box-shadow:0 10px 40px #0002;max-width:760px;margin:24px auto;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.mock *{box-sizing:border-box}
+.m-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 6px}
+.m-head h2{font:700 18px system-ui,sans-serif;margin:0;color:#222}
+.m-x{font-size:22px;color:#999}
+.m-sub{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:0 20px 12px;color:#555;font-size:13px;border-bottom:1px solid #eee}
+.m-tg{display:inline-flex;border:1px solid #cfd6e0;border-radius:6px;overflow:hidden}
+.m-acts{display:flex;align-items:center;gap:10px}
+.m-lang{display:inline-flex;border:1px solid #ccc;border-radius:4px;overflow:hidden;font-size:13px}
+.m-lang span{padding:3px 8px;cursor:default}.m-lang span.on{background:#4a90d9}
+.m-exp{margin-left:auto;border:1px solid #ccc;border-radius:4px;padding:3px 8px;font-size:14px;color:#555;background:#fff;cursor:default}
+.m-tg span{padding:3px 12px;font-weight:600;font-size:12px;color:#4a5a70}
+.m-tg span.on{background:#4a90d9;color:#fff}
+.m-body{padding:12px 20px 18px}
+.m-roll{background:#fdf6dd;border:1px solid #efe1a8;border-radius:6px;padding:7px 12px;color:#7a6520;font-size:13px;margin:0 0 12px}
+.m-h3{font:700 15px system-ui,sans-serif;margin:10px 0 8px;color:#222}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.m-h4{font:600 13px system-ui,sans-serif;margin:0 0 6px;color:#333}
+.m-row{display:flex;align-items:center;gap:6px;margin:4px 0}
+.m-v{width:30px;text-align:right;font-weight:600;font-size:12px;color:#333}
+.m-bg{flex:1;height:16px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+.m-b{height:100%;border-radius:3px}
+.m-b.d{background:#4a90d9}.m-b.dc{background:repeating-linear-gradient(45deg,#b0c8e8,#b0c8e8 4px,#d0e0f4 4px,#d0e0f4 8px)}
+.m-b.ic{background:repeating-linear-gradient(45deg,#e8d5a0,#e8d5a0 4px,#f0e4c4 4px,#f0e4c4 8px)}
+.m-mk{width:34px;font-size:12px;color:#555;white-space:nowrap}
+.m-row.off{opacity:.3}
+.m-leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:#555;margin:10px 0 4px}
+.m-sw{display:inline-block;width:14px;height:10px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.m-tot{text-align:right;font-weight:700;font-size:14px;margin:12px 0 4px;color:#222}
+.m-tot .s{color:#bbb;margin:0 6px}
+table.m-t{width:100%;border-collapse:collapse;font-size:13px;min-width:0}
+.m-t th{font:600 11px system-ui,sans-serif;text-transform:uppercase;color:#888;text-align:left;padding:6px 6px;border-bottom:2px solid #eee;background:none;letter-spacing:.03em}
+.m-t td{padding:7px 6px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+.m-t .n{text-align:right;font-variant-numeric:tabular-nums}
+.m-t .p{text-align:right;font-weight:700;white-space:nowrap}
+.m-t a{color:#2a6fbd}
+.m-loc{font-size:11px;color:#999}.m-cb{font-size:10px;color:#999;font-style:italic}
+.m-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px}
+.m-badge.dom{background:#e3efff;color:#2a5ea8}.m-badge.int{background:#fdebd3;color:#a8661c}
+.m-t tr.car td{color:#999}.m-t tr.off td{background:#e4e4e4;color:#9d9d9d;border-bottom-color:#d6d6d6}.m-t tr.off a{color:#9d9d9d}.m-t tr.off .m-badge{opacity:.5}.m-t tr.off .p{font-weight:500}.m-t tr.off .m-loc,.m-t tr.off .m-cb{color:#aaa}
+.m-cap{font-size:12px;color:#888;margin:6px 0 0}
+.phone{max-width:340px}
+.c{border:1px solid #eee;border-radius:6px;padding:9px 11px;margin:7px 0;background:#f8f9fa}
+.c .t{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:13px}
+.c .t b{white-space:nowrap}.c a{color:#2a6fbd}.c .mt{font-size:11px;color:#777;margin-top:3px}
+.c.car{background:#f5f4f2;border-color:#e8e8e8;color:#999}.c.car .mt{color:#999}.c.off{background:#e2e2e2;border-color:#d4d4d4}.c.off *{color:#9d9d9d !important}.c.off .t b{font-weight:500}
+@media (max-width:640px){.m-grid{grid-template-columns:1fr}.m-t .hide{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Public ranklist · score drilldown · Plan with mock</p>
+  <h1>Drilldown: sorted by points, uncounted results greyed out</h1>
+  <p class="dek"><b>Both tables</b> — Zawody krajowe and Zawody EVF+ — sorted by <b>Punkty, highest first</b>, with every row that does not count in the ranking <b>greyed out — grey background and grey text</b>. <b>The bars</b> the same: sorted by points, uncounted bars faded. <b>★</b> marks every result that counts, MPW included — <b>no ✓</b> anywhere, and no extra label.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Implemented on LOCAL · preflight passes · not committed</span>
+    <span class="pill">frontend only · no DB change</span>
+    <span class="pill">KRZEMIŃSKI Mariusz · épée men V3 · LOCAL</span>
+  </div>
+  <hr class="rule">
+
+  <section id="status">
+    <p class="kicker">Status · 1 October 2026</p>
+    <h2>Built and checked on LOCAL — one decision before it can be committed</h2>
+    <ul>
+      <li><b>Done:</b> everything in this plan, A1&ndash;A7 and B1&ndash;B2 included, test first. Vitest 1083/1083 (82 drilldown tests); the counted set matches <code>fn_ranking_full</code> / <code>fn_ranking_ppw</code> for all 228 LOCAL fencers. svelte-check: 0 errors. The docs gate is complete (see below).</li>
+      <li><b>In the browser on LOCAL:</b> KRZEMIŃSKI shows the mock&rsquo;s layout plus the review items (short names such as „PPW1 · 2026/27&rdquo;, bars with one decimal, which the mock below predates) — both tables and both charts sorted by points, PPW4/PPW5/PPW2 greyed, ★ on all seven counted results, framed panels, „SPWS Suma: 338 · EVF+ Suma: 183.6 · Razem: 521.6&rdquo;, no yellow banner, the language switch and ⎙ export still in place. Phone width: the same in cards, no sideways scroll.</li>
+      <li><b>Not seen in the browser yet:</b> the PPW | Ranking switch in the modal. The switch flag for SPWS-2026-2027 is still off on LOCAL — you said you&rsquo;d tick it yourself. Its behaviour is covered by DD.MODE.01 and DD.MODE.02.</li>
+      <li><b>Preflight:</b> <code>scripts/preflight.sh</code> exits 0 — all 15 gates pass — after LOCAL was reset with <code>./scripts/reset-dev.sh</code> on your answer A (1 Oct 2026). The reset removed the PPW1-2026/27 test import and set the switch flag back to off on LOCAL. Making the database tests independent of such data is a separate task.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede">Answered A — LOCAL reset after your switch test; preflight exits 0</p>
+      <p>Ready to commit on your word.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The mock</p>
+    <h2>KRZEMIŃSKI Mariusz, 2026/27, Ranking view</h2>
+    <p><span class="tryit">Click PPW / Ranking in the mock</span></p>
+    <p>Real LOCAL data. The rule counts the best 2 PPW, the MPW, and the best 5 EVF+ results. Rows on a grey background and faded bars are the ones that do not count; carried-over rows keep today&rsquo;s grey text. Counted: 131.3 + 108.7 + 98 = 338 and 54 + 51.7 + 40.1 + 37.7 = 183.6, the totals shown.</p>
+
+<div class="mock" data-view="RANKING">
+  <div class="m-head"><h2>KRZEMIŃSKI Mariusz</h2><div class="m-acts"><span class="m-lang" title="Język / Language — unchanged"><span>🇬🇧</span><span class="on">🇵🇱</span></span><span class="m-x">×</span></div></div>
+  <div class="m-sub"><span>Poz. #<span class="only-ranking">2</span><span class="only-ppw">1</span></span><span style="color:#ccc">|</span><span>V3 · SPWS-2026-2027 (ur. 1962)</span><span class="m-tg" role="group" aria-label="PPW / Ranking"><span data-v="PPW" role="button" tabindex="0">PPW</span><span data-v="RANKING" class="on" role="button" tabindex="0">Ranking</span></span><span class="m-exp" title="Eksport do ODS — unchanged">&#9113;</span></div>
+  <div class="m-body">
+
+    <div class="m-h3">Szczegóły punktacji</div>
+    <div class="m-grid">
+      <div><div class="m-h4">SPWS: 338 pkt</div><div class="m-row"><span class="m-v">131</span><div class="m-bg"><div class="m-b dc" style="width:100.0%"></div></div><span class="m-mk">★ ↩</span></div><div class="m-row"><span class="m-v">109</span><div class="m-bg"><div class="m-b d" style="width:82.8%"></div></div><span class="m-mk">★</span></div><div class="m-row"><span class="m-v">98</span><div class="m-bg"><div class="m-b dc" style="width:74.7%"></div></div><span class="m-mk">★ ↩</span></div><div class="m-row off"><span class="m-v">97</span><div class="m-bg"><div class="m-b dc" style="width:74.1%"></div></div><span class="m-mk"> ↩</span></div><div class="m-row off"><span class="m-v">96</span><div class="m-bg"><div class="m-b dc" style="width:73.4%"></div></div><span class="m-mk"> ↩</span></div><div class="m-row off"><span class="m-v">18</span><div class="m-bg"><div class="m-b dc" style="width:13.6%"></div></div><span class="m-mk"> ↩</span></div></div>
+      <div class="only-ranking"><div class="m-h4">EVF+: 183.6 pkt</div><div class="m-row"><span class="m-v">54</span><div class="m-bg"><div class="m-b ic" style="width:41.2%"></div></div><span class="m-mk">★ ↩</span></div><div class="m-row"><span class="m-v">52</span><div class="m-bg"><div class="m-b ic" style="width:39.4%"></div></div><span class="m-mk">★ ↩</span></div><div class="m-row"><span class="m-v">40</span><div class="m-bg"><div class="m-b ic" style="width:30.6%"></div></div><span class="m-mk">★ ↩</span></div><div class="m-row"><span class="m-v">38</span><div class="m-bg"><div class="m-b ic" style="width:28.7%"></div></div><span class="m-mk">★ ↩</span></div></div>
+    </div>
+    <div class="m-leg"><span><i class="m-sw" style="background:#4a90d9"></i>SPWS</span><span><i class="m-sw" style="background:repeating-linear-gradient(45deg,#b0c8e8,#b0c8e8 3px,#d0e0f4 3px,#d0e0f4 6px)"></i>Przeniesione</span><span class="only-ranking"><i class="m-sw" style="background:#e8a838"></i>EVF+</span><span class="only-ranking"><i class="m-sw" style="background:repeating-linear-gradient(45deg,#e8d5a0,#e8d5a0 3px,#f0e4c4 3px,#f0e4c4 6px)"></i>Przeniesione (EVF)</span><span>★ wliczany</span><span>↩ Wynik z poprzedniego sezonu</span></div>
+    <div class="m-tot only-ranking">SPWS Suma: 338 pkt<span class="s">·</span>EVF+ Suma: 183.6 pkt<span class="s">·</span>Razem: 521.6 pkt</div><div class="m-tot only-ppw">Suma: 338 pkt</div>
+    <div class="m-h3">Zawody krajowe</div>
+    <div class="m-panel"><table class="m-t"><thead><tr><th>Zawody</th><th class="hide">Data</th><th>Typ</th><th class="n">Miejsce</th><th class="n hide">N</th><th class="n hide">Mnożnik</th><th class="p">Punkty</th></tr></thead><tbody><tr class="car"><td><a href="#">MPW-V3-M-EPEE-2025-2026</a><div class="m-loc">Warszawa</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">20 cze 26</td><td><span class="m-badge dom">MPW</span></td><td class="n">1</td><td class="n hide">10</td><td class="n hide">1.2</td><td class="p">131.3 ★</td></tr><tr class=""><td><a href="#">PPW1-V3-M-EPEE-2026-2027</a><div class="m-loc">Opole</div></td><td class="hide">26 wrz 26</td><td><span class="m-badge dom">PPW</span></td><td class="n">1</td><td class="n hide">9</td><td class="n hide">1.0</td><td class="p">108.7 ★</td></tr><tr class="car"><td><a href="#">PPW3-V3-M-EPEE-2025-2026</a><div class="m-loc">Warszawa-Łomianki</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">13 gru 25</td><td><span class="m-badge dom">PPW</span></td><td class="n">1</td><td class="n hide">8</td><td class="n hide">1.0</td><td class="p">98 ★</td></tr><tr class="car off"><td><a href="#">PPW4-V3-M-EPEE-2025-2026</a><div class="m-loc">Gdańsk</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">21 lut 26</td><td><span class="m-badge dom">PPW</span></td><td class="n">1</td><td class="n hide">7</td><td class="n hide">1.0</td><td class="p">97.2</td></tr><tr class="car off"><td><a href="#">PPW5-V3-M-EPEE-2025-2026</a><div class="m-loc">Gdańsk</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">11 kwi 26</td><td><span class="m-badge dom">PPW</span></td><td class="n">1</td><td class="n hide">6</td><td class="n hide">1.0</td><td class="p">96.4</td></tr><tr class="car off"><td><a href="#">PPW2-V3-M-EPEE-2025-2026</a><div class="m-loc">Poznań</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">25 paź 25</td><td><span class="m-badge dom">PPW</span></td><td class="n">4</td><td class="n hide">5</td><td class="n hide">1.0</td><td class="p">17.8</td></tr></tbody></table></div>
+    <div class="m-h3 only-ranking" style="margin-top:18px">Zawody EVF+</div>
+    <div class="m-panel only-ranking"><table class="m-t"><thead><tr><th>Zawody</th><th class="hide">Data</th><th>Typ</th><th class="n">Miejsce</th><th class="n hide">N</th><th class="n hide">Mnożnik</th><th class="p">Punkty</th></tr></thead><tbody><tr class="car"><td><a href="#">IMSW-V3-M-EPEE-2025-2026</a><div class="m-loc">Manama</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">12 lis 25</td><td><span class="m-badge int">MSW</span></td><td class="n">2</td><td class="n hide">4</td><td class="n hide">1.2</td><td class="p">54 ★</td></tr><tr class="car"><td>PEW4efs-V3-M-EPEE-2025-2026<div class="m-loc">Napoli</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">7 mar 26</td><td><span class="m-badge int">PEW</span></td><td class="n">12</td><td class="n hide">74</td><td class="n hide">1.0</td><td class="p">51.7 ★</td></tr><tr class="car"><td>PEW6efs-V3-M-EPEE-2025-2026<div class="m-loc">Jabłonna</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">28 mar 26</td><td><span class="m-badge int">PEW</span></td><td class="n">3</td><td class="n hide">8</td><td class="n hide">1.0</td><td class="p">40.1 ★</td></tr><tr class="car"><td><a href="#">PEW62efs-V3-M-EPEE-2025-2026</a><div class="m-loc">Guildford</div><div class="m-cb">↩ SPWS-2025-2026</div></td><td class="hide">10 sty 26</td><td><span class="m-badge int">PEW</span></td><td class="n">2</td><td class="n hide">3</td><td class="n hide">1.0</td><td class="p">37.7 ★</td></tr></tbody></table></div>
+    <p class="m-cap only-ranking">All four EVF+ results count here (the best five count). A sixth or later result would be greyed exactly like PPW2, PPW4 and PPW5 above.</p>
+  </div>
+</div>
+    <p><b>How the switch works:</b> click <b>PPW</b> or <b>Ranking</b> in the mock. <b>Ranking</b> shows both bar charts, both tables and &bdquo;SPWS Suma · EVF+ Suma · Razem&rdquo;; <b>PPW</b> shows only the SPWS bars and Zawody krajowe, with &bdquo;Suma&rdquo;. The rank follows the view — <b>#2</b> in Ranking, <b>#1</b> in PPW, as the two rankings on LOCAL have him — and the ranklist behind the modal switches with it (review items A1 and A2).</p>
+    <p>On a phone the tables are cards; same order, same greying:</p>
+    <div class="mock phone"><div class="m-body"><div class="m-h3">Zawody krajowe — telefon</div><div class="m-panel cards"><div class="c car"><div class="t"><a href="#">MPW-V3-M-EPEE-2025-2026</a><b>131.3 ★</b></div><div class="mt">Warszawa · 20 cze 26 · MPW · 1/10 · ×1.2 · ↩ SPWS-2025-2026</div></div><div class="c"><div class="t"><a href="#">PPW1-V3-M-EPEE-2026-2027</a><b>108.7 ★</b></div><div class="mt">Opole · 26 wrz 26 · PPW · 1/9 · ×1.0</div></div><div class="c car"><div class="t"><a href="#">PPW3-V3-M-EPEE-2025-2026</a><b>98 ★</b></div><div class="mt">Warszawa-Łomianki · 13 gru 25 · PPW · 1/8 · ×1.0 · ↩ SPWS-2025-2026</div></div><div class="c car off"><div class="t"><a href="#">PPW4-V3-M-EPEE-2025-2026</a><b>97.2</b></div><div class="mt">Gdańsk · 21 lut 26 · PPW · 1/7 · ×1.0 · ↩ SPWS-2025-2026</div></div><div class="c car off"><div class="t"><a href="#">PPW5-V3-M-EPEE-2025-2026</a><b>96.4</b></div><div class="mt">Gdańsk · 11 kwi 26 · PPW · 1/6 · ×1.0 · ↩ SPWS-2025-2026</div></div><div class="c car off"><div class="t"><a href="#">PPW2-V3-M-EPEE-2025-2026</a><b>17.8</b></div><div class="mt">Poznań · 25 paź 25 · PPW · 4/5 · ×1.0 · ↩ SPWS-2025-2026</div></div></div></div></div>
+  </section>
+
+  <section>
+    <p class="kicker">Rules</p>
+    <h2>What changes</h2>
+    <ul>
+      <li><b>Order — both tables, the phone cards and both bar charts:</b> Punkty descending. Equal points: the newer result first. The old ordering (current season first, then by date; MPW last in the chart) goes.</li>
+      <li><b>Counted:</b> drawn as today, with <b>★</b> after the points and on the bar — MPW too (it had ✓).</li>
+      <li><b>Not counted:</b> the table row (and the phone card) gets a <b>grey background and grey text</b>; the bar is faded; no ★, no label.</li>
+      <li><b>Carried over:</b> keeps exactly today&rsquo;s look — grey text, the ↩ season badge, the striped bar — and is simply sorted with the rest, with ★ when it counts. The grey <em>background</em> is what marks &ldquo;not counted&rdquo;, so the two never look alike.</li>
+      <li><b>Legend:</b> &bdquo;★ wliczany&rdquo; replaces &bdquo;★ Best&rdquo; and &bdquo;✓ zawsze wliczane&rdquo;; the ↩ entry reads &bdquo;↩ Wynik z poprzedniego sezonu&rdquo; (was &bdquo;↩ Przeniesione&rdquo;).</li>
+      <li><b>The yellow banner</b> &bdquo;↩ Część wyników przeniesiona z poprzedniego sezonu&rdquo; is removed; the ↩ on each row and bar, explained in the legend, says it instead.</li>
+      <li><b>PPW view:</b> the same, for the domestic table and the SPWS bars (the EVF+ part stays hidden there, as today).</li>
+      <li><b>Look of the tables:</b> each table — Zawody krajowe and Zawody EVF+, and the card list on a phone — sits in a framed panel with a light blue-grey background (<code>#f3f6fb</code>), a rounded border and a soft two-layer shadow, so it lifts off the white modal. Greyed rows stay clearly grey against it.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Greyed means the ranking does not count it</p>
+      <p>Which results count comes from the counting the modal already does for its totals. Checked on LOCAL: for all 228 ranked fencers in the 30 sub-rankings of 2026/27 it gives the same domestic, EVF+ and PPW totals as <code>fn_ranking_full</code> and <code>fn_ranking_ppw</code> — 0 disagreements.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Steps</p>
+    <h2>Tests first</h2>
+    <ol class="steps">
+      <li><b>RED</b> — the tests below in <code>frontend/tests/DrilldownModal.test.ts</code> and a new <code>frontend/tests/drilldown-counting.test.ts</code>. The existing ✓ test (line 163) becomes a ★ test.</li>
+      <li><b>One counted set</b> — move the existing counting unchanged into <code>frontend/src/lib/drilldown-counting.ts</code>, so the tables, the bars and the totals read the same set.</li>
+      <li><b>GREEN</b> in <code>frontend/src/components/DrilldownModal.svelte</code> — sort the two lists and the two charts by points; <code>class:not-counted</code> on rows, cards and bars (grey background and text for rows and cards, faded bars); ★ for every counted result (<code>getMarker</code> and the chart markers); the legend. The carried styles stay as they are.</li>
+      <li><b>Parity on the real code</b> — re-run the 228-fencer check with the extracted module; pin a LOCAL snapshot as a test.</li>
+      <li><b>Browser on LOCAL</b> — KRZEMIŃSKI in both views, desktop and phone width; a past season in the PPW view.</li>
+      <li><b>Done</b> — <code>scripts/preflight.sh</code> exits 0; docs below; commit on your word.</li>
+    </ol>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>DD.SORT.01–02</code></td><td>Zawody krajowe and Zawody EVF+ rows run by points, highest first (131.3, 108.7, 98, 97.2, 96.4, 17.8 here).</td></tr>
+        <tr><td><code>DD.SORT.03</code></td><td>The phone cards follow the same order; equal points put the newer result first.</td></tr>
+        <tr><td><code>DD.SORT.04–05</code></td><td>The SPWS and EVF+ bars run by points, highest first (MPW 131 on top here).</td></tr>
+        <tr><td><code>DD.GREY.01</code></td><td>Domestic rows outside the best PPW are greyed; the MPW and the best PPW are not.</td></tr>
+        <tr><td><code>DD.GREY.02</code></td><td>EVF+ rows beyond the best five are greyed; the five are not.</td></tr>
+        <tr><td><code>DD.GREY.03</code></td><td>Uncounted bars are faded; counted bars are not.</td></tr>
+        <tr><td><code>DD.GREY.04</code></td><td>PPW view: the same domestic greying; the EVF+ part stays hidden.</td></tr>
+        <tr><td><code>DD.GREY.05</code></td><td>Each printed total equals the sum of the rows not greyed, in both views.</td></tr>
+        <tr><td><code>DD.GREY.06</code></td><td>A carried row that counts keeps today&rsquo;s carried look with ★; a carried row that does not count also gets the grey background and keeps its ↩ badge.</td></tr>
+        <tr><td><code>DD.GREY.07</code></td><td>A season without bucket rules: the older PEW/MEW counting decides the greying, matching its totals.</td></tr>
+        <tr><td><code>DD.LEG.01</code></td><td>No yellow banner, with or without carried results (replaces R.21); the legend&rsquo;s ↩ entry reads &bdquo;Wynik z poprzedniego sezonu&rdquo; / &ldquo;Result from the previous season&rdquo;.</td></tr>
+        <tr><td><code>DD.LOOK.01</code></td><td>Both tables and the phone card lists are wrapped in the framed panel (<code>.table-panel</code>); the look itself is checked in the browser.</td></tr>
+        <tr><td><code>DD.STAR.01</code></td><td>Every counted result shows ★, the MPW included; no ✓ appears anywhere in the modal.</td></tr>
+        <tr><td><code>DD.KEEP.01</code></td><td>The header keeps the language switch 🇬🇧/🇵🇱 (with test K) and the ⎙ export button in the subheader; clicking ⎙ still exports the drilldown.</td></tr>
+        <tr><td><code>DD.MODE.01</code></td><td>A1: the modal&rsquo;s PPW | Ranking switch reports the chosen view to the page.</td></tr>
+        <tr><td><code>DD.MODE.02</code></td><td>A1, App level (<code>DrilldownModeSwitch.test.ts</code>): switching the modal to PPW reloads the PPW list, the header turns &bdquo;#2&rdquo; into &bdquo;#1&rdquo;, the page&rsquo;s own switch shows PPW, the modal stays open.</td></tr>
+        <tr><td><code>DD.TOT.01</code></td><td>A2: &bdquo;SPWS Suma&rdquo; in the Ranking view, &bdquo;Suma&rdquo; in the PPW view; &bdquo;PPW Suma&rdquo; is gone (the existing totals tests, renamed).</td></tr>
+        <tr><td><code>DD.BAR.01</code></td><td>A3: bar values print one decimal, as the table does (with DD.SORT.04).</td></tr>
+        <tr><td><code>DD.FOOT.01</code></td><td>A4: the multiplier footer no longer describes the old raw-score formula.</td></tr>
+        <tr><td><code>DD.TYPES.01</code></td><td>A5: the type legend lists exactly the types shown, PSW/PPS/MPS included (test H, rewritten).</td></tr>
+        <tr><td><code>DD.NAME.01&ndash;02</code></td><td>B1: &bdquo;PPW1 &middot; 2026/27&rdquo;, &bdquo;MPW &middot; 2025/26&rdquo;; a PEW row by its own name; the code as the tooltip; a code that does not parse is shown as it is.</td></tr>
+        <tr><td><code>DD.JOIN.01</code></td><td>B2: an EVF_JOINED row notes &bdquo;stawka łączona &middot; premia +6.6&rdquo; (and &bdquo;obniżenie&rdquo; when capped) in the table and the card; other rows have no note.</td></tr>
+        <tr><td><code>DD.PARITY.01</code></td><td>The extracted counting, on a LOCAL snapshot, matches the totals of <code>fn_ranking_full</code> and <code>fn_ranking_ppw</code>.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="review">
+    <p class="kicker">Review · is everything on the drilldown coherent?</p>
+    <h2>Seven things that disagree, two worth adding, two data issues</h2>
+    <p>Checked against the code and KRZEMIŃSKI&rsquo;s real drilldown on LOCAL.</p>
+
+    <h3>A · The drilldown contradicts itself or the ranklist</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>What you see</th><th>Why it is wrong</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>A1</td><td>&bdquo;Poz. #2&rdquo; stays after switching the modal to <b>PPW</b>.</td><td>In the PPW ranking he is #1. The rank comes from the list that was open when you clicked (<code>App.svelte:780–791</code>); the modal&rsquo;s own switch changes only the modal.</td><td>The switch in the modal switches the page too, so the list, the rank and the modal always show the same view.</td></tr>
+        <tr><td>A2</td><td>&bdquo;<b>PPW Suma</b>: 338&rdquo;.</td><td>338 includes the MPW (131.3). The ranklist column and the chart heading call the same number &bdquo;SPWS&rdquo;.</td><td>&bdquo;SPWS Suma&rdquo; in the Ranking view, &bdquo;Suma&rdquo; in the PPW view.</td></tr>
+        <tr><td>A3</td><td>Bar &bdquo;109&rdquo;, table &bdquo;108.7&rdquo;.</td><td>One result, two numbers: the chart rounds to whole points, the table to one decimal.</td><td>Bars show one decimal, as the table does.</td></tr>
+        <tr><td>A4</td><td>Footer: &bdquo;Mnożnik … stosowany do wyniku surowego (punkty za miejsce + bonus DE + bonus podium)&rdquo;.</td><td>No longer true in 2026/27: a joined bracket adds a premium and a cap, and a bracket of 1–3 scores 3-2-1.</td><td>&bdquo;Mnożnik — współczynnik typu zawodów, mnoży wynik zawodów&rdquo;.</td></tr>
+        <tr><td>A5</td><td>Type legend: PPW, MPW, PEW, MEW, MSW.</td><td>PSW, PPS and MPS also appear in Zawody EVF+ and are never explained.</td><td>List the types that are actually in the modal.</td></tr>
+        <tr><td>A6</td><td>The &bdquo;↩ part carried over&rdquo; banner in the PPW view.</td><td>It reacts to every result, including hidden EVF+ ones, so it can show when nothing on screen is carried over.</td><td>Gone: the banner is removed.</td></tr>
+        <tr><td>A7</td><td>&bdquo;★ Best&rdquo;.</td><td>English in the Polish screen.</td><td>Already in this plan: &bdquo;★ wliczany&rdquo;.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>B · Worth adding</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Today</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>B1</td><td>Every row is named by its full technical code, <code>PPW1-V3-M-EPEE-2026-2027</code>, in a modal already headed V3 épée men; EVF rows read <code>PEW4efs-V3-M-EPEE-2025-2026</code>.</td><td>The event and season: &bdquo;PPW1 · 2026/27&rdquo;, &bdquo;MPW · 2025/26&rdquo;, &bdquo;IMSW · 2025/26&rdquo;; a PEW row by its own name where the row carries one, &bdquo;EVF Grand Prix 4&rdquo;. The full code stays as the link&rsquo;s tooltip, and the link itself stays.</td></tr>
+        <tr><td>B2</td><td>A 2026/27 joined-bracket result shows its place and N in the <b>whole</b> bracket — a V1 fencer may see &bdquo;3/8&rdquo; with only four V1 rivals — and nothing says why.</td><td>A short line under such a row: &bdquo;stawka łączona · premia +6.6&rdquo; (built with a dot, like every other number in the modal). The method and the premium are already in every row (ADR-104); the modal just does not show them.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>C · Data, not the screen</h3>
+    <ul>
+      <li><b>C1 · Links.</b> Two of his EVF results have no link (Napoli, Jabłonna), and Guildford&rsquo;s links to an FTL event schedule (<code>…eventSchedule/…#today</code>) rather than a results page — so some codes are links and some are not. The fix is in the stored <code>url_results</code>, not in the modal.</li>
+      <li><b>C2 · Estimated birth years.</b> The six fencers the PPW1 import created show &bdquo;(ur. 1982)&rdquo; as if known; it was estimated from the category. Marking it &bdquo;(ur. ~1982)&rdquo; needs the estimate flag in the drilldown RPC.</li>
+    </ul>
+
+    <div class="note accent">
+      <p class="lede">Recommended scope for this change <span class="chip fill">recommended</span></p>
+      <p><b>A1–A7 and B1–B2</b> go in with the sorting and greying: all frontend, all in <code>DrilldownModal.svelte</code> (A1 also touches <code>App.svelte</code>), each with its own test first. <b>C1 and C2</b> go to separate tasks: one is a data repair, the other an RPC change.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Not touched</p>
+    <h2>Out of scope</h2>
+    <ul>
+      <li>Which results count — the SQL ranking decides; no database change.</li>
+      <li>The ODS export, the ranklist table, the Ranking | PPW switch.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation</p>
+    <h2>Coherence gate</h2>
+    <div class="note warn">
+      <p class="lede">☑ Documentation coherence gate complete</p>
+<pre class="trace">Impact: product
+Canonical docs affected: doc/handbook/product/product-surfaces.html (the drilldown: ordered by points,
+  uncounted results greyed, ★ for counted); doc/requirements-traceability-matrix.md and its generated
+  .html (FR-36 amended with the DD test IDs; FR-66 loses the "rolling info banner" and R.21, the carried styling is unchanged)
+ADR impact: none — presentation inside the existing drilldown (ADR-101 §6 holds)
+Operational impact: none
+Source-map / last-verified updated: yes (product-surfaces.html)
+Validation: python scripts/check_docs.py --changed-from main — valid, 26 handbook pages, 0 ownership warnings (1 Oct 2026)
+Superseded prose archived rather than appended: not applicable</pre>
+    </div>
+  </section>
+
+  <p class="foot">Plan · 1 October 2026 · SPWS Ranklist · score drilldown · supersedes doc/mockups/drilldown-uncounted-results-2026-10-01.html</p>
+</div>
+<script>
+(function(){
+  var m=document.querySelector('.mock[data-view]'); if(!m) return;
+  var btns=m.querySelectorAll('.m-tg [data-v]');
+  function set(v){ m.setAttribute('data-view',v); btns.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v')===v); }); }
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){ set(b.getAttribute('data-v')); });
+    b.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); set(b.getAttribute('data-v')); } });
+  });
+})();
+</script>
+</body>
+</html>

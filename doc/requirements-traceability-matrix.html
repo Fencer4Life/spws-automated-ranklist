@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="ad47927ae68540fd3e792c5c8b4f2c122c5fe7be5c36b483aed59a59c46a4439">
+<meta name="doc-source-sha256" content="c373ecc0067f9daaa55a29d13fb2d6d2818015884e3b48ef159b51e46732c5b8">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -278,9 +278,9 @@
 </tr>
 <tr>
 <td>FR-36</td>
-<td>Web Component: fencer drilldown modal with score breakdown</td>
+<td>Web Component: fencer drilldown modal with score breakdown. <strong>Amended 2026-10-01:</strong> both tables, their phone cards and both bar charts run by points (newer first on ties); a result that does not count is greyed (grey background and text, faded bar) and every counted result carries ★ (no ✓); tables sit in a framed panel; the PPW | Ranking switch also switches the ranklist; rows are named by event and season, a joined-bracket row notes its premium. <strong>Amended 2026-10-01 (controls, proposal A):</strong> under the name a headline shows the fencer's place and total for the view shown, said once — the line of sums under the charts is removed and the SPWS and EVF+ parts stay in the chart headings; the Ranking | PPW switch (Ranking first) and the ODS download sit at the right end of that row; the language flags and the close button sit in the top-right corner; Esc closes; on a phone the header stays at the top while the results scroll; every tournament with a results URL stays a link; a carried-over EVF+ or PZSz result draws a striped bar, as the legend shows.</td>
 <td>UC13(a,b)</td>
-<td>DrilldownModal.test.ts (24 tests)</td>
+<td>DrilldownModal.test.ts (77 tests, incl. DD.SORT.01–05, DD.GREY.01–07, DD.LOOK.01, DD.LEG.01, DD.STAR.01, DD.KEEP.01, DD.MODE.01, DD.FOOT.01, DD.NAME.01, DD.JOIN.01, DD.BAR.02, UX.DD.01–07); drilldown-counting.test.ts (DD.PARITY.01 — the counted set sums to <code>fn_ranking_full</code> / <code>fn_ranking_ppw</code> on a LOCAL snapshot of 228 fencers; DD.NAME.01–02, DD.JOIN.01); DrilldownModeSwitch.test.ts (DD.MODE.02)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -474,9 +474,9 @@
 </tr>
 <tr>
 <td>FR-64</td>
-<td>Season-level EVF toggle config: <code>bool_show_evf_toggle</code> in <code>tbl_scoring_config</code> controls PPW/+EVF toggle visibility in Ranklist and Calendar; admin checkbox in SeasonManager edit form</td>
-<td>ADR-017</td>
-<td>9.37–9.39, 8.79–8.83</td>
+<td>Season-level EVF toggle config: <code>bool_show_evf_toggle</code> in <code>tbl_scoring_config</code> controls PPW/+EVF toggle visibility in Ranklist and Calendar; admin checkbox in SeasonManager edit form. <strong>Amended 2026-10-01 (controls, proposal A):</strong> on the ranklist the switch reads Ranking | PPW, Ranking first, and sits with the ODS download at the right end of the filter row (one shared <code>ViewSwitch</code> and <code>OdsButton</code> with the drilldown); the language switch shows round flag images (<code>CountryFlag</code>), not emoji.</td>
+<td>ADR-017, ADR-101</td>
+<td>9.37–9.39, 8.79–8.83, UX.LIST.01–05 (<code>FilterBar.test.ts</code>), UX.LANG.01–02 (<code>LangToggle.test.ts</code>)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -488,9 +488,9 @@
 </tr>
 <tr>
 <td>FR-66</td>
-<td>Rolling drilldown: <code>fn_fencer_scores_rolling</code> returns carried-over scores with <code>bool_carried_over</code> flag and source season code; visual distinction in DrilldownModal (grey striped bars, <code>↩</code> marker, rolling info banner) and CalendarView (progress slot bar). <strong>Amended 2026-06-26 (ADR-018/021):</strong> never shows both this-year and last-year for the same position — the carried row drops the moment a current-season result exists.</td>
+<td>Rolling drilldown: <code>fn_fencer_scores_rolling</code> returns carried-over scores with <code>bool_carried_over</code> flag and source season code; visual distinction in DrilldownModal (grey text, grey striped bars, <code>↩</code> marker and source-season badge, legend „↩ Wynik z poprzedniego sezonu”; the carried-over banner was removed 2026-10-01) and CalendarView (progress slot bar). <strong>Amended 2026-06-26 (ADR-018/021):</strong> never shows both this-year and last-year for the same position — the carried row drops the moment a current-season result exists.</td>
 <td>ADR-018</td>
-<td>R.15–R.21, R.22–R.24 (pgTAP, results-based carry-stop), R.26–R.30 (Vitest: the drilldown header names the ranked season, never a carried row's — <code>DrilldownModal.test.ts</code>, <code>DrilldownRankedSeason.test.ts</code>)</td>
+<td>R.15–R.20, DD.LEG.01 (replaces R.21: no carried-over banner), R.22–R.24 (pgTAP, results-based carry-stop), R.26–R.30 (Vitest: the drilldown header names the ranked season, never a carried row's — <code>DrilldownModal.test.ts</code>, <code>DrilldownRankedSeason.test.ts</code>)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1568,5 +1568,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ad47927ae68540fd3e792c5c8b4f2c122c5fe7be5c36b483aed59a59c46a4439</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c373ecc0067f9daaa55a29d13fb2d6d2818015884e3b48ef159b51e46732c5b8</code></footer>
 </div></body></html>
