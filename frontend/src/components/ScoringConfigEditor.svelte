@@ -598,23 +598,42 @@
     draftRules[pool] = draftRules[pool].map((b, i) => (i === index ? bucket : b))
   }
 
-  function handleSave() {
+  // The form as it opened, so an edited form can be told from an untouched one.
+  // svelte-ignore state_referenced_locally
+  const openedAs = JSON.stringify(currentConfig())
+
+  /** True when anything on the form differs from what it opened with. */
+  export function hasUnsavedChanges(): boolean {
+    return JSON.stringify(currentConfig()) !== openedAs
+  }
+
+  /**
+   * What Save sends, after Save's own checks; null when Save is blocked, with
+   * the reason shown exactly as for Save. The season card's Zapisz calls this,
+   * so one click there saves every edit the card shows (SM.SAVE.01).
+   */
+  export function checkedConfig(): ScoringConfig | null {
     if (readonly) {
       showLockedNotice = true
-      return
+      return null
     }
     // ADM27: changed rules must be rules the ranking can use, as the server
     // requires. Unchanged rules save as they are, so a season whose older
     // rules repeat the domestic buckets internationally stays savable.
     if (rulesProblems.length > 0 && !sameRankingRules(draftRules, config.ranking_rules)) {
       rulesSaveBlocked = true
-      return
+      return null
     }
     rulesSaveBlocked = false
     // Includes `carryover_engine` so App.svelte's handler can patch
     // tbl_season.enum_carryover_engine separately from tbl_scoring_config
     // (instant flip, no migration).
-    onsave(currentConfig())
+    return currentConfig()
+  }
+
+  function handleSave() {
+    const checked = checkedConfig()
+    if (checked) onsave(checked)
   }
 
   function handleExport() {

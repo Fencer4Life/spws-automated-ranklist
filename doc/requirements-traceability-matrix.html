@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="c373ecc0067f9daaa55a29d13fb2d6d2818015884e3b48ef159b51e46732c5b8">
+<meta name="doc-source-sha256" content="87c80caa5bb093c057f31355523d2ed5bfb6bb5a26273917e8670404ff264bad">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -453,9 +453,9 @@
 </tr>
 <tr>
 <td>FR-61</td>
-<td>Scoring config editor (admin, per-season, structured form)</td>
+<td>Scoring config editor (admin, per-season, structured form). <strong>Amended 2026-10-01:</strong> the season edit card's own Zapisz saves the open editor's unsaved changes too (scoring first, through the editor's checks, then the season); a refused scoring save keeps the card open and shows its reason in the card, for either button (found on CERT: the card's Zapisz saved only the season and dropped typed coefficients)</td>
 <td>UC22(f)</td>
-<td>8.62–8.75</td>
+<td>8.62–8.75, SeasonManager.test.ts SM.SAVE.01–05</td>
 <td>Covered (M8)</td>
 </tr>
 <tr>
@@ -1568,5 +1568,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c373ecc0067f9daaa55a29d13fb2d6d2818015884e3b48ef159b51e46732c5b8</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>87c80caa5bb093c057f31355523d2ed5bfb6bb5a26273917e8670404ff264bad</code></footer>
 </div></body></html>

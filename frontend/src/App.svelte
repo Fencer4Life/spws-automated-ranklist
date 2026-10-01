@@ -1506,7 +1506,11 @@
     }
   }
 
-  async function handleSaveScoringConfig(config: ScoringConfig) {
+  // Resolves to the reason a save was refused, for SeasonManager to show in
+  // the season's card (SM.SAVE.04); null once saved. A Supabase error is a
+  // plain object, not an Error, so its message is read the way the season
+  // form reads it.
+  async function handleSaveScoringConfig(config: ScoringConfig): Promise<string | null> {
     try {
       await saveScoringConfig(config as unknown as Record<string, unknown>)
       // Phase 3 (ADR-045): patch the season's carry-over engine separately.
@@ -1519,8 +1523,9 @@
       await refreshEvfToggle()
       await fetchSeasons()
       editingScoringSeasonId = null
+      return null
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : String(e)
+      return friendlySeasonError(e)
     }
   }
 
