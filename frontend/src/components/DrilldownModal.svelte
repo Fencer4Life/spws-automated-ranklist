@@ -1,141 +1,115 @@
+<svelte:window onkeydowncapture={onWindowKeydown} />
+
 {#if open}
   <div class="modal-overlay" role="presentation" onclick={onClose}>
-    <div class="modal-content" role="dialog" aria-modal="true" aria-label="Fencer details" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-      <div class="modal-header">
-        <h2>{fencerName}</h2>
-        <div class="modal-actions">
-          <LangToggle />
-          <button class="btn-close" onclick={onClose}>&times;</button>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label={fencerName} tabindex="-1" bind:this={dialogEl} onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+      <!-- UX proposal A (doc/mockups/ranklist-controls-ux-2026-10-01.html):
+           the frame (language, close) in the top-right corner; under the name
+           the headline — place and total, said once — with the view switch and
+           the ODS download at the right end of the same row. On a phone this
+           whole block stays at the top while the results scroll. -->
+      <div class="modal-head">
+        <div class="modal-header">
+          <div class="modal-id">
+            <h2>{fencerName}</h2>
+            {#if context || seasonLabel}
+              <div class="subheader">{metaLine}</div>
+            {/if}
+          </div>
+          <div class="modal-actions">
+            <LangToggle />
+            <button type="button" class="btn-close" aria-label={t('close')} title={t('close_esc')} onclick={onClose}>
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5 5 15" /></svg>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {#if context || seasonLabel}
-        <div class="subheader">
-          {#if context}
-            <span>{t('rank')} #{context.rank}</span>
-            <span class="sep">|</span>
-          {/if}
-          <span>
-            {context?.category ?? scores[0]?.enum_age_category ?? ''}
-            {#if seasonLabel} · {seasonLabel}{/if}
-            {#if context?.birthYear} ({t('born')} {context.birthYear}){/if}
-          </span>
-          {#if showEvfToggle}
-            <div class="toggle">
-              <button
-                class="toggle-btn"
-                class:active={mode === 'PPW'}
-                onclick={() => setMode('PPW')}
-              >{t('mode_ppw')}</button>
-              <button
-                class="toggle-btn"
-                class:active={mode === 'RANKING'}
-                onclick={() => setMode('RANKING')}
-              >{t('mode_ranking')}</button>
+        <div class="headline-row">
+          {#if showHeadline}
+            <div class="score" role="group" aria-live="polite" aria-label={headlineLabel}>
+              {#if context}
+                <div class="score-fig">
+                  <span class="score-num score-rank">{context.rank}</span>
+                  <span class="score-lab">{t('dd_place')}</span>
+                </div>
+              {/if}
+              <div class="score-fig big">
+                <span class="score-num score-total">{fmt(headlineTotal)}</span>
+                <span class="score-lab">{t('dd_points_total')}</span>
+              </div>
             </div>
           {/if}
-          <button class="btn-export-sub" title={t('export_to_ods')} onclick={handleExport}>&#9113;</button>
+          <div class="view-tools">
+            {#if showEvfToggle}
+              <ViewSwitch {mode} onchange={setMode} />
+            {/if}
+            <OdsButton title={t('ods_tip_drilldown')} onclick={handleExport} />
+          </div>
         </div>
-      {/if}
+      </div>
 
       {#if loading}
         <div class="loading">{t('loading')}</div>
       {:else if filteredScores.length === 0}
         <div class="empty">{t('no_tournament_results')}</div>
       {:else}
-        {#if hasCarryover}
-          <div class="rolling-info">
-            ↩ <strong>{t('rolling_banner_text')}</strong>
-          </div>
-        {/if}
         <div class="breakdown-section">
           <h3>{t('points_breakdown')}</h3>
           <div class="breakdown-grid" class:single-col={mode === 'PPW'}>
             <div class="breakdown-col">
-              <h4>{t('domestic_ppw_mpw')}: {fmt(domesticTotal)} {t('pts')}</h4>
+              <h4>{t('domestic_ppw_mpw')}: {fmt(counted.domesticTotal)} {t('pts')}</h4>
               <div class="chart-area">
-                {#each domesticChart as item}
-                  <div class="chart-row" class:carried-row={item.carried}>
-                    <span class="chart-value">{Math.round(item.score)}</span>
-                    <div class="chart-bar-bg">
-                      <div
-                        class="chart-bar domestic"
-                        class:domestic-carried={item.carried}
-                        style="width: {maxScore > 0 ? (item.score / maxScore) * 100 : 0}%"
-                      ></div>
-                    </div>
-                    <span class="chart-marker">{item.marker}</span>
-                  </div>
+                {#each domesticScores as s (s.id_result)}
+                  {@render chartRow(s, 'domestic')}
                 {/each}
               </div>
             </div>
 
             {#if mode === 'RANKING'}
               <div class="breakdown-col">
-                <h4>{t('international_evf')}: {fmt(internationalTotal)} {t('pts')}</h4>
+                <h4>{t('international_evf')}: {fmt(counted.internationalTotal)} {t('pts')}</h4>
                 <div class="chart-area">
-                  {#each internationalChart as item}
-                    <div class="chart-row" class:carried-row={item.carried}>
-                      <span class="chart-value">{Math.round(item.score)}</span>
-                      <div class="chart-bar-bg">
-                        <div
-                          class="chart-bar international"
-                          class:international-carried={item.carried}
-                          class:chart-bar-evf={EVF_TYPES.includes(item.type as (typeof EVF_TYPES)[number])}
-                          class:chart-bar-pzsz={PZSZ_TYPES.includes(item.type as (typeof PZSZ_TYPES)[number])}
-                          style="width: {maxScore > 0 ? (item.score / maxScore) * 100 : 0}%"
-                        ></div>
-                      </div>
-                      <span class="chart-marker">{item.marker}</span>
-                    </div>
+                  {#each internationalScores as s (s.id_result)}
+                    {@render chartRow(s, 'international')}
                   {/each}
                 </div>
               </div>
             {/if}
           </div>
-          {#if hasCarryover || (mode === 'RANKING' && hasPzszResults)}
-            <div class="carried-legend">
+          <div class="carried-legend">
+            <div class="carried-legend-item"><div class="legend-swatch current"></div> {t('domestic_ppw_mpw').split(' (')[0]}</div>
+            {#if hasCarryover}
+              <div class="carried-legend-item"><div class="legend-swatch carried"></div> {t('rolling_carried_over')}</div>
+            {/if}
+            {#if mode === 'RANKING'}
+              <div class="carried-legend-item"><div class="legend-swatch intl-current"></div> {t('international_evf').split(' (')[0]}</div>
               {#if hasCarryover}
-                <div class="carried-legend-item"><div class="legend-swatch current"></div> {t('domestic_ppw_mpw').split(' (')[0]}</div>
-                <div class="carried-legend-item"><div class="legend-swatch carried"></div> {t('rolling_carried_over')}</div>
-                {#if mode === 'RANKING'}
-                  <div class="carried-legend-item"><div class="legend-swatch intl-current"></div> {t('international_evf').split(' (')[0]}</div>
-                  <div class="carried-legend-item"><div class="legend-swatch intl-carried"></div> {t('rolling_carried_over')} (EVF)</div>
-                {/if}
-                <div class="carried-legend-item">★ Best</div>
-                <div class="carried-legend-item">✓ {t('sc_rule_always')}</div>
-                <div class="carried-legend-item">↩ {t('rolling_carried_over')}</div>
+                <div class="carried-legend-item"><div class="legend-swatch intl-carried"></div> {t('rolling_carried_over')} (EVF)</div>
               {/if}
-              {#if mode === 'RANKING' && hasPzszResults}
+              {#if hasPzszResults}
                 <div class="carried-legend-item"><div class="legend-swatch evf-color"></div> {t('legend_evf_label')}</div>
                 <div class="carried-legend-item"><div class="legend-swatch pzsz-color"></div> {t('legend_pzsz_label')}</div>
               {/if}
-            </div>
-          {/if}
+            {/if}
+            <div class="carried-legend-item">★ {t('dd_counted')}</div>
+            {#if hasCarryover}
+              <div class="carried-legend-item">↩ {t('dd_previous_season')}</div>
+            {/if}
+          </div>
         </div>
-
-        {#if mode === 'RANKING'}
-          <div class="table-total">
-            {t('ppw_total_label')}: {fmt(domesticTotal)} {t('pts')}
-            <span class="sep">·</span>
-            {t('evf_plus_total_label')}: {fmt(internationalTotal)} {t('pts')}
-            <span class="sep">·</span>
-            {t('col_total')}: {fmt(grandTotal)} {t('pts')}
-          </div>
-        {:else}
-          <div class="table-total">
-            {t('ppw_total_label')}: {fmt(ppwModeTotal)} {t('pts')}
-          </div>
-        {/if}
 
         <div class="table-section">
           <h3>{t('domestic_tournaments')}</h3>
-          {@render tournamentTable(domesticScores)}
-          {@render tournamentCards(domesticScores)}
+          <div class="table-panel">
+            {@render tournamentTable(domesticScores)}
+            {@render tournamentCards(domesticScores)}
+          </div>
           {#if mode === 'RANKING' && internationalScores.length > 0}
             <h3>{t('international_tournaments_evf')}</h3>
-            {@render tournamentTable(internationalScores)}
-            {@render tournamentCards(internationalScores)}
+            <div class="table-panel">
+              {@render tournamentTable(internationalScores)}
+              {@render tournamentCards(internationalScores)}
+            </div>
           {/if}
         </div>
       {/if}
@@ -146,14 +120,40 @@
         <span><strong>{footerMult[0]}</strong> — {footerMult.slice(1).join(' — ')}</span>
       </div>
       <div class="type-legend">
-        {#each ['legend_ppw', 'legend_mpw', 'legend_pew', 'legend_mew', 'legend_msw'] as key}
-          {@const parts = t(key).split(' — ')}
+        {#each legendTypes as type (type)}
+          {@const parts = t('legend_' + type.toLowerCase()).split(' — ')}
           <span><strong>{parts[0]}</strong> — {parts.slice(1).join(' — ')}</span>
         {/each}
       </div>
     </div>
   </div>
 {/if}
+
+{#snippet chartRow(s: ScoreRow, pool: 'domestic' | 'international')}
+  {@const carried = !!s.bool_carried_over}
+  <div class="chart-row" class:carried-row={carried} class:not-counted={!counted.ids.has(s.id_result)} title={s.txt_tournament_code}>
+    <span class="chart-value">{fmt(s.num_final_score)}</span>
+    <div class="chart-bar-bg">
+      <div
+        class="chart-bar {pool}"
+        class:domestic-carried={pool === 'domestic' && carried}
+        class:international-carried={pool === 'international' && carried}
+        class:chart-bar-evf={pool === 'international' && isEvf(s.enum_type)}
+        class:chart-bar-pzsz={pool === 'international' && isPzsz(s.enum_type)}
+        style="width: {maxScore > 0 ? ((s.num_final_score ?? 0) / maxScore) * 100 : 0}%"
+      ></div>
+    </div>
+    <span class="chart-marker">{[marker(s), carried ? '↩' : ''].filter(Boolean).join(' ')}</span>
+  </div>
+{/snippet}
+
+{#snippet tournamentName(s: ScoreRow)}
+  {#if s.url_results}
+    <a class="tournament-name" href={s.url_results} target="_blank" rel="noopener" title={s.txt_tournament_code}>{shortTournamentName(s)}</a>
+  {:else}
+    <span class="tournament-name" title={s.txt_tournament_code}>{shortTournamentName(s)}</span>
+  {/if}
+{/snippet}
 
 {#snippet tournamentTable(rows: ScoreRow[])}
   <table>
@@ -169,27 +169,27 @@
       </tr>
     </thead>
     <tbody>
-      {#each rows as s}
-        <tr class:carried-row={s.bool_carried_over}>
+      {#each rows as s (s.id_result)}
+        {@const note = joinedNote(s)}
+        <tr class:carried-row={s.bool_carried_over} class:not-counted={!counted.ids.has(s.id_result)}>
           <td>
-            {#if s.url_results}
-              <a href={s.url_results} target="_blank" rel="noopener">{s.txt_tournament_code}</a>
-            {:else}
-              {s.txt_tournament_code}
-            {/if}
+            {@render tournamentName(s)}
             {#if s.txt_location}
               <div class="location">{s.txt_location}</div>
+            {/if}
+            {#if note}
+              <div class="joined-note">{note}</div>
             {/if}
             {#if s.bool_carried_over && s.txt_source_season_code}
               <div class="carried-badge">↩ {s.txt_source_season_code}</div>
             {/if}
           </td>
           <td>{formatDate(s.dt_tournament)}</td>
-          <td><span class="type-badge" class:domestic={s.enum_type === 'PPW' || s.enum_type === 'MPW'} class:international={INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number])}>{s.enum_type}</span></td>
+          <td><span class="type-badge" class:domestic={isDomestic(s.enum_type)} class:international={isInternational(s.enum_type)}>{s.enum_type}</span></td>
           <td class="num place">{s.int_place}</td>
           <td class="num">{s.int_participant_count ?? '—'}</td>
           <td class="num">{s.num_multiplier != null ? Number(s.num_multiplier).toFixed(1) : '—'}</td>
-          <td class="num total">{fmt(s.num_final_score)} {getMarker(s)}</td>
+          <td class="num total">{fmt(s.num_final_score)} {marker(s)}</td>
         </tr>
       {/each}
     </tbody>
@@ -198,25 +198,23 @@
 
 {#snippet tournamentCards(rows: ScoreRow[])}
   <div class="card-list">
-    {#each rows as s}
-      <div class="result-card" class:carried={s.bool_carried_over}>
+    {#each rows as s (s.id_result)}
+      {@const note = joinedNote(s)}
+      <div class="result-card" class:carried={s.bool_carried_over} class:not-counted={!counted.ids.has(s.id_result)}>
         <div class="card-top">
-          <span class="card-tournament">
-            {#if s.url_results}
-              <a href={s.url_results} target="_blank" rel="noopener">{s.txt_tournament_code}</a>
-            {:else}
-              {s.txt_tournament_code}
-            {/if}
-          </span>
-          <span class="card-points">{fmt(s.num_final_score)} {getMarker(s)}</span>
+          <span class="card-tournament">{@render tournamentName(s)}</span>
+          <span class="card-points">{fmt(s.num_final_score)} {marker(s)}</span>
         </div>
         <div class="card-meta">
           {#if s.txt_location}<span class="card-location">{s.txt_location}</span>{/if}
           <span class="card-date">{formatDate(s.dt_tournament)}</span>
-          <span class="type-badge" class:domestic={s.enum_type === 'PPW' || s.enum_type === 'MPW'} class:international={INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number])}>{s.enum_type}</span>
+          <span class="type-badge" class:domestic={isDomestic(s.enum_type)} class:international={isInternational(s.enum_type)}>{s.enum_type}</span>
           <span class="card-place">{s.int_place}/{s.int_participant_count ?? '—'}</span>
           <span class="card-mult">&times;{s.num_multiplier != null ? Number(s.num_multiplier).toFixed(1) : '—'}</span>
         </div>
+        {#if note}
+          <div class="joined-note">{note}</div>
+        {/if}
         {#if s.bool_carried_over && s.txt_source_season_code}
           <div class="card-carried-badge">↩ {s.txt_source_season_code}</div>
         {/if}
@@ -229,15 +227,19 @@
   import type { ScoreRow, RankingMode, DrilldownContext, RankingRules } from '../lib/types'
   import { exportDrilldown } from '../lib/export'
   import { t, getLocale } from '../lib/locale.svelte'
+  import {
+    byPointsDesc,
+    countResults,
+    isDomestic,
+    isEvf,
+    isInternational,
+    isPzsz,
+    joinedBracketDetails,
+    shortTournamentName,
+  } from '../lib/drilldown-counting'
   import LangToggle from './LangToggle.svelte'
-
-  // SS26.UI (design step 7, ADR-101): split for bar-color provenance — both
-  // groups still combine into the one EVF+ total/pool below (INTL_TYPES is
-  // their union), matching §06: "Color communicates provenance only; it does
-  // not create separate orange or red subtotals."
-  const EVF_TYPES = ['PEW', 'MEW', 'MSW', 'PSW'] as const
-  const PZSZ_TYPES = ['PPS', 'MPS'] as const
-  const INTL_TYPES = [...EVF_TYPES, ...PZSZ_TYPES] as const
+  import ViewSwitch from './ViewSwitch.svelte'
+  import OdsButton from './OdsButton.svelte'
 
   let {
     open = false,
@@ -250,6 +252,7 @@
     rankingRules = null as RankingRules | null,
     seasonCode = null as string | null,
     onclose,
+    onmodechange,
   }: {
     open?: boolean
     fencerName?: string
@@ -262,6 +265,9 @@
     // The season the ranking being drilled into belongs to (R.26–R.30).
     seasonCode?: string | null
     onclose?: () => void
+    // A1: the page follows the modal's PPW | Ranking switch, so the list
+    // behind the modal and the rank in its header show the same view.
+    onmodechange?: (mode: RankingMode) => void
   } = $props()
 
   // --- Derived data ---
@@ -274,232 +280,54 @@
     seasonCode ?? scores.find((s) => !s.bool_carried_over)?.txt_season_code ?? null,
   )
 
-  let filteredScores = $derived(
-    mode === 'PPW'
-      ? scores.filter((s) => s.enum_type === 'PPW' || s.enum_type === 'MPW')
-      : scores
+  let filteredScores = $derived(mode === 'PPW' ? scores.filter((s) => isDomestic(s.enum_type)) : scores)
+
+  // Both tables, their phone cards and both bar charts run by points, highest
+  // first; equal points put the newer result first.
+  let domesticScores = $derived(scores.filter((s) => isDomestic(s.enum_type)).sort(byPointsDesc))
+  let internationalScores = $derived(scores.filter((s) => isInternational(s.enum_type)).sort(byPointsDesc))
+
+  // The results that count and the totals they make: one set for the ★, the
+  // greyed rows and bars, and every printed total.
+  let counted = $derived(countResults(scores, rankingRules, context))
+
+  // The line under the name: category, season, birth year.
+  let metaLine = $derived(
+    [
+      context?.category ?? scores[0]?.enum_age_category ?? '',
+      seasonLabel,
+      context?.birthYear ? `${t('born')} ${context.birthYear}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · '),
   )
 
-  // Sort: current season first (bool_carried_over=false), then carried-over, within each group by date asc
-  function sortCurrentFirst<T extends { bool_carried_over?: boolean; dt_tournament?: string | null }>(a: T, b: T): number {
-    const ac = a.bool_carried_over ? 1 : 0
-    const bc = b.bool_carried_over ? 1 : 0
-    if (ac !== bc) return ac - bc
-    return (a.dt_tournament ?? '').localeCompare(b.dt_tournament ?? '')
-  }
-
-  let domesticScores = $derived(
-    scores
-      .filter((s) => s.enum_type === 'PPW' || s.enum_type === 'MPW')
-      .sort(sortCurrentFirst)
+  // The headline: the place and total of the view shown. The total comes from
+  // the ranklist row the drilldown was opened from, so it is the number on the
+  // list; without one it is the counted total, which matches it (DD.PARITY.01).
+  let headlineTotal = $derived(
+    context?.totalScore ?? (mode === 'RANKING' ? counted.grandTotal : counted.domesticTotal),
+  )
+  let showHeadline = $derived(!loading && (context != null || filteredScores.length > 0))
+  let headlineLabel = $derived(
+    (context ? `${t('dd_place')} ${context.rank}, ` : '') + `${fmt(headlineTotal)} ${t('dd_points_total')}`,
   )
 
-  let internationalScores = $derived(
-    scores
-      .filter((s) => INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number]))
-      .sort(sortCurrentFirst)
-  )
-
-  // Pool selection for JSONB rules: all international scores sorted desc
-  let intlPoolSorted = $derived(
-    scores
-      .filter((s) => INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number]))
-      .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
-  )
-
-  // Best-K PPW scores
-  let ppwScoresSorted = $derived(
-    scores
-      .filter((s) => s.enum_type === 'PPW')
-      .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
-  )
-
-  let useJsonbRules = $derived(rankingRules != null)
-
-  let bestK = $derived.by(() => {
-    if (rankingRules) {
-      const bucket = rankingRules.domestic.find((b) => b.types.includes('PPW'))
-      return bucket?.best ?? 4
-    }
-    return context?.ppwBestCount ?? 4
-  })
-
-  let bestJ = $derived.by(() => {
-    if (rankingRules) {
-      const bucket = rankingRules.international.find((b) =>
-        b.types.some((t) => INTL_TYPES.includes(t as (typeof INTL_TYPES)[number])),
-      )
-      return bucket?.best ?? 3
-    }
-    return context?.pewBestCount ?? 3
-  })
-
-  let intlPoolBestIds = $derived(new Set(intlPoolSorted.slice(0, bestJ).map((s) => s.id_result)))
-
-  let ppwBestIds = $derived(new Set(ppwScoresSorted.slice(0, bestK).map((s) => s.id_result)))
-  let ppwSum = $derived(
-    Math.round(ppwScoresSorted.slice(0, bestK).reduce((acc, s) => acc + (s.num_final_score ?? 0), 0) * 10) / 10
-  )
-
-  // MPW inclusion
-  let mpwScore = $derived(scores.find((s) => s.enum_type === 'MPW'))
-  let mpwIncluded = $derived(Math.round((mpwScore?.num_final_score ?? 0) * 10) / 10)
-
-  let domesticTotal = $derived(Math.round((ppwSum + mpwIncluded) * 10) / 10)
-
-  // Best-J PEW scores
-  let pewScoresSorted = $derived(
-    scores
-      .filter((s) => s.enum_type === 'PEW')
-      .sort((a, b) => (b.num_final_score ?? 0) - (a.num_final_score ?? 0))
-  )
-
-  let pewBestIds = $derived(new Set(pewScoresSorted.slice(0, bestJ).map((s) => s.id_result)))
-  let pewSum = $derived(
-    Math.round(pewScoresSorted.slice(0, bestJ).reduce((acc, s) => acc + (s.num_final_score ?? 0), 0) * 10) / 10
-  )
-
-  let mewScore = $derived(scores.find((s) => s.enum_type === 'MEW'))
-  let mewIncluded = $derived(Math.round((mewScore?.num_final_score ?? 0) * 10) / 10)
-
-  let internationalTotal = $derived(
-    useJsonbRules
-      ? Math.round(
-          intlPoolSorted
-            .slice(0, bestJ)
-            .reduce((acc, s) => acc + (s.num_final_score ?? 0), 0) * 10,
-        ) / 10
-      : Math.round((pewSum + mewIncluded) * 10) / 10,
-  )
-  let grandTotal = $derived(Math.round((domesticTotal + internationalTotal) * 10) / 10)
-
-  let ppwModeTotal = $derived(domesticTotal)
-
-  // Chart data
-  let hasCarryover = $derived(scores.some(s => s.bool_carried_over))
-  let carriedResultIds = $derived(new Set(scores.filter(s => s.bool_carried_over).map(s => s.id_result)))
+  // The legend explains only what is on screen.
+  let hasCarryover = $derived(filteredScores.some((s) => s.bool_carried_over))
   // SS26.UI: only show the EVF/PZSz provenance legend when a PZSz result is
   // actually present — otherwise every bar is orange and the distinction is
   // noise, not information.
-  let hasPzszResults = $derived(
-    internationalScores.some((s) => PZSZ_TYPES.includes(s.enum_type as (typeof PZSZ_TYPES)[number]))
-  )
-
-  interface ChartItem {
-    score: number
-    code: string
-    marker: string
-    type: string
-    carried: boolean
-  }
-
-  let domesticChart = $derived.by((): ChartItem[] => {
-    // Current PPW first (by score desc), then carried PPW (by score desc), then MPW last
-    const currentPpw = ppwScoresSorted.filter(s => !s.bool_carried_over)
-    const carriedPpw = ppwScoresSorted.filter(s => !!s.bool_carried_over)
-    const items: ChartItem[] = []
-    for (const s of currentPpw) {
-      items.push({
-        score: s.num_final_score ?? 0,
-        code: s.txt_tournament_code,
-        marker: ppwBestIds.has(s.id_result) ? '★' : '',
-        type: 'PPW',
-        carried: false,
-      })
-    }
-    for (const s of carriedPpw) {
-      const best = ppwBestIds.has(s.id_result) ? '★' : ''
-      items.push({
-        score: s.num_final_score ?? 0,
-        code: s.txt_tournament_code,
-        marker: best + ' ↩',
-        type: 'PPW',
-        carried: true,
-      })
-    }
-    if (mpwScore) {
-      const carried = !!mpwScore.bool_carried_over
-      items.push({
-        score: mpwScore.num_final_score ?? 0,
-        code: mpwScore.txt_tournament_code,
-        marker: '✓' + (carried ? ' ↩' : ''),
-        type: 'MPW',
-        carried,
-      })
-    }
-    return items
-  })
-
-  let internationalChart = $derived.by((): ChartItem[] => {
-    if (useJsonbRules) {
-      // Current first (by score desc), then carried (by score desc)
-      const current = intlPoolSorted.filter(s => !s.bool_carried_over)
-      const carried = intlPoolSorted.filter(s => !!s.bool_carried_over)
-      return [...current, ...carried].map((s) => {
-        const isCarried = !!s.bool_carried_over
-        const best = intlPoolBestIds.has(s.id_result) ? '★' : ''
-        return {
-          score: s.num_final_score ?? 0,
-          code: s.txt_tournament_code,
-          marker: best + (isCarried ? ' ↩' : ''),
-          type: s.enum_type,
-          carried: isCarried,
-        }
-      })
-    }
-    // Legacy path
-    const items: ChartItem[] = []
-    if (mewScore) {
-      const carried = !!mewScore.bool_carried_over
-      items.push({
-        score: mewScore.num_final_score ?? 0,
-        code: mewScore.txt_tournament_code,
-        marker: '✓' + (carried ? ' ↩' : ''),
-        type: 'MEW',
-        carried,
-      })
-    }
-    for (const s of pewScoresSorted) {
-      const carried = !!s.bool_carried_over
-      items.push({
-        score: s.num_final_score ?? 0,
-        code: s.txt_tournament_code,
-        marker: (pewBestIds.has(s.id_result) ? '★' : '') + (carried ? ' ↩' : ''),
-        type: 'PEW',
-        carried,
-      })
-    }
-    // SS26.UI (design step 7): MSW/PSW/PPS/MPS have no legacy best-J/marker
-    // convention (the pre-JSONB model only ever defined one for PEW/MEW) —
-    // included here with no marker so a real result is never silently
-    // dropped from the chart while ranking_rules JSONB hasn't loaded yet.
-    // This closes a pre-existing gap (MSW/PSW were already missing from this
-    // branch before design step 7; PPS/MPS are new as of design step 6).
-    const OTHER_INTL_TYPES = ['MSW', 'PSW', 'PPS', 'MPS'] as const
-    for (const s of scores.filter((s) => OTHER_INTL_TYPES.includes(s.enum_type as (typeof OTHER_INTL_TYPES)[number]))) {
-      const carried = !!s.bool_carried_over
-      items.push({
-        score: s.num_final_score ?? 0,
-        code: s.txt_tournament_code,
-        marker: carried ? '↩' : '',
-        type: s.enum_type,
-        carried,
-      })
-    }
-    // Current first, then carried; within each group by score desc
-    items.sort((a, b) => {
-      if (a.carried !== b.carried) return a.carried ? 1 : -1
-      return b.score - a.score
-    })
-    return items
-  })
+  let hasPzszResults = $derived(internationalScores.some((s) => isPzsz(s.enum_type)))
+  const LEGEND_ORDER = ['PPW', 'MPW', 'PEW', 'MEW', 'MSW', 'PSW', 'PPS', 'MPS'] as const
+  let legendTypes = $derived(LEGEND_ORDER.filter((type) => filteredScores.some((s) => s.enum_type === type)))
 
   let maxScore = $derived(
     Math.max(
-      ...domesticChart.map((i) => i.score),
-      ...internationalChart.map((i) => i.score),
-      1
-    )
+      ...domesticScores.map((s) => s.num_final_score ?? 0),
+      ...internationalScores.map((s) => s.num_final_score ?? 0),
+      1,
+    ),
   )
 
   // --- i18n derived ---
@@ -527,27 +355,49 @@
     }
   }
 
-  function getMarker(s: ScoreRow): string {
-    if (s.enum_type === 'PPW' && ppwBestIds.has(s.id_result)) return '★'
-    if (s.enum_type === 'MPW') return '✓'
-    if (useJsonbRules) {
-      if (INTL_TYPES.includes(s.enum_type as (typeof INTL_TYPES)[number])) {
-        return intlPoolBestIds.has(s.id_result) ? '★' : ''
-      }
-      return ''
-    }
-    // Legacy
-    if (s.enum_type === 'PEW' && pewBestIds.has(s.id_result)) return '★'
-    if (s.enum_type === 'MEW') return '✓'
-    return ''
+  function marker(s: ScoreRow): string {
+    return counted.ids.has(s.id_result) ? '★' : ''
+  }
+
+  // B2 (ADR-104): a joined-bracket result's place and N are in the whole
+  // bracket; the note says so and shows the premium (and any cap reduction).
+  function joinedNote(s: ScoreRow): string | null {
+    const j = joinedBracketDetails(s)
+    if (!j) return null
+    const parts = [t('dd_joined')]
+    if (j.premium > 0) parts.push(`${t('dd_premium')} +${fmt(j.premium)}`)
+    if (j.cap > 0) parts.push(`${t('dd_cap')} −${fmt(j.cap)}`)
+    return parts.join(' · ')
   }
 
   function onClose() {
     onclose?.()
   }
 
+  // Esc closes from anywhere — in the capture phase, because the dialog stops
+  // its own key events from bubbling.
+  function onWindowKeydown(e: KeyboardEvent) {
+    if (open && e.key === 'Escape') onClose()
+  }
+
+  // Focus moves into the dialog when it opens and back where it was when it
+  // closes.
+  let dialogEl: HTMLElement | null = $state(null)
+  let returnFocus: HTMLElement | null = null
+  $effect(() => {
+    if (open) {
+      returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      queueMicrotask(() => dialogEl?.focus({ preventScroll: true }))
+    } else if (returnFocus) {
+      const el = returnFocus
+      returnFocus = null
+      if (el.isConnected) el.focus({ preventScroll: true })
+    }
+  })
+
   function setMode(m: RankingMode) {
     mode = m
+    onmodechange?.(m)
   }
 
   function handleExport() {
@@ -575,87 +425,121 @@
     padding: 24px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
+  /* Focus moves onto the dialog itself when it opens; the dialog is not a
+     control, so it draws no focus ring. */
+  .modal-content:focus {
+    outline: none;
+  }
+  /* Header: name and meta with the frame controls (language, close) in the
+     top-right corner; under them the headline row. */
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    gap: 12px;
+  }
+  .modal-id {
+    min-width: 0;
   }
   .modal-header h2 {
     margin: 0;
     font-size: 20px;
-    color: #333;
+    line-height: 1.25;
+    color: #222;
+  }
+  .subheader {
+    margin-top: 2px;
+    font-size: 13px;
+    color: #777;
   }
   .modal-actions {
     display: flex;
-    gap: 12px;
+    flex: none;
+    gap: 10px;
     align-items: center;
-  }
-  .toggle {
-    display: inline-flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .toggle-btn {
-    padding: 5px 12px;
-    border: none;
-    background: #fff;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .toggle-btn:first-child {
-    border-right: 1px solid #ccc;
-  }
-  .toggle-btn.active {
-    background: #4a90d9;
-    color: #fff;
-  }
-  .toggle-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
   .btn-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
     background: none;
-    border: none;
-    font-size: 24px;
+    color: #6b7482;
     cursor: pointer;
-    color: #999;
-    padding: 0 4px;
+  }
+  .btn-close svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
   }
   .btn-close:hover {
-    color: #333;
+    background: #eef1f5;
+    color: #222;
+  }
+  .btn-close:focus-visible {
+    outline: 2px solid #12467e;
+    outline-offset: 2px;
   }
 
-  /* Subheader */
-  .subheader {
+  /* The headline: place and total, the largest figures on the screen, said
+     once; the view switch and the ODS download at the right end. */
+  .headline-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #666;
-    padding: 6px 0 12px;
+    gap: 12px;
+    padding: 10px 0 14px;
     border-bottom: 1px solid #eee;
     margin-bottom: 16px;
-    flex-wrap: wrap;
   }
-  .subheader .sep {
-    color: #ccc;
-  }
-  .btn-export-sub {
+  .view-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-left: auto;
-    background: none;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 3px 8px;
-    font-size: 14px;
-    cursor: pointer;
-    color: #555;
   }
-  .btn-export-sub:hover {
-    background: #f0f0f0;
+  .score {
+    display: inline-flex;
+    align-items: stretch;
+    background: #f3f6fb;
+    border: 1px solid #d9e2ee;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(16, 34, 64, 0.07), inset 0 1px 0 #fff;
+  }
+  .score-fig {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 16px 7px;
+    line-height: 1.05;
+  }
+  .score-fig + .score-fig {
+    border-left: 1px solid #d9e2ee;
+  }
+  .score-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: #24364b;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .score-fig.big .score-num {
+    font-size: 28px;
+    color: #12467e;
+  }
+  .score-lab {
+    margin-top: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #6b7482;
   }
 
   .loading, .empty {
@@ -699,7 +583,7 @@
     font-size: 12px;
   }
   .chart-value {
-    width: 36px;
+    width: 42px;
     text-align: right;
     font-weight: 600;
     color: #333;
@@ -742,6 +626,11 @@
   .chart-bar.chart-bar-pzsz {
     background: #c72626;
   }
+  /* A carried-over result keeps the stripes in either colour, as the legend
+     shows (DD.BAR.02); the solid colours above apply only to current results. */
+  .chart-bar.chart-bar-evf.international-carried {
+    background: repeating-linear-gradient(45deg, #e8d5a0, #e8d5a0 4px, #f0e4c4 4px, #f0e4c4 8px);
+  }
   .chart-bar.chart-bar-pzsz.international-carried {
     background: repeating-linear-gradient(45deg, #e8a3a3, #e8a3a3 4px, #f4d1d1 4px, #f4d1d1 8px);
   }
@@ -749,6 +638,10 @@
     min-width: 28px;
     text-align: center;
     font-size: 13px;
+  }
+  /* A result that does not count in the ranking: its bar fades. */
+  .chart-row.not-counted {
+    opacity: 0.3;
   }
   .type-legend {
     margin-top: 12px;
@@ -803,18 +696,6 @@
   .legend-swatch.pzsz-color {
     background: #c72626;
   }
-  .table-total {
-    text-align: right;
-    font-size: 15px;
-    font-weight: 700;
-    color: #222;
-    margin-bottom: 4px;
-  }
-  .table-total .sep {
-    color: #ccc;
-    font-weight: 400;
-    margin: 0 4px;
-  }
 
   /* Tables */
   .table-section h3 {
@@ -867,21 +748,6 @@
     color: #b07d2b;
   }
 
-  .rolling-info {
-    background: #fff8e6;
-    border: 1px solid #f0d88a;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: #92730c;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .rolling-info strong {
-    color: #7a6520;
-  }
   tr.carried-row {
     color: #999;
   }
@@ -907,6 +773,64 @@
   td a:hover {
     text-decoration-color: #2c6fad;
   }
+  .joined-note {
+    font-size: 11px;
+    color: #5b6f86;
+    margin-top: 2px;
+  }
+
+  /* Each table and its phone cards sit in one framed, slightly raised panel. */
+  .table-panel {
+    background: #f3f6fb;
+    border: 1px solid #d9e2ee;
+    border-radius: 10px;
+    padding: 2px 10px 4px;
+    margin: 6px 0 16px;
+    box-shadow:
+      0 1px 2px rgba(16, 34, 64, 0.07),
+      0 6px 18px rgba(16, 34, 64, 0.12),
+      inset 0 1px 0 #fff;
+    overflow-x: auto;
+  }
+  .table-panel table {
+    margin-bottom: 0;
+  }
+  .table-panel th {
+    background: transparent;
+    border-bottom-color: #d9e2ee;
+  }
+  .table-panel td {
+    border-bottom-color: #e3e9f2;
+  }
+  .table-panel tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* A result that does not count in the ranking: grey background, grey text.
+     Carried-over rows keep their own look and get this on top only when they
+     do not count. */
+  tr.not-counted td {
+    background: #e1e3e6;
+    color: #9d9d9d;
+    border-bottom-color: #d3d6db;
+  }
+  tr.not-counted a {
+    color: #9d9d9d;
+    text-decoration-color: #c4c7cc;
+  }
+  tr.not-counted .type-badge,
+  .result-card.not-counted .type-badge {
+    opacity: 0.5;
+  }
+  tr.not-counted .place,
+  tr.not-counted .total {
+    font-weight: 500;
+  }
+  tr.not-counted .location,
+  tr.not-counted .carried-badge,
+  tr.not-counted .joined-note {
+    color: #aaa;
+  }
 
   .modal-footer {
     margin-top: 16px;
@@ -923,11 +847,6 @@
     color: #ccc;
   }
 
-  /* Tables scroll horizontally on mobile */
-  .table-section {
-    overflow-x: auto;
-  }
-
   /* Card layout — hidden on desktop, shown on mobile */
   .card-list {
     display: none;
@@ -942,10 +861,29 @@
     background: #f8f9fa;
     color: #333;
   }
+  .table-panel .card-list {
+    margin: 0;
+    padding: 6px 0;
+  }
+  .table-panel .result-card {
+    background: #fff;
+  }
+  .table-panel .result-card.carried,
   .result-card.carried {
     color: #999;
     border-color: #e8e8e8;
     background: #f5f4f2;
+  }
+  .table-panel .result-card.not-counted {
+    background: #e1e3e6;
+    border-color: #d3d6db;
+  }
+  .result-card.not-counted,
+  .result-card.not-counted :is(a, .card-points, .card-meta, .card-carried-badge, .joined-note) {
+    color: #9d9d9d;
+  }
+  .result-card.not-counted .card-points {
+    font-weight: 500;
   }
   .card-top {
     display: flex;
@@ -1007,19 +945,53 @@
       min-height: 100vh;
       background: #fff;
     }
+    /* Name, headline and controls stay at the top while the results scroll. */
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      margin: -16px -12px 12px;
+      padding: 12px 12px 10px;
+      background: #fff;
+      border-bottom: 1px solid #e5e9ef;
+      box-shadow: 0 6px 12px -8px rgba(16, 34, 64, 0.35);
+    }
+    .modal-header {
+      align-items: flex-start;
+    }
     .modal-header h2 {
       font-size: 17px;
-    }
-    .modal-actions {
-      gap: 8px;
-    }
-    .toggle-btn {
-      padding: 4px 8px;
-      font-size: 12px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
     }
     .subheader {
       font-size: 12px;
-      gap: 4px;
+    }
+    .modal-actions {
+      gap: 6px;
+    }
+    .btn-close {
+      width: 44px;
+      height: 44px;
+    }
+    .headline-row {
+      gap: 10px;
+      padding: 10px 0 0;
+      border-bottom: 0;
+      margin-bottom: 0;
+    }
+    .view-tools {
+      flex: 1 1 100%;
+      margin-left: 0;
+    }
+    .score-fig {
+      padding: 5px 14px 6px;
+    }
+    .score-num {
+      font-size: 19px;
+    }
+    .score-fig.big .score-num {
+      font-size: 24px;
     }
     .breakdown-grid {
       grid-template-columns: 1fr;
@@ -1032,7 +1004,7 @@
       font-size: 11px;
     }
     .chart-value {
-      width: 30px;
+      width: 36px;
     }
     .chart-bar-bg {
       height: 16px;

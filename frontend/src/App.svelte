@@ -92,6 +92,7 @@
       rankingRules={rankingRules}
       seasonCode={modalSeasonCode}
       onclose={closeDrilldown}
+      onmodechange={handleModalModeChange}
     />
 
     {#if dualEnv}
@@ -777,26 +778,7 @@
             )
         if (gen !== drilldownGen) return
         modalScores = scores
-        const row =
-          filters.mode === 'PPW'
-            ? ppwRows.find((r) => r.id_fencer === fencerId)
-            : fullRows.find((r) => r.id_fencer === fencerId)
-        if (row) {
-          const birthYear = modalScores[0]?.int_birth_year ?? null
-          const season = seasons.find((s) => s.id_season === selectedSeasonId)
-          const seasonEndYear = season ? parseInt(season.dt_end.split('-')[0]) : null
-          const age =
-            birthYear != null && seasonEndYear != null ? seasonEndYear - birthYear : null
-          modalContext = {
-            rank: row.rank,
-            birthYear,
-            age,
-            category: filters.category,
-            totalScore: row.total_score,
-            ppwBestCount: 4,
-            pewBestCount: 3,
-          }
-        }
+        modalContext = buildModalContext(fencerId)
       }
     } catch (e: unknown) {
       if (gen !== drilldownGen) return
@@ -804,6 +786,40 @@
     } finally {
       if (gen === drilldownGen) modalLoading = false
     }
+  }
+
+  // The modal's header rank and total come from the list currently shown.
+  function buildModalContext(fencerId: number): DrilldownContext | null {
+    const row =
+      filters.mode === 'PPW'
+        ? ppwRows.find((r) => r.id_fencer === fencerId)
+        : fullRows.find((r) => r.id_fencer === fencerId)
+    if (!row) return null
+    const birthYear = modalScores[0]?.int_birth_year ?? null
+    const season = seasons.find((s) => s.id_season === selectedSeasonId)
+    const seasonEndYear = season ? parseInt(season.dt_end.split('-')[0]) : null
+    const age = birthYear != null && seasonEndYear != null ? seasonEndYear - birthYear : null
+    return {
+      rank: row.rank,
+      birthYear,
+      age,
+      category: filters.category,
+      totalScore: row.total_score,
+      ppwBestCount: 4,
+      pewBestCount: 3,
+    }
+  }
+
+  // A1 (doc/plans/drilldown-points-order-and-uncounted-2026-10-01.html): the
+  // drilldown's PPW | Ranking switch switches the page too, so the list behind
+  // the modal, the rank in its header and the modal always show one view.
+  async function handleModalModeChange(mode: RankingMode) {
+    if (mode === filters.mode) return
+    filters = { ...filters, mode }
+    const gen = drilldownGen
+    await loadRanking()
+    if (gen !== drilldownGen || modalFencerId == null) return
+    modalContext = buildModalContext(modalFencerId)
   }
 
   function closeDrilldown() {

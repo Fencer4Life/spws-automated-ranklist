@@ -38,31 +38,25 @@
       </select>
     </label>
 
-    {#if showEvfToggle}
-      <div class="filter-group toggle-group">
-        <span class="filter-label">{t('view_toggle_label')}</span>
-        <div class="toggle">
-          <button
-            class="toggle-btn"
-            class:active={mode === 'PPW'}
-            onclick={() => setMode('PPW')}
-          >{t('mode_ppw')}</button>
-          <button
-            class="toggle-btn"
-            class:active={mode === 'RANKING'}
-            onclick={() => setMode('RANKING')}
-          >{t('mode_ranking')}</button>
+    <!-- The data controls: the view, then its ODS file, at the right end of
+         the row — the same place and order as in the score drilldown. -->
+    <div class="view-tools">
+      {#if showEvfToggle}
+        <div class="filter-group toggle-group">
+          <span class="filter-label">{t('view_toggle_label')}</span>
+          <ViewSwitch {mode} onchange={setMode} />
         </div>
-      </div>
-    {/if}
-
-    <button class="btn-export" title={t('export_to_ods')} onclick={onexport}>&#9113;</button>
+      {/if}
+      <OdsButton title={t('ods_tip_list')} onclick={() => onexport?.()} />
+    </div>
   </div>
 </div>
 
 <script lang="ts">
   import type { WeaponType, GenderType, AgeCategory, RankingMode, Filters, Season } from '../lib/types'
   import { t } from '../lib/locale.svelte'
+  import ViewSwitch from './ViewSwitch.svelte'
+  import OdsButton from './OdsButton.svelte'
 
   let {
     weapon = 'EPEE' as WeaponType,
@@ -112,19 +106,11 @@
     align-items: flex-end;
     flex-wrap: wrap;
   }
-  .btn-export {
+  .view-tools {
     margin-left: auto;
-    align-self: flex-end;
-    background: none;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-size: 16px;
-    cursor: pointer;
-    color: #555;
-  }
-  .btn-export:hover {
-    background: #f0f0f0;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
   }
   .filter-group {
     display: flex;
@@ -138,10 +124,13 @@
     color: #666;
     letter-spacing: 0.5px;
   }
+  /* 38 px, the height of the view switch and the ODS button, so the whole
+     row lines up. */
   select {
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #c7ced8;
+    border-radius: 8px;
     font-size: 14px;
     background: #fff;
     cursor: pointer;
@@ -154,32 +143,6 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-  }
-  .toggle {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .toggle-btn {
-    padding: 6px 14px;
-    border: none;
-    background: #fff;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .toggle-btn:first-child {
-    border-right: 1px solid #ccc;
-  }
-  .toggle-btn.active {
-    background: #4a90d9;
-    color: #fff;
-  }
-  .toggle-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 
   @media (max-width: 600px) {
@@ -194,9 +157,18 @@
       width: 100%;
       font-size: 13px;
     }
-    .toggle-btn {
-      padding: 6px 10px;
-      font-size: 13px;
+    /* The view switch fills its own row with the ODS button beside it; the
+       switch names itself, so the "Widok" label above it is dropped. */
+    .view-tools {
+      flex: 1 1 100%;
+      margin-left: 0;
+      align-items: center;
+    }
+    .view-tools .toggle-group {
+      flex: 1 1 auto;
+    }
+    .view-tools .toggle-group .filter-label {
+      display: none;
     }
   }
 </style>
