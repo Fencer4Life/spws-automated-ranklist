@@ -58,6 +58,7 @@ from python.scrapers._location import (
     city_from_name,
     resolve_location,
 )
+from python.scrapers.evf_results import EvfAccessBlocked, refuse_bot_challenge
 
 try:
     from rapidfuzz import fuzz
@@ -565,8 +566,10 @@ def _fetch_html_list() -> list[dict]:
         try:
             resp = httpx.get(url, timeout=30, follow_redirects=True)
             resp.raise_for_status()
+            # A challenged page parses as an empty calendar; refuse it first.
+            refuse_bot_challenge(resp.text, url)
             page_events = parse_evf_calendar_html(resp.text)
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, EvfAccessBlocked) as exc:
             errors.append(f"{url}: {type(exc).__name__}: {exc}")
             logger.warning("HTML calendar fetch failed for %s: %s", url, exc)
             continue
