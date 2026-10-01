@@ -81,6 +81,14 @@
       />
     {/if}
 
+    {#if rulesSeason}
+      {@const rs = rulesSeason}
+      <button type="button" class="rules-link rules-float" onclick={() => openSeasonRules(rs)}>
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.6" /><path d="M10 9v5M10 6.2v.1" /></svg>
+        {t('sr_link', { season: seasonYears(rs.txt_code) })}
+      </button>
+    {/if}
+
     <DrilldownModal
       open={modalOpen}
       fencerName={modalFencerName}
@@ -95,6 +103,14 @@
       onmodechange={handleModalModeChange}
     />
 
+    <SeasonRulesModal
+      open={rulesModalOpen}
+      season={seasons.find((s) => s.id_season === rankingRulesSeasonId) ?? null}
+      rules={rankingRules}
+      coefficients={rulesCoefficients}
+      onclose={() => { rulesModalOpen = false }}
+    />
+
     {#if dualEnv}
       <div class="env-footer">
         <div class="env-toggle">
@@ -104,6 +120,11 @@
             onclick={() => { activeEnv = 'PROD' }}>PD</button>
         </div>
       </div>
+    {/if}
+    {#if rulesSeason}
+      <!-- Room at the end of the list, so the last row and the CT/PD switch
+           scroll clear of the pinned pill. -->
+      <div class="rules-float-space" aria-hidden="true"></div>
     {/if}
   {:else if currentView === 'calendar'}
     <!-- The calendar is the one view built from geometry rather than a list,
@@ -301,6 +322,7 @@
     fetchFencerScores,
     fetchFencerScoresRolling,
     fetchRankingRules,
+    fetchSeasonCoefficients,
     fetchAllCalendarEvents,
     fetchCalendarEvents,
     fetchPriorSeasonEvents,
@@ -364,6 +386,7 @@
   import LangToggle from './components/LangToggle.svelte'
   import RanklistTable from './components/RanklistTable.svelte'
   import DrilldownModal from './components/DrilldownModal.svelte'
+  import SeasonRulesModal, { seasonYears } from './components/SeasonRulesModal.svelte'
   import SkeletonLoader from './components/SkeletonLoader.svelte'
   import AdminSignInModal from './components/AdminSignInModal.svelte'
   import AdminMfaEnrollModal from './components/AdminMfaEnrollModal.svelte'
@@ -514,6 +537,18 @@
   // season rendered empty.
   let useRolling = $derived(shouldUseRolling(seasons.find(s => s.id_season === selectedSeasonId)))
   let rankingRules: RankingRules | null = $state(null)
+  // The season `rankingRules` was read for. The „Reguły rankingu na sezon …”
+  // pill shows only while it matches the dropdown, so a season change never
+  // shows the previous season's rules under the new season's name.
+  let rankingRulesSeasonId: number | null = $state(null)
+  let rulesSeason = $derived(
+    rankingRules && rankingRulesSeasonId === selectedSeasonId
+      ? (seasons.find((s) => s.id_season === selectedSeasonId) ?? null)
+      : null,
+  )
+  let rulesModalOpen = $state(false)
+  let rulesCoefficients: Record<string, number> | null = $state(null)
+  let rulesGen = 0
 
   let calendarEvents: CalendarEvent[] = $state([])
   let priorSeasonEvents: CalendarEvent[] = $state([])
@@ -722,6 +757,7 @@
           const rules = await fetchRankingRules(selectedSeasonId)
           if (gen !== rankingGen) return
           rankingRules = rules
+          rankingRulesSeasonId = selectedSeasonId
         }
       } else {
         const rows = await fetchRankingFull(
@@ -738,6 +774,7 @@
           const rules = await fetchRankingRules(selectedSeasonId)
           if (gen !== rankingGen) return
           rankingRules = rules
+          rankingRulesSeasonId = selectedSeasonId
         }
       }
     } catch (e: unknown) {
@@ -746,6 +783,21 @@
     } finally {
       if (gen === rankingGen) loading = false
     }
+  }
+
+  // The coefficients are read only when the rules open, so the ranklist's own
+  // loading is untouched; if they fail, the modal leaves out that one line.
+  async function openSeasonRules(season: Season) {
+    const gen = ++rulesGen
+    rulesCoefficients = null
+    rulesModalOpen = true
+    let coefficients: Record<string, number> | null = null
+    try {
+      coefficients = await fetchSeasonCoefficients(season.txt_code)
+    } catch {
+      coefficients = null
+    }
+    if (gen === rulesGen) rulesCoefficients = coefficients
   }
 
   async function openDrilldown(fencerId: number, fencerName: string) {
@@ -1739,6 +1791,64 @@
     border-bottom: 1px solid #eee;
     font-size: 12px;
     color: #888;
+  }
+  /* The chosen season's rules, pinned to the bottom of the visible screen
+     (doc/mockups/ranking-rules-modal-2026-10-01.html, revision 2). The browser
+     finds the bottom: `fixed` anchors to the viewport, the safe-area inset keeps
+     it above an iPhone's home bar. It sits under the drawer (99/100), the
+     modals (1000) and the error banner (9999), so they cover it. */
+  .rules-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 11px 3px 7px;
+    border: 1px solid #c9dbf0;
+    border-radius: 999px;
+    background: #eef4fb;
+    color: #1f5fa8;
+    font: 600 12.5px system-ui, sans-serif;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .rules-link svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+  }
+  .rules-link:hover {
+    background: #e1ecf8;
+    border-color: #a9c6e8;
+  }
+  .rules-link:focus-visible {
+    outline: 2px solid #12467e;
+    outline-offset: 2px;
+  }
+  .rules-float {
+    position: fixed;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 50;
+    max-width: calc(100vw - 32px);
+    padding: 7px 15px 7px 11px;
+    font-size: 13.5px;
+    box-shadow: 0 6px 18px rgba(16, 34, 64, 0.22), 0 1px 3px rgba(16, 34, 64, 0.12);
+  }
+  /* Room at the end of the list for the pill: 16px gap + pill + air. */
+  .rules-float-space {
+    height: 72px;
+  }
+  @media (max-width: 600px) {
+    .rules-float {
+      min-height: 44px;
+      padding: 8px 14px 8px 10px;
+      font-size: 13px;
+    }
   }
   .env-footer {
     display: flex;

@@ -19,7 +19,7 @@ vi.mock('@supabase/supabase-js', () => ({
   })),
 }))
 
-import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents, approveMatch, dismissMatch, createFencerFromMatch, listFencerAliases, transferFencerAlias, splitFencerFromAlias, discardFencerAliasAndResults } from '../src/lib/api'
+import { initClient, fetchSeasons, fetchRankingPpw, fetchRankingKadra, fetchFencerScores, fetchCalendarEvents, approveMatch, dismissMatch, createFencerFromMatch, listFencerAliases, transferFencerAlias, splitFencerFromAlias, discardFencerAliasAndResults, fetchSeasonCoefficients } from '../src/lib/api'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -272,5 +272,28 @@ describe('discardFencerAliasAndResults', () => {
     expect(mockRpc).toHaveBeenCalledWith('fn_discard_fencer_alias_and_results', {
       p_from_fencer: 1, p_alias: 'X',
     })
+  })
+})
+
+// SR.API — the season's type coefficients for the ranklist's rules modal, from
+// the same public RPC the scoring table and the calculator read.
+describe('fetchSeasonCoefficients', () => {
+  it('SR.API.01 reads fn_public_scoring_params for the season and maps type to coefficient', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { type_code: 'PPW', multiplier: 1 },
+        { type_code: 'MPW', multiplier: 1.2 },
+        { type_code: 'PSW', multiplier: '1.1000' },
+      ],
+      error: null,
+    })
+    const coef = await fetchSeasonCoefficients('SPWS-2026-2027')
+    expect(mockRpc).toHaveBeenCalledWith('fn_public_scoring_params', { p_season_code: 'SPWS-2026-2027' })
+    expect(coef).toEqual({ PPW: 1, MPW: 1.2, PSW: 1.1 })
+  })
+
+  it('SR.API.02 a failed call yields null, so the modal simply leaves the line out', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
+    expect(await fetchSeasonCoefficients('SPWS-2026-2027')).toBeNull()
   })
 })

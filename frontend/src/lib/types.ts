@@ -17,6 +17,9 @@ export interface RankingBucket {
 export interface RankingRules {
   domestic: RankingBucket[]
   international: RankingBucket[]
+  // From 2026/27 (ADR-103, FR-141): the types whose start brings a fencer into
+  // the ranking. Older seasons store none.
+  entry_types?: string[]
 }
 // SS26.UI (design step 7, ADR-101): renamed from 'PPW' | 'KADRA'. RANKING
 // calls fn_ranking_full (schema v2, ADR-098); PPW is unchanged (fn_ranking_ppw).
