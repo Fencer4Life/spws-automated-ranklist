@@ -38,6 +38,34 @@ EVF_PAGE_URL = "https://www.veteransfencing.eu/fencing/results/"
 EVF_API_BASE = "https://api.veteransfencing.eu/fe"
 RESULTS_MODEL = {"offset": 0, "pagesize": 10000, "filter": "", "sort": "pnc"}
 
+# The EVF host answers some networks with a bot-verification page ("One moment,
+# please..." / "Please wait while your request is being verified...") instead
+# of the page asked for. The scrapers do not try to get past it; they refuse
+# it, so a challenged run fails loudly instead of reading as "nothing found".
+_BOT_CHALLENGE_MARKERS = (
+    re.compile(r"<title>\s*One moment, please\.\.\.\s*</title>", re.I),
+    re.compile(r"Please wait while your request is being verified", re.I),
+)
+
+
+class EvfAccessBlocked(RuntimeError):
+    """The EVF host served its bot-verification page instead of the page asked for."""
+
+
+def is_bot_challenge(html: str) -> bool:
+    """True when ``html`` is the EVF host's bot-verification page."""
+    return any(marker.search(html) for marker in _BOT_CHALLENGE_MARKERS)
+
+
+def refuse_bot_challenge(html: str, url: str) -> None:
+    """Raise EvfAccessBlocked when ``html`` is the bot-verification page."""
+    if is_bot_challenge(html):
+        raise EvfAccessBlocked(
+            f"EVF served its bot-verification page instead of {url}: scripted access from "
+            "this network is being challenged. This is not a parse error, and retrying "
+            "from the same address does not help."
+        )
+
 
 class EvfApiClient:
     """Client for the EVF ranking API."""
@@ -51,6 +79,7 @@ class EvfApiClient:
     def connect(self) -> None:
         """Fetch the results page to get nonce, then establish API session."""
         page = self._client.get(EVF_PAGE_URL)
+        refuse_bot_challenge(page.text, EVF_PAGE_URL)
         m = re.search(r'"nonce":"([^"]+)"', page.text)
         if not m:
             raise RuntimeError("Could not extract EVF nonce from results page")

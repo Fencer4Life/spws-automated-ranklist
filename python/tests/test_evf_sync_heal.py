@@ -9,6 +9,7 @@ Plan test IDs:
           (DISABLE TRIGGER … UPDATE enum_status='PLANNED' … ENABLE TRIGGER).
 """
 
+from datetime import date, timedelta
 from unittest.mock import patch
 
 import python.scrapers.evf_sync as evf_sync
@@ -23,11 +24,14 @@ class _DummyClient:
 
 
 def _violator(url_event=None):
+    # A future-COMPLETED row: its date must stay ahead of today. A fixed date
+    # ("2026-10-01") stopped being future on that day and the heal skipped it.
+    future = (date.today() + timedelta(days=30)).isoformat()
     return {
         "id_event": 82,
         "txt_code": "PEW63e-2025-2026",
-        "dt_start": "2026-10-01",
-        "dt_end": "2026-10-01",
+        "dt_start": future,
+        "dt_end": future,
         "enum_status": "COMPLETED",
         "txt_country": None,
         "txt_location": None,
