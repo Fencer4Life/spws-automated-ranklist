@@ -545,3 +545,106 @@ describe('ADM27 — season edit card', () => {
     expect(form.contains(q(container, 'form-save-btn'))).toBe(true)
   })
 })
+
+// =============================================================================
+// SM.SAVE — the season card's Zapisz saves everything the card shows. Found on
+// CERT, 2026-10-01: with Punktacja open, an admin typed new coefficients and
+// clicked the green Zapisz at the foot of the card — the last button there,
+// by ADM27's own layout. It saved only the season's fields, closed the card
+// and dropped the coefficients without a word; only the editor's own
+// "Zapisz i przelicz" wrote them. A failed scoring save, too, was shown only
+// in the page's banner, far below the card.
+// =============================================================================
+describe('SM.SAVE — the season card saves the scoring edits it shows', () => {
+  const SCORING_CONFIG: ScoringConfig = {
+    season_code: 'SPWS-2024-2025',
+    mp_value: 50,
+    podium_gold: 3,
+    podium_silver: 2,
+    podium_bronze: 1,
+    ppw_multiplier: 1.0,
+    ppw_best_count: 4,
+    ppw_total_rounds: 5,
+    mpw_multiplier: 1.2,
+    mpw_droppable: false,
+    pew_multiplier: 1.0,
+    pew_best_count: 3,
+    mew_multiplier: 2.0,
+    mew_droppable: false,
+    msw_multiplier: 1.2,
+    psw_multiplier: 2.0,
+    min_participants_evf: 5,
+    min_participants_ppw: 1,
+    show_evf_toggle: false,
+    ranking_rules: null,
+  }
+
+  async function openWithScoring(extra: Record<string, unknown> = {}) {
+    const onupdate = vi.fn().mockResolvedValue(null)
+    const onsavescoring = vi.fn().mockResolvedValue(null)
+    const view = render(SeasonManager, {
+      props: {
+        seasons: MOCK_SEASONS,
+        isAdmin: true,
+        onupdate,
+        onsavescoring,
+        onfetchevf: vi.fn().mockResolvedValue({ ranklist: false, calendar: true }),
+        scoringConfig: SCORING_CONFIG,
+        scoringSeasonId: 1,
+        ...extra,
+      },
+    })
+    await fireEvent.click(view.container.querySelector('[data-field="edit-btn"]')!)
+    await vi.waitFor(() => expect(view.container.querySelector('[data-field="form-save-btn"]')).not.toBeNull())
+    return { ...view, onupdate: (extra.onupdate as typeof onupdate) ?? onupdate, onsavescoring: (extra.onsavescoring as typeof onsavescoring) ?? onsavescoring }
+  }
+
+  const field = (c: HTMLElement, name: string) => c.querySelector(`[data-field="${name}"]`) as HTMLElement
+
+  it('SM.SAVE.01 a changed coefficient is saved by the season card\'s Zapisz, then the season', async () => {
+    const { container, onupdate, onsavescoring } = await openWithScoring()
+    await fireEvent.input(field(container, 'mew_multiplier'), { target: { value: '1.3' } })
+    await fireEvent.click(field(container, 'form-save-btn'))
+    await vi.waitFor(() => expect(onupdate).toHaveBeenCalledTimes(1))
+    expect(onsavescoring).toHaveBeenCalledTimes(1)
+    expect(onsavescoring.mock.calls[0][0].mew_multiplier).toBe(1.3)
+    expect(onsavescoring.mock.invocationCallOrder[0]).toBeLessThan(onupdate.mock.invocationCallOrder[0])
+  })
+
+  it('SM.SAVE.02 an unchanged scoring editor sends nothing; the season still saves', async () => {
+    const { container, onupdate, onsavescoring } = await openWithScoring()
+    await fireEvent.click(field(container, 'form-save-btn'))
+    await vi.waitFor(() => expect(onupdate).toHaveBeenCalledTimes(1))
+    expect(onsavescoring).not.toHaveBeenCalled()
+  })
+
+  it('SM.SAVE.03 a refused scoring save keeps the card open, shows why in the card, and saves no season', async () => {
+    const onsavescoring = vi.fn().mockResolvedValue('Sezon jest zablokowany')
+    const { container, onupdate } = await openWithScoring({ onsavescoring })
+    await fireEvent.input(field(container, 'mew_multiplier'), { target: { value: '1.3' } })
+    await fireEvent.click(field(container, 'form-save-btn'))
+    await vi.waitFor(() => expect(onsavescoring).toHaveBeenCalledTimes(1))
+    const form = field(container, 'season-form')
+    await vi.waitFor(() => expect(form.textContent).toContain('Sezon jest zablokowany'))
+    expect(onupdate).not.toHaveBeenCalled()
+    expect(field(container, 'season-form')).not.toBeNull()
+  })
+
+  it('SM.SAVE.04 a refused save from the editor\'s own button shows why inside the card', async () => {
+    const onsavescoring = vi.fn().mockResolvedValue('Nieznany silnik punktacji')
+    const { container } = await openWithScoring({ onsavescoring })
+    await fireEvent.input(field(container, 'mew_multiplier'), { target: { value: '1.3' } })
+    await fireEvent.click(container.querySelector('.config-save-btn')!)
+    await vi.waitFor(() => expect(onsavescoring).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(field(container, 'season-form').textContent).toContain('Nieznany silnik punktacji'))
+  })
+
+  it('SM.SAVE.05 on a locked season the card\'s Zapisz saves the season and sends no scoring', async () => {
+    const { container, onupdate, onsavescoring } = await openWithScoring({
+      scoringConfig: { ...SCORING_CONFIG, scoring_admin_locked: true },
+    })
+    await fireEvent.click(field(container, 'form-save-btn'))
+    await vi.waitFor(() => expect(onupdate).toHaveBeenCalledTimes(1))
+    expect(onsavescoring).not.toHaveBeenCalled()
+  })
+})
