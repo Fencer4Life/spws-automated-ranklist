@@ -1,9 +1,26 @@
 # ADR-049: Joint-pool split flag on tbl_tournament
 
-**Status:** Accepted; implemented LOCAL/CERT/PROD 2026-04-30. Backfill executed on all three; ingester contract enforced by pytest.
+**Status:** Accepted; implemented LOCAL/CERT/PROD 2026-04-30. Backfill executed on all three, then retired 2026-10-01; ingester contract enforced by pytest.
 **Date:** 2026-04-30
 **Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`).
 **Relates to:** ADR-024 (Combined Category Splitting), ADR-038 (per-cat field count), ADR-047 (V-cat invariant trigger), ADR-048 (Source-vs-DB audit). Supersedes the "Joint-pool reference field — also deferred" subsection of ADR-048.
+
+## Amendment (2026-10-01 — the backfill function is retired)
+
+`fn_backfill_joint_pool_split()` is dropped by migration `supabase/migrations/20261001000001_retire_fn_backfill_joint_pool_split.sql`. It was a one-shot remediation: it ran on LOCAL, CERT and PROD on 2026-04-30 and nothing has called it since. The commit path keeps its own per-commit copy of the flag and count logic in `fn_commit_event_draft`, and the 2026-06-13 count fix (`20260613000001_adr049_data_fix_ppw345_counts.sql`) was written as a scoped data migration because a global run was already unsafe.
+
+A global run is now wrong in two ways:
+
+- **International fields (ADR-038).** An international tournament's N is the whole field, not the Polish rows we hold. Step 2 sets N to our row count.
+- **2026/27 joined brackets ([ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md)).** A joined bracket keeps N as the whole bracket, and `chk_tournament_joined_order` ties N to the length of `txt_joined_order`. `fn_commit_event_draft` skips such tournaments (`txt_joined_order IS NULL`). The backfill had no such guard: step 2 sets N to one category's count, and the statement aborts on the CHECK.
+
+**What changes:**
+
+- The function no longer exists. The 2026-06-04 amendment's "or by re-running `fn_backfill_joint_pool_split` (count only)" no longer applies. A wrong count on an old joint pool is corrected by re-scrape or by a scoped data migration, as on 2026-06-13.
+- The original migration `20260430000004` stays in history. A fresh bootstrap creates the function and then drops it.
+- `bool_joint_pool_split`, its partial index and the commit-path logic are unchanged.
+
+**Tests:** `supabase/tests/25_joint_pool_split.sql` goes from 7 to 3 assertions. 25.1 (column shape) and 25.2 (partial index) are unchanged. 25.3 now asserts the function is absent. 25.4–25.7, which ran the backfill globally, are removed: on a database holding 2026/27 joined brackets they aborted on the CHECK (plan `doc/plans/pgtap-2026-27-data-2026-10-01.html`). The commit-path count stays covered by 27.27. pgTAP total 1183 → 1179.
 
 ## Amendment (2026-09-28 — renumbering is a named module)
 
