@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Joined bracket weights</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:60rem;margin:0 auto;padding:48px 24px 100px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);background:var(--surface-2);padding:.1em .4em;border-radius:5px;font-size:.85em;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,46px);line-height:1.1;margin:0 0 16px;text-wrap:balance;max-width:24ch}
+  .dek{font-size:20px;color:var(--muted);margin:0 0 24px;max-width:62ch}
+  .dek b{color:var(--ink)}
+  h2{font-family:var(--serif);font-weight:700;font-size:28px;line-height:1.15;margin:0 0 12px}
+  h3{font-size:19px;margin:22px 0 8px}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:48px 0 6px}
+  p{margin:0 0 14px;max-width:70ch}
+  ul,ol{margin:0 0 14px;padding-left:1.3em;max-width:72ch} li{margin:6px 0}
+  .formula{font-family:var(--mono);font-size:15px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 14px;margin:12px 0;overflow-x:auto;white-space:pre;line-height:1.7}
+  .tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:560px;font-variant-numeric:tabular-nums}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+  th{background:var(--surface-2);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  td:first-child,th:first-child{text-align:left}
+  tr:last-child td{border-bottom:0}
+  th.rec,td.rec{background:var(--good-soft)}
+  td small{color:var(--muted)}
+  .bad{color:var(--danger);font-weight:700}
+  .ok{color:var(--good);font-weight:700}
+  .note{border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;background:var(--warn-soft);padding:14px 18px;margin:16px 0}
+  .note .lede{font-weight:800;color:var(--warn);margin:0 0 6px}
+  .note>:last-child{margin-bottom:0}
+  .good{border:1px solid var(--line);border-left:5px solid var(--good);border-radius:10px;background:var(--good-soft);padding:14px 18px;margin:16px 0}
+  .good .lede{font-weight:800;color:var(--good);margin:0 0 6px}
+  .good>:last-child{margin-bottom:0}
+  .ask{border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);padding:18px 20px;margin:24px 0}
+  .ask .lede{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 8px}
+  .ask h2{font-size:24px}
+  .ask>:last-child{margin-bottom:0}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--line);font-size:13px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:600px){.wrap{padding:30px 16px 80px} body{font-size:17px} h2{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Scoring 2026/27 · joined brackets of 4–15 · weights that prevent any loss from joining</p>
+  <h1>Joined brackets: no fencer scores less than their category alone</h1>
+  <p class="dek">With these weights, <b>no fencer in any joined bracket of 4–15 scores less than their category would have scored alone</b>: gold 44, silver 26, bronze 13, 4th 8, 5th and below 4 (all × ∛K), 3.5 per fencer with a worse score, +3 for the last. I checked every position a fencer can hold, not a sample.</p>
+  <p class="dek">Weights alone could not get there. I added two things, both explained below: <b>the bonus continues past bronze</b>, and <b>no one scores more than the fencer of their own category directly ahead</b>. The cost is what you allowed: many fencers score more than the same category place earns in a single bracket, some by a lot.</p>
+
+  <p class="kicker">1 · The formula</p>
+  <h2>Your rule, with new weights and two additions</h2>
+  <div class="formula">N = 1–3                 N − p + 1, the table, unchanged
+N ≥ 16                  EVF(N, p)
+N = 4–15, one category  EVF(N, p)
+N = 4–15, joined        EVF(N, p)
+                        + w[m] × ∛K + 3.5 × b    if a fencer of another category finished ahead (m &lt; p)
+                                                 and at least one fencer finished below (b ≥ 1)
+                        + 3                      for the last fencer of the bracket
+                        never more than the fencer of the same category directly ahead</div>
+  <p>N is the whole bracket and p the place in it. K is the size of the fencer's own category, m the place within it, and b the number of fencers with a worse score, of any category.</p>
+  <div class="good">
+    <p class="lede">Decided 29 Sep 2026</p>
+    <ul>
+      <li><strong>The medal follows the place in the fencer's own category.</strong> A 3rd from the 1st's category, after a 2nd from another category, is silver in their category. They get silver + 3.5 × b, and only if at least one fencer finished below them.</li>
+      <li><strong>The last fencer of a joined bracket gets +3, not +2.</strong> No one scores less than alone as a result: the last now gets 4, against 1 alone. In 38 of 20,000 simulated brackets (0.2%), the last would outscore the fencer of their own category directly ahead, who has plain EVF near the bottom. For example, 13 fencers of one category, then one of another, then the last: 4.0 against 3.6. The cap trims the last to 3.6. The simulation figures in §5 were measured with +2.</li>
+      <li><strong>Every category is treated alike.</strong> The idea of scoring the youngest category by plain EVF was considered and dropped, because it would make the table harder to read.</li>
+    </ul>
+  </div>
+  <div class="tablewrap"><table>
+    <tr><th>Setting</th><th>You proposed</th><th class="rec">Now</th></tr>
+    <tr><td>w[1] gold</td><td>13</td><td class="rec">44</td></tr>
+    <tr><td>w[2] silver</td><td>7</td><td class="rec">26</td></tr>
+    <tr><td>w[3] bronze</td><td>3</td><td class="rec">13</td></tr>
+    <tr><td>w[4] 4th in category</td><td>—</td><td class="rec">8</td></tr>
+    <tr><td>w[5+] 5th in category and below</td><td>—</td><td class="rec">4</td></tr>
+    <tr><td>per fencer with a worse score</td><td>3.5, medallists only</td><td class="rec">3.5, every fencer passed by another category</td></tr>
+    <tr><td>last fencer of the bracket</td><td>+2</td><td class="rec">+3 <small>(changed 29 Sep)</small></td></tr>
+    <tr><td>cap</td><td>—</td><td class="rec">the fencer of your category directly ahead</td></tr>
+  </table></div>
+
+  <p class="kicker">2 · How the weights were set</p>
+  <h2>The smallest weight that rescues the worst position</h2>
+  <p>For each category place I found the position where joining costs most, and set the weight just high enough to bring that position back to "alone". "Alone" is EVF(K, m), or the table for a category of 1–3. In each case the worst position is a small category passed by nearly the whole bracket:</p>
+  <div class="tablewrap"><table>
+    <tr><th>Category place</th><th>worst position in a bracket of 15</th><th>alone</th><th>weight needed</th><th>weight set</th></tr>
+    <tr><td>gold</td><td>category of 5, 11th overall</td><td>95.4</td><td>43.7</td><td>44</td></tr>
+    <tr><td>silver</td><td>category of 5, 12th</td><td>59.2</td><td>25.5</td><td>26</td></tr>
+    <tr><td>bronze</td><td>category of 5, 13th</td><td>31.7</td><td>12.3</td><td>13</td></tr>
+    <tr><td>4th</td><td>category of 5, 14th</td><td>17.8</td><td>7.0</td><td>8</td></tr>
+    <tr><td>5th–8th</td><td>category of 9, 11th–14th</td><td>24.1–13.6</td><td>1.7–3.8</td><td>4</td></tr>
+    <tr><td>9th and below</td><td>—</td><td></td><td>0 (3.5 × b is enough)</td><td>4</td></tr>
+  </table></div>
+  <div class="good">
+    <p class="lede">Checked on every position, not a sample</p>
+    <p>A fencer's score depends only on N, K, m and p. I computed it for all 2,375 positions a fencer can hold in a joined bracket of 4–15, and none falls below "alone". The tightest is the 8th of a category of 9 finishing 14th of 15, 0.4 above. The order cap cannot create a loss: the fencer directly ahead scored at least their own "alone", which is at least yours.</p>
+  </div>
+
+  <p class="kicker">3 · Two additions the weights could not replace</p>
+  <h2>Why the rule needed more than new numbers</h2>
+  <h3>The bonus continues past bronze</h3>
+  <p>In your rule a category's 4th and lower get plain EVF, however many fencers of other categories pass them. The 4th of a category of 8 who finishes 11th of 15 gets 6.6; fenced alone they would get 27.3. The 4th of a category of 5 who finishes 14th gets 2.2 against 17.8. No medal weight reaches those fencers, so every fencer passed by another category now gets a weight for their category place, plus 3.5 × b.</p>
+  <h3>No one scores more than the fencer of their own category directly ahead</h3>
+  <p>The weights needed to prevent losses also make a passed silver outscore the gold of their own category in the same bracket. Without the cap, this happens in 41.4% of simulated brackets. The worst case: a category of 14 takes 1st, a single fencer of another category takes 2nd, and the category's silver finishes 3rd. The gold, never passed, gets plain EVF, 112.2; the silver gets 162.2. Your rule as proposed already did this in 26.8% of brackets.</p>
+  <p>No choice of weights avoids it. For a category of 8 in a bracket of 15, one weight has to serve two positions:</p>
+  <ul>
+    <li>a silver passed by one fencer, who must not outscore the gold ahead: the weight must pay at most 54.7;</li>
+    <li>a silver passed by seven, who must not lose: the weight must pay at least 55.5.</li>
+  </ul>
+  <p>That is true even with 0 per fencer below, and any points per fencer below widen the gap. The cap settles it bracket by bracket, and it binds for 5.9% of fencers.</p>
+
+  <p class="kicker">4 · Worked brackets</p>
+  <h2>The same brackets as before</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Fencer</th><th>alone</th><th>as proposed</th><th class="rec">now</th></tr>
+    <tr><td>older gold, 8th of 15 (7 younger all ahead)</td><td>98.0</td><td class="bad">72.9</td><td class="rec">134.9</td></tr>
+    <tr><td>older silver, 9th of 15</td><td>65.7</td><td class="bad">45.2</td><td class="rec">83.2</td></tr>
+    <tr><td>older 4th, 11th of 15</td><td>27.3</td><td class="bad">6.6</td><td class="rec">36.6</td></tr>
+    <tr><td>older 5th, 12th of 15</td><td>12.1</td><td class="bad">5.0</td><td class="rec">23.5</td></tr>
+    <tr><td>older last, 15th of 15</td><td>1.0</td><td>3.0</td><td class="rec">3.0</td></tr>
+    <tr><td>younger gold, 2nd of 15 (categories alternate)</td><td>97.2</td><td>152.6</td><td class="rec">211.9</td></tr>
+    <tr><td>older silver, 3rd of 15 (categories alternate)</td><td>65.7</td><td>113.5</td><td class="rec">112.2 <small>capped at own gold</small></td></tr>
+    <tr><td>older gold of a category of 3, 4th of 13</td><td>3.0</td><td>93.8</td><td class="rec">138.5</td></tr>
+    <tr><td>younger 4th of 10, pushed to 5th of 13</td><td>40.5</td><td class="bad">29.3</td><td class="rec">56.1 <small>capped at own bronze</small></td></tr>
+  </table></div>
+
+  <p class="kicker">5 · Across 20,000 random joined brackets</p>
+  <h2>No losses; more fencers above a single bracket</h2>
+  <div class="tablewrap"><table>
+    <tr><th></th><th>as proposed</th><th class="rec">now</th></tr>
+    <tr><td>older fencers scoring less than alone</td><td class="bad">35.1%</td><td class="rec ok">0%</td></tr>
+    <tr><td>younger fencers scoring less than alone</td><td class="bad">11.9%</td><td class="rec ok">0%</td></tr>
+    <tr><td>average gain over alone, older / younger</td><td>+9.0 / +18.4</td><td class="rec">+28.9 / +29.6</td></tr>
+    <tr><td>brackets where someone outscores their category-mate ahead</td><td class="bad">26.8%</td><td class="rec ok">0%</td></tr>
+    <tr><td>fencers above the same category place in a single bracket of N</td><td>11.2%</td><td class="rec">45.6% <small>(allowed)</small></td></tr>
+    <tr><td>95% of all fencers stay within this much above it</td><td></td><td class="rec">+47</td></tr>
+    <tr><td>fencers scoring more than the bracket winner</td><td>3.7%</td><td class="rec">9.3%</td></tr>
+    <tr><td>highest score seen</td><td>159.1</td><td class="rec">233.8</td></tr>
+  </table></div>
+
+  <div class="note">
+    <p class="lede">The largest scores, and where they come from</p>
+    <p>The highest score comes from a 14-strong older category behind a single younger winner. Its gold finishes 2nd and scores 233.8, against 111.7 alone and the winner's 112.2.</p>
+    <p>That comes from ∛K. The gold weight is needed most by categories of 4–5, which can be passed by ten fencers. A category of 14 can be passed by one at most, yet ∛K pays it 2.41 × the weight. A weight shaped to K could cut these extremes roughly in half. That would change "× ∛K", so I left it as you defined it.</p>
+  </div>
+  <div class="note">
+    <p class="lede">The guarantee stops at 15</p>
+    <p>From 16 every bracket is plain EVF, as decided. A join that makes 16 or more puts older fencers back on the place in the whole bracket. Example: 8 older fencers behind 8 younger ones. The older gold, 9th of 16, gets 11.2; fenced alone, 98.0.</p>
+  </div>
+
+  <div class="ask">
+    <p class="lede">The question</p>
+    <h2>Do we keep the cap "never more than your own category-mate directly ahead"?</h2>
+    <ul>
+      <li><strong>Keep it</strong> — no losses, and a category's places always score in order.</li>
+      <li><strong>Drop it</strong> — no losses, but in 41.4% of brackets someone outscores their own category-mate ahead, by up to 50 points.</li>
+    </ul>
+    <p><strong>Recommendation: keep it.</strong> No weights can remove the inversions (§3), and the cap never costs anyone their guarantee. Without it, a board member will find a silver scoring more than the gold of the same category in the same bracket.</p>
+  </div>
+
+  <p class="foot">joined-bracket-weights · 2026-09-29 · EVF classic as in frontend/src/lib/scoring.ts (base 50, 10 per DE round, podium 3/2/1 × 3 × ∛N) · "alone" = EVF(K, m), or K − m + 1 for K ≤ 3 · exhaustive check over all 2,375 (N, K, m, p) positions with N 4–15 · simulation: 20,000 brackets, N uniform 4–15, two categories split uniformly, younger category 0.7 standard deviations stronger</p>
+</div>
+</body>
+</html>

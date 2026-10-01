@@ -84,7 +84,7 @@ if [ -f "$RTM" ]; then
   #   The identity-candidate/override work the same day amended FR-124 in place
   #   rather than adding a row.
   # 141 since 2026-09-28: +FR-137–FR-142 (2026/2027 scoring engine, ADR-103).
-  EXPECTED=141
+  EXPECTED=144
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

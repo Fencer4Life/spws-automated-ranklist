@@ -234,19 +234,20 @@ class DbConnector:
 
         Returns [{id_fencer, place, enum_age_category, int_birth_year, weapon,
         gender, date, id_tournament, participant_count, url_results,
-        below_count}]. Empty if the event has no committed tournaments yet.
+        joined_order}]. Empty if
+        the event has no committed tournaments yet.
         Reuses `fetch_birth_years_batch` so the BY is always the governed value.
         weapon/gender/date carry the source tournament's
         enum_weapon/enum_gender/dt_tournament so Commit can re-partition by
         (weapon, gender, governed-V-cat) on recompute (Step C). The stored N,
-        listing URL and count of fencers below let the joined-bracket module
-        keep a joined bracket whole across a recompute (ADR-103 §4).
+        listing URL and category order let the joined-bracket module keep a
+        joined bracket whole across a recompute (ADR-103 §4, ADR-104 §3).
         """
         tr = (
             self._sb.table("tbl_tournament")
             .select(
                 "id_tournament,enum_weapon,enum_gender,enum_age_category,dt_tournament,"
-                "int_participant_count,url_results"
+                "int_participant_count,url_results,txt_joined_order"
             )
             .eq("id_event", id_event)
             .execute()
@@ -259,7 +260,7 @@ class DbConnector:
         # (never-live-run) query got wrong.
         rr = (
             self._sb.table("tbl_result")
-            .select("id_fencer,int_place,id_tournament,int_below_count")
+            .select("id_fencer,int_place,id_tournament")
             .in_("id_tournament", list(tmeta))
             .execute()
         )
@@ -278,7 +279,7 @@ class DbConnector:
                 "id_tournament": r.get("id_tournament"),
                 "participant_count": tmeta[r["id_tournament"]].get("int_participant_count"),
                 "url_results": tmeta[r["id_tournament"]].get("url_results"),
-                "below_count": r.get("int_below_count"),
+                "joined_order": tmeta[r["id_tournament"]].get("txt_joined_order"),
             }
             for r in rows
         ]
@@ -536,7 +537,11 @@ class DbConnector:
         return len(resp.data) > 0
 
     def ingest_results(
-        self, tournament_id: int, results_json: list[dict], participant_count: int | None = None
+        self,
+        tournament_id: int,
+        results_json: list[dict],
+        participant_count: int | None = None,
+        joined_order: str | None = None,
     ) -> dict:
         """Call fn_ingest_tournament_results RPC (ADR-022).
 
@@ -544,10 +549,15 @@ class DbConnector:
             participant_count: Optional total tournament size. When provided,
                 overrides auto-count from results array. Critical for international
                 tournaments where only POL fencers are imported.
+            joined_order: The listing's category order, one digit per place
+                (ADR-104 §3). Sent only under the joined module; the joined
+                engine scores the whole bracket from it.
         """
         params = {"p_tournament_id": tournament_id, "p_results": results_json}
         if participant_count is not None:
             params["p_participant_count"] = participant_count
+        if joined_order is not None:
+            params["p_joined_order"] = joined_order
         resp = self._sb.rpc("fn_ingest_tournament_results", params).execute()
         return resp.data
 
@@ -576,6 +586,53 @@ class DbConnector:
         ).execute()
         return resp.data
 
+    def fetch_event_joined_orders(self, id_event: int) -> list[dict]:
+        """The stored category order of every category tournament of an event
+        that has one (ADR-104 §7): [{weapon, gender, order}]. Siblings of one
+        listing repeat the same order."""
+        resp = (
+            self._sb.table("tbl_tournament")
+            .select("enum_weapon,enum_gender,txt_joined_order")
+            .eq("id_event", id_event)
+            .not_.is_("txt_joined_order", "null")
+            .execute()
+        )
+        return [
+            {"weapon": r["enum_weapon"], "gender": r["enum_gender"], "order": r["txt_joined_order"]}
+            for r in resp.data or []
+        ]
+
+    def fetch_joining_check(self, id_event: int, weapon: str, gender: str) -> bool | None:
+        """The last stored § 2 verdict for one listing, or None before the
+        first check (ADR-104 §7)."""
+        resp = (
+            self._sb.table("tbl_joining_check")
+            .select("bool_match")
+            .eq("id_event", id_event)
+            .eq("enum_weapon", weapon)
+            .eq("enum_gender", gender)
+            .execute()
+        )
+        rows = resp.data or []
+        return rows[0]["bool_match"] if rows else None
+
+    def upsert_joining_check(
+        self, id_event: int, weapon: str, gender: str, fenced: str, rule: str, match: bool
+    ) -> None:
+        """Store the § 2 verdict for one listing, replacing the previous one
+        (ADR-104 §7)."""
+        self._sb.table("tbl_joining_check").upsert(
+            {
+                "id_event": id_event,
+                "enum_weapon": weapon,
+                "enum_gender": gender,
+                "txt_fenced": fenced,
+                "txt_rule": rule,
+                "bool_match": match,
+            },
+            on_conflict="id_event,enum_weapon,enum_gender",
+        ).execute()
+
     def queue_pzsz_match_review(
         self,
         id_tournament: int,
@@ -583,15 +640,12 @@ class DbConnector:
         place: int,
         id_candidate_fencer: int | None,
         confidence: float | None,
-        below_count: int,
     ) -> int:
         """Queue one uncertain PZSz senior match for Admin review (ADR-100).
 
         No tbl_result row is written -- fn_queue_pzsz_match_review holds the
         candidate for a human decision (fn_approve_pzsz_match_review /
-        fn_reject_pzsz_match_review). `below_count` is the number of the full
-        senior field with a worse place (ADR-103 §4): the approval writes it,
-        because the unmatched field is never stored.
+        fn_reject_pzsz_match_review).
         """
         resp = self._sb.rpc(
             "fn_queue_pzsz_match_review",
@@ -601,7 +655,6 @@ class DbConnector:
                 "p_int_place": place,
                 "p_id_candidate_fencer": id_candidate_fencer,
                 "p_num_confidence": confidence,
-                "p_int_below_count": below_count,
             },
         ).execute()
         return resp.data

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Order cap examples</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1000px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:72ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.br td,table.br th{white-space:nowrap}
+.r{text-align:right}
+td.r{font-family:var(--mono);font-size:13px}
+td.muted{color:var(--muted)}
+tr.hit td{background:var(--hit)}
+.red{display:block;font-size:11px;color:var(--coral)}
+.cy,.co{display:inline-block;font-family:var(--mono);font-size:11px;padding:0 6px;border-radius:4px}
+.cy{background:var(--navy-soft);color:var(--navy)}
+.co{background:var(--green-bg);color:var(--green)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.stat b{display:block;font-family:var(--serif);font-size:24px;font-weight:600}
+.stat span{font-size:13px;color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Decision support for D1 · 29 September 2026 · <a href="scoring-engine-evf-joined-implementation-plan-2026-09-29.html">implementation plan</a></p>
+<h1>The order cap: what the 5.9% look like</h1>
+<p class="dek">Four joined brackets from the simulation behind the weights page. Each table shows every fencer's score before the cap, with the cap as proposed, and with a variant that stops one point lower. The cap turns out to have one side effect the plan did not mention: every capped fencer ends up tied with the fencer who beat them.</p>
+
+<h2>1 · Where the 5.9% comes from</h2>
+<p>This is the same simulation as on <a href="joined-bracket-weights-2026-09-29.html">the weights page</a>:</p>
+<ul>
+<li>20,000 joined brackets, with N drawn from 4 to 15;</li>
+<li>two categories, split at random;</li>
+<li>the younger category stronger on average, by 0.7 standard deviations;</li>
+<li>the weights 44 / 26 / 13 / 8 / 4, 3.5 per fencer below and +3 for last.</li>
+</ul>
+<p>These are simulated brackets, not real results. No joined order is stored in history.</p>
+<div class="stats">
+<div class="stat"><b>11,234</b><span>capped fencers out of 189,356 (5.9%)</span></div>
+<div class="stat"><b>41.7%</b><span>of brackets have at least one capped fencer</span></div>
+<div class="stat"><b>11.1 pts</b><span>median cut (10% of cuts are ≤ 1.7; 90% are ≤ 27.7; the largest is 50.0)</span></div>
+<div class="stat"><b>+2.59</b><span>the smallest margin over "category alone" among capped fencers. Nobody is capped below it.</span></div>
+</div>
+<p><b>Who is capped</b>, by place within their own category:</p>
+<ul>
+<li>2nd — 2,935;</li>
+<li>3rd — 1,550;</li>
+<li>6th — 1,347;</li>
+<li>4th — 1,215;</li>
+<li>7th — 1,100;</li>
+<li>5th — 1,097;</li>
+<li>8th and below — 1,990.</li>
+</ul>
+<p>The older category accounts for 3,553 (32%), the younger for 7,681.</p>
+
+<div class="card locked"><span class="lb">Two reasons a fencer is capped</span>
+<ol>
+<li><b>Their premium is larger than the gap to the fencer of their category ahead of them.</b> They lost to that fencer, but someone from another category finished between them. So they collect a premium the fencer ahead did not get, because the fencer ahead was never passed. Examples A and C.</li>
+<li><b>The fencer ahead got no premium at all</b>, because only their own category was ahead of them. The fencer behind was passed by another category and so collects one. Examples B and D.</li>
+</ol></div>
+
+<h3>How to read the tables</h3>
+<ul>
+<li><b>Before cap</b> = EVF + premium a + 3.5 × below + last.</li>
+<li><b>Cap as proposed</b>: no more than the fencer of your category directly ahead.</li>
+<li><b>Cap −1 pt</b>: at least 1 point less than that fencer.</li>
+<li><b>Category alone</b>: what the same fencer would score in a bracket of only their category, which is the floor nobody may fall below.</li>
+<li>Rows the cap touches are shaded, and the cut is shown in red under the score.</li>
+</ul>
+<p>All numbers are before the rank coefficient (PPW 1.0).</p>
+
+<h2>2 · Example A — a typical cut (−11.26, about the median)</h2>
+<p>N = 9: 6 <span class="co">older</span> and 3 <span class="cy">younger</span>.</p>
+<ul>
+<li>An older fencer wins with 108.72 and no premium, since nobody passed them.</li>
+<li>A younger fencer is 2nd.</li>
+<li>The next older fencer is 3rd and collects EVF 51.74 + 47.25 + 21.00 = 119.99. That is more than the older winner who beat them, so they are cut to 108.72, level with the winner.</li>
+</ul>
+<div class="tw"><table class="br"><thead><tr><th>Place</th><th>Cat.</th><th>K</th><th>m</th><th>Below</th><th class="r">EVF</th><th class="r">Premium a</th><th class="r">3.5 × below</th><th class="r">Last</th><th class="r">Before cap</th><th class="r">Cap as proposed</th><th class="r">Cap −1 pt</th><th class="r">Category alone</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="co">older</span></td><td>6</td><td>1</td><td>8</td><td class="r">108.72</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">108.72</td><td class="r">108.72</td><td class="r">108.72</td><td class="r muted">96.35</td></tr>
+<tr><td>2</td><td><span class="cy">younger</span></td><td>3</td><td>1</td><td>7</td><td class="r">77.02</td><td class="r">63.46</td><td class="r">24.50</td><td class="r">—</td><td class="r">164.98</td><td class="r">164.98</td><td class="r">164.98</td><td class="r muted">3.00</td></tr>
+<tr class="hit"><td>3</td><td><span class="co">older</span></td><td>6</td><td>2</td><td>6</td><td class="r">51.74</td><td class="r">47.25</td><td class="r">21.00</td><td class="r">—</td><td class="r">119.99</td><td class="r"><b>108.72</b><span class="red">−11.26</span></td><td class="r"><b>107.72</b><span class="red">−12.26</span></td><td class="r muted">61.95</td></tr>
+<tr><td>4</td><td><span class="co">older</span></td><td>6</td><td>3</td><td>5</td><td class="r">39.08</td><td class="r">23.62</td><td class="r">17.50</td><td class="r">—</td><td class="r">80.21</td><td class="r">80.21</td><td class="r">80.21</td><td class="r muted">35.41</td></tr>
+<tr><td>5</td><td><span class="co">older</span></td><td>6</td><td>4</td><td>4</td><td class="r">24.11</td><td class="r">14.54</td><td class="r">14.00</td><td class="r">—</td><td class="r">52.65</td><td class="r">52.65</td><td class="r">52.65</td><td class="r muted">22.09</td></tr>
+<tr><td>6</td><td><span class="cy">younger</span></td><td>3</td><td>2</td><td>3</td><td class="r">20.04</td><td class="r">37.50</td><td class="r">10.50</td><td class="r">—</td><td class="r">68.04</td><td class="r">68.04</td><td class="r">68.04</td><td class="r muted">2.00</td></tr>
+<tr><td>7</td><td><span class="co">older</span></td><td>6</td><td>5</td><td>2</td><td class="r">16.60</td><td class="r">7.27</td><td class="r">7.00</td><td class="r">—</td><td class="r">30.87</td><td class="r">30.87</td><td class="r">30.87</td><td class="r muted">5.99</td></tr>
+<tr><td>8</td><td><span class="co">older</span></td><td>6</td><td>6</td><td>1</td><td class="r">13.63</td><td class="r">7.27</td><td class="r">3.50</td><td class="r">—</td><td class="r">24.40</td><td class="r">24.40</td><td class="r">24.40</td><td class="r muted">1.00</td></tr>
+<tr><td>9</td><td><span class="cy">younger</span></td><td>3</td><td>3</td><td>0</td><td class="r">1.00</td><td class="r">—</td><td class="r">—</td><td class="r">3.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r muted">1.00</td></tr>
+</tbody></table></div>
+
+<h2>3 · Example B — two capped in one bracket (−11.00 and −4.46)</h2>
+<p>N = 12: 8 <span class="cy">younger</span> and 4 <span class="co">older</span>.</p>
+<ul>
+<li>The younger category takes the top four. Each of them has only younger fencers ahead, so they score plain EVF: the 4th has 42.66.</li>
+<li>An older fencer is 5th.</li>
+<li>The younger fencers in 6th and 7th were passed by that older fencer, so they collect a premium: 53.67 and 47.13. Both are cut to 42.66.</li>
+<li>Three younger fencers (4th, 6th and 7th) end on the same 42.66.</li>
+</ul>
+<div class="tw"><table class="br"><thead><tr><th>Place</th><th>Cat.</th><th>K</th><th>m</th><th>Below</th><th class="r">EVF</th><th class="r">Premium a</th><th class="r">3.5 × below</th><th class="r">Last</th><th class="r">Before cap</th><th class="r">Cap as proposed</th><th class="r">Cap −1 pt</th><th class="r">Category alone</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="cy">younger</span></td><td>8</td><td>1</td><td>11</td><td class="r">110.60</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">110.60</td><td class="r">110.60</td><td class="r">110.60</td><td class="r muted">98.00</td></tr>
+<tr><td>2</td><td><span class="cy">younger</span></td><td>8</td><td>2</td><td>10</td><td class="r">80.07</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">80.07</td><td class="r">80.07</td><td class="r">80.07</td><td class="r muted">65.67</td></tr>
+<tr><td>3</td><td><span class="cy">younger</span></td><td>8</td><td>3</td><td>9</td><td class="r">55.20</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">55.20</td><td class="r">55.20</td><td class="r">55.20</td><td class="r muted">40.11</td></tr>
+<tr><td>4</td><td><span class="cy">younger</span></td><td>8</td><td>4</td><td>8</td><td class="r">42.66</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">42.66</td><td class="r">42.66</td><td class="r">42.66</td><td class="r muted">27.33</td></tr>
+<tr><td>5</td><td><span class="co">older</span></td><td>4</td><td>1</td><td>7</td><td class="r">28.26</td><td class="r">69.85</td><td class="r">24.50</td><td class="r">—</td><td class="r">122.61</td><td class="r">122.61</td><td class="r">122.61</td><td class="r muted">84.29</td></tr>
+<tr class="hit"><td>6</td><td><span class="cy">younger</span></td><td>8</td><td>5</td><td>6</td><td class="r">24.67</td><td class="r">8.00</td><td class="r">21.00</td><td class="r">—</td><td class="r">53.67</td><td class="r"><b>42.66</b><span class="red">−11.00</span></td><td class="r"><b>41.66</b><span class="red">−12.00</span></td><td class="r muted">12.08</td></tr>
+<tr class="hit"><td>7</td><td><span class="cy">younger</span></td><td>8</td><td>6</td><td>5</td><td class="r">21.63</td><td class="r">8.00</td><td class="r">17.50</td><td class="r">—</td><td class="r">47.13</td><td class="r"><b>42.66</b><span class="red">−4.46</span></td><td class="r"><b>40.66</b><span class="red">−6.46</span></td><td class="r muted">7.78</td></tr>
+<tr><td>8</td><td><span class="co">older</span></td><td>4</td><td>2</td><td>4</td><td class="r">19.00</td><td class="r">41.27</td><td class="r">14.00</td><td class="r">—</td><td class="r">74.27</td><td class="r">74.27</td><td class="r">74.27</td><td class="r muted">45.02</td></tr>
+<tr><td>9</td><td><span class="co">older</span></td><td>4</td><td>3</td><td>3</td><td class="r">6.67</td><td class="r">20.64</td><td class="r">10.50</td><td class="r">—</td><td class="r">37.81</td><td class="r">37.81</td><td class="r">37.81</td><td class="r muted">15.93</td></tr>
+<tr><td>10</td><td><span class="cy">younger</span></td><td>8</td><td>7</td><td>2</td><td class="r">4.60</td><td class="r">8.00</td><td class="r">7.00</td><td class="r">—</td><td class="r">19.60</td><td class="r">19.60</td><td class="r">19.60</td><td class="r muted">4.15</td></tr>
+<tr><td>11</td><td><span class="cy">younger</span></td><td>8</td><td>8</td><td>1</td><td class="r">2.72</td><td class="r">8.00</td><td class="r">3.50</td><td class="r">—</td><td class="r">14.22</td><td class="r">14.22</td><td class="r">14.22</td><td class="r muted">1.00</td></tr>
+<tr><td>12</td><td><span class="co">older</span></td><td>4</td><td>4</td><td>0</td><td class="r">1.00</td><td class="r">—</td><td class="r">—</td><td class="r">3.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r muted">1.00</td></tr>
+</tbody></table></div>
+
+<h2>4 · Example C — the largest cut in the simulation (−49.99)</h2>
+<p>N = 15: 14 <span class="co">older</span> and 1 <span class="cy">younger</span>.</p>
+<ul>
+<li>An older fencer wins with 112.20.</li>
+<li>The lone younger fencer is 2nd, with 171.76.</li>
+<li>The older fencers in 3rd and 4th collect large premiums because K = 14: raw 162.18 and 114.75. Both are cut to 112.20.</li>
+<li>The winner and the two fencers they beat end on the same score.</li>
+</ul>
+<div class="tw"><table class="br"><thead><tr><th>Place</th><th>Cat.</th><th>K</th><th>m</th><th>Below</th><th class="r">EVF</th><th class="r">Premium a</th><th class="r">3.5 × below</th><th class="r">Last</th><th class="r">Before cap</th><th class="r">Cap as proposed</th><th class="r">Cap −1 pt</th><th class="r">Category alone</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="co">older</span></td><td>14</td><td>1</td><td>14</td><td class="r">112.20</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">112.20</td><td class="r">112.20</td><td class="r">112.20</td><td class="r muted">111.69</td></tr>
+<tr><td>2</td><td><span class="cy">younger</span></td><td>1</td><td>1</td><td>13</td><td class="r">82.26</td><td class="r">44.00</td><td class="r">45.50</td><td class="r">—</td><td class="r">171.76</td><td class="r">171.76</td><td class="r">171.76</td><td class="r muted">1.00</td></tr>
+<tr class="hit"><td>3</td><td><span class="co">older</span></td><td>14</td><td>2</td><td>12</td><td class="r">57.52</td><td class="r">62.66</td><td class="r">42.00</td><td class="r">—</td><td class="r">162.18</td><td class="r"><b>112.20</b><span class="red">−49.99</span></td><td class="r"><b>111.20</b><span class="red">−50.99</span></td><td class="r muted">81.59</td></tr>
+<tr class="hit"><td>4</td><td><span class="co">older</span></td><td>14</td><td>3</td><td>11</td><td class="r">44.92</td><td class="r">31.33</td><td class="r">38.50</td><td class="r">—</td><td class="r">114.75</td><td class="r"><b>112.20</b><span class="red">−2.55</span></td><td class="r"><b>110.20</b><span class="red">−4.55</span></td><td class="r muted">56.83</td></tr>
+<tr><td>5</td><td><span class="co">older</span></td><td>14</td><td>4</td><td>10</td><td class="r">30.88</td><td class="r">19.28</td><td class="r">35.00</td><td class="r">—</td><td class="r">85.16</td><td class="r">85.16</td><td class="r">85.16</td><td class="r muted">44.26</td></tr>
+<tr><td>6</td><td><span class="co">older</span></td><td>14</td><td>5</td><td>9</td><td class="r">27.58</td><td class="r">9.64</td><td class="r">31.50</td><td class="r">—</td><td class="r">68.72</td><td class="r">68.72</td><td class="r">68.72</td><td class="r muted">30.12</td></tr>
+<tr><td>7</td><td><span class="co">older</span></td><td>14</td><td>6</td><td>8</td><td class="r">24.79</td><td class="r">9.64</td><td class="r">28.00</td><td class="r">—</td><td class="r">62.43</td><td class="r">62.43</td><td class="r">62.43</td><td class="r muted">26.73</td></tr>
+<tr><td>8</td><td><span class="co">older</span></td><td>14</td><td>7</td><td>7</td><td class="r">22.37</td><td class="r">9.64</td><td class="r">24.50</td><td class="r">—</td><td class="r">56.51</td><td class="r">56.51</td><td class="r">56.51</td><td class="r muted">23.87</td></tr>
+<tr><td>9</td><td><span class="co">older</span></td><td>14</td><td>8</td><td>6</td><td class="r">10.24</td><td class="r">9.64</td><td class="r">21.00</td><td class="r">—</td><td class="r">40.88</td><td class="r">40.88</td><td class="r">40.88</td><td class="r muted">21.39</td></tr>
+<tr><td>10</td><td><span class="co">older</span></td><td>14</td><td>9</td><td>5</td><td class="r">8.34</td><td class="r">9.64</td><td class="r">17.50</td><td class="r">—</td><td class="r">35.48</td><td class="r">35.48</td><td class="r">35.48</td><td class="r muted">9.20</td></tr>
+<tr><td>11</td><td><span class="co">older</span></td><td>14</td><td>10</td><td>4</td><td class="r">6.61</td><td class="r">9.64</td><td class="r">14.00</td><td class="r">—</td><td class="r">30.25</td><td class="r">30.25</td><td class="r">30.25</td><td class="r muted">7.25</td></tr>
+<tr><td>12</td><td><span class="co">older</span></td><td>14</td><td>11</td><td>3</td><td class="r">5.04</td><td class="r">9.64</td><td class="r">10.50</td><td class="r">—</td><td class="r">25.18</td><td class="r">25.18</td><td class="r">25.18</td><td class="r muted">5.48</td></tr>
+<tr><td>13</td><td><span class="co">older</span></td><td>14</td><td>12</td><td>2</td><td class="r">3.59</td><td class="r">9.64</td><td class="r">7.00</td><td class="r">—</td><td class="r">20.23</td><td class="r">20.23</td><td class="r">20.23</td><td class="r muted">3.86</td></tr>
+<tr><td>14</td><td><span class="co">older</span></td><td>14</td><td>13</td><td>1</td><td class="r">2.25</td><td class="r">9.64</td><td class="r">3.50</td><td class="r">—</td><td class="r">15.39</td><td class="r">15.39</td><td class="r">15.39</td><td class="r muted">2.38</td></tr>
+<tr><td>15</td><td><span class="co">older</span></td><td>14</td><td>14</td><td>0</td><td class="r">1.00</td><td class="r">—</td><td class="r">—</td><td class="r">3.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r muted">1.00</td></tr>
+</tbody></table></div>
+
+<h2>5 · Example D — a small cut (−1.67)</h2>
+<p>N = 9: 7 <span class="co">older</span> and 2 <span class="cy">younger</span>.</p>
+<ul>
+<li>The top three are older, with only older fencers ahead, so they score plain EVF.</li>
+<li>A younger fencer is 4th.</li>
+<li>The older fencer in 5th was passed by that younger fencer and collects a premium: 53.41, just above the older 3rd's 51.74. They are cut by 1.67.</li>
+</ul>
+<div class="tw"><table class="br"><thead><tr><th>Place</th><th>Cat.</th><th>K</th><th>m</th><th>Below</th><th class="r">EVF</th><th class="r">Premium a</th><th class="r">3.5 × below</th><th class="r">Last</th><th class="r">Before cap</th><th class="r">Cap as proposed</th><th class="r">Cap −1 pt</th><th class="r">Category alone</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="co">older</span></td><td>7</td><td>1</td><td>8</td><td class="r">108.72</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">108.72</td><td class="r">108.72</td><td class="r">108.72</td><td class="r muted">97.22</td></tr>
+<tr><td>2</td><td><span class="co">older</span></td><td>7</td><td>2</td><td>7</td><td class="r">77.02</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">77.02</td><td class="r">77.02</td><td class="r">77.02</td><td class="r muted">64.02</td></tr>
+<tr><td>3</td><td><span class="co">older</span></td><td>7</td><td>3</td><td>6</td><td class="r">51.74</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">51.74</td><td class="r">51.74</td><td class="r">51.74</td><td class="r muted">38.07</td></tr>
+<tr><td>4</td><td><span class="cy">younger</span></td><td>2</td><td>1</td><td>5</td><td class="r">39.08</td><td class="r">55.44</td><td class="r">17.50</td><td class="r">—</td><td class="r">112.02</td><td class="r">112.02</td><td class="r">112.02</td><td class="r muted">2.00</td></tr>
+<tr class="hit"><td>5</td><td><span class="co">older</span></td><td>7</td><td>4</td><td>4</td><td class="r">24.11</td><td class="r">15.30</td><td class="r">14.00</td><td class="r">—</td><td class="r">53.41</td><td class="r"><b>51.74</b><span class="red">−1.67</span></td><td class="r"><b>50.74</b><span class="red">−2.67</span></td><td class="r muted">25.09</td></tr>
+<tr><td>6</td><td><span class="co">older</span></td><td>7</td><td>5</td><td>3</td><td class="r">20.04</td><td class="r">7.65</td><td class="r">10.50</td><td class="r">—</td><td class="r">38.19</td><td class="r">38.19</td><td class="r">38.19</td><td class="r muted">9.47</td></tr>
+<tr><td>7</td><td><span class="co">older</span></td><td>7</td><td>6</td><td>2</td><td class="r">16.60</td><td class="r">7.65</td><td class="r">7.00</td><td class="r">—</td><td class="r">31.26</td><td class="r">31.26</td><td class="r">31.26</td><td class="r muted">4.88</td></tr>
+<tr><td>8</td><td><span class="cy">younger</span></td><td>2</td><td>2</td><td>1</td><td class="r">13.63</td><td class="r">32.76</td><td class="r">3.50</td><td class="r">—</td><td class="r">49.88</td><td class="r">49.88</td><td class="r">49.88</td><td class="r muted">1.00</td></tr>
+<tr><td>9</td><td><span class="co">older</span></td><td>7</td><td>7</td><td>0</td><td class="r">1.00</td><td class="r">—</td><td class="r">—</td><td class="r">3.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r">4.00</td><td class="r muted">1.00</td></tr>
+</tbody></table></div>
+
+<h2>6 · The side effect: ties with the fencer who beat you</h2>
+<div class="card warn"><span class="lb">Every capped fencer ties</span>
+<p>Under the cap as proposed, all 11,234 capped fencers end with <b>exactly</b> the score of the fencer of their category who finished ahead of them. In the category ranking, those two results from the same event are then worth the same, although one fencer beat the other.</p>
+<ul>
+<li>In example C, the winner has the same 112.20 as two fencers they beat.</li>
+<li>In example B, three fencers share 42.66.</li>
+</ul>
+<p>This is not an inversion, which the cap exists to prevent. It is still likely to draw questions from the fencer who won.</p></div>
+
+<h2>7 · Question D1 (revised)</h2>
+<div class="card open"><span class="lb">How should the cap work?</span>
+<ol>
+<li><b>At least 1 point below the fencer of your category directly ahead</b><span class="rec">recommended</span>
+<ul>
+<li>No ties: the simulation has 0 same-category equal scores, against 11,234 under the proposed cap.</li>
+<li>6.6% of fencers are capped instead of 5.9%, because fencers who were within 1 point of the fencer ahead are now cut too. The median cut is 10.8.</li>
+<li><b>No-loss still holds.</b> The smallest step between two consecutive places in any single category is exactly 1 point: the table for K = 2 and K = 3. Every larger category is EVF, where the step is bigger. So 1 point below the fencer ahead is never below your own "category alone" score. The smallest margin over it stays +0.44.</li>
+<li>Fencers tied on the same place share the same cap, with no 1-point step between them.</li>
+<li>The step is applied before the rank coefficient, so under MPW it is 1.2 points.</li>
+<li>Annex sentence: „Twój wynik jest co najmniej o 1 pkt niższy niż wynik zawodnika Twojej kategorii, który skończył tuż przed Tobą.”</li>
+</ul></li>
+<li><b>At most the score of the fencer ahead</b> — as in the plan. It is simpler to state, and every capped fencer ties (§6).</li>
+<li><b>No cap.</b> 41.4% of brackets would have a fencer outscoring someone of their own category who beat them, by up to 50 points.</li>
+</ol>
+<p>Your answer goes into D1 of the plan. Under option 1, EJ27.CAP.01 expects 111.20 instead of 112.20, and <code>num_cap_reduction</code> is 40.32.</p></div>
+
+<footer>Generated from the session model (<code>capcases.py</code>, <code>capvariant.py</code>, <code>capexamples_gen.py</code> in the scratchpad), using the same EVF(N, p) and "category alone" as <a href="joined-bracket-weights-2026-09-29.html">the weights page</a>. Seed 1, 20,000 brackets. Simulated brackets only.</footer>
+</div>
+</body>
+</html>

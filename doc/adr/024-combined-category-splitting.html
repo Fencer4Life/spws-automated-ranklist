@@ -4,22 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="024-combined-category-splitting.md">
-<meta name="adr-source-sha256" content="e0846b470c84abb715b3e58af22748931f7f0e22191f10fdb8108673e246a76b">
+<meta name="adr-source-sha256" content="38cc5bad27cca50a1270d77a28ca33a1757fdeb22784af715171cc71accf202c">
 <title>ADR-024 · Combined Category Splitting Strategy</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 024</p><h1>Combined Category Splitting Strategy</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-05 (Go-to-PROD) <strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (superseded in part — types on the new engine no longer split joined brackets).</dd></div><div><dt>Source</dt><dd class=""><code>024-combined-category-splitting.md</code></dd></div><div><dt>Length</dt><dd class="">53 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-05 (Go-to-PROD) <strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (superseded in part — types on the new engine no longer split joined brackets). <a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a> (2026-09-30 — the new engine keeps joined brackets whole with a stored category order instead of K, m and b).</dd></div><div><dt>Source</dt><dd class=""><code>024-combined-category-splitting.md</code></dd></div><div><dt>Length</dt><dd class="">57 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2026-04-05 (Go-to-PROD)
-<strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (superseded in part — types on the new engine no longer split joined brackets).</p>
+<strong>Amended by:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> (superseded in part — types on the new engine no longer split joined brackets). <a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a> (2026-09-30 — the new engine keeps joined brackets whole with a stored category order instead of K, m and b).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-28-superseded-in-part">Amendment (2026-09-28 — superseded in part)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#edge-case-unresolvable-fencers">Edge Case: Unresolvable Fencers</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
-  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-28-superseded-in-part">Amendment (2026-09-28 — superseded in part)</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-30-the-joined-engine">Amendment (2026-09-30 — the joined engine)</a></li><li class="depth-2"><a href="#amendment-2026-09-28-superseded-in-part">Amendment (2026-09-28 — superseded in part)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#edge-case-unresolvable-fencers">Edge Case: Unresolvable Fencers</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-30-the-joined-engine">Amendment (2026-09-30 — the joined engine)</h2>
+<p>For tournament types assigned <code>SPWS_EVF_JOINED_V1_2026_2027</code> (<a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a>) — PPW and MPW from 2026/2027 — a joined bracket is still not split and renumbered: every fencer keeps the joined place and the joined N, and each category tournament stores the listing's category order in <code>tbl_tournament.txt_joined_order</code> instead of K, m and b. The splitting described here remains in force for types on EVF classic.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-28-superseded-in-part">Amendment (2026-09-28 — superseded in part)</h2>
 <p>For tournament types assigned <code>SPWS_PLACE_MEDAL_V1_2026_2027</code> (<a href="103-spws-place-medal-engine-per-type.html">ADR-103</a>), a joined bracket is no longer split and renumbered per category: every fencer keeps the joined place and the joined N, and K, m and b are stored with the result. The splitting described here remains in force for types on EVF classic.</p>
 </section>
 <section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
@@ -71,5 +74,5 @@ c. If neither resolves → <strong>flag as PENDING for admin review</strong> (do
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="023-email-ingestion-gas-storage.html">← ADR-023: Email Ingestion via Google Apps Script + Supabase Storage</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="025-event-centric-ingestion-telegram.html">→ ADR-025: Event-Centric Ingestion + Telegram Admin Interface</a></nav>
-<footer class="foot">Generated from <code>024-combined-category-splitting.md</code> · source SHA-256 <code>e0846b470c84abb715b3e58af22748931f7f0e22191f10fdb8108673e246a76b</code></footer>
+<footer class="foot">Generated from <code>024-combined-category-splitting.md</code> · source SHA-256 <code>38cc5bad27cca50a1270d77a28ca33a1757fdeb22784af715171cc71accf202c</code></footer>
 </div></body></html>

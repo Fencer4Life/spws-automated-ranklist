@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Joined 4–8, every case</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1040px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:74ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:17px;margin:22px 0 6px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.grid td{white-space:nowrap}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--mono);font-size:12.5px}
+td.neg{color:var(--coral);font-weight:600}
+td.pos{color:var(--green)}
+tr.small td{background:transparent}
+tr.big td{background:var(--hit)}
+tr.grp td{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--navy-soft)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warn{border-left:4px solid var(--coral)}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.quad{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:14px 0}
+.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.q b.h{display:block;font-family:var(--serif);font-size:17px;margin-bottom:4px}
+.q.ok{border-top:4px solid var(--green)}
+.q.bad{border-top:4px solid var(--coral)}
+.q span{font-size:14px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Analysis · 29 September 2026 · rule from <a href="joined-bracket-new-approach-2026-09-29.html">the new-approach page</a> · one question at the end</p>
+<h1>Joined brackets of 4–8: every size split and every finishing order</h1>
+<p class="dek">Your set-up: V0 joined with V1, V2 fenced alone, and V3 joined with V4. Each joined bracket has two categories and 4–8 fencers. That gives 25 size splits and 486 finishing orders, and all of them were scored. Each result is compared with what the same fencer would have scored in a bracket of their own category alone.</p>
+
+<h2>1 · What was scored</h2>
+<ul>
+<li><b>The rule.</b> Everyone scores EVF for their place in the joined bracket. A fencer beaten by at least one fencer of the younger category adds their own-category points: 3/2/1 in a category of 1–3, or EVF(K, m) in a category of 4+. Every fencer ends at least 1 point below anyone who finished ahead of them.</li>
+<li><b>"Own bracket"</b> is the comparison. It is N − p + 1 for a category of 1–3 (3/2/1), and EVF for a category of 4 or more, which is a real bracket.</li>
+<li><b>Coverage.</b> Every order of the two categories in the bracket is counted once, 3,492 fencer results in all. This includes every worst case. It treats both categories as equally strong, so the shares below are neither optimistic nor pessimistic about who wins.</li>
+<li><b>V0 + V1 and V3 + V4 behave identically.</b> Only "younger" and "older" matter: V0 and V3 are the younger sides, V1 and V4 the older.</li>
+</ul>
+
+<h2>2 · The result in one picture: category size decides everything</h2>
+<div class="quad">
+<div class="q ok"><b class="h">Both categories 1–3</b><span>Brackets of 4–6. Nobody scores below their own bracket, in any order. Older fencers are always at least +1.00 above it. Younger fencers are never below it; one who finishes last ties it at 1 point. The average gain is +30 to +41 points.</span></div>
+<div class="q bad"><b class="h">Older category 4+</b><span>Younger 1–3 with older 4–7, brackets of 5–8. The younger side is never below its own bracket. The older side falls below when younger fencers beat its top fencers, because nobody may outscore the fencers who beat them. The worst case is −56.28.</span></div>
+<div class="q bad"><b class="h">Younger category 4+</b><span>Younger 4–7 with older 1–3, brackets of 5–8. The older side is always +1.00 or more above its own bracket. The younger side falls below when older fencers beat it, because younger fencers score plain EVF. The worst case is −68.06.</span></div>
+<div class="q bad"><b class="h">Both 4+</b><span>Only 4 + 4 fits within 8. Both sides can lose: −72.21 for the younger side, −57.95 for the older.</span></div>
+</div>
+<div class="card locked"><span class="lb">The finding</span>
+<p>Every loss involves a category of <b>4 or more</b>, which is a category that already has a real EVF bracket of its own. A category of 1–3 never loses anything by joining under this rule, whichever side it is on.</p>
+<p><b>Brackets of 7 and 8 always contain a category of 4+</b>, because 3 + 3 = 6 is the largest bracket two small categories can make.</p></div>
+
+<h2>3 · How often each case happened in real events</h2>
+<p>This counts PPW and MPW in 2023/24–2025/26: 124 event × weapon × gender combinations, using the real size of each category.</p>
+<div class="tw"><table>
+<thead><tr><th>Pair</th><th class="r">Joined 4–8</th><th class="r">both 1–3</th><th class="r">older 4+</th><th class="r">younger 4+</th><th class="r">both 4+</th><th class="r">would be 9+</th><th class="r">would be 2–3</th><th class="r">only one of the two</th><th class="r">neither</th></tr></thead>
+<tbody>
+<tr><td>V0 + V1</td><td class="r">40</td><td class="r">20</td><td class="r">15</td><td class="r">3</td><td class="r">2</td><td class="r">35</td><td class="r">14</td><td class="r">27</td><td class="r">8</td></tr>
+<tr><td>V3 + V4</td><td class="r">30</td><td class="r">9</td><td class="r">8</td><td class="r">10</td><td class="r">3</td><td class="r">25</td><td class="r">13</td><td class="r">40</td><td class="r">16</td></tr>
+</tbody></table></div>
+<p><b>Share of fencers who would have scored below their own bracket</b>, averaging every finishing order over those real brackets:</p>
+<div class="tw"><table>
+<thead><tr><th>Pair</th><th class="r">both 1–3</th><th class="r">older 4+</th><th class="r">younger 4+</th><th class="r">both 4+</th></tr></thead>
+<tbody>
+<tr><td>V0 + V1</td><td class="r pos">0%</td><td class="r">5.8%</td><td class="r neg">24.4%</td><td class="r neg">38.0%</td></tr>
+<tr><td>V3 + V4</td><td class="r pos">0%</td><td class="r">6.3%</td><td class="r neg">28.3%</td><td class="r neg">38.0%</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>V0 + V1:</b> half of the real 4–8 joins (20 of 40) are two small categories. The most common problem case is a <b>V1 of 4+</b> (15), where about 6% of fencers would lose.</li>
+<li><b>V3 + V4:</b> only 9 of 30 are two small categories. The most common problem case is a <b>V3 of 4+</b> (10), where about 28% would lose when V4 fencers beat V3 fencers.</li>
+<li>Joins of 2–3 fencers are also common: 14 for V0 + V1 and 13 for V3 + V4. They stay on the flat table.</li>
+</ul>
+
+<h2>4 · Every size split</h2>
+<p>For each side: how many of that side's results score above their own bracket, how many score below, the worst result, and the average change.</p>
+<ul>
+<li>"Premium kept" is what the older side keeps after the 1-point rule.</li>
+<li>"Trims" counts results the 1-point rule reduced.</li>
+<li>Shaded rows contain a category of 4+.</li>
+</ul>
+<div class="tw"><table class="grid">
+<thead><tr><th>N</th><th>Younger + older</th><th class="r">Orders</th><th class="r">Younger above / all</th><th class="r">Younger below</th><th class="r">Younger worst</th><th class="r">Younger avg</th><th class="r">Older above / all</th><th class="r">Older below</th><th class="r">Older worst</th><th class="r">Older avg</th><th class="r">Premium kept avg / max</th><th class="r">Trims</th></tr></thead>
+<tbody>
+<tr class="grp"><td colspan="13">Brackets of 4</td></tr>
+<tr><td>4</td><td>3 + 1</td><td class="r">4</td><td class="r">9 / 12</td><td class="r">0</td><td class="r">0.00</td><td class="r">+34.6</td><td class="r">4 / 4</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+36.3</td><td class="r">1.0 / 1.0</td><td class="r">0</td></tr>
+<tr><td>4</td><td>2 + 2</td><td class="r">6</td><td class="r">9 / 12</td><td class="r">0</td><td class="r">0.00</td><td class="r">+35.1</td><td class="r">12 / 12</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+36.0</td><td class="r">1.4 / 2.0</td><td class="r">0</td></tr>
+<tr><td>4</td><td>1 + 3</td><td class="r">4</td><td class="r">3 / 4</td><td class="r">0</td><td class="r">0.00</td><td class="r">+35.6</td><td class="r">12 / 12</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+35.4</td><td class="r">1.7 / 3.0</td><td class="r">0</td></tr>
+<tr class="grp"><td colspan="13">Brackets of 5</td></tr>
+<tr class="big"><td>5</td><td>4 + 1</td><td class="r">5</td><td class="r">13 / 20</td><td class="r neg">3</td><td class="r neg">−25.13</td><td class="r">+4.4</td><td class="r">5 / 5</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+40.8</td><td class="r">1.0 / 1.0</td><td class="r">0</td></tr>
+<tr><td>5</td><td>3 + 2</td><td class="r">10</td><td class="r">24 / 30</td><td class="r">0</td><td class="r">0.00</td><td class="r">+39.0</td><td class="r">20 / 20</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+40.6</td><td class="r">1.4 / 2.0</td><td class="r">0</td></tr>
+<tr><td>5</td><td>2 + 3</td><td class="r">10</td><td class="r">16 / 20</td><td class="r">0</td><td class="r">0.00</td><td class="r">+39.5</td><td class="r">30 / 30</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+40.2</td><td class="r">1.8 / 3.0</td><td class="r">0</td></tr>
+<tr class="big"><td>5</td><td>1 + 4</td><td class="r">5</td><td class="r">4 / 5</td><td class="r">0</td><td class="r">0.00</td><td class="r">+40.0</td><td class="r">20 / 20</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+12.2</td><td class="r">15.5 / 45.0</td><td class="r">3</td></tr>
+<tr class="grp"><td colspan="13">Brackets of 6</td></tr>
+<tr class="big"><td>6</td><td>5 + 1</td><td class="r">6</td><td class="r">15 / 30</td><td class="r neg">10</td><td class="r neg">−33.44</td><td class="r">−3.9</td><td class="r">6 / 6</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+37.0</td><td class="r">1.0 / 1.0</td><td class="r">0</td></tr>
+<tr class="big"><td>6</td><td>4 + 2</td><td class="r">15</td><td class="r">30 / 60</td><td class="r neg">20</td><td class="r neg">−48.88</td><td class="r">+0.6</td><td class="r">30 / 30</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+36.8</td><td class="r">1.4 / 2.0</td><td class="r">0</td></tr>
+<tr><td>6</td><td>3 + 3</td><td class="r">20</td><td class="r">50 / 60</td><td class="r">0</td><td class="r">0.00</td><td class="r">+35.1</td><td class="r">60 / 60</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+36.5</td><td class="r">1.8 / 3.0</td><td class="r">0</td></tr>
+<tr class="big"><td>6</td><td>2 + 4</td><td class="r">15</td><td class="r">25 / 30</td><td class="r">0</td><td class="r">0.00</td><td class="r">+35.6</td><td class="r">57 / 60</td><td class="r neg">3</td><td class="r neg">−23.34</td><td class="r">+11.1</td><td class="r">15.7 / 45.0</td><td class="r">16</td></tr>
+<tr class="big"><td>6</td><td>1 + 5</td><td class="r">6</td><td class="r">5 / 6</td><td class="r">0</td><td class="r">0.00</td><td class="r">+36.1</td><td class="r">29 / 30</td><td class="r neg">1</td><td class="r neg">−0.04</td><td class="r">+5.0</td><td class="r">17.8 / 58.9</td><td class="r">5</td></tr>
+<tr class="grp"><td colspan="13">Brackets of 7 — always contain a category of 4+</td></tr>
+<tr class="big"><td>7</td><td>6 + 1</td><td class="r">7</td><td class="r">21 / 42</td><td class="r neg">15</td><td class="r neg">−32.33</td><td class="r">−2.9</td><td class="r">7 / 7</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+34.1</td><td class="r">1.0 / 1.0</td><td class="r">0</td></tr>
+<tr class="big"><td>7</td><td>5 + 2</td><td class="r">21</td><td class="r">40 / 105</td><td class="r neg">50</td><td class="r neg">−57.32</td><td class="r">−6.8</td><td class="r">42 / 42</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+33.9</td><td class="r">1.4 / 2.0</td><td class="r">0</td></tr>
+<tr class="big"><td>7</td><td>4 + 3</td><td class="r">35</td><td class="r">58 / 140</td><td class="r neg">62</td><td class="r neg">−59.19</td><td class="r">−2.3</td><td class="r">105 / 105</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+33.7</td><td class="r">1.8 / 3.0</td><td class="r">0</td></tr>
+<tr class="big"><td>7</td><td>3 + 4</td><td class="r">35</td><td class="r">90 / 105</td><td class="r">0</td><td class="r">0.00</td><td class="r">+32.3</td><td class="r">119 / 140</td><td class="r neg">21</td><td class="r neg">−47.21</td><td class="r">+8.7</td><td class="r">14.7 / 45.0</td><td class="r">49</td></tr>
+<tr class="big"><td>7</td><td>2 + 5</td><td class="r">21</td><td class="r">36 / 42</td><td class="r">0</td><td class="r">0.00</td><td class="r">+32.8</td><td class="r">95 / 105</td><td class="r neg">10</td><td class="r neg">−32.37</td><td class="r">+4.7</td><td class="r">17.2 / 57.1</td><td class="r">31</td></tr>
+<tr class="big"><td>7</td><td>1 + 6</td><td class="r">7</td><td class="r">6 / 7</td><td class="r">0</td><td class="r">0.00</td><td class="r">+33.3</td><td class="r">41 / 42</td><td class="r neg">1</td><td class="r neg">−0.14</td><td class="r">+4.5</td><td class="r">14.8 / 57.1</td><td class="r">6</td></tr>
+<tr class="grp"><td colspan="13">Brackets of 8 — always contain a category of 4+</td></tr>
+<tr class="big"><td>8</td><td>7 + 1</td><td class="r">8</td><td class="r">28 / 56</td><td class="r neg">21</td><td class="r neg">−31.55</td><td class="r">−2.2</td><td class="r">8 / 8</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+31.9</td><td class="r">1.0 / 1.0</td><td class="r">0</td></tr>
+<tr class="big"><td>8</td><td>6 + 2</td><td class="r">28</td><td class="r">72 / 168</td><td class="r neg">75</td><td class="r neg">−56.24</td><td class="r">−5.1</td><td class="r">56 / 56</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+31.7</td><td class="r">1.4 / 2.0</td><td class="r">0</td></tr>
+<tr class="big"><td>8</td><td>5 + 3</td><td class="r">56</td><td class="r">90 / 280</td><td class="r neg">155</td><td class="r neg">−68.06</td><td class="r">−9.0</td><td class="r">168 / 168</td><td class="r">0</td><td class="r pos">+1.00</td><td class="r">+31.6</td><td class="r">1.9 / 3.0</td><td class="r">0</td></tr>
+<tr class="big"><td>8</td><td>4 + 4</td><td class="r">70</td><td class="r">102 / 280</td><td class="r neg">143</td><td class="r neg">−72.21</td><td class="r">−4.5</td><td class="r">210 / 280</td><td class="r neg">70</td><td class="r neg">−57.95</td><td class="r">+6.1</td><td class="r">13.3 / 45.0</td><td class="r">119</td></tr>
+<tr class="big"><td>8</td><td>3 + 5</td><td class="r">56</td><td class="r">147 / 168</td><td class="r">0</td><td class="r">0.00</td><td class="r">+30.0</td><td class="r">220 / 280</td><td class="r neg">60</td><td class="r neg">−56.28</td><td class="r">+2.7</td><td class="r">15.6 / 55.9</td><td class="r">121</td></tr>
+<tr class="big"><td>8</td><td>2 + 6</td><td class="r">28</td><td class="r">49 / 56</td><td class="r">0</td><td class="r">0.00</td><td class="r">+30.5</td><td class="r">158 / 168</td><td class="r neg">10</td><td class="r neg">−31.69</td><td class="r">+4.8</td><td class="r">14.9 / 55.9</td><td class="r">50</td></tr>
+<tr class="big"><td>8</td><td>1 + 7</td><td class="r">8</td><td class="r">7 / 8</td><td class="r">0</td><td class="r">0.00</td><td class="r">+31.0</td><td class="r">55 / 56</td><td class="r neg">1</td><td class="r neg">−0.22</td><td class="r">+4.2</td><td class="r">13.0 / 55.9</td><td class="r">8</td></tr>
+</tbody></table></div>
+<p>The younger results that neither rise nor fall (for example 3 of 12 in 3 + 1) are always a younger fencer who finishes last. That scores 1 point, the same as last place in their own bracket. Across all 1,130 results from categories of 1–3 there are 85 such ties and no losses.</p>
+
+<h3>The worst cases</h3>
+<div class="tw"><table>
+<thead><tr><th>Order (Y = younger, O = older)</th><th>Who</th><th class="r">Place</th><th class="r">EVF</th><th class="r">Own bracket</th><th class="r">Final</th><th class="r">Change</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>OOOOYYYY</code></td><td>younger winner, K = 4</td><td class="r">5</td><td class="r">12.08</td><td class="r">84.29</td><td class="r">12.08</td><td class="r neg">−72.21</td><td>All four older fencers beat them, and younger fencers score plain EVF.</td></tr>
+<tr><td><code>OOOYYYYY</code></td><td>younger winner, K = 5</td><td class="r">4</td><td class="r">27.33</td><td class="r">95.39</td><td class="r">27.33</td><td class="r neg">−68.06</td><td>Same reason.</td></tr>
+<tr><td><code>YYYYOOOO</code></td><td>older winner, K = 4</td><td class="r">5</td><td class="r">12.08</td><td class="r">84.29</td><td class="r">26.33</td><td class="r neg">−57.95</td><td>Held 1 point under the younger fencer at 4th.</td></tr>
+<tr><td><code>YYYOOOOO</code></td><td>older winner, K = 5</td><td class="r">4</td><td class="r">27.33</td><td class="r">95.39</td><td class="r">39.11</td><td class="r neg">−56.28</td><td>Held 1 point under the younger fencer at 3rd.</td></tr>
+</tbody></table></div>
+
+<h2>5 · What this says about the rule</h2>
+<ul>
+<li><b>For two small categories, the rule does what you asked, in every order.</b> The older side always gains, by at least 1 point, and the younger side never loses. The premium it needs is tiny: 1.0–1.9 on average, 3 at most. Most of the gain is plain EVF. A category of 1–3 scores only 3/2/1 in its own bracket, so any joined bracket beats that.</li>
+<li><b>Your assumption that younger fencers always want to join</b> holds when the younger category has 1–3 fencers. With 4+, it has its own EVF bracket. In orders where older fencers beat it, it scores less: on average −2 to −9 for splits of 5+1 and larger, with a worst case of −72.21. It holds even less for an older category of 4+.</li>
+<li><b>The only large premiums</b> (average 13–18, up to 58.9) belong to an older category of 4+, where own-category points are EVF(K, m). The 1-point rule always trims them below the fencers who beat them.</li>
+<li>These losses come from rules 1 and 3 themselves, not from a parameter. No weight or premium size removes them without scoring someone above a fencer who beat them.</li>
+</ul>
+
+<h2>6 · Question: what to do with a category of 4 or more?</h2>
+<div class="card open"><span class="lb">This replaces the question on the new-approach page</span>
+<ol>
+<li><b>Join automatically only when both categories have 1–3 fencers (brackets of 4–6)</b><span class="rec">recommended</span>
+<ul>
+<li>Nobody ever scores below their own bracket, and the older side always gains.</li>
+<li>A category of 4+ fences its own bracket. It joins only if it chooses to, and the annex says in one sentence that joining can then cost points.</li>
+<li>In the real events: 20 of 40 V0 + V1 joins and 9 of 30 V3 + V4 joins qualify automatically. The rest would need the category of 4+ to opt in.</li>
+</ul></li>
+<li><b>Join brackets of 4–8 regardless</b> and accept the losses in §3–§4. They fall on the category of 4+: about 6% of its fencers when it is the older side and about 26% when it is the younger side, with a worst case of −72.</li>
+<li><b>Protect a category of 4+ with its own-bracket score as a floor.</b> No fencer loses, but a fencer of that category can then score above fencers who beat them. That breaks the "never above anyone who beat you" rule for them.</li>
+</ol>
+<p>After your answer, the implementation plan is rewritten around the rule and this decision.</p></div>
+
+<footer>Model: <code>all48.py</code> and <code>real48.py</code> in the session scratchpad. EVF(N, p) is the same as on the earlier pages, with mp 50, DE round 10 and podium 3/2/1. Real category sizes come from 124 PPW/MPW event × weapon × gender combinations, 2023/24–2025/26, read from LOCAL. Every finishing order is counted once. A version in which the younger category is stronger was not run, because the tool that runs it failed repeatedly this session. With a stronger younger side, older 4+ categories would lose more often and younger 4+ categories less often.</footer>
+</div>
+</body>
+</html>

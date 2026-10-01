@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>EVF plus d</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1060px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:78ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:16.5px;margin:24px 0 4px}
+h3+p{margin:2px 0 6px;color:var(--muted);font-size:14.5px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.grid td,table.ex td{white-space:nowrap}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--mono);font-size:12.5px}
+td.muted{color:var(--muted)}
+td.neg{color:var(--coral);font-weight:600}
+td.pos{color:var(--green)}
+td.warn{color:var(--amber);font-weight:600}
+tr.big td,tr.hit td{background:var(--hit)}
+tr.off td{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+tr.grp td{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--navy-soft);text-decoration:none}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:0 6px;border-radius:4px}
+.c0{background:#e8e0f7;color:#4b2d86}.c1{background:var(--navy-soft);color:var(--navy)}.c2{background:#dff1f1;color:#1d5d5d}
+.c3{background:var(--green-bg);color:var(--green)}.c4{background:var(--amber-bg);color:var(--amber)}
+@media (prefers-color-scheme:dark){.c0{background:#2c2342;color:#c9b6f0}.c2{background:#173535;color:#9fdada}}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warnc{border-left:4px solid var(--coral)}
+.rules{border-left:4px solid var(--navy)}
+.rules ol{margin:6px 0 0;padding-left:22px}
+.rules li{margin:6px 0}
+.rules ol ol{list-style:lower-alpha}
+.rules ol.z{list-style:none;padding-left:0}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.ok{color:var(--green);font-weight:600}.no{color:var(--coral);font-weight:600}
+.legend{font-size:13.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.stat b{display:block;font-family:var(--serif);font-size:24px;font-weight:600}
+.stat span{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:4px;margin-right:6px}
+.tag.ok{background:var(--green-bg);color:var(--green)}.tag.ex{background:var(--amber-bg);color:var(--amber)}.tag.no{background:var(--navy-soft);color:var(--muted)}
+tr.d3 td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+.was{font-size:11px;color:var(--muted)}
+.new{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:var(--amber-bg);color:var(--amber);padding:0 6px;border-radius:4px;margin-left:4px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Brainstorm · 30 September 2026 · your idea "EVF + d, capped" · checked on every order and on three seasons</p>
+<h1>EVF + d: one short rule for every joined bracket</h1>
+<p class="dek">You asked why clause 3d is needed, and whether 3, 4 and 5 joined categories can have something simple. Your idea, EVF + d with a cap, keeps every principle for small categories, holds premiums to 4 points or less, and needs no chains. It works for pairs too, so it can replace clauses 3a–3d entirely. One question at the end, about the small category whose only neighbour has 4+ fencers.</p>
+
+<h2>1 · Why clause 3d was there</h2>
+<div class="card warnc"><span class="lb">Short answer: only because of the exception</span>
+<p>3d applies only when a category of 4+ is an older category in a joined bracket. The joining rules allow that in one case: a small category at the young end whose only neighbour has 4+ fencers, for example V0 3 next to V1 7. Without joining, that V0 would score by the table. It happened in 25 brackets in three seasons.</p>
+<p>You are right that it gains little and complicates a lot: a floor, then raises up the list. If a category of 4+ never joins as an older category, 3d is never needed. That brings back the small category with nobody to join, which is the question in §6.</p></div>
+
+<h2>2 · Your idea, written as a rule</h2>
+<div class="card rules" lang="pl"><span class="lb">Reguła punktacji (propozycja)</span>
+<ol>
+<li><b>Stawka 1–3 zawodników:</b> N − p + 1 pkt, czyli 3, 2, 1.</li>
+<li><b>Stawka jednej kategorii wiekowej albo stawka 16 i więcej zawodników:</b> punkty EVF za miejsce w stawce.</li>
+<li><b>Stawka łączona 4–15 zawodników:</b> zawodnik dostaje punkty EVF za miejsce w całej stawce <b>plus d pkt</b>, gdzie d to różnica między jego kategorią a najmłodszą kategorią w stawce. Przykład: w stawce z V0 zawodnik V1 ma d = 1, a zawodnik V4 ma d = 4; najmłodsza kategoria ma d = 0.
+<p>Nikt nie dostaje więcej niż zawodnik, który zajął miejsce przed nim, minus 1 pkt.</p></li>
+<li>Wynik mnoży się przez współczynnik rangi zawodów (PPW 1,0; MPW 1,2).</li>
+</ol>
+<p>Każde miejsce jest rozstrzygnięte walką, więc w stawce nie ma miejsc ex aequo.</p></div>
+<p><b>How I read "capping".</b> The cap is only an upper limit: it lowers a score to 1 point under the fencer placed ahead, and never lifts anyone. The lift of clause 3b ("miejsce wyżej − 1") goes away.</p>
+<p>If you meant to keep the lift and only change "+ 1" to "+ d", the lift would still need this cap, because EVF + 4 can reach the fencer ahead. That version is longer, not shorter.</p>
+
+<h2>3 · Does it keep the principles?</h2>
+<div class="tw"><table>
+<thead><tr><th>Principle</th><th>Every order: 2 categories 1–4 apart, up to 15 fencers (261,984 orders); 3 categories, 4–8 fencers; 5 categories, 5–7 fencers (18,720)</th><th>Real joined brackets of 4–15, rules 1–5 (93 brackets)</th><th>Real, with the exception (109 brackets)</th></tr></thead>
+<tbody>
+<tr><td lang="pl">Z1 · najmłodsza kategoria: czyste EVF</td><td class="ok">Kept: never changed, never capped</td><td class="ok">Kept</td><td class="ok">Kept</td></tr>
+<tr><td lang="pl">Z2 · starsze kategorie 1–3 zawsze zyskują</td><td class="ok">Kept: every result gains</td><td class="ok">Kept: all 257 gain, by 36.3 points on average over their own bracket</td><td class="ok">Kept: all 260 gain</td></tr>
+<tr><td lang="pl">Z2 · starsza kategoria 4+</td><td>Below its own bracket when younger fencers place ahead</td><td class="ok">Never formed</td><td class="no">24 brackets: below its own bracket in 38.8% of its results (see §6)</td></tr>
+<tr><td lang="pl">Z3 · nigdy więcej niż ktoś na miejscu przed Tobą</td><td class="ok">Kept</td><td class="ok">Kept</td><td class="ok">Kept</td></tr>
+<tr><td lang="pl">Z4 · zawsze co najmniej 1 pkt mniej</td><td class="ok">Kept: smallest gap 1.00</td><td class="ok">Kept</td><td class="ok">Kept</td></tr>
+<tr><td lang="pl">Z5 · małe premie</td><td class="ok">Kept: at most 4 points over EVF</td><td class="ok">Kept: 1.5 on average, at most 4</td><td class="ok">Kept: 1.45 on average, at most 4</td></tr>
+</tbody></table></div>
+<div class="card locked"><span class="lb">Why it works</span>
+<ul>
+<li><b>Small categories gain anyway.</b> A category of 1–3 alone scores 3 / 2 / 1. The joined bracket pays EVF, which is at least that for every place, and + d makes it strictly more. The premium does not have to carry the incentive.</li>
+<li><b>The cap never reaches the youngest and never goes below EVF.</b> For 4–15 fencers, neighbouring EVF places are at least 1.25 points apart. So a cap can only trim part of a fencer's + d.</li>
+<li><b>No chains.</b> Each score needs only its own place, its d, and the score of the fencer one place ahead.</li>
+<li><b>The cap is rare.</b> It binds in 1.9% of older results in the real brackets, mostly near the bottom, where EVF places are close together.</li>
+</ul></div>
+<p>The youngest category of 4+ still pays, as before: below its own bracket in 40.3% of its results, when older fencers place ahead of it. EVF + d does not change that, because the youngest category's score is plain EVF under both rules.</p>
+
+<h2>4 · It works for pairs too: one rule for every joined bracket</h2>
+<p>You asked about 3, 4 and 5 categories. Pairs are 71 of the 110 joined brackets, and the same rule fits them. With neighbouring categories, d = 1, so a pair is simply "EVF + 1, capped". I recommend one clause for all joined brackets instead of one rule for pairs and another for the rest.</p>
+<div class="tw"><table>
+<thead><tr><th>Real joined brackets, with the exception</th><th class="r">Place-ahead rule (3a–3c, no 3d)</th><th class="r">EVF + d</th></tr></thead>
+<tbody>
+<tr><td>Clauses</td><td class="r">3 (4 with 3d)</td><td class="r pos">1</td></tr>
+<tr><td>Older fencers' premium over EVF, average / largest</td><td class="r neg">6.81 / 38.26</td><td class="r pos">1.45 / 4.00</td></tr>
+<tr><td>Older fencers of 1–3 below their own bracket</td><td class="r">0</td><td class="r">0</td></tr>
+<tr><td>Older category of 4+ below its own bracket (exception brackets)</td><td class="r">29.9%</td><td class="r">38.8%</td></tr>
+<tr><td>Smallest gap to the fencer one place ahead</td><td class="r neg">0.86</td><td class="r pos">1.00</td></tr>
+</tbody></table></div>
+<div class="card warnc"><span class="lb">Correction to the previous page</span>
+<p>The place-ahead rule does not always keep Z4. When an older fencer takes "miejsce wyżej − 1" and a teammate directly behind takes "EVF + 1", the gap between them can fall below 1 point at the bottom of a large bracket.</p>
+<ul>
+<li>It happens in the real data in V2 12 + V3 2 brackets: GP7-2023-2024 Sabre M, and PPW3-2025-2026 Sabre M under rules 1–5. When the two V3 fencers finish 13th and 14th, there are 0.86 points between them.</li>
+<li>Across all pairs up to 15 fencers, the gap goes down to 0.59.</li>
+</ul>
+<p>The previous page reported "smallest gap 1.00" because my 3d code raised more fencers than the written clause says. EVF + d cannot do this: its cap is Z4 itself.</p></div>
+<p><b>What you give up:</b> the big lift for the older fencer directly behind a youngest fencer. Example 4: 66.67 instead of 97.00. The older fencer still gains far more than their own bracket would pay: 2.00 there.</p>
+
+<h2>5 · Examples</h2>
+<p class="legend">Shaded rows are fencers outside the youngest category. A row marked on the left was capped. The last column is the place-ahead rule, for comparison.</p>
+<h3>1 · Five categories, with the cap: PPW5-2025-2026 Foil F, V0 2 · V1 1 · V2 2 · V3 1 · V4 1 (N = 7)</h3>
+<p>The V4 fencer is last, directly behind the V1 fencer. EVF + 4 = 5.00 would leave only 0.88 below the V1 fencer's 5.88, so the cap gives 4.88. That is the only change the cap makes here.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th><th class="r">Place-ahead rule</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">97.22</td><td class="r">97.22</td><td class="r"><b>97.22</b></td><td class="r muted">2.00</td><td class="r pos">+95.22</td><td class="r muted">97.22</td></tr>
+<tr><td>2</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">64.02</td><td class="r">64.02</td><td class="r"><b>64.02</b></td><td class="r muted">1.00</td><td class="r pos">+63.02</td><td class="r muted">64.02</td></tr>
+<tr class="hit"><td>3</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">38.07</td><td class="r">40.07</td><td class="r"><b>40.07</b></td><td class="r muted">2.00</td><td class="r pos">+38.07</td><td class="r muted">63.02</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">25.09</td><td class="r">27.09</td><td class="r"><b>27.09</b></td><td class="r muted">1.00</td><td class="r pos">+26.09</td><td class="r muted">26.09</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c3">V3</span></td><td class="r">3</td><td class="r">9.47</td><td class="r">12.47</td><td class="r"><b>12.47</b></td><td class="r muted">1.00</td><td class="r pos">+11.47</td><td class="r muted">10.47</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">4.88</td><td class="r">5.88</td><td class="r"><b>5.88</b></td><td class="r muted">1.00</td><td class="r pos">+4.88</td><td class="r muted">5.88</td></tr>
+<tr class="hit d3"><td>7</td><td><span class="chip c4">V4</span></td><td class="r">4</td><td class="r">1.00</td><td class="r">5.00</td><td class="r"><b>4.88</b> <span class="was">cap</span></td><td class="r muted">1.00</td><td class="r pos">+3.88</td><td class="r muted">2.00</td></tr>
+</tbody></table></div>
+<h3>2 · Five categories: PPW3-2024-2025 Sabre F, 2 × V0 and one each of V1–V4 (N = 6)</h3>
+<p>The place-ahead rule gave the V1 fencer in 2nd 95.35, because a V0 fencer was one place ahead. EVF + d gives 62.95.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th><th class="r">Place-ahead rule</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">96.35</td><td class="r">96.35</td><td class="r"><b>96.35</b></td><td class="r muted">2.00</td><td class="r pos">+94.35</td><td class="r muted">96.35</td></tr>
+<tr class="hit"><td>2</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">61.95</td><td class="r">62.95</td><td class="r"><b>62.95</b></td><td class="r muted">1.00</td><td class="r pos">+61.95</td><td class="r muted">95.35</td></tr>
+<tr><td>3</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">35.41</td><td class="r">35.41</td><td class="r"><b>35.41</b></td><td class="r muted">1.00</td><td class="r pos">+34.41</td><td class="r muted">35.41</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">22.09</td><td class="r">24.09</td><td class="r"><b>24.09</b></td><td class="r muted">1.00</td><td class="r pos">+23.09</td><td class="r muted">34.41</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c3">V3</span></td><td class="r">3</td><td class="r">5.99</td><td class="r">8.99</td><td class="r"><b>8.99</b></td><td class="r muted">1.00</td><td class="r pos">+7.99</td><td class="r muted">6.99</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c4">V4</span></td><td class="r">4</td><td class="r">1.00</td><td class="r">5.00</td><td class="r"><b>5.00</b></td><td class="r muted">1.00</td><td class="r pos">+4.00</td><td class="r muted">2.00</td></tr>
+</tbody></table></div>
+<h3>3 · Three categories of 3: GP8-2023-2024 Foil M, V1 3 · V2 3 · V3 3 (N = 9)</h3>
+<p>V1 is the youngest, so V2 gets EVF + 1 and V3 gets EVF + 2.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th><th class="r">Place-ahead rule</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">108.72</td><td class="r">108.72</td><td class="r"><b>108.72</b></td><td class="r muted">3.00</td><td class="r pos">+105.72</td><td class="r muted">108.72</td></tr>
+<tr class="hit"><td>2</td><td><span class="chip c2">V2</span></td><td class="r">1</td><td class="r">77.02</td><td class="r">78.02</td><td class="r"><b>78.02</b></td><td class="r muted">3.00</td><td class="r pos">+75.02</td><td class="r muted">107.72</td></tr>
+<tr><td>3</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">51.74</td><td class="r">51.74</td><td class="r"><b>51.74</b></td><td class="r muted">2.00</td><td class="r pos">+49.74</td><td class="r muted">51.74</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">39.08</td><td class="r">41.08</td><td class="r"><b>41.08</b></td><td class="r muted">3.00</td><td class="r pos">+38.08</td><td class="r muted">50.74</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c2">V2</span></td><td class="r">1</td><td class="r">24.11</td><td class="r">25.11</td><td class="r"><b>25.11</b></td><td class="r muted">2.00</td><td class="r pos">+23.11</td><td class="r muted">25.11</td></tr>
+<tr><td>6</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">20.04</td><td class="r">20.04</td><td class="r"><b>20.04</b></td><td class="r muted">1.00</td><td class="r pos">+19.04</td><td class="r muted">20.04</td></tr>
+<tr class="hit"><td>7</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">16.60</td><td class="r">18.60</td><td class="r"><b>18.60</b></td><td class="r muted">2.00</td><td class="r pos">+16.60</td><td class="r muted">19.04</td></tr>
+<tr class="hit"><td>8</td><td><span class="chip c2">V2</span></td><td class="r">1</td><td class="r">13.63</td><td class="r">14.63</td><td class="r"><b>14.63</b></td><td class="r muted">1.00</td><td class="r pos">+13.63</td><td class="r muted">14.63</td></tr>
+<tr class="hit"><td>9</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">1.00</td><td class="r">3.00</td><td class="r"><b>3.00</b></td><td class="r muted">1.00</td><td class="r pos">+2.00</td><td class="r muted">2.00</td></tr>
+</tbody></table></div>
+<h3>4 · A pair: V3 6 and V4 2, <code>YOOYYYYY</code> (N = 8)</h3>
+<p>The V4 fencer in 2nd had 97.00 under the place-ahead rule; now 66.67. Both are far above the 2 points of their own bracket.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th><th class="r">Place-ahead rule</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">98.00</td><td class="r">98.00</td><td class="r"><b>98.00</b></td><td class="r muted">96.35</td><td class="r pos">+1.65</td><td class="r muted">98.00</td></tr>
+<tr class="hit"><td>2</td><td><span class="chip c4">V4</span></td><td class="r">1</td><td class="r">65.67</td><td class="r">66.67</td><td class="r"><b>66.67</b></td><td class="r muted">2.00</td><td class="r pos">+64.67</td><td class="r muted">97.00</td></tr>
+<tr class="hit"><td>3</td><td><span class="chip c4">V4</span></td><td class="r">1</td><td class="r">40.11</td><td class="r">41.11</td><td class="r"><b>41.11</b></td><td class="r muted">1.00</td><td class="r pos">+40.11</td><td class="r muted">41.11</td></tr>
+<tr><td>4</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">27.33</td><td class="r">27.33</td><td class="r"><b>27.33</b></td><td class="r muted">61.95</td><td class="r neg">-34.61</td><td class="r muted">27.33</td></tr>
+<tr><td>5</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">12.08</td><td class="r">12.08</td><td class="r"><b>12.08</b></td><td class="r muted">35.41</td><td class="r neg">-23.33</td><td class="r muted">12.08</td></tr>
+<tr><td>6</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">7.78</td><td class="r">7.78</td><td class="r"><b>7.78</b></td><td class="r muted">22.09</td><td class="r neg">-14.31</td><td class="r muted">7.78</td></tr>
+<tr><td>7</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">4.15</td><td class="r">4.15</td><td class="r"><b>4.15</b></td><td class="r muted">5.99</td><td class="r neg">-1.84</td><td class="r muted">4.15</td></tr>
+<tr><td>8</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">1.00</td><td class="r">1.00</td><td class="r"><b>1.00</b></td><td class="r muted">1.00</td><td class="r warn">+0.00</td><td class="r muted">1.00</td></tr>
+</tbody></table></div>
+<h3>5 · A pair two categories apart: 7 × V1 and 3 × V3 (N = 10)</h3>
+<p>d = 2 for every V3 fencer.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th><th class="r">Place-ahead rule</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">109.39</td><td class="r">109.39</td><td class="r"><b>109.39</b></td><td class="r muted">97.22</td><td class="r pos">+12.17</td><td class="r muted">109.39</td></tr>
+<tr><td>2</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">78.18</td><td class="r">78.18</td><td class="r"><b>78.18</b></td><td class="r muted">64.02</td><td class="r pos">+14.15</td><td class="r muted">78.18</td></tr>
+<tr><td>3</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">53.08</td><td class="r">53.08</td><td class="r"><b>53.08</b></td><td class="r muted">38.07</td><td class="r pos">+15.01</td><td class="r muted">53.08</td></tr>
+<tr><td>4</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">40.50</td><td class="r">40.50</td><td class="r"><b>40.50</b></td><td class="r muted">25.09</td><td class="r pos">+15.41</td><td class="r muted">40.50</td></tr>
+<tr><td>5</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">25.75</td><td class="r">25.75</td><td class="r"><b>25.75</b></td><td class="r muted">9.47</td><td class="r pos">+16.28</td><td class="r muted">25.75</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">21.87</td><td class="r">23.87</td><td class="r"><b>23.87</b></td><td class="r muted">3.00</td><td class="r pos">+20.87</td><td class="r muted">24.75</td></tr>
+<tr><td>7</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">18.59</td><td class="r">18.59</td><td class="r"><b>18.59</b></td><td class="r muted">4.88</td><td class="r pos">+13.71</td><td class="r muted">18.59</td></tr>
+<tr><td>8</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">15.75</td><td class="r">15.75</td><td class="r"><b>15.75</b></td><td class="r muted">1.00</td><td class="r pos">+14.75</td><td class="r muted">15.75</td></tr>
+<tr class="hit"><td>9</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">3.24</td><td class="r">5.24</td><td class="r"><b>5.24</b></td><td class="r muted">2.00</td><td class="r pos">+3.24</td><td class="r muted">14.75</td></tr>
+<tr class="hit"><td>10</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">1.00</td><td class="r">3.00</td><td class="r"><b>3.00</b></td><td class="r muted">1.00</td><td class="r pos">+2.00</td><td class="r muted">2.00</td></tr>
+</tbody></table></div>
+<h3>6 · The exception bracket: V0 3 and V1 4, all V0 fencers ahead (N = 7)</h3>
+<p>Real in PPW1-2025-2026 Sabre M and PPW4-2025-2026 Epee F. The V1 winner scores 26.09, against 84.29 in their own bracket (37.07 under the place-ahead rule without 3d). This is the case the question in §6 is about.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th><th class="r">Place-ahead rule</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">97.22</td><td class="r">97.22</td><td class="r"><b>97.22</b></td><td class="r muted">3.00</td><td class="r pos">+94.22</td><td class="r muted">97.22</td></tr>
+<tr><td>2</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">64.02</td><td class="r">64.02</td><td class="r"><b>64.02</b></td><td class="r muted">2.00</td><td class="r pos">+62.02</td><td class="r muted">64.02</td></tr>
+<tr><td>3</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">38.07</td><td class="r">38.07</td><td class="r"><b>38.07</b></td><td class="r muted">1.00</td><td class="r pos">+37.07</td><td class="r muted">38.07</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">25.09</td><td class="r">26.09</td><td class="r"><b>26.09</b></td><td class="r muted">84.29</td><td class="r neg">-58.19</td><td class="r muted">37.07</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">9.47</td><td class="r">10.47</td><td class="r"><b>10.47</b></td><td class="r muted">45.02</td><td class="r neg">-34.55</td><td class="r muted">10.47</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">4.88</td><td class="r">5.88</td><td class="r"><b>5.88</b></td><td class="r muted">15.93</td><td class="r neg">-10.05</td><td class="r muted">5.88</td></tr>
+<tr class="hit"><td>7</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">1.00</td><td class="r">2.00</td><td class="r"><b>2.00</b></td><td class="r muted">1.00</td><td class="r pos">+1.00</td><td class="r muted">2.00</td></tr>
+</tbody></table></div>
+
+<h2>6 · Question</h2>
+<div class="card open"><span class="lb">A small category at the young end whose only neighbour has 4+ fencers: join or not?</span>
+<p>You wrote that a category of 4+ goes on its own. For most brackets that is already the rule. The exception is a small V0 (sometimes V1) at the young end: its only neighbour has 4+ fencers, and there is nobody younger to join.</p>
+<ol>
+<li><b>Join anyway, with the same EVF + d rule and no 3d</b><span class="rec">recommended</span>. The table stays unused. The category of 4+ pays: below its own bracket in 38.8% of its results in these 24 brackets. A youngest category of 4+ pays 40.3% everywhere else, so every category of 4+ is treated alike, whether it is the youngest or not. Z2 then reads:
+<p lang="pl">„Z2. Kategoria, która ma 1–3 zawodników, zawsze zyskuje na łączeniu. Zapłacić może tylko kategoria, która ma co najmniej 4 zawodników i mogłaby startować osobno.”</p></li>
+<li><b>The category of 4+ always fences alone.</b> The small category scores by the 3 / 2 / 1 table: 21 small categories and 45 fencers in three seasons, 18 of them V0.</li>
+</ol>
+<p>Why the recommendation: it keeps both of your goals, "never the table" and "simple". It adds no clause, and the only fencers who can lose points are in categories big enough to fence alone.</p>
+<p class="legend">Still open from the previous page: how to score a weapon and gender with only 1–3 fencers in total (§10 there). It does not depend on this answer.</p></div>
+
+<footer>Models, in the session scratchpad:
+<ul>
+<li><code>evfd.py</code>: the EVF + d rule, the exhaustive checks, and the history under both joining variants;</li>
+<li><code>exd.py</code>: the examples.</li>
+</ul>
+Real sizes come from 124 PPW/MPW event × weapon × gender combinations, 2023/24–2025/26, read from LOCAL. Every distinct finishing order is enumerated. Previous page: <a href="joined-simplified-cap-2026-09-30.html">place-ahead rule with one joining exception</a>.</footer>
+</div>
+</body>
+</html>

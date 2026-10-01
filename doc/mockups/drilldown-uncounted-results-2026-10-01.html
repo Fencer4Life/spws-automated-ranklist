@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Drilldown: uncounted results</title>
+<style>
+  :root { --bg:#f4f7fb; --card:#fff; --ink:#142033; --muted:#526176; --faint:#8a96a8; --line:#dfe5ee;
+          --spws:#2f7fe0; --spws-carried:#a9c8f2; --evf:#f0a040; --accent:#173f70; --good:#216346; --good-soft:#deeee6; --warn:#875a0a; --warn-soft:#f4ead0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#111722; --card:#182231; --ink:#edf3fb; --muted:#a9b6c6; --faint:#7f8fa3; --line:#2c3a4d; --spws:#5aa0f0; --spws-carried:#35577f; --accent:#8ec2f2; --good:#7bd3a6; --good-soft:#18372c; --warn:#e4bd6e; --warn-soft:#3a301e; } }
+  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif }
+  .wrap { max-width:980px; margin:auto; padding:32px 16px 80px }
+  .eyebrow { font:700 12px ui-monospace,Menlo,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent) }
+  h1 { font:700 clamp(28px,5vw,40px)/1.1 Georgia,"Iowan Old Style",serif; margin:8px 0 12px }
+  h2 { font:700 24px/1.2 Georgia,serif; margin:34px 0 10px }
+  p { max-width:68ch } .muted { color:var(--muted) }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px } @media (max-width:760px){ .grid{grid-template-columns:1fr} }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px }
+  .panel h3 { margin:0 0 10px; font:800 13px ui-monospace,Menlo,monospace; text-transform:uppercase; letter-spacing:.08em; color:var(--muted) }
+  .sum { font-weight:700; margin:0 0 4px } .rule { font-size:13px; color:var(--muted); margin:0 0 10px }
+  .row { display:grid; grid-template-columns:34px 1fr minmax(54px,auto); align-items:center; gap:8px; margin:6px 0; font:600 13px ui-monospace,Menlo,monospace }
+  .track { height:16px; background:var(--line); border-radius:3px; overflow:hidden }
+  .bar { height:100%; background:var(--spws); border-radius:3px }
+  .bar.carried { background:repeating-linear-gradient(135deg,var(--spws-carried) 0 5px,#c9dcf6 5px 10px) }
+  .bar.off { background:repeating-linear-gradient(135deg,#c5ccd6 0 5px,#dde2e9 5px 10px); }
+  .mk { font-size:13px; color:var(--muted); white-space:nowrap }
+  .row.off .num { color:var(--faint) } .row.off .mk { color:var(--faint) }
+  .tag-off { font:700 10px ui-monospace,Menlo,monospace; color:var(--muted); background:var(--line); border-radius:5px; padding:1px 5px }
+  .cards { margin-top:12px }
+  .c { border:1px solid var(--line); border-radius:9px; padding:9px 12px; margin:7px 0; display:flex; justify-content:space-between; gap:10px; background:var(--card) }
+  .c b { color:var(--accent) } .c .pts { font-weight:800 } .c small { color:var(--muted) }
+  .c.off { opacity:.55; background:transparent } .c.off .pts { font-weight:600 }
+  .q { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--accent); border-radius:10px; padding:14px 18px; margin:12px 0 }
+  .q.rec { border-left-color:var(--good); background:var(--good-soft) }
+  .q .t { font-weight:800; margin:0 0 4px } .chip { font:800 11px ui-monospace,Menlo,monospace; color:var(--good); border:1px solid var(--good); border-radius:5px; padding:1px 6px; margin-left:6px }
+  code { font:600 .85em ui-monospace,Menlo,monospace; background:var(--line); padding:.1em .35em; border-radius:4px }
+</style>
+</head>
+<body><div class="wrap">
+<p class="eyebrow">Mockup · score drilldown · 1 October 2026 · awaiting your answer</p>
+<h1>Show which results do not count</h1>
+<p class="muted">KRZEMIŃSKI Mariusz, épée men V3, 2026/27 on LOCAL. The 2026/27 rule counts the best 2 PPW and every MPW. The scores are right: SPWS 338 = 108.7 + 98 + 131.3. But the drilldown draws the three PPW that do not count (97.2, 96.4, 17.8) exactly like the ones that do — only a small ★ tells them apart.</p>
+
+<div class="grid">
+  <div class="panel">
+    <h3>Today</h3>
+    <p class="sum">SPWS: 338 pkt</p>
+    <p class="rule">&nbsp;</p>
+    <div class="row"><span class="num">109</span><div class="track"><div class="bar" style="width:83%"></div></div><span class="mk">★</span></div>
+    <div class="row"><span class="num">98</span><div class="track"><div class="bar carried" style="width:75%"></div></div><span class="mk">★ ↩</span></div>
+    <div class="row"><span class="num">97</span><div class="track"><div class="bar carried" style="width:74%"></div></div><span class="mk">↩</span></div>
+    <div class="row"><span class="num">96</span><div class="track"><div class="bar carried" style="width:73%"></div></div><span class="mk">↩</span></div>
+    <div class="row"><span class="num">18</span><div class="track"><div class="bar carried" style="width:14%"></div></div><span class="mk">↩</span></div>
+    <div class="row"><span class="num">131</span><div class="track"><div class="bar carried" style="width:100%"></div></div><span class="mk">✓ ↩</span></div>
+    <div class="cards">
+      <div class="c"><span><b>PPW1 · 2026/27</b><br><small>Opole · 1/9</small></span><span class="pts">108.7 ★</span></div>
+      <div class="c"><span><b>PPW4 · 2025/26</b><br><small>↩ Gdańsk · 1/7</small></span><span class="pts">97.2</span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Proposed (A)</h3>
+    <p class="sum">SPWS: 338 pkt</p>
+    <p class="rule">Liczone: 2 najlepsze PPW + wszystkie MPW</p>
+    <div class="row"><span class="num">109</span><div class="track"><div class="bar" style="width:83%"></div></div><span class="mk">★</span></div>
+    <div class="row"><span class="num">98</span><div class="track"><div class="bar carried" style="width:75%"></div></div><span class="mk">★ ↩</span></div>
+    <div class="row off"><span class="num">97</span><div class="track"><div class="bar off" style="width:74%"></div></div><span class="mk"><span class="tag-off">nie wliczany</span></span></div>
+    <div class="row off"><span class="num">96</span><div class="track"><div class="bar off" style="width:73%"></div></div><span class="mk"><span class="tag-off">nie wliczany</span></span></div>
+    <div class="row off"><span class="num">18</span><div class="track"><div class="bar off" style="width:14%"></div></div><span class="mk"><span class="tag-off">nie wliczany</span></span></div>
+    <div class="row"><span class="num">131</span><div class="track"><div class="bar carried" style="width:100%"></div></div><span class="mk">✓ ↩</span></div>
+    <div class="cards">
+      <div class="c"><span><b>PPW1 · 2026/27</b><br><small>Opole · 1/9</small></span><span class="pts">108.7 ★</span></div>
+      <div class="c off"><span><b>PPW4 · 2025/26</b><br><small>↩ Gdańsk · 1/7 · nie wliczany</small></span><span class="pts">97.2</span></div>
+    </div>
+  </div>
+</div>
+
+<h2>What changes in A</h2>
+<ul>
+  <li>A result outside the counted set gets a grey bar and the label <code>nie wliczany</code> / <code>not counted</code> instead of a blank marker. Its card below is dimmed.</li>
+  <li>One line under each pool total states the rule it applies, taken from the season&rsquo;s own ranking buckets: &bdquo;Liczone: 2 najlepsze PPW + wszystkie MPW&rdquo;; the EVF+ pool the same way (&bdquo;5 najlepszych&rdquo;).</li>
+  <li>Nothing about which results count changes: the drilldown already picks them with the season&rsquo;s rules (<code>ppwBestIds</code>, <code>intlPoolBestIds</code> in <code>DrilldownModal.svelte</code>), and the ranking SQL agrees. It only shows the choice.</li>
+  <li>Applies in both the Ranking and the PPW view, and to carried-over results the same way as current ones.</li>
+</ul>
+
+<h2>Your answer</h2>
+<div class="q rec"><p class="t">A · Grey out the uncounted results, and state the rule under each total <span class="chip">RECOMMENDED</span></p><p>The question you asked — &ldquo;are these 5 counted?&rdquo; — is answered by looking, without hunting for ★. Small change in one component, test first.</p></div>
+<div class="q"><p class="t">B · Grey them out, no rule line</p><p>Less text; the reader still has to know the rule.</p></div>
+<div class="q"><p class="t">C · Leave it as it is</p><p>The ★ stays the only signal.</p></div>
+<p>Reply <b>A</b>, <b>B</b> or <b>C</b>.</p>
+</div></body></html>

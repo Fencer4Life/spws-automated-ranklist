@@ -27,12 +27,15 @@
 --      checking — that the engine honours config — and cannot drift. The literal
 --      values live in 2.0, in one place.
 --
--- PER-TYPE ENGINES (2026-09-28, ADR-103)
+-- PER-TYPE ENGINES (2026-09-28, ADR-103; 2026-09-30, ADR-104)
 -- -----------------------------------------------------------------------------
 -- The active season assigns its engine per tournament type: PPW and MPW use
--- SPWS_PLACE_MEDAL_V1_2026_2027, PEW, PSW and MSW use EVF classic. The EVF
--- mechanics below (place points, DE rounds, podium) are therefore exercised on
--- PEW, and the PPW/MPW pair exercises the new engine. Test 2.0 pins both.
+-- SPWS_EVF_JOINED_V1_2026_2027 (ADR-104), PEW, PSW and MSW use EVF classic.
+-- The joined engine scores a bracket from the category order its tournament
+-- stores, so every PPW and MPW fixture below carries one; each is a single
+-- category, where the joined engine IS EVF classic from 4 fencers. The EVF
+-- mechanics below (place points, DE rounds, podium) are exercised on PEW; the
+-- PPW/MPW pair pins the coefficient. Test 2.0 pins the assignment.
 --
 -- Fencers are created by this file (see the convention in
 -- doc/handbook/reference/test-and-traceability.html). Do not reintroduce
@@ -88,7 +91,7 @@ BEGIN
   VALUES (v_event, 'SCORE-PEW-N24', 'Test PEW N=24', 'PEW',
     'EPEE', 'M', 'V2', '2024-10-01', 24, 'IMPORTED');
 
-  -- Tournament A2: PPW, N=24 (the 2026/2027 engine; pairs with MPW for 2.7)
+  -- Tournament A2: PPW, N=24 (pairs with MPW for 2.7)
   INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,
     enum_weapon, enum_gender, enum_age_category, dt_tournament, int_participant_count,
     enum_import_status)
@@ -187,10 +190,16 @@ BEGIN
 END;
 $setup$;
 
--- PPW and MPW N=24, the same five placements, on the 2026/2027 engine. One
--- category, so K = 24, m = the place and 24 - place fencers are below. Written
--- through EXECUTE with a plain fallback so that, before the engine migration,
--- the file still runs and fails by name rather than aborting here.
+-- The joined engine's category order: one digit per place, all V2 here.
+DO $setup_order$
+BEGIN
+  EXECUTE $$UPDATE tbl_tournament SET txt_joined_order = repeat('2', int_participant_count)
+             WHERE txt_code IN ('SCORE-PPW-N24', 'SCORE-MPW-N24', 'SCORE-PPW-N1')$$;
+EXCEPTION WHEN undefined_column THEN NULL;  -- before the engine migration: fail by name below
+END;
+$setup_order$;
+
+-- PPW and MPW N=24, the same five placements.
 DO $setup_new$
 DECLARE v_t TEXT; v_place INT; v_i INT := 0;
 BEGIN
@@ -198,19 +207,10 @@ BEGIN
     v_i := 0;
     FOREACH v_place IN ARRAY ARRAY[1, 2, 3, 4, 24] LOOP
       v_i := v_i + 1;
-      BEGIN
-        EXECUTE 'INSERT INTO tbl_result (id_fencer, id_tournament, int_place, int_category_count,
-                   int_category_place, int_below_count)
-                 SELECT f.id_fencer, t.id_tournament, $1, 24, $1, 24 - $1
-                   FROM tbl_fencer f, tbl_tournament t
-                  WHERE f.txt_surname = $2 AND t.txt_code = $3'
-          USING v_place, 'SC-FENCER-' || v_i, v_t;
-      EXCEPTION WHEN undefined_column THEN
-        INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
-        SELECT f.id_fencer, t.id_tournament, v_place
-          FROM tbl_fencer f, tbl_tournament t
-         WHERE f.txt_surname = 'SC-FENCER-' || v_i AND t.txt_code = v_t;
-      END;
+      INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+      SELECT f.id_fencer, t.id_tournament, v_place
+        FROM tbl_fencer f, tbl_tournament t
+       WHERE f.txt_surname = 'SC-FENCER-' || v_i AND t.txt_code = v_t;
     END LOOP;
   END LOOP;
 END;
@@ -239,11 +239,12 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 -- That is not necessarily a bug — but every expectation in this file must then
 -- be recomputed deliberately, and the governance rule set re-checked.
 -- Extended 2026-09-19 and 2026-09-28: the engines are values this file's
--- arithmetic depends on, so they belong in the contract. The season default is
--- the 2026/2027 engine, and each type used below resolves as ADR-103 assigns
--- it: PPW and MPW to the new engine, PEW, PSW and MSW to EVF classic. If the
--- active season moves to other engines, every expectation below must be
--- recomputed deliberately — which is exactly what the contract is for.
+-- arithmetic depends on, so they belong in the contract. The season default
+-- is the 2026/2027 joined engine (ADR-104), and each type used below resolves
+-- as ADR-104 assigns it: PPW and MPW to the joined engine, PEW, PSW and MSW to
+-- EVF classic. If the active season moves to other engines, every expectation
+-- below must be recomputed deliberately — which is exactly what the contract
+-- is for.
 CREATE FUNCTION pg_temp.type_engines_used() RETURNS TEXT
 LANGUAGE plpgsql AS $$
 DECLARE v TEXT;
@@ -271,9 +272,9 @@ SELECT results_eq(
             1.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
             1.0000::NUMERIC(10,4),
             2.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
-            5, 'SPWS_PLACE_MEDAL_V1_2026_2027',
-            'MPW=SPWS_PLACE_MEDAL_V1_2026_2027,MSW=EVF_CLASSIC_V1_2025_2026,'
-            || 'PEW=EVF_CLASSIC_V1_2025_2026,PPW=SPWS_PLACE_MEDAL_V1_2026_2027,'
+            5, 'SPWS_EVF_JOINED_V1_2026_2027',
+            'MPW=SPWS_EVF_JOINED_V1_2026_2027,MSW=EVF_CLASSIC_V1_2025_2026,'
+            || 'PEW=EVF_CLASSIC_V1_2025_2026,PPW=SPWS_EVF_JOINED_V1_2026_2027,'
             || 'PSW=EVF_CLASSIC_V1_2025_2026')$$,
   '2.0 Config contract: active season scoring config and engines match this file''s assumptions'
 );
@@ -327,11 +328,12 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 -- 2.2  Edge case: N=1 → the walkover, scored by the 2026/2027 table
 -- ---------------------------------------------------------------------------
--- Up to three fencers the PPW engine scores N − place + 1 (§8 ust. 7), so a
--- one-competitor bracket earns 1 point where EVF classic gave 50+0+9 = 59. A
--- live case: ADR-066 records six of seven FOIL brackets in PPW2-2025-2026 as
--- single-competitor. The table stores its points in num_place_pts; the DE bonus
--- is not used by the table and holds −1 (ADR-103 §5).
+-- Up to three fencers the joined engine scores N − place + 1 (a meeting, not a
+-- competition), so a one-competitor bracket earns 1 point where EVF classic
+-- gave 50+0+9 = 59 (SS26.HIST.04 pins the classic side). A live case: ADR-066
+-- records six of seven FOIL brackets in PPW2-2025-2026 as single-competitor.
+-- The table stores its points in num_place_pts; the DE bonus is not used by
+-- the table and holds −1.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
@@ -480,18 +482,19 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- 2.7  Multiplier: PPW uses 1.0, MPW uses 1.2 — on the 2026/2027 engine
+-- 2.7  Multiplier: PPW uses 1.0, MPW uses 1.2
 -- ---------------------------------------------------------------------------
 -- Same fencer, same N=24, same place: PPW (mult=1.0) vs MPW (mult=1.2).
--- The engine's components (field, fencers below, medal) should be identical;
--- final scores differ by the multiplier (rounding applied at the end). N=24
--- place 1: log2 24 + 23 × 3.5 + 13 × ∛24 = 4.58 + 80.5 + 37.50 = 122.58.
+-- The components (place, DE rounds, podium) should be identical; final scores
+-- differ by the multiplier (rounding applied at the end). N=24 place 1 is EVF
+-- classic under every 2026/2027 engine, since 24 is at least 16:
+-- 50 + 50 + 25.96 = 125.96.
 SELECT ok(
   (SELECT
-    ppw.num_field_pts = mpw.num_field_pts
-    AND ppw.num_below_pts = mpw.num_below_pts
-    AND ppw.num_medal_bonus = mpw.num_medal_bonus
-    AND ppw.num_final_score = 122.58
+    ppw.num_place_pts = mpw.num_place_pts
+    AND ppw.num_de_bonus = mpw.num_de_bonus
+    AND ppw.num_podium_bonus = mpw.num_podium_bonus
+    AND ppw.num_final_score = 125.96
     AND mpw.num_final_score > ppw.num_final_score
     AND ABS(mpw.num_final_score / ppw.num_final_score - 1.2) < 0.01
    FROM
@@ -504,7 +507,7 @@ SELECT ok(
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
      WHERE t.txt_code = 'SCORE-MPW-N24' AND f.txt_surname = 'SC-FENCER-1') mpw
   ),
-  '2.7 MPW has the same components as PPW on the 2026/2027 engine, final_score scaled by 1.2'
+  '2.7 MPW has the same components as PPW, final_score scaled by 1.2'
 );
 
 -- ---------------------------------------------------------------------------

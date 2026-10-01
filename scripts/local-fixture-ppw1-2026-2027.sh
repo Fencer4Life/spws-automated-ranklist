@@ -9,22 +9,23 @@
 #
 # WHY THIS EXISTS.
 #
-# SPWS-2026-2027 is the first season whose PPW brackets are scored by
-# SPWS_PLACE_MEDAL_V1_2026_2027 (ADR-103), and it holds no results yet, so on
-# LOCAL the new engine had nothing real to score.
+# SPWS-2026-2027 is the first season whose PPW brackets are scored by the
+# 2026/2027 SPWS engine (ADR-104), and it holds no results yet, so on LOCAL the
+# new engine had nothing real to score.
 # This copies the 23 PPW1 brackets and 85 placements of PPW1-2025-2026 onto the
 # already-existing PPW1-2026-2027 calendar row and scores them with the new
 # engine, so the ranklist, drilldown, export and calculator can all be exercised
 # against realistic data before the real results arrive.
 #
-# PPW1 is an unusually good probe for this change. Its fields run from 1 to 11
-# competitors, every one of them below the N = 32 switch to EVF classic, so
-# EVERY bracket scores differently. Eight of the 23 are one-competitor walkovers —
-# the ADR-066 case the table (N <= 3) re-prices from 59 to 1.
-#
-# The copied brackets were already split per category last season, so each is
-# written as ONE category: K = N, m = the place among the stored rows, and the
-# fencers below counted from the stored places (ties are not below).
+# What it can and cannot show. The copied brackets were already split per
+# category and renumbered last season, so each is written as ONE category, with
+# that category's digit at every place of its order (txt_joined_order, ADR-104
+# §3). A single category of 4 or more scores EVF classic under the new engine,
+# exactly as last season; only the brackets of 1-3 change, re-priced by the
+# table (N - place + 1). Eight of the 23 are one-competitor walkovers — the
+# ADR-066 case — which drop from 59 to 1. The joined premium and the cap need a
+# joined listing, which this copy cannot rebuild: pgTAP 85 (Part C) and the
+# real 2026/2027 ingestion exercise those.
 #
 # THIS IS TEST DATA AND IT MUST NEVER LEAVE LOCAL.
 #
@@ -46,7 +47,7 @@
 # That is correct: the season is already assigned the intended engine, which is
 # the condition §11 actually requires, and the probe reports it that way. It
 # also LOCKS LOCAL's SPWS-2026-2027 (ADR-097), and --remove does not unlock it:
-# supabase/tests/83_spws_place_medal_engine.sql needs it unlocked, so reset
+# supabase/tests/85_spws_evf_joined_engine.sql needs it unlocked, so reset
 # LOCAL before running pgTAP again.
 # =============================================================================
 
@@ -137,15 +138,19 @@ BEGIN
   FOR v_t IN
     SELECT t.* FROM tbl_tournament t WHERE t.id_event = v_src_event ORDER BY t.txt_code
   LOOP
+    -- One category per bracket: its digit at every place of the order, which
+    -- the joined engine needs to score it (ADR-104 §3).
     INSERT INTO tbl_tournament (
       id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender,
-      enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+      enum_age_category, dt_tournament, int_participant_count, enum_import_status,
+      txt_joined_order)
     VALUES (
       v_dst_event,
       replace(v_t.txt_code, '2025-2026', '2026-2027'),
       v_t.txt_name || ' [LOCAL TEST FIXTURE]',
       v_t.enum_type, v_t.enum_weapon, v_t.enum_gender, v_t.enum_age_category,
-      v_dst_start, v_t.int_participant_count, 'IMPORTED')
+      v_dst_start, v_t.int_participant_count, 'IMPORTED',
+      repeat(substr(v_t.enum_age_category::TEXT, 2, 1), v_t.int_participant_count))
     RETURNING id_tournament INTO v_new_t;
     v_tourns := v_tourns + 1;
 
@@ -158,17 +163,10 @@ BEGIN
     INSERT INTO tbl_result (
       id_fencer, id_tournament, int_place, enum_fencer_age_category,
       enum_source_age_category, txt_scraped_name, num_match_confidence,
-      enum_match_method, int_category_count, int_category_place, int_below_count)
+      enum_match_method)
     SELECT r.id_fencer, v_new_t, r.int_place, v_t.enum_age_category,
            v_t.enum_age_category, r.txt_scraped_name, r.num_match_confidence,
-           r.enum_match_method,
-           v_t.int_participant_count,
-           1 + (SELECT count(*) FROM tbl_result b
-                 WHERE b.id_tournament = v_t.id_tournament AND b.int_place < r.int_place),
-           LEAST(v_t.int_participant_count - r.int_place,
-                 v_t.int_participant_count
-                 - (SELECT count(*) FROM tbl_result b
-                     WHERE b.id_tournament = v_t.id_tournament AND b.int_place <= r.int_place))
+           r.enum_match_method
       FROM tbl_result r
      WHERE r.id_tournament = v_t.id_tournament;
     GET DIAGNOSTICS v_n = ROW_COUNT;

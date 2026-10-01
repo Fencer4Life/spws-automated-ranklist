@@ -138,11 +138,12 @@ SELECT ok(
 -- SS26.CALC.05 — 2026/2027 reports its PPW engine
 -- =============================================================================
 -- The annex is pinned to this season (§08) and shows the PPW engine, so this is
--- the pin's contract. SE27.CALC.01 asserts every type.
+-- the pin's contract. JB27.TYPE.01 (85_spws_evf_joined_engine.sql) asserts
+-- every type.
 SELECT is(
   (SELECT engine_code FROM pg_temp.params_of('SPWS-2026-2027') WHERE type_code = 'PPW'),
-  'SPWS_PLACE_MEDAL_V1_2026_2027',
-  'SS26.CALC.05: SPWS-2026-2027 reports the place-and-medal engine for PPW'
+  'SPWS_EVF_JOINED_V1_2026_2027',
+  'SS26.CALC.05: SPWS-2026-2027 reports the joined engine for PPW'
 );
 
 -- =============================================================================

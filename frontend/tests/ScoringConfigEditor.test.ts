@@ -377,29 +377,32 @@ describe('ScoringConfigEditor (T8.8)', () => {
   // SE27.UI.02–07 — an engine per tournament type (ADR-103 §2, mockup
   // doc/mockups/se27_scoring_config_per_type.html revision 2, approved
   // 2026-09-28). The season engine becomes the default; each type card
-  // carries its own engine selector and names its joined-bracket module; two
-  // read-only panels list each engine's fixed rules.
+  // carries its own engine selector and names its joined-bracket module;
+  // read-only panels list each engine's fixed rules. ADR-104 removed the
+  // place-and-medal engine: the second engine here is the joined engine that
+  // replaces it. Its texts are those of the mockup's revision 3, approved on
+  // 1 October 2026 (JB27.UI.02).
   // ==========================================================================
 
   const CLASSIC = 'EVF_CLASSIC_V1_2025_2026'
-  const PLACE_MEDAL = 'SPWS_PLACE_MEDAL_V1_2026_2027'
+  const JOINED = 'SPWS_EVF_JOINED_V1_2026_2027'
   // The shape fetchScoringEngines returns: tbl_scoring_engine's code, label
   // and joined-bracket module, in id order.
   const ENGINES = [
     { code: CLASSIC, label: 'EVF klasyczny (do sezonu 2025/2026)', module: 'PER_CATEGORY_RENUMBER' },
-    { code: PLACE_MEDAL, label: 'SPWS — miejsce w stawce i premia medalowa (od sezonu 2026/2027)', module: 'JOINED_BRACKET_CATEGORY_PLACE' },
+    { code: JOINED, label: 'SPWS — punkty EVF i premia w stawce łączonej (od sezonu 2026/2027)', module: 'JOINED_BRACKET_CATEGORY_PLACE' },
   ]
   const ALL_TYPES = ['PPW', 'MPW', 'PPS', 'MPS', 'PEW', 'MEW', 'MSW', 'PSW']
   // fn_export_scoring_config's type_engines for SPWS-2026-2027: the RESOLVED
   // engine of every type (ADR-103 amendment of 2026-09-28).
   const TYPE_ENGINES_2026: Record<string, string> = {
-    PPW: PLACE_MEDAL, MPW: PLACE_MEDAL,
+    PPW: JOINED, MPW: JOINED,
     PPS: CLASSIC, MPS: CLASSIC, PEW: CLASSIC, MEW: CLASSIC, MSW: CLASSIC, PSW: CLASSIC,
   }
   const CONFIG_2026: ScoringConfig = {
     ...MOCK_CONFIG,
     season_code: 'SPWS-2026-2027',
-    engine_code: PLACE_MEDAL,
+    engine_code: JOINED,
     type_engines: TYPE_ENGINES_2026,
   }
   const props2026 = { ...defaultProps, seasonCode: 'SPWS-2026-2027', config: CONFIG_2026, scoringEngines: ENGINES }
@@ -415,7 +418,7 @@ describe('ScoringConfigEditor (T8.8)', () => {
       for (const tp of ALL_TYPES) {
         const select = typeSelect(container, tp)
         expect(select, `selector for ${tp}`).not.toBeNull()
-        expect(Array.from(select.options).map((o) => o.value)).toEqual([CLASSIC, PLACE_MEDAL])
+        expect(Array.from(select.options).map((o) => o.value)).toEqual([CLASSIC, JOINED])
       }
     })
 
@@ -444,8 +447,8 @@ describe('ScoringConfigEditor (T8.8)', () => {
       const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config, scoringEngines: ENGINES } })
       for (const tp of ALL_TYPES) expect(typeSelect(container, tp).value, tp).toBe(CLASSIC)
       const seasonSelect = container.querySelector('select[data-field="scoring-engine-select"]') as HTMLSelectElement
-      await fireEvent.change(seasonSelect, { target: { value: PLACE_MEDAL } })
-      for (const tp of ALL_TYPES) expect(typeSelect(container, tp).value, tp).toBe(PLACE_MEDAL)
+      await fireEvent.change(seasonSelect, { target: { value: JOINED } })
+      for (const tp of ALL_TYPES) expect(typeSelect(container, tp).value, tp).toBe(JOINED)
     })
   })
 
@@ -455,7 +458,8 @@ describe('ScoringConfigEditor (T8.8)', () => {
       for (const tp of ['PPW', 'MPW']) {
         const text = typeModule(container, tp).textContent ?? ''
         expect(text).toContain('JOINED_BRACKET_CATEGORY_PLACE')
-        expect(text).toContain('Stawka łączona: miejsce w stawce i w kategorii')
+        // JB27.UI.02: the bracket's category order is stored, not K, m and b.
+        expect(text).toContain('Stawka łączona: miejsce w całej stawce i kolejność kategorii')
       }
     })
 
@@ -493,7 +497,7 @@ describe('ScoringConfigEditor (T8.8)', () => {
         expect(shown, tp).toContain(text)
         expect(shown, tp).not.toContain('PER_CATEGORY_RENUMBER')
       }
-      await fireEvent.change(typeSelect(container, 'PPS'), { target: { value: PLACE_MEDAL } })
+      await fireEvent.change(typeSelect(container, 'PPS'), { target: { value: JOINED } })
       expect(typeModule(container, 'PPS').textContent).not.toContain('JOINED_BRACKET_CATEGORY_PLACE')
     })
   })
@@ -511,18 +515,53 @@ describe('ScoringConfigEditor (T8.8)', () => {
       expect(panel.querySelectorAll('input, select').length).toBe(0)
     })
 
-    it('SPWS 2026/2027: the three ranges by N and its module', () => {
+    // JB27.UI.02 (ADR-104 §8, mockup revision 3): the joined engine's fixed
+    // rules, in the annex's words. None of them is a setting: they belong to
+    // the engine version, like EVF classic's.
+    it('JB27.UI.02 the joined engine: 3-2-1 up to 3, EVF from 4 and from 16, the premium, the cap, its module', () => {
       const { container } = render(ScoringConfigEditor, { props: props2026 })
-      const panel = container.querySelector(`[data-field="engine-panel-${PLACE_MEDAL}"]`) as HTMLElement
+      const panel = container.querySelector(`[data-field="engine-panel-${JOINED}"]`) as HTMLElement
       expect(panel).not.toBeNull()
-      const text = panel.textContent ?? ''
-      expect(text).toContain('Stawka 1–3')
-      expect(text).toContain('Stawka 4–31')
-      expect(text).toContain('Stawka od 32')
-      expect(text).toContain('log₂N')
-      expect(text).toContain('13 / 7 / 3 × ∛K')
-      expect(text).toContain('JOINED_BRACKET_CATEGORY_PLACE')
+      expect(panel.querySelector('h4')?.textContent).toContain(JOINED)
+      expect(panel.querySelector('h4')?.textContent).toContain('stałe silnika — tylko do odczytu')
+      const rows = Array.from(panel.querySelectorAll('tr')).map((tr) =>
+        Array.from(tr.querySelectorAll('td')).map((td) => td.textContent ?? ''))
+      expect(rows).toEqual([
+        ['Stawka 1–3', 'N − miejsce + 1 (3, 2, 1)'],
+        ['Jedna kategoria od 4, każda stawka od 16', 'algorytm EVF dla całej stawki (wartość bazowa i podium powyżej)'],
+        ['Stawka łączona 4–15, najmłodsza kategoria', 'algorytm EVF'],
+        ['Stawka łączona 4–15, starsza kategoria',
+          'większa z wartości EVF × (1 + 0,05 · d) oraz EVF + d; d — liczba kroków od najmłodszej kategorii obecnej w stawce'],
+        ['Limit',
+          'co najmniej 1 pkt mniej niż zawodnik, który zajął miejsce bezpośrednio przed nim (dowolnej kategorii); współczynnik typu mnoży wynik po limicie'],
+        ['Moduł stawki łączonej',
+          'JOINED_BRACKET_CATEGORY_PLACE — miejsce i N całej stawki; kolejność kategorii stawki zapisana przy turnieju'],
+      ])
       expect(panel.querySelectorAll('input, select').length).toBe(0)
+    })
+
+    it('JB27.UI.02 the panels follow the order of the engine registry: EVF classic, then the joined engine', () => {
+      const { container } = render(ScoringConfigEditor, { props: props2026 })
+      const order = Array.from(container.querySelectorAll('[data-field^="engine-panel-"]'))
+        .map((el) => el.getAttribute('data-field'))
+      expect(order).toEqual([`engine-panel-${CLASSIC}`, `engine-panel-${JOINED}`])
+    })
+
+    it('JB27.UI.02 the joined panel stays shown, read-only, on a locked season', () => {
+      const locked: ScoringConfig = { ...CONFIG_2026, scoring_admin_locked: true }
+      const { container } = render(ScoringConfigEditor, { props: { ...props2026, config: locked, readonly: true } })
+      const panel = container.querySelector(`[data-field="engine-panel-${JOINED}"]`) as HTMLElement
+      expect(panel).not.toBeNull()
+      expect(panel.textContent).toContain('EVF × (1 + 0,05 · d)')
+    })
+
+    it('JB27.CLEAN.06 no panel describes the removed place-and-medal engine', () => {
+      const { container } = render(ScoringConfigEditor, { props: props2026 })
+      expect(container.querySelector('[data-field="engine-panel-SPWS_PLACE_MEDAL_V1_2026_2027"]')).toBeNull()
+      const text = container.textContent ?? ''
+      for (const gone of ['Stawka 4–31', 'Stawka od 32', '13 / 7 / 3 × ∛K', 'premia medalowa']) {
+        expect(text, gone).not.toContain(gone)
+      }
     })
 
     it('an engine without known fixed rules gets no panel', () => {
@@ -539,17 +578,17 @@ describe('ScoringConfigEditor (T8.8)', () => {
       await fireEvent.click(container.querySelector('.config-save-btn') as HTMLButtonElement)
       const payload = onsave.mock.calls[0][0]
       expect(payload.type_engines).toEqual(TYPE_ENGINES_2026)
-      expect(payload.engine_code).toBe(PLACE_MEDAL)
+      expect(payload.engine_code).toBe(JOINED)
     })
 
     it('changing one card changes only that type', async () => {
       const onsave = vi.fn()
       const { container } = render(ScoringConfigEditor, { props: { ...props2026, onsave } })
-      await fireEvent.change(typeSelect(container, 'PPS'), { target: { value: PLACE_MEDAL } })
+      await fireEvent.change(typeSelect(container, 'PPS'), { target: { value: JOINED } })
       await fireEvent.click(container.querySelector('.config-save-btn') as HTMLButtonElement)
       const payload = onsave.mock.calls[0][0]
-      expect(payload.type_engines).toEqual({ ...TYPE_ENGINES_2026, PPS: PLACE_MEDAL })
-      expect(payload.engine_code).toBe(PLACE_MEDAL)
+      expect(payload.type_engines).toEqual({ ...TYPE_ENGINES_2026, PPS: JOINED })
+      expect(payload.engine_code).toBe(JOINED)
     })
 
     it('changing the season default keeps every card on the engine it shows', async () => {
@@ -571,24 +610,24 @@ describe('ScoringConfigEditor (T8.8)', () => {
       const save = container.querySelector('.config-save-btn') as HTMLButtonElement
       await fireEvent.click(save)
       expect(onsave.mock.calls[0][0].type_engines).toBeUndefined()
-      await fireEvent.change(typeSelect(container, 'PPW'), { target: { value: PLACE_MEDAL } })
+      await fireEvent.change(typeSelect(container, 'PPW'), { target: { value: JOINED } })
       await fireEvent.click(save)
-      expect(onsave.mock.calls[1][0].type_engines).toEqual({ PPW: PLACE_MEDAL })
+      expect(onsave.mock.calls[1][0].type_engines).toEqual({ PPW: JOINED })
     })
 
     it('the live config a wizard captures carries type_engines too', async () => {
       const onchange = vi.fn()
       const { container } = render(ScoringConfigEditor, { props: { ...props2026, onchange } })
-      await fireEvent.change(typeSelect(container, 'PSW'), { target: { value: PLACE_MEDAL } })
+      await fireEvent.change(typeSelect(container, 'PSW'), { target: { value: JOINED } })
       const last = onchange.mock.calls[onchange.mock.calls.length - 1][0]
-      expect(last.type_engines).toEqual({ ...TYPE_ENGINES_2026, PSW: PLACE_MEDAL })
+      expect(last.type_engines).toEqual({ ...TYPE_ENGINES_2026, PSW: JOINED })
     })
 
     it('the type engines never touch the carry-over engine', async () => {
       const onsave = vi.fn()
       const config: ScoringConfig = { ...CONFIG_2026, carryover_engine: 'EVENT_CODE_MATCHING' }
       const { container } = render(ScoringConfigEditor, { props: { ...props2026, config, onsave } })
-      await fireEvent.change(typeSelect(container, 'PEW'), { target: { value: PLACE_MEDAL } })
+      await fireEvent.change(typeSelect(container, 'PEW'), { target: { value: JOINED } })
       await fireEvent.click(container.querySelector('.config-save-btn') as HTMLButtonElement)
       expect(onsave.mock.calls[0][0].carryover_engine).toBe('EVENT_CODE_MATCHING')
     })
@@ -615,14 +654,16 @@ describe('ScoringConfigEditor (T8.8)', () => {
     it('names the EVF base value, the season default and the per-type section', () => {
       const { getByText } = render(ScoringConfigEditor, { props: props2026 })
       expect(getByText('Wartość bazowa EVF (mp)')).not.toBeNull()
-      expect(getByText('algorytm EVF — PPS, MPS, PEW, MEW, MSW, PSW oraz stawki od 32 w PPW i MPW')).not.toBeNull()
+      // JB27.UI.02: on the joined engine the EVF base value feeds every bracket
+      // of 4 or more in PPW and MPW, so it feeds every type.
+      expect(getByText('algorytm EVF — każdy typ zawodów; w PPW i MPW każda stawka od 4 zawodników')).not.toBeNull()
       expect(getByText('Silnik domyślny sezonu')).not.toBeNull()
       expect(getByText('dla typów bez własnego silnika')).not.toBeNull()
       expect(getByText('Premia za podium EVF')).not.toBeNull()
       expect(getByText('Typy zawodów — silnik i współczynnik')).not.toBeNull()
     })
 
-    it('the EVF hint follows the cards: a season up to 2025/2026 claims no 32+ range', async () => {
+    it('the EVF hint follows the cards', async () => {
       const config: ScoringConfig = {
         ...MOCK_CONFIG,
         engine_code: CLASSIC,
@@ -630,9 +671,21 @@ describe('ScoringConfigEditor (T8.8)', () => {
       }
       const { container } = render(ScoringConfigEditor, { props: { ...defaultProps, config, scoringEngines: ENGINES } })
       const hint = () => container.querySelector('[data-field="mp-hint"]')?.textContent
-      expect(hint()).toBe('algorytm EVF — PPW, MPW, PPS, MPS, PEW, MEW, MSW, PSW')
-      await fireEvent.change(typeSelect(container, 'PPW'), { target: { value: PLACE_MEDAL } })
-      expect(hint()).toBe('algorytm EVF — MPW, PPS, MPS, PEW, MEW, MSW, PSW oraz stawki od 32 w PPW')
+      expect(hint()).toBe('algorytm EVF — każdy typ zawodów')
+      await fireEvent.change(typeSelect(container, 'PPW'), { target: { value: JOINED } })
+      expect(hint()).toBe('algorytm EVF — każdy typ zawodów; w PPW każda stawka od 4 zawodników')
+      await fireEvent.change(typeSelect(container, 'MPW'), { target: { value: JOINED } })
+      expect(hint()).toBe('algorytm EVF — każdy typ zawodów; w PPW i MPW każda stawka od 4 zawodników')
+    })
+
+    // An engine this build does not know feeds nothing the hint can vouch for,
+    // so the hint lists the types it can.
+    it('JB27.UI.02 a type on an unknown engine drops out of the EVF hint', async () => {
+      const engines = [...ENGINES, { code: 'FUTURE_V1', label: 'Przyszły silnik', module: 'PER_CATEGORY_RENUMBER' }]
+      const { container } = render(ScoringConfigEditor, { props: { ...props2026, scoringEngines: engines } })
+      await fireEvent.change(typeSelect(container, 'PSW'), { target: { value: 'FUTURE_V1' } })
+      expect(container.querySelector('[data-field="mp-hint"]')?.textContent)
+        .toBe('algorytm EVF — PPW, MPW, PPS, MPS, PEW, MEW, MSW; w PPW i MPW każda stawka od 4 zawodników')
     })
   })
 

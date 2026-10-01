@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ranklist switch for 2026/27 — plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Public ranklist · configuration only · Plan</p>
+  <h1>Bring back the Ranking | PPW switch for 2026/27</h1>
+  <p class="dek">The switch was hidden by a season setting, not removed from the code. Turn that setting on for <b>SPWS-2026-2027</b> — LOCAL, then CERT, then PROD — and keep the <b>combined Ranking as the default</b>. The labels stay <b>Ranking | PPW</b>. No code, no migration, no deploy.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Approved 1 Oct: B — you tick it in Admin</span>
+    <span class="pill">one flag: <code>bool_show_evf_toggle</code></span>
+    <span class="pill"><span class="dot"></span>Ranking stays the default</span>
+    <span class="pill">LOCAL → CERT → PROD</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What visitors see</p>
+    <h2>Today the 2026/27 ranklist has no way to show PPW alone</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Today</th><th>After this change</th></tr></thead>
+      <tbody>
+        <tr><td><b>2026/27</b> (publication <code>FULL</code>, default <code>RANKING</code>)</td><td>Opens on the combined Ranking — <code>Zawodnik · SPWS · EVF+ · Razem</code> — with <b>no switch</b>.</td><td>Same default, plus the <b>Ranking | PPW</b> switch above the table and in the score drilldown; <b>PPW</b> shows the PPW-only list with one <code>Punkty</code> column.</td></tr>
+        <tr><td>2023/24 – 2025/26 (publication <code>PPW_ONLY</code>)</td><td>PPW only, no switch.</td><td><b>Unchanged.</b> Their publication is immutable (ADR-099), so the switch never shows for them.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Why it is hidden</p>
+    <h2>One season setting, false everywhere</h2>
+    <p>The ranklist shows the switch when the season is published <code>FULL</code> <em>and</em> its scoring config has the flag on — <code>frontend/src/App.svelte:671</code>:</p>
+    <pre class="trace">showEvfToggleRanklist = isFullPublication &amp;&amp; (scoringConfig?.show_evf_toggle ?? false)</pre>
+    <p>Read today on all three environments: every season has <code>bool_show_evf_toggle = false</code>; 2026/27 is <code>FULL</code> with default mode <code>RANKING</code>. The flag became the ranklist&rsquo;s own setting, default off, in June 2026, when SPWS lost its national-team selection privilege. FR-34 and FR-64 describe exactly this setting, and its Admin checkbox is &bdquo;Pokaż przełącznik +EVF/Kadra na Liście&rdquo; in the season edit form.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The lock does not get in the way</p>
+      <p>ADR-097 applies <code>show_evf_toggle</code> regardless of the season&rsquo;s scoring lock (pgTAP SS26.LOCK.07), so the switch can be turned on before or after the first 2026/27 result is scored. The default mode, which <em>is</em> locked, is not touched.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The change</p>
+    <h2>One flag, three environments, each on your go</h2>
+    <ol class="steps">
+      <li><b>LOCAL.</b> Set the flag for SPWS-2026-2027. LOCAL&rsquo;s 2026/27 season is already locked by the PPW1 test, so this also rehearses the locked case. Check in the browser: the switch shows; the list opens on Ranking; <b>PPW</b> shows the PPW1 points in one column; the drilldown has the switch; 2025/26 still has none.</li>
+      <li><b>CERT.</b> The same flag, then the same browser check on the CERT ranklist.</li>
+      <li><b>PROD.</b> The same flag, then the same check on the live ranklist.</li>
+    </ol>
+    <h3>How the flag is written on CERT and PROD</h3>
+    <div class="note accent">
+      <p class="lede">A · I write it, scoped and proven <span class="chip fill">recommended</span></p>
+      <p>Through <code>scripts/cloud-sql.sh</code>: read the row first, then <code>UPDATE tbl_scoring_config SET bool_show_evf_toggle = true WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027') RETURNING …</code>, then confirm through the public <code>fn_export_scoring_config</code> and the page itself. It is the same single write the Admin save makes for this flag, and it needs no MFA session from you.</p>
+    </div>
+    <div class="note">
+      <p class="lede">B · You tick it in Admin</p>
+      <p>Admin → Sezony → SPWS-2026-2027 → tick &bdquo;Pokaż przełącznik +EVF/Kadra na Liście&rdquo; → Zapisz, on CERT and on PROD. I check each afterwards.</p>
+    </div>
+    <p><b>Undo</b> is the same write with <code>false</code>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Tests</p>
+    <h2>No code changes, so no new tests</h2>
+    <p>The behaviour is already covered: <code>AppShell.test.ts</code> SS26.UIHIST (the switch shows for a <code>FULL</code> season with the flag on and hides for <code>PPW_ONLY</code>), <code>FilterBar.test.ts</code>, <code>DrilldownModal.test.ts</code>, pgTAP SS26.LOCK.07 (a flag-only save on a locked season) and Playwright <code>ranking-publication-boundary.spec.ts</code>. The proof for this change is the browser check on each environment.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Worth knowing</p>
+    <h2>Two side effects, neither blocking</h2>
+    <ul>
+      <li><b>Timing.</b> Independent of the ADR-104 release: the ranking code behind the switch (<code>fn_ranking_full</code>) has been live since 20 September. It can go now.</li>
+      <li><b>LOCAL reset.</b> <code>./scripts/reset-dev.sh</code> loads the 12 September PROD seed, where the flag is off. LOCAL shows the switch again after a reset only once the seed is refreshed from PROD.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation</p>
+    <h2>Coherence gate</h2>
+    <div class="note good">
+      <p class="lede">☑ Documentation coherence gate complete</p>
+<pre class="trace" style="border-left-color:var(--good)">Impact: configuration
+Canonical docs affected: none — FR-34, FR-64 and the handbook already describe the switch
+  as a season setting; which value an environment holds is data, not documentation
+ADR impact: none (ADR-017, ADR-097 and ADR-101 hold as written)
+Operational impact: none
+Source-map / last-verified updated: not applicable
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: not applicable</pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Your answer</p>
+    <h2>Go ahead?</h2>
+    <div class="note accent">
+      <p class="lede">A · LOCAL now; CERT and PROD by my scoped write, each on your go <span class="chip fill">recommended</span></p>
+      <p>Fastest, and every write is shown before and after.</p>
+    </div>
+    <div class="note">
+      <p class="lede">B · LOCAL now; you tick the box in Admin on CERT and PROD</p>
+      <p>The app&rsquo;s own path, with your MFA session.</p>
+    </div>
+    <p><b>Answered 1 October 2026: B.</b> You tick the box in Admin; I verify each environment from the database and the page. The one checkbox drives both switches: the one above the list (<code>FilterBar</code>) and the one in the score drilldown (<code>DrilldownModal</code>) — <code>App.svelte</code> passes them the same flag, and the WordPress <code>&lt;spws-ranklist&gt;</code> embed wraps the same app.</p>
+  </section>
+
+  <p class="foot">Plan · 1 October 2026 · SPWS Ranklist · the ranklist switch for 2026/27</p>
+</div>
+</body>
+</html>

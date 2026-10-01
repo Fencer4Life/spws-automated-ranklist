@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Percentage premium</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1060px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:78ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:16.5px;margin:24px 0 4px}
+h3+p{margin:2px 0 6px;color:var(--muted);font-size:14.5px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.grid td,table.ex td{white-space:nowrap}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--mono);font-size:12.5px}
+td.muted{color:var(--muted)}
+td.neg{color:var(--coral);font-weight:600}
+td.pos{color:var(--green)}
+td.warn{color:var(--amber);font-weight:600}
+tr.big td,tr.hit td{background:var(--hit)}
+tr.off td{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+tr.grp td{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--navy-soft);text-decoration:none}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:0 6px;border-radius:4px}
+.c0{background:#e8e0f7;color:#4b2d86}.c1{background:var(--navy-soft);color:var(--navy)}.c2{background:#dff1f1;color:#1d5d5d}
+.c3{background:var(--green-bg);color:var(--green)}.c4{background:var(--amber-bg);color:var(--amber)}
+@media (prefers-color-scheme:dark){.c0{background:#2c2342;color:#c9b6f0}.c2{background:#173535;color:#9fdada}}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warnc{border-left:4px solid var(--coral)}
+.rules{border-left:4px solid var(--navy)}
+.rules ol{margin:6px 0 0;padding-left:22px}
+.rules li{margin:6px 0}
+.rules ol ol{list-style:lower-alpha}
+.rules ol.z{list-style:none;padding-left:0}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.ok{color:var(--green);font-weight:600}.no{color:var(--coral);font-weight:600}
+.legend{font-size:13.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.stat b{display:block;font-family:var(--serif);font-size:24px;font-weight:600}
+.stat span{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:4px;margin-right:6px}
+.tag.ok{background:var(--green-bg);color:var(--green)}.tag.ex{background:var(--amber-bg);color:var(--amber)}.tag.no{background:var(--navy-soft);color:var(--muted)}
+tr.d3 td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+.was{font-size:11px;color:var(--muted)}
+.new{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:var(--amber-bg);color:var(--amber);padding:0 6px;border-radius:4px;margin-left:4px}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Chosen rule · 30 September 2026 · EVF × (1 + 0.05 · d), at least EVF + d · checked on every order and on three seasons</p>
+<h1>The chosen rule: EVF × (1 + 0.05 · d), at least EVF + d</h1>
+<p class="dek">The youngest category of a joined bracket gets pure EVF. An older fencer gets 5% per category step, and never less than EVF + d. Nobody gets more than the fencer placed ahead minus 1 point. The rule keeps Z1–Z4 in every order tested and in every real bracket of 2023/24–2025/26. It never rewards finishing lower. Every older fencer of a small category gains at least 0.38 points over fencing alone. The limits that remain are shown with an example each in §5.</p>
+
+<div class="card locked"><span class="lb">Decided</span>
+<ul>
+<li>A bracket of 1–3 fencers is a meeting, not a competition, and scores 3 / 2 / 1.</li>
+<li>A joined bracket of 4–15:
+<ul>
+<li>the youngest category gets pure EVF;</li>
+<li>an older category gets EVF × (1 + 0.05 · d), but at least EVF + d;</li>
+<li>everyone is capped at 1 point under the fencer placed ahead.</li>
+</ul></li>
+<li>A single-category bracket or a bracket of 16+ scores plain EVF.</li>
+<li>The joining rules, including the exception for a small category at the young end, are unchanged.</li>
+<li>No bottom bonus, no +1 for last place, no tie clause.</li>
+</ul></div>
+
+<h2>1 · Reguła punktacji</h2>
+<div class="card rules" lang="pl"><span class="lb">Reguła punktacji</span>
+<p>Stawka to wszyscy zawodnicy jednej listy wyników. N to liczba zawodników w stawce, a p to miejsce w stawce. Każde miejsce jest rozstrzygnięte walką, więc w stawce nie ma miejsc ex aequo.</p>
+<ol>
+<li><b>Stawka 1–3 zawodników</b> to spotkanie, nie zawody: N − p + 1 pkt, czyli 3, 2, 1.</li>
+<li><b>Stawka jednej kategorii wiekowej albo stawka 16 i więcej zawodników:</b> punkty EVF za miejsce w stawce.</li>
+<li><b>Stawka łączona 4–15 zawodników:</b>
+<ul>
+<li>zawodnik najmłodszej kategorii w stawce dostaje punkty EVF za miejsce w całej stawce;</li>
+<li>zawodnik starszej kategorii dostaje punkty EVF × (1 + 0,05 · d), ale co najmniej EVF + d. d to różnica między jego kategorią a najmłodszą kategorią w stawce; na przykład w stawce z V0 zawodnik V4 ma d = 4;</li>
+<li>nikt nie dostaje więcej niż zawodnik, który zajął miejsce przed nim, minus 1 pkt.</li>
+</ul></li>
+<li>Wynik mnoży się przez współczynnik rangi zawodów (PPW 1,0; MPW 1,2).</li>
+</ol>
+<p>Punkty EVF = 50 − 49 · ln p / ln N + 10 · liczba wygranych rund eliminacji + premia za podium (3 / 2 / 1 · 3 · ∛N).</p></div>
+<div class="card rules"><span class="lb">How it reads</span>
+<p>The two parts meet at exactly <b>20 EVF points</b>, whatever d is: 5% × d × 20 = d.</p>
+<ul>
+<li>Above 20 EVF points, the older fencer gets 5% per step.</li>
+<li>Below 20, they get + d.</li>
+</ul>
+<p>In a bracket of 8, places 1–4 have EVF above 20 and places 5–8 below it. So the top gets a premium that grows with the score, and the bottom gets a fixed 1–4 points.</p></div>
+
+<h2>2 · Zasady łączenia kategorii (bez zmian)</h2>
+<div class="card rules" lang="pl"><span class="lb">Zasady łączenia</span>
+<ol>
+<li>Kategoria, w której startuje mniej niż 4 zawodników, jest automatycznie łączona z sąsiednią kategorią wiekową, czyli z najbliższą kategorią obecną w tej broni i płci.</li>
+<li>W jednej stawce łączy się najwyżej 2 kategorie.</li>
+<li>Więcej niż 2 kategorie łączy się tylko wtedy, gdy inaczej nie da się połączyć wszystkich kategorii poniżej 4 zawodników albo stawka miałaby mniej niż 4 zawodników.</li>
+<li>Kategoria z co najmniej 4 zawodnikami może startować osobno.</li>
+<li>Kategoria z co najmniej 4 zawodnikami może być w stawce łączonej tylko najmłodszą kategorią. <b>Wyjątek:</b> jeśli najmłodsza obecna kategoria ma mniej niż 4 zawodników i nawet razem z kolejnymi kategoriami poniżej 4 zawodników nie osiąga 4, łączy się je z najbliższą starszą kategorią, także gdy ma ona 4 lub więcej zawodników.</li>
+<li>Jeśli w całej broni i płci startuje mniej niż 4 zawodników, wszystkie obecne kategorie tworzą jedną stawkę.</li>
+</ol></div>
+
+<h2>3 · Z1–Z4</h2>
+<div class="card rules" lang="pl"><span class="lb">Zasady</span>
+<ol class="z">
+<li><b>Z1.</b> Zawodnicy najmłodszej kategorii dostają czyste punkty EVF.</li>
+<li><b>Z2.</b> Kategoria, która ma 1–3 zawodników, nigdy nie traci na łączeniu w porównaniu z turniejem samej swojej kategorii. Zapłacić może tylko kategoria, która ma co najmniej 4 zawodników i mogłaby startować osobno.</li>
+<li><b>Z3.</b> Nikt nie dostaje więcej punktów niż ktokolwiek, kto zajął miejsce przed nim.</li>
+<li><b>Z4.</b> Nikt nie ma tyle samo punktów co zawodnik na miejscu przed nim. Ma zawsze co najmniej 1 pkt mniej.</li>
+</ol></div>
+<p class="legend">Method: every distinct finishing order was scored in two sets. The first covers two categories 1–4 steps apart, up to 15 fencers (261,984 orders), plus three categories of 4–8 and five categories of 5–7 (43,704 orders). The second is the 109 real joined brackets of 4–15 fencers from every PPW and MPW of 2023/24–2025/26, keeping each category's real internal order; there, orders are counted as equally likely, and again with younger categories 2× stronger. All scores are before the rank coefficient.</p>
+<div class="tw"><table>
+<thead><tr><th>Principle</th><th>Every order tested</th><th>Real brackets, orders equal</th><th>Real, younger 2× stronger</th></tr></thead>
+<tbody>
+<tr><td lang="pl">Z1</td><td class="ok">Kept: no youngest score changed</td><td class="ok">Kept</td><td class="ok">Kept</td></tr>
+<tr><td lang="pl">Z2 · kategoria 1–3</td><td class="ok">Kept: every older result of 1–3 gains</td><td class="ok">Kept: 260 older and 154 youngest fencers never below; smallest older gain 0.38</td><td class="ok">Kept</td></tr>
+<tr><td lang="pl">Z2 · kategoria 4+</td><td>Can pay</td><td>Youngest 4+ below in 40.2% of results; older 4+ in exception brackets 38.6%</td><td>24.4% and 50.6%</td></tr>
+<tr><td lang="pl">Z3, Z4</td><td class="ok">Kept: smallest gap 1.00</td><td class="ok">Kept</td><td class="ok">Kept</td></tr>
+<tr><td>Nobody scores more by finishing one place lower</td><td></td><td class="ok">Kept: checked on every swap of neighbouring fencers</td><td></td></tr>
+</tbody></table></div>
+<p class="legend">Why it cannot fail:</p>
+<ul class="legend">
+<li>For 4–15 fencers, neighbouring EVF places are at least 1.25 points apart. So the cap can only trim part of an older fencer's premium: it never takes anyone below EVF and never reaches the youngest category.</li>
+<li>An older fencer always scores above EVF, and EVF is always at least 3 / 2 / 1 for their place in their own category.</li>
+</ul>
+
+<h2>4 · How it behaves on the real brackets</h2>
+<div class="tw"><table>
+<thead><tr><th>Older fencers in real joined brackets</th><th class="r">Orders equal</th><th class="r">Younger 2× stronger</th></tr></thead>
+<tbody>
+<tr><td>Score set by the 5% part / by EVF + d</td><td class="r">58.1% / 41.9%</td><td class="r">46.1% / 53.9%</td></tr>
+<tr><td>Premium over EVF, average / largest</td><td class="r">3.02 / 21.9</td><td class="r">2.44 / 21.9</td></tr>
+<tr><td>— d = 1</td><td class="r">2.07 / 5.6</td><td class="r">1.87 / 5.6</td></tr>
+<tr><td>— d = 2</td><td class="r">4.09 / 11.1</td><td class="r">3.27 / 11.1</td></tr>
+<tr><td>— d = 3</td><td class="r">6.26 / 16.4</td><td class="r">4.07 / 16.4</td></tr>
+<tr><td>— d = 4</td><td class="r">8.16 / 21.9</td><td class="r">4.73 / 21.9</td></tr>
+<tr><td>Cut by the cap</td><td class="r">1.8%, by 0.44 on average, at most 2.76</td><td class="r">1.9%, by 0.33 on average</td></tr>
+<tr><td>Older results of 1–3 gaining under 1 point over their own bracket</td><td class="r">0.5%</td><td class="r">1.0%</td></tr>
+<tr><td>Average gain of an older fencer of 1–3 over their own bracket</td><td class="r">38.0</td><td class="r">27.4</td></tr>
+</tbody></table></div>
+<p>The variants tested on the way, for reference, with orders equal:</p>
+<ul>
+<li><b>5% alone</b> left 16.4% of those results under 1 point.</li>
+<li><b>The +2 bottom bonus</b> left 5.2%, and did not reach middle categories.</li>
+<li><b>10%</b> let an older winner top every stand-alone winner 6.8 times in three seasons.</li>
+</ul>
+
+<h2>5 · What remains, with an example for each point</h2>
+<div class="card rules"><span class="lb">Two assumptions used below</span>
+<p>Past results only give places inside each category. They do not show who would have finished ahead across categories, so two cases are tested:</p>
+<ul>
+<li><b>No idea who is stronger:</b> every finishing order is equally likely.</li>
+<li><b>Younger fencers stronger:</b> a fencer one category younger is twice as likely to finish ahead.</li>
+</ul></div>
+
+<h3>B1 · An older winner can score more than any stand-alone winner, but it is rare</h3>
+<p>An older fencer who wins a joined bracket gets EVF for 1st place plus 5% per step. Once in a while, that is more than any winner of a stand-alone category got in three seasons.</p>
+<div class="tw"><table>
+<thead><tr><th>Who wins</th><th>Bracket</th><th class="r">Score</th></tr></thead>
+<tbody>
+<tr class="hit"><td>A V4 fencer (d = 4)</td><td>PPW5-2024-2025 Foil M: 10 fencers from V0 to V4</td><td class="r"><b>109.39 × 1.20 = 131.27</b></td></tr>
+<tr><td>A V0 fencer, same bracket</td><td>same</td><td class="r">109.39</td></tr>
+<tr><td>Best stand-alone winner in three seasons</td><td>PPW3-2025-2026 Epee M: V2 alone, 19 fencers</td><td class="r">124.02</td></tr>
+<tr class="hit"><td>A V4 fencer, typical case (d = 1)</td><td>V3 6 + V4 2: 8 fencers</td><td class="r">98.00 × 1.05 = 102.90</td></tr>
+<tr><td>A V3 fencer, same bracket</td><td>same</td><td class="r">98.00</td></tr>
+</tbody></table></div>
+<p><b>What it means:</b> the top premium is 5 points for a V4 winning over V3 fencers, and 22 points for a V4 winning over V0 fencers. Going above 124.02 needs a large bracket with a V0 in it and an older fencer in 1st place. Across all real brackets of three seasons, we would expect that less than once in total (0.4 times).</p>
+
+<h3>B2 · A category of 3 has a higher ceiling and a lower floor than a category of 4</h3>
+<p>A category of 3 is joined; a category of 4 fences alone. Take V3 with 5 fencers. The best V4 fencer's score depends on whether V4 has 3 fencers (joined with V3) or 4 (alone):</p>
+<div class="tw"><table>
+<thead><tr><th>Best V4 fencer finishes, in the joined bracket of 8</th><th class="r">1st</th><th class="r">2nd</th><th class="r">3rd</th><th class="r">4th</th><th class="r">5th</th><th class="r">6th</th></tr></thead>
+<tbody>
+<tr class="hit"><td>V4 has 3 fencers, joined with V3 5</td><td class="r pos">102.90</td><td class="r neg">68.95</td><td class="r neg">42.12</td><td class="r neg">28.70</td><td class="r neg">13.08</td><td class="r neg">8.78</td></tr>
+<tr><td>V4 has 4 fencers, fences alone</td><td class="r" colspan="6">84.29, whatever happens in V3</td></tr>
+</tbody></table></div>
+<p><b>What it means:</b> with 3 fencers, the best V4 scores more than the stand-alone 84.29 only by finishing ahead of every V3 fencer. One more V4 entry changes their range from "8.78 to 102.90" to "always 84.29". This comes from joining itself; the 5% premium adds only 4.90 points at the top.</p>
+
+<h3>B3 · Who else is in the bracket decides d</h3>
+<p>d counts the steps from the youngest category present. The same V4 fencer in the same place scores more when a younger category is in the bracket.</p>
+<div class="tw"><table>
+<thead><tr><th>V4 fencer in a bracket of 8</th><th class="r">Youngest in the bracket is V3 (d = 1)</th><th class="r">Youngest in the bracket is V0 (d = 4)</th></tr></thead>
+<tbody>
+<tr><td>2nd place (EVF 65.67)</td><td class="r">65.67 × 1.05 = 68.95</td><td class="r">65.67 × 1.20 = 78.80</td></tr>
+<tr><td>Last place (EVF 1.00)</td><td class="r">1.00 + 1 = 2.00</td><td class="r">1.00 + 4 = 5.00</td></tr>
+</tbody></table></div>
+<p><b>Real case:</b> in PPW2-2025-2026 Foil M, one V0 fencer entered, so the V4 fencer had d = 4. Without that V0 fencer, the youngest category would have been V1 and d would have been 3.</p>
+<p><b>What it means:</b> depending on who else entered, the same result is worth up to 14.7 points more in 1st place (102.90 against 117.60), 9.85 more in 2nd, and 3 more in last place. Most older fencers have d = 1 (250 of 381 results); d = 4 happened 12 times.</p>
+
+<h3>B4 · Being the best V4 of the day is worth less when V4 is small</h3>
+<div class="tw"><table>
+<thead><tr><th>Event</th><th>Best V4 fencer</th><th class="r">Score</th></tr></thead>
+<tbody>
+<tr><td>Event A: V4 has 4 fencers and fences alone</td><td>wins V4</td><td class="r">84.29</td></tr>
+<tr class="hit"><td>Event B: V4 has 3, joined with V3 5</td><td>finishes 4th, behind three V3 fencers</td><td class="r neg">28.70</td></tr>
+<tr class="hit"><td>Event B</td><td>finishes 1st, ahead of every V3 fencer</td><td class="r pos">102.90</td></tr>
+</tbody></table></div>
+<p><b>Real averages:</b> the best fencer of an older category of 1–3 scores 56.2 (41.9 if younger fencers are stronger). The winner of a stand-alone category scores 97.7, and never less than 84.29.</p>
+<p><b>What it means:</b> in a category's season ranking, "best of my category that day" is worth more at events where that category was big. It comes from joining under any rule, not from the premium.</p>
+
+<h3>B5 · A category of 4+ can lose points</h3>
+<p>A category big enough to fence alone loses when fencers of another category finish ahead of it. Real case: GP3-2023-2024 Sabre M, V3 5 + V4 3 (8 fencers). Take the V3 fencer who finished 2nd among the V3 fencers. Fencing alone they would score 59.16.</p>
+<div class="tw"><table>
+<thead><tr><th>Finishing order</th><th class="r">Their place</th><th class="r">Score</th><th class="r">vs alone</th></tr></thead>
+<tbody>
+<tr><td>V3 V3 V3 V3 V3 V4 V4 V4</td><td class="r">2nd</td><td class="r">65.67</td><td class="r pos">+6.51</td></tr>
+<tr><td>V4 V3 V3 V3 V3 V3 V4 V4</td><td class="r">3rd</td><td class="r">40.11</td><td class="r neg">−19.05</td></tr>
+<tr><td>V4 V4 V4 V3 V3 V3 V3 V3</td><td class="r">5th</td><td class="r">12.08</td><td class="r neg">−47.08</td></tr>
+<tr><td>Average over all 56 possible orders</td><td class="r"></td><td class="r"></td><td class="r neg">−14.66</td></tr>
+</tbody></table></div>
+<p>The V3 winner in the same bracket scores 98.00 against 95.39 alone (+2.61) when the V3 fencers lead. When all three V4 fencers finish ahead, they score 27.33 (−68.06). In an exception bracket it is the older category that loses. With V0 3 + V1 4 and the three V0 fencers ahead, the V1 winner scores 26.35 against 84.29 alone.</p>
+<p><b>What it means:</b> in three seasons, 72 real fencers would on average lose points against fencing alone. A youngest category of 4+ ends below its own tournament in 40% of its results, or 24% if younger fencers are stronger. This is by design (Z2): only a category that could fence alone can lose.</p>
+
+<h3>B6 · One fencer more than 15 removes the premium</h3>
+<div class="tw"><table>
+<thead><tr><th>Bracket</th><th class="r">V3 fencer wins</th><th class="r">V3 fencer finishes last</th></tr></thead>
+<tbody>
+<tr class="hit"><td>V2 12 + V3 3 = 15 fencers (joined rule)</td><td class="r">117.81</td><td class="r">2.00</td></tr>
+<tr><td>V2 13 + V3 3 = 16 fencers (plain EVF)</td><td class="r">112.68</td><td class="r">1.00</td></tr>
+</tbody></table></div>
+<p><b>Real case:</b> PPW3-2025-2026 Sabre M formed a joined bracket of 17: V0 1 + V1 2 + V2 12 + V3 2. It is scored with plain EVF, so a V3 fencer in last place gets 1.00, the same as fencing alone.</p>
+<p><b>What it means:</b> the premium stops at 15 fencers. This happened once in three seasons.</p>
+
+<h3>B7 · We do not know how much stronger younger fencers are</h3>
+<p>The same bracket, V3 5 + V4 3, under the two assumptions:</p>
+<div class="tw"><table>
+<thead><tr><th></th><th class="r">No idea who is stronger</th><th class="r">Younger fencers stronger</th></tr></thead>
+<tbody>
+<tr><td>A V4 fencer wins the bracket</td><td class="r">37.5%</td><td class="r">23.1%</td></tr>
+<tr><td>Best V4 fencer's average score</td><td class="r">68.5</td><td class="r">53.1</td></tr>
+<tr><td>V3 results below fencing alone</td><td class="r">55.4%</td><td class="r">41.7%</td></tr>
+</tbody></table></div>
+<p><b>What it means:</b> if younger fencers are stronger, which is likely, older small categories score less and the V3 category loses less often. The first 2026/27 events will give real joined results to check this against.</p>
+
+<h2>6 · Examples</h2>
+<p class="legend">Shaded rows are fencers outside the youngest category. The part that sets an older fencer's score is in bold. A row marked on the left was capped.</p>
+<h3>1 · Two categories of 3, all V4 fencers at the bottom (N = 6)</h3>
+<p>The V4 fencer in 4th has EVF above 20, so 5% applies: 23.19. Below that, + d applies: 6.99, then 2.00 for last place, against 1.05 at 5% alone.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF × (1 + 0,05·d)</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">96.35</td><td class="r"></td><td class="r"></td><td class="r"><b>96.35</b></td><td class="r muted">3.00</td><td class="r pos">+93.35</td></tr>
+<tr><td>2</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">61.95</td><td class="r"></td><td class="r"></td><td class="r"><b>61.95</b></td><td class="r muted">2.00</td><td class="r pos">+59.95</td></tr>
+<tr><td>3</td><td><span class="chip c3">V3</span></td><td class="r">0</td><td class="r">35.41</td><td class="r"></td><td class="r"></td><td class="r"><b>35.41</b></td><td class="r muted">1.00</td><td class="r pos">+34.41</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c4">V4</span></td><td class="r">1</td><td class="r">22.09</td><td class="r"><b>23.19</b></td><td class="r">23.09</td><td class="r"><b>23.19</b></td><td class="r muted">3.00</td><td class="r pos">+20.19</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c4">V4</span></td><td class="r">1</td><td class="r">5.99</td><td class="r">6.29</td><td class="r"><b>6.99</b></td><td class="r"><b>6.99</b></td><td class="r muted">2.00</td><td class="r pos">+4.99</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c4">V4</span></td><td class="r">1</td><td class="r">1.00</td><td class="r">1.05</td><td class="r"><b>2.00</b></td><td class="r"><b>2.00</b></td><td class="r muted">1.00</td><td class="r pos">+1.00</td></tr>
+</tbody></table></div>
+<h3>2 · A middle category at the bottom: GP1-2023-2024 Epee F, V1 7 · V2 2 · V3 1 (N = 10)</h3>
+<p>Every older fencer here has EVF under 20, so + d applies to all of them. The V2 fencer in last place gets 2.00 and the V3 fencer in 9th gets 5.24. The bottom bonus would have given both of them nothing.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF × (1 + 0,05·d)</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">109.39</td><td class="r"></td><td class="r"></td><td class="r"><b>109.39</b></td><td class="r muted">97.22</td><td class="r pos">+12.17</td></tr>
+<tr><td>2</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">78.18</td><td class="r"></td><td class="r"></td><td class="r"><b>78.18</b></td><td class="r muted">64.02</td><td class="r pos">+14.15</td></tr>
+<tr><td>3</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">53.08</td><td class="r"></td><td class="r"></td><td class="r"><b>53.08</b></td><td class="r muted">38.07</td><td class="r pos">+15.01</td></tr>
+<tr><td>4</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">40.50</td><td class="r"></td><td class="r"></td><td class="r"><b>40.50</b></td><td class="r muted">25.09</td><td class="r pos">+15.41</td></tr>
+<tr><td>5</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">25.75</td><td class="r"></td><td class="r"></td><td class="r"><b>25.75</b></td><td class="r muted">9.47</td><td class="r pos">+16.28</td></tr>
+<tr><td>6</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">21.87</td><td class="r"></td><td class="r"></td><td class="r"><b>21.87</b></td><td class="r muted">4.88</td><td class="r pos">+16.99</td></tr>
+<tr><td>7</td><td><span class="chip c1">V1</span></td><td class="r">0</td><td class="r">18.59</td><td class="r"></td><td class="r"></td><td class="r"><b>18.59</b></td><td class="r muted">1.00</td><td class="r pos">+17.59</td></tr>
+<tr class="hit"><td>8</td><td><span class="chip c2">V2</span></td><td class="r">1</td><td class="r">15.75</td><td class="r">16.54</td><td class="r"><b>16.75</b></td><td class="r"><b>16.75</b></td><td class="r muted">2.00</td><td class="r pos">+14.75</td></tr>
+<tr class="hit"><td>9</td><td><span class="chip c3">V3</span></td><td class="r">2</td><td class="r">3.24</td><td class="r">3.57</td><td class="r"><b>5.24</b></td><td class="r"><b>5.24</b></td><td class="r muted">1.00</td><td class="r pos">+4.24</td></tr>
+<tr class="hit"><td>10</td><td><span class="chip c2">V2</span></td><td class="r">1</td><td class="r">1.00</td><td class="r">1.05</td><td class="r"><b>2.00</b></td><td class="r"><b>2.00</b></td><td class="r muted">1.00</td><td class="r pos">+1.00</td></tr>
+</tbody></table></div>
+<h3>3 · The cap: GP7-2023-2024 Sabre M, V2 12 · V3 2 (N = 14)</h3>
+<p>The V3 fencer in 12th would get 4.86, but the V2 fencer in 11th has 5.48, so the cap gives 4.48. The V3 fencer in last place would get 2.00; the cap gives 1.38. That +0.38 over their own bracket is the smallest gain in any real bracket.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF × (1 + 0,05·d)</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">111.69</td><td class="r"></td><td class="r"></td><td class="r"><b>111.69</b></td><td class="r muted">110.60</td><td class="r pos">+1.09</td></tr>
+<tr><td>2</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">81.59</td><td class="r"></td><td class="r"></td><td class="r"><b>81.59</b></td><td class="r muted">80.07</td><td class="r pos">+1.52</td></tr>
+<tr><td>3</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">56.83</td><td class="r"></td><td class="r"></td><td class="r"><b>56.83</b></td><td class="r muted">55.20</td><td class="r pos">+1.63</td></tr>
+<tr><td>4</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">44.26</td><td class="r"></td><td class="r"></td><td class="r"><b>44.26</b></td><td class="r muted">42.66</td><td class="r pos">+1.60</td></tr>
+<tr><td>5</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">30.12</td><td class="r"></td><td class="r"></td><td class="r"><b>30.12</b></td><td class="r muted">28.26</td><td class="r pos">+1.85</td></tr>
+<tr><td>6</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">26.73</td><td class="r"></td><td class="r"></td><td class="r"><b>26.73</b></td><td class="r muted">24.67</td><td class="r pos">+2.06</td></tr>
+<tr><td>7</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">23.87</td><td class="r"></td><td class="r"></td><td class="r"><b>23.87</b></td><td class="r muted">21.63</td><td class="r pos">+2.24</td></tr>
+<tr><td>8</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">21.39</td><td class="r"></td><td class="r"></td><td class="r"><b>21.39</b></td><td class="r muted">19.00</td><td class="r pos">+2.40</td></tr>
+<tr><td>9</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">9.20</td><td class="r"></td><td class="r"></td><td class="r"><b>9.20</b></td><td class="r muted">6.67</td><td class="r pos">+2.53</td></tr>
+<tr><td>10</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">7.25</td><td class="r"></td><td class="r"></td><td class="r"><b>7.25</b></td><td class="r muted">4.60</td><td class="r pos">+2.65</td></tr>
+<tr><td>11</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">5.48</td><td class="r"></td><td class="r"></td><td class="r"><b>5.48</b></td><td class="r muted">2.72</td><td class="r pos">+2.76</td></tr>
+<tr class="hit d3"><td>12</td><td><span class="chip c3">V3</span></td><td class="r">1</td><td class="r">3.86</td><td class="r">4.06</td><td class="r"><b>4.86</b></td><td class="r"><b>4.48</b> <span class="was">cap</span></td><td class="r muted">2.00</td><td class="r pos">+2.48</td></tr>
+<tr><td>13</td><td><span class="chip c2">V2</span></td><td class="r">0</td><td class="r">2.38</td><td class="r"></td><td class="r"></td><td class="r"><b>2.38</b></td><td class="r muted">1.00</td><td class="r pos">+1.38</td></tr>
+<tr class="hit d3"><td>14</td><td><span class="chip c3">V3</span></td><td class="r">1</td><td class="r">1.00</td><td class="r">1.05</td><td class="r"><b>2.00</b></td><td class="r"><b>1.38</b> <span class="was">cap</span></td><td class="r muted">1.00</td><td class="r pos">+0.38</td></tr>
+</tbody></table></div>
+<h3>4 · The exception bracket: V0 3 and V1 4, all V1 fencers at the bottom (N = 7)</h3>
+<p>Real in PPW1-2025-2026 Sabre M and PPW4-2025-2026 Epee F. The V1 winner scores 26.35 in 4th, against 84.29 in their own bracket. Categories of 4+ can pay.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF × (1 + 0,05·d)</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th></tr></thead><tbody>
+<tr><td>1</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">97.22</td><td class="r"></td><td class="r"></td><td class="r"><b>97.22</b></td><td class="r muted">3.00</td><td class="r pos">+94.22</td></tr>
+<tr><td>2</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">64.02</td><td class="r"></td><td class="r"></td><td class="r"><b>64.02</b></td><td class="r muted">2.00</td><td class="r pos">+62.02</td></tr>
+<tr><td>3</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">38.07</td><td class="r"></td><td class="r"></td><td class="r"><b>38.07</b></td><td class="r muted">1.00</td><td class="r pos">+37.07</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">25.09</td><td class="r"><b>26.35</b></td><td class="r">26.09</td><td class="r"><b>26.35</b></td><td class="r muted">84.29</td><td class="r neg">-57.94</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">9.47</td><td class="r">9.95</td><td class="r"><b>10.47</b></td><td class="r"><b>10.47</b></td><td class="r muted">45.02</td><td class="r neg">-34.55</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">4.88</td><td class="r">5.13</td><td class="r"><b>5.88</b></td><td class="r"><b>5.88</b></td><td class="r muted">15.93</td><td class="r neg">-10.05</td></tr>
+<tr class="hit"><td>7</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">1.00</td><td class="r">1.05</td><td class="r"><b>2.00</b></td><td class="r"><b>2.00</b></td><td class="r muted">1.00</td><td class="r pos">+1.00</td></tr>
+</tbody></table></div>
+<h3>5 · The top: PPW5-2024-2025 Foil M, V0 1 · V1 2 · V2 4 · V3 1 · V4 2 (N = 10)</h3>
+<p>A V4 fencer wins: 109.39 × 1.2 = 131.27, the highest score this rule gives in three seasons. The best stand-alone winner scored 124.02.</p>
+<div class="tw"><table class="ex"><thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">EVF × (1 + 0,05·d)</th><th class="r">EVF + d</th><th class="r">Score</th><th class="r">Own bracket</th><th class="r">vs own</th></tr></thead><tbody>
+<tr class="hit"><td>1</td><td><span class="chip c4">V4</span></td><td class="r">4</td><td class="r">109.39</td><td class="r"><b>131.27</b></td><td class="r">113.39</td><td class="r"><b>131.27</b></td><td class="r muted">2.00</td><td class="r pos">+129.27</td></tr>
+<tr class="hit"><td>2</td><td><span class="chip c4">V4</span></td><td class="r">4</td><td class="r">78.18</td><td class="r"><b>93.81</b></td><td class="r">82.18</td><td class="r"><b>93.81</b></td><td class="r muted">1.00</td><td class="r pos">+92.81</td></tr>
+<tr class="hit"><td>3</td><td><span class="chip c3">V3</span></td><td class="r">3</td><td class="r">53.08</td><td class="r"><b>61.05</b></td><td class="r">56.08</td><td class="r"><b>61.05</b></td><td class="r muted">1.00</td><td class="r pos">+60.05</td></tr>
+<tr class="hit"><td>4</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">40.50</td><td class="r"><b>44.55</b></td><td class="r">42.50</td><td class="r"><b>44.55</b></td><td class="r muted">84.29</td><td class="r neg">-39.74</td></tr>
+<tr class="hit"><td>5</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">25.75</td><td class="r"><b>28.33</b></td><td class="r">27.75</td><td class="r"><b>28.33</b></td><td class="r muted">45.02</td><td class="r neg">-16.70</td></tr>
+<tr class="hit"><td>6</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">21.87</td><td class="r"><b>24.06</b></td><td class="r">23.87</td><td class="r"><b>24.06</b></td><td class="r muted">15.93</td><td class="r pos">+8.13</td></tr>
+<tr class="hit"><td>7</td><td><span class="chip c2">V2</span></td><td class="r">2</td><td class="r">18.59</td><td class="r">20.45</td><td class="r"><b>20.59</b></td><td class="r"><b>20.59</b></td><td class="r muted">1.00</td><td class="r pos">+19.59</td></tr>
+<tr class="hit"><td>8</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">15.75</td><td class="r">16.54</td><td class="r"><b>16.75</b></td><td class="r"><b>16.75</b></td><td class="r muted">2.00</td><td class="r pos">+14.75</td></tr>
+<tr class="hit"><td>9</td><td><span class="chip c1">V1</span></td><td class="r">1</td><td class="r">3.24</td><td class="r">3.40</td><td class="r"><b>4.24</b></td><td class="r"><b>4.24</b></td><td class="r muted">1.00</td><td class="r pos">+3.24</td></tr>
+<tr><td>10</td><td><span class="chip c0">V0</span></td><td class="r">0</td><td class="r">1.00</td><td class="r"></td><td class="r"></td><td class="r"><b>1.00</b></td><td class="r muted">1.00</td><td class="r warn">+0.00</td></tr>
+</tbody></table></div>
+
+<h2>7 · Question</h2>
+<div class="card open"><span class="lb">Is this the final rule for the implementation plan?</span>
+<p>No design question is open. The implementation plan from 29 September describes an earlier design, so it has to be rewritten. The new plan will cover:</p>
+<ul>
+<li>a new ADR;</li>
+<li>the scoring engine in SQL, replacing the place-and-medal engine;</li>
+<li>the joining rules and the exception in ingestion;</li>
+<li>the 3 / 2 / 1 meeting bracket;</li>
+<li>the calculator and the public scoring table;</li>
+<li>tests on these examples;</li>
+<li>the documentation gate.</li>
+</ul>
+<ol>
+<li><b>Yes: rewrite the implementation plan for this rule</b><span class="rec">recommended</span>. §5 lists no fault in the rule itself. B1 and B6 are rare, B2 and B4 come with joining under any rule, B3 is at most 14.7 points, and B5 is by design.</li>
+<li><b>Not yet</b>: name what should change first.</li>
+</ol></div>
+
+<footer>Models, in the session scratchpad:
+<ul>
+<li><code>rulef.py</code>: the rule, the exhaustive checks, the real-bracket checks and the finishing-lower test;</li>
+<li><code>exf.py</code>: the examples;</li>
+<li><code>tail.py</code> and <code>evfpct.py</code>: the variants tested on the way;</li>
+<li><code>weak.py</code>: the strength model.</li>
+</ul>
+Real fencers and category places come from 2,009 PPW/MPW result rows, 2023/24–2025/26, exported from LOCAL.</footer>
+</div>
+</body>
+</html>

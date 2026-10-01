@@ -157,16 +157,15 @@ export interface ScoreRow {
   txt_location: string | null
   bool_carried_over?: boolean
   txt_source_season_code?: string
-  // ADR-103 (FR-140): the bracket position and components a result was scored
-  // from. -1 marks a component its method does not use; NULL (or absent, on a
-  // payload that predates these columns) means it has not been scored.
-  int_category_count?: number | null
-  int_category_place?: number | null
-  int_below_count?: number | null
-  num_field_pts?: number | null
-  num_below_pts?: number | null
-  num_medal_bonus?: number | null
+  // ADR-103 (FR-140): the method that scored the result. NULL (or absent, on a
+  // payload that predates the column) means it has not been scored.
   enum_score_method?: ScoreMethod | null
+  // ADR-104 §6: EVF_JOINED's components, -1 under any other method. The
+  // premium and the cap reduction are before the coefficient; d is the steps
+  // from the youngest category of the bracket.
+  num_joined_premium?: number | null
+  num_cap_reduction?: number | null
+  int_category_steps?: number | null
 }
 
 export interface TournamentDetail {

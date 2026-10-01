@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>SPWS vs EVF curves</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc; --grid:#e3e8ef;
+    --accent:#12467e; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --above:#c8412f; --below:#1f63b0;
+    --ref:#b3402b; --zone:#eef1f6;
+    --r1:#a9c7e6;--r2:#8fb6df;--r3:#6f9ed2;--r4:#5086c2;--r5:#376ead;--r6:#235a93;--r7:#144274;--r8:#0a2d52;
+    --q1:#0a2d52;--q2:#235a93;--q3:#5086c2;--q4:#b8612a;--q5:#d08a3c;--q6:#9e2418;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552; --grid:#262d38;
+      --accent:#8cbdec; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --above:#e0604c; --below:#4f8fd6;
+      --ref:#f0a595; --zone:#1f2530;
+      --r1:#24578e;--r2:#3a6faa;--r3:#5588c4;--r4:#72a1d8;--r5:#93b9e6;--r6:#b3cff1;--r7:#c6dbf5;--r8:#e0ecfa;
+      --q1:#e0ecfa;--q2:#93b9e6;--q3:#5588c4;--q4:#e8b47e;--q5:#d9824a;--q6:#f59a90;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552; --grid:#262d38;
+    --accent:#8cbdec; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --above:#e0604c; --below:#4f8fd6;
+    --ref:#f0a595; --zone:#1f2530;
+    --r1:#24578e;--r2:#3a6faa;--r3:#5588c4;--r4:#72a1d8;--r5:#93b9e6;--r6:#b3cff1;--r7:#c6dbf5;--r8:#e0ecfa;
+    --q1:#e0ecfa;--q2:#93b9e6;--q3:#5588c4;--q4:#e8b47e;--q5:#d9824a;--q6:#f59a90;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:64rem;margin:0 auto;padding:48px 24px 100px}
+  code{font-family:var(--mono);background:var(--surface-2);padding:.1em .4em;border-radius:5px;font-size:.85em;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,46px);line-height:1.1;margin:0 0 16px;text-wrap:balance;max-width:24ch}
+  .dek{font-size:20px;color:var(--muted);margin:0 0 24px;max-width:62ch}
+  .dek b{color:var(--ink)}
+  h2{font-family:var(--serif);font-weight:700;font-size:28px;line-height:1.15;margin:0 0 12px}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:44px 0 6px}
+  p{margin:0 0 14px;max-width:70ch}
+  ul{margin:0 0 14px;padding-left:1.3em;max-width:72ch} li{margin:6px 0}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .sticky{position:sticky;top:0;z-index:5;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+  .note{border:1px solid var(--line);border-left:5px solid var(--good);border-radius:10px;background:var(--good-soft);padding:14px 18px;margin:16px 0}
+  .note .lede{font-weight:800;color:var(--good);margin:0 0 6px}
+  .note>:last-child{margin-bottom:0}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 22px;align-items:end}
+  .ctl label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .ctl label output{color:var(--ink);font-size:14px}
+  .ctl input[type=range]{width:100%;accent-color:var(--accent)}
+  .row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+  .row .lab{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:4px;min-width:5.5em}
+  .opt{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);font-size:14px;cursor:pointer}
+  .opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+  .opt input{accent-color:var(--accent);margin:0}
+  button.preset{font:inherit;font-size:14px;padding:5px 11px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+  button.preset:hover{border-color:var(--accent)}
+  button.fit{border-color:var(--accent);background:var(--accent);color:var(--surface);font-weight:700}
+  .score{font-family:var(--mono);font-size:13px;color:var(--muted);margin:10px 0 0}
+  .score b{color:var(--ink);font-size:15px}
+  figure{margin:14px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 14px 8px}
+  figcaption{font-size:15px;color:var(--muted);margin:0 0 10px;max-width:80ch}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:0 0 8px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .sw{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .holder{position:relative}
+  .holder svg{display:block;width:100%;height:auto;overflow:visible}
+  .holder text{font-family:var(--mono);font-size:10.5px;fill:var(--faint)}
+  .holder text.axname{font-size:9.5px;letter-spacing:.1em;font-weight:700}
+  .holder text.ref{fill:var(--ref);font-weight:700;font-size:10px}
+  .holder text.mark{fill:var(--danger);font-weight:700;font-size:10px}
+  .tip{position:absolute;top:8px;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.14);z-index:2}
+  .tip.on{opacity:1}
+  .tip .th{font-weight:800;margin-bottom:4px}
+  .tip table{border-collapse:collapse;font-size:12px}
+  .tip td,.tip th{padding:1px 6px;text-align:right}
+  .tip th{color:var(--faint);font-weight:600;font-size:10px;text-transform:uppercase}
+  .tip td:first-child{text-align:left;color:var(--muted)}
+  .heatwrap{overflow-x:auto;margin:10px 0 4px}
+  table.heat{border-collapse:separate;border-spacing:2px;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  table.heat th{font-size:11px;color:var(--muted);font-weight:700;padding:2px 4px;text-align:center;white-space:nowrap}
+  table.heat th.rowh{text-align:right}
+  table.heat td{width:58px;min-width:58px;height:40px;text-align:center;border-radius:4px;font-size:13px;font-weight:800;line-height:1.1;color:var(--ink);cursor:default}
+  table.heat td small{display:block;font-size:10px;font-weight:500;color:var(--muted)}
+  table.heat td.na{background:transparent}
+  .scale{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);margin:6px 0 0;flex-wrap:wrap}
+  .scale .bar{width:180px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--below),var(--surface) 50%,var(--above));border:1px solid var(--line)}
+  .facts li b{font-variant-numeric:tabular-nums}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--line);font-size:13px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:600px){.wrap{padding:30px 16px 80px} body{font-size:17px} h2{font-size:24px} .sticky{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Scoring 2026/27 · SPWS place-and-medal for N = 4–15 · EVF classic from N = 16</p>
+  <h1>Where SPWS sits against EVF, for fields of 4 to 15</h1>
+  <p class="dek" id="dek"></p>
+
+  <div class="panel sticky" id="panel">
+    <div class="row"><span class="lab">Start from</span>
+      <button class="preset" data-preset="E">E · ⁵√K 50/32/17/11</button>
+      <button class="preset" data-preset="A7">A′ · your set + 4th 7</button>
+      <button class="preset" data-preset="A">A · your set</button>
+      <button class="preset" data-preset="D">D · ⁶√K 56/36/20/12</button>
+      <button class="preset" data-preset="C">C · flat 80/50/28/18</button>
+      <button class="preset" data-preset="today16">today's constants · EVF from 16</button>
+      <button class="preset" data-preset="released">as released · EVF from 32</button>
+    </div>
+    <div class="row"><span class="lab">Medal grows</span>
+      <label class="opt"><input type="radio" name="expo" value="0.3333333333"> × ∛K (today)</label>
+      <label class="opt"><input type="radio" name="expo" value="0.2"> × ⁵√K</label>
+      <label class="opt"><input type="radio" name="expo" value="0.1666666667"> × ⁶√K</label>
+      <label class="opt"><input type="radio" name="expo" value="0"> flat, no K</label>
+      <button class="preset fit" id="fitBtn" type="button">Fit to EVF</button>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label for="gold">złoto <output id="goldV"></output></label><input id="gold" type="range" min="0" max="100" step="0.1"></div>
+      <div class="ctl"><label for="silver">srebro <output id="silverV"></output></label><input id="silver" type="range" min="0" max="70" step="0.1"></div>
+      <div class="ctl"><label for="bronze">brąz <output id="bronzeV"></output></label><input id="bronze" type="range" min="0" max="40" step="0.1"></div>
+      <div class="ctl"><label for="fourth">4th place <output id="fourthV"></output></label><input id="fourth" type="range" min="0" max="30" step="0.1"></div>
+      <div class="ctl"><label for="per">per fencer below <output id="perV"></output></label><input id="per" type="range" min="0" max="6" step="0.05"></div>
+      <div class="ctl"><label for="evfFrom">EVF classic from N = <output id="evfFromV"></output></label><input id="evfFrom" type="range" min="8" max="32" step="1"></div>
+    </div>
+    <p class="score" id="score"></p>
+  </div>
+
+  <p class="kicker">View 1 · the gap, cell by cell</p>
+  <h2>SPWS minus EVF for every place in every field</h2>
+  <figure>
+    <figcaption>Columns are field sizes, rows are places. Each cell shows how many points SPWS gives above (red) or below (blue) EVF for that place; underneath are the SPWS and EVF values. White means parity. Hover over a cell for the exact values.</figcaption>
+    <div class="heatwrap"><table class="heat" id="heat"></table></div>
+    <div class="scale"><span>SPWS below EVF</span><span class="bar"></span><span>SPWS above EVF</span><span>· full colour at ±30 pts</span></div>
+  </figure>
+
+  <p class="kicker">View 2 · as in the reference calculator</p>
+  <h2>Points by place, one curve per field size</h2>
+  <figure>
+    <div class="row"><span class="lab">Show</span>
+      <label class="opt"><input type="radio" name="mode" value="spws"> SPWS</label>
+      <label class="opt"><input type="radio" name="mode" value="both" checked> both</label>
+      <label class="opt"><input type="radio" name="mode" value="evf"> EVF only</label>
+    </div>
+    <figcaption>X axis: place. One curve per field size; a bigger field is a darker tone. Solid lines are SPWS with the settings above; dashed lines are EVF classic, which the sliders do not move. The dashed red line is a win in a field of 4. Where a solid line lies on its dashed twin, that field is at parity.</figcaption>
+    <div class="legend" id="leg1"></div>
+    <div class="holder"><svg id="c1" viewBox="0 0 880 440" role="img" aria-label="Points by place for field sizes 4 to 18"></svg><div class="tip" id="t1"></div></div>
+  </figure>
+
+  <p class="kicker">View 3 · the hand-over to EVF</p>
+  <h2>What one place is worth as the field grows</h2>
+  <figure>
+    <figcaption>X axis: field size N, from 1 to 32. One curve per place. The vertical red line is where the engine hands over to EVF classic. A fair scale rises from left to right: at the hand-over, a solid line should step up or continue, never drop.</figcaption>
+    <div class="legend" id="leg2"></div>
+    <div class="holder"><svg id="c2" viewBox="0 0 880 440" role="img" aria-label="Points for places 1, 2, 3, 4, 8 and 12 as the field grows from 1 to 32"></svg><div class="tip" id="t2"></div></div>
+  </figure>
+
+  <p class="kicker">Recomputed as you move the sliders</p>
+  <h2>What the settings above produce</h2>
+  <div class="panel"><ul class="facts" id="facts"></ul></div>
+
+  <div class="note">
+    <p class="lede">How the fit works</p>
+    <p><strong>Fit to EVF</strong> chooses złoto, srebro, brąz, 4th place and points per fencer below so that the SPWS value of every place, in every field from 4 up to the hand-over, lands as close as possible to the EVF value (least squares, each place-and-field cell weighted equally). Field points stay at log₂ N and fields of 1–3 keep their table. The medal-growth choice changes what the fit can reach. The fitted numbers are shown to one decimal; a regulation would round them.</p>
+  </div>
+
+  <p class="foot">scoring-curves-spws-vs-evf · 2026-09-28 · formulas identical to frontend/src/lib/scoring.ts (SPWS_PLACE_MEDAL_V1_2026_2027, EVF_CLASSIC_V1_2025_2026: base 50, 10 per round, podium 3/2/1 × 3 × ∛N) · one category per bracket, so K = N · coefficients (PPW 1.0, PEW 1.0) not applied</p>
+</div>
+
+<script>
+const PRESETS = {
+  E:        {gold:50, silver:32, bronze:17, fourth:11, per:3, evfFrom:16, expo:1/5},
+  A7:       {gold:35.7, silver:22.6, bronze:12.3, fourth:7, per:3, evfFrom:16, expo:1/3},
+  A:        {gold:35.7, silver:22.6, bronze:12.3, fourth:0, per:3, evfFrom:16, expo:1/3},
+  D:        {gold:56, silver:36, bronze:20, fourth:12, per:2.25, evfFrom:16, expo:1/6},
+  C:        {gold:80, silver:50, bronze:28, fourth:18, per:2.5, evfFrom:16, expo:0},
+  today16:  {gold:13, silver:7, bronze:3, fourth:0, per:3.5, evfFrom:16, expo:1/3},
+  released: {gold:13, silver:7, bronze:3, fourth:0, per:3.5, evfFrom:32, expo:1/3},
+  fitcube:  {fit:true, evfFrom:16, expo:1/3},
+  fitflat:  {fit:true, evfFrom:16, expo:0},
+};
+const S = {...PRESETS.E};
+const N_SET = [4,6,8,10,12,14,16,18];
+const P_SET = [1,2,3,4,8,12];
+
+function rounds(n,p){ if(n<=1) return 0; const pow2=(n&(n-1))===0; return Math.max(0, Math.floor(Math.log2(n))-Math.ceil(Math.log2(p))+(pow2?0:1)); }
+function evf(n,p){ const place = n===1 ? 50 : 50-49*Math.log(p)/Math.log(n); const c={1:3,2:2,3:1}[p]||0; return place + rounds(n,p)*10 + c*3*Math.cbrt(n); }
+function medalOf(n,p){ const m=[S.gold,S.silver,S.bronze,S.fourth]; return (p<=4 && n>p) ? m[p-1]*Math.pow(n,S.expo) : 0; }
+function spws(n,p){
+  if(n<=3) return n-p+1;
+  if(n>=S.evfFrom) return evf(n,p);
+  return Math.log2(n) + S.per*(n-p) + medalOf(n,p);
+}
+const f1 = v => v.toFixed(1);
+const sgn = v => (v>0.05?'+':'') + (Math.abs(v)<0.05?'0':v.toFixed(0).replace('-','−'));
+const mode = () => document.querySelector('input[name=mode]:checked').value;
+const range = () => { const hi=Math.min(S.evfFrom-1,18); const out=[]; for(let n=4;n<=hi;n++) out.push(n); return out; };
+
+// ---------- least-squares fit of per, gold, silver, bronze, fourth ----------
+function fit(){
+  const A=[], Y=[];
+  for(let n=4;n<S.evfFrom;n++) for(let p=1;p<=n;p++){
+    const c=Math.pow(n,S.expo);
+    A.push([n-p, p===1?c:0, p===2?c:0, p===3?c:0, (p===4&&n>4)?c:0]);
+    Y.push(evf(n,p)-Math.log2(n));
+  }
+  const k=5, M=[];
+  for(let i=0;i<k;i++){ const r=[]; for(let j=0;j<k;j++) r.push(A.reduce((s,a)=>s+a[i]*a[j],0)); r.push(A.reduce((s,a,ix)=>s+a[i]*Y[ix],0)); M.push(r); }
+  for(let i=0;i<k;i++){
+    let piv=i; for(let r=i+1;r<k;r++) if(Math.abs(M[r][i])>Math.abs(M[piv][i])) piv=r;
+    [M[i],M[piv]]=[M[piv],M[i]];
+    for(let r=0;r<k;r++) if(r!==i){ const f=M[r][i]/M[i][i]; for(let c=i;c<=k;c++) M[r][c]-=f*M[i][c]; }
+  }
+  const x=M.map((r,i)=>r[k]/r[i]);
+  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+  S.per=clamp(Math.round(x[0]*20)/20,0,6);
+  S.gold=clamp(Math.round(x[1]*10)/10,0,100); S.silver=clamp(Math.round(x[2]*10)/10,0,70);
+  S.bronze=clamp(Math.round(x[3]*10)/10,0,40); S.fourth=clamp(Math.round(x[4]*10)/10,0,30);
+}
+
+function stats(){
+  let sum=0, signed=0, atOrAbove=0, cnt=0, worst={d:0}, win={lo:Infinity, hi:-Infinity};
+  range().forEach(n=>{ for(let p=1;p<=n;p++){ const d=spws(n,p)-evf(n,p); sum+=Math.abs(d); signed+=d; if(d>=-0.05) atOrAbove++; cnt++; if(Math.abs(d)>Math.abs(worst.d)) worst={n,p,d}; if(p===1){ win.lo=Math.min(win.lo,d); win.hi=Math.max(win.hi,d); } } });
+  return {mae: cnt? sum/cnt : 0, mean: cnt? signed/cnt : 0, atOrAbove, worst, win, cnt};
+}
+
+// ---------- SVG helpers ----------
+const G = {w:880,h:440,l:52,r:18,t:20,b:46};
+const PW = G.w-G.l-G.r, PH = G.h-G.t-G.b;
+function niceMax(v){ return Math.max(25, Math.ceil(v/25)*25); }
+function frame(yMax, xTicks, X, xlabel){
+  const Y = v => G.t + PH - v/yMax*PH;
+  let s='';
+  for(let v=0; v<=yMax; v+=25){ s+=`<line x1="${G.l}" y1="${Y(v).toFixed(1)}" x2="${G.l+PW}" y2="${Y(v).toFixed(1)}" stroke="var(--grid)"/><text x="${G.l-8}" y="${(Y(v)+3.5).toFixed(1)}" text-anchor="end">${v}</text>`; }
+  xTicks.forEach(v=>{ s+=`<text x="${X(v).toFixed(1)}" y="${G.t+PH+18}" text-anchor="middle">${v}</text>`; });
+  s+=`<text class="axname" x="${G.l}" y="${G.h-6}">${xlabel}</text><text class="axname" x="${G.l-8}" y="${G.t-7}" text-anchor="end">PTS</text>`;
+  return {s, Y};
+}
+function poly(pts, X, Y, color, dashed){
+  return `<polyline points="${pts.map(([a,v])=>`${X(a).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${color}" stroke-width="${dashed?1.5:2.4}" ${dashed?'stroke-dasharray="5 4" opacity="0.9"':''} stroke-linejoin="round"/>`;
+}
+function tip(id, svg, cx, htmlStr){
+  const t=document.getElementById(id), holder=svg.parentElement;
+  t.innerHTML=htmlStr; t.classList.add('on');
+  const hr=holder.getBoundingClientRect(), sr=svg.getBoundingClientRect();
+  const px=cx/G.w*sr.width + (sr.left-hr.left);
+  let left=px+14; if(left+t.offsetWidth>hr.width) left=px-t.offsetWidth-14;
+  t.style.left=Math.max(0,left)+'px';
+}
+function tipRows(items, showS, showE){
+  return `<table><tr><th></th>${showE?'<th>EVF</th>':''}${showS?'<th>SPWS</th><th>gap</th>':''}</tr>${items.map(({label,c,s,e})=>`<tr><td><span class="sw" style="background:${c};width:12px"></span>${label}</td>${showE?`<td>${f1(e)}</td>`:''}${showS?`<td><b>${f1(s)}</b></td><td>${sgn(s-e)}</td>`:''}</tr>`).join('')}</table>`;
+}
+
+// ---------- view 1: heatmap ----------
+function heat(){
+  const cols=[]; for(let n=4;n<=18;n++) cols.push(n);
+  let h='<tr><th class="rowh">place \\ N</th>'+cols.map(n=>`<th>${n}${n>=S.evfFrom?'*':''}</th>`).join('')+'</tr>';
+  for(let p=1;p<=18;p++){
+    h+=`<tr><th class="rowh">${p}</th>`;
+    cols.forEach(n=>{
+      if(p>n){ h+='<td class="na"></td>'; return; }
+      const s=spws(n,p), e=evf(n,p), d=s-e, a=Math.min(Math.abs(d)/30,1)*85;
+      const bg = Math.abs(d)<0.05 ? 'var(--surface)' : `color-mix(in srgb, var(${d>0?'--above':'--below'}) ${a.toFixed(0)}%, var(--surface))`;
+      h+=`<td style="background:${bg}" title="N ${n} · place ${p}: SPWS ${f1(s)} · EVF ${f1(e)}">${sgn(d)}<small>${s.toFixed(0)} / ${e.toFixed(0)}</small></td>`;
+    });
+    h+='</tr>';
+  }
+  document.getElementById('heat').innerHTML=h;
+}
+
+// ---------- view 2: place on X, one curve per N ----------
+function chart1(){
+  const m=mode(), showS=m!=='evf', showE=m!=='spws';
+  const fam=N_SET.map((n,i)=>({n, c:`var(--r${i+1})`}));
+  const X = p => G.l + (p-1)/17*PW;
+  let peak=0; fam.forEach(({n})=>{ if(showS) peak=Math.max(peak,spws(n,1)); if(showE) peak=Math.max(peak,evf(n,1)); });
+  const {s:ax,Y}=frame(niceMax(peak), [1,2,3,4,5,6,8,10,12,14,16,18], X, 'PLACE');
+  let lines='';
+  fam.forEach(({n,c})=>{
+    const P=[...Array(n).keys()].map(i=>i+1);
+    if(showE) lines+=poly(P.map(p=>[p,evf(n,p)]),X,Y,c,true);
+    if(showS) lines+=poly(P.map(p=>[p,spws(n,p)]),X,Y,c,false);
+  });
+  const refV = showS ? spws(4,1) : evf(4,1), ry=Y(refV);
+  const ref=`<line x1="${G.l}" y1="${ry.toFixed(1)}" x2="${G.l+PW}" y2="${ry.toFixed(1)}" stroke="var(--ref)" stroke-width="1.4" stroke-dasharray="5 4"/><text class="ref" x="${G.l+PW}" y="${(ry-6).toFixed(1)}" text-anchor="end">win in a field of 4${showS?' (SPWS)':' (EVF)'} · ${f1(refV)} pts</text>`;
+  const svg=document.getElementById('c1');
+  svg.innerHTML = ax + ref + lines + `<g id="x1"></g><rect x="${G.l}" y="${G.t}" width="${PW}" height="${PH}" fill="transparent" style="cursor:crosshair"/>`;
+  document.getElementById('leg1').innerHTML='<span>FIELD N</span>'+fam.map(({n,c})=>`<span><span class="sw" style="background:${c}"></span>${n}${n>=S.evfFrom?'*':''}</span>`).join('')+`<span>· solid SPWS · dashed EVF${S.evfFrom<=18?` · * scored by EVF (from ${S.evfFrom})`:''}</span>`;
+  svg.onmousemove = ev => {
+    const r=svg.getBoundingClientRect(), mx=(ev.clientX-r.left)*G.w/r.width;
+    const p=Math.max(1,Math.min(18,Math.round((mx-G.l)/PW*17+1))), cx=X(p);
+    let g=`<line x1="${cx}" y1="${G.t}" x2="${cx}" y2="${G.t+PH}" stroke="var(--accent)"/>`;
+    const items=fam.filter(f=>f.n>=p).reverse().map(({n,c})=>{
+      if(showS) g+=`<circle cx="${cx}" cy="${Y(spws(n,p)).toFixed(1)}" r="4" fill="${c}"/>`;
+      if(showE) g+=`<circle cx="${cx}" cy="${Y(evf(n,p)).toFixed(1)}" r="3" fill="var(--surface)" stroke="${c}" stroke-width="1.5"/>`;
+      return {label:`N ${n}`, c, s:spws(n,p), e:evf(n,p)};
+    });
+    document.getElementById('x1').innerHTML=g;
+    tip('t1', svg, cx, `<div class="th">Place ${p}</div>${tipRows(items,showS,showE)}`);
+  };
+  svg.onmouseleave = () => { document.getElementById('x1').innerHTML=''; document.getElementById('t1').classList.remove('on'); };
+}
+
+// ---------- view 3: N on X, one curve per place ----------
+function chart2(){
+  const m=mode(), showS=m!=='evf', showE=m!=='spws';
+  const fam=P_SET.map((p,i)=>({p, c:`var(--q${i+1})`}));
+  const X = n => G.l + (n-1)/31*PW;
+  let peak=0; for(let n=1;n<=32;n++){ if(showS) peak=Math.max(peak,spws(n,1)); if(showE) peak=Math.max(peak,evf(n,1)); }
+  const {s:ax,Y}=frame(niceMax(peak), [1,4,8,12,16,20,24,28,32], X, 'FIELD SIZE N');
+  const zone=`<rect x="${X(1)}" y="${G.t}" width="${(X(3.5)-X(1)).toFixed(1)}" height="${PH}" fill="var(--zone)"/><text x="${((X(1)+X(3.5))/2).toFixed(1)}" y="${G.t+12}" text-anchor="middle">table</text>`;
+  const sx=X(S.evfFrom-0.5);
+  const sw=`<line x1="${sx.toFixed(1)}" y1="${G.t}" x2="${sx.toFixed(1)}" y2="${G.t+PH}" stroke="var(--danger)" stroke-width="1.4"/><text class="mark" x="${(sx+5).toFixed(1)}" y="${G.t+12}">EVF from ${S.evfFrom}</text>`;
+  let lines='';
+  fam.forEach(({p,c})=>{
+    const Ns=[]; for(let n=Math.max(p,1);n<=32;n++) Ns.push(n);
+    if(showE) lines+=poly(Ns.map(n=>[n,evf(n,p)]),X,Y,c,true);
+    if(showS){
+      const a=Ns.filter(n=>n<S.evfFrom), b=Ns.filter(n=>n>=S.evfFrom);
+      if(a.length) lines+=poly(a.map(n=>[n,spws(n,p)]),X,Y,c,false);
+      if(b.length) lines+=poly(b.map(n=>[n,spws(n,p)]),X,Y,c,false);
+      if(a.length && b.length){ const n0=a[a.length-1], n1=b[0]; lines+=`<line x1="${X(n0).toFixed(1)}" y1="${Y(spws(n0,p)).toFixed(1)}" x2="${X(n1).toFixed(1)}" y2="${Y(spws(n1,p)).toFixed(1)}" stroke="${c}" stroke-width="1.2" stroke-dasharray="1 3"/>`; }
+    }
+  });
+  const svg=document.getElementById('c2');
+  svg.innerHTML = ax + zone + sw + lines + `<g id="x2"></g><rect x="${G.l}" y="${G.t}" width="${PW}" height="${PH}" fill="transparent" style="cursor:crosshair"/>`;
+  document.getElementById('leg2').innerHTML='<span>PLACE</span>'+fam.map(({p,c})=>`<span><span class="sw" style="background:${c}"></span>${p}</span>`).join('')+'<span>· solid SPWS · dashed EVF</span>';
+  svg.onmousemove = ev => {
+    const r=svg.getBoundingClientRect(), mx=(ev.clientX-r.left)*G.w/r.width;
+    const n=Math.max(1,Math.min(32,Math.round((mx-G.l)/PW*31+1))), cx=X(n);
+    let g=`<line x1="${cx}" y1="${G.t}" x2="${cx}" y2="${G.t+PH}" stroke="var(--accent)"/>`;
+    const items=fam.filter(f=>f.p<=n).map(({p,c})=>{
+      if(showS) g+=`<circle cx="${cx}" cy="${Y(spws(n,p)).toFixed(1)}" r="4" fill="${c}"/>`;
+      if(showE) g+=`<circle cx="${cx}" cy="${Y(evf(n,p)).toFixed(1)}" r="3" fill="var(--surface)" stroke="${c}" stroke-width="1.5"/>`;
+      return {label:`place ${p}`, c, s:spws(n,p), e:evf(n,p)};
+    });
+    document.getElementById('x2').innerHTML=g;
+    tip('t2', svg, cx, `<div class="th">Field of ${n}${n>=S.evfFrom?' · EVF':n<=3?' · table':''}</div>${tipRows(items,showS,showE)}`);
+  };
+  svg.onmouseleave = () => { document.getElementById('x2').innerHTML=''; document.getElementById('t2').classList.remove('on'); };
+}
+
+// ---------- findings ----------
+function facts(){
+  const st=stats(), out=[], R=range();
+  if(!R.length){ document.getElementById('facts').innerHTML='<li>No field between 4 and 18 is scored by SPWS with this hand-over.</li>'; return; }
+  out.push(`Across fields of ${R[0]}–${R[R.length-1]} (${st.cnt} place-and-field cells), a place lies on average <b>${f1(st.mae)}</b> points from its EVF value. The largest gap: place ${st.worst.p} of ${st.worst.n}, <b>${sgn(st.worst.d)}</b>.`);
+  out.push(`A win is ${st.win.hi<0?'below':'between'} EVF by <b>${sgn(st.win.lo)}</b> to <b>${sgn(st.win.hi)}</b> points. In a field of 4: SPWS ${f1(spws(4,1))}, EVF ${f1(evf(4,1))}. In a field of ${R[R.length-1]}: SPWS ${f1(spws(R[R.length-1],1))}, EVF ${f1(evf(R[R.length-1],1))}.`);
+  [4,8,12,R[R.length-1]].filter((n,i,a)=>R.includes(n)&&a.indexOf(n)===i).forEach(n=>{
+    const below=[], above=[];
+    for(let p=1;p<=n;p++){ const d=spws(n,p)-evf(n,p); if(d<-2) below.push(p); else if(d>2) above.push(p); }
+    const span=a=>a.length?` (places ${a[0]}${a.length>1?'–'+a[a.length-1]:''})`:'';
+    out.push(`Field of ${n}: more than 2 points below EVF at <b>${below.length}</b> place${below.length===1?'':'s'}${span(below)}, more than 2 above at <b>${above.length}</b>${span(above)}, within 2 points at ${n-below.length-above.length}.`);
+  });
+  const n0=S.evfFrom-1, n1=S.evfFrom, drops=[];
+  if(n0>=4) for(let p=1;p<=n0;p++){ const a=spws(n0,p), b=spws(n1,p); if(b<a-0.05) drops.push({p,a,b}); }
+  if(drops.length){
+    const w=drops.reduce((m,d)=>(d.a-d.b>m.a-m.b?d:m));
+    out.push(`<span style="color:var(--danger);font-weight:800">At the hand-over, ${drops.length} place${drops.length===1?' loses':'s lose'} points</span> when a ${n1}th fencer enters (${n0} → ${n1}). The largest drop: place ${w.p}, ${f1(w.a)} → ${f1(w.b)}.`);
+  } else if(n0>=4) {
+    out.push(`<span style="color:var(--good);font-weight:800">At the hand-over (${n0} → ${n1}) no place loses points.</span> The winner goes ${f1(spws(n0,1))} → ${f1(spws(n1,1))}.`);
+  }
+  let bad=0; for(let p=1;p<=18;p++) for(let n=Math.max(4,p);n<Math.min(S.evfFrom-1,18);n++) if(spws(n+1,p)<spws(n,p)-0.05) bad++;
+  out.push(bad ? `Inside the SPWS range there are <b>${bad}</b> cases where one more fencer lowers the points for the same place.` : `Inside the SPWS range, one more fencer never lowers the points for the same place.`);
+  document.getElementById('facts').innerHTML=out.map(s=>`<li>${s}</li>`).join('');
+
+  const expoName={'0.333':'× ∛K','0.200':'× ⁵√K','0.167':'× ⁶√K','0.000':'flat'}[S.expo.toFixed(3)];
+  document.getElementById('score').innerHTML=`Medal ${expoName} · złoto ${S.gold} · srebro ${S.silver} · brąz ${S.bronze} · 4th ${S.fourth} · ${S.per} per fencer below · EVF from ${S.evfFrom} &nbsp;→&nbsp; average gap <b>${f1(st.mae)}</b> pts · on average <b>${st.mean>=0?'+':'−'}${f1(Math.abs(st.mean))}</b> vs EVF · <b>${st.atOrAbove}</b> of ${st.cnt} places at or above EVF · win gap ${sgn(st.win.lo)} to ${sgn(st.win.hi)}`;
+}
+
+// ---------- dek: a fixed reading of the three reference settings ----------
+function dek(){
+  const save={...S};
+  Object.assign(S, PRESETS.today16); const t=stats();
+  Object.assign(S, PRESETS.A7); const a=stats();
+  Object.assign(S, PRESETS.E); const d=stats();
+  Object.assign(S, save);
+  document.getElementById('dek').innerHTML =
+    `From N = 16 every result is scored by EVF classic. Below that, today's constants leave a place in a field of 4–15 on average <b>${f1(t.mae)} points</b> from EVF, and a win <b>${f1(-t.win.hi)} to ${f1(-t.win.lo)} points</b> short. `+
+    `Your set with a 4th medal of 7 (A′) brings the average to <b>${f1(a.mae)}</b>, with a win between <b>${sgn(a.win.lo)}</b> and <b>${sgn(a.win.hi)}</b>. `+
+    `Set E (medal × ⁵√K) sits on average <b>${sgn(d.mean)}</b> above EVF, with <b>${d.atOrAbove} of ${d.cnt}</b> places at or above it and a win between <b>${sgn(d.win.lo)}</b> and <b>${sgn(d.win.hi)}</b>. Use the buttons above to switch.`;
+}
+
+// ---------- wiring ----------
+const KEYS=['gold','silver','bronze','fourth','per','evfFrom'];
+function sync(){
+  KEYS.forEach(k=>{ document.getElementById(k).value=S[k]; document.getElementById(k+'V').textContent=S[k]; });
+  document.querySelectorAll('input[name=expo]').forEach(r=>{ r.checked = Math.abs(parseFloat(r.value)-S.expo)<1e-6; });
+}
+function render(){ heat(); chart1(); chart2(); facts(); }
+KEYS.forEach(k=>document.getElementById(k).addEventListener('input',e=>{ S[k]=parseFloat(e.target.value); document.getElementById(k+'V').textContent=S[k]; render(); }));
+document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',render));
+document.querySelectorAll('input[name=expo]').forEach(r=>r.addEventListener('change',e=>{ S.expo=parseFloat(e.target.value); render(); }));
+document.getElementById('fitBtn').addEventListener('click',()=>{ fit(); sync(); render(); });
+document.querySelectorAll('button[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+  const pr=PRESETS[b.dataset.preset];
+  Object.assign(S, pr); delete S.fit;
+  if(pr.fit) fit();
+  sync(); render();
+}));
+{ const h=(location.hash||'').slice(1); if(PRESETS[h]){ Object.assign(S, PRESETS[h]); delete S.fit; if(PRESETS[h].fit) fit(); } }
+dek(); sync(); render();
+</script>
+</body>
+</html>
