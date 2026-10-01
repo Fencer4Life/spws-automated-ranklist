@@ -1876,6 +1876,119 @@ class TestEvfLiveSmoke:
 
 
 # =============================================================================
+# evf.69–evf.75: the EVF host's bot-verification page fails loudly
+# =============================================================================
+# Since 1 October 2026 the EVF host (veteransfencing.eu) answers some networks
+# with a bot-verification page instead of the page asked for. The scrapers do
+# not try to get past it. They must recognise it: before this, the calendar
+# read the page as "no events" and the run reported success with nothing.
+# A synthetic stand-in for that page: its title and text, not EVF's markup.
+BOT_CHALLENGE_HTML = (
+    "<!DOCTYPE html><html><head><title>One moment, please...</title></head>"
+    '<body><div id="text">Please wait while your request is being verified...</div>'
+    "<script>/* obfuscated browser checks */</script></body></html>"
+)
+
+
+def _page(text: str):
+    resp = MagicMock()
+    resp.text = text
+    resp.status_code = 200
+    resp.raise_for_status = MagicMock()
+    return resp
+
+
+class TestEvfBotChallenge:
+    def test_detects_the_verification_page_only(self):
+        """evf.69: the verification page is recognised; real EVF pages are not."""
+        from python.scrapers.evf_results import is_bot_challenge
+
+        assert is_bot_challenge(BOT_CHALLENGE_HTML)
+        assert not is_bot_challenge('<script>var evf = {"nonce":"abc123"};</script>')
+        assert not is_bot_challenge((FIXTURES / "evf_calendar.html").read_text())
+        assert not is_bot_challenge((FIXTURES / "evf_calendar_past.html").read_text())
+
+    def test_results_client_refuses_the_verification_page(self, monkeypatch):
+        """evf.70: connect() says the host served its verification page, not "no nonce"."""
+        from python.scrapers import evf_results
+
+        client = evf_results.EvfApiClient(request_delay=0)
+        monkeypatch.setattr(client._client, "get", lambda url, **kw: _page(BOT_CHALLENGE_HTML))
+        try:
+            with pytest.raises(evf_results.EvfAccessBlocked) as exc:
+                client.connect()
+        finally:
+            client.close()
+        message = str(exc.value)
+        assert "bot-verification page" in message
+        assert evf_results.EVF_PAGE_URL in message
+        # evf_sync turns a RuntimeError into a FAILED run and a Telegram alert.
+        assert isinstance(exc.value, RuntimeError)
+
+    def test_results_client_still_reads_the_nonce(self, monkeypatch):
+        """evf.71: a real results page still yields its nonce."""
+        from python.scrapers import evf_results
+
+        client = evf_results.EvfApiClient(request_delay=0)
+        monkeypatch.setattr(client._client, "get", lambda url, **kw: _page('{"nonce":"abc123"}'))
+        monkeypatch.setattr(client, "_post", lambda path, model=None: {})
+        try:
+            client.connect()
+        finally:
+            client.close()
+        assert client._nonce == "abc123"
+
+    def test_calendar_list_fails_when_every_page_is_the_verification_page(self, monkeypatch):
+        """evf.72: two challenged calendar pages raise; they are not an empty calendar."""
+        from python.scrapers import evf_calendar
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", lambda url, **kw: _page(BOT_CHALLENGE_HTML))
+        with pytest.raises(RuntimeError) as exc:
+            evf_calendar._fetch_html_list()
+        assert "bot-verification page" in str(exc.value)
+
+    def test_one_challenged_calendar_page_is_tolerated_like_any_failed_url(self, monkeypatch):
+        """evf.73: one challenged URL is skipped like an HTTP error; the other still counts."""
+        from python.scrapers import evf_calendar
+
+        good = (FIXTURES / "evf_calendar.html").read_text()
+
+        def fake_get(url, **kw):
+            return _page(BOT_CHALLENGE_HTML if url == evf_calendar.EVF_CALENDAR_PAST else good)
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", fake_get)
+        assert len(evf_calendar._fetch_html_list()) == len(
+            evf_calendar.parse_evf_calendar_html(good)
+        )
+
+    def test_season_scrape_fails_when_both_sources_are_challenged(self, monkeypatch):
+        """evf.74: HTML and API both challenged is a failed scrape, not an empty season."""
+        from python.scrapers import evf_calendar, evf_results
+
+        monkeypatch.setattr(evf_calendar.httpx, "get", lambda url, **kw: _page(BOT_CHALLENGE_HTML))
+        monkeypatch.setattr(evf_results.EvfApiClient, "_post", lambda self, path, model=None: {})
+        monkeypatch.setattr(
+            evf_results.httpx.Client, "get", lambda self, url, **kw: _page(BOT_CHALLENGE_HTML)
+        )
+        with pytest.raises(RuntimeError) as exc:
+            evf_calendar.scrape_full_season_calendar("2026-09-01", "2027-08-31", skip_details=True)
+        assert "bot-verification page" in str(exc.value)
+
+
+def test_default_run_skips_live_site_tests():
+    """evf.75: a plain `pytest` (CI, preflight) leaves the live-site tests out.
+
+    They hit EVF and Dartagnan over the network, so a third-party outage or a
+    bot wall failed every unrelated push. `pytest -m integration` runs them.
+    """
+    import tomllib
+
+    root = Path(__file__).resolve().parents[2]
+    config = tomllib.loads((root / "pyproject.toml").read_text())["tool"]["pytest"]["ini_options"]
+    assert "-m 'not integration'" in config.get("addopts", "")
+
+
+# =============================================================================
 # evf.40–evf.42: Phase 2 — scraper drops `code` field, allocator RPC drives
 # alerting per alloc_path returned by fn_ingest_evf_calendar
 # =============================================================================

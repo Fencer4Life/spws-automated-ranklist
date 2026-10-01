@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Scoring table rewrite plan</title>
+<style>
+:root{
+ --navy:#173f70;--paper:#f4f7fb;--ink:#142033;--muted:#5b6b82;--line:#d5dfeb;--card:#fff;
+ --green:#1c5a3e;--green-bg:#cfe8d9;--amber:#7a5209;--amber-bg:#fbe9c4;
+ --coral:#9e3a29;--coral-bg:#f7d9d3;--navy-soft:#e4ecf7;--hit:#fff6e0;
+ --serif:"Iowan Old Style",Charter,"Palatino Linotype",Georgia,serif;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+ :root{--paper:#131a24;--ink:#e8eef7;--muted:#95a6bd;--line:#2a3748;--card:#1a2330;
+  --navy:#7aa5da;--navy-soft:#1e2c40;--green:#a8e0c0;--green-bg:#1d4632;
+  --amber:#f0cd80;--amber-bg:#3d2f0e;--coral:#f0a595;--coral-bg:#43221b;--hit:#2e2715}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.page{max-width:1060px;margin:0 auto;padding:32px 16px 60px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--serif);font-size:clamp(24px,4.6vw,33px);line-height:1.18;margin:8px 0;font-weight:600}
+.dek{font-family:var(--serif);font-style:italic;color:var(--muted);margin:0;max-width:78ch}
+h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-family:var(--serif);font-size:16.5px;margin:24px 0 4px}
+a{color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.ex td{white-space:nowrap}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--mono);font-size:12.5px}
+td.pos{color:var(--green)}
+td.plus{background:var(--amber-bg)}
+tr.hit td{background:var(--hit)}
+.tw{overflow-x:auto}
+code{font-family:var(--mono);font-size:12.5px;background:var(--navy-soft);padding:1px 5px;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+.locked{border-left:4px solid var(--green)}
+.open{border-left:4px solid var(--amber)}
+.warnc{border-left:4px solid var(--coral)}
+.rules{border-left:4px solid var(--navy)}
+.card ol,.card ul{margin:6px 0 0;padding-left:22px}
+.card li{margin:5px 0}
+.lb{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rec{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--green-bg);color:var(--green);padding:1px 7px;border-radius:4px;margin-left:4px}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;padding:1px 7px;border-radius:4px}
+.tag.keep{background:var(--green-bg);color:var(--green)}
+.tag.re{background:var(--amber-bg);color:var(--amber)}
+.tag.del{background:var(--coral-bg);color:var(--coral)}
+.tag.new{background:var(--navy-soft);color:var(--navy)}
+.pl{font-family:var(--serif)}
+.en{color:var(--muted);font-size:13px;display:block}
+pre.code{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.5;white-space:pre;margin:10px 0}
+.legend{font-size:13.5px;color:var(--muted)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+<p class="eyebrow">Plan · 30 September 2026 · Załącznik nr 1, the scoring table · a full rewrite for the locked 2026/27 rule</p>
+<h1>Rewriting the scoring table in Polish and English</h1>
+<p class="dek">The annex still describes the place-and-medal engine, which is being deleted. This plan rewrites the whole page for the rule locked on 30 September. That rule covers the meeting, EVF, the joined-bracket premium with the 1-point cap, the coefficient and the joining rules. Polish is the default and English the twin. The page's working parts are reused.</p>
+
+<div class="card rules"><span class="lb">Status · 30 September 2026</span>
+<ul>
+<li><b>Approved.</b> Q1 and Q3 were taken as recommended.</li>
+<li><b>Changed after review:</b>
+<ul>
+<li>The order is now: W skrócie, then Narzędzia, then Zasady § 1–§ 6. This reverses Q2.</li>
+<li>§ 7 Gwarancje was removed at the user's request.</li>
+</ul></li>
+<li><b>Built:</b> the page is rewritten, and <code>scoring.ts</code> carries the new engine.
+<ul>
+<li>Tests: 89 in the scoring and asset files, and 1,061 in the whole frontend suite, all passing.</li>
+<li><code>npm run check</code>: 0 errors.</li>
+<li><code>build-scoring-pages.mjs --check</code>: passes.</li>
+</ul></li>
+<li><b>Nothing is committed yet.</b></li>
+<li><b>Review copy:</b> <code>doc/plans/tabela-punktacji-podglad-2026-09-30.html</code>, served at <code>http://localhost:8100/doc/plans/tabela-punktacji-podglad-2026-09-30.html</code>.</li>
+</ul></div>
+
+<div class="card locked"><span class="lb">The plan in six lines</span>
+<ol>
+<li>Rewrite the source <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>. The generator copies it byte for byte to <code>frontend/public/tabela-punktacji.html</code>.</li>
+<li>Everything about the place-and-medal engine goes: the three-part table, K, the medal table and icons, and the N = 10 example.</li>
+<li>Four new parts: the joining rules, the joined-bracket rule, a premium table for 4–15 fencers, and a step-by-step simulator of a joined bracket. The simulator is the only part that can show the 1-point cap, because the cap depends on the whole finishing order.</li>
+<li>These parts are reused: the language switch, the season-parameter loader, the coefficient table, the calculator frame, the 64 × 64 table, locate, the CSV export and the startup-failure banner.</li>
+<li><code>frontend/src/lib/scoring.ts</code> gains the new engine, test-first. The expected values come from the spec's reference implementation.</li>
+<li>The rewritten page shows numbers only once the database assigns the new engine to PPW (ADR-102). It therefore ships with the engine in the ADR-104 release, not before. Until then you review a copy in <code>doc/plans/</code> with the season parameters filled in.</li>
+</ol></div>
+
+<h2>1 · Starting point</h2>
+<p><b>The locked rule</b>, in full in <code>doc/plans/joined-scoring-final-spec-2026-09-30.html</code>:</p>
+<ul>
+<li>A bracket of 1–3 fencers is a meeting and scores 3 / 2 / 1.</li>
+<li>A single-category bracket of 4 or more, and any bracket of 16 or more, scores plain EVF.</li>
+<li>In a joined bracket of 4–15:
+<ul>
+<li>the youngest category scores EVF;</li>
+<li>an older category scores max(EVF × (1 + 0.05 · d), EVF + d);</li>
+<li>nobody scores more than the fencer directly ahead, minus 1 point.</li>
+</ul></li>
+<li>The result is then multiplied by the rank coefficient: PPW 1.0, MPW 1.2.</li>
+<li>The joining rules are in Part B §2 of the spec.</li>
+</ul>
+<p><b>What the page shows today, and what happens to each part:</b></p>
+<div class="tw"><table>
+<thead><tr><th>Current part</th><th>Where (source line)</th><th>Fate</th></tr></thead>
+<tbody>
+<tr><td>Header: Załącznik nr 1, title, lead, date</td><td>259–266</td><td><span class="tag keep">keep</span> The date and status change.</td></tr>
+<tr><td>Bands: N ≤ 3 / 4–31 / ≥ 32</td><td>272–276</td><td><span class="tag re">rewrite</span> New bands: 1–3 / 4–15 / 16 and more.</td></tr>
+<tr><td>Three-part table (log₂N, 3.5 per fencer below, medal 13/7/3 × ∛K) and the K legend</td><td>277–295</td><td><span class="tag del">delete</span></td></tr>
+<tr><td>Formula block</td><td>296–308</td><td><span class="tag re">rewrite</span> Meeting, EVF, joined. The season-parameter spans <code>.p-mp</code>, <code>.p-de</code> and <code>.p-pod</code> are kept.</td></tr>
+<tr><td>Coefficient table, filled from the season</td><td>310–315, 899–928</td><td><span class="tag keep">keep</span> The algorithm column is renamed "Sposób liczenia". The engine test uses the new engine code.</td></tr>
+<tr><td>Calculator: N, place, rank slider, type chips; joined toggle with K and the place within the category</td><td>318–358, 842–897</td><td><span class="tag keep">keep</span> N, place, slider and chips stay. <span class="tag re">rewrite</span> Joined mode: the fencer's own category and the youngest category in the bracket, giving d.</td></tr>
+<tr><td>Medal card: K = 1–31 × gold, silver, bronze, with SVG medals</td><td>360–377, 930–965</td><td><span class="tag del">delete</span> It is replaced by the premium table.</td></tr>
+<tr><td>Full table 64 × 64 (4–31 SPWS formula, 32–64 EVF), locate, CSV</td><td>380–404, 985–1075</td><td><span class="tag keep">keep</span> The grid, locate and CSV stay. Rows 4–64 all become EVF, with new bands.</td></tr>
+<tr><td>Example V1 × 2, V2 × 4, V3 × 4 in one bracket of 10</td><td>406–411, 967–983</td><td><span class="tag del">delete</span> Under the new joining rules this line-up does not form one bracket. V1 joins V2 under the exception, and V3 fences alone (checked with the reference implementation). It is replaced by the simulator, which uses real line-ups.</td></tr>
+<tr><td>Language switch, <code>?lang=</code>, localStorage, <code>num()</code>, <code>coefficient()</code>, <code>esc()</code>, the <code>#spws-env</code> block, the startup-failure banner</td><td>249–257, 731–750, 1077–1153</td><td><span class="tag keep">keep</span> Reused as they are.</td></tr>
+<tr><td>Footer "Projekt załącznika…"</td><td>413</td><td><span class="tag keep">keep</span></td></tr>
+</tbody></table></div>
+<p class="legend">Bits reused from the 29 September proposal (<code>doc/plans/tabela-punktacji-nowy-silnik-2026-09-29.html</code>): the bands card, the three-row EVF components table, the legend for the 16–64 band, and the "Sposób liczenia" column of the coefficient table. That page's joined bonus (weights 44/26/13, 3.5 per fencer, +3 for last place) is not reused.</p>
+
+<h2>2 · The new page, section by section</h2>
+<p>Recommended order: the rules first, then the tools. The page is an annex to a regulation, so it reads as rules with tools attached (question Q2). Every heading and paragraph exists in both languages, as <code>.copy-pl</code> and <code>.copy-en</code> spans switched by CSS alone, so the page reads with JavaScript turned off (ADR-092 §2).</p>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Heading (PL / EN)</th><th>Content</th><th>Text source</th></tr></thead>
+<tbody>
+<tr><td>0</td><td><span class="pl">Załącznik nr 1 · Tabela punktacji Pucharu Polski Weteranów w szermierce</span><span class="en">Annex 1 · Scoring Table of the Polish Veterans Fencing Cup</span></td><td>Title, lead "sezon 2026/2027", date, status "Projekt"</td><td>current header</td></tr>
+<tr><td>1</td><td><span class="pl">W skrócie</span><span class="en">In short</span></td><td>Three band cards:
+<ul>
+<li>1–3 fencers: a meeting, 3 / 2 / 1;</li>
+<li>4–15: EVF, plus the premium for older categories in a joined bracket;</li>
+<li>16+: EVF, also when joined, with no premium.</li>
+</ul>
+Then the rule in five lines, and links to the calculator and the simulator.</td><td>spec "rule in five lines"; 29 Sep bands card</td></tr>
+<tr><td>2</td><td><span class="pl">Łączenie kategorii w stawki</span><span class="en">How categories are joined into brackets</span></td><td>§2 ust. 1–8, including preference keys a–f. A table of four real cases:
+<ul>
+<li>GP1-2023-2024 women's épée: V1 7 + V2 2 + V3 1 form one bracket;</li>
+<li>PPW4-2025-2026 men's épée: V0 3 + V1 7 (the exception);</li>
+<li>PPW3-2025-2026 men's sabre: 17 fencers, 16+;</li>
+<li>PPW5-2024-2025 women's sabre: V0 1 + V3 1 + V4 1 (a meeting).</li>
+</ul></td><td>spec Part B §2, Part C1</td></tr>
+<tr><td>3</td><td><span class="pl">Punktacja</span><span class="en">Scoring</span></td><td>§3 ust. 1–5: the meeting; EVF; the joined bracket a / b / c; the coefficient; no tied places. The definition of d with its five examples. "How to read the premium": the two values cross at 20 EVF points. The order of calculation and the rounding.</td><td>spec Part B §1 ust. 6, §3, §5</td></tr>
+<tr><td>4</td><td><span class="pl">Algorytm EVF</span><span class="en">The EVF algorithm</span></td><td>A three-row table: points for the place, DE rounds won, podium. The formula block with the season's parameters.</td><td>29 Sep EVF table; spec Part B §4</td></tr>
+<tr><td>5</td><td><span class="pl">Gwarancje</span><span class="en">What the rule guarantees</span></td><td>Z1–Z4, and the fact that nobody gains points by placing lower.</td><td>spec Part B §6</td></tr>
+<tr><td>6</td><td><span class="pl">Współczynnik rangi zawodów w sezonie 2026/2027</span><span class="en">Competition rank coefficient in season 2026/2027</span></td><td>The table from the season configuration. PPW and MPW read "EVF; w stawce łączonej premia"; the other types read "EVF".</td><td>current page</td></tr>
+<tr><td>7</td><td><span class="pl">Kalkulator wyniku</span><span class="en">Result calculator</span></td><td>See §3 below.</td><td>current page</td></tr>
+<tr><td>8</td><td><span class="pl">Premia w stawce łączonej</span><span class="en">The joined-bracket premium</span></td><td>For the calculator's N (4–15): rows are places, columns are d = 0…4. Values before the cap, multiplied by the coefficient.</td><td><span class="tag new">new</span></td></tr>
+<tr><td>9</td><td><span class="pl">Pełna tabela: stawka 1–64, miejsca 1–64</span><span class="en">Full table: fields 1–64, places 1–64</span></td><td>The grid, locate and CSV. Bands: 1–3 meeting, 4–15, 16–64.</td><td>current page</td></tr>
+<tr><td>10</td><td><span class="pl">Stawka łączona krok po kroku</span><span class="en">A joined bracket step by step</span></td><td>The simulator with presets from real line-ups. It shows the premium, the cap, and a comparison with the fencer's own category fencing alone.</td><td><span class="tag new">new</span>; spec Part C</td></tr>
+<tr><td>—</td><td>Footer</td><td>"Projekt załącznika do Regulaminu…"</td><td>current page</td></tr>
+</tbody></table></div>
+
+<h3>Terms: one word each, in both languages</h3>
+<div class="tw"><table>
+<thead><tr><th>Polish</th><th>English</th></tr></thead>
+<tbody>
+<tr><td>stawka</td><td>bracket</td></tr>
+<tr><td>spotkanie (stawka 1–3)</td><td>meeting (bracket of 1–3)</td></tr>
+<tr><td>stawka łączona</td><td>joined bracket</td></tr>
+<tr><td>najmłodsza kategoria stawki</td><td>youngest category in the bracket</td></tr>
+<tr><td>mała kategoria</td><td>small category</td></tr>
+<tr><td>premia</td><td>premium</td></tr>
+<tr><td>ograniczenie (o 1 pkt mniej niż zawodnik bezpośrednio przed)</td><td>cap (1 point below the fencer directly ahead)</td></tr>
+<tr><td>współczynnik rangi zawodów</td><td>rank coefficient</td></tr>
+<tr><td>zajął miejsce przed</td><td>placed ahead of</td></tr>
+</tbody></table></div>
+<p class="legend">Wording rules still apply: never "pokonał" or "beat", never „stoi”, no verdicts. Every order in an example is labelled "przykładowa kolejność" / "an illustrative order", because past results give places only within each category.</p>
+
+<h2>3 · The interactive parts</h2>
+
+<h3>Calculator (section 7)</h3>
+<ul>
+<li><b>Inputs kept:</b> N (1–300), place, rank slider and type chips.</li>
+<li><b>Joined toggle:</b> "Twoja kategoria" (V0–V4) and "Najmłodsza kategoria w stawce" (not older than yours), with d shown between them.</li>
+<li><b>Breakdown by case:</b>
+<ul>
+<li>meeting: N − place + 1;</li>
+<li>EVF: points for the place, DE rounds, podium;</li>
+<li>joined 4–15 with d &gt; 0: "EVF × (1 + 0,05 · d)", "EVF + d", then "the larger of the two";</li>
+<li>joined 16+: "no premium from 16 fencers".</li>
+</ul></li>
+<li><b>Result:</b> multiplied by the coefficient.</li>
+<li><b>The cap:</b> one fixed row reads "Ograniczenie: najwyżej wynik zawodnika bezpośrednio przed Tobą minus 1 pkt. Zależy od całej listy; pokazuje je symulator poniżej." A link goes to section 10 (question Q1).</li>
+</ul>
+
+<h3>Premium table (section 8): mock for N = 6</h3>
+<p>It follows the calculator's N and the slider. Amber cells are where EVF + d is the larger value, which happens below 20 EVF points.</p>
+<div class="tw"><table class="ex">
+<thead><tr><th>Place</th><th class="r">d = 0 (EVF)</th><th class="r">d = 1</th><th class="r">d = 2</th><th class="r">d = 3</th><th class="r">d = 4</th></tr></thead>
+<tbody>
+<tr><td>1</td><td class="r">96.35</td><td class="r">101.17</td><td class="r">105.99</td><td class="r">110.81</td><td class="r">115.62</td></tr>
+<tr><td>2</td><td class="r">61.95</td><td class="r">65.04</td><td class="r">68.14</td><td class="r">71.24</td><td class="r">74.34</td></tr>
+<tr><td>3</td><td class="r">35.41</td><td class="r">37.18</td><td class="r">38.95</td><td class="r">40.72</td><td class="r">42.49</td></tr>
+<tr><td>4</td><td class="r">22.09</td><td class="r">23.19</td><td class="r">24.30</td><td class="r">25.40</td><td class="r">26.51</td></tr>
+<tr><td>5</td><td class="r">5.99</td><td class="r plus">6.99</td><td class="r plus">7.99</td><td class="r plus">8.99</td><td class="r plus">9.99</td></tr>
+<tr><td>6</td><td class="r">1.00</td><td class="r plus">2.00</td><td class="r plus">3.00</td><td class="r plus">4.00</td><td class="r plus">5.00</td></tr>
+</tbody></table></div>
+<p class="legend">Values are before the cap. A note under the table says so and points to the simulator.</p>
+
+<h3>Full table (section 9)</h3>
+<ul>
+<li>Rows 1–3: the meeting.</li>
+<li>Rows 4–64: EVF.</li>
+<li>The 4–15 band note: "w stawce łączonej starsze kategorie dostają premię — tabela premii i symulator".</li>
+<li>The 16–64 band: "EVF, także w stawce łączonej, bez premii".</li>
+<li>Places 1–3 are bold from N = 4.</li>
+<li>Locate and CSV stay as they are.</li>
+</ul>
+
+<h3>Simulator (section 10)</h3>
+<ul>
+<li><b>Building the order:</b> buttons V0–V4 add the next fencer to the finishing order. "Cofnij" removes the last one, "Wyczyść" clears the order.</li>
+<li><b>Status line:</b> it shows N, the youngest category, and which rule applies: meeting, EVF, joined 4–15, or 16+.</li>
+<li><b>Columns:</b> place, category, d, EVF, × (1 + 0.05 · d), + d, the larger value, the cap (score ahead − 1), the result × the coefficient, the category alone, and the difference.</li>
+<li><b>The "alone" column:</b> a category of 1–3 alone is a meeting; a category of 4 or more is EVF for its place within the category.</li>
+<li><b>Joining is not checked:</b> the simulator does not verify that the line-up would be joined this way. A note says that §2 decides that. Joining stays implemented only in ingestion, in Python.</li>
+</ul>
+<p><b>Presets.</b> The line-ups are real and the orders illustrative.</p>
+<ul>
+<li><b>A.</b> GP2-2023-2024 men's foil, V3 3 + V4 3: the 5% at the top, + d at the bottom.</li>
+<li><b>B.</b> GP7-2023-2024 men's sabre, V2 12 + V3 2: the cap applies twice at the bottom, at 12th and 14th place (4.48 and 1.38).</li>
+<li><b>C.</b> MPW-2023-2024 women's sabre, V0 3 + V1 3 + V2 2 + V3 1: four categories, the cap applies, and the preset sets the slider to MPW 1.2.</li>
+<li><b>D.</b> PPW3-2025-2026 men's sabre, 17 fencers: plain EVF, no premium.</li>
+</ul>
+<p>Mock of preset C. Columns up to the cap are before the coefficient; the last three are × 1.2.</p>
+<div class="tw"><table class="ex">
+<thead><tr><th>Place</th><th>Cat.</th><th class="r">d</th><th class="r">EVF</th><th class="r">× (1+0.05d)</th><th class="r">+ d</th><th class="r">Larger</th><th class="r">Cap</th><th class="r">Result ×1.2</th><th class="r">Alone ×1.2</th><th class="r">Diff.</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>V0</td><td class="r">0</td><td class="r">108.72</td><td class="r">—</td><td class="r">—</td><td class="r">108.72</td><td class="r">—</td><td class="r">130.46</td><td class="r">3.60</td><td class="r pos">+126.86</td></tr>
+<tr><td>2</td><td>V1</td><td class="r">1</td><td class="r">77.02</td><td class="r">80.87</td><td class="r">78.02</td><td class="r">80.87</td><td class="r">107.72</td><td class="r">97.05</td><td class="r">3.60</td><td class="r pos">+93.45</td></tr>
+<tr><td>3</td><td>V0</td><td class="r">0</td><td class="r">51.74</td><td class="r">—</td><td class="r">—</td><td class="r">51.74</td><td class="r">79.87</td><td class="r">62.09</td><td class="r">2.40</td><td class="r pos">+59.69</td></tr>
+<tr><td>4</td><td>V2</td><td class="r">2</td><td class="r">39.08</td><td class="r">42.99</td><td class="r">41.08</td><td class="r">42.99</td><td class="r">50.74</td><td class="r">51.59</td><td class="r">2.40</td><td class="r pos">+49.19</td></tr>
+<tr><td>5</td><td>V1</td><td class="r">1</td><td class="r">24.11</td><td class="r">25.31</td><td class="r">25.11</td><td class="r">25.31</td><td class="r">41.99</td><td class="r">30.38</td><td class="r">2.40</td><td class="r pos">+27.98</td></tr>
+<tr><td>6</td><td>V0</td><td class="r">0</td><td class="r">20.04</td><td class="r">—</td><td class="r">—</td><td class="r">20.04</td><td class="r">24.31</td><td class="r">24.05</td><td class="r">1.20</td><td class="r pos">+22.85</td></tr>
+<tr class="hit"><td>7</td><td>V3</td><td class="r">3</td><td class="r">16.60</td><td class="r">19.10</td><td class="r">19.60</td><td class="r">19.60</td><td class="r"><b>19.04</b></td><td class="r"><b>22.85</b></td><td class="r">1.20</td><td class="r pos">+21.65</td></tr>
+<tr><td>8</td><td>V1</td><td class="r">1</td><td class="r">13.63</td><td class="r">14.31</td><td class="r">14.63</td><td class="r">14.63</td><td class="r">18.04</td><td class="r">17.55</td><td class="r">1.20</td><td class="r pos">+16.35</td></tr>
+<tr><td>9</td><td>V2</td><td class="r">2</td><td class="r">1.00</td><td class="r">1.10</td><td class="r">3.00</td><td class="r">3.00</td><td class="r">13.63</td><td class="r">3.60</td><td class="r">1.20</td><td class="r pos">+2.40</td></tr>
+</tbody></table></div>
+<p class="legend">Row 7: the larger value, 19.60, is above the cap of 20.04 − 1 = 19.04, so the fencer scores 19.04 × 1.2 = 22.85. All values were computed with the spec's reference implementation (A14).</p>
+
+<h2>4 · Changes to <code>scoring.ts</code></h2>
+<p>The page computes only from the shared module (ADR-102 §1). The cap makes a score depend on the fencer ahead, so the module needs a function that scores a whole bracket, alongside the existing single-result one.</p>
+<pre class="code">// name to be fixed in ADR-104; the page's engine check uses it
+export const JOINED_ENGINE = 'SPWS_EVF_JOINED_V1_2026_2027'
+export const JOINED = { meetingUpTo: 3, premiumUpTo: 15, perStep: 0.05, capGap: 1 } as const
+export type ScoreMethod = 'TABLE' | 'PLACE_MEDAL' | 'EVF_CLASSIC' | 'EVF_JOINED'
+
+/** max(EVF × (1 + 0.05·d), EVF + d); d = 0 returns EVF. */
+export function joinedCandidate(evf: number, d: number): number
+
+/** One place without the cap: the calculator, the premium table, the full table. */
+scoreComponents(params, JOINED_ENGINE, n, place, multiplier, { d })
+
+/** The whole bracket in finishing order (category 0–4 per place), with the cap. */
+export function scoreBracket(params, categories: number[], multiplier): BracketLine[]
+// BracketLine: place, category, d, method, EVF parts, pct, plusD, candidate,
+//              cap (null for 1st), capped, rawTotal, finalScore</pre>
+<ul>
+<li><b>Rounding:</b> nothing is rounded along the way. The cap compares unrounded values, and <code>finalScore = round2(raw × multiplier)</code>, as in spec A5.</li>
+<li><b>The place-and-medal engine stays in the module for now.</b> The points calculator page (<code>kalkulator-punktow.html</code>) still uses it. It leaves in the ADR-104 release, together with its SQL and that page's rewrite.</li>
+<li><b>Both pages get the new module.</b> The generator writes it into both published pages, so the calculator page's module block changes too; its behaviour does not.</li>
+</ul>
+
+<h2>5 · Why the page cannot go live on its own</h2>
+<div class="card warnc">
+<ul>
+<li><b>The annex refuses to compute with the wrong engine.</b> It computes only with the engine assigned to PPW, and refuses any other (<code>loadScoringParams</code>, source line 783). After the rewrite it expects the new engine code.</li>
+<li><b>The database still assigns the old engine.</b> CERT and PROD assign <code>SPWS_PLACE_MEDAL_V1_2026_2027</code> until the ADR-104 migration lands. Published alone, the annex would show "parameters unavailable" to the public, and a push to <code>main</code> deploys PROD.</li>
+<li><b>So the page ships with the engine.</b> It is committed only when you ask, and it goes out in the ADR-104 release, together with:
+<ul>
+<li>the SQL engine;</li>
+<li>the calculator page;</li>
+<li>the documentation gate.</li>
+</ul></li>
+<li><b>The season lock (ADR-097) still applies.</b> No 2026/27 PPW or MPW result may be scored before that release. A read-only check at the release confirms it.</li>
+</ul></div>
+<div class="card rules"><span class="lb">Review copy, for reading before the engine exists</span>
+<ul>
+<li><b>What it is:</b> <code>doc/plans/tabela-punktacji-podglad-2026-09-30.html</code>, the real rewritten page plus one injected script.</li>
+<li><b>What the script does:</b> it answers <code>fn_public_scoring_params</code> with the season's values, read from LOCAL when the copy is built, and puts the new engine code in the PPW and MPW rows.</li>
+<li><b>How it is marked:</b> a banner reads "Podgląd — parametry sezonu wpisane na stałe" / "Preview — season parameters fixed".</li>
+<li><b>The published page stays clean:</b> its own code carries no fallback, because ADR-102 forbids computing from hard-coded constants.</li>
+<li><b>ADR-085 is not affected:</b> the copy is not published, so the ADR-085 §2 limit on static pages is not triggered (question Q3).</li>
+</ul></div>
+
+<h2>6 · Steps, test first</h2>
+<ol>
+<li><b>RED: <code>frontend/tests/scoring.test.ts</code>.</b>
+<ul>
+<li>Cases for the new engine: every finishing order in spec Part C, and the §7 example. The expected values come from the reference implementation.</li>
+<li>Properties:
+<ul>
+<li>the youngest category equals EVF;</li>
+<li>the gap to the fencer ahead is at least 1 before the coefficient;</li>
+<li>a small category never scores below its own meeting;</li>
+<li>N ≥ 16 is plain EVF, and N ≤ 3 is 3 / 2 / 1.</li>
+</ul></li>
+<li>ADR-102 wants these expectations derived from the database. The SQL engine does not exist yet, so ADR-104 re-derives them from <code>fn_score_by_engine</code>, and they must come out the same.</li>
+</ul></li>
+<li><b>RED: <code>frontend/tests/assets.test.ts</code>.</b>
+<ul>
+<li>SE27.PAGE.01: the annex module block carries the new engine code.</li>
+<li>SE27.PAGE.03: the annex keeps <code>TABLE_N = 64</code>, <code>SEASON_CODE</code> and <code>#coefBody</code>. It has no <code>MEDAL_ROWS</code> and no place-and-medal text (<code>∛K</code>, <code>log₂N</code>, <code>3,5 pkt</code>). It has the premium-table and simulator elements.</li>
+</ul></li>
+<li><b>GREEN: <code>frontend/src/lib/scoring.ts</code>.</b> Add the functions from §4.</li>
+<li><b>Rewrite the annex source.</b> Keep the module markers, then run <code>node frontend/scripts/build-scoring-pages.mjs</code>.</li>
+<li><b>Build the review copy</b> with a script in the session scratchpad. The script is not committed.</li>
+<li><b>Verify in the browser</b> (§7), then hand over. There is no commit unless you ask, and no push to <code>main</code>.</li>
+</ol>
+
+<h2>7 · Verification</h2>
+<ul>
+<li><b>Commands:</b>
+<ul>
+<li><code>cd frontend &amp;&amp; npx vitest run tests/scoring.test.ts tests/assets.test.ts</code>;</li>
+<li><code>npm run check</code>;</li>
+<li><code>node scripts/build-scoring-pages.mjs --check</code>.</li>
+</ul></li>
+<li><b>Browser pane, on the review copy:</b>
+<ul>
+<li>Polish by default; the EN switch and <code>?lang=en</code> work.</li>
+<li>The console is clean.</li>
+<li>No horizontal page scroll at 375 px.</li>
+<li>The CSV has 64 rows.</li>
+</ul></li>
+<li><b>Values to check against the spec:</b>
+<ul>
+<li>N = 8: 1st place 98.00, last 1.00;</li>
+<li>N = 6 with d = 1: 2nd place 65.04, 6th place 2.00;</li>
+<li>preset B: 12th and 14th place 4.48 and 1.38;</li>
+<li>preset C: 7th place 22.85 at × 1.2;</li>
+<li>row 16 of the full table equals plain EVF.</li>
+</ul></li>
+<li><b>Before any commit:</b> <code>scripts/preflight.sh</code> exits 0.</li>
+</ul>
+
+<h2>8 · Documentation coherence gate (in the ADR-104 release, when the page ships)</h2>
+<ul>
+<li><code>doc/handbook/product/product-surfaces.html</code> #published-pages. Its sentence on the annex content (rows 4–31 on the SPWS formula, the medal table for K = 1–31, the worked example) is rewritten in present tense.</li>
+<li>ADR-092 gets an amendment for the new annex content.</li>
+<li>ADR-102 gets an amendment: the module has a bracket-level function because of the cap.</li>
+<li>ADR-104 records the new engine and supersedes ADR-103 §7.</li>
+<li>Specification Appendix C (the ADR registry) is updated, and the RTM FR-142 test IDs.</li>
+<li>Then <code>python3 tools/docs-search/ingest.py</code>, <code>scripts/refresh-graph.sh</code>, and <code>scripts/preflight.sh</code> exiting 0.</li>
+</ul>
+
+<h2>9 · Not in this plan</h2>
+<p>These belong to the ADR-104 implementation plan, which comes next:</p>
+<ul>
+<li>the SQL engine, and the migration that deletes the place-and-medal engine;</li>
+<li>joining in ingestion (<code>python/pipeline/joined_brackets/</code>);</li>
+<li>refusing repeated places at ingestion;</li>
+<li>the rewrite of the points calculator page.</li>
+</ul>
+<p>Lifting <code>noindex</code> is the act of adopting the annex and stays separate (ADR-102, open item 1).</p>
+
+<h2>10 · Questions</h2>
+<div class="card open"><span class="lb">Q1 · How is the 1-point cap shown?</span>
+<ol type="A">
+<li><b>A per-place calculator without the cap, plus the simulator.</b> <span class="rec">recommended</span> The calculator stays simple, and the simulator shows the cap on a real order.</li>
+<li><b>The calculator gets an extra field: "points of the fencer directly ahead".</b> The cap works on scores before the coefficient, so at MPW the gap is 1.2 points after it. A fencer typing in a published score would find that confusing.</li>
+<li><b>The simulator only.</b> The per-place calculator is lost, and it is the quickest answer to "how much for 3rd place of 8?".</li>
+</ol></div>
+<div class="card open"><span class="lb">Q2 · Order of the sections</span>
+<ol type="A">
+<li><b>Rules first, then the tools, as in §2.</b> <span class="rec">recommended</span> It is a regulation annex. The "In short" box at the top links straight to the calculator.</li>
+<li><b>Tools first, rules below, as in the 29 September proposal.</b> This is quicker for someone who only wants a number, but it puts the rules below a 64 × 64 grid.</li>
+</ol></div>
+<div class="card open"><span class="lb">Q3 · How is the page reviewed before the engine exists?</span>
+<ol type="A">
+<li><b>A local review copy in <code>doc/plans/</code>.</b> <span class="rec">recommended</span> Nothing is published, and ADR-085 is not touched.</li>
+<li><b>A published, time-limited board preview</b>, as on 28 September. That needs a new ADR-085 §2 amendment, its own tests, and its deletion at the release.</li>
+</ol></div>
+
+<footer>Plan for the scoring-table rewrite · 30 September 2026 · worktree fervent-antonelli-be346d · inputs: <code>doc/plans/joined-scoring-final-spec-2026-09-30.html</code> (A6, Part B, Part C), <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>, <code>doc/plans/tabela-punktacji-nowy-silnik-2026-09-29.html</code>, ADR-085, ADR-092, ADR-097, ADR-102.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pgTAP and 2026/27 data — plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Database tests · pgTAP 19, 25, 74 · Plan · 1 October 2026</p>
+  <h1>Database tests that survive 2026/27 data</h1>
+  <p class="dek">Three pgTAP files failed on LOCAL as soon as it held the real PPW1-2026/27 import, and passed again only after the reset. CI passes today only because its database has no 2026/27 results yet. <b>Two of the files need a one-line cleanup fix. The third tests a one-off repair function that would now damage data — that one needs your decision.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Answered B · implemented 1 October · not committed</span>
+    <span class="pill">tests + one migration · no data change</span>
+    <span class="pill">replaces the task chip „Harden pgTAP 19, 25 and 74&rdquo;</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">What fails</p>
+    <h2>Seen on LOCAL with the PPW1-2026/27 import, 1 October</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Error</th><th>Cause</th></tr></thead>
+      <tbody>
+        <tr><td><code>19_phase3_wizard.sql</code> (line 104)<br><code>74_no_evf_season_skeletons.sql</code> (line 56)</td><td><code>tbl_match_candidate_id_result_fkey</code> — the result is still referenced</td><td>Both fixtures clear SPWS-2026-2027 before rebuilding it, deleting results, tournaments, events in order. The import also wrote identity-match candidates pointing at the results, and that foreign key has no cascade. It is the only blocker: every other dependant of events and tournaments cascades or is already cleared.</td></tr>
+        <tr><td><code>25_joint_pool_split.sql</code> (line 126)</td><td><code>chk_tournament_joined_order</code> violated</td><td>The test runs <code>fn_backfill_joint_pool_split()</code>, which rewrites N of <em>every</em> joint-pool tournament in the database to its own result count. A 2026/27 joined bracket keeps N as the whole bracket (ADR-104), and the constraint refuses the change: PPW1-V0-F-EPEE-2026-2027, order <code>1010101</code> (7), N rewritten to 3.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Production is not affected: nothing runs the backfill, and the cleanups exist only in tests. CI will fail the same way once its seed carries 2026/27 joined brackets.</p>
+  </section>
+
+  <section>
+    <p class="kicker">19 and 74 · no decision needed</p>
+    <h2>Clear the match candidates first</h2>
+    <ol class="steps">
+      <li><b>RED:</b> inside each file&rsquo;s existing savepoint, before the cleanup, insert a 2026/27 result and a match candidate pointing at it — the shape the import leaves. On a fresh database the file then aborts with the same error as on LOCAL.</li>
+      <li><b>GREEN:</b> delete the match candidates of those results before the results. Still inside the savepoint; the rollback at the end restores everything.</li>
+    </ol>
+    <p>No assertion is added or removed in either file.</p>
+  </section>
+
+  <section>
+    <p class="kicker">25 · your decision</p>
+    <h2>What to do with <code>fn_backfill_joint_pool_split()</code></h2>
+    <p>ADR-049 calls it a <b>one-shot remediation</b>, and it ran on LOCAL, CERT and PROD on 30 April. Its own later fix had to be applied event by event, because running it across the database would collapse the full-field N of international events (migration <code>20260613000001</code>, ADR-038). A 2026/27 joined bracket is now a second kind of row it would rewrite wrongly — this time the constraint catches it. Nothing in the application, the scrapers or the release workflows calls it.</p>
+    <div class="note good">
+      <p class="lede">B · Retire the function <span class="chip never">RECOMMENDED</span></p>
+      <p>A new migration drops it. Test 25 keeps its column and index checks (25.1–25.2); 25.3 becomes „the function no longer exists&rdquo;; 25.4–25.7, which test what the function does, go with it. ADR-049 gets an amendment: the backfill is retired, with the reasons above. pgTAP total 1183 → 1179.</p>
+      <p><b>Why:</b> a repair that already ran and is now wrong for two kinds of rows is a hazard to keep callable. Dropping it removes the hazard instead of fencing one case.</p>
+    </div>
+    <div class="note">
+      <p class="lede">A · Keep it, skip 2026/27 joined brackets</p>
+      <p>A new migration redefines it so step 2 leaves rows with a joined order alone; test 25 gains 25.8 with a joined-bracket fixture (1183 → 1184). Smaller — but the function stays wrong for international events, the hazard the June fix already documented.</p>
+    </div>
+    <p>Either way the migration reaches CERT and PROD with the next release, on your go; it touches no data.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Definition of done</p>
+    <h2>Tests, docs, release</h2>
+    <ul>
+      <li>RED first for each file, on a fresh database, with the fixture inside the test — no LOCAL reset needed.</li>
+      <li><code>postgrestools</code> on the new migration and the three test files.</li>
+      <li><code>scripts/preflight.sh</code> exits 0; commit only on your word.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede">☑ Documentation coherence gate complete</p>
+<pre class="trace">Impact: architecture (B: a function is dropped) | tests
+Canonical docs affected: doc/adr/049-joint-pool-split-flag.md + its generated .html (amendment
+  2026-10-01 — backfill retired; status line notes it) and doc/adr/index.html (status cell);
+  specification Appendix C row for ADR-049 and Appendix D "pgTAP total" 1183 → 1179, plus the
+  generated specification .html; RTM checked — no row names test 25 or the function
+ADR impact: amend ADR-049 (new-adr skill rules: Markdown source, render_adrs.py)
+Operational impact: none — the migration ships with the next release
+Source-map / last-verified updated: not applicable (no handbook page names the function)
+Validation: render_adrs.py --check (102 ADRs), render_docs.py --check (7 docs),
+  check_docs.py --changed-from main: 26 handbook pages, 0 ownership warnings
+Superseded prose archived rather than appended: ADR amendment section, per ADR-082</pre>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Your answer: B · what was done</p>
+    <h2>Implemented on 1 October</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>RED</td><td>A fixture helper (<code>pg_temp.seed_imported_2026_27_result</code>) writes one 2026/27 result and its AUTO_MATCHED candidate inside each savepoint, before each cleanup: three times in 19, once in 74. On LOCAL, 19 aborted at line 138 and 74 at line 90 on <code>tbl_match_candidate_id_result_fkey</code>; 25 failed its new 25.3 (the function still existed).</td></tr>
+        <tr><td>GREEN · 19 and 74</td><td>Each 2026/27 cleanup deletes the match candidates of those results first. 19: 25 of 25 ok; 74: 9 of 9 ok. No assertion added or removed. 19 still prints its documented „planned 25 but ran 5&rdquo; savepoint artefact (file header, line 20).</td></tr>
+        <tr><td>GREEN · 25</td><td>Migration <code>20261001000001_retire_fn_backfill_joint_pool_split.sql</code> drops the function; applied to LOCAL. 25: 3 of 3 ok (25.1, 25.2 unchanged; 25.3 <code>hasnt_function</code>).</td></tr>
+        <tr><td>Checked on the way</td><td>The commit path already skips joined brackets: <code>fn_commit_event_draft</code> recomputes N only where <code>txt_joined_order IS NULL</code> (<code>20260930000003</code>, line 806). The backfill was the only writer without that guard. The commit-path count stays covered by 27.27.</td></tr>
+        <tr><td><code>postgrestools</code></td><td>The migration is clean. The test files report only the existing false-positive group (pgTAP functions and temp objects unknown to the static checker): 19 has 20 errors (main: 20), 25 has 4 (main: 9), 74 has 12 (main: 11; the extra one is <code>schema "pg_temp"</code> at the helper call).</td></tr>
+        <tr><td><code>scripts/preflight.sh</code></td><td>Exit 0, all 15 gates pass. <code>supabase test db</code>: 86 files, 1179 tests, PASS. That matches the specification total, so the coherence gate passes too.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Not committed. The migration reaches CERT and PROD with the next release, on your go; it touches no data.</p>
+  </section>
+
+  <p class="foot">Plan · 1 October 2026 · SPWS Ranklist · pgTAP 19, 25, 74 · evidence from LOCAL before the 1 October reset</p>
+</div>
+</body>
+</html>

@@ -125,11 +125,13 @@ describe('exportDrilldown', () => {
   })
 })
 
-// SE27.UI.08 (ADR-103, FR-140): the drill-down export names the method that
-// scored each result and every stored component. A component the method does
-// not use is stored as -1 (chk_result_components_match_method); the export
-// shows it as „nie dotyczy”, never as a negative number of points. The export
-// reaches fencers, so its headers follow the UI language: Polish by default.
+// SE27.UI.08 (ADR-103, FR-140, as amended by ADR-104): the drill-down export
+// names the method that scored each result and every stored component. A
+// component the method does not use is stored as -1
+// (chk_result_components_match_method); the export shows it as „nie dotyczy”,
+// never as a negative number of points. The export reaches fencers, so its
+// headers follow the UI language: Polish by default. JB27.CLEAN.06: K, m, b
+// and the place-and-medal components left with their engine.
 describe('exportDrilldown — components by method (SE27.UI.08)', () => {
   beforeEach(() => setLocale('pl'))
 
@@ -149,22 +151,16 @@ describe('exportDrilldown — components by method (SE27.UI.08)', () => {
     int_participant_count: 8,
     num_multiplier: 1.0,
     int_place: 3,
-    num_place_pts: -1,
-    num_de_bonus: -1,
-    num_podium_bonus: -1,
-    num_final_score: 36.14,
+    num_place_pts: 24.11,
+    num_de_bonus: 10,
+    num_podium_bonus: 6,
+    num_final_score: 40.11,
     ts_points_calc: '2026-10-04T00:00:00Z',
     id_season: 2,
     txt_season_code: 'SPWS-2026-2027',
     url_results: null,
     txt_location: null,
-    int_category_count: 4,
-    int_category_place: 1,
-    int_below_count: 5,
-    num_field_pts: 3,
-    num_below_pts: 17.5,
-    num_medal_bonus: 20.64,
-    enum_score_method: 'PLACE_MEDAL',
+    enum_score_method: 'EVF_CLASSIC',
   }
   const rowOf = (s: ScoreRow) => {
     exportDrilldown('DOE Jane', [s], 'RANKING')
@@ -174,87 +170,77 @@ describe('exportDrilldown — components by method (SE27.UI.08)', () => {
   it('Polish headers, in order, with the component names of the calculator', () => {
     expect(Object.keys(rowOf(base))).toEqual([
       'Turniej', 'Data', 'Typ', 'Miejsce', 'Liczba zawodników (N)',
-      'Zawodników w kategorii (K)', 'Miejsce w kategorii (m)', 'Zawodników poniżej (b)',
       'Współczynnik', 'Metoda',
       'Punkty za miejsce', 'Bonus za wygrane rundy', 'Bonus za podium',
-      'Za liczebność', 'Zawodnicy poniżej w stawce', 'Premia medalowa',
+      'Różnica kategorii (d)', 'Premia w stawce łączonej', 'Obniżenie do ograniczenia',
       'Wynik',
     ])
   })
 
-  it('a place-and-medal result shows its method, K, m, b and its three components', () => {
-    const row = rowOf(base)
-    expect(row['Metoda']).toBe('SPWS: miejsce i medal (stawka 4–31)')
-    expect(row['Zawodników w kategorii (K)']).toBe(4)
-    expect(row['Miejsce w kategorii (m)']).toBe(1)
-    expect(row['Zawodników poniżej (b)']).toBe(5)
-    expect(row['Za liczebność']).toBe(3)
-    expect(row['Zawodnicy poniżej w stawce']).toBe(17.5)
-    expect(row['Premia medalowa']).toBe(20.64)
-    expect(row['Wynik']).toBe(36.14)
+  // JB27.UI.03: a joined-bracket row adds up from its components — EVF, the
+  // premium for its d, minus what the cap took off — before the coefficient.
+  it('JB27.UI.03 a joined-bracket result shows its method, d, premium and cap reduction', () => {
+    const row = rowOf({
+      ...base,
+      txt_tournament_code: 'MPW1-V3-M-EPEE-2026-2027', enum_type: 'MPW', num_multiplier: 1.2,
+      int_participant_count: 9, int_place: 7, num_place_pts: 8.18, num_de_bonus: 10,
+      num_podium_bonus: -1, num_joined_premium: 1.43, num_cap_reduction: 0.56,
+      int_category_steps: 3, num_final_score: 22.85, enum_score_method: 'EVF_JOINED',
+    })
+    expect(row['Metoda']).toBe('EVF w stawce łączonej')
+    expect(row['Różnica kategorii (d)']).toBe(3)
+    expect(row['Premia w stawce łączonej']).toBe(1.43)
+    expect(row['Obniżenie do ograniczenia']).toBe(0.56)
+    expect(row['Wynik']).toBe(22.85)
   })
 
-  it('shows -1 as „nie dotyczy”', () => {
+  it('JB27.UI.03 a classic result shows „nie dotyczy” for d, the premium and the cap', () => {
+    const row = rowOf({ ...base, num_joined_premium: -1, num_cap_reduction: -1, int_category_steps: -1 })
+    expect(row['Różnica kategorii (d)']).toBe('nie dotyczy')
+    expect(row['Premia w stawce łączonej']).toBe('nie dotyczy')
+    expect(row['Obniżenie do ograniczenia']).toBe('nie dotyczy')
+  })
+
+  it('an EVF classic result shows its method and its three components', () => {
     const row = rowOf(base)
-    expect(row['Punkty za miejsce']).toBe('nie dotyczy')
+    expect(row['Metoda']).toBe('EVF klasyczny')
+    expect(row['Punkty za miejsce']).toBe(24.11)
+    expect(row['Bonus za wygrane rundy']).toBe(10)
+    expect(row['Bonus za podium']).toBe(6)
+    expect(row['Wynik']).toBe(40.11)
+  })
+
+  it('a table result names the table and shows -1 as „nie dotyczy”', () => {
+    const row = rowOf({
+      ...base,
+      int_participant_count: 3, num_place_pts: 1, num_de_bonus: -1, num_podium_bonus: -1,
+      num_final_score: 1, enum_score_method: 'TABLE',
+    })
+    expect(row['Metoda']).toBe('Tabela (stawka 1–3)')
+    expect(row['Punkty za miejsce']).toBe(1)
     expect(row['Bonus za wygrane rundy']).toBe('nie dotyczy')
     expect(row['Bonus za podium']).toBe('nie dotyczy')
   })
 
-  it('an EVF classic result shows the classic components and „nie dotyczy” for the rest', () => {
-    const row = rowOf({
-      ...base,
-      num_place_pts: 36.25, num_de_bonus: 20, num_podium_bonus: 6,
-      num_field_pts: -1, num_below_pts: -1, num_medal_bonus: -1,
-      int_category_count: -1, int_category_place: -1, int_below_count: -1,
-      enum_score_method: 'EVF_CLASSIC',
-    })
-    expect(row['Metoda']).toBe('EVF klasyczny')
-    expect(row['Punkty za miejsce']).toBe(36.25)
-    expect(row['Bonus za wygrane rundy']).toBe(20)
-    expect(row['Bonus za podium']).toBe(6)
-    for (const col of ['Za liczebność', 'Zawodnicy poniżej w stawce', 'Premia medalowa',
-      'Zawodników w kategorii (K)', 'Miejsce w kategorii (m)', 'Zawodników poniżej (b)']) {
-      expect(row[col], col).toBe('nie dotyczy')
-    }
-  })
-
-  it('a table result names the table', () => {
-    const row = rowOf({
-      ...base,
-      int_participant_count: 3, num_place_pts: 1,
-      num_field_pts: -1, num_below_pts: -1, num_medal_bonus: -1,
-      enum_score_method: 'TABLE',
-    })
-    expect(row['Metoda']).toBe('Tabela (stawka 1–3)')
-    expect(row['Punkty za miejsce']).toBe(1)
-  })
-
-  it('an unscored or pre-ADR-103 row leaves the new columns empty', () => {
+  it('an unscored row leaves the method empty', () => {
     const legacy: ScoreRow = { ...base }
-    for (const k of ['int_category_count', 'int_category_place', 'int_below_count',
-      'num_field_pts', 'num_below_pts', 'num_medal_bonus', 'enum_score_method'] as const) {
-      delete legacy[k]
-    }
+    delete legacy.enum_score_method
     const row = rowOf({ ...legacy, num_place_pts: 40, num_de_bonus: 10, num_podium_bonus: 0 })
     expect(row['Metoda']).toBe('')
-    expect(row['Za liczebność']).toBe('')
-    expect(row['Zawodników w kategorii (K)']).toBe('')
     expect(row['Punkty za miejsce']).toBe(40)
   })
 
   it('in English: the original header names, and "n/a"', () => {
     setLocale('en')
-    const row = rowOf(base)
+    const row = rowOf({ ...base, num_de_bonus: -1 })
     expect(Object.keys(row)).toEqual([
       'Tournament', 'Date', 'Type', 'Place', 'Participants',
-      'Category Size (K)', 'Category Place (m)', 'Below (b)',
       'Multiplier', 'Method',
       'Place Pts', 'DE Bonus', 'Podium Bonus',
-      'Field Pts', 'Below Pts', 'Medal Bonus',
+      'Category Difference (d)', 'Joined Premium', 'Cap Reduction',
       'Final Score',
     ])
-    expect(row['Place Pts']).toBe('n/a')
-    expect(row.Method).toBe('SPWS place and medal (bracket of 4–31)')
+    expect(row['DE Bonus']).toBe('n/a')
+    expect(row.Method).toBe('EVF classic')
   })
 })

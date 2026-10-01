@@ -19,6 +19,37 @@ from datetime import date
 
 import httpx
 
+# tbl_result columns the export leaves out: the auto-id, the FKs it re-resolves
+# by sub-SELECT, and every scoring-engine output, which the post-seed
+# fn_calc_tournament_scores run recomputes (exporting them would only let the
+# dump drift from the recomputed values).
+RESULT_SKIP_COLUMNS = frozenset(
+    {
+        "id_result",
+        "id_fencer",
+        "id_tournament",
+        # Scoring-engine output, like the score columns below it: set by
+        # fn_calc_tournament_scores (20260919000005:177) to record which
+        # revision scored the row, and repopulated by the post-seed recompute.
+        # Carrying it as a raw id pointed at a table the dump did not emit,
+        # which is half of what made the 2026-09-24 dump unloadable.
+        "id_scoring_revision",
+        "num_place_pts",
+        "num_de_bonus",
+        "num_podium_bonus",
+        "num_final_score",
+        "ts_points_calc",
+        # ADR-103 §5: the method that scored the row, recomputed the same way.
+        "enum_score_method",
+        # ADR-104 §6: the joined engine's components. The category order they
+        # are computed from is tbl_tournament.txt_joined_order, an input, and is
+        # exported with the tournament.
+        "num_joined_premium",
+        "num_cap_reduction",
+        "int_category_steps",
+    }
+)
+
 
 # ---------------------------------------------------------------------------
 # Management API
@@ -482,31 +513,7 @@ def export_monolithic(ref: str, token: str) -> str:
     # Skip auto-id + FKs we re-resolve via subquery, and skip score-engine
     # output columns that get recomputed by fn_calc_tournament_scores on
     # post-seed run (avoid drift between exported and recomputed values).
-    _R_SKIP = {
-        "id_result",
-        "id_fencer",
-        "id_tournament",
-        # Scoring-engine output, like the four score columns below it: set by
-        # fn_calc_tournament_scores (20260919000005:177) to record which
-        # revision scored the row, and repopulated by the post-seed recompute.
-        # Carrying it as a raw id pointed at a table the dump did not emit,
-        # which is half of what made the 2026-09-24 dump unloadable.
-        "id_scoring_revision",
-        "num_place_pts",
-        "num_de_bonus",
-        "num_podium_bonus",
-        "num_final_score",
-        "ts_points_calc",
-        # ADR-103 §5: the 2026/2027 engine's outputs, recomputed the same way.
-        # Its INPUTS (int_category_count, int_category_place, int_below_count)
-        # are exported: b counts fencers the dump does not hold, so it cannot
-        # be recomputed after the seed loads.
-        "num_field_pts",
-        "num_below_pts",
-        "num_medal_bonus",
-        "enum_score_method",
-    }
-    r_cols_data = [c for c in r_cols if c["name"] not in _R_SKIP]
+    r_cols_data = [c for c in r_cols if c["name"] not in RESULT_SKIP_COLUMNS]
     r_data_select = ", ".join(
         f"r.{c['name']}::TEXT" if c["type"] in ("date", "USER-DEFINED") else f"r.{c['name']}"
         for c in r_cols_data

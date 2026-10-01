@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Medal constants brainstorm</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:60rem;margin:0 auto;padding:48px 24px 100px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);background:var(--surface-2);padding:.1em .4em;border-radius:5px;font-size:.85em;border:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(32px,5vw,46px);line-height:1.1;margin:0 0 16px;text-wrap:balance;max-width:24ch}
+  .dek{font-size:20px;color:var(--muted);margin:0 0 24px;max-width:62ch}
+  .dek b{color:var(--ink)}
+  h2{font-family:var(--serif);font-weight:700;font-size:28px;line-height:1.15;margin:0 0 12px}
+  h3{font-size:19px;margin:0 0 8px}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:48px 0 6px}
+  p{margin:0 0 14px;max-width:70ch}
+  ul,ol{margin:0 0 14px;padding-left:1.3em;max-width:72ch} li{margin:6px 0}
+  .num{font-variant-numeric:tabular-nums}
+  .tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:15px;min-width:640px;font-variant-numeric:tabular-nums}
+  th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+  th{background:var(--surface-2);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  td:first-child,th:first-child{text-align:left}
+  tr:last-child td{border-bottom:0}
+  th.rec,td.rec{background:var(--good-soft)}
+  .bad{color:var(--danger);font-weight:700}
+  .ok{color:var(--good);font-weight:700}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .card.rec{border:2px solid var(--good)}
+  .card .tag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:var(--muted);margin:0 0 6px}
+  .card.rec .tag{color:var(--good)}
+  .card ul{padding-left:1.1em;font-size:16px}
+  .card p{font-size:16px}
+  .note{border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;background:var(--warn-soft);padding:14px 18px;margin:16px 0}
+  .note .lede{font-weight:800;color:var(--warn);margin:0 0 6px}
+  .note>:last-child{margin-bottom:0}
+  .ask{border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);padding:18px 20px;margin:24px 0}
+  .ask .lede{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 8px}
+  .ask h2{font-size:24px}
+  .ask>:last-child{margin-bottom:0}
+  .links{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .links a{font-family:var(--mono);font-size:13px;padding:5px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);text-decoration:none}
+  .foot{margin-top:50px;padding-top:18px;border-top:2px solid var(--line);font-size:13px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:600px){.wrap{padding:30px 16px 80px} body{font-size:17px} h2{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Scoring 2026/27 · brainstorm · medal constants and the switch to EVF at 16</p>
+  <h1>Your set, tested against EVF, and what "slightly better" costs at N = 16</h1>
+  <p class="dek">Your set (złoto 35.7, srebro 22.6, brąz 12.3 × ∛K, 3 per fencer below, EVF from 16) <b>halves the distance to EVF</b>. Averaged over every place in fields of 4–15, the gap falls from 12.7 to 6.1 points. Three things stay open. <b>Small fields are still below EVF</b>. <b>Fields of 12–15 rise well above it.</b> <b>The winner of 15 loses 21.3 points</b> when a 16th fencer enters. The cause is the medal's growth with K, not its size. The page ends with one question.</p>
+
+  <div class="note">
+    <p class="lede">Update · A′, your set with a 4th-place medal of 7 × ∛K</p>
+    <p>Adding a 4th medal of 7 fixes the clearest gap in your set. 4th place moves from 8.0–20.9 points below EVF to between −6.4 and +9.3, and the average gap falls from 6.1 to 5.1.</p>
+    <p>The two ends stay where they were: the win is −20.0 at N = 5 and +21.8 at N = 15, and the winner of 15 still drops 134.0 → 112.7 at 16. Those come from the ∛K growth (§2), which the 4th medal does not touch.</p>
+    <p>At the hand-over, all 15 places now lose points; 4th of 15 goes 54.2 → 45.5. A′ is compared with the others in §5.</p>
+  </div>
+
+  <div class="note">
+    <p class="lede">Update · E, medal × ⁵√K, fitted to sit slightly on top of EVF</p>
+    <p>Keeping your 3 points per fencer below, the medal constants were fitted to sit a little above EVF, with any shortfall penalised more than going above. The result is 50 / 32 / 17 / 11 × ⁵√K. On average it is +2.1 above EVF, and 78 of 114 places are at or above it.</p>
+    <p>"On top everywhere" cannot be reached. EVF adds a whole DE round at N = 5 and at N = 9, and a formula large enough to clear those steps runs far above EVF by N = 15. E accepts a 12.1 shortfall for the win at N = 5 to keep the win at N = 15 at +19.6. Details in §5.</p>
+  </div>
+
+  <div class="links">
+    <a href="scoring-curves-spws-vs-evf-2026-09-28.html#E">open the chart · E, ⁵√K</a>
+    <a href="scoring-curves-spws-vs-evf-2026-09-28.html#A7">open the chart · A′, your set + 4th 7</a>
+    <a href="scoring-curves-spws-vs-evf-2026-09-28.html#A">open the chart · A, your set</a>
+    <a href="scoring-curves-spws-vs-evf-2026-09-28.html#D">open the chart · D</a>
+    <a href="scoring-curves-spws-vs-evf-2026-09-28.html#C">open the chart · C</a>
+  </div>
+
+  <p class="kicker">1 · What your set does</p>
+  <h2>Measured on every place of every field from 4 to 15</h2>
+  <ul class="num">
+    <li><strong>The average gap to EVF falls from 12.7 to 6.1 points</strong>, measured over 114 place-and-field cells.</li>
+    <li><strong>A win climbs from below EVF to above it.</strong> The largest gaps are at N = 5, where SPWS gives 75.4 against EVF's 95.4 (−20.0), and at N = 15, where it gives 134.0 against 112.2 (+21.8). The two scales meet at N = 10–11.</li>
+    <li><strong>4th place gets no medal.</strong> It sits 8.0–20.9 points below EVF in every field of 5–15. In a field of 15, the step from 3rd to 4th is 70.2 → 36.9; EVF's is 57.5 → 44.9. EVF gives 3rd and 4th the same DE rounds, because both reached the semi-final; only the podium bonus separates them.</li>
+    <li><strong>At the hand-over, 14 of 15 places lose points</strong> when a 16th fencer enters. The winner drops 134.0 → 112.7. A win in a field of 15 pays more than an EVF win in any field up to 32.</li>
+  </ul>
+
+  <p class="kicker">2 · Why the two ends pull apart</p>
+  <h2>EVF's winner rises by 28 points from N = 4 to N = 15. Yours rises by 66.</h2>
+  <p>EVF gives the winner 84.3 in a field of 4 and 112.2 in a field of 15. The 50 place points stay fixed; the bigger field adds two DE rounds and a slightly bigger podium bonus.</p>
+  <p>Your winner goes from 67.7 to 134.0. The 66 extra points come from three places:</p>
+  <ul>
+    <li>33 from 3 points per fencer below;</li>
+    <li>31 from the medal's ∛K growth (35.7 × (∛15 − ∛4));</li>
+    <li>2 from log₂ N.</li>
+  </ul>
+  <p>A line that climbs 2.4 times as fast can meet EVF at one field size only.</p>
+  <p><strong>The medal constants alone cannot fix this while the medal grows with ∛K.</strong> Even with zero points per fencer below, a gold large enough to reach EVF at N = 4 (51.9) gives 131.9 at N = 15, which is 19.7 above EVF. What decides the fit is how fast the medal grows. There are two ways to slow it: a sixth root (⁶√K), or no growth at all (a flat medal).</p>
+  <p>Every set has its largest shortfall at N = 5 or N = 9. In those fields EVF adds a whole DE round with one extra fencer: from 4 to 5 its winner jumps from 84.3 to 95.4. No smooth formula follows those steps.</p>
+
+  <p class="kicker">3 · Slightly better, then EVF</p>
+  <h2>Whatever SPWS pays above EVF at 15, the 16th fencer takes away</h2>
+  <p>From 16, every place gets exactly its EVF value. A premium over EVF at N = 15 therefore becomes a loss when one more fencer enters. The winner's loss is 21.3 under your set, 10.7 under D and 6.2 under C.</p>
+  <p>Places 9–15 lose points at 15 → 16 in every set, today's included, because EVF drops sharply after 8th: a field of 16 gives 9th place no DE round. Under your set, 9th of 15 earns 21.9 and 9th of 16 earns 11.2.</p>
+  <p>With a full switch at 16 and a straight points-per-fencer term, this drop cannot be removed, only kept small. "Slightly better than EVF" and "a small drop at 16" are the same requirement.</p>
+
+  <p class="kicker">4 · Joined brackets</p>
+  <h2>Two things change for brackets that join categories</h2>
+  <h3>The switch at 16 moves joined brackets of 16–31 onto EVF</h3>
+  <p>Today a joined bracket of up to 31 is scored by the place-and-medal formula. ADR-103 records that under it no one loses points by joining.</p>
+  <p>From 16, a joined bracket of 16–31 is scored by EVF on the place in the whole bracket, with no category medal (<code>frontend/src/lib/scoring.ts:211</code>). Two categories that are each below 16 but join into a bracket of 16 or more both move onto EVF.</p>
+  <p>Regulation §8 ust. 8 names 32 and would have to name 16.</p>
+  <p>For scale, over 2024/25–2025/26: if every category of an event's weapon and gender had been joined, 18 of 71 such groups would have had 16–31 fencers, covering 419 of 1,166 domestic results. That is an upper bound; the real number depends on how often categories join.</p>
+
+  <h3>The medal's shape decides what small categories get</h3>
+  <p>EVF scores every category separately, so the fair reference is what EVF would pay the same category fenced on its own.</p>
+  <div class="tablewrap"><table>
+    <tr><th>Case in a joined bracket</th><th>EVF, category alone</th><th>Today</th><th>A / A′ · your set</th><th class="rec">E · ⁵√K</th><th>D · ⁶√K</th><th>C · flat</th></tr>
+    <tr><td>wins a category of 2, finishes 10th of 15</td><td>71.3</td><td>37.8</td><td>63.9</td><td class="rec">76.3</td><td>78.0</td><td class="bad">96.4</td></tr>
+    <tr><td>wins a category of 3, finishes 8th of 15</td><td>83.0</td><td>47.2</td><td>76.4</td><td class="rec">87.2</td><td>86.9</td><td class="bad">101.4</td></tr>
+    <tr><td>wins a category of 4, finishes 5th of 12</td><td>84.3</td><td>48.7</td><td>81.3</td><td class="rec">90.6</td><td>89.9</td><td class="bad">101.1</td></tr>
+  </table></div>
+  <p>A flat medal pays a category of 2 as much as a category of 15. That puts small categories 17–25 points above what EVF would pay them. Under your set they sit 3–7 below, under E 4–6 above, and under D 4–7 above.</p>
+
+  <p class="kicker">5 · Three ways forward</p>
+  <h2>Six sets side by side</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Fields 4–15, EVF from 16</th><th>Today's constants</th><th>A · your set</th><th>A′ · + 4th 7</th><th class="rec">E · ⁵√K</th><th>D · ⁶√K</th><th>C · flat</th></tr>
+    <tr><td>złoto / srebro / brąz / 4th</td><td>13 / 7 / 3 / –</td><td>35.7 / 22.6 / 12.3 / –</td><td>35.7 / 22.6 / 12.3 / 7</td><td class="rec">50 / 32 / 17 / 11</td><td>56 / 36 / 20 / 12</td><td>80 / 50 / 28 / 18</td></tr>
+    <tr><td>medal grows with</td><td>∛K</td><td>∛K</td><td>∛K</td><td class="rec">⁵√K</td><td>⁶√K</td><td>nothing</td></tr>
+    <tr><td>points per fencer below</td><td>3.5</td><td>3</td><td>3</td><td class="rec">3</td><td>2.25</td><td>2.5</td></tr>
+    <tr><td>on average, SPWS minus EVF</td><td class="bad">−8.3</td><td>−0.3</td><td>+1.2</td><td class="rec ok">+2.1</td><td>−0.7</td><td>+0.2</td></tr>
+    <tr><td>places at or above EVF (of 114)</td><td class="bad">51</td><td>63</td><td>69</td><td class="rec ok">78</td><td>59</td><td>66</td></tr>
+    <tr><td>average distance to EVF</td><td class="bad">12.7</td><td>6.1</td><td>5.1</td><td class="rec">4.7</td><td>4.4</td><td class="ok">4.1</td></tr>
+    <tr><td>any place, gap to EVF</td><td class="bad">−56.8 … +14.7</td><td>−20.9 … +21.8</td><td>−20.0 … +21.8</td><td class="rec">−12.1 … +19.6</td><td>−11.9 … +13.5</td><td>−10.9 … +16.6</td></tr>
+    <tr><td>win, gap to EVF</td><td class="bad">−56.8 … −27.2</td><td>−20.0 … +21.8</td><td>−20.0 … +21.8</td><td class="rec">−12.1 … +19.6</td><td>−10.8 … +11.2</td><td class="ok">−5.6 … +6.7</td></tr>
+    <tr><td>4th place, gap to EVF</td><td>−18.4 … −2.5</td><td class="bad">−20.9 … −8.0</td><td>−6.4 … +9.3</td><td class="rec">−3.8 … +10.9</td><td>−7.4 … +2.6</td><td>−5.4 … +5.0</td></tr>
+    <tr><td>winner, 15 → 16 fencers</td><td>85.0 → 112.7</td><td class="bad">134.0 → 112.7</td><td class="bad">134.0 → 112.7</td><td class="rec">131.8 → 112.7</td><td>123.4 → 112.7</td><td class="ok">118.9 → 112.7</td></tr>
+    <tr><td>places losing points at 15 → 16</td><td>11</td><td>14</td><td>15</td><td class="rec">15</td><td>11</td><td>11</td></tr>
+    <tr><td>category of 2 won, 10th of 15 (EVF alone 71.3)</td><td>37.8</td><td>63.9</td><td>63.9</td><td class="rec">76.3</td><td>78.0</td><td class="bad">96.4</td></tr>
+    <tr><td>what changes in the engine</td><td>switch 32 → 16</td><td>constants, switch</td><td>constants, switch, 4th medal</td><td class="rec">constants, switch, 4th medal, root</td><td>constants, switch, 4th medal, root</td><td>constants, switch, 4th medal, no root</td></tr>
+  </table></div>
+
+  <div class="cards">
+    <div class="card">
+      <p class="tag">A · your set</p>
+      <ul>
+        <li>The smallest change: three constants, points per fencer below, and the switch.</li>
+        <li>Small fields stay below EVF (−20 at N = 5), and fields of 12–15 sit well above it (+22 at N = 15).</li>
+        <li>4th place stays 8–21 below EVF.</li>
+        <li>The winner of 15 loses 21.3 at the switch.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="tag">A′ · your set + 4th 7</p>
+      <ul>
+        <li>Keeps the medal the board signed off, × ∛K, and adds one slot: a 4th medal of 7 × ∛K.</li>
+        <li>4th place comes to within −6.4…+9.3 of EVF.</li>
+        <li>The two ends are unchanged from A: −20 at N = 5, +22 at N = 15. The winner of 15 loses 21.3 at the switch, and a win in 15 pays more than an EVF win in any field up to 32.</li>
+      </ul>
+    </div>
+    <div class="card rec">
+      <p class="tag">E · fifth root · recommended</p>
+      <ul>
+        <li>Your 3 points per fencer below, with the medal growing as ⁵√K, between ∛K and ⁶√K. Fitted to sit a little above EVF, with falling below it penalised more than going above.</li>
+        <li><strong>The most "slightly on top" of all six sets.</strong> On average it sits +2.1 above EVF, and 78 of 114 places are at or above EVF. Small categories in joined brackets get 5–6 points more than EVF would pay them alone.</li>
+        <li>4th place comes to within −3.8…+10.9 of EVF.</li>
+        <li>Cost: being on top means more to lose at 16. The winner of 15 goes 131.8 → 112.7, and a win in 15 pays more than an EVF win in any field up to 32. A win at N = 5 is still 12.1 short, because EVF adds a DE round there.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="tag">D · sixth root</p>
+      <ul>
+        <li>The medal still grows with the category, but half as fast: ⁶√K is the square root of ∛K.</li>
+        <li>Every place in every field of 4–15 lands between −11.9 and +13.5 of EVF (yours: −20.9 to +21.8). Small categories in joined brackets sit 4–7 above what EVF pays them alone.</li>
+        <li>Adds a 4th medal (12), which brings 4th place to −7…+3.</li>
+        <li>Cost: a sixth root is harder to explain than a cube root. The annex shows the values anyway.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="tag">C · flat medal</p>
+      <ul>
+        <li>The closest fit for single-category fields: a win is always within 7 of EVF, and the smallest drop at 16 (6.2).</li>
+        <li>Drops the category size from the medal entirely, so in joined brackets a category of 2 pays like a category of 15, 17–25 above EVF.</li>
+        <li>Adds a 4th medal (18).</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="kicker">6 · What changes whichever set is picked</p>
+  <h2>Before the first 2026/27 PPW result is scored</h2>
+  <ul>
+    <li><strong>Regulation and annex.</strong> The medal constants, points per fencer below and the switch at 16 (§8 ust. 8) go to the board. Załącznik nr 1 already computes from the engine; its text naming the ranges 4–31 and 32–64 becomes 4–15 and 16–64.</li>
+    <li><strong>ADR-103 amendment.</strong> §1 records the constants. The no-loss-by-joining guarantee narrows from 31 to 15 fencers.</li>
+    <li><strong>Engine.</strong> The SQL strategy <code>fn_score_spws_place_medal_v1_2026_2027</code> and <code>PLACE_MEDAL</code> in <code>frontend/src/lib/scoring.ts</code> change, with the parity pins in pgTAP and <code>frontend/tests/scoring.test.ts</code>. D and C also add a 4th medal slot and change the root.</li>
+    <li><strong>Timing.</strong> A season's scoring configuration locks at its first scored result (ADR-097). On 27 Sep, SPWS-2026-2027 held 0 results on CERT and PROD; that is re-checked before choosing between changing V1 in place and adding a V2 engine.</li>
+  </ul>
+
+  <div class="note">
+    <p class="lede">Not decided here</p>
+    <p>The table for fields of 1–3 is where SPWS is furthest from EVF. The winner of a field of 3 gets 3 points against EVF's 83.0, while the winner of 4 gets 67.7 under your set. Over the last two seasons, 284 of 1,166 domestic results came from categories of 1–3. Joining categories lowers that share. It is a separate decision from this one.</p>
+  </div>
+
+  <div class="ask">
+    <p class="lede">The question</p>
+    <h2>Which set goes into the board proposal: E, A′, D or C?</h2>
+    <ul>
+      <li><strong>E · ⁵√K</strong> — 50 / 32 / 17 / 11 × ⁵√K, 3 per fencer below. Slightly on top of EVF.</li>
+      <li><strong>A′ · your set + 4th 7</strong> — 35.7 / 22.6 / 12.3 / 7 × ∛K, 3 per fencer below. It keeps the ∛K medal the board signed off.</li>
+      <li><strong>A · your set</strong> — the same without the 4th medal. The smallest change.</li>
+      <li><strong>D · ⁶√K</strong> — 56 / 36 / 20 / 12 × ⁶√K, 2.25 per fencer below.</li>
+      <li><strong>C · flat</strong> — 80 / 50 / 28 / 18, 2.5 per fencer below.</li>
+      <li><strong>Your own</strong> — set it with the chart's sliders and name the numbers.</li>
+    </ul>
+    <p><strong>Recommendation: E.</strong> It is the set that does what you asked for, SPWS slightly on top of EVF.</p>
+    <ul>
+      <li><strong>Mostly above EVF:</strong> +2.1 on average, with 78 of 114 places at or above it — more than any other set.</li>
+      <li><strong>Small categories in joined brackets:</strong> 5–6 points above what EVF pays them alone.</li>
+      <li><strong>A smaller shortfall in small fields:</strong> a win at N = 5 is 12.1 below EVF, against 20.0 under your set.</li>
+      <li><strong>Your 3 points per fencer below stays.</strong></li>
+    </ul>
+    <p>The price is the drop at 16. The winner of 15 loses 19.1, almost as much as under your set (21.3). Being on top at 15 is exactly what the 16th fencer takes away (§3).</p>
+    <p>If a small drop at 16 matters more than being on top, D halves it (10.7), but it sits on average 0.7 below EVF. A′ keeps the ∛K medal the board signed off, but it keeps the widest gaps at both ends. C fits single fields best, but it overpays small categories in joined brackets by up to 25 points.</p>
+  </div>
+
+  <p class="foot">scoring-parameters-2026-27-brainstorm · 2026-09-28 · every figure computed with the formulas of frontend/src/lib/scoring.ts (EVF classic: base 50, 10 per DE round, podium 3/2/1 × 3 × ∛N); D's and C's constants are least-squares fits to EVF over fields 4–15 (under-shoot weighted 4×, drops at 16 penalised), rounded · results history: stored PPW/MPW results 2024/25–2025/26 · coefficients (PPW 1.0, MPW 1.2) not applied</p>
+</div>
+</body>
+</html>

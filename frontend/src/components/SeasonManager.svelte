@@ -150,14 +150,18 @@
               {#if scoringConfig && scoringSeasonId === season.id_season}
                 <div class="scoring-editor-slot">
                   <ScoringConfigEditor
+                    bind:this={scoringEditor}
                     config={scoringConfig}
                     seasonCode={season.txt_code}
                     readonly={scoringConfig?.scoring_admin_locked ?? false}
                     {scoringEngines}
-                    onsave={onsavescoring}
+                    onsave={(c) => { void saveScoring(c) }}
                     oncancel={onclosescoring}
                   />
                 </div>
+                {#if scoringError}
+                  <div class="form-error" data-field="scoring-save-error" role="alert">{scoringError}</div>
+                {/if}
               {/if}
 
               <!-- ADM27: the season's own Zapisz / Anuluj are always the last
@@ -238,7 +242,7 @@
     scoringConfig = null as ScoringConfig | null,
     scoringEngines = [] as ScoringEngineOption[],
     scoringSeasonId = null as number | null,
-    onsavescoring = (_c: ScoringConfig) => {},
+    onsavescoring = (_c: ScoringConfig): Promise<string | null> | void => {},
     onclosescoring = () => {},
     onwizardloadprior = (_dtStart: string): Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }> => Promise.resolve({ priorConfig: null, priorCode: null, priorBreakdown: null }),
     onwizardcommit = (_p: WizardCommitPayload): Promise<string | null> => Promise.resolve(null),
@@ -258,7 +262,8 @@
     scoringConfig?: ScoringConfig | null
     scoringEngines?: ScoringEngineOption[]
     scoringSeasonId?: number | null
-    onsavescoring?: (config: ScoringConfig) => void
+    // Resolves to the reason when the save is refused, null when it is saved.
+    onsavescoring?: (config: ScoringConfig) => Promise<string | null> | void
     onclosescoring?: () => void
     onwizardloadprior?: (dtStart: string) => Promise<{ priorConfig: ScoringConfig | null, priorCode: string | null, priorBreakdown: Required<SkeletonByKind> | null }>
     onwizardcommit?: (payload: WizardCommitPayload) => Promise<string | null>
@@ -285,6 +290,21 @@
   let formError: string | null = $state(null)
   let revertError: string | null = $state(null)
 
+  // The open scoring editor and why its last save was refused, shown in the
+  // card beside it rather than only in the page's banner (SM.SAVE.04).
+  let scoringEditor: { hasUnsavedChanges(): boolean, checkedConfig(): ScoringConfig | null } | undefined = $state()
+  let scoringError: string | null = $state(null)
+
+  async function saveScoring(config: ScoringConfig): Promise<boolean> {
+    scoringError = null
+    const err = await onsavescoring(config)
+    if (err) {
+      scoringError = err
+      return false
+    }
+    return true
+  }
+
   // Past-complete season = dt_end strictly before today's date (local TZ).
   // Used to hide the 🎯 Konfiguracja punktacji button per ADR-045.
   function isSeasonPast(s: Season): boolean {
@@ -302,6 +322,7 @@
     draftEuropean = (season.enum_european_event_type ?? null) as EuropeanEventType
     formError = null
     revertError = null
+    scoringError = null
     skeletonsExpanded = false
     showForm = true
     // Load skeleton inventory for the edited season (CREATED status only).
@@ -313,6 +334,7 @@
     editingId = null
     formError = null
     revertError = null
+    scoringError = null
     editingSkeletons = []
     skeletonsExpanded = false
   }
@@ -323,6 +345,15 @@
       return
     }
     formError = null
+    // SM.SAVE: this Zapisz is the last button in the card, below the scoring
+    // editor, so it saves the scoring edits on screen too — first, so a refused
+    // scoring save keeps the card open with nothing half-saved. A locked
+    // season's editor cannot be edited, so it never has edits to send.
+    if (scoringSeasonId === editingId && !scoringConfig?.scoring_admin_locked && scoringEditor?.hasUnsavedChanges()) {
+      const pending = scoringEditor.checkedConfig()
+      if (!pending) return
+      if (!(await saveScoring(pending))) return
+    }
     const err = await onupdate(
       editingId,
       draftCode,

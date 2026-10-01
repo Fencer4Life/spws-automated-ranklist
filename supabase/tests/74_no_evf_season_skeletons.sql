@@ -37,6 +37,38 @@ BEGIN;
 
 SELECT plan(9);
 
+-- What an FTL import leaves behind in a live season: a 2026/27 tournament, a
+-- result, and an identity-match candidate pointing at the result. Every
+-- fixture that clears SPWS-2026-2027 must clear that candidate too —
+-- tbl_match_candidate_id_result_fkey has no cascade (seen on LOCAL 2026-10-01
+-- after the PPW1-2026-2027 import; doc/plans/pgtap-2026-27-data-2026-10-01.html).
+-- Called inside each such savepoint, so the rollback removes it again.
+CREATE FUNCTION pg_temp.seed_imported_2026_27_result(p_tag TEXT) RETURNS VOID
+LANGUAGE plpgsql AS $imported$
+DECLARE
+  v_t INT;
+  v_f INT;
+  v_r INT;
+BEGIN
+  INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon,
+                              enum_gender, enum_age_category, dt_tournament,
+                              int_participant_count)
+       VALUES ((SELECT e.id_event FROM tbl_event e
+                  JOIN tbl_season s ON s.id_season = e.id_season
+                 WHERE s.txt_code = 'SPWS-2026-2027' AND e.txt_code = 'PPW1-2026-2027'),
+               'PPW1-V2-M-EPEE-2026-2027', 'PPW', 'EPEE', 'M', 'V2', '2026-09-26', 1)
+    RETURNING id_tournament INTO v_t;
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
+       VALUES ('IMPORTED ' || p_tag, 'Fixture', 1970)
+    RETURNING id_fencer INTO v_f;
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place)
+       VALUES (v_f, v_t, 1)
+    RETURNING id_result INTO v_r;
+  INSERT INTO tbl_match_candidate (id_result, txt_scraped_name, id_fencer, num_confidence, enum_status)
+       VALUES (v_r, 'IMPORTED ' || p_tag || ' Fixture', v_f, 100, 'AUTO_MATCHED');
+END;
+$imported$;
+
 -- ---------------------------------------------------------------------------
 -- A freshly initialised season: what fn_init_season provisions now.
 -- Mirrors the 19_phase3_wizard.sql fixture — SPWS-2026-2027 exists in the seed
@@ -44,12 +76,20 @@ SELECT plan(9);
 -- ---------------------------------------------------------------------------
 SAVEPOINT s_init;
 
--- Clear the dependants first. When this fixture was written SPWS-2026-2027 was
+SELECT pg_temp.seed_imported_2026_27_result('74.init');
+
+-- Clear the dependants first (match candidates, results, tournaments,
+-- events). When this fixture was written SPWS-2026-2027 was
 -- a bare promoted skeleton, so deleting its events was safe; the season has
 -- since acquired real competitions with tournaments and results behind them,
 -- and tbl_tournament_id_event_fkey has no ON DELETE CASCADE — so the bare
 -- event delete now aborts the file. All inside the savepoint; the ROLLBACK
 -- at the end restores every row.
+DELETE FROM tbl_match_candidate WHERE id_result IN (
+  SELECT r.id_result FROM tbl_result r
+    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+    JOIN tbl_event e ON e.id_event = t.id_event
+   WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_result WHERE id_tournament IN (
   SELECT t.id_tournament FROM tbl_tournament t
     JOIN tbl_event e ON e.id_event = t.id_event

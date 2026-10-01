@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADR-104 step 11 — status</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="page">
+  <p class="eyebrow">ADR-104 · step 11 · Status · 1 October 2026</p>
+  <h1>Step 11 is complete: CERT&rsquo;s coefficients match PROD</h1>
+  <p class="dek">Step 11 has three parts before the release. You answered <b>A</b>: the reads ran, and the migration preflight is clean on LOCAL, CERT and PROD. <b>What is left is five coefficients on CERT, changed in the Admin editor once you have signed in.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Step 11 complete · 1 October · Save fix not yet committed</span>
+    <span class="pill">nothing written to CERT or PROD</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Where step 11 stands</p>
+    <h2>The three parts</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Part</th><th>State</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Run LOCAL end to end with the PPW1 fixture, then remove it</td><td><span class="chip fill">done 1 Oct</span></td><td>102 results, 0 differences from the reference implementation, joining check 6 of 6 matching (<code>doc/plans/ppw1-2026-2027-local-test-2026-10-01.html</code>). The LOCAL reset removed the fixture.</td></tr>
+        <tr><td>Migration preflight, read-only, on LOCAL, CERT and PROD</td><td><span class="chip fill">clean on all three</span></td><td><code>scripts/check-scoring-migration-preflight.sh local|cert|prod</code>: all 11 checks pass or are informational on each. SSP-06: no 2026/27 scored result and no scoring revision on any of them, so the engine can still be assigned. SSP-11: the place-and-medal columns hold no value and nothing was scored with that engine (on LOCAL the columns are already gone; on CERT and PROD they are present, so the ADR-104 cleanup can run).</td></tr>
+        <tr><td>Align CERT&rsquo;s coefficients to PROD&rsquo;s through the Admin editor (D4)</td><td><span class="chip fill">done 1 Oct</span></td><td>Saved by you with „Zapisz i przelicz” (the first attempt hit the Save bug below; a second save stored PPS as 1.2 and a third corrected it). Read back from CERT at 17:21 UTC: all eight 2026/27 coefficients equal PROD&rsquo;s; engines, rules, podium and intake unchanged; the season is not locked.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Read 1 October, read-only</p>
+    <h2>2026/27 coefficients: PROD and CERT</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Type</th><th>PROD</th><th>CERT before</th><th>CERT now (read 17:21 UTC)</th></tr></thead>
+      <tbody>
+        <tr><td>PPW</td><td>1</td><td>1</td><td>1 ✓</td></tr>
+        <tr><td>MPW</td><td>1.2</td><td>1.2</td><td>1.2 ✓</td></tr>
+        <tr><td>PEW</td><td>1</td><td>1</td><td>1 ✓</td></tr>
+        <tr><td><b>MEW</b></td><td>1.3</td><td>2</td><td><b>1.3</b> ✓</td></tr>
+        <tr><td><b>MSW</b></td><td>1.4</td><td>1.2</td><td><b>1.4</b> ✓</td></tr>
+        <tr><td><b>PSW</b></td><td>1.1</td><td>2</td><td><b>1.1</b> ✓</td></tr>
+        <tr><td><b>PPS</b></td><td>1.1</td><td>1</td><td><b>1.1</b> ✓</td></tr>
+        <tr><td><b>MPS</b></td><td>1.3</td><td>1</td><td><b>1.3</b> ✓</td></tr>
+      </tbody>
+    </table></div>
+    <p>Only the coefficients change. Engines stay as they are on both: PPW and MPW on the released place-and-medal engine, the rest on EVF classic. The release in step 12 moves PPW and MPW to the joined engine.</p>
+    <p>The change goes through the Admin editor, on CERT only, in season 2026/27. A direct write to <code>tbl_scoring_type_config</code> is blocked by the <code>trg_guard_type_config_direct_write</code> trigger.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Found on CERT · fixed on the branch</p>
+    <h2>The card&rsquo;s green Zapisz dropped the coefficients</h2>
+    <p>With Punktacja open, the season card has two save buttons: the scoring editor&rsquo;s blue <b>„Zapisz i przelicz”</b> and, below it, the card&rsquo;s green <b>„Zapisz”</b>, the last button in the card. The green one saved only the season&rsquo;s own fields (<code>fn_update_season</code>), closed the card and dropped the typed coefficients without a word. CERT&rsquo;s 2026/27 configuration was last written on 28 September, so none of your attempts reached it. Reproduced on LOCAL: PSW typed as 1.1, green Zapisz, PSW still 2.</p>
+    <p>A refused scoring save was hidden too: its reason went only to the page&rsquo;s banner, far below the card, and a Supabase error printed there as „[object Object]”.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Change</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>The card&rsquo;s Zapisz saves the open editor&rsquo;s unsaved changes first, through the editor&rsquo;s own checks, then the season. An untouched editor sends nothing; a locked season sends no scoring.</td><td><code>SeasonManager.svelte</code>, <code>ScoringConfigEditor.svelte</code> (<code>hasUnsavedChanges</code>, <code>checkedConfig</code>)</td></tr>
+        <tr><td>A refused scoring save, from either button, keeps the card open and shows its reason in the card; nothing of the season is saved.</td><td><code>SeasonManager.svelte</code>, <code>App.svelte</code> (the handler returns the reason)</td></tr>
+        <tr><td>Tests SM.SAVE.01–05 (RED first: 01, 03, 04 failed). Vitest 1100 of 1100, svelte-check 0 errors, <code>scripts/preflight.sh</code> exits 0 (all 15 gates; pgTAP 1179). A first run failed pgTAP 2.0 only because the browser test had left LOCAL at MEW 1.3 / PSW 1.1; LOCAL was restored to its seed values.</td><td><code>frontend/tests/SeasonManager.test.ts</code></td></tr>
+        <tr><td>Checked in the browser on LOCAL: untouched editor + green Zapisz sends only the season; PSW typed 1.1 + green Zapisz sends the scoring save, then the season, and PSW is 1.1.</td><td>LOCAL, dev server</td></tr>
+        <tr><td>Handbook (season edit card) and RTM FR-61.</td><td><code>product-surfaces.html</code>, RTM</td></tr>
+      </tbody>
+    </table></div>
+    <p>The fix is not committed, and it reaches CERT only with a release (step 12), because CERT and PROD share one deployed page.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Next</p>
+    <h2>Step 12, the release, waits for your go</h2>
+    <p>Step 11 is done. Before step 12, the Save fix should be committed with the rest of the branch; it reaches CERT and PROD with that release.</p>
+  </section>
+
+  <p class="foot">Status · 1 October 2026 · SPWS Ranklist · ADR-104 step 11 · plan <code>doc/plans/adr-104-joined-engine-implementation-plan-2026-09-30.html</code></p>
+</div>
+</body>
+</html>

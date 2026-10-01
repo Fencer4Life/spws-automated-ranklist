@@ -1,0 +1,83 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>ADR-104 on the end-to-end flows · SPWS</title><link rel="stylesheet" href="../handbook/assets/handbook.css">
+<style>.sequence > li > .change { margin: 8px 0 0; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); }</style></head>
+<body><div class="page"><header class="handbook-header"><nav class="breadcrumb"><a href="../handbook/architecture/end-to-end-flows.html">End-to-end flows</a><span>ADR-104 · commit 2</span></nav><p class="eyebrow">Change report · 1 October 2026</p><h1>The joined engine on the end-to-end flows</h1><p class="dek">Each flow below is the handbook&rsquo;s own sequence, word for word. Where commit 2 (<code>39a158d2</code>, branch <code>claude/joined-engine-2026-2027</code>, local, not pushed) touches a step, the step carries a marker and a box says what changed. <span class="tag database">new</span> = a step this change adds &middot; <span class="tag operator">changed</span> = a step it alters &middot; <span class="tag">pending</span> = waits for your go. Flows 2 and 5 are not touched.</p><div class="doc-meta"><span>Plan steps 5–10 done</span><span>Admin panel built 1 October</span><span>Steps 11–12 need your go</span></div></header>
+<main>
+<figure class="system-map"><a href="../handbook/assets/system-architecture.svg" title="Open the chart full size"><img src="../handbook/assets/system-architecture.svg" width="1040" height="730" alt="SPWS system chart: external results, Python ingestion, PostgreSQL, PostgREST and the Svelte app, with the admin and operator control plane, the clean-roster loop and the LOCAL, CERT and PROD tiers."></a><figcaption>Where ADR-104 lands on the system chart: in <strong>Ingestion</strong> (the category order, the two refusals, the joining check and its Telegram alert) and in <strong>PostgreSQL</strong> (the joined engine, chosen per tournament type). The Svelte app on the right gains the new columns in the drilldown export. Nothing in the coral loop or the control plane changes. Flow 6, the tier strip, has not run yet.</figcaption></figure>
+
+<section id="status"><p class="kicker">Checked 1 October 2026 against git and the RTM</p><h2>Where we are</h2>
+<p><span class="tag database">done</span> built and committed &middot; <span class="tag operator">open</span> not finished &middot; <span class="tag">your go</span> not started; waits for you</p>
+<ol class="sequence">
+<li><span class="tag database">done</span> <strong>Design, rule and annex committed</strong> — <code>ca65e98b</code>, including your Step 0 wording.</li>
+<li><span class="tag database">done</span> <strong>ADR-104 and governance</strong> — ADR-104 accepted, amendment notes on ADR-103, 102, 092 and 085, Appendix C, and RTM rows FR-143–145 marked Covered (&ldquo;not yet released&rdquo;).</li>
+<li><span class="tag database">done</span> <strong>Commit 1, the cleanup</strong> — <code>9056d50e</code>: the place-and-medal engine and its columns removed.</li>
+<li><span class="tag database">done</span> <strong>Commit 2, the engine</strong> — <code>39a158d2</code>: the two migrations, the Python order, refusals and joining check, <code>scoring.ts</code>, the export, the rebuilt calculator and the documentation gate. The flows below show each piece.</li>
+<li><span class="tag database">done</span> <strong>The Admin editor&rsquo;s rules panel</strong> (JB27.UI.02) — you approved the mockup as shown on 1 October. The panel, the PPW/MPW module line and the EVF hint now read as approved; 7 new or changed Vitest cases, checked in the browser at phone and desktop width and on a locked season. FR-137 is now Covered. <em>Not committed yet.</em></li>
+<li><span class="tag database">done</span> <strong><code>scripts/preflight.sh</code> exits 0</strong> — every gate passes (1 October). <code>TestEvfLiveSmoke</code> was not a nonce change: the EVF host now answers this network with a bot-verification page, which the scrapers do not try to pass. They now refuse that page loudly instead of reading it as an empty calendar, and the two live-site tests are opt-in (<code>pytest -m integration</code>). Three self-heal tests that used 1 October as a &ldquo;future&rdquo; date now use a date relative to today. <em>Not committed yet.</em></li>
+<li><span class="tag">your go</span> <strong>Step 11, before the release</strong> — align CERT&rsquo;s coefficients with PROD&rsquo;s; run the migration preflight read-only on LOCAL, CERT and PROD; run LOCAL end to end with the PPW1 fixture, then remove it.</li>
+<li><span class="tag">your go</span> <strong>Step 12, the release</strong> — from the integration checkout, then CI and Release to success, then a read-only check on CERT and PROD.</li>
+</ol>
+<div class="danger"><strong>What is live today.</strong> Nothing from ADR-104 is pushed: the branch is three commits ahead of <code>origin/main</code> and is not on the remote. CERT and PROD still run the place-and-medal engine released on 28 September. Under ADR-097, the first 2026/27 PPW or MPW result scored there locks the season on that engine, which is why 2026/27 ingestion is on hold (D3 A). I have not read CERT or PROD today; step 11&rsquo;s preflight is the read that checks the lock.</div>
+</section>
+
+
+<section id="read"><p class="kicker">Flow 1</p><h2>Browse ranklist and calendar</h2><ol class="sequence">
+<li>The SPA or embedded component loads seasons and the selected public view.</li>
+<li>The frontend API queries curated Supabase views/RPCs.</li>
+<li><span class="tag operator">changed</span> PostgreSQL ranking functions apply season configuration, category, eligibility and carry-over policy.<div class="change"><code>vw_score</code> and the three rolling-score functions return three more columns per result: category steps (d), the joined premium and the cap reduction; −1 means &ldquo;not applicable&rdquo;.</div></li>
+<li><span class="tag operator">changed</span> The frontend renders rankings, calendar cards or score drilldown.<div class="change">The drilldown export gains the same three columns — „Różnica kategorii (d)”, „Premia w stawce łączonej”, „Obniżenie do ograniczenia” — and −1 reads „nie dotyczy”. <code>scoring.ts</code> computes each joined row as the database stores it, with the cap.</div></li>
+<li>A read failure becomes visible UI state; it never mutates domain data.</li>
+</ol>
+<div class="invariant"><strong>Beside this flow, the two static pages.</strong> The points calculator is rebuilt from the annex&rsquo;s tools — „W skrócie”, the calculator, the premium table and the simulator, with the same texts. It follows the active season, has no SPWS/EVF toggle, and links to the annex for the rules. The annex itself only gets the new module. Both compute with the new engine only.</div>
+</section>
+
+<section id="ingest"><p class="kicker">Flow 3</p><h2>Ingest domestic results</h2><ol class="sequence">
+<li>An operator/workflow chooses a source URL, file or storage artifact.</li>
+<li>A source parser emits <code>ParsedTournament</code> and source rows.</li>
+<li>The rule engine plans and runs parse, validation, event resolution, identity resolution, pool handling, count checks, category assignment and commit.</li>
+<li>The bridge delegates selected plugin work to existing stage functions while maintaining the new context/fault contract.</li>
+<li><span class="tag operator">changed</span> Commit files the result set through the joined-bracket module paired with the tournament type&rsquo;s engine and persists it transactionally; the database scores each tournament with that engine.<div class="change">For a 2026/27 PPW or MPW listing the joined module first builds the <strong>category order</strong>: one digit per place, 0 = V0 … 4 = V4, from every listed fencer with a category, matched or not. <strong>Before anything is written</strong> it refuses two kinds of listing: a joined one that repeats a place (the operator asks the organiser for the fenced order) and one with a fencer who has no category (a pending match, or no birth year). A tie inside one category is accepted.<br><br>Every category&rsquo;s tournament gets the same order (<code>txt_joined_order</code>). The database scores the <strong>whole bracket</strong> from it:<br>• N ≤ 3 is a meeting and scores 3, 2, 1.<br>• One category of 4 or more, or any bracket of 16 or more, scores EVF.<br>• In a joined bracket of 4–15, the youngest category scores EVF and an older one max(EVF × (1 + 0,05 · d), EVF + d).<br>• Nobody scores more than the fencer directly ahead, minus 1 point.<br>The cap is applied in one place, <code>fn_score_joined_bracket</code>, and the rank coefficient multiplies the capped value. Each tournament writes only its own rows.</div></li>
+<li>Post-commit validation, notification and staging-report formatting run as a separate flow.</li>
+<li><span class="tag database">new</span> At the end of the event run, the joining check compares how each PPW and MPW listing was fenced with the scoring table&rsquo;s § 2, stores the verdict and reports a change on Telegram; it never blocks.<div class="change">The verdict lives in <code>tbl_joining_check</code>, one row per event, weapon and gender. Telegram hears only when a verdict changes; the results are already scored as fenced.</div></li>
+</ol>
+<div class="warning"><strong>Review path:</strong> when the operator uses draft review, run-scoped draft tables and three-way comparison provide an explicit inspection step before <code>fn_commit_event_draft</code>. <span class="tag operator">changed</span> The draft tables carry the order and the three columns, and the commit copies them across.</div>
+<div class="success"><strong>Evidence.</strong> All seventeen Part C orders store the spec&rsquo;s finals to the cent through the real writer. The cap&rsquo;s guarantees hold over 1,700 generated orders, and the browser module returns the same seventeen sets of numbers. pgTAP 1,183 assertions, pytest 1,356 and Vitest 1,050 pass.</div>
+</section>
+
+<section id="identity"><p class="kicker">Flow 4</p><h2>Correct identity and recompute</h2><ol class="sequence">
+<li>An admin confirms an alias, birth year, duplicate merge or identity correction.</li>
+<li>The database records master-data change and enqueues affected events.</li>
+<li><span class="tag operator">changed</span> The recompute worker loads committed FK-linked results for an event.<div class="change">It also loads each tournament&rsquo;s stored order.</div></li>
+<li><span class="tag operator">changed</span> The rule engine reassigns effective category/counts and recommits derived state without scraping or fuzzy matching again.<div class="change">Under the new engine, N and the order are read back as stored. Every stored place gets its fencer&rsquo;s current category digit; places never stored keep theirs.</div></li>
+<li><span class="tag database">new</span> Post-commit checks and notifications run for the updated event, and the joining check runs again.<div class="change">A fencer who moves category changes the category sizes that § 2 is computed from.</div></li>
+</ol></section>
+
+<section id="release"><p class="kicker">Flow 6</p><h2>Release and promote</h2>
+<div class="invariant"><strong>None of this has run for the joined engine.</strong> Step 11 of the plan comes first, each part on your go: align CERT&rsquo;s 2026/27 coefficients with PROD&rsquo;s through the Admin editor (D4); run <code>scripts/check-scoring-migration-preflight.sh</code> read-only on LOCAL, CERT and PROD; run LOCAL end to end with the PPW1 fixture, then remove it. Step 12 is the release below, pushed from the integration checkout.</div>
+<ol class="sequence">
+<li><span class="tag">pending</span> CI validates database, Python, frontend and generated documentation.<div class="change"><code>scripts/preflight.sh</code> passes every gate, the same set CI runs. Live-site tests no longer run in CI; they are opt-in.</div></li>
+<li><span class="tag">pending</span> The release workflow builds artifacts and deploys environment-scoped schema/functions/frontend.<div class="change">Two migrations: <code>20260930000002</code> adds <code>EVF_JOINED</code> on its own, because Postgres cannot use a new enum value in the transaction that adds it. <code>20260930000003</code> brings the engine, the order, the cap, <code>tbl_joining_check</code> and the backfill.</div></li>
+<li>CERT is verified before PROD actions proceed.</li>
+<li>Season, event/calendar and result promotion use separate contracts appropriate to their data.</li>
+<li>Tracking/seed exports are refreshed after successful production changes where required.<div class="change">The seed export leaves out the three new columns, which the post-seed recompute fills again. The order is an input and goes out with the tournament.</div></li>
+<li>Failure stops the workflow at its boundary; rollback/retry follows the runbook rather than ad hoc mutation.</li>
+</ol></section>
+
+<section id="deviations"><p class="kicker">Read this</p><h2>Where I departed from the plan or changed tests</h2>
+<ul class="checklist">
+<li><strong>A season already scored.</strong> If 2026/27 holds a scored result when the migration runs, the engine is still registered but the season is left as it stands, with a NOTICE; moving it takes a privileged revision. The plan and ADR-104 specify this. My first version aborted the deploy instead.</li>
+<li><strong>The annex link.</strong> The calculator links the annex by its full GitHub Pages address, because the WordPress copy is uploaded alone; inside the ranklist the link is relative. If the annex goes to WordPress too, the address changes.</li>
+<li><strong>The annex simulator.</strong> The youngest category&rsquo;s rows are now labelled like the other joined rows. Its two premium columns still show „—”, as in the version you approved.</li>
+<li><strong>Tests.</strong> One new pgTAP assertion could never see its own write; I fixed the test, not the migration. File 81 now names EVF classic for PPS instead of &ldquo;the newest engine&rdquo;. File 10 passes a category order when it ingests a 2026/27 PPW result.</li>
+<li><strong>Commit 1 for context.</strong> The place-and-medal engine of ADR-103 is gone (<code>9056d50e</code>): K, m and b, its three components and <code>PLACE_MEDAL</code>. A guard refuses to drop any column that holds a value.</li>
+</ul></section>
+
+<section id="drilldown"><p class="kicker">Where to continue</p><h2>Updated pages</h2><div class="flow-grid">
+<article class="flow-card"><h3><a href="../handbook/architecture/end-to-end-flows.html">End-to-end flows</a></h3><p>The canonical page; Flow 3 step 7 and Flow 4 step 5 are updated.</p></article>
+<article class="flow-card"><h3><a href="../handbook/subsystems/scoring-and-ranking.html">Scoring and ranking</a></h3><p>The engine, the cap, the stored order and the components.</p></article>
+<article class="flow-card"><h3><a href="../handbook/subsystems/ingestion.html">Ingestion</a></h3><p>The order, the two refusals and the joining check.</p></article>
+<article class="flow-card"><h3><a href="../handbook/subsystems/identity-and-recompute.html">Identity and recompute</a></h3><p>The digit patch and the second joining check.</p></article>
+<article class="flow-card"><h3><a href="../adr/104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a></h3><p>The decision, marked implemented and not yet released.</p></article>
+<article class="flow-card"><h3><a href="adr-104-joined-engine-implementation-plan-2026-09-30.html">The plan</a></h3><p>Steps 11–12 and the ticked documentation gate.</p></article>
+</div></section>
+
+</main><footer class="freshness">Change report for ADR-104 commit 2. The handbook is the canonical, present-tense description; this page is a snapshot for review.</footer></div></body></html>

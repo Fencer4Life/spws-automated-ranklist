@@ -292,6 +292,12 @@ describe('SS26.UIHIST — publication boundary and staleness', () => {
     return container.querySelectorAll('.filter-bar .toggle-btn')
   }
 
+  // The switch reads Ranking | PPW, Ranking first (UX proposal A), so find a
+  // button by its label rather than its position.
+  function modeButton(container: HTMLElement, label: 'PPW' | 'Ranking'): HTMLButtonElement {
+    return Array.from(modeButtons(container)).find((b) => b.textContent?.trim() === label)!
+  }
+
   async function waitForSeasonOptions(container: HTMLElement) {
     await vi.waitFor(() => {
       expect(container.querySelectorAll('.season-select option').length).toBeGreaterThan(0)
@@ -308,8 +314,7 @@ describe('SS26.UIHIST — publication boundary and staleness', () => {
     await vi.waitFor(() => {
       expect(modeButtons(container).length).toBe(2)
     })
-    const btns = modeButtons(container)
-    expect(btns[1].classList.contains('active')).toBe(true) // Ranking is active
+    expect(modeButton(container, 'Ranking').classList.contains('active')).toBe(true)
   })
 
   // SS26.UIHIST: a PPW_ONLY season forces PPW and hides the switch entirely —
@@ -349,8 +354,7 @@ describe('SS26.UIHIST — publication boundary and staleness', () => {
 
     await fireEvent.change(seasonSelect, { target: { value: '1' } })
     await vi.waitFor(() => expect(modeButtons(container).length).toBe(2))
-    const btns = modeButtons(container)
-    expect(btns[1].classList.contains('active')).toBe(true)
+    expect(modeButton(container, 'Ranking').classList.contains('active')).toBe(true)
   })
 
   // SS26.UIHIST: a slow response from an abandoned mode switch is discarded —
@@ -374,14 +378,14 @@ describe('SS26.UIHIST — publication boundary and staleness', () => {
       resolveStaleFull = resolve as (rows: unknown[]) => void
     })
     vi.mocked(fetchRankingFull).mockReturnValueOnce(hungFull as never)
-    const rankingBtn = modeButtons(container)[1]
+    const rankingBtn = modeButton(container, 'Ranking')
     await fireEvent.click(rankingBtn)
 
     // Before it resolves, switch back to PPW — a newer generation starts.
     vi.mocked(fetchRankingPpw).mockResolvedValueOnce([
       { rank: 1, id_fencer: 1, fencer_name: 'LATE Arrival', ppw_score: 90, mpw_score: 9, total_score: 99 },
     ])
-    const ppwBtn = modeButtons(container)[0]
+    const ppwBtn = modeButton(container, 'PPW')
     await fireEvent.click(ppwBtn)
     await vi.waitFor(() => {
       expect(container.textContent).toContain('LATE Arrival')

@@ -12,6 +12,7 @@ supabase test db
 # Python
 source .venv/bin/activate
 python -m pytest python/tests/ -v
+python -m pytest -m integration        # opt-in: live EVF/Dartagnan sites; a plain run deselects them
 ruff check python/ scripts/
 ruff format --check python/ scripts/
 basedpyright python/ scripts/

@@ -722,7 +722,9 @@ BEGIN
   v_results := jsonb_build_array(
     jsonb_build_object('id_fencer', v_f1, 'int_place', 1, 'txt_scraped_name', 'TESTOWSKI Jan', 'num_confidence', 99.0, 'enum_match_status', 'AUTO_MATCHED')
   );
-  PERFORM fn_ingest_tournament_results(v_tourn_id, v_results);
+  -- The active season's PPW is on the joined engine (ADR-104), which scores
+  -- from the listing's category order: one V2 fencer, order '2'.
+  PERFORM fn_ingest_tournament_results(v_tourn_id, v_results, NULL, '2');
 END;
 $setup_del$;
 

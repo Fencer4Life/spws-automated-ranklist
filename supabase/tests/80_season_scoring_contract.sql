@@ -175,9 +175,10 @@ SELECT results_eq(
   'SS26.HIST.03 classic N=24 last place = (1.00, 0.00, 0.00) -> 1.00'
 );
 
--- SS26.HIST.04 — the walkover, pinned on the CLASSIC side. SE27.ENG.01 pins
--- the same bracket at 1.00 under the 2026/2027 engine; the pair is what makes
--- the 59 -> 1 change deliberate and visible.
+-- SS26.HIST.04 — the walkover, pinned on the CLASSIC side. JB27.ENG.01
+-- (85_spws_evf_joined_engine.sql) pins the same bracket at 1.00 under the
+-- 2026/2027 engine; the pair is what makes the 59 -> 1 change deliberate and
+-- visible.
 SELECT results_eq(
   $$SELECT * FROM pg_temp.comp('SS26-PPW-N1', 1)$$,
   $$VALUES (50.00::NUMERIC, 0.00::NUMERIC, 9.00::NUMERIC, 59.00::NUMERIC)$$,
@@ -245,20 +246,24 @@ SELECT has_column('public', 'tbl_season', 'id_scoring_engine',
 SELECT has_function('public', 'fn_score_evf_classic_v1_2025_2026',
   ARRAY['integer','integer','numeric','numeric','numeric','numeric','numeric','numeric'],
   'SS26.DB.03a classic strategy exists with the uniform dispatcher signature');
--- SS26.DB.03b — the 2026/2027 strategy takes K, m and the count below as well
--- (ADR-103 §1); the field-scaled strategy it replaced is gone (ADR-103 §3).
+-- SS26.DB.03b — the 2026/2027 strategy takes d and the joined flag after N and
+-- the place (ADR-104 §2); neither withdrawn 2026/2027 strategy remains:
+-- field-scaled (ADR-103 §3) and place-and-medal (ADR-104 §1) never scored a
+-- result.
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-           WHERE n.nspname = 'public' AND p.proname = 'fn_score_spws_place_medal_v1_2026_2027'
+           WHERE n.nspname = 'public' AND p.proname = 'fn_score_spws_evf_joined_v1_2026_2027'
              AND pg_get_function_identity_arguments(p.oid) LIKE
-                 'p_n integer, p_place integer, p_k integer, p_m integer, p_below integer, %')
-  AND NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'fn_score_spws_field_scaled_v1_2026_2027'),
-  'SS26.DB.03b the place-and-medal strategy exists with (n, place, k, m, below, …); field-scaled is gone');
+                 'p_n integer, p_place integer, p_category_steps integer, p_joined boolean, %')
+  AND NOT EXISTS (SELECT 1 FROM pg_proc
+               WHERE proname IN ('fn_score_spws_field_scaled_v1_2026_2027',
+                                 'fn_score_spws_place_medal_v1_2026_2027')),
+  'SS26.DB.03b the joined strategy exists with (n, place, d, joined, …); field-scaled and place-and-medal are gone');
 
 -- SS26.DB.04 — an unrecognised engine fails closed, exactly as the carry-over
 -- dispatcher's ELSE RAISE EXCEPTION 'Unknown carryover engine' already does.
 SELECT throws_like(
-  $$SELECT fn_score_by_engine('NO_SUCH_ENGINE_V9', 16, 1, 16, 1, 15, 50, 10, 3, 2, 1)$$,
+  $$SELECT fn_score_by_engine('NO_SUCH_ENGINE_V9', 16, 1, 0, FALSE, 50, 10, 3, 2, 1)$$,
   '%Unknown scoring engine%',
   'SS26.DB.04 an unrecognised engine raises instead of scoring'
 );
@@ -282,10 +287,11 @@ SELECT throws_like(
 
 -- =============================================================================
 -- SS26.NEW.01-12 (the field-scaled engine) were retired on 2026-09-28 together
--- with SPWS_FIELD_SCALED_V1_2026_2027 itself (ADR-103 §3). The engine never
--- scored a result; its successor is pinned by 83_spws_place_medal_engine.sql
--- (SE27.ENG.*), and place > N / N < 1 rejection by 02_scoring_engine 2.3 and
--- SE27.ENG.13.
+-- with SPWS_FIELD_SCALED_V1_2026_2027 itself (ADR-103 §3), and its successor's
+-- SE27.ENG.* on 2026-09-30 with SPWS_PLACE_MEDAL_V1_2026_2027 (ADR-104 §1).
+-- Neither engine scored a result. The 2026/2027 engine is pinned by
+-- 85_spws_evf_joined_engine.sql, and place > N / N < 1 rejection by
+-- 02_scoring_engine 2.3.
 
 -- =============================================================================
 -- SS26.PARITY — preview and persistence are one implementation. RED until §11
@@ -753,9 +759,14 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- A scratch registry row: the locked season must refuse an engine that
+  -- exists and differs from its own, whichever engines are released.
+  INSERT INTO tbl_scoring_engine (txt_code, txt_label, txt_base_shape, txt_joined_bracket_module)
+  VALUES ('SS26_LOCK02_PROBE', 'SS26.LOCK.02 probe', 'probe', 'PER_CATEGORY_RENUMBER')
+  ON CONFLICT (txt_code) DO NOTHING;
   BEGIN
     PERFORM fn_import_scoring_config(jsonb_build_object(
-      'id_season', v_season, 'engine_code', 'SPWS_PLACE_MEDAL_V1_2026_2027'));
+      'id_season', v_season, 'engine_code', 'SS26_LOCK02_PROBE'));
     v_failures := v_failures || 'engine_code=NOT_REJECTED; ';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM NOT LIKE '%locked%' THEN v_failures := v_failures || 'engine_code=OTHER:' || SQLERRM || '; '; END IF;
@@ -788,8 +799,8 @@ DECLARE
   v_locked_past BOOLEAN; v_locked_future BOOLEAN;
 BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
-  -- EVF classic by code: this fixture writes no K, m or count below, which
-  -- the 2026/2027 engine requires for a bracket of 4-31 (SE27.ENG.13).
+  -- EVF classic by code: the scratch seasons are scored the way history was,
+  -- whatever engine a new season defaults to.
   SELECT id_engine INTO v_engine FROM tbl_scoring_engine
    WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026';
 
@@ -1458,7 +1469,7 @@ SELECT throws_like(
 -- Shared fixture helper: one tournament (one event) plus one result, exact
 -- score set directly rather than computed by fn_calc_tournament_scores --
 -- these tests are about bucket AGGREGATION, not the scoring formula (already
--- covered by SS26.HIST and SE27.ENG), so a literal num_final_score is deliberate.
+-- covered by SS26.HIST and JB27.ENG), so a literal num_final_score is deliberate.
 --
 -- enum_status = 'COMPLETED', not the column's own 'PLANNED' default: every
 -- scratch season fn_create_season builds defaults to enum_carryover_engine

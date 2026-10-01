@@ -36,8 +36,12 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]
 asyncio_mode = "auto"
+# Live-site tests are opt-in: `pytest -m integration`. A plain run (CI,
+# scripts/preflight.sh) must not depend on EVF or Dartagnan being up, or on a
+# third-party bot wall letting this network through.
+addopts = "-m 'not integration'"
 markers = [
-    "integration: tests requiring live external APIs (deselect with -m 'not integration')",
+    "integration: tests requiring live external APIs (opt-in: pytest -m integration)",
 ]
 
 [tool.basedpyright]

@@ -2,13 +2,16 @@
 // The SPWS scoring formula — the single browser-side implementation
 // =============================================================================
 // doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html §08, step 8;
-// ADR-102 (one module, generated into the published pages) and ADR-103 (the
-// 2026/2027 engine).
+// ADR-102 (one module, generated into the published pages) and ADR-104 (the
+// joined-bracket engine locked on 30 September 2026,
+// doc/plans/joined-scoring-final-spec-2026-09-30.html, which replaced the
+// place-and-medal engine of ADR-103 before it scored a result).
 //
 // THE FORMULA LIVES IN EXACTLY TWO PLACES
 // -----------------------------------------------------------------------------
-// Here, and in the SQL strategies (fn_score_evf_classic_v1_2025_2026 /
-// fn_score_spws_place_medal_v1_2026_2027). A client-side implementation is
+// Here, and in the SQL strategies (fn_score_evf_classic_v1_2025_2026,
+// fn_score_spws_evf_joined_v1_2026_2027) with the whole-bracket cap in
+// fn_score_joined_bracket. A client-side implementation is
 // unavoidable because the scoring-table annex renders a 64 x 64 grid and
 // re-renders on every rank-coefficient change, so a per-cell RPC is not viable.
 // frontend/tests/scoring.test.ts is the pin between the two, with every
@@ -18,29 +21,40 @@
 // -----------------------------------------------------------------------------
 // mp_value, the DE round and the podium coefficients are SEASON CONFIGURATION
 // delivered by fn_public_scoring_params, one row per tournament type. They feed
-// EVF classic, and the 2026/2027 engine's range from 32. Everything else about
-// the 2026/2027 engine — log2 N, 3.5 per fencer below, the 13/7/3 medal, the
-// table up to 3 and the switch at 32 — belongs to the engine version, and is
-// therefore a constant here, exactly as it is in SQL.
+// EVF classic and every bracket of 4 or more under the joined-bracket engine.
+// Everything else about the joined-bracket engine — the meeting up to 3, the
+// premium up to 15, 5% per category step and the 1-point cap — belongs to the
+// engine version, and is therefore a constant here, exactly as it is in SQL.
+//
+// WHY THE JOINED-BRACKET ENGINE SCORES A WHOLE BRACKET
+// -----------------------------------------------------------------------------
+// Its cap — nobody scores more than the fencer directly ahead, minus 1 — makes
+// a score depend on the fencer ahead, not only on N and the place. So
+// scoreComponents gives one place WITHOUT the cap (the calculator, the premium
+// table, the grid) and scoreBracket gives a finishing order WITH it.
 // =============================================================================
 
 export const CLASSIC_ENGINE = 'EVF_CLASSIC_V1_2025_2026'
-export const PLACE_MEDAL_ENGINE = 'SPWS_PLACE_MEDAL_V1_2026_2027'
+/** The joined-bracket engine (ADR-104). */
+export const JOINED_ENGINE = 'SPWS_EVF_JOINED_V1_2026_2027'
 
-/** The constants of SPWS_PLACE_MEDAL_V1_2026_2027 (ADR-103 §1). Not settings. */
-export const PLACE_MEDAL = {
-  /** N <= tableUpTo scores N - place + 1. */
-  tableUpTo: 3,
-  /** From this bracket size the engine is EVF classic. */
-  evfFrom: 32,
-  /** Points for each fencer with a worse result in the bracket. */
-  perBelow: 3.5,
-  /** Gold, silver, bronze within the own category, times the cube root of K. */
-  medal: [13, 7, 3] as const,
-}
+/** The constants of the joined-bracket engine (spec A5). Not settings. */
+export const JOINED = {
+  /** A bracket of up to this many fencers is a meeting: N - place + 1. */
+  meetingUpTo: 3,
+  /** A joined bracket up to this size pays the premium; from one more, plain EVF. */
+  premiumUpTo: 15,
+  /** The premium per category step: EVF x (1 + perStep x d). */
+  perStep: 0.05,
+  /** Nobody scores more than the fencer directly ahead, minus this. */
+  capGap: 1,
+} as const
+
+/** The oldest category index, V4; the youngest, V0, is 0. */
+const CATEGORY_STEPS_MAX = 4
 
 /** The range that scored a result — tbl_result.enum_score_method. */
-export type ScoreMethod = 'TABLE' | 'PLACE_MEDAL' | 'EVF_CLASSIC'
+export type ScoreMethod = 'TABLE' | 'EVF_CLASSIC' | 'EVF_JOINED'
 
 /** One tournament type's parameters, as fn_public_scoring_params publishes them. */
 export interface ScoringParams {
@@ -54,15 +68,14 @@ export interface ScoringParams {
 }
 
 /**
- * Where a fencer stands in a joined bracket (ADR-103 §5): K fencers of the own
- * category, place m among them, and b fencers with a strictly worse place in
- * the whole bracket. Omitted, the bracket is one category: K = N, m = place,
- * b = N - place.
+ * Where a fencer stands for the joined-bracket engine: d, the category steps
+ * from the youngest category present in the bracket (0-4), and whether the
+ * bracket is joined (two or more categories). Omitted, d = 0; `joined`
+ * defaults to d > 0, since only a joined bracket has an older category.
  */
-export interface BracketPosition {
-  categoryCount: number
-  categoryPlace: number
-  belowCount: number
+export interface JoinedPosition {
+  categorySteps: number
+  joined?: boolean
 }
 
 /**
@@ -76,11 +89,10 @@ export interface ScoreComponents {
   deRounds: number | null
   deBonus: number | null
   podiumBonus: number | null
-  /** log2 N under PLACE_MEDAL. */
-  fieldPoints: number | null
-  belowCount: number | null
-  belowPoints: number | null
-  medalBonus: number | null
+  /** d under EVF_JOINED. */
+  categorySteps: number | null
+  /** What EVF_JOINED adds to EVF, before the cap. */
+  premium: number | null
   /** The unrounded sum before the multiplier, for display at one decimal. */
   rawTotal: number
   /** ROUND(raw sum x multiplier, 2) — what fn_calc_tournament_scores stores. */
@@ -143,33 +155,28 @@ export function podiumBonus(
   return coefficient * 3 * Math.cbrt(n)
 }
 
-/**
- * The 2026/2027 category medal: 13, 7 or 3 x the cube root of K for places
- * 1, 2 or 3 of the own category — only when K exceeds the place, so the last
- * of a category earns none (§8 ust. 5).
- */
-export function medalBonus(categoryPlace: number, categoryCount: number): number {
-  if (categoryPlace > 3 || categoryCount <= categoryPlace) return 0
-  return PLACE_MEDAL.medal[categoryPlace - 1] * Math.cbrt(categoryCount)
-}
-
-/** The range of the 2026/2027 engine that scores a bracket of n. */
-export function placeMedalMethod(n: number): ScoreMethod {
-  if (n <= PLACE_MEDAL.tableUpTo) return 'TABLE'
-  if (n >= PLACE_MEDAL.evfFrom) return 'EVF_CLASSIC'
-  return 'PLACE_MEDAL'
-}
-
 interface RawBreakdown {
   method: ScoreMethod
   placePoints: number | null
   deRounds: number | null
   deBonus: number | null
   podiumBonus: number | null
-  fieldPoints: number | null
-  belowCount: number | null
-  belowPoints: number | null
-  medalBonus: number | null
+  categorySteps: number | null
+  premium: number | null
+}
+
+const NO_PARTS = {
+  placePoints: null,
+  deRounds: null,
+  deBonus: null,
+  podiumBonus: null,
+  categorySteps: null,
+  premium: null,
+}
+
+/** N <= 3 under the joined-bracket engine: N - place + 1. */
+function meeting(n: number, place: number): RawBreakdown {
+  return { ...NO_PARTS, method: 'TABLE', placePoints: n - place + 1 }
 }
 
 function evfClassic(params: ScoringParams, n: number, place: number): RawBreakdown {
@@ -181,55 +188,57 @@ function evfClassic(params: ScoringParams, n: number, place: number): RawBreakdo
     deRounds: rounds,
     deBonus: rounds * params.deRound,
     podiumBonus: podiumBonus(n, place, params.podiumGold, params.podiumSilver, params.podiumBronze),
-    fieldPoints: null,
-    belowCount: null,
-    belowPoints: null,
-    medalBonus: null,
+    categorySteps: null,
+    premium: null,
   }
 }
 
-function placeMedal(
+/**
+ * The range of the joined-bracket engine that scores a place in a bracket of n:
+ * every row of a joined bracket of 4-15 is EVF_JOINED, the youngest category's
+ * with a premium of 0, exactly as fn_score_spws_evf_joined_v1_2026_2027 stores it.
+ */
+export function joinedMethod(n: number, categorySteps = 0, joined = categorySteps > 0): ScoreMethod {
+  if (n <= JOINED.meetingUpTo) return 'TABLE'
+  if (joined && n <= JOINED.premiumUpTo) return 'EVF_JOINED'
+  return 'EVF_CLASSIC'
+}
+
+/**
+ * The two values an older category can score in a joined bracket of 4-15, and
+ * the larger, which it gets before the cap. They are equal at exactly 20 EVF
+ * points: above, 5% per step is more; below, d points are.
+ */
+export function joinedAlternatives(
+  evf: number,
+  categorySteps: number,
+): { byPercent: number; byPoints: number; candidate: number } {
+  const byPercent = evf * (1 + JOINED.perStep * categorySteps)
+  const byPoints = evf + categorySteps
+  return { byPercent, byPoints, candidate: Math.max(byPercent, byPoints) }
+}
+
+function joinedPlace(
   params: ScoringParams,
   n: number,
   place: number,
-  position: BracketPosition,
+  d: number,
+  joined: boolean,
 ): RawBreakdown {
-  const method = placeMedalMethod(n)
-  if (method === 'TABLE') {
-    return {
-      method,
-      placePoints: n - place + 1,
-      deRounds: null,
-      deBonus: null,
-      podiumBonus: null,
-      fieldPoints: null,
-      belowCount: null,
-      belowPoints: null,
-      medalBonus: null,
-    }
+  if (!(Number.isInteger(d) && d >= 0 && d <= CATEGORY_STEPS_MAX)) {
+    throw invalid(`category steps d must be a whole number from 0 to ${CATEGORY_STEPS_MAX}, got ${d}.`)
   }
-  if (method === 'EVF_CLASSIC') return evfClassic(params, n, place)
-
-  const { categoryCount: k, categoryPlace: m, belowCount: b } = position
-  if (!(k >= 1 && k <= n)) {
-    throw invalid(`a bracket of ${n} needs the own category's fencer count K between 1 and ${n}, got ${k}.`)
-  }
-  if (!(m >= 1 && m <= k && m <= place)) {
-    throw invalid(`category place m ${m} must be between 1 and K = ${k} and not better than place ${place}.`)
-  }
-  if (!(b >= 0 && b <= n - place)) {
-    throw invalid(`${b} fencers below place ${place} of ${n} is impossible.`)
-  }
+  if (d > 0 && !joined) throw invalid(`category steps d = ${d} need a joined bracket; a single category has d = 0.`)
+  const method = joinedMethod(n, d, joined)
+  if (method === 'TABLE') return meeting(n, place)
+  const evf = evfClassic(params, n, place)
+  if (method === 'EVF_CLASSIC') return evf
+  const base = (evf.placePoints ?? 0) + (evf.deBonus ?? 0) + (evf.podiumBonus ?? 0)
   return {
+    ...evf,
     method,
-    placePoints: null,
-    deRounds: null,
-    deBonus: null,
-    podiumBonus: null,
-    fieldPoints: Math.log2(n),
-    belowCount: b,
-    belowPoints: PLACE_MEDAL.perBelow * b,
-    medalBonus: medalBonus(m, k),
+    categorySteps: d,
+    premium: joinedAlternatives(base, d).candidate - base,
   }
 }
 
@@ -250,35 +259,24 @@ export function scoreComponents(
   n: number,
   place: number,
   multiplier: number,
-  position?: BracketPosition,
+  position?: JoinedPosition,
 ): ScoreComponents {
   // Engine first: an unknown engine is a programming error, not bad user input,
   // and should say so even when the place happens to be out of range too.
-  if (engineCode !== CLASSIC_ENGINE && engineCode !== PLACE_MEDAL_ENGINE) {
+  if (engineCode !== CLASSIC_ENGINE && engineCode !== JOINED_ENGINE) {
     throw new Error(
       `Unknown scoring engine: ${engineCode}. An engine is assigned deliberately, never inferred.`,
     )
   }
   assertScoringInput(n, place)
 
-  const raw =
+  const d = position?.categorySteps ?? 0
+  const raw: RawBreakdown =
     engineCode === CLASSIC_ENGINE
       ? evfClassic(params, n, place)
-      : placeMedal(
-          params,
-          n,
-          place,
-          position ?? { categoryCount: n, categoryPlace: place, belowCount: n - place },
-        )
+      : joinedPlace(params, n, place, d, position?.joined ?? d > 0)
 
-  const parts = [
-    raw.placePoints,
-    raw.deBonus,
-    raw.podiumBonus,
-    raw.fieldPoints,
-    raw.belowPoints,
-    raw.medalBonus,
-  ]
+  const parts = [raw.placePoints, raw.deBonus, raw.podiumBonus, raw.premium]
   const rawTotal = parts.reduce<number>((sum, v) => sum + (v ?? 0), 0)
   const r2 = (v: number | null) => (v === null ? null : round2(v))
 
@@ -288,11 +286,76 @@ export function scoreComponents(
     deRounds: raw.deRounds,
     deBonus: r2(raw.deBonus),
     podiumBonus: r2(raw.podiumBonus),
-    fieldPoints: r2(raw.fieldPoints),
-    belowCount: raw.belowCount,
-    belowPoints: r2(raw.belowPoints),
-    medalBonus: r2(raw.medalBonus),
+    categorySteps: raw.categorySteps,
+    premium: r2(raw.premium),
     rawTotal,
     finalScore: round2(rawTotal * multiplier),
   }
+}
+
+/** One place of a bracket scored by scoreBracket. */
+export interface BracketLine extends ScoreComponents {
+  place: number
+  /** The fencer's category index: 0 = V0 ... 4 = V4. */
+  category: number
+  /** The unrounded score before the cap. rawTotal is after it. */
+  uncappedTotal: number
+  /** The unrounded ceiling — the fencer directly ahead minus 1 — or null where no cap applies. */
+  capAt: number | null
+  /** True when the cap lowered this score. */
+  capped: boolean
+  /**
+   * How much the cap took off, before the coefficient, rounded to two decimals
+   * as tbl_result.num_cap_reduction stores it: 0 where it did not bite, null
+   * where no cap applies (SQL stores -1).
+   */
+  capReduction: number | null
+}
+
+/**
+ * A whole bracket under the joined-bracket engine, in finishing order: one
+ * category index per place. d is counted from the youngest category present.
+ * The cap applies only in a joined bracket of 4-15, is taken on unrounded
+ * scores before the coefficient, and the final rounds once, after it.
+ */
+export function scoreBracket(
+  params: ScoringParams,
+  categories: readonly number[],
+  multiplier: number,
+): BracketLine[] {
+  if (categories.length === 0) throw invalid('a bracket has no fencers.')
+  for (const c of categories) {
+    if (!(Number.isInteger(c) && c >= 0 && c <= CATEGORY_STEPS_MAX)) {
+      throw invalid(`a category is a whole number from 0 (V0) to ${CATEGORY_STEPS_MAX} (V4), got ${c}.`)
+    }
+  }
+  const n = categories.length
+  const youngest = Math.min(...categories)
+  const joined = new Set(categories).size > 1
+  const capApplies = joined && n > JOINED.meetingUpTo && n <= JOINED.premiumUpTo
+
+  const lines: BracketLine[] = []
+  let ahead: number | null = null
+  categories.forEach((category, i) => {
+    const place = i + 1
+    const c = scoreComponents(params, JOINED_ENGINE, n, place, multiplier, {
+      categorySteps: category - youngest,
+      joined,
+    })
+    const capAt = capApplies && ahead !== null ? ahead - JOINED.capGap : null
+    const total = capAt !== null && c.rawTotal > capAt ? capAt : c.rawTotal
+    lines.push({
+      ...c,
+      place,
+      category,
+      uncappedTotal: c.rawTotal,
+      capAt,
+      capped: total < c.rawTotal,
+      capReduction: capApplies ? round2(c.rawTotal - total) : null,
+      rawTotal: total,
+      finalScore: round2(total * multiplier),
+    })
+    ahead = total
+  })
+  return lines
 }

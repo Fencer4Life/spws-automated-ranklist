@@ -13,6 +13,12 @@ import source from '../../doc/tools/kalkulator-punktow-za-wynik-spws.v2.html?raw
 import wordpress from '../../doc/tools/WP-kalkulator-punktow-za-wynik-spws.html?raw'
 import tablePublished from '../public/tabela-punktacji.html?raw'
 import tableSource from '../../doc/tools/Tabela-punktacji-SPWS_2026-2027.html?raw'
+import scoringSource from '../src/lib/scoring.ts?raw'
+import typesSource from '../src/lib/types.ts?raw'
+import exportSource from '../src/lib/export.ts?raw'
+import editorSource from '../src/components/ScoringConfigEditor.svelte?raw'
+import plLocale from '../src/lib/locales/pl.json?raw'
+import enLocale from '../src/lib/locales/en.json?raw'
 
 describe('static tool assets (ADR-085)', () => {
   // 8.88 — the menu entry must point at a file that actually ships, and that
@@ -93,12 +99,14 @@ const PAGES: [string, string][] = [
 
 describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
   for (const [name, html] of PAGES) {
-    // SE27.PAGE.01 — the formula is the shared module, now with the new engine;
-    // the retired field-scaled engine and its base_slope are gone everywhere.
-    it(`SE27.PAGE.01 ${name}: carries the generated module of both engines, not the retired one`, () => {
+    // SE27.PAGE.01 — the formula is the shared module, with EVF classic and the
+    // joined engine; the retired field-scaled engine and its base_slope, and the
+    // removed place-and-medal engine (ADR-104), are gone everywhere.
+    it(`SE27.PAGE.01 ${name}: carries the generated module of both engines, not the retired ones`, () => {
       const block = html.match(MODULE_BLOCK)?.[0] ?? ''
       expect(block.length).toBeGreaterThan(1000)
-      expect(block).toContain('"SPWS_PLACE_MEDAL_V1_2026_2027"')
+      expect(html).not.toContain('SPWS_PLACE_MEDAL_V1_2026_2027')
+      expect(block).toContain('"SPWS_EVF_JOINED_V1_2026_2027"')
       expect(block).toContain('"EVF_CLASSIC_V1_2025_2026"')
       expect(html).not.toMatch(/FIELD_SCALED|baseSlope|base_slope/)
     })
@@ -115,17 +123,69 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
   }
 
   // SE27.PAGE.03 (structure) — FR-142's shape for each page.
-  it('SE27.PAGE.03 annex: 64 x 64, the medal table complete to K = 31, pinned to 2026/2027', () => {
+  // The annex was rewritten for the joined-bracket engine locked on 30 September
+  // 2026 (doc/plans/scoring-table-rewrite-plan-2026-09-30.html): the medal
+  // table gave way to the premium table and the bracket simulator.
+  it('SE27.PAGE.03 annex: 64 x 64, the premium table and the simulator, pinned to 2026/2027', () => {
     expect(tablePublished).toContain('const TABLE_N = 64;')
-    expect(tablePublished).toContain('const MEDAL_ROWS = 31;')
     expect(tablePublished).toContain("const SEASON_CODE = 'SPWS-2026-2027';")
     expect(tablePublished).toContain('id="coefBody"')
+    for (const id of ['premiumTable', 'premiumN', 'simTable', 'ownCat', 'youngCat']) {
+      expect(tablePublished).toContain(`id="${id}"`)
+    }
+    // It computes with the joined-bracket engine and refuses any other.
+    expect(tablePublished).toContain('r.engine_code !== SPWSScoring.JOINED_ENGINE')
   })
 
-  it('SE27.PAGE.03 calculator: any field up to 300, a joined mode, and the SPWS/EVF toggle', () => {
-    expect(published).toMatch(/id="fN"[^>]*max="300"/)
-    for (const id of ['fJ', 'fK', 'fC', 'algSpws', 'algEvf']) {
-      expect(published).toContain(`id="${id}"`)
-    }
+  it('SE27.PAGE.03 annex: describes no place-and-medal engine outside the shared module', () => {
+    const page = tablePublished.replace(MODULE_BLOCK, '')
+    expect(page).not.toMatch(/MEDAL_ROWS|PLACE_MEDAL|medalBonus|placeMedalMethod/)
+    expect(page).not.toMatch(/∛K|log₂N|3,5 pkt|3\.5 points|13 × ∛/)
   })
+
+  // JB27.PAGE.01 (ADR-104 §8) — the calculator is rebuilt from the annex's
+  // tools: the calculator, the premium table and the simulator, with the same
+  // texts, following the ACTIVE season and computing only with the joined
+  // engine. The SPWS/EVF toggle and the K/m fields are gone, and so is the
+  // 64 x 64 table; the rules are a link to the annex, absolute so that the
+  // WordPress copy, uploaded alone, still reaches it. The browser half — PL
+  // and EN, 375 px, a clean console — is checked in the browser.
+  it('JB27.PAGE.01 calculator: the annex tools for the active season, no toggle, the rules linked', () => {
+    expect(published).toContain('const MAX_PARTICIPANTS = 300;')
+    expect(published).toContain('const SEASON_CODE = null;')
+    for (const id of ['participants', 'place', 'joinedToggle', 'ownCat', 'youngCat', 'typeChips',
+      'premiumTable', 'premiumN', 'simTable']) {
+      expect(published, id).toContain(`id="${id}"`)
+    }
+    expect(published).toContain('r.engine_code !== SPWSScoring.JOINED_ENGINE')
+    for (const id of ['algSpws', 'algEvf', 'fK', 'fC', 'pointsTable', 'coefBody']) {
+      expect(published, id).not.toContain(`id="${id}"`)
+    }
+    expect(published).toContain(
+      'href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html"',
+    )
+  })
+})
+
+// JB27.CLEAN.06 (ADR-104 §1): the place-and-medal engine and its columns are
+// gone from the frontend — the shared module, the row type, the drill-down
+// export, the Admin editor, both locales and both published pages.
+const RETIRED = /PLACE_MEDAL|placeMedal|medalBonus|int_category_count|int_category_place|int_below_count|num_field_pts|num_below_pts|num_medal_bonus/
+describe('JB27.CLEAN.06 — the place-and-medal engine is gone from the frontend', () => {
+  const sources: [string, string][] = [
+    ['src/lib/scoring.ts', scoringSource],
+    ['src/lib/types.ts', typesSource],
+    ['src/lib/export.ts', exportSource],
+    ['src/components/ScoringConfigEditor.svelte', editorSource],
+    ['src/lib/locales/pl.json', plLocale],
+    ['src/lib/locales/en.json', enLocale],
+    ['public/kalkulator-punktow.html', published],
+    ['public/tabela-punktacji.html', tablePublished],
+  ]
+  for (const [path, text] of sources) {
+    it(`${path} names neither the engine nor its columns`, () => {
+      expect(text.length).toBeGreaterThan(100)
+      expect(text.match(RETIRED)?.[0] ?? null).toBeNull()
+    })
+  }
 })

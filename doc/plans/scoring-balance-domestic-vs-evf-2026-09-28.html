@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Domestic vs EVF points</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --c-field:#8fa3bf; --c-below:#2f6db3; --c-medal:#c9a227;
+    --c-place:#e0a266; --c-de:#b8612a; --c-podium:#7a3b12;
+    --c-dom:#2f6db3; --c-pew:#d08a3c; --c-zone:#dce2ec;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+      --c-field:#5d6f88; --c-below:#6ea8e6; --c-medal:#e6c34f;
+      --c-place:#e8b47e; --c-de:#d9824a; --c-podium:#a8622f;
+      --c-dom:#6ea8e6; --c-pew:#e6a55c; --c-zone:#232935;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+    --c-field:#5d6f88; --c-below:#6ea8e6; --c-medal:#e6c34f;
+    --c-place:#e8b47e; --c-de:#d9824a; --c-podium:#a8622f;
+    --c-dom:#6ea8e6; --c-pew:#e6a55c; --c-zone:#232935;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line);overflow-wrap:anywhere}
+  a{color:var(--accent)}
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(36px,5.6vw,52px);line-height:1.08;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:22ch}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:58ch}
+  .dek b{color:var(--ink)}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)} .pill.danger .dot{background:var(--danger)}
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:56px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;margin:0 0 18px;text-wrap:balance}
+  h3{font-size:20px;font-weight:800;margin:30px 0 10px}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0} li::marker{color:var(--accent)}
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)} .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)} .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)} .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)} .note.accent .lede{color:var(--accent-ink)}
+  .formula{font-family:var(--mono);font-size:16px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:14px 18px;margin:14px 0;white-space:pre-wrap;line-height:1.7}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:760px){.two{grid-template-columns:1fr}}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:16px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  td{font-variant-numeric:tabular-nums}
+  .muted{color:var(--faint);font-size:.88em}
+  .chip{font-family:var(--mono);font-size:12.5px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2)}
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 14px 6px}
+  figcaption{font-size:15px;color:var(--muted);margin:6px 4px 8px}
+  svg{width:100%;height:auto;display:block}
+  svg .grid{stroke:var(--line);stroke-width:1}
+  svg .ax{fill:var(--faint);font-family:var(--mono);font-size:11px}
+  svg .val{fill:var(--ink);font-family:var(--mono);font-size:10.5px;font-weight:700}
+  svg .zone{fill:var(--c-zone);opacity:.7}
+  svg .s-field{fill:var(--c-field)} svg .s-below{fill:var(--c-below)} svg .s-medal{fill:var(--c-medal)}
+  svg .e-place{fill:var(--c-place)} svg .e-de{fill:var(--c-de)} svg .e-podium{fill:var(--c-podium)}
+  svg .b-dom{fill:var(--c-dom)} svg .b-pew{fill:var(--c-pew)}
+  svg .l-evf{fill:none;stroke:var(--c-de);stroke-width:2.5;stroke-dasharray:6 4}
+  svg .l-today{fill:none;stroke:var(--c-below);stroke-width:2.5}
+  svg .l-prop{fill:none;stroke:var(--good);stroke-width:3}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--muted);margin:4px 4px 10px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  ol.steps{counter-reset:step;list-style:none;padding-left:0}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:var(--bg)}
+  .opt{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px 20px;margin:16px 0}
+  .opt h3{margin-top:0}
+  .opt.rec{border:2px solid var(--good)}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  @media (max-width:600px){.wrap{padding:36px 16px 80px} body{font-size:18px} .dek{font-size:20px} h2{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Scoring 2026/27 · Domestic against international · Brainstorm report</p>
+  <h1>Why a domestic podium earns half an EVF one, and what the medals can do</h1>
+  <p class="dek">For places 1–4 in the brackets where PPW is usually fenced, EVF classic gives <b>1.5 to 2.5 times</b> what the 2026/27 SPWS engine gives. Raising the medals to <b>36 / 21 / 9 × ∛K</b>, plus <b>5 × ∛K for fourth place</b>, closes most of that gap. It leaves every place below fourth exactly as the board approved it.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Brainstorm — nothing decided</span>
+    <span class="pill danger"><span class="dot"></span>Engine constants lock with the first scored PPW1 result</span>
+    <span class="pill"><span class="dot"></span>Data: 2024/25–2025/26, LOCAL (PROD dump of 12 Sep)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Short answer</p>
+    <h2>You are right for small and middle brackets. The gap depends on N</h2>
+    <ul>
+      <li><strong>N = 4–10:</strong> EVF gives 1.5–2.5× for places 1–4. That is where PPW brackets with medals usually sit.</li>
+      <li><strong>N = 12–16:</strong> the gap narrows to 1.0–1.5×.</li>
+      <li><strong>N ≈ 20–24:</strong> the two engines meet.</li>
+      <li><strong>N = 28–31:</strong> SPWS gives <em>more</em> than EVF. At 32 the engine switches to EVF, and the winner drops from 150.8 to 128.6.</li>
+      <li><strong>N ≤ 3:</strong> the table gives 3 / 2 / 1, while EVF gives 83 / 38 / 5. No medal constant changes this range, and it holds 156 of the 558 domestic results.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">Why the shapes differ</p>
+      <p>EVF pays for <strong>reaching the podium</strong>: the winner starts from 50, earns 10 per elimination round won and a podium bonus, whatever the field. SPWS pays for <strong>the fencers you finish above</strong>: 3.5 each, plus a medal that grows slowly (∛K). A small field therefore pays little under SPWS and a lot under EVF. A big field is the other way round, because 3.5 per fencer grows in a straight line while EVF's place scale is logarithmic.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">How the two engines score</p>
+    <h2>Six ingredients, three in each engine</h2>
+    <div class="two">
+      <div>
+        <h3>SPWS 2026/27 · PPW and MPW</h3>
+<div class="formula">4 ≤ N ≤ 31:
+  log₂ N                      field
++ 3.5 × b                     fencers below
++ medal × ∛K                  1st–3rd in own category
+    złoto 13 · srebro 7 · brąz 3
+    (only while K > place)
+N ≤ 3:  N − place + 1
+N ≥ 32: EVF classic</div>
+        <p class="muted">N = whole bracket, K = fencers of the own category, b = fencers with a worse place.</p>
+      </div>
+      <div>
+        <h3>EVF classic · PEW, MEW, MSW, PSW, PPS, MPS</h3>
+<div class="formula">  50 − 49 × ln(place)/ln(N)   place scale
++ 10 × rounds won             elimination
++ podium × 3 × ∛N             1st–3rd
+    gold 3 → 9∛N
+    silver 2 → 6∛N
+    bronze 1 → 3∛N</div>
+        <p class="muted">Base 50, 10 per round and the 3/2/1 podium are this season&rsquo;s EVF settings; on PROD they are the same for every type.</p>
+      </div>
+    </div>
+    <figure>
+      <div class="legend"><span><i style="background:var(--c-field)"></i>SPWS field</span><span><i style="background:var(--c-below)"></i>SPWS 3.5 × below</span><span><i style="background:var(--c-medal)"></i>SPWS medal</span><span><i style="background:var(--c-place)"></i>EVF place scale</span><span><i style="background:var(--c-de)"></i>EVF rounds won</span><span><i style="background:var(--c-podium)"></i>EVF podium</span></div>
+      <svg viewBox="0 0 760 330" role="img" aria-label="Points by place in a bracket of 8: SPWS components against EVF classic components"><line class="grid" x1="46" y1="286.0" x2="752" y2="286.0"/><text class="ax" x="38" y="290.0" text-anchor="end">0</text><line class="grid" x1="46" y1="232.0" x2="752" y2="232.0"/><text class="ax" x="38" y="236.0" text-anchor="end">20</text><line class="grid" x1="46" y1="178.0" x2="752" y2="178.0"/><text class="ax" x="38" y="182.0" text-anchor="end">40</text><line class="grid" x1="46" y1="124.0" x2="752" y2="124.0"/><text class="ax" x="38" y="128.0" text-anchor="end">60</text><line class="grid" x1="46" y1="70.0" x2="752" y2="70.0"/><text class="ax" x="38" y="74.0" text-anchor="end">80</text><line class="grid" x1="46" y1="16.0" x2="752" y2="16.0"/><text class="ax" x="38" y="20.0" text-anchor="end">100</text><rect class="s-field" x="58.1" y="277.9" width="28" height="8.1"/><rect class="s-below" x="58.1" y="211.7" width="28" height="66.2"/><rect class="s-medal" x="58.1" y="141.5" width="28" height="70.2"/><text class="val" x="72.1" y="137.5" text-anchor="middle">53.5</text><rect class="e-place" x="94.1" y="151.0" width="28" height="135.0"/><rect class="e-de" x="94.1" y="70.0" width="28" height="81.0"/><rect class="e-podium" x="94.1" y="21.4" width="28" height="48.6"/><text class="val" x="108.1" y="17.4" text-anchor="middle">98.0</text><text class="ax" x="90.1" y="304" text-anchor="middle">place 1</text><rect class="s-field" x="146.4" y="277.9" width="28" height="8.1"/><rect class="s-below" x="146.4" y="221.2" width="28" height="56.7"/><rect class="s-medal" x="146.4" y="183.4" width="28" height="37.8"/><text class="val" x="160.4" y="179.4" text-anchor="middle">38.0</text><rect class="e-place" x="182.4" y="195.1" width="28" height="90.9"/><rect class="e-de" x="182.4" y="141.1" width="28" height="54.0"/><rect class="e-podium" x="182.4" y="108.7" width="28" height="32.4"/><text class="val" x="196.4" y="104.7" text-anchor="middle">65.7</text><text class="ax" x="178.4" y="304" text-anchor="middle">place 2</text><rect class="s-field" x="234.6" y="277.9" width="28" height="8.1"/><rect class="s-below" x="234.6" y="230.6" width="28" height="47.2"/><rect class="s-medal" x="234.6" y="214.4" width="28" height="16.2"/><text class="val" x="248.6" y="210.4" text-anchor="middle">26.5</text><rect class="e-place" x="270.6" y="220.9" width="28" height="65.1"/><rect class="e-de" x="270.6" y="193.9" width="28" height="27.0"/><rect class="e-podium" x="270.6" y="177.7" width="28" height="16.2"/><text class="val" x="284.6" y="173.7" text-anchor="middle">40.1</text><text class="ax" x="266.6" y="304" text-anchor="middle">place 3</text><rect class="s-field" x="322.9" y="277.9" width="28" height="8.1"/><rect class="s-below" x="322.9" y="240.1" width="28" height="37.8"/><text class="val" x="336.9" y="236.1" text-anchor="middle">17.0</text><rect class="e-place" x="358.9" y="239.2" width="28" height="46.8"/><rect class="e-de" x="358.9" y="212.2" width="28" height="27.0"/><text class="val" x="372.9" y="208.2" text-anchor="middle">27.3</text><text class="ax" x="354.9" y="304" text-anchor="middle">place 4</text><rect class="s-field" x="411.1" y="277.9" width="28" height="8.1"/><rect class="s-below" x="411.1" y="249.5" width="28" height="28.4"/><text class="val" x="425.1" y="245.5" text-anchor="middle">13.5</text><rect class="e-place" x="447.1" y="253.4" width="28" height="32.6"/><text class="val" x="461.1" y="249.4" text-anchor="middle">12.1</text><text class="ax" x="443.1" y="304" text-anchor="middle">place 5</text><rect class="s-field" x="499.4" y="277.9" width="28" height="8.1"/><rect class="s-below" x="499.4" y="259.0" width="28" height="18.9"/><text class="val" x="513.4" y="255.0" text-anchor="middle">10.0</text><rect class="e-place" x="535.4" y="265.0" width="28" height="21.0"/><text class="val" x="549.4" y="261.0" text-anchor="middle">7.8</text><text class="ax" x="531.4" y="304" text-anchor="middle">place 6</text><rect class="s-field" x="587.6" y="277.9" width="28" height="8.1"/><rect class="s-below" x="587.6" y="268.4" width="28" height="9.4"/><text class="val" x="601.6" y="264.4" text-anchor="middle">6.5</text><rect class="e-place" x="623.6" y="274.8" width="28" height="11.2"/><text class="val" x="637.6" y="270.8" text-anchor="middle">4.1</text><text class="ax" x="619.6" y="304" text-anchor="middle">place 7</text><rect class="s-field" x="675.9" y="277.9" width="28" height="8.1"/><text class="val" x="689.9" y="273.9" text-anchor="middle">3.0</text><rect class="e-place" x="711.9" y="283.3" width="28" height="2.7"/><text class="val" x="725.9" y="279.3" text-anchor="middle">1.0</text><text class="ax" x="707.9" y="304" text-anchor="middle">place 8</text><text class="ax" x="46" y="324">left bar SPWS 2026/27 · right bar EVF classic</text></svg>
+      <figcaption>A bracket of 8, each place scored by both engines. The winner gets 53.5 under SPWS (3 + 24.5 + 26) and 98 under EVF (50 + 30 + 18). Below fourth place SPWS is level or ahead; the whole gap is at the top.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="kicker">The gap, bracket by bracket</p>
+    <h2>EVF / SPWS for places 1–4</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>N</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th></tr></thead>
+      <tbody><tr><td><strong>2</strong></td><td>71.3 / 2.0 <span class="chip over">×35.67</span></td><td>8.6 / 1.0 <span class="chip over">×8.56</span></td><td>—</td><td>—</td></tr><tr><td><strong>3</strong></td><td>83.0 / 3.0 <span class="chip over">×27.66</span></td><td>37.7 / 2.0 <span class="chip over">×18.87</span></td><td>5.3 / 1.0 <span class="chip over">×5.33</span></td><td>—</td></tr><tr><td><strong>4</strong></td><td>84.3 / 33.1 <span class="chip over">×2.54</span></td><td>45.0 / 20.1 <span class="chip over">×2.24</span></td><td>15.9 / 10.3 <span class="chip over">×1.55</span></td><td>1.0 / 2.0 <span class="chip fill">×0.50</span></td></tr><tr><td><strong>5</strong></td><td>95.4 / 38.6 <span class="chip over">×2.47</span></td><td>59.2 / 24.8 <span class="chip over">×2.39</span></td><td>31.7 / 14.5 <span class="chip over">×2.19</span></td><td>17.8 / 5.8 <span class="chip over">×3.06</span></td></tr><tr><td><strong>6</strong></td><td>96.4 / 43.7 <span class="chip over">×2.20</span></td><td>61.9 / 29.3 <span class="chip over">×2.11</span></td><td>35.4 / 18.5 <span class="chip over">×1.91</span></td><td>22.1 / 9.6 <span class="chip over">×2.30</span></td></tr><tr><td><strong>8</strong></td><td>98.0 / 53.5 <span class="chip over">×1.83</span></td><td>65.7 / 38.0 <span class="chip over">×1.73</span></td><td>40.1 / 26.5 <span class="chip over">×1.51</span></td><td>27.3 / 17.0 <span class="chip over">×1.61</span></td></tr><tr><td><strong>10</strong></td><td>109.4 / 62.8 <span class="chip over">×1.74</span></td><td>78.2 / 46.4 <span class="chip over">×1.68</span></td><td>53.1 / 34.3 <span class="chip over">×1.55</span></td><td>40.5 / 24.3 <span class="chip over">×1.67</span></td></tr><tr><td><strong>12</strong></td><td>110.6 / 71.8 <span class="chip over">×1.54</span></td><td>80.1 / 54.6 <span class="chip over">×1.47</span></td><td>55.2 / 42.0 <span class="chip warn">×1.32</span></td><td>42.7 / 31.6 <span class="chip warn">×1.35</span></td></tr><tr><td><strong>14</strong></td><td>111.7 / 80.6 <span class="chip warn">×1.39</span></td><td>81.6 / 62.7 <span class="chip warn">×1.30</span></td><td>56.8 / 49.5 <span class="chip warn">×1.15</span></td><td>44.3 / 38.8 <span class="chip warn">×1.14</span></td></tr><tr><td><strong>16</strong></td><td>112.7 / 89.3 <span class="chip warn">×1.26</span></td><td>82.9 / 70.6 <span class="chip warn">×1.17</span></td><td>58.1 / 57.1 <span class="chip never">×1.02</span></td><td>45.5 / 46.0 <span class="chip never">×0.99</span></td></tr><tr><td><strong>20</strong></td><td>124.4 / 106.1 <span class="chip warn">×1.17</span></td><td>94.9 / 86.3 <span class="chip never">×1.10</span></td><td>70.2 / 72.0 <span class="chip never">×0.98</span></td><td>57.3 / 60.3 <span class="chip never">×0.95</span></td></tr><tr><td><strong>24</strong></td><td>126.0 / 122.6 <span class="chip never">×1.03</span></td><td>96.6 / 101.8 <span class="chip never">×0.95</span></td><td>71.7 / 86.7 <span class="chip fill">×0.83</span></td><td>58.6 / 74.6 <span class="chip fill">×0.79</span></td></tr><tr><td><strong>28</strong></td><td>127.3 / 138.8 <span class="chip never">×0.92</span></td><td>98.0 / 117.1 <span class="chip fill">×0.84</span></td><td>73.0 / 101.4 <span class="chip fill">×0.72</span></td><td>59.6 / 88.8 <span class="chip fill">×0.67</span></td></tr><tr><td><strong>31</strong></td><td>128.3 / 150.8 <span class="chip fill">×0.85</span></td><td>99.0 / 128.4 <span class="chip fill">×0.77</span></td><td>73.7 / 112.4 <span class="chip fill">×0.66</span></td><td>60.2 / 99.5 <span class="chip fill">×0.61</span></td></tr><tr><td><strong>32</strong></td><td>128.6 / 128.6 <span class="chip never">×1.00</span></td><td>99.2 / 99.2 <span class="chip never">×1.00</span></td><td>74.0 / 74.0 <span class="chip never">×1.00</span></td><td>60.4 / 60.4 <span class="chip never">×1.00</span></td></tr></tbody>
+    </table></div>
+    <p class="muted">Each cell reads EVF / SPWS and EVF ÷ SPWS. Red: EVF gives 40% or more above SPWS. Amber: 10–40%. Green: within 10%. Blue: SPWS gives more. Your table at N = 8 (53.5 / 38.0 / 26.5 / 17.0) is the SPWS side of that row.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Where the fencers actually are</p>
+    <h2>Most domestic brackets are small; PEW categories run larger</h2>
+    <figure>
+      <svg viewBox="0 0 760 280" role="img" aria-label="Number of category brackets by size N: PPW and MPW against PEW, 2024/25 and 2025/26"><line class="grid" x1="40" y1="236.0" x2="752" y2="236.0"/><text class="ax" x="32" y="240.0" text-anchor="end">0</text><line class="grid" x1="40" y1="180.5" x2="752" y2="180.5"/><text class="ax" x="32" y="184.5" text-anchor="end">20</text><line class="grid" x1="40" y1="125.0" x2="752" y2="125.0"/><text class="ax" x="32" y="129.0" text-anchor="end">40</text><line class="grid" x1="40" y1="69.5" x2="752" y2="69.5"/><text class="ax" x="32" y="73.5" text-anchor="end">60</text><line class="grid" x1="40" y1="14.0" x2="752" y2="14.0"/><text class="ax" x="32" y="18.0" text-anchor="end">80</text><rect class="zone" x="40.0" y="14" width="142.4" height="222"/><text class="ax" x="111.2" y="26" text-anchor="middle">no medal (table)</text><rect class="b-dom" x="50.7" y="27.9" width="12" height="208.1"/><text class="val" x="56.7" y="24.9" text-anchor="middle">75</text><rect class="b-pew" x="64.7" y="150.0" width="12" height="86.0"/><text class="val" x="70.7" y="147.0" text-anchor="middle">31</text><text class="ax" x="63.7" y="252" text-anchor="middle">1</text><rect class="b-dom" x="98.2" y="100.0" width="12" height="136.0"/><text class="val" x="104.2" y="97.0" text-anchor="middle">49</text><rect class="b-pew" x="112.2" y="186.1" width="12" height="50.0"/><text class="val" x="118.2" y="183.1" text-anchor="middle">18</text><text class="ax" x="111.2" y="252" text-anchor="middle">2</text><rect class="b-dom" x="145.7" y="133.3" width="12" height="102.7"/><text class="val" x="151.7" y="130.3" text-anchor="middle">37</text><rect class="b-pew" x="159.7" y="194.4" width="12" height="41.6"/><text class="val" x="165.7" y="191.4" text-anchor="middle">15</text><text class="ax" x="158.7" y="252" text-anchor="middle">3</text><rect class="b-dom" x="193.1" y="136.1" width="12" height="99.9"/><text class="val" x="199.1" y="133.1" text-anchor="middle">36</text><rect class="b-pew" x="207.1" y="205.5" width="12" height="30.5"/><text class="val" x="213.1" y="202.5" text-anchor="middle">11</text><text class="ax" x="206.1" y="252" text-anchor="middle">4</text><rect class="b-dom" x="240.6" y="166.6" width="12" height="69.4"/><text class="val" x="246.6" y="163.6" text-anchor="middle">25</text><rect class="b-pew" x="254.6" y="211.0" width="12" height="25.0"/><text class="val" x="260.6" y="208.0" text-anchor="middle">9</text><text class="ax" x="253.6" y="252" text-anchor="middle">5</text><rect class="b-dom" x="288.1" y="183.3" width="12" height="52.7"/><text class="val" x="294.1" y="180.3" text-anchor="middle">19</text><rect class="b-pew" x="302.1" y="211.0" width="12" height="25.0"/><text class="val" x="308.1" y="208.0" text-anchor="middle">9</text><text class="ax" x="301.1" y="252" text-anchor="middle">6</text><rect class="b-dom" x="335.5" y="216.6" width="12" height="19.4"/><text class="val" x="341.5" y="213.6" text-anchor="middle">7</text><rect class="b-pew" x="349.5" y="222.1" width="12" height="13.9"/><text class="val" x="355.5" y="219.1" text-anchor="middle">5</text><text class="ax" x="348.5" y="252" text-anchor="middle">7</text><rect class="b-dom" x="383.0" y="202.7" width="12" height="33.3"/><text class="val" x="389.0" y="199.7" text-anchor="middle">12</text><rect class="b-pew" x="397.0" y="216.6" width="12" height="19.4"/><text class="val" x="403.0" y="213.6" text-anchor="middle">7</text><text class="ax" x="396.0" y="252" text-anchor="middle">8</text><rect class="b-dom" x="430.5" y="213.8" width="12" height="22.2"/><text class="val" x="436.5" y="210.8" text-anchor="middle">8</text><rect class="b-pew" x="444.5" y="222.1" width="12" height="13.9"/><text class="val" x="450.5" y="219.1" text-anchor="middle">5</text><text class="ax" x="443.5" y="252" text-anchor="middle">9</text><rect class="b-dom" x="477.9" y="213.8" width="12" height="22.2"/><text class="val" x="483.9" y="210.8" text-anchor="middle">8</text><rect class="b-pew" x="491.9" y="233.2" width="12" height="2.8"/><text class="val" x="497.9" y="230.2" text-anchor="middle">1</text><text class="ax" x="490.9" y="252" text-anchor="middle">10</text><rect class="b-dom" x="525.4" y="208.2" width="12" height="27.8"/><text class="val" x="531.4" y="205.2" text-anchor="middle">10</text><rect class="b-pew" x="539.4" y="219.3" width="12" height="16.6"/><text class="val" x="545.4" y="216.3" text-anchor="middle">6</text><text class="ax" x="538.4" y="252" text-anchor="middle">11</text><rect class="b-dom" x="572.9" y="222.1" width="12" height="13.9"/><text class="val" x="578.9" y="219.1" text-anchor="middle">5</text><rect class="b-pew" x="586.9" y="219.3" width="12" height="16.6"/><text class="val" x="592.9" y="216.3" text-anchor="middle">6</text><text class="ax" x="585.9" y="252" text-anchor="middle">12</text><rect class="b-dom" x="620.3" y="230.4" width="12" height="5.5"/><text class="val" x="626.3" y="227.4" text-anchor="middle">2</text><rect class="b-pew" x="634.3" y="177.7" width="12" height="58.3"/><text class="val" x="640.3" y="174.7" text-anchor="middle">21</text><text class="ax" x="633.3" y="252" text-anchor="middle">13–20</text><rect class="b-dom" x="667.8" y="236.0" width="12" height="0.0"/><rect class="b-pew" x="681.8" y="197.2" width="12" height="38.9"/><text class="val" x="687.8" y="194.2" text-anchor="middle">14</text><text class="ax" x="680.8" y="252" text-anchor="middle">21–31</text><rect class="b-dom" x="715.3" y="236.0" width="12" height="0.0"/><rect class="b-pew" x="729.3" y="199.9" width="12" height="36.1"/><text class="val" x="735.3" y="196.9" text-anchor="middle">13</text><text class="ax" x="728.3" y="252" text-anchor="middle">32+</text><rect class="b-dom" x="510" y="36" width="12" height="10"/><text class="ax" x="528" y="45">PPW + MPW (293 brackets)</text><rect class="b-pew" x="510" y="54" width="12" height="10"/><text class="ax" x="528" y="63">PEW (171 brackets)</text><text class="ax" x="752" y="274" text-anchor="end">category bracket size N</text></svg>
+      <figcaption>Category brackets with results, 2024/25 and 2025/26. PPW/MPW: median N = 3, middle half 1–5, largest 19. PEW: median 6, middle half 2–14, with a long tail past 32.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>161 of 293</strong> domestic category brackets have N ≤ 3, scored by the table, where medals do not apply.</li>
+      <li>From 2026/27 a <strong>joined</strong> PPW bracket is scored whole: N is the physical bracket, K the fencer&rsquo;s category. Where categories are fenced together, N grows toward the per-event totals seen in the data (10–56), and SPWS points grow with it.</li>
+      <li>A PEW category is scored at its own N. A PEW win in a category of 6 earns 96; a PPW win in a category of 6 earns 43.7.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">The levers</p>
+    <h2>What each constant moves</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Lever</th><th>What it moves</th><th>Side effect</th></tr></thead>
+      <tbody>
+        <tr><td><strong>złoto / srebro / brąz × ∛K</strong></td><td>Only places 1–3 of the own category, and only while K exceeds the place.</td><td>∛K grows slowly, so a value that fits N = 8 overshoots N = 20+.</td></tr>
+        <tr><td><strong>A fourth-place medal</strong> (new)</td><td>Place 4, the second semi-finalist. PPW records 3rd and 4th separately (no shared bronze in 240 PPW brackets).</td><td>A new constant in the engine and the annex.</td></tr>
+        <tr><td><strong>3.5 per fencer below</strong></td><td>Every place, in a straight line with N.</td><td>Lowering it flattens big brackets, but also cuts middle places, which are already at or above EVF.</td></tr>
+        <tr><td><strong>log₂ N</strong></td><td>Everyone, 2–5 points.</td><td>Too small to matter.</td></tr>
+        <tr><td><strong>Type coefficient</strong> (PPW 1.0, MPW 1.2)</td><td>Everything the type scores.</td><td>Also lifts the lower places, where SPWS already equals or beats EVF.</td></tr>
+        <tr><td><strong>The N ≤ 3 table</strong></td><td>3 / 2 / 1 points.</td><td>Deliberate: walkovers are worth nothing (ADR-066). A separate question.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Options</p>
+    <h2>Five ways to rebalance</h2>
+    <p>Each option below is fitted against EVF, weighted by the bracket sizes PPW and MPW actually have. The ranking effect is simulated on 2025/26 under the 2026/27 rules: best 2 PPW + every MPW against the best 5 international results, with this season&rsquo;s PROD coefficients.</p>
+
+    <div class="opt rec">
+      <h3>A+ · New medals: złoto 36, srebro 21, brąz 9, plus 5 for fourth (× ∛K) · recommended</h3>
+      <p>This is the lever you named. Places 1–4 come within about 17% of EVF for N = 6–12 (within 5% at N = 8), and every place from fifth down stays exactly as approved.</p>
+      <p>Its cost is larger overshoot in big brackets: the winner of 16 gets 147 against EVF&rsquo;s 113, and the jump at 32 widens. For category brackets that range is rare (one domestic bracket above 13 in two seasons).</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>N</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th></tr></thead>
+        <tbody><tr><td><strong>4</strong></td><td>33.1 → <strong>69.6</strong> <span class='muted'>EVF 84.3</span></td><td>20.1 → <strong>42.3</strong> <span class='muted'>EVF 45.0</span></td><td>10.3 → <strong>19.8</strong> <span class='muted'>EVF 15.9</span></td><td>2.0 → <strong>2.0</strong> <span class='muted'>EVF 1.0</span></td></tr><tr><td><strong>5</strong></td><td>38.6 → <strong>77.9</strong> <span class='muted'>EVF 95.4</span></td><td>24.8 → <strong>48.7</strong> <span class='muted'>EVF 59.2</span></td><td>14.5 → <strong>24.7</strong> <span class='muted'>EVF 31.7</span></td><td>5.8 → <strong>14.4</strong> <span class='muted'>EVF 17.8</span></td></tr><tr><td><strong>6</strong></td><td>43.7 → <strong>85.5</strong> <span class='muted'>EVF 96.4</span></td><td>29.3 → <strong>54.7</strong> <span class='muted'>EVF 61.9</span></td><td>18.5 → <strong>29.4</strong> <span class='muted'>EVF 35.4</span></td><td>9.6 → <strong>18.7</strong> <span class='muted'>EVF 22.1</span></td></tr><tr><td><strong>8</strong></td><td>53.5 → <strong>99.5</strong> <span class='muted'>EVF 98.0</span></td><td>38.0 → <strong>66.0</strong> <span class='muted'>EVF 65.7</span></td><td>26.5 → <strong>38.5</strong> <span class='muted'>EVF 40.1</span></td><td>17.0 → <strong>27.0</strong> <span class='muted'>EVF 27.3</span></td></tr><tr><td><strong>10</strong></td><td>62.8 → <strong>112.4</strong> <span class='muted'>EVF 109.4</span></td><td>46.4 → <strong>76.6</strong> <span class='muted'>EVF 78.2</span></td><td>34.3 → <strong>47.2</strong> <span class='muted'>EVF 53.1</span></td><td>24.3 → <strong>35.1</strong> <span class='muted'>EVF 40.5</span></td></tr><tr><td><strong>12</strong></td><td>71.8 → <strong>124.5</strong> <span class='muted'>EVF 110.6</span></td><td>54.6 → <strong>86.7</strong> <span class='muted'>EVF 80.1</span></td><td>42.0 → <strong>55.7</strong> <span class='muted'>EVF 55.2</span></td><td>31.6 → <strong>43.0</strong> <span class='muted'>EVF 42.7</span></td></tr><tr><td><strong>16</strong></td><td>89.3 → <strong>147.2</strong> <span class='muted'>EVF 112.7</span></td><td>70.6 → <strong>105.9</strong> <span class='muted'>EVF 82.9</span></td><td>57.1 → <strong>72.2</strong> <span class='muted'>EVF 58.1</span></td><td>46.0 → <strong>58.6</strong> <span class='muted'>EVF 45.5</span></td></tr><tr><td><strong>20</strong></td><td>106.1 → <strong>168.5</strong> <span class='muted'>EVF 124.4</span></td><td>86.3 → <strong>124.3</strong> <span class='muted'>EVF 94.9</span></td><td>72.0 → <strong>88.3</strong> <span class='muted'>EVF 70.2</span></td><td>60.3 → <strong>73.9</strong> <span class='muted'>EVF 57.3</span></td></tr><tr><td><strong>24</strong></td><td>122.6 → <strong>188.9</strong> <span class='muted'>EVF 126.0</span></td><td>101.8 → <strong>142.2</strong> <span class='muted'>EVF 96.6</span></td><td>86.7 → <strong>104.0</strong> <span class='muted'>EVF 71.7</span></td><td>74.6 → <strong>89.0</strong> <span class='muted'>EVF 58.6</span></td></tr><tr><td><strong>31</strong></td><td>150.8 → <strong>223.0</strong> <span class='muted'>EVF 128.3</span></td><td>128.4 → <strong>172.4</strong> <span class='muted'>EVF 99.0</span></td><td>112.4 → <strong>131.2</strong> <span class='muted'>EVF 73.7</span></td><td>99.5 → <strong>115.2</strong> <span class='muted'>EVF 60.2</span></td></tr></tbody>
+      </table></div>
+      <p class="muted">today → proposal, with EVF for comparison. Without the fourth-place medal (option A: 36 / 21 / 9) place 4 stays as today.</p>
+    </div>
+
+    <div class="opt">
+      <h3>B · Medals 43 / 25 / 10 / 8 and 2.0 per fencer below</h3>
+      <p>This tracks EVF across all N for places 1–4, including big brackets. But fencers in the middle lose points: at N = 10, 6th place goes from 17.3 to 11.3, against EVF&rsquo;s 21.9. It changes the approved table everywhere, not only at the top.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>N</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th></tr></thead>
+        <tbody><tr><td><strong>4</strong></td><td>33.1 → <strong>76.3</strong> <span class='muted'>EVF 84.3</span></td><td>20.1 → <strong>45.7</strong> <span class='muted'>EVF 45.0</span></td><td>10.3 → <strong>19.9</strong> <span class='muted'>EVF 15.9</span></td><td>2.0 → <strong>2.0</strong> <span class='muted'>EVF 1.0</span></td></tr><tr><td><strong>5</strong></td><td>38.6 → <strong>83.9</strong> <span class='muted'>EVF 95.4</span></td><td>24.8 → <strong>51.1</strong> <span class='muted'>EVF 59.2</span></td><td>14.5 → <strong>23.4</strong> <span class='muted'>EVF 31.7</span></td><td>5.8 → <strong>18.0</strong> <span class='muted'>EVF 17.8</span></td></tr><tr><td><strong>6</strong></td><td>43.7 → <strong>90.7</strong> <span class='muted'>EVF 96.4</span></td><td>29.3 → <strong>56.0</strong> <span class='muted'>EVF 61.9</span></td><td>18.5 → <strong>26.8</strong> <span class='muted'>EVF 35.4</span></td><td>9.6 → <strong>21.1</strong> <span class='muted'>EVF 22.1</span></td></tr><tr><td><strong>8</strong></td><td>53.5 → <strong>103.0</strong> <span class='muted'>EVF 98.0</span></td><td>38.0 → <strong>65.0</strong> <span class='muted'>EVF 65.7</span></td><td>26.5 → <strong>33.0</strong> <span class='muted'>EVF 40.1</span></td><td>17.0 → <strong>27.0</strong> <span class='muted'>EVF 27.3</span></td></tr><tr><td><strong>10</strong></td><td>62.8 → <strong>114.0</strong> <span class='muted'>EVF 109.4</span></td><td>46.4 → <strong>73.2</strong> <span class='muted'>EVF 78.2</span></td><td>34.3 → <strong>38.9</strong> <span class='muted'>EVF 53.1</span></td><td>24.3 → <strong>32.6</strong> <span class='muted'>EVF 40.5</span></td></tr><tr><td><strong>12</strong></td><td>71.8 → <strong>124.0</strong> <span class='muted'>EVF 110.6</span></td><td>54.6 → <strong>80.8</strong> <span class='muted'>EVF 80.1</span></td><td>42.0 → <strong>44.5</strong> <span class='muted'>EVF 55.2</span></td><td>31.6 → <strong>37.9</strong> <span class='muted'>EVF 42.7</span></td></tr><tr><td><strong>16</strong></td><td>89.3 → <strong>142.4</strong> <span class='muted'>EVF 112.7</span></td><td>70.6 → <strong>95.0</strong> <span class='muted'>EVF 82.9</span></td><td>57.1 → <strong>55.2</strong> <span class='muted'>EVF 58.1</span></td><td>46.0 → <strong>48.2</strong> <span class='muted'>EVF 45.5</span></td></tr><tr><td><strong>20</strong></td><td>106.1 → <strong>159.0</strong> <span class='muted'>EVF 124.4</span></td><td>86.3 → <strong>108.2</strong> <span class='muted'>EVF 94.9</span></td><td>72.0 → <strong>65.5</strong> <span class='muted'>EVF 70.2</span></td><td>60.3 → <strong>58.0</strong> <span class='muted'>EVF 57.3</span></td></tr><tr><td><strong>24</strong></td><td>122.6 → <strong>174.6</strong> <span class='muted'>EVF 126.0</span></td><td>101.8 → <strong>120.7</strong> <span class='muted'>EVF 96.6</span></td><td>86.7 → <strong>75.4</strong> <span class='muted'>EVF 71.7</span></td><td>74.6 → <strong>67.7</strong> <span class='muted'>EVF 58.6</span></td></tr><tr><td><strong>31</strong></td><td>150.8 → <strong>200.0</strong> <span class='muted'>EVF 128.3</span></td><td>128.4 → <strong>141.5</strong> <span class='muted'>EVF 99.0</span></td><td>112.4 → <strong>92.4</strong> <span class='muted'>EVF 73.7</span></td><td>99.5 → <strong>84.1</strong> <span class='muted'>EVF 60.2</span></td></tr></tbody>
+      </table></div>
+    </div>
+
+    <div class="opt">
+      <h3>C · Type coefficient: PPW and MPW × 1.74</h3>
+      <p>This is a configuration change only, with no new engine: 1.74 is the weighted EVF / SPWS ratio for places 1–4. It lifts every domestic place, including the lower ones that are already level with EVF (the ratio for all places is 1.35), and it leaves the N-dependence unchanged.</p>
+    </div>
+
+    <div class="opt">
+      <h3>D · One yardstick: score international results with the SPWS engine too</h3>
+      <p>This removes the root cause: EVF over-rewards small international categories exactly as it would domestic ones. Domestic and international then differ only by coefficient (MEW 1.3, MSW 1.4). But international totals fall to about 43% of today&rsquo;s. It reverses the ADR-103 decision that kept those types on EVF classic, and results carried over from 2025/26 keep their EVF points for this season.</p>
+    </div>
+
+    <div class="opt">
+      <h3>E · Count fewer international results (best 3 instead of 5)</h3>
+      <p>On its own this is a small lever: 76% → 72.5% for fencers who travel. Combined with A+ it reaches 59%.</p>
+    </div>
+
+    <h3>Ranking effect · share of EVF+ in a fencer&rsquo;s total (median, 2025/26)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Fencers with ≥ 1 international result (100)</th><th>Fencers with ≥ 3 (37)</th></tr></thead>
+      <tbody>
+        <tr><td>Today</td><td>57.5%</td><td><strong>76.1%</strong></td></tr>
+        <tr><td>A · 36 / 21 / 9</td><td>46.6%</td><td>63.9%</td></tr>
+        <tr><td><strong>A+ · 36 / 21 / 9 / 5</strong></td><td><strong>45.0%</strong></td><td><strong>63.9%</strong></td></tr>
+        <tr><td>B · 43 / 25 / 10 / 8, 2.0 below</td><td>47.3%</td><td>64.9%</td></tr>
+        <tr><td>C · PPW/MPW × 1.74</td><td>43.7%</td><td>64.6%</td></tr>
+        <tr><td>D · international on SPWS</td><td>43.2%</td><td>63.7%</td></tr>
+        <tr><td>E · best 3 international</td><td>57.3%</td><td>72.5%</td></tr>
+        <tr><td>A+ and E together</td><td>44.2%</td><td>59.0%</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">Every points option lands in the same place: roughly 64% for the fencers who travel. Where they differ is who pays for it and what else moves.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The proposal in full</p>
+    <h2>The winner and fourth place, across every N</h2>
+    <figure>
+      <svg viewBox="0 0 760 300" role="img" aria-label="Winner&#x27;s points by bracket size: EVF classic, SPWS today, proposal A+"><rect class="zone" x="46.0" y="14" width="45.0" height="246"/><text class="ax" x="67.6" y="26" text-anchor="middle">N≤3 table</text><rect class="zone" x="595.0" y="14" width="153.0" height="246"/><text class="ax" x="670.6" y="26" text-anchor="middle">N≥32: EVF classic</text><line class="grid" x1="46" y1="260.0" x2="748" y2="260.0"/><text class="ax" x="38" y="264.0" text-anchor="end">0</text><line class="grid" x1="46" y1="219.0" x2="748" y2="219.0"/><text class="ax" x="38" y="223.0" text-anchor="end">40</text><line class="grid" x1="46" y1="178.0" x2="748" y2="178.0"/><text class="ax" x="38" y="182.0" text-anchor="end">80</text><line class="grid" x1="46" y1="137.0" x2="748" y2="137.0"/><text class="ax" x="38" y="141.0" text-anchor="end">120</text><line class="grid" x1="46" y1="96.0" x2="748" y2="96.0"/><text class="ax" x="38" y="100.0" text-anchor="end">160</text><line class="grid" x1="46" y1="55.0" x2="748" y2="55.0"/><text class="ax" x="38" y="59.0" text-anchor="end">200</text><line class="grid" x1="46" y1="14.0" x2="748" y2="14.0"/><text class="ax" x="38" y="18.0" text-anchor="end">240</text><text class="ax" x="46.0" y="276" text-anchor="middle">1</text><text class="ax" x="100.0" y="276" text-anchor="middle">4</text><text class="ax" x="172.0" y="276" text-anchor="middle">8</text><text class="ax" x="244.0" y="276" text-anchor="middle">12</text><text class="ax" x="316.0" y="276" text-anchor="middle">16</text><text class="ax" x="388.0" y="276" text-anchor="middle">20</text><text class="ax" x="460.0" y="276" text-anchor="middle">24</text><text class="ax" x="532.0" y="276" text-anchor="middle">28</text><text class="ax" x="604.0" y="276" text-anchor="middle">32</text><text class="ax" x="676.0" y="276" text-anchor="middle">36</text><text class="ax" x="748.0" y="276" text-anchor="middle">40</text><text class="ax" x="748" y="294" text-anchor="end">bracket size N</text><polyline class="l-evf" points="46.0,199.5 64.0,186.9 82.0,174.9 100.0,173.6 118.0,162.2 136.0,161.2 154.0,160.4 172.0,159.6 190.0,148.6 208.0,147.9 226.0,147.2 244.0,146.6 262.0,146.1 280.0,145.5 298.0,145.0 316.0,144.5 334.0,133.8 352.0,133.3 370.0,132.9 388.0,132.5 406.0,132.0 424.0,131.7 442.0,131.3 460.0,130.9 478.0,130.5 496.0,130.2 514.0,129.8 532.0,129.5 550.0,129.2 568.0,128.8 586.0,128.5 604.0,128.2 622.0,117.7 640.0,117.4 658.0,117.1 676.0,116.8 694.0,116.5 712.0,116.2 730.0,116.0 748.0,115.7"/><polyline class="l-today" points="46.0,259.0 64.0,258.0 82.0,256.9 100.0,226.0 118.0,220.5 136.0,215.2 154.0,210.1 172.0,205.2 190.0,200.3 208.0,195.6 226.0,190.9 244.0,186.4 262.0,181.8 280.0,177.3 298.0,172.9 316.0,168.5 334.0,164.1 352.0,159.8 370.0,155.5 388.0,151.2 406.0,147.0 424.0,142.8 442.0,138.5 460.0,134.4 478.0,130.2 496.0,126.0 514.0,121.9 532.0,117.7 550.0,113.6 568.0,109.5 586.0,105.4 604.0,128.2 622.0,117.7 640.0,117.4 658.0,117.1 676.0,116.8 694.0,116.5 712.0,116.2 730.0,116.0 748.0,115.7"/><polyline class="l-prop" points="46.0,259.0 64.0,258.0 82.0,256.9 100.0,188.6 118.0,180.2 136.0,172.4 154.0,165.0 172.0,158.0 190.0,151.3 208.0,144.8 226.0,138.5 244.0,132.4 262.0,126.4 280.0,120.5 298.0,114.8 316.0,109.1 334.0,103.5 352.0,98.0 370.0,92.6 388.0,87.2 406.0,81.9 424.0,76.7 442.0,71.5 460.0,66.3 478.0,61.2 496.0,56.2 514.0,51.2 532.0,46.2 550.0,41.2 568.0,36.3 586.0,31.4 604.0,128.2 622.0,117.7 640.0,117.4 658.0,117.1 676.0,116.8 694.0,116.5 712.0,116.2 730.0,116.0 748.0,115.7"/><line class="l-evf" x1="60" y1="44" x2="86" y2="44"/><text class="ax" x="92" y="48">EVF classic</text><line class="l-today" x1="60" y1="62" x2="86" y2="62"/><text class="ax" x="92" y="66">SPWS today (13/7/3)</text><line class="l-prop" x1="60" y1="80" x2="86" y2="80"/><text class="ax" x="92" y="84">proposal A+ (36/21/9/5)</text></svg>
+      <figcaption>Winner. A+ follows EVF for N = 8–12 and rises above it beyond that, as today&rsquo;s engine already does from about 24.</figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 760 300" role="img" aria-label="Fourth place points by bracket size: EVF classic, SPWS today, proposal A+"><rect class="zone" x="46.0" y="14" width="45.0" height="246"/><text class="ax" x="67.6" y="26" text-anchor="middle">N≤3 table</text><rect class="zone" x="595.0" y="14" width="153.0" height="246"/><text class="ax" x="670.6" y="26" text-anchor="middle">N≥32: EVF classic</text><line class="grid" x1="46" y1="260.0" x2="748" y2="260.0"/><text class="ax" x="38" y="264.0" text-anchor="end">0</text><line class="grid" x1="46" y1="222.2" x2="748" y2="222.2"/><text class="ax" x="38" y="226.2" text-anchor="end">20</text><line class="grid" x1="46" y1="184.3" x2="748" y2="184.3"/><text class="ax" x="38" y="188.3" text-anchor="end">40</text><line class="grid" x1="46" y1="146.5" x2="748" y2="146.5"/><text class="ax" x="38" y="150.5" text-anchor="end">60</text><line class="grid" x1="46" y1="108.6" x2="748" y2="108.6"/><text class="ax" x="38" y="112.6" text-anchor="end">80</text><line class="grid" x1="46" y1="70.8" x2="748" y2="70.8"/><text class="ax" x="38" y="74.8" text-anchor="end">100</text><line class="grid" x1="46" y1="32.9" x2="748" y2="32.9"/><text class="ax" x="38" y="36.9" text-anchor="end">120</text><text class="ax" x="46.0" y="276" text-anchor="middle">1</text><text class="ax" x="100.0" y="276" text-anchor="middle">4</text><text class="ax" x="172.0" y="276" text-anchor="middle">8</text><text class="ax" x="244.0" y="276" text-anchor="middle">12</text><text class="ax" x="316.0" y="276" text-anchor="middle">16</text><text class="ax" x="388.0" y="276" text-anchor="middle">20</text><text class="ax" x="460.0" y="276" text-anchor="middle">24</text><text class="ax" x="532.0" y="276" text-anchor="middle">28</text><text class="ax" x="604.0" y="276" text-anchor="middle">32</text><text class="ax" x="676.0" y="276" text-anchor="middle">36</text><text class="ax" x="748.0" y="276" text-anchor="middle">40</text><text class="ax" x="748" y="294" text-anchor="end">bracket size N</text><polyline class="l-evf" points="100.0,258.1 118.0,226.3 136.0,218.2 154.0,212.5 172.0,208.3 190.0,186.0 208.0,183.4 226.0,181.1 244.0,179.3 262.0,177.7 280.0,176.2 298.0,175.0 316.0,173.9 334.0,154.0 352.0,153.1 370.0,152.3 388.0,151.5 406.0,150.8 424.0,150.2 442.0,149.6 460.0,149.1 478.0,148.5 496.0,148.1 514.0,147.6 532.0,147.2 550.0,146.8 568.0,146.4 586.0,146.0 604.0,145.7 622.0,126.5 640.0,126.1 658.0,125.8 676.0,125.6 694.0,125.3 712.0,125.0 730.0,124.8 748.0,124.5"/><polyline class="l-today" points="100.0,256.2 118.0,249.0 136.0,241.9 154.0,234.8 172.0,227.8 190.0,220.9 208.0,214.0 226.0,207.1 244.0,200.2 262.0,193.4 280.0,186.6 298.0,179.8 316.0,173.0 334.0,166.2 352.0,159.4 370.0,152.6 388.0,145.9 406.0,139.1 424.0,132.3 442.0,125.6 460.0,118.9 478.0,112.1 496.0,105.4 514.0,98.7 532.0,91.9 550.0,85.2 568.0,78.5 586.0,71.8 604.0,145.7 622.0,126.5 640.0,126.1 658.0,125.8 676.0,125.6 694.0,125.3 712.0,125.0 730.0,124.8 748.0,124.5"/><polyline class="l-prop" points="100.0,256.2 118.0,232.8 136.0,224.7 154.0,216.7 172.0,208.9 190.0,201.2 208.0,193.6 226.0,186.0 244.0,178.6 262.0,171.1 280.0,163.8 298.0,156.4 316.0,149.1 334.0,141.8 352.0,134.6 370.0,127.4 388.0,120.2 406.0,113.0 424.0,105.8 442.0,98.7 460.0,91.6 478.0,84.5 496.0,77.4 514.0,70.3 532.0,63.2 550.0,56.2 568.0,49.1 586.0,42.1 604.0,145.7 622.0,126.5 640.0,126.1 658.0,125.8 676.0,125.6 694.0,125.3 712.0,125.0 730.0,124.8 748.0,124.5"/><line class="l-evf" x1="60" y1="44" x2="86" y2="44"/><text class="ax" x="92" y="48">EVF classic</text><line class="l-today" x1="60" y1="62" x2="86" y2="62"/><text class="ax" x="92" y="66">SPWS today (13/7/3)</text><line class="l-prop" x1="60" y1="80" x2="86" y2="80"/><text class="ax" x="92" y="84">proposal A+ (36/21/9/5)</text></svg>
+      <figcaption>Fourth place. Today it gets no medal; A+ gives 5 × ∛K and tracks EVF for N = 8–12.</figcaption>
+    </figure>
+    <h3>Proposed table A+, places 1–5 (EVF in grey)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>N</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>5th (unchanged)</th></tr></thead>
+      <tbody><tr><td><strong>4</strong></td><td><strong>69.6</strong> <span class='muted'>84.3</span></td><td><strong>42.3</strong> <span class='muted'>45.0</span></td><td><strong>19.8</strong> <span class='muted'>15.9</span></td><td>2.0 <span class='muted'>1.0</span></td><td>—</td></tr><tr><td><strong>5</strong></td><td><strong>77.9</strong> <span class='muted'>95.4</span></td><td><strong>48.7</strong> <span class='muted'>59.2</span></td><td><strong>24.7</strong> <span class='muted'>31.7</span></td><td><strong>14.4</strong> <span class='muted'>17.8</span></td><td>2.3 <span class='muted'>1.0</span></td></tr><tr><td><strong>6</strong></td><td><strong>85.5</strong> <span class='muted'>96.4</span></td><td><strong>54.7</strong> <span class='muted'>61.9</span></td><td><strong>29.4</strong> <span class='muted'>35.4</span></td><td><strong>18.7</strong> <span class='muted'>22.1</span></td><td>6.1 <span class='muted'>6.0</span></td></tr><tr><td><strong>7</strong></td><td><strong>92.7</strong> <span class='muted'>97.2</span></td><td><strong>60.5</strong> <span class='muted'>64.0</span></td><td><strong>34.0</strong> <span class='muted'>38.1</span></td><td><strong>22.9</strong> <span class='muted'>25.1</span></td><td>9.8 <span class='muted'>9.5</span></td></tr><tr><td><strong>8</strong></td><td><strong>99.5</strong> <span class='muted'>98.0</span></td><td><strong>66.0</strong> <span class='muted'>65.7</span></td><td><strong>38.5</strong> <span class='muted'>40.1</span></td><td><strong>27.0</strong> <span class='muted'>27.3</span></td><td>13.5 <span class='muted'>12.1</span></td></tr><tr><td><strong>9</strong></td><td><strong>106.1</strong> <span class='muted'>108.7</span></td><td><strong>71.4</strong> <span class='muted'>77.0</span></td><td><strong>42.9</strong> <span class='muted'>51.7</span></td><td><strong>31.1</strong> <span class='muted'>39.1</span></td><td>17.2 <span class='muted'>24.1</span></td></tr><tr><td><strong>10</strong></td><td><strong>112.4</strong> <span class='muted'>109.4</span></td><td><strong>76.6</strong> <span class='muted'>78.2</span></td><td><strong>47.2</strong> <span class='muted'>53.1</span></td><td><strong>35.1</strong> <span class='muted'>40.5</span></td><td>20.8 <span class='muted'>25.8</span></td></tr><tr><td><strong>11</strong></td><td><strong>118.5</strong> <span class='muted'>110.0</span></td><td><strong>81.7</strong> <span class='muted'>79.2</span></td><td><strong>51.5</strong> <span class='muted'>54.2</span></td><td><strong>39.1</strong> <span class='muted'>41.7</span></td><td>24.5 <span class='muted'>27.1</span></td></tr><tr><td><strong>12</strong></td><td><strong>124.5</strong> <span class='muted'>110.6</span></td><td><strong>86.7</strong> <span class='muted'>80.1</span></td><td><strong>55.7</strong> <span class='muted'>55.2</span></td><td><strong>43.0</strong> <span class='muted'>42.7</span></td><td>28.1 <span class='muted'>28.3</span></td></tr><tr><td><strong>13</strong></td><td><strong>130.3</strong> <span class='muted'>111.2</span></td><td><strong>91.6</strong> <span class='muted'>80.9</span></td><td><strong>59.9</strong> <span class='muted'>56.1</span></td><td><strong>47.0</strong> <span class='muted'>43.5</span></td><td>31.7 <span class='muted'>29.3</span></td></tr><tr><td><strong>14</strong></td><td><strong>136.1</strong> <span class='muted'>111.7</span></td><td><strong>96.4</strong> <span class='muted'>81.6</span></td><td><strong>64.0</strong> <span class='muted'>56.8</span></td><td><strong>50.9</strong> <span class='muted'>44.3</span></td><td>35.3 <span class='muted'>30.1</span></td></tr><tr><td><strong>15</strong></td><td><strong>141.7</strong> <span class='muted'>112.2</span></td><td><strong>101.2</strong> <span class='muted'>82.3</span></td><td><strong>68.1</strong> <span class='muted'>57.5</span></td><td><strong>54.7</strong> <span class='muted'>44.9</span></td><td>38.9 <span class='muted'>30.9</span></td></tr><tr><td><strong>16</strong></td><td><strong>147.2</strong> <span class='muted'>112.7</span></td><td><strong>105.9</strong> <span class='muted'>82.9</span></td><td><strong>72.2</strong> <span class='muted'>58.1</span></td><td><strong>58.6</strong> <span class='muted'>45.5</span></td><td>42.5 <span class='muted'>31.6</span></td></tr><tr><td><strong>17</strong></td><td><strong>152.7</strong> <span class='muted'>123.1</span></td><td><strong>110.6</strong> <span class='muted'>93.4</span></td><td><strong>76.2</strong> <span class='muted'>68.7</span></td><td><strong>62.4</strong> <span class='muted'>56.0</span></td><td>46.1 <span class='muted'>42.2</span></td></tr><tr><td><strong>18</strong></td><td><strong>158.0</strong> <span class='muted'>123.6</span></td><td><strong>115.2</strong> <span class='muted'>94.0</span></td><td><strong>80.3</strong> <span class='muted'>69.2</span></td><td><strong>66.3</strong> <span class='muted'>56.5</span></td><td>49.7 <span class='muted'>42.7</span></td></tr><tr><td><strong>19</strong></td><td><strong>163.3</strong> <span class='muted'>124.0</span></td><td><strong>119.8</strong> <span class='muted'>94.5</span></td><td><strong>84.3</strong> <span class='muted'>69.7</span></td><td><strong>70.1</strong> <span class='muted'>56.9</span></td><td>53.2 <span class='muted'>43.2</span></td></tr><tr><td><strong>20</strong></td><td><strong>168.5</strong> <span class='muted'>124.4</span></td><td><strong>124.3</strong> <span class='muted'>94.9</span></td><td><strong>88.3</strong> <span class='muted'>70.2</span></td><td><strong>73.9</strong> <span class='muted'>57.3</span></td><td>56.8 <span class='muted'>43.7</span></td></tr><tr><td><strong>21</strong></td><td><strong>173.7</strong> <span class='muted'>124.8</span></td><td><strong>128.8</strong> <span class='muted'>95.4</span></td><td><strong>92.2</strong> <span class='muted'>70.6</span></td><td><strong>77.7</strong> <span class='muted'>57.7</span></td><td>60.4 <span class='muted'>44.1</span></td></tr><tr><td><strong>22</strong></td><td><strong>178.8</strong> <span class='muted'>125.2</span></td><td><strong>133.3</strong> <span class='muted'>95.8</span></td><td><strong>96.2</strong> <span class='muted'>71.0</span></td><td><strong>81.5</strong> <span class='muted'>58.0</span></td><td>64.0 <span class='muted'>44.5</span></td></tr><tr><td><strong>23</strong></td><td><strong>183.9</strong> <span class='muted'>125.6</span></td><td><strong>137.7</strong> <span class='muted'>96.2</span></td><td><strong>100.1</strong> <span class='muted'>71.4</span></td><td><strong>85.2</strong> <span class='muted'>58.3</span></td><td>67.5 <span class='muted'>44.8</span></td></tr><tr><td><strong>24</strong></td><td><strong>188.9</strong> <span class='muted'>126.0</span></td><td><strong>142.2</strong> <span class='muted'>96.6</span></td><td><strong>104.0</strong> <span class='muted'>71.7</span></td><td><strong>89.0</strong> <span class='muted'>58.6</span></td><td>71.1 <span class='muted'>45.2</span></td></tr><tr><td><strong>25</strong></td><td><strong>193.9</strong> <span class='muted'>126.3</span></td><td><strong>146.5</strong> <span class='muted'>97.0</span></td><td><strong>108.0</strong> <span class='muted'>72.0</span></td><td><strong>92.8</strong> <span class='muted'>58.9</span></td><td>74.6 <span class='muted'>45.5</span></td></tr><tr><td><strong>26</strong></td><td><strong>198.9</strong> <span class='muted'>126.7</span></td><td><strong>150.9</strong> <span class='muted'>97.4</span></td><td><strong>111.9</strong> <span class='muted'>72.4</span></td><td><strong>96.5</strong> <span class='muted'>59.2</span></td><td>78.2 <span class='muted'>45.8</span></td></tr><tr><td><strong>27</strong></td><td><strong>203.8</strong> <span class='muted'>127.0</span></td><td><strong>155.3</strong> <span class='muted'>97.7</span></td><td><strong>115.8</strong> <span class='muted'>72.7</span></td><td><strong>100.3</strong> <span class='muted'>59.4</span></td><td>81.8 <span class='muted'>46.1</span></td></tr><tr><td><strong>28</strong></td><td><strong>208.6</strong> <span class='muted'>127.3</span></td><td><strong>159.6</strong> <span class='muted'>98.0</span></td><td><strong>119.6</strong> <span class='muted'>73.0</span></td><td><strong>104.0</strong> <span class='muted'>59.6</span></td><td>85.3 <span class='muted'>46.3</span></td></tr><tr><td><strong>29</strong></td><td><strong>213.5</strong> <span class='muted'>127.7</span></td><td><strong>163.9</strong> <span class='muted'>98.3</span></td><td><strong>123.5</strong> <span class='muted'>73.2</span></td><td><strong>107.7</strong> <span class='muted'>59.8</span></td><td>88.9 <span class='muted'>46.6</span></td></tr><tr><td><strong>30</strong></td><td><strong>218.3</strong> <span class='muted'>128.0</span></td><td><strong>168.2</strong> <span class='muted'>98.7</span></td><td><strong>127.4</strong> <span class='muted'>73.5</span></td><td><strong>111.4</strong> <span class='muted'>60.0</span></td><td>92.4 <span class='muted'>46.8</span></td></tr><tr><td><strong>31</strong></td><td><strong>223.0</strong> <span class='muted'>128.3</span></td><td><strong>172.4</strong> <span class='muted'>99.0</span></td><td><strong>131.2</strong> <span class='muted'>73.7</span></td><td><strong>115.2</strong> <span class='muted'>60.2</span></td><td>96.0 <span class='muted'>47.0</span></td></tr></tbody>
+    </table></div>
+    <p class="muted">Bold values change. N ≤ 3 is unchanged (3 / 2 / 1); from N = 32 it is EVF classic, as today. In a joined bracket the medal uses K, the fencer&rsquo;s own category, and the rest uses the whole bracket.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Constraints</p>
+    <h2>What any change costs, and when</h2>
+    <ul>
+      <li><strong>Timing.</strong> The first scored 2026/27 result (PPW1, expected around 29 September) locks the season&rsquo;s scoring (ADR-097). A coefficient change (C) is then only possible through the audited revision. The engine constants in A, A+ and B belong to the engine itself, not the season, so after results are scored they would need a rescore.</li>
+      <li><strong>The approved table.</strong> 13 / 7 / 3 and 3.5 are in the board-approved points table and the published <em>Załącznik nr 1</em>. A, A+ and B change them, so they need the board&rsquo;s approval of a revised table. Because no result has been scored on the engine yet, the constants can be amended in place rather than as a second engine version.</li>
+      <li><strong>The code.</strong> The constants live in two places, the SQL strategy and <code>frontend/src/lib/scoring.ts</code>, which the calculator and the annex are generated from; one pgTAP and one Vitest parity suite pin them. Adding a fourth-place medal is a small change to the same formula.</li>
+      <li><strong>Carried results.</strong> Until each 2026/27 PPW is fenced, 2025/26 PPW results scored by EVF classic stay in the domestic column (for example 109.4 for last season&rsquo;s PPW4 win at N = 10). Today a new PPW win at N = 8 earns 53.5, half of that; under A+ it earns 99.5.</li>
+      <li><strong>Data caveat.</strong> MEW categories are stored with a median N of 1, too small to be real fields, so MEW&rsquo;s share here is understated.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Question for you</p>
+    <h2>Which direction should I turn into a board-ready proposal?</h2>
+    <div class="note good">
+      <p class="lede">Recommendation: A+ (36 / 21 / 9 and 5 for fourth, × ∛K)</p>
+      <p>It moves exactly the lever you named. It fixes places 1–4 where domestic brackets actually are, keeps every lower place and the field-size principle as approved, and removes the cliff between carried 2025/26 PPW results and new ones. The next step would be a revised points table for the board, then an ADR-103 amendment, then the code, all before PPW1 is scored.</p>
+    </div>
+    <ol class="steps">
+      <li><strong>A+</strong>: new medals and a fourth-place medal (recommended).</li>
+      <li><strong>A</strong>: new medals only; fourth place unchanged.</li>
+      <li><strong>B</strong>: medals and fewer points per fencer below; changes the whole table.</li>
+      <li><strong>C</strong>: PPW/MPW coefficient × 1.74; configuration only.</li>
+      <li><strong>D</strong>: international results scored by the SPWS engine too.</li>
+      <li>Any of these combined with <strong>E</strong>, best 3 international.</li>
+    </ol>
+  </section>
+
+  <p class="foot">report · scoring-balance-domestic-vs-evf · 2026-09-28 · computed from frontend/src/lib/scoring.ts formulas and 1,727 stored results</p>
+</div>
+</body>
+</html>

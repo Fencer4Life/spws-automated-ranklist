@@ -1,4 +1,5 @@
-"""Joined-bracket modules, paired one-to-one with scoring engines (ADR-103 §4).
+"""Joined-bracket modules, paired one-to-one with scoring engines (ADR-103 §4,
+ADR-104 §§3-4).
 
 A joined bracket is one listing fenced by two or more age categories. How its
 results are filed is decided by the engine assigned to the tournament type,
@@ -6,11 +7,12 @@ never by the listing:
 
 - ``PER_CATEGORY_RENUMBER`` ↔ ``EVF_CLASSIC_V1_2025_2026``. Split per category,
   dense-renumber places 1..K and store the category's own size as N (ADR-049).
-  This is the behaviour before ADR-103, byte for byte.
-- ``JOINED_BRACKET_CATEGORY_PLACE`` ↔ ``SPWS_PLACE_MEDAL_V1_2026_2027``. Keep
-  the joined place and the joined N, file each fencer under their own
-  category's tournament as before, and write K (own-category fencers in the
-  bracket), m (place among them) and b (fencers strictly below).
+  This is the behaviour before ADR-103, byte for byte, and no order is stored.
+- ``JOINED_BRACKET_CATEGORY_PLACE`` ↔ ``SPWS_EVF_JOINED_V1_2026_2027``. Keep the
+  joined place and the joined N, file each fencer under their own category's
+  tournament, and store the listing's category order — one digit per place,
+  0 = V0 … 4 = V4 — on every one of them, so the database scores the whole
+  bracket from it (``fn_score_joined_bracket``).
 
 The module names are the two values ``tbl_scoring_engine.
 txt_joined_bracket_module`` admits. The registry is the only place an engine
@@ -21,19 +23,18 @@ publish per category (ADR-103 Context).
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+import re
+from collections import Counter
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Protocol
-
-NOT_USED = -1
-"""Stored in K, m and b when the module does not use them (ADR-103 §5)."""
 
 PER_CATEGORY_RENUMBER = "PER_CATEGORY_RENUMBER"
 JOINED_BRACKET_CATEGORY_PLACE = "JOINED_BRACKET_CATEGORY_PLACE"
 
 MODULE_BY_ENGINE: dict[str, str] = {
     "EVF_CLASSIC_V1_2025_2026": PER_CATEGORY_RENUMBER,
-    "SPWS_PLACE_MEDAL_V1_2026_2027": JOINED_BRACKET_CATEGORY_PLACE,
+    "SPWS_EVF_JOINED_V1_2026_2027": JOINED_BRACKET_CATEGORY_PLACE,
 }
 
 INTERNATIONAL_TYPES = frozenset({"PEW", "MEW", "MSW", "PSW"})
@@ -49,24 +50,9 @@ class JoinedBracketNotAllowed(ValueError):
 
 @dataclass(frozen=True)
 class RowPlan:
-    """What one written result stores: its place and, when used, K, m and b."""
+    """What one written result stores: the place the module decided on."""
 
     place: int
-    category_count: int = NOT_USED
-    category_place: int = NOT_USED
-    below_count: int = NOT_USED
-
-    def columns(self) -> dict[str, int]:
-        """The K, m, b keys for fn_ingest_tournament_results. Empty when the
-        module does not use them, so the classic payload is unchanged; the RPC
-        stores an absent key as -1."""
-        if (self.category_count, self.category_place, self.below_count) == (NOT_USED,) * 3:
-            return {}
-        return {
-            "int_category_count": self.category_count,
-            "int_category_place": self.category_place,
-            "int_below_count": self.below_count,
-        }
 
 
 @dataclass(frozen=True)
@@ -79,12 +65,10 @@ class CategoryPlan:
 
 @dataclass(frozen=True)
 class BracketField:
-    """The whole bracket as the engine sees it: its size N and, for any place,
-    the number of fencers strictly below it."""
+    """The whole bracket as the engine sees it: its size N and its places."""
 
     size: int
     places: tuple[int, ...]
-    stored_below: Mapping[int, int] | None = None
 
     @classmethod
     def from_places(cls, places: Iterable[int]) -> BracketField:
@@ -93,17 +77,10 @@ class BracketField:
         return cls(size=len(ps), places=ps)
 
     @classmethod
-    def stored(cls, size: int, places: Iterable[int], below: Mapping[int, int]) -> BracketField:
-        """Recompute: N and b as stored at ingestion. b counts fencers who were
-        never stored, so it is read, not recounted; a place with no stored b
-        falls back to the stored places."""
-        return cls(size=size, places=tuple(places), stored_below=dict(below))
-
-    def below(self, place: int) -> int:
-        if self.stored_below is not None and place in self.stored_below:
-            return self.stored_below[place]
-        # A tied fencer is not below (§8 ust. 6): strictly worse places only.
-        return sum(1 for p in self.places if p > place)
+    def stored(cls, size: int, places: Iterable[int]) -> BracketField:
+        """Recompute: N as stored at ingestion, which counts fencers who were
+        never stored, so it is read back rather than recounted."""
+        return cls(size=size, places=tuple(places))
 
 
 class JoinedBracketModule(Protocol):
@@ -117,6 +94,17 @@ class JoinedBracketModule(Protocol):
         ``kept`` are the places of the fencers to write, in write order;
         ``category`` the places of every fencer of that category in the
         bracket, written or not; ``field`` the whole bracket.
+        """
+        ...
+
+    def listing_order(
+        self, categories: Sequence[tuple[int, str]], listing: Sequence[int]
+    ) -> str | None:
+        """The category order to store with every category of the listing, or
+        None when the module stores none.
+
+        ``categories`` holds (place, V-cat) for every fencer of the listing who
+        has a category, written or not; ``listing`` every listed place.
         """
         ...
 
@@ -138,6 +126,71 @@ def dense_rank(places: Sequence[int | None]) -> list[int]:
     return out
 
 
+_VCAT = re.compile(r"^V([0-4])$")
+
+
+def category_digit(vcat: str) -> str:
+    """'V2' -> '2': the digit a category takes in a stored order."""
+    m = _VCAT.match(vcat or "")
+    if m is None:
+        raise ValueError(f"{vcat!r} is not a veterans category V0-V4; it has no digit in an order.")
+    return m.group(1)
+
+
+def listing_order(categories: Sequence[tuple[int, str]], listing: Sequence[int]) -> str:
+    """The listing's category order, best place first (ADR-104 §§3-4).
+
+    Refuses what cannot be scored: a listed place with no category (a pending
+    match, or no birth year) and, in a joined listing, a repeated place, since
+    nothing then says which fencer fenced ahead. A tie inside one category is
+    accepted: that category's digit stands at every place, as EVF classic
+    always scored it.
+    """
+    missing = sorted((Counter(listing) - Counter(p for p, _ in categories)).elements())
+    if missing:
+        raise ValueError(
+            f"Place(s) {missing} of the listing have no category (a pending match or no "
+            "birth year): the category order cannot be written, so the listing waits "
+            "until each is resolved."
+        )
+    size = len(listing)
+    digits = {category_digit(v) for _, v in categories}
+    if len(digits) == 1:
+        return digits.pop() * size
+    counts = Counter(p for p, _ in categories)
+    repeated = sorted(p for p, c in counts.items() if c > 1)
+    if repeated:
+        raise ValueError(
+            f"A joined listing repeats place(s) {repeated}: nothing says which fencer "
+            "fenced ahead. Ask the organiser for the fenced order."
+        )
+    by_place = dict(categories)
+    if sorted(by_place) != list(range(1, size + 1)):
+        raise ValueError(
+            f"A joined listing's places {sorted(by_place)} are not 1..{size}. "
+            "Ask the organiser for the fenced order."
+        )
+    return "".join(category_digit(by_place[p]) for p in range(1, size + 1))
+
+
+def patch_order(order: str, placed: Iterable[tuple[int, str]]) -> str:
+    """Recompute (ADR-104 §3): rewrite the digit of every stored place to its
+    fencer's current category; places never stored keep their digit."""
+    digits = list(order)
+    seen: dict[int, str] = {}
+    for place, vcat in placed:
+        if not 1 <= place <= len(digits):
+            raise ValueError(f"Place {place} is outside the stored order {order!r}.")
+        digit = category_digit(vcat)
+        if seen.setdefault(place, digit) != digit:
+            raise ValueError(
+                f"Place {place} holds two categories after the recompute of {order!r}: "
+                "a joined listing needs the fenced order."
+            )
+        digits[place - 1] = digit
+    return "".join(digits)
+
+
 class PerCategoryRenumber:
     """EVF classic: each category is its own bracket of its written fencers."""
 
@@ -152,33 +205,36 @@ class PerCategoryRenumber:
             rows=tuple(RowPlan(place=p) for p in dense_rank(list(kept))),
         )
 
+    def listing_order(
+        self, categories: Sequence[tuple[int, str]], listing: Sequence[int]
+    ) -> str | None:
+        del categories, listing  # EVF classic scores each category on its own
+        return None
+
 
 class JoinedBracketCategoryPlace:
-    """The 2026/2027 engine: the joined place and N, plus K, m and b."""
+    """A joined bracket kept whole: every category keeps the joined place and N."""
 
     name = JOINED_BRACKET_CATEGORY_PLACE
 
     def plan_category(
         self, kept: Sequence[int], category: Sequence[int], field: BracketField
     ) -> CategoryPlan:
-        k = len(category)
-        rows = []
+        del category  # the joined place is the fencer's own; nothing is recounted
         for place in kept:
             if place < 1 or place > field.size:
                 raise ValueError(
                     f"Joined place {place} exceeds the bracket of {field.size}; "
                     "a place outside the listing is corrupt input, not a weak result."
                 )
-            rows.append(
-                RowPlan(
-                    place=place,
-                    category_count=k,
-                    # Ties run 1, 2, 3, 3, 5: one more than the strictly better.
-                    category_place=1 + sum(1 for q in category if q < place),
-                    below_count=field.below(place),
-                )
-            )
-        return CategoryPlan(participant_count=field.size, rows=tuple(rows))
+        return CategoryPlan(
+            participant_count=field.size, rows=tuple(RowPlan(place=p) for p in kept)
+        )
+
+    def listing_order(
+        self, categories: Sequence[tuple[int, str]], listing: Sequence[int]
+    ) -> str | None:
+        return listing_order(categories, listing) if listing else None
 
 
 _MODULES: dict[str, JoinedBracketModule] = {
@@ -212,7 +268,6 @@ __all__ = [
     "INTERNATIONAL_TYPES",
     "JOINED_BRACKET_CATEGORY_PLACE",
     "MODULE_BY_ENGINE",
-    "NOT_USED",
     "PER_CATEGORY_RENUMBER",
     "BracketField",
     "CategoryPlan",
@@ -220,6 +275,9 @@ __all__ = [
     "JoinedBracketNotAllowed",
     "RowPlan",
     "UnknownScoringEngine",
+    "category_digit",
     "dense_rank",
+    "listing_order",
     "module_for",
+    "patch_order",
 ]
