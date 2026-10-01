@@ -2,6 +2,8 @@
 
 SPWS automates competition results, identity resolution, scoring and public rankings for the Polish Veterans Fencing Association (Stowarzyszenie Polskich Weteranów Szermierki). It combines a Svelte frontend, Python ingestion and operations tooling, PostgreSQL/Supabase domain logic, and GitHub Actions automation across LOCAL, CERT and PROD.
 
+[![What the system does: results flow from external platforms through Python ingestion into PostgreSQL and out to the Svelte app and web components; admins and operators control it; a live clean-roster loop seeds the organizer's Fencing Time from public registrations.](doc/handbook/assets/system-architecture.svg)](doc/handbook/assets/system-architecture.svg)
+
 ## Start here
 
 - [Developer handbook](doc/handbook/index.html) — business domain, product, current architecture, subsystems and operations

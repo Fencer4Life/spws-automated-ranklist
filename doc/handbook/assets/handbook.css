@@ -65,3 +65,9 @@ figure.shot figcaption {
   color: var(--muted, #5a6472);
 }
 figure.shot figcaption b { color: inherit; }
+
+/* The system chart: one file, doc/handbook/assets/system-architecture.svg, shown on every page that carries it. */
+.system-map { margin: 26px 0 34px; }
+.system-map a { display: block; }
+.system-map img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 16px; }
+.system-map figcaption { margin-top: 10px; font-size: 14px; line-height: 1.5; color: var(--muted); }

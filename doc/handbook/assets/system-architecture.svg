@@ -1,0 +1,146 @@
+<svg viewBox="0 0 1040 730" width="1040" height="730" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="arch-t arch-d">
+<title id="arch-t">SPWS Ranklist: what the system does</title>
+<desc id="arch-d">Results from eight competition platforms, plus the EVF and PZSz calendars, enter a Python ingestion pipeline run on GitHub Actions. It resolves identity and category and commits into PostgreSQL on Supabase, the single source of truth. There each tournament type's scoring engine stores the scores at import, and views and ranking functions build the rankings. PostgREST exposes curated views and allowlisted RPCs as JSON to a Svelte app and web components embedded in WordPress and GitHub Pages. Administrators write through MFA-protected RPCs. Operators dispatch workflows through Telegram, GAS and Edge Functions, and receive Telegram alerts. A fix to identity puts the affected events on a recompute queue, which the pipeline drains. A live clean-roster loop takes public registrations into FIE-XML seed files that the organizer downloads into Fencing Time; the results the organizer publishes on FTL come back through ordinary ingestion, with 99 per cent auto-resolution as the target. Everything runs in three tiers, LOCAL, CERT and PROD: schema and code move by release, events and results by explicit promotion.</desc>
+<style>
+svg { --paper: #f4f7fb; --card: #ffffff; --ink: #142033; --muted: #526176; --faint: #718096; --line: #cfd8e6; --navy: #173f70; --blue: #dfeafa; --coral: #b84634; --coral-soft: #f7e3df; --green: #216346; --green-soft: #deeee6; --amber: #875a0a; --amber-soft: #f4ead0; --shadow: #0f1c30;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --serif: "Iowan Old Style", Charter, "Palatino Linotype", Georgia, serif; --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+@media (prefers-color-scheme: dark) {
+  svg { --paper: #111722; --card: #182231; --ink: #edf3fb; --muted: #a9b6c6; --faint: #7f8fa3; --line: #2c3a4d; --navy: #8ec2f2; --blue: #1b3047; --coral: #ff9a88; --coral-soft: #3b2526; --green: #7bd3a6; --green-soft: #18372c; --amber: #e4bd6e; --amber-soft: #3a301e; --shadow: #000000; }
+}
+text { font-family: var(--sans); }
+.mono { font-family: var(--mono); }
+.serif { font-family: var(--serif); }
+</style>
+<defs>
+<marker id="ah-navy" markerWidth="9" markerHeight="9" refX="6.6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--navy)"/></marker>
+<marker id="ah-amber" markerWidth="9" markerHeight="9" refX="6.6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--amber)"/></marker>
+<marker id="ah-coral" markerWidth="9" markerHeight="9" refX="6.6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--coral)"/></marker>
+<filter id="sft" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="1.5" stdDeviation="3.5" flood-color="var(--shadow)" flood-opacity="0.11"/></filter>
+</defs>
+
+<rect x="0" y="0" width="1040" height="730" rx="16" fill="var(--paper)"/>
+<text x="40" y="38" font-size="11" letter-spacing="2.4" font-weight="600" fill="var(--faint)">SPWS · WHAT THE SYSTEM DOES</text>
+<text x="40" y="70" class="serif" font-size="25" fill="var(--ink)">A decoupled, headless ranklist pipeline</text>
+
+<!-- trusted control plane -->
+<rect x="190" y="104" width="220" height="54" rx="10" fill="var(--card)" stroke="var(--line)" filter="url(#sft)"/>
+<rect x="199" y="116" width="3" height="30" rx="1.5" fill="var(--amber)"/>
+<text x="212" y="126" font-size="13" font-weight="600" fill="var(--amber)">Operator</text>
+<text x="212" y="144" font-size="10.5" fill="var(--muted)">Telegram · GAS · Edge Functions</text>
+<rect x="430" y="104" width="180" height="54" rx="10" fill="var(--card)" stroke="var(--line)" filter="url(#sft)"/>
+<rect x="439" y="116" width="3" height="30" rx="1.5" fill="var(--amber)"/>
+<text x="452" y="126" font-size="13" font-weight="600" fill="var(--amber)">Admin console</text>
+<text x="452" y="144" font-size="10.5" fill="var(--muted)">MFA-protected writes</text>
+<path d="M285,158 L285,194" fill="none" stroke="var(--amber)" stroke-width="1.6" marker-end="url(#ah-amber)"/>
+<text x="279" y="182" font-size="9.5" text-anchor="end" fill="var(--amber)">dispatch</text>
+<path d="M315,200 L315,164" fill="none" stroke="var(--amber)" stroke-width="1.6" marker-end="url(#ah-amber)"/>
+<text x="321" y="182" font-size="9.5" fill="var(--amber)">Telegram alerts</text>
+<path d="M520,158 L520,184" fill="none" stroke="var(--amber)" stroke-width="1.6" marker-end="url(#ah-amber)"/>
+<text x="528" y="176" font-size="9.5" fill="var(--amber)">authenticated RPCs</text>
+
+<!-- data plane -->
+<rect x="40" y="200" width="140" height="120" rx="10" fill="var(--card)" stroke="var(--line)" filter="url(#sft)"/>
+<rect x="49" y="214" width="3" height="92" rx="1.5" fill="var(--navy)"/>
+<text x="62" y="223" font-size="13" font-weight="600" fill="var(--navy)">External</text>
+<text x="62" y="239" font-size="13" font-weight="600" fill="var(--navy)">sources</text>
+<text x="62" y="263" font-size="10" fill="var(--muted)">8 result platforms</text>
+<text x="62" y="278" font-size="10" fill="var(--muted)">EVF, PZSz calendars</text>
+<text x="62" y="300" font-size="9.5" class="mono" fill="var(--faint)">FTL · EVF · files</text>
+
+<rect x="230" y="200" width="140" height="120" rx="10" fill="var(--card)" stroke="var(--line)" filter="url(#sft)"/>
+<rect x="239" y="214" width="3" height="92" rx="1.5" fill="var(--navy)"/>
+<text x="252" y="223" font-size="13" font-weight="600" fill="var(--navy)">Ingestion</text>
+<text x="252" y="247" font-size="10" fill="var(--muted)">Python rule engine</text>
+<text x="252" y="262" font-size="10" fill="var(--muted)">identity + category</text>
+<text x="252" y="300" font-size="9.5" class="mono" fill="var(--faint)">GitHub Actions</text>
+
+<rect x="420" y="190" width="200" height="140" rx="11" fill="var(--card)" stroke="var(--green)" stroke-width="1.4" filter="url(#sft)"/>
+<rect x="429" y="204" width="3" height="112" rx="1.5" fill="var(--green)"/>
+<text x="442" y="216" font-size="14" font-weight="700" fill="var(--green)">PostgreSQL</text>
+<text x="442" y="238" font-size="10.5" fill="var(--muted)">Supabase · single</text>
+<text x="442" y="253" font-size="10.5" fill="var(--muted)">source of truth</text>
+<text x="442" y="277" font-size="10" fill="var(--ink)">scoring engine per type</text>
+<text x="442" y="292" font-size="10" fill="var(--muted)">scores stored at import</text>
+<text x="442" y="314" font-size="9.5" class="mono" fill="var(--faint)">vw_score · fn_ranking_*</text>
+
+<rect x="670" y="200" width="140" height="120" rx="10" fill="var(--card)" stroke="var(--line)" filter="url(#sft)"/>
+<rect x="679" y="214" width="3" height="92" rx="1.5" fill="var(--navy)"/>
+<text x="692" y="223" font-size="13" font-weight="600" fill="var(--navy)">PostgREST</text>
+<text x="692" y="247" font-size="10" fill="var(--muted)">curated views</text>
+<text x="692" y="262" font-size="10" fill="var(--muted)">+ allowlisted RPCs</text>
+<text x="692" y="300" font-size="9.5" class="mono" fill="var(--faint)">JSON · HTTPS</text>
+
+<rect x="860" y="200" width="140" height="120" rx="10" fill="var(--card)" stroke="var(--line)" filter="url(#sft)"/>
+<rect x="869" y="214" width="3" height="92" rx="1.5" fill="var(--navy)"/>
+<text x="882" y="223" font-size="13" font-weight="600" fill="var(--navy)">Svelte app +</text>
+<text x="882" y="239" font-size="13" font-weight="600" fill="var(--navy)">web components</text>
+<text x="882" y="263" font-size="10" fill="var(--muted)">Shadow DOM</text>
+<text x="882" y="300" font-size="9.5" class="mono" fill="var(--faint)">WordPress · Pages</text>
+
+<path d="M180,260 L224,260" fill="none" stroke="var(--navy)" stroke-width="1.6" marker-end="url(#ah-navy)"/>
+<text x="202" y="252" font-size="9.5" text-anchor="middle" fill="var(--faint)">results</text>
+<path d="M370,260 L414,260" fill="none" stroke="var(--navy)" stroke-width="1.6" marker-end="url(#ah-navy)"/>
+<text x="392" y="252" font-size="9.5" text-anchor="middle" fill="var(--faint)">commit</text>
+<path d="M620,260 L664,260" fill="none" stroke="var(--navy)" stroke-width="1.6" marker-end="url(#ah-navy)"/>
+<text x="642" y="252" font-size="9.5" text-anchor="middle" fill="var(--faint)">views</text>
+<path d="M810,260 L854,260" fill="none" stroke="var(--navy)" stroke-width="1.6" marker-end="url(#ah-navy)"/>
+<text x="832" y="252" font-size="9.5" text-anchor="middle" fill="var(--faint)">JSON</text>
+<path d="M440,330 C440,364 310,364 310,326" fill="none" stroke="var(--navy)" stroke-width="1.3" marker-end="url(#ah-navy)"/>
+<text x="375" y="376" font-size="9.5" text-anchor="middle" fill="var(--faint)">recompute queue</text>
+
+<!-- clean-roster loop -->
+<rect x="40" y="392" width="960" height="212" rx="14" fill="var(--coral-soft)" fill-opacity="0.45" stroke="var(--coral)" stroke-width="1.3"/>
+<text x="176" y="420" font-size="10.5" letter-spacing="1.1" font-weight="700" fill="var(--coral)">CLEAN-ROSTER LOOP — REGISTRATION TO RESULTS</text>
+<rect x="560" y="405" width="232" height="24" rx="12" fill="var(--card)" stroke="var(--coral)" stroke-width="1.2"/>
+<text x="676" y="421" font-size="10.5" text-anchor="middle" font-weight="600" fill="var(--coral)">≥ 99% auto-resolution — the target</text>
+
+<rect x="100" y="462" width="250" height="104" rx="10" fill="var(--card)" stroke="var(--coral)" stroke-width="1.2" filter="url(#sft)"/>
+<text x="120" y="490" font-size="13" font-weight="600" fill="var(--coral)">Organizer</text>
+<text x="120" y="508" font-size="10.5" fill="var(--muted)">runs Fencing Time (FTL)</text>
+<text x="120" y="523" font-size="10" fill="var(--faint)">minimal manual correction</text>
+<text x="120" y="538" font-size="10" fill="var(--faint)">publishes results on FTL</text>
+
+<rect x="420" y="462" width="220" height="104" rx="10" fill="var(--card)" stroke="var(--coral)" stroke-width="1.2" filter="url(#sft)"/>
+<text x="440" y="494" font-size="13" font-weight="600" fill="var(--coral)">FIE-XML seed files</text>
+<text x="440" y="512" font-size="10.5" fill="var(--muted)">built at download</text>
+<text x="440" y="528" font-size="9.5" class="mono" fill="var(--faint)">capability-link page</text>
+
+<rect x="720" y="462" width="240" height="104" rx="10" fill="var(--card)" stroke="var(--coral)" stroke-width="1.2" filter="url(#sft)"/>
+<text x="740" y="494" font-size="13" font-weight="600" fill="var(--coral)">Public registration</text>
+<text x="740" y="512" font-size="10.5" fill="var(--muted)">declared roster + birth year</text>
+<text x="740" y="528" font-size="9.5" class="mono" fill="var(--faint)">tbl_registration</text>
+
+<path d="M930,320 L930,456" fill="none" stroke="var(--coral)" stroke-width="1.5" marker-end="url(#ah-coral)"/>
+<text x="922" y="354" font-size="9.5" text-anchor="end" fill="var(--coral)">registration form</text>
+<text x="922" y="367" font-size="9.5" text-anchor="end" fill="var(--coral)">one public RPC</text>
+<path d="M720,512 L646,512" fill="none" stroke="var(--coral)" stroke-width="1.5" marker-end="url(#ah-coral)"/>
+<text x="683" y="504" font-size="9.5" text-anchor="middle" fill="var(--coral)">entry list</text>
+<path d="M420,512 L356,512" fill="none" stroke="var(--coral)" stroke-width="1.5" marker-end="url(#ah-coral)"/>
+<text x="388" y="504" font-size="9.5" text-anchor="middle" fill="var(--coral)">download</text>
+<path d="M150,462 C128,420 112,370 110,326" fill="none" stroke="var(--coral)" stroke-width="1.5" marker-end="url(#ah-coral)"/>
+<text x="124" y="376" font-size="9.5" fill="var(--coral)">results published on FTL</text>
+<text x="64" y="590" font-size="10" fill="var(--muted)">Registration and the seed download are live; the results come back through ordinary FTL ingestion.</text>
+
+<!-- environments -->
+<rect x="40" y="624" width="960" height="42" rx="10" fill="var(--card)" stroke="var(--line)"/>
+<text x="60" y="650" font-size="12" font-weight="700" fill="var(--navy)">Three tiers</text>
+<rect x="160" y="634" width="66" height="22" rx="6" fill="var(--blue)"/>
+<text x="193" y="649" font-size="10.5" font-weight="700" text-anchor="middle" class="mono" fill="var(--navy)">LOCAL</text>
+<path d="M230,645 L252,645" fill="none" stroke="var(--navy)" stroke-width="1.4" marker-end="url(#ah-navy)"/>
+<rect x="256" y="634" width="66" height="22" rx="6" fill="var(--blue)"/>
+<text x="289" y="649" font-size="10.5" font-weight="700" text-anchor="middle" class="mono" fill="var(--navy)">CERT</text>
+<path d="M326,645 L348,645" fill="none" stroke="var(--navy)" stroke-width="1.4" marker-end="url(#ah-navy)"/>
+<rect x="352" y="634" width="66" height="22" rx="6" fill="var(--blue)"/>
+<text x="385" y="649" font-size="10.5" font-weight="700" text-anchor="middle" class="mono" fill="var(--navy)">PROD</text>
+<text x="440" y="649" font-size="10.5" fill="var(--muted)">Schema and code move by release; events and results by explicit promotion.</text>
+
+<!-- legend -->
+<line x1="40" y1="700" x2="66" y2="700" stroke="var(--navy)" stroke-width="1.8" marker-end="url(#ah-navy)"/>
+<text x="74" y="704" font-size="10.5" fill="var(--muted)">data plane</text>
+<line x1="170" y1="700" x2="196" y2="700" stroke="var(--amber)" stroke-width="1.8" marker-end="url(#ah-amber)"/>
+<text x="204" y="704" font-size="10.5" fill="var(--muted)">trusted control (MFA, workflows)</text>
+<rect x="420" y="694" width="13" height="13" rx="3" fill="var(--green)"/>
+<text x="440" y="704" font-size="10.5" fill="var(--muted)">single source of truth</text>
+<line x1="600" y1="700" x2="626" y2="700" stroke="var(--coral)" stroke-width="1.8" marker-end="url(#ah-coral)"/>
+<text x="634" y="704" font-size="10.5" fill="var(--muted)">clean-roster loop (live)</text>
+</svg>
