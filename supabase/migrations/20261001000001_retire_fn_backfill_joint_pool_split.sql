@@ -1,0 +1,24 @@
+-- ADR-049 amendment (2026-10-01): retire fn_backfill_joint_pool_split().
+--
+-- The function was a one-shot remediation (migration 20260430000004). It ran
+-- on LOCAL, CERT and PROD on 2026-04-30 and has had no caller since: the
+-- ingestion commit path carries its own per-commit copy of the split logic
+-- (fn_commit_event_draft, last redefined in 20260930000003), and the later
+-- count fix (20260613000001) was written as a scoped data migration precisely
+-- because a global run was unsafe.
+--
+-- A global run is now wrong in two ways:
+--   * ADR-038 — an international tournament's N is the whole field, not the
+--     count of POL rows we hold; step 2 collapses it to our row count.
+--   * ADR-104 — a 2026/27 joined bracket keeps N as the whole bracket, and
+--     chk_tournament_joined_order ties N to the length of txt_joined_order.
+--     The commit path skips such tournaments (txt_joined_order IS NULL);
+--     the backfill's step 2 has no such guard, sets N to one category's
+--     count and aborts on the CHECK.
+--
+-- Keeping a callable function whose only effect today is damage is a trap
+-- (it is how pgTAP 25 started failing against real 2026/27 data, plan
+-- doc/plans/pgtap-2026-27-data-2026-10-01.html). Drop it. The original
+-- migration stays in history; fresh bootstraps create and then drop it.
+
+DROP FUNCTION IF EXISTS fn_backfill_joint_pool_split();
