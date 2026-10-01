@@ -312,7 +312,7 @@
 <script lang="ts">
   import type { ScoringConfig, ScoringEngineOption, RankingRules, TournamentType } from '../lib/types'
   import { CARRYOVER_ENGINE_VALUES } from '../lib/types'
-  import { CLASSIC_ENGINE } from '../lib/scoring'
+  import { CLASSIC_ENGINE, JOINED_ENGINE } from '../lib/scoring'
   import { POOL_TYPES, rankingRulesProblems, sameRankingRules, type BucketProblem, type Pool } from '../lib/ranking-rules'
   import { t } from '../lib/locale.svelte'
 
@@ -377,8 +377,9 @@
     field: MultiplierField
     labelKey: string
     // A type whose bracket is never split names no joined-bracket module,
-    // whatever its engine: PZSz is one senior bracket (K = N, m = place), and
-    // an international result arrives already per category from its publisher.
+    // whatever its engine: PZSz is one senior bracket (the full field as N, the
+    // original place), and an international result arrives already per
+    // category from its publisher.
     fixedModuleKey?: string
   }
 
@@ -425,11 +426,21 @@
   }
 
   // Which results the EVF base value and podium fields actually feed: every
-  // type on EVF classic. Derived from the cards, so the hint never claims a
-  // type another engine scores.
+  // type on EVF classic, and every bracket of 4 or more on a type on the joined
+  // engine (ADR-104; N ≤ 3 scores 3-2-1 there). Derived from the cards, so the
+  // hint never claims a type an engine this build does not know scores.
   function evfHint(): string {
-    const whole = TYPE_CARDS.filter((c) => engineOf(c.type) === CLASSIC_ENGINE).map((c) => c.type)
-    return t('sc_mp_hint', { types: whole.join(', ') })
+    const fed = TYPE_CARDS.filter((c) => [CLASSIC_ENGINE, JOINED_ENGINE].includes(engineOf(c.type))).map((c) => c.type)
+    const joined = TYPE_CARDS.filter((c) => engineOf(c.type) === JOINED_ENGINE).map((c) => c.type)
+    const types = fed.length === TYPE_CARDS.length ? t('sc_mp_hint_all_types') : fed.join(', ')
+    const hint = t('sc_mp_hint', { types })
+    return joined.length ? hint + t('sc_mp_hint_joined', { types: listWithAnd(joined) }) : hint
+  }
+
+  /** "PPW", "PPW i MPW", "PPW, MPW i PPS" — the locale's "and" before the last. */
+  function listWithAnd(items: string[]): string {
+    if (items.length < 2) return items.join('')
+    return `${items.slice(0, -1).join(', ')}${t('sc_list_and')}${items[items.length - 1]}`
   }
 
   // The fixed rules of each known engine, shown read-only beside the settings
@@ -442,6 +453,17 @@
       { label: t('sc_ro_classic_de_label'), text: t('sc_ro_classic_de') },
       { label: t('sc_ro_classic_podium_label'), text: t('sc_ro_classic_podium') },
       { label: t('sc_ro_module'), text: withModule(eng, t('sc_ro_classic_module')) },
+    ],
+    // ADR-104 §8 and the approved mockup's revision 3: the joined engine in the
+    // annex's words. Its constants (the 3-2-1 meeting up to 3, the premium up
+    // to 15, 5% per step, the 1-point cap) belong to the engine version.
+    [JOINED_ENGINE]: (eng) => [
+      { label: t('sc_ro_joined_meeting_label'), text: t('sc_ro_joined_meeting') },
+      { label: t('sc_ro_joined_evf_label'), text: t('sc_ro_joined_evf') },
+      { label: t('sc_ro_joined_youngest_label'), text: t('sc_ro_joined_youngest') },
+      { label: t('sc_ro_joined_older_label'), text: t('sc_ro_joined_older') },
+      { label: t('sc_ro_joined_cap_label'), text: t('sc_ro_joined_cap') },
+      { label: t('sc_ro_module'), text: withModule(eng, t('sc_ro_joined_module')) },
     ],
   }
 
@@ -876,10 +898,15 @@
     padding: 4px 6px;
     border-bottom: 1px solid #dbe1fb;
     vertical-align: top;
+    overflow-wrap: anywhere;
   }
+  /* The joined engine's labels are long ("Jedna kategoria od 4, każda stawka
+     od 16"): a bounded column that wraps keeps the rule text inside the card
+     on a phone, and still holds each label on one line on a desktop. */
   .ro-panel td:first-child {
-    white-space: nowrap;
+    width: 38%;
     color: #4b5563;
+    overflow-wrap: normal;
   }
   .ro-tag {
     display: inline-block;
