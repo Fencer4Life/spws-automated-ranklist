@@ -25,8 +25,9 @@ Phase 5 stamps the event's own date on a bracket whose source has none.
 
 Readers are per platform, from the HTML a URL serves:
   * FTL event schedule — <title>, "Month D, YYYY" day headings, bracket names;
-  * Ophardt (fencingworldwide) — <h1>, "dd.mm. - dd.mm." with the year taken
-    from the URL (".../32812-2025/...");
+  * Ophardt (fencingworldwide) — <h1>, "dd.mm." dates whose year comes from a
+    competition's results page ("Last transmission: 02.05.2026"), passed as
+    `competitions`; the number in the URL is Ophardt's season, not the year;
   * Engarde — `.tounament-title`; the page builds its competition list in
     JavaScript, so the dates, weapons and city come from the list it loads
     (getCompeForDisplay, passed as `competitions`); without it the page has
@@ -34,7 +35,7 @@ Readers are per platform, from the HTML a URL serves:
   * anything else (4fence, d'Artagnan, ...) — <title> and the text, with the
     generic date and weapon patterns.
 
-Tests: python/tests/test_source_identity.py (REPAIR.URL.01, REPAIR.URL.02).
+Tests: python/tests/test_source_identity.py (REPAIR.URL.01, REPAIR.URL.02, REPAIR.URL.03).
 """
 
 from __future__ import annotations
@@ -89,7 +90,6 @@ _NUMERIC = re.compile(r"\b(\d{1,2})([./])(\d{1,2})\2(\d{4})\b")
 _DAY_MONTH_YEAR = re.compile(rf"\b(\d{{1,2}})\.?\s+({_MONTH_RE})\.?\s+(\d{{4}})\b")
 _MONTH_DAY_YEAR = re.compile(rf"\b({_MONTH_RE})\.?\s+(\d{{1,2}}),?\s+(\d{{4}})\b")
 _DAY_MONTH_NO_YEAR = re.compile(r"(?<![\d.])(\d{1,2})\.(\d{1,2})\.(?!\d)")
-_URL_YEAR = re.compile(r"/\d+-(\d{4})/")
 
 _WEAPON_WORDS = {
     "EPEE": "epee epees szpada szpady degen spada espada varja",
@@ -185,13 +185,30 @@ def read_source_identity(url: str, html: str, competitions: str | None = None) -
         )
 
     if "fencingworldwide.com" in host or "ophardt" in host:
-        m = _URL_YEAR.search(url)
+        # The page prints "dd.mm." only, and the number in its URL is
+        # Ophardt's season, not the year (Chania, 2 May 2026, is 32819-2025).
+        # A results page, passed as `competitions`, fixes the year from when
+        # its results were transmitted; without one the page has no date
+        # (REPAIR.URL.03).
+        from python.scrapers.ophardt import resolve_day_month, transmission_date
+
+        anchor = transmission_date(competitions) if competitions else None
+        dates: set[date] = set()
+        if anchor is not None:
+            # The anchor is one competition's; the event's other days fall
+            # within the week after it, never in another edition.
+            latest = anchor + timedelta(days=7)
+            for d, m in _DAY_MONTH_NO_YEAR.findall(_fold(text)):
+                try:
+                    dates.add(resolve_day_month((int(d), int(m)), latest))
+                except ValueError:
+                    continue
         h1 = soup.find("h1")
         return SourceIdentity(
             url=url,
             title=h1.get_text(" ", strip=True) if h1 else _title_tag(soup),
             text=text,
-            dates=frozenset(find_dates(text, int(m.group(1)) if m else None)),
+            dates=frozenset(dates),
             weapons=frozenset(find_weapons(text)),
         )
 

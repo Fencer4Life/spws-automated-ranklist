@@ -1,0 +1,224 @@
+<meta charset="utf-8">
+<title>Four EVF Events Plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">International results · ADR-105 §5 · ADR-106 · Implementation Plan</p>
+  <h1>Four EVF circuit events from their organisers’ pages</h1>
+  <p class="dek">Munich 2024, Munich 2025 and Chania 2026 publish on <b>Ophardt</b> (fencingworldwide); Salzburg 2026 on <b>d’Artagnan</b>. The runner reads single brackets from both but cannot open an event page into its brackets, and three of the four events point at the wrong page. This plan teaches the runner both event pages, points the four events at their organisers on LOCAL, CERT and PROD, and takes them through the same per-event review and machine-checked rollout as the 14 events already done.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 2 Oct · S, C A (“accept all”)</span>
+    <span class="pill"><span class="dot"></span>4 events · 40 SPWS-starter results at EVF</span>
+    <span class="pill"><span class="dot"></span>no migration</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decide this first</p>
+    <h2>What I need from you</h2>
+    <div class="note accent">
+      <p class="lede"><span class="tick">S</span> Sign off this plan</p>
+      <p>The source is not a question: ADR-105 §5 says the source is the organiser’s results and EVF results are a secondary source, used only when nothing else exists. All four events have an organiser source, so EVF’s results API is used only as a cross-check after staging.</p>
+      <p>Each event is still reviewed and signed off by name before it is committed, as for the 14.</p>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">C</span> Chania 2025 is not in our calendar</p>
+      <p>EVF circuit Chania, 3–4 May 2025 (fencingworldwide <code>30661-2024</code>, EVF event 77), has no event row. No SPWS starter fenced there; its one printed-POL row is KARATHANASIS Athanasios, who is not a starter.</p>
+      <ul>
+        <li><b>A</b> leave it out: under ADR-106 it would store nothing, unless that one row is linked.</li>
+        <li><b>B</b> add the event to 2024/25 and stage it with the other four.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> KARATHANASIS also appears in Chania 2026 as printed POL, so his row comes up for decision there in any case.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> How to answer</p>
+      <p>“accept all” takes S and C as recommended. Otherwise name what you want the other way.</p>
+    </div>
+  </section>
+
+  <section id="found">
+    <p class="kicker">What I found · read-only</p>
+    <h2>Where each event stands, on every environment</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Link stored today (LOCAL = CERT = PROD)</th><th>Organiser source</th><th>Competitions</th><th>SPWS starters at EVF</th><th>Stored now</th></tr></thead>
+      <tbody>
+        <tr><td><b>Munich 2024</b><br><code>PEW3fs-2024-2025</code><br>7–8 Dec 2024</td><td>An FTL schedule of a different tournament: it has épée brackets, Munich had foil and sabre only.</td><td>fencingworldwide <code>30657-2024</code> “EVF Circuit Memoriam Max Geuter”</td><td>16, one per weapon, gender and category</td><td>12</td><td>10</td></tr>
+        <tr><td><b>Munich 2025</b><br><code>PEW3fs-2025-2026</code><br>6–7 Dec 2025</td><td>The EVF event page, not a results source (8 of its brackets carry a fencingworldwide link).</td><td>fencingworldwide <code>32812-2025</code> “EVF Circuit Memoriam Max Geuter”</td><td>16</td><td>7</td><td>7</td></tr>
+        <tr><td><b>Salzburg 2026</b><br><code>PEW7ef-2025-2026</code><br>18–19 Apr 2026</td><td>The right d’Artagnan index, but the runner reads it as one empty bracket.</td><td>the same index</td><td>22 listed; combined rounds are left out by the existing parser</td><td>16</td><td>7, printed POL only</td></tr>
+        <tr><td><b>Chania 2026</b><br><code>PEW8es-2025-2026</code><br>2–3 May 2026</td><td>EVF’s address <code>evf-circuit-athens-gre</code>, which EVF reused for Athens 2027.</td><td>fencingworldwide <code>32819-2025</code> “EVF Circuit Chania Crete”</td><td>16</td><td>5, plus 2 printed POL</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+    <p>“SPWS starters at EVF” counts rows in EVF’s published results whose surname and first name exactly equal a roster fencer with a PPW or MPW result; the staged drafts give the real figure, by the ADR-106 rule, category included.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Correction</p>
+      <p>My first report said Munich 2024 had combined brackets and two brackets on one code. Those brackets belong to the tournament behind the wrong FTL link; Munich 2024 itself has one bracket per category. The ADR-106 re-staging refused that link, so nothing was committed from it.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> How far EVF’s results can be trusted as a check</p>
+      <p>For the 13 repaired events EVF covers, 401 of 413 committed results carry exactly EVF’s place, N and points. The 12 others follow from two of your rules: EVF counts fencers who did not start or did not finish in N, and EVF does not close up the places below a fencer who withdrew during the direct elimination. That is why EVF is the check, not the source.</p>
+    </div>
+  </section>
+
+  <section id="work">
+    <p class="kicker">Tests first · RED before GREEN</p>
+    <h2>The work</h2>
+    <ol class="steps">
+      <li><b>Ophardt event page.</b> A parser for <code>/{lang}/{id}-{year}/tournament/</code> that lists each competition with its weapon, gender, category (O40 → V1, O50 → V2, O60 → V3, O70 → V4) and its <code>/results/</code> page. Tests OPH.EVT.01–04 on saved copies of the three tournament pages: all 16 competitions, the category mapping, a team or combined competition left out, an unknown age band refused rather than guessed.</li>
+      <li><b>d’Artagnan event page.</b> The runner sends a d’Artagnan <code>index.html</code> to the existing <code>parse_dartagnan_event_index</code> and reads each competition’s rankings page with that competition’s weapon, gender and category. Tests DART.EVT.01–02 on a saved Salzburg index: the single-category competitions, and the index never read as a bracket.</li>
+      <li><b>Runner routing.</b> <code>fetch_event_url_with_skips</code> expands both event pages the way it expands Engarde and 4fence, each bracket filed under its own source category (ADR-105). Tests INTL.EVT.01–02.</li>
+      <li><b>Event links on LOCAL.</b> Written by <code>set_event_source_urls</code>, which already reads Ophardt and d’Artagnan pages and writes only when date, name and weapons match the event.</li>
+      <li><b>Stage the four on LOCAL and review.</b> One review page, same layout as the 14: what the rule adds and removes, place and N changes, PENDING rows with a recommendation each, and the EVF cross-check (<code>compare_evf_points</code>) with every difference explained.</li>
+      <li><b>Your sign-off per event</b>, then the commit on LOCAL, and an override file for any linked or excluded row (fencers named, never numbered).</li>
+      <li><b>Release</b> through the integration checkout, <code>scripts/preflight.sh</code> exit 0 first.</li>
+      <li><b>CERT, then PROD.</b> The event links set with a scoped update that returns what changed; then each event through <code>phase5-event-runner.yml</code>, one at a time, machine-checked against LOCAL before and after its commit.</li>
+      <li><b>Seed refresh from PROD</b> once all international events of 2024/25 and 2025/26 are repaired (ADR-036: the full suite passes before the seed pointer moves). It also brings PROD’s two birth-year corrections, STOCKI and STAŃCZYK, to LOCAL and CERT.</li>
+    </ol>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note good"><p class="lede">☑ Documentation coherence gate complete</p>
+<pre>Impact: architecture | operations
+Canonical docs affected: doc/handbook/subsystems/ingestion.html (the runner reads Ophardt and d'Artagnan event pages);
+  doc/handbook/operations/operator-runbooks.html (re-ingesting an event published on Ophardt or d'Artagnan);
+  doc/requirements-traceability-matrix.md + HTML twin (OPH.EVT.01-04, DART.EVT.01-02, INTL.EVT.01-02)
+ADR impact: none (implements ADR-105 §5: the organiser's results are the source)
+Operational impact: operator-runbooks.html; workflow-catalog.html unchanged (same phase5-event-runner.yml)
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]; scripts/preflight.sh exit 0
+Superseded prose archived rather than appended: yes</pre></div>
+  </section>
+
+  <section id="bounds">
+    <p class="kicker">Boundaries</p>
+    <h2>What this plan does not touch</h2>
+    <ul>
+      <li><b>Roster corrections</b> (UIJTING “Henh” → Henk, KAZIK Martin’s gender): master data, separate, on your go.</li>
+      <li><b>The other 2024/25 EVF events</b> not yet repaired: a separate pass after these four.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · four EVF circuit events · organiser sources (Ophardt, d’Artagnan) · 2 October 2026</p>
+</div>
+</body>
+</html>

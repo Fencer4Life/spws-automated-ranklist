@@ -75,17 +75,17 @@ def _extract_gender(text: str) -> str | None:
     return None
 
 
-def parse_dartagnan_event_index(html: str, base_url: str) -> list[dict]:
-    """Parse Dartagnan index.html → list of single-category competitions.
+def list_dartagnan_competitions(html: str, base_url: str) -> tuple[list[dict], list[dict]]:
+    """Parse Dartagnan index.html → (single-category competitions, skipped).
 
-    Returns:
-        [{"id": "6687", "weapon": "EPEE", "gender": "M", "category": "V1",
-          "rankings_url": "https://.../6687-rankings.html"}, ...]
-
-    Combined rounds (V1/V2, V3/V4 Runde, etc.) are filtered out.
+    Kept: [{"id": "6687", "weapon": "EPEE", "gender": "M", "category": "V1",
+            "title": "Men Epee V1", "rankings_url": "https://.../6687-rankings.html"}, ...]
+    Skipped (DART.EVT.01): [{"weapon", "name", "url", "reason"}] for a combined
+    round ("V1/V2 Runde") or a competition without a weapon or gender.
     """
     soup = BeautifulSoup(html, "html.parser")
     competitions: list[dict] = []
+    skipped: list[dict] = []
     seen_ids: set[str] = set()
 
     # Primary competition blocks live inside <div class="compBox">.
@@ -103,32 +103,54 @@ def parse_dartagnan_event_index(html: str, base_url: str) -> list[dict]:
         comp_id = m.group(1)
         if comp_id in seen_ids:
             continue
-
-        # Category must be a single V0-V4; combined "V1/V2 Runde" → skip.
-        category = _extract_single_category(title)
-        if category is None:
-            continue
+        seen_ids.add(comp_id)
+        rankings_url = urljoin(base_url, f"{comp_id}-rankings.html")
 
         # Combine title + descriptive text below h3 for weapon/gender lookup.
         descriptor = box.get_text(" ", strip=True)
         weapon = _extract_weapon(descriptor) or _extract_weapon(title)
         gender = _extract_gender(descriptor) or _extract_gender(title)
-        if not weapon or not gender:
+
+        # Category must be a single V0-V4; combined "V1/V2 Runde" → skip.
+        category = _extract_single_category(title)
+        reason = (
+            "no single category"
+            if category is None
+            else "no weapon"
+            if not weapon
+            else "no gender"
+            if not gender
+            else None
+        )
+        if reason is not None:
+            skipped.append({"weapon": weapon, "name": title, "url": rankings_url, "reason": reason})
             continue
 
-        rankings_url = urljoin(base_url, f"{comp_id}-rankings.html")
         competitions.append(
             {
                 "id": comp_id,
                 "weapon": weapon,
                 "gender": gender,
                 "category": category,
+                "title": title,
                 "rankings_url": rankings_url,
             }
         )
-        seen_ids.add(comp_id)
 
-    return competitions
+    return competitions, skipped
+
+
+def parse_dartagnan_event_index(html: str, base_url: str) -> list[dict]:
+    """Parse Dartagnan index.html → list of single-category competitions.
+
+    Returns:
+        [{"id": "6687", "weapon": "EPEE", "gender": "M", "category": "V1",
+          "rankings_url": "https://.../6687-rankings.html"}, ...]
+
+    Combined rounds (V1/V2, V3/V4 Runde, etc.) are filtered out.
+    """
+    kept, _skipped = list_dartagnan_competitions(html, base_url)
+    return [{k: v for k, v in c.items() if k != "title"} for c in kept]
 
 
 def _country_from_flag(cell) -> str:
