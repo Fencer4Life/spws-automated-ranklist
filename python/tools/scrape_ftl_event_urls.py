@@ -63,7 +63,9 @@ SKIP_PATTERNS = re.compile(
     r"\bJUNIOR(?:ZY|KI|EM|ÓW)?\b|"
     r"\bCADET\b|\bKADET\b|"
     r"\bMŁODZI[KCZ]?\b|"
-    r"\bU-?\d+\b",
+    r"\bU-?\d+\b|"
+    # Team brackets list teams, not individual places (ADR-105; see _TEAM_RE).
+    r"\b(?:TEAM|DRU[ŻZ]YN\w*|[ÉE]QUIPE\w*|MANNSCHAFT\w*)\b",
     re.IGNORECASE,
 )
 SENIOR_PATTERN = re.compile(r"\bSENIOR\b", re.IGNORECASE)
@@ -79,6 +81,10 @@ _JUNIOR_RE = re.compile(
     r"\bJUNIOR(?:ZY|KI|EM|ÓW)?\b|\bCADET\b|\bKADET\b|\bMŁODZI[KCZ]?\b|\bU-?\d+\b",
     re.IGNORECASE,
 )
+# A team bracket lists teams, not individual places, so it is never an
+# individual result. FTL's MSW Manama 2025 schedule lists "Vet Team …" next to
+# every "Vet-40 …" bracket; both parsed as V1 and were merged (ADR-105).
+_TEAM_RE = re.compile(r"\b(?:TEAM|DRU[ŻZ]YN\w*|[ÉE]QUIPE\w*|MANNSCHAFT\w*)\b", re.IGNORECASE)
 
 
 def _skip_reason(name: str) -> str | None:
@@ -95,6 +101,8 @@ def _skip_reason(name: str) -> str | None:
         return "DE sub-event (the parent bracket is the result)"
     if _JUNIOR_RE.search(name):
         return "junior / age-restricted (non-veteran)"
+    if _TEAM_RE.search(name):
+        return "team event (not an individual result)"
     return None
 
 

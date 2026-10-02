@@ -4,24 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="072-cdc-recompute-debounce.md">
-<meta name="adr-source-sha256" content="23ae3af5fcab3981d442cdaa01618b277d4143581e5a2cae878bbd4807e518bd">
+<meta name="adr-source-sha256" content="2156d13626dded8fbd42ac99ac0769255f1f595ce3f4fa030809c680207e8b51">
 <title>ADR-072 · Master-data-change-triggered idempotent recompute (CDC queue + debounce)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 072</p><h1>Master-data-change-triggered idempotent recompute (CDC queue + debounce)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">161 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline. <strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — an international result stays in its stored tournament with its N and place); the 2026-10-01 provenance amendment below (a recompute writes the stored name, confidence and method back verbatim).</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">197 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
 <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-14
 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch),
-ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.</p>
+ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline.
+<strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — an international result stays in its stored tournament with its N and place); the 2026-10-01 provenance amendment below (a recompute writes the stored name, confidence and method back verbatim).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-deterministic-claimed-recovery-no-time-heuristic">Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)</a></li><li class="depth-2"><a href="#amendment-2026-07-14-extend-the-scheduled-drain-to-prod">Amendment (2026-07-14) — extend the scheduled drain to PROD</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests-implemented-design-10-red-first">Tests (implemented — design §10, RED first)</a></li><li class="depth-2"><a href="#amendment-2026-06-26-deterministic-claimed-recovery-no-time-heuristic">Amendment (2026-06-26) — deterministic CLAIMED recovery (no time heuristic)</a></li><li class="depth-2"><a href="#amendment-2026-07-14-extend-the-scheduled-drain-to-prod">Amendment (2026-07-14) — extend the scheduled drain to PROD</a></li><li class="depth-2"><a href="#amendment-2026-10-01-a-recompute-keeps-an-international-result-where-it-is-stored-adr-105-105-international-results-keep-source-bracket-md">Amendment (2026-10-01) — a recompute keeps an international result where it is stored ([ADR-105](105-international-results-keep-source-bracket.md))</a></li><li class="depth-2"><a href="#amendment-2026-10-01-a-recompute-writes-each-result-s-stored-provenance-back-verbatim">Amendment (2026-10-01) — a recompute writes each result&#x27;s stored provenance back verbatim</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Birth years will be wrong on first ingest and corrected repeatedly during cleanup; merges (ADR-071) move
 results between fencers. A correction must propagate to the live ranking <strong>automatically</strong>, or
@@ -170,8 +171,39 @@ supported by the self-heal loop, not just schema-permitted — worth naming so f
 don't assume the CERT-centric framing in the original 2026-06-14 Decision is still the whole
 story.</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-01-a-recompute-keeps-an-international-result-where-it-is-stored-adr-105-105-international-results-keep-source-bracket-md">Amendment (2026-10-01) — a recompute keeps an international result where it is stored (<a href="105-international-results-keep-source-bracket.html">ADR-105</a>)</h2>
+<p>The Decision's &quot;re-partitions results by derived V-cat … recounts&quot; holds for domestic events only. An international result (PEW, MEW, MSW, PSW) stays in the tournament it is stored in, with its stored N and place, and is only re-scored:</p>
+<ul>
+<li>the stored tournament is the source bracket the fencer fenced, and a corrected birth year does not change which bracket that was;</li>
+<li>one tournament holds one source bracket's N, so a moved place would be compared with the wrong N;</li>
+<li>the recompute writes the stored bracket's category as <code>enum_source_age_category</code>, so <code>fn_assert_result_vcat</code> trusts the bracket (<a href="056-vcat-from-birthyear.html">ADR-056</a> revision) instead of rejecting the write and halting the drain.</li>
+</ul>
+<p><code>LoadCommitted</code> carries the stored category (<code>StageMatchResult.stored_vcat</code>). <code>Commit._plan_source_recompute</code> refuses a tournament whose rows do not share one stored N. Tests INTL.RECOMP.01–04 (<code>python/tests/test_international_field.py</code>). Before this, every drain on CERT and PROD renumbered international brackets and recounted them to the Polish head-count.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-01-a-recompute-writes-each-result-s-stored-provenance-back-verbatim">Amendment (2026-10-01) — a recompute writes each result's stored provenance back verbatim</h2>
+<p>&quot;No source fetch, no re-match&quot; now holds for the row's identity provenance too. <code>RECOMPUTE_DOMESTIC</code> deletes and re-inserts each result through <code>fn_ingest_tournament_results</code>. It used to rebuild the row from the fencer id alone, so every recompute:</p>
+<ul>
+<li>stored the fencer id as <code>txt_scraped_name</code>;</li>
+<li>reset <code>enum_match_method</code> to <code>AUTO_MATCH</code>;</li>
+<li>set <code>num_match_confidence</code> to 100.</li>
+</ul>
+<p>On 2026-10-01, 2,610 of 2,811 CERT results and 2,661 of 2,811 PROD results carried their own fencer id as their scraped name. Neither environment holds a single <code>USER_CONFIRMED</code> or <code>AUTO_CREATED</code> result.</p>
+<p><strong>Decision.</strong> The recompute writes back the stored provenance verbatim, NULLs included. It sends no match status, so a match candidate's status follows the stored method:</p>
+<ul>
+<li><code>fetch_event_results</code> reads <code>txt_scraped_name</code>, <code>num_match_confidence</code> and <code>enum_match_method</code>;</li>
+<li><code>LoadCommitted</code> carries them (<code>stored_scraped_name</code>, <code>stored_confidence</code>, <code>stored_match_method</code>);</li>
+<li><code>Commit._recompute_row</code> writes them.</li>
+</ul>
+<p>Migration <code>20261001000003_recompute_keeps_provenance.sql</code> makes the RPC keep what it is handed:</p>
+<ul>
+<li>an explicit <code>&quot;num_confidence&quot;: null</code> stays NULL, while an absent key still means 100;</li>
+<li>a row without a scraped name gets no <code>tbl_match_candidate</code> row, because its name is NOT NULL.</li>
+</ul>
+<p><strong>What was lost.</strong> No score, place or identity link: <code>id_fencer</code> was never touched. Lost are the scraped names and the record of manual confirmations. The admin Identity Manager shows numbers where names belong. The originals exist only in the sources, so they return only when an event is re-ingested. Alias write-back is unaffected, because it reads drafts at sign-off.</p>
+<p><strong>Tests.</strong> pytest RECOMP.PROV.01–05 (<code>python/tests/test_recompute_provenance.py</code>). pgTAP RECOMP.PROV.RPC.01–05 (<code>supabase/tests/87_recompute_provenance.sql</code>). N9.6 (<code>python/tests/test_recompute_persist.py</code>) had pinned the old shape and is amended.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="071-mdm-dedup-sweep.html">← ADR-071: Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="073-plugin-rule-engine-architecture.html">→ ADR-073: Plugin + rule-engine ingestion architecture</a></nav>
-<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>23ae3af5fcab3981d442cdaa01618b277d4143581e5a2cae878bbd4807e518bd</code></footer>
+<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>2156d13626dded8fbd42ac99ac0769255f1f595ce3f4fa030809c680207e8b51</code></footer>
 </div></body></html>

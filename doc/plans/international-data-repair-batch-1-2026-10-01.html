@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>International Data Repair</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · data repair · Development Plan · batch 1</p>
+  <h1>Repairing the international results the 2026/27 ranking reads</h1>
+  <p class="dek">With your 8 URLs and the organiser URLs already stored, <b>16 events</b> have an organiser source: <b>all 12 of 2025/26</b> and 4 of 2024/25, including the biennial European Championships. These are the international results the 2026/27 ranking carries over. Each is rolled back and re-ingested from the organiser's results through the fixed path, on LOCAL first, <b>one event at a time, with your sign-off on each</b>. Then CERT, then PROD. It repairs N, the places and the lost scraped names together.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Signed off 2 Oct: R1–R4 = A</span>
+    <span class="pill"><span class="dot"></span>per-event sign-off still applies</span>
+    <span class="pill"><span class="dot"></span>16 events · 150 brackets · 461 POL results</span>
+    <span class="pill danger"><span class="dot"></span>needs ADR-105 release 1 deployed and release 2 built</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decided 2 October · R1–R4 = A</p>
+    <h2>Four decisions</h2>
+    <div class="note accent">
+      <p class="lede">R1 · What happens to the damaged international results that have no organiser source?</p>
+      <p>29 events have none: 8 of 2024/25 (25 damaged brackets) and 21 of 2023/24 (46). Those seasons are published PPW-only (ADR-099), so their international results appear in no published ranking. They also feed no 2026/27 carry-over, because the 2026/27 ranking reads the 2025/26 editions plus the biennial IMEW 2024/25.</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended): leave them as stored, and list them.</b> The invariant report from release 2 names every one, and a later batch can repair any event once a source turns up. Nothing published changes.</li>
+        <li><b>B: repair them from EVF results.</b> You allow EVF as the exception when no other source exists, and here none does. Whether EVF gives the whole bracket size for every category of these events has not been checked, so N may stay uncertain. It is 29 events of review for no visible effect.</li>
+        <li><b>C: delete their international results.</b> Clean, but it destroys data that can still be repaired. I recommend against it.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede">R2 · Re-ingest all 16 events, or only the 9 whose N is visibly wrong?</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended): all 16.</b> The "N equals the Polish count" check misses renumbered places (Napoli V1 men's épée: places 1–4 of 59). It also misses every scraped name a recompute overwrote, and PEW61s Liège was never ingested at all. One uniform pass leaves no event half-trusted.</li>
+        <li><b>B: only the 9 with a wrong N.</b> That is 100 brackets instead of 150, and the other 7 events keep unverified places and numeric scraped names.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede">R3 · How do CERT and PROD follow?</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended): sign off per event on LOCAL, then one go per environment for the batch.</b> Your per-event sign-off happens where the review is: on LOCAL, against the source. CERT then re-runs exactly the signed-off events, and each must reproduce its LOCAL result bracket for bracket. PROD then follows by <code>promote.yml</code>, one event at a time, after CERT matches. Any difference stops the batch.</li>
+        <li><b>B: a separate go for each event in each environment.</b> 32 more approvals for runs that must reproduce a result you already signed off.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede">R4 · Napoli (PEW4efs-2025-2026): its source gives no country</p>
+      <p>The 4fence parser records no nationality (<code>fencer_country=None</code>). Release 2 keeps only rows whose country is POL, and treats a missing country as not POL (ADR-038 point 4). So staging Napoli from 4fence would dismiss every row, and the staging summary flags it ("every row dismissed: the source has no country"). The 4fence results pages are script-driven, so whether they show a nationality is not yet known.</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended): extend the 4fence parser to read the nationality</b>, if the classification pages show it, test-first. Napoli is then staged like every other event. If 4fence shows no nationality, fall back to B for Napoli alone.</li>
+        <li><b>B: stage Napoli from EVF's results</b>, as the exception you allow when no other source works. EVF's rows carry a country.</li>
+        <li><b>C: for a source without countries, keep only rows that exactly match a Polish fencer in the roster.</b> This relaxes ADR-038's fail-closed rule for every such source, not just Napoli. I recommend against it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="coverage">
+    <p class="kicker">What your URLs cover</p>
+    <h2>2025/26 is complete; that is what the active season reads</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Events with results</th><th>With an organiser source</th><th>Damaged brackets (N = Poles)</th><th>Covered</th><th>Feeds 2026/27?</th></tr></thead>
+      <tbody>
+        <tr><td>2025/26</td><td>12</td><td><b>12</b></td><td>65</td><td><b>65</b></td><td>Yes: carry-over until each 2026/27 edition is scored</td></tr>
+        <tr><td>2024/25</td><td>12</td><td>4</td><td>60</td><td>35</td><td>Only IMEW (biennial, ADR-021)</td></tr>
+        <tr><td>2023/24</td><td>23</td><td>2</td><td>50</td><td>4</td><td>No</td></tr>
+      </tbody>
+    </table></div>
+    <p>The two covered 2023/24 events are left out of batch 1, so that the batch holds only what 2026/27 reads plus the 2024/25 events you sent. They can join a later batch.</p>
+  </section>
+
+  <section id="batch">
+    <p class="kicker">Batch 1 · in date order</p>
+    <h2>The 16 events</h2>
+    <p>Counts are what is stored on LOCAL today. "Damaged" counts brackets whose N equals their Polish results. The others still get checked against the source.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Event</th><th>Date</th><th>Source · parser</th><th>Brackets</th><th>POL results</th><th>Damaged</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>2024/25</td><td><code>PEW3fs-2024-2025</code><br><span style="color:var(--muted)">EVF Circuit Munich</span></td><td>7 Dec 2024</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">5</td><td style="text-align:right">10</td><td style="text-align:right"><b>5</b></td><td>Stored source.</td></tr>
+        <tr><td>2024/25</td><td><code>PEW7es-2024-2025</code><br><span style="color:var(--muted)">EVF Circuit Jabłonna</span></td><td>29 Mar 2025</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">14</td><td style="text-align:right">89</td><td style="text-align:right"><b>14</b></td><td>No source was stored before.</td></tr>
+        <tr><td>2024/25</td><td><code>IMEW-2024-2025</code><br><span style="color:var(--muted)">European Championships, Plovdiv</span></td><td>28 May 2025</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">16</td><td style="text-align:right">29</td><td style="text-align:right"><b>16</b></td><td>Biennial: it carries into 2026/27 (ADR-021).</td></tr>
+        <tr><td>2024/25</td><td><code>PEW10efs-2024-2025</code><br><span style="color:var(--muted)">Criterium Mondial, Paris</span></td><td>5 Jul 2025</td><td>engarde-service.com<br><span style="color:var(--muted)">Engarde</span></td><td style="text-align:right">7</td><td style="text-align:right">7</td><td style="text-align:right">0</td><td>Stored source.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW1efs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Budapest</span></td><td>20 Sep 2025</td><td>engarde-service.com (2 days)<br><span style="color:var(--muted)">Engarde</span></td><td style="text-align:right">14</td><td style="text-align:right">50</td><td style="text-align:right"><b>14</b></td><td>Two URLs, one per day; both are read.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW2efs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Madrid</span></td><td>1 Nov 2025</td><td>engarde-service.com<br><span style="color:var(--muted)">Engarde</span></td><td style="text-align:right">10</td><td style="text-align:right">19</td><td style="text-align:right"><b>10</b></td><td>13 brackets known, 10 with results.</td></tr>
+        <tr><td>2025/26</td><td><code>IMSW-2025-2026</code><br><span style="color:var(--muted)">World Championships, Manama</span></td><td>12 Nov 2025</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">10</td><td style="text-align:right">25</td><td style="text-align:right"><b>10</b></td><td>FTL holds 30 POL results in 14 brackets; LOCAL misses the Vet-40 brackets.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW3fs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Munich</span></td><td>6 Dec 2025</td><td>fencingworldwide.com<br><span style="color:var(--muted)">Ophardt</span></td><td style="text-align:right">5</td><td style="text-align:right">7</td><td style="text-align:right">0</td><td>Your link is the event page; the parser reads per-bracket results pages. 8 bracket URLs are already stored.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW62efs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Guildford</span></td><td>10 Jan 2026</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">16</td><td style="text-align:right">52</td><td style="text-align:right"><b>8</b></td><td>New URL from you.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW31fs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Faches-Thumesnil</span></td><td>7 Feb 2026</td><td>engarde-service.com<br><span style="color:var(--muted)">Engarde</span></td><td style="text-align:right">1</td><td style="text-align:right">1</td><td style="text-align:right">0</td><td>New URL from you.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW4efs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Napoli</span></td><td>7 Mar 2026</td><td>4fence.it<br><span style="color:var(--muted)">4fence</span></td><td style="text-align:right">10</td><td style="text-align:right">28</td><td style="text-align:right">0</td><td>N looks right, but V1 men's épée holds places 1–4 of 59: renumbered.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW5ef-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Stockholm</span></td><td>14 Mar 2026</td><td>engarde-service.com<br><span style="color:var(--muted)">Engarde</span></td><td style="text-align:right">5</td><td style="text-align:right">10</td><td style="text-align:right">0</td><td>New URL from you.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW6efs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Jabłonna</span></td><td>28 Mar 2026</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">23</td><td style="text-align:right">109</td><td style="text-align:right"><b>23</b></td><td>The largest 2025/26 event.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW61s-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Liège</span></td><td>11 Apr 2026</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">0</td><td style="text-align:right">0</td><td style="text-align:right">0</td><td>Never ingested: a first ingest, not a repair.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW7ef-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Salzburg</span></td><td>18 Apr 2026</td><td>dartagnan.live<br><span style="color:var(--muted)">d'Artagnan</span></td><td style="text-align:right">4</td><td style="text-align:right">7</td><td style="text-align:right">0</td><td>Stored source.</td></tr>
+        <tr><td>2025/26</td><td><code>PEW9efs-2025-2026</code><br><span style="color:var(--muted)">EVF Circuit Dublin</span></td><td>30 May 2026</td><td>fencingtimelive.com<br><span style="color:var(--muted)">FTL</span></td><td style="text-align:right">10</td><td style="text-align:right">18</td><td style="text-align:right">0</td><td>Was ingested from EVF; FTL from you replaces it.</td></tr>
+        <tr><td colspan="4"><b>Total</b></td><td style="text-align:right"><b>150</b></td><td style="text-align:right"><b>461</b></td><td style="text-align:right"><b>100</b></td><td></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="before">
+    <p class="kicker">Before the first event</p>
+    <h2>What must be in place</h2>
+    <ol class="steps">
+      <li><b>Release 1 is deployed to CERT and PROD.</b> Until then, every fencer edit lets the recompute drains renumber and recount international brackets, and they would undo a repair within the hour.</li>
+      <li><b>Release 2 is built and on LOCAL.</b> The Phase 5 path must drop foreign rows before matching, write the source N in the draft, and keep the source places. Today it writes each category's row count as N. CERT and PROD runs wait until release 2 is released too.</li>
+      <li><b>A rollback by exact event code.</b> <code>fn_rollback_event</code> resolves a <i>prefix</i> in the <b>active season only</b>, so it cannot reach a 2025/26 event. The draft commit only inserts and never replaces, and tournament codes are unique, so the old tournaments must go first. A small RPC, <code>fn_rollback_event_by_code(p_code)</code>, will:
+        <ul>
+          <li>take an exact code, with no <code>LIKE</code>, so <code>PEW1efs</code> can never match a 2026/27 event;</li>
+          <li>delete the event's tournaments through the existing <code>fn_delete_tournament_cascade</code>;</li>
+          <li>leave the event row and its status as they are;</li>
+          <li>be <code>service_role</code> only (ADR-083).</li>
+        </ul>
+        pgTAP <code>REPAIR.RB.01–04</code>: the exact code only; another season untouched; the event row kept; no anon or authenticated grant.</li>
+      <li><b>Source URLs written to the event.</b> Your URLs go into the event's result URL slots (FR-98), replacing an EVF link where one is stored. Each write is checked against the source first: the event name, the date and the weapons must match (the URL-identity rule).</li>
+    </ol>
+  </section>
+
+  <section id="procedure">
+    <p class="kicker">Per event, on LOCAL · nothing is committed without your word</p>
+    <h2>The procedure</h2>
+    <ol class="steps">
+      <li><b>Snapshot</b> the event as stored: N, places, scraped names, match method and points per bracket.</li>
+      <li><b>Stage</b> the event with the Phase 5 runner from the organiser URL(s). This writes drafts only.</li>
+      <li><b>Review page</b> (<code>doc/staging/&lt;code&gt;.review.html</code>). For every bracket it shows the stored N and places against the source's: the whole bracket size, each Pole's published place, foreign rows dismissed, and any Pole the matcher could not link. International events never auto-create a fencer. It also shows the points before and after, and the effect on the 2026/27 ranking for each fencer. I send you the page's path and link.</li>
+      <li><b>Your sign-off</b> on that event. If anything looks wrong, the event stays as stored and the drafts are discarded.</li>
+      <li><b>Roll back and commit</b> in one session: <code>fn_rollback_event_by_code</code>, then <code>fn_commit_event_draft</code>.</li>
+      <li><b>Verify</b> what was committed. N equals the source bracket, every place equals the source place, and no place is above N (<code>INTL.INV.01</code>). Scraped names are real names again, and the match method is recorded.</li>
+    </ol>
+    <p>The next event starts only after the previous one is verified.</p>
+  </section>
+
+  <section id="environments">
+    <p class="kicker">After the batch is signed off on LOCAL</p>
+    <h2>CERT and PROD</h2>
+    <ul>
+      <li><b>CERT:</b> the same rollback and staged re-ingest per event (<code>phase5-event-runner.yml</code>, target CERT). Each event must reproduce its LOCAL result: the same N, places, fencers and points per bracket. A difference stops the batch and gets its own review.</li>
+      <li><b>PROD:</b> <code>promote.yml</code> per event, once CERT matches. Promotion copies the stored N and places, which are right by then. PROD is read back afterwards and compared with CERT.</li>
+      <li><b>Seed:</b> the PROD seed is refreshed after the batch, so a LOCAL reset reproduces the repaired data. A seed refresh is a change to the test inputs, so the full pgTAP suite must pass first (ADR-036 amendment).</li>
+    </ul>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Acceptance</p>
+    <h2>Test IDs</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>REPAIR.RB.01–04</code></td><td>pgTAP</td><td>The rollback by exact code: exact match only, other seasons untouched, the event row kept, <code>service_role</code> only</td></tr>
+        <tr><td><code>REPAIR.URL.01</code></td><td>pytest</td><td>A source URL is written to an event only when its name, date and weapons match the event</td></tr>
+        <tr><td><code>INTL.INV.01</code></td><td>pgTAP (release 2)</td><td>No international result has a place above its tournament's N</td></tr>
+        <tr><td>Per-event verification</td><td>read-only query</td><td>After each commit: N and places equal the source; scraped names restored; CERT equals LOCAL; PROD equals CERT</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--accent)">Impact: data | operations
+Canonical docs affected: doc/handbook/domain/competition-and-ranking.html
+  (the "under repair" warning shrinks as events are repaired);
+  doc/handbook/subsystems/identity-and-recompute.html (scraped-name warning);
+  doc/handbook/operations/ (past-event rollback by exact code);
+  doc/requirements-traceability-matrix.md (+ HTML twin): REPAIR.*;
+  spec Appendix D pgTAP total
+ADR impact: ADR-105 consequences updated with what was repaired;
+  no new ADR (the rollback RPC follows ADR-014 and ADR-083)
+Operational impact: doc/handbook/reference/workflow-catalog.html unchanged
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: yes</pre>
+    </div>
+  </section>
+
+  <section id="out">
+    <p class="kicker">Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li>The 29 events without an organiser source (R1), and the two covered 2023/24 events.</li>
+      <li>Domestic results whose scraped names a recompute overwrote. Their sources are the PPW/MPW organisers' pages, and that is a separate batch.</li>
+      <li>MŚW Tbilisi 2026 (9–13 October). It belongs to 2026/27 and is ingested normally once release 2 is out. It is a first ingest, not a repair.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Sign-off</p>
+    <h2>What I need from you</h2>
+    <p>Sign-off of this plan, with R1, R2, R3 and R4 (I recommend A for each). The fixed Phase 5 path is already proven on MSW Manama: <a href="msw-manama-replay-review-2026-10-01.html">replay review</a>. Then I build the rollback RPC and the URL check test-first, alongside release 2. The first event to stage is <code>PEW3fs-2024-2025</code> (Munich, 7 December 2024), the oldest in the batch.</p>
+  </section>
+
+  <p class="foot">plan · international-data-repair-batch-1 · 2026-10-01 · evidence: LOCAL counts; source sheet doc/plans/evf-source-urls-2026-10-01.html</p>
+</div>
+</body>
+</html>

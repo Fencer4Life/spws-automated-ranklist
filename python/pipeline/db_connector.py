@@ -234,7 +234,7 @@ class DbConnector:
 
         Returns [{id_fencer, place, enum_age_category, int_birth_year, weapon,
         gender, date, id_tournament, participant_count, url_results,
-        joined_order}]. Empty if
+        joined_order, scraped_name, confidence, match_method}]. Empty if
         the event has no committed tournaments yet.
         Reuses `fetch_birth_years_batch` so the BY is always the governed value.
         weapon/gender/date carry the source tournament's
@@ -242,6 +242,8 @@ class DbConnector:
         (weapon, gender, governed-V-cat) on recompute (Step C). The stored N,
         listing URL and category order let the joined-bracket module keep a
         joined bracket whole across a recompute (ADR-103 §4, ADR-104 §3).
+        The scraped name, confidence and match method are written back verbatim:
+        a recompute never changes who a row is or how it was matched.
         """
         tr = (
             self._sb.table("tbl_tournament")
@@ -260,7 +262,10 @@ class DbConnector:
         # (never-live-run) query got wrong.
         rr = (
             self._sb.table("tbl_result")
-            .select("id_fencer,int_place,id_tournament")
+            .select(
+                "id_fencer,int_place,id_tournament,"
+                "txt_scraped_name,num_match_confidence,enum_match_method"
+            )
             .in_("id_tournament", list(tmeta))
             .execute()
         )
@@ -280,6 +285,9 @@ class DbConnector:
                 "participant_count": tmeta[r["id_tournament"]].get("int_participant_count"),
                 "url_results": tmeta[r["id_tournament"]].get("url_results"),
                 "joined_order": tmeta[r["id_tournament"]].get("txt_joined_order"),
+                "scraped_name": r.get("txt_scraped_name"),
+                "confidence": r.get("num_match_confidence"),
+                "match_method": r.get("enum_match_method"),
             }
             for r in rows
         ]

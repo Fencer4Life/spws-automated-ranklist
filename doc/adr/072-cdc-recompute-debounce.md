@@ -6,6 +6,7 @@
 **Relates to:** ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY),
 ADR-070 (identity) / ADR-071 (dedup) — the change *sources*; ADR-041 (edge-function dispatch),
 ADR-074 (no-halt recompute). This ADR builds the **self-healing** half of the pipeline.
+**Amended by:** [ADR-105](105-international-results-keep-source-bracket.md) (2026-10-01 — an international result stays in its stored tournament with its N and place); the 2026-10-01 provenance amendment below (a recompute writes the stored name, confidence and method back verbatim).
 
 ## Context
 
@@ -159,3 +160,38 @@ CERT's dedicated job, cadence and concurrency group are untouched.
   supported by the self-heal loop, not just schema-permitted — worth naming so future sessions
   don't assume the CERT-centric framing in the original 2026-06-14 Decision is still the whole
   story.
+
+## Amendment (2026-10-01) — a recompute keeps an international result where it is stored ([ADR-105](105-international-results-keep-source-bracket.md))
+
+The Decision's "re-partitions results by derived V-cat … recounts" holds for domestic events only. An international result (PEW, MEW, MSW, PSW) stays in the tournament it is stored in, with its stored N and place, and is only re-scored:
+
+- the stored tournament is the source bracket the fencer fenced, and a corrected birth year does not change which bracket that was;
+- one tournament holds one source bracket's N, so a moved place would be compared with the wrong N;
+- the recompute writes the stored bracket's category as `enum_source_age_category`, so `fn_assert_result_vcat` trusts the bracket ([ADR-056](056-vcat-from-birthyear.md) revision) instead of rejecting the write and halting the drain.
+
+`LoadCommitted` carries the stored category (`StageMatchResult.stored_vcat`). `Commit._plan_source_recompute` refuses a tournament whose rows do not share one stored N. Tests INTL.RECOMP.01–04 (`python/tests/test_international_field.py`). Before this, every drain on CERT and PROD renumbered international brackets and recounted them to the Polish head-count.
+
+## Amendment (2026-10-01) — a recompute writes each result's stored provenance back verbatim
+
+"No source fetch, no re-match" now holds for the row's identity provenance too. `RECOMPUTE_DOMESTIC` deletes and re-inserts each result through `fn_ingest_tournament_results`. It used to rebuild the row from the fencer id alone, so every recompute:
+
+- stored the fencer id as `txt_scraped_name`;
+- reset `enum_match_method` to `AUTO_MATCH`;
+- set `num_match_confidence` to 100.
+
+On 2026-10-01, 2,610 of 2,811 CERT results and 2,661 of 2,811 PROD results carried their own fencer id as their scraped name. Neither environment holds a single `USER_CONFIRMED` or `AUTO_CREATED` result.
+
+**Decision.** The recompute writes back the stored provenance verbatim, NULLs included. It sends no match status, so a match candidate's status follows the stored method:
+
+- `fetch_event_results` reads `txt_scraped_name`, `num_match_confidence` and `enum_match_method`;
+- `LoadCommitted` carries them (`stored_scraped_name`, `stored_confidence`, `stored_match_method`);
+- `Commit._recompute_row` writes them.
+
+Migration `20261001000003_recompute_keeps_provenance.sql` makes the RPC keep what it is handed:
+
+- an explicit `"num_confidence": null` stays NULL, while an absent key still means 100;
+- a row without a scraped name gets no `tbl_match_candidate` row, because its name is NOT NULL.
+
+**What was lost.** No score, place or identity link: `id_fencer` was never touched. Lost are the scraped names and the record of manual confirmations. The admin Identity Manager shows numbers where names belong. The originals exist only in the sources, so they return only when an event is re-ingested. Alias write-back is unaffected, because it reads drafts at sign-off.
+
+**Tests.** pytest RECOMP.PROV.01–05 (`python/tests/test_recompute_provenance.py`). pgTAP RECOMP.PROV.RPC.01–05 (`supabase/tests/87_recompute_provenance.sql`). N9.6 (`python/tests/test_recompute_persist.py`) had pinned the old shape and is amended.

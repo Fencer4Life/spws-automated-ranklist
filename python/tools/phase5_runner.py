@@ -29,6 +29,7 @@ from pathlib import Path
 from python.pipeline.db_connector import create_db_connector
 from python.pipeline.draft_store import DraftStore
 from python.pipeline.review_cli import Fetcher, ReviewSession
+from python.pipeline.stages import _is_international_intake
 
 
 def _summary_md(event_code: str, url: str, ctx, parsed) -> str:
@@ -539,7 +540,11 @@ def main() -> int:
     #    (e.g. PENDING/UNMATCHED-only V-cat groups that never produced a
     #    finalized result row). User-rule 2026-05-02: no empty tournaments.
     if session.run_id:
-        _consolidate_duplicate_codes(db, session.run_id)
+        _consolidate_duplicate_codes(
+            db,
+            session.run_id,
+            international=_is_international_intake({"txt_code": args.event_code}),
+        )
         _drop_empty_tournament_drafts(db, session.run_id)
 
     # Per-weapon pool-round invariant (≤2 per weapon per event)
@@ -671,8 +676,12 @@ def main() -> int:
     return 0
 
 
-def _consolidate_duplicate_codes(db, run_id: str) -> int:
+def _consolidate_duplicate_codes(db, run_id: str, *, international: bool = False) -> int:
     """Merge tournament_draft rows that share (run_id, txt_code).
+
+    An international event refuses instead (ADR-105): each draft is one source
+    bracket with its own N, so two brackets mapped to one code cannot be merged,
+    and the merge would recount N to the Poles kept. Nothing is changed.
 
     For each duplicate group:
       - Keep the row with the most result_drafts (ties: lowest id_tournament_draft)
@@ -686,13 +695,25 @@ def _consolidate_duplicate_codes(db, run_id: str) -> int:
     # Find all duplicate codes for this run
     rows = (
         sb.table("tbl_tournament_draft")
-        .select("id_tournament_draft,txt_code,bool_joint_pool_split")
+        .select("id_tournament_draft,txt_code,bool_joint_pool_split,url_results")
         .eq("txt_run_id", run_id)
         .execute()
     ).data or []
     by_code: dict[str, list[dict]] = {}
     for r in rows:
         by_code.setdefault(r["txt_code"], []).append(r)
+    if international:
+        clashes = {code: group for code, group in by_code.items() if len(group) > 1}
+        if clashes:
+            detail = "; ".join(
+                f"{code}: " + ", ".join(str(r.get("url_results")) for r in group)
+                for code, group in sorted(clashes.items())
+            )
+            raise ValueError(
+                "Several source brackets map to one international tournament code, and "
+                "an international tournament is one source bracket (ADR-105): "
+                f"{detail}. Resolve which bracket the code stands for before staging."
+            )
     removed = 0
     for code, group in by_code.items():
         if len(group) <= 1:
@@ -1704,6 +1725,57 @@ def _format_stage0_section(ctxs: list) -> list[str]:
     return lines
 
 
+def _format_international_section(event_code: str, ctxs: list) -> list[str]:
+    """Per international bracket: source N, highest place, Polish rows, how
+    many of them are linked to a fencer, and rows dismissed (ADR-105 §5.8).
+    Empty for a domestic event. An unlinked Pole is never auto-created in an
+    international event, so the operator sees the gap here.
+
+    Two cases are flagged: an N equal to the Polish rows (the source may list
+    only the Poles, which is exactly the shape of the old damage), and a
+    bracket whose rows were all dismissed for having no country (a parser
+    without a country column, such as 4fence).
+    """
+    from python.pipeline.joined_brackets import BracketField
+
+    if not _is_international_intake({"txt_code": event_code}):
+        return []
+    lines = [
+        "## International brackets — source size (ADR-105)",
+        "",
+        "| Bracket | V-cat | Wpn | Gen | N (source) | Highest place | POL rows | Linked | Non-POL dismissed | Check |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---|",
+    ]
+    for _, parsed, ctx, _err in ctxs:
+        if parsed is None or ctx is None:
+            continue
+        places = [r.place for r in parsed.results]
+        n = BracketField.source(places, parsed.raw_pool_size).size
+        poles = len(ctx.matches)
+        linked = sum(1 for m in ctx.matches if m.method != "EXCLUDED")
+        dismissed = ctx.dismissed_non_pol
+        if (
+            places
+            and len(dismissed) == len(places)
+            and all(d["country"] is None for d in dismissed)
+        ):
+            check = "⚠ every row dismissed: the source has no country"
+        elif poles and n == poles:
+            check = "⚠ N equals the POL rows: confirm the source lists the whole bracket"
+        else:
+            check = "✓"
+        name = (
+            getattr(parsed, "_ftl_source_name", None) or getattr(parsed, "source_url", None) or "?"
+        )
+        lines.append(
+            f"| {name} | {parsed.category_hint or '—'} | {parsed.weapon or '?'} | "
+            f"{parsed.gender or '?'} | {n} | {max(places, default=0)} | {poles} | {linked} | "
+            f"{len(dismissed)} | {check} |"
+        )
+    lines.append("")
+    return lines
+
+
 def _multi_summary_md(
     event_code: str,
     event_meta: dict,
@@ -1855,6 +1927,9 @@ def _multi_summary_md(
             url = getattr(parsed, "source_url", "—") or "—"
             lines.append(f"| {name} | {wpn} | {gen} | {vcat} | {n} | `{reason}` | {url} |")
         lines.append("")
+
+    # ADR-105: every international bracket's source size, before the drafts.
+    lines.extend(_format_international_section(event_code, ctxs))
 
     # Tournament rows — show committed (live) if any, else show drafts
     if db is not None:

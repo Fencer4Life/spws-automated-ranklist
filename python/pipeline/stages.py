@@ -72,6 +72,41 @@ def _is_domestic(event: dict | None) -> bool:
     return _organizer_for_event(event) == "SPWS"
 
 
+def _is_international_intake(event: dict | None) -> bool:
+    """True if the event's type is international (PEW, MEW, MSW, PSW).
+
+    Keyed on the tournament type rather than the organizer prefix, so the
+    IMEW/IMSW alternation codes, which `_organizer_for_event` reports as
+    UNKNOWN, are international too (ADR-105 §5.2).
+    """
+    from python.pipeline.db_connector import derive_tourn_type_from_event_code
+    from python.pipeline.joined_brackets import INTERNATIONAL_TYPES
+
+    code = (event or {}).get("txt_code")
+    return bool(code) and derive_tourn_type_from_event_code(code) in INTERNATIONAL_TYPES
+
+
+def _keep_pol_rows(ctx: PipelineContext, rows: list[tuple[Any, Any]]) -> list[tuple[Any, Any]]:
+    """The (category, row) pairs of an international event that may be matched.
+
+    ADR-038 / ADR-105 §1.1: only a row whose country folds to POL reaches the
+    matcher; a row with any other country, or none, is dismissed (fail-closed)
+    and recorded in ``ctx.dismissed_non_pol``. Every other event keeps all rows.
+    """
+    if not _is_international_intake(ctx.event):
+        return rows
+    kept: list[tuple[Any, Any]] = []
+    for cat, r in rows:
+        country = getattr(r, "fencer_country", None)
+        if _norm_nat(country) == "POL":
+            kept.append((cat, r))
+        else:
+            ctx.dismissed_non_pol.append(
+                {"name": r.fencer_name, "place": r.place, "country": country}
+            )
+    return kept
+
+
 # ===========================================================================
 # S0 — Roster reconciliation (ADR-050 / ADR-056 / ADR-010 / ADR-038)
 # ===========================================================================
@@ -457,7 +492,10 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
     # ADR-038: skip international/EXCLUDED events. Derive organizer from the
     # admin-canonical event code (available at construction; ctx.event isn't
     # resolved until S2, keeping S0 source-agnostic).
-    if _organizer_for_event({"txt_code": ctx.event_code}) in ("EVF", "FIE"):
+    # Keyed on the type as well: the IMEW/IMSW alternation codes report an
+    # UNKNOWN organizer, and Stage 0 then created every participant (ADR-105).
+    event_ref = {"txt_code": ctx.event_code}
+    if _organizer_for_event(event_ref) in ("EVF", "FIE") or _is_international_intake(event_ref):
         return
 
     season_end = ctx.season_end_year
@@ -826,16 +864,21 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
         cat = ctx.parsed.category_hint
         rows = [(cat, r) for r in ctx.parsed.results]
 
-    # V0/EVF check FIRST — halt before fetching fencer DB.
-    if organizer in ("EVF", "FIE"):
-        # organizer is only EVF/FIE when ctx.event is set (_organizer_for_event
-        # returns "UNKNOWN" for a None event).
+    # ADR-038 / ADR-105: an international event's non-POL rows are dismissed
+    # before anything else looks at them, the V0 check included.
+    rows = _keep_pol_rows(ctx, rows)
+
+    # V0/EVF check FIRST — halt before fetching fencer DB. Keyed on the type,
+    # so the IMEW/IMSW alternation codes are checked too.
+    if organizer in ("EVF", "FIE") or _is_international_intake(ctx.event):
+        # Both predicates are False for a None event.
         assert ctx.event is not None
         for cat, r in rows:
             if cat == "V0":
                 raise HaltError(
                     HaltReason.V0_PROHIBITED_ON_INTERNATIONAL,
-                    f"V0 result in {organizer} event ({ctx.event.get('txt_code')!r}): "
+                    f"V0 result in {organizer if organizer in ('EVF', 'FIE') else 'international'} "
+                    f"event ({ctx.event.get('txt_code')!r}): "
                     f"{r.fencer_name} (R005b — fix upstream data, no override path)",
                 )
 
@@ -958,8 +1001,10 @@ def s7_validate(ctx: PipelineContext, db: Any) -> None:
     )
 
     # ---- (a) Count validation ----
+    # The rows dismissed as non-POL were parsed too: the parse is complete when
+    # matches + dismissed account for the whole source bracket (ADR-105).
     expected = ctx.parsed.raw_pool_size
-    actual = len(ctx.matches)
+    actual = len(ctx.matches) + len(ctx.dismissed_non_pol)
 
     if expected is not None:
         diff = actual - expected

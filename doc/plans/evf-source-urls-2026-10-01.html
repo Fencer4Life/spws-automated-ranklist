@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EVF Source URLs</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+  .wrap{max-width:min(1500px,calc(100vw - 32px))}
+  .sheet{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:18px 0;background:var(--surface)}
+  .sheet table{min-width:1180px;font-size:15px}
+  .sheet td{padding:10px 12px}
+  .sheet .season-row td{background:var(--surface-2);font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+  .code{font-family:var(--mono);font-weight:700;font-size:14px;white-space:nowrap;color:var(--ink)}
+  .sub{display:block;color:var(--faint);font-size:13px}
+  .brk{font-family:var(--mono);font-size:12.5px;color:var(--muted);max-width:260px}
+  .cur a{word-break:break-all;font-size:13px}
+  .kind{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:5px;margin-bottom:4px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .kind.src{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .kind.evf{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+  .kind.none{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .sheet input{width:100%;min-width:260px;font:14px var(--mono);padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);color:var(--ink)}
+  .sheet input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .sheet input.filled{border-color:var(--good);background:var(--good-soft)}
+  .bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:12px 16px;margin:18px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 14px rgba(16,34,64,.08)}
+  .bar button{font:700 15px var(--sans);padding:9px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+  .bar button.ghost{background:var(--surface);color:var(--accent)}
+  .bar .count{font-family:var(--mono);font-size:14px;color:var(--muted)}
+  .bar .ok{font-family:var(--mono);font-size:14px;color:var(--good);font-weight:700}
+  .n{font-family:var(--mono);text-align:right;white-space:nowrap}
+  @media (max-width:600px){.wrap{padding:36px 16px 80px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Big bug · international field size · input sheet · 1 October 2026</p>
+  <h1>Source URLs for every EVF event</h1>
+  <p class="dek">Every PEW, MEW and MSW result ingested for <b>2023/24, 2024/25 and 2025/26</b> can carry a wrong field size N, and most also carry renumbered places. In <b>175 of 290</b> brackets, N equals the number of Polish fencers instead of the whole bracket. To repair them I need each event's real results source: the page that lists the <b>whole</b> bracket.</p>
+  <div class="note good"><p class="lede">Received 1 October: 8 URLs</p><p style="margin-bottom:0">They are filled in below (PEW7es and IMEW 2024/25; PEW3fs, PEW62efs, PEW31fs, PEW5ef, PEW61s and PEW9efs 2025/26). With the organiser URLs already stored, <b>all 12 events of 2025/26 have an organiser source</b>, covering all 65 damaged brackets. That is the season the 2026/27 carry-over reads. 2024/25 is covered for 4 of 12 events (35 of 60 damaged brackets) and 2023/24 for 2 of 23 (4 of 50). <a href="international-data-repair-batch-1-2026-10-01.html">The batch 1 repair plan</a> says what happens to the rest.</p></div>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>47 events · 290 brackets with results · 802 POL results</span>
+    <span class="pill danger"><span class="dot"></span>N = Polish head-count in 175 brackets</span>
+    <span class="pill warn"><span class="dot"></span>your input needed</span>
+  </div>
+
+  <div class="note accent">
+    <p class="lede">What I need from you</p>
+    <ul style="margin-bottom:0">
+      <li>For each event, paste the <b>organiser's own results URL that shows the whole field</b>: an FTL event schedule, an Engarde tournament, 4fence, d'Artagnan, Ophardt, FencingWorldwide, or similar.</li>
+      <li><b>EVF is a secondary source.</b> Its results are used only when no organiser source exists, and that is the exception. An EVF event page is never the answer here.</li>
+      <li><b>Leave it empty</b> where the <span class="kind src">results source</span> already listed is right, or where you have nothing.</li>
+      <li>Then press <b>Copy for chat</b> and paste the result into the chat. What you type stays in this browser, so you can stop and come back.</li>
+    </ul>
+  </div>
+  <p>Legend for the current URL: <span class="kind src">results source</span> already lists brackets · <span class="kind evf">EVF site</span> is a secondary source, used only when nothing else exists · <span class="kind none">none</span> means nothing is stored. Damage: <span class="chip over">N = Poles</span> counts the brackets whose stored N equals the number of Poles; <span class="chip plain">N looks right</span> will still be re-checked against the source.</p>
+
+  <div class="bar" role="region" aria-label="Actions">
+    <button type="button" id="copy">Copy for chat</button>
+    <button type="button" class="ghost" id="clear">Clear my entries</button>
+    <span class="count" id="count"></span>
+    <span class="ok" id="copied" hidden>Copied — paste it into the chat</span>
+  </div>
+
+  <div class="sheet">
+    <table>
+      <thead><tr><th>Event</th><th>Date · name · place</th><th>Brackets (weapon gender cat.)</th><th>Damage</th><th>Current URL</th><th>Your results URL</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <section>
+    <p class="kicker">Why the data is wrong</p>
+    <h2>Root cause, in one paragraph</h2>
+    <p>The Phase 5 draft writer (<code>python/pipeline/review_cli.py:899</code>, commit <code>fc5ac389</code>, 2 May 2026) sets each tournament's N to the number of <em>matched</em> fencers in its V-category group. For a domestic event that is the whole field, because everyone is ingested. For an EVF event, ADR-038 drops every non-Polish row before matching, so N became the Polish head-count, and the places were renumbered among the Poles. The EVF score depends on both, so those scores are wrong. They feed the 2026/27 ranking through carry-over until each event's 2026/27 edition is scored. The fix plan for every ingestion path and for the stored data follows this sheet.</p>
+  </section>
+
+  <p class="foot">input sheet · evf-source-urls · 2026-10-01 · data: LOCAL, read-only</p>
+</div>
+<script>
+(function () {
+  const ROWS = [{"season": "2023/2024", "code": "PEW2e-2023-2024", "name": "PEW2", "date": "2022-01-08", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 1, "wrong": 0, "url": "", "url2": "", "brackets": "E M V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW16e-2023-2024", "name": "PEW16-2023-2024", "date": "2022-02-25", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 1, "wrong": 0, "url": "", "url2": "", "brackets": "E M V1", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "IMEW-2023-2024", "name": "IMEW", "date": "2023-01-01", "place": "", "types": "MEW", "tourns": 16, "with_res": 16, "res": 52, "wrong": 16, "url": "", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, E M V4, F F V3, F M V1, F M V2, F M V3, F M V4, S F V3, S M V1, S M V2, S M V3, S M V4", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW1e-2023-2024", "name": "PEW1", "date": "2023-01-07", "place": "Guilford, Great Britain", "types": "PEW", "tourns": 4, "with_res": 4, "res": 7, "wrong": 4, "url": "https://fencingtimelive.com/tournaments/eventSchedule/A49E0E562CE6460B82AACFD5C909F0BE#today", "url2": "", "brackets": "E F V1, E M V1, E M V2, E M V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW17fs-2023-2024", "name": "PEW17-2023-2024", "date": "2023-01-21", "place": "", "types": "PEW", "tourns": 2, "with_res": 1, "res": 1, "wrong": 0, "url": "", "url2": "", "brackets": "F M V1, S M V4", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW3s-2023-2024", "name": "PEW3", "date": "2023-02-12", "place": "", "types": "PEW", "tourns": 2, "with_res": 2, "res": 3, "wrong": 0, "url": "", "url2": "", "brackets": "S M V1, S M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW18e-2023-2024", "name": "PEW18-2023-2024", "date": "2023-02-25", "place": "", "types": "PEW", "tourns": 2, "with_res": 2, "res": 2, "wrong": 0, "url": "", "url2": "", "brackets": "E F V1, E M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW4f-2023-2024", "name": "PEW4", "date": "2023-03-18", "place": "", "types": "PEW", "tourns": 3, "with_res": 3, "res": 4, "wrong": 0, "url": "", "url2": "", "brackets": "F M V1, F M V2, F M V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW12f-2023-2024", "name": "PEW12", "date": "2023-03-23", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 1, "wrong": 0, "url": "", "url2": "", "brackets": "F M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW20s-2023-2024", "name": "PEW20-2023-2024", "date": "2023-04-01", "place": "", "types": "PEW", "tourns": 3, "with_res": 2, "res": 3, "wrong": 2, "url": "", "url2": "", "brackets": "S F V3, S M V1, S M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW19e-2023-2024", "name": "PEW19-2023-2024", "date": "2023-04-14", "place": "", "types": "PEW", "tourns": 8, "with_res": 8, "res": 43, "wrong": 8, "url": "", "url2": "", "brackets": "E F V1, E F V2, E F V3, E M V0, E M V1, E M V2, E M V3, E M V4", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW5efs-2023-2024", "name": "EVF Circuit – Budapest (HUN)", "date": "2023-09-16", "place": "Budapest, Hungary", "types": "PEW", "tourns": 12, "with_res": 12, "res": 26, "wrong": 0, "url": "", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, F F V1, F F V2, F M V1, F M V2, F M V3, S M V2, S M V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW22e-2023-2024", "name": "PEW22-2023-2024", "date": "2023-09-24", "place": "", "types": "PEW", "tourns": 2, "with_res": 2, "res": 2, "wrong": 0, "url": "", "url2": "", "brackets": "E F V1, E M V1", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW7s-2023-2024", "name": "PEW7", "date": "2023-10-09", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 1, "wrong": 0, "url": "", "url2": "", "brackets": "S M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW6efs-2023-2024", "name": "PEW6", "date": "2023-11-11", "place": "", "types": "PEW", "tourns": 9, "with_res": 9, "res": 16, "wrong": 9, "url": "", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, F F V1, F M V1, S M V2, S M V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW23f-2023-2024", "name": "PEW23-2023-2024", "date": "2023-12-09", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 1, "wrong": 0, "url": "", "url2": "", "brackets": "F F V1", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW8efs-2023-2024", "name": "EVF Circuit – Terni (ITA)", "date": "2023-12-16", "place": "Terni, Italy", "types": "PEW", "tourns": 7, "with_res": 7, "res": 11, "wrong": 0, "url": "", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, F M V1, S M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW25e-2023-2024", "name": "PEW25-2023-2024", "date": "2024-01-06", "place": "", "types": "PEW", "tourns": 4, "with_res": 4, "res": 7, "wrong": 4, "url": "", "url2": "", "brackets": "E F V1, E M V1, E M V2, E M V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW10s-2023-2024", "name": "PEW10", "date": "2024-01-20", "place": "", "types": "PEW", "tourns": 1, "with_res": 0, "res": 0, "wrong": 0, "url": "", "url2": "", "brackets": "S M V2", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW9ef-2023-2024", "name": "EVF Circuit – Stockholm (SWE)", "date": "2024-02-24", "place": "Stockholm, Sweden", "types": "PEW", "tourns": 6, "with_res": 6, "res": 10, "wrong": 0, "url": "https://fencingtimelive.com/tournaments/eventSchedule/1B776AA923B64D3FA61AB02233AF54BD#today", "url2": "", "brackets": "E F V1, E M V1, E M V2, E M V3, F F V1, F M V1", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW13e-2023-2024", "name": "PEW13-2023-2024", "date": "2024-04-06", "place": "", "types": "PEW", "tourns": 6, "with_res": 6, "res": 41, "wrong": 6, "url": "", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, E M V4", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW14s-2023-2024", "name": "PEW14-2023-2024", "date": "2024-04-06", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 1, "wrong": 1, "url": "", "url2": "", "brackets": "S F V3", "bhosts": "", "burls": 0}, {"season": "2023/2024", "code": "PEW15e-2023-2024", "name": "PEW15-2023-2024", "date": "2024-04-27", "place": "", "types": "PEW", "tourns": 3, "with_res": 3, "res": 7, "wrong": 0, "url": "", "url2": "", "brackets": "E M V1, E M V2, E M V3", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW1efs-2024-2025", "name": "PEW1", "date": "2024-09-21", "place": "Budapest", "types": "PEW", "tourns": 14, "with_res": 12, "res": 28, "wrong": 12, "url": "", "url2": "", "brackets": "E F V0, E F V1, E F V2, E M V1, E M V2, E M V3, F F V0, F F V1, F F V2, F M V1, F M V2, F M V3, S M V1, S M V2", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW2efs-2024-2025", "name": "PEW2", "date": "2024-11-16", "place": "Madrid", "types": "PEW", "tourns": 11, "with_res": 11, "res": 21, "wrong": 0, "url": "", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, F F V1, F M V1, F M V2, F M V3, S M V1, S M V2", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW3fs-2024-2025", "name": "PEW3", "date": "2024-12-07", "place": "Munich, Germany", "types": "PEW", "tourns": 5, "with_res": 5, "res": 10, "wrong": 5, "url": "https://fencingtimelive.com/tournaments/eventSchedule/9CC8D1BC59084DC0852659F9B68D97DB#today", "url2": "", "brackets": "F M V2, F M V3, S F V3, S M V2, S M V3", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW4ef-2024-2025", "name": "EVF Circuit – Guildford (GBR)", "date": "2025-01-04", "place": "Guildford, Great Britain", "types": "PEW", "tourns": 5, "with_res": 5, "res": 9, "wrong": 4, "url": "", "url2": "", "brackets": "E F V1, E M V1, E M V2, E M V3, F M V1", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW5s-2024-2025", "name": "PEW5", "date": "2025-01-18", "place": "", "types": "PEW", "tourns": 1, "with_res": 1, "res": 4, "wrong": 1, "url": "", "url2": "", "brackets": "S M V2", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW6efs-2024-2025", "name": "EVF Circuit – Terni (ITA)", "date": "2025-02-01", "place": "Terni, Italy", "types": "PEW", "tourns": 7, "with_res": 7, "res": 12, "wrong": 3, "url": "", "url2": "", "brackets": "E F V1, E M V1, E M V2, E M V3, F M V1, S M V2, S M V3", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW13e-2024-2025", "name": "PEW13-2024-2025", "date": "2025-03-15", "place": "", "types": "PEW", "tourns": 3, "with_res": 3, "res": 4, "wrong": 0, "url": "", "url2": "", "brackets": "E M V1, E M V2, E M V3", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW7es-2024-2025", "name": "European Veterans Circuit – Jabłonna (POL)", "date": "2025-03-29", "place": "Jabłonna, Poland", "types": "PEW", "tourns": 15, "with_res": 14, "res": 89, "wrong": 14, "url": "", "url2": "", "brackets": "E F V0, E F V1, E F V2, E F V4, E M V1, E M V2, E M V3, E M V4, S F V2, S F V3, S F V4, S M V1, S M V2, S M V3, S M V4", "bhosts": "", "burls": 0, "given": "https://www.fencingtimelive.com/tournaments/eventSchedule/D050FA69743A43B590473A6442DF7AF7#today"}, {"season": "2024/2025", "code": "PEW8f-2024-2025", "name": "PEW8", "date": "2025-03-30", "place": "", "types": "PEW", "tourns": 7, "with_res": 6, "res": 20, "wrong": 5, "url": "", "url2": "", "brackets": "F F V0, F F V1, F F V2, F M V1, F M V2, F M V3, F M V4", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "PEW15f-2024-2025", "name": "PEW15-2024-2025", "date": "2025-05-15", "place": "", "types": "PEW", "tourns": 2, "with_res": 2, "res": 2, "wrong": 0, "url": "", "url2": "", "brackets": "F M V1, F M V2", "bhosts": "", "burls": 0}, {"season": "2024/2025", "code": "IMEW-2024-2025", "name": "European Veterans Championships 2025", "date": "2025-05-28", "place": "Plovdiv, Bulgaria", "types": "MEW", "tourns": 17, "with_res": 16, "res": 29, "wrong": 16, "url": "", "url2": "", "brackets": "E F V0, E F V1, E F V2, E F V3, E F V4, E M V1, E M V2, E M V3, E M V4, F M V1, F M V3, F M V4, S F V3, S F V4, S M V2, S M V3, S M V4", "bhosts": "", "burls": 0, "given": "https://www.fencingtimelive.com/tournaments/eventSchedule/2E0379194C1947DCA5BC8B72F76D31A5#today"}, {"season": "2024/2025", "code": "PEW10efs-2024-2025", "name": "EVF Criterium Mondial Vétérans 2025", "date": "2025-07-05", "place": "Paris, France", "types": "PEW", "tourns": 7, "with_res": 7, "res": 7, "wrong": 0, "url": "https://engarde-service.com/tournament/fencingaddict/crit25", "url2": "", "brackets": "E M V1, E M V2, F M V1, F M V2, S M V1, S M V2, S M V4", "bhosts": "", "burls": 0}, {"season": "2025/2026", "code": "PEW1efs-2025-2026", "name": "EVF Circuit Budapest", "date": "2025-09-20", "place": "Budapest, Hungary", "types": "PEW", "tourns": 14, "with_res": 14, "res": 50, "wrong": 14, "url": "https://engarde-service.com/tournament/hunfencing/2025_09_20_pbt", "url2": "https://engarde-service.com/tournament/hunfencing/2025_09_21_tor", "brackets": "E F V1, E F V2, E F V3, E M V1, E M V2, E M V3, E M V4, F F V1, F F V2, F M V1, F M V2, F M V3, S M V2, S M V3", "bhosts": "", "burls": 0}, {"season": "2025/2026", "code": "PEW2efs-2025-2026", "name": "EVF Circuit Madrid", "date": "2025-11-01", "place": "Madrid, Spain", "types": "PEW", "tourns": 13, "with_res": 10, "res": 19, "wrong": 10, "url": "https://engarde-service.com/tournament/aeve_esgrima/evf_madrid_2025", "url2": "", "brackets": "E F V1, E F V3, E M V1, E M V2, E M V3, E M V4, F M V1, F M V2, S F V1, S F V2, S F V3, S F V4, S M V2", "bhosts": "", "burls": 0}, {"season": "2025/2026", "code": "IMSW-2025-2026", "name": "IMSW", "date": "2025-11-12", "place": "Manama, Bahrain", "types": "MSW", "tourns": 10, "with_res": 10, "res": 25, "wrong": 10, "url": "https://www.fencingtimelive.com/tournaments/eventSchedule/D7E898476AE94A41BBB553FCF26A9AEF#today", "url2": "", "brackets": "E F V2, E M V2, E M V3, E M V4, F F V3, F M V2, F M V4, S M V2, S M V3, S M V4", "bhosts": "www.fencingtimelive.com", "burls": 10}, {"season": "2025/2026", "code": "PEW3fs-2025-2026", "name": "EVF Circuit Memoriam Max Geuter – Munich (GER)", "date": "2025-12-06", "place": "Munich, Germany", "types": "PEW", "tourns": 8, "with_res": 5, "res": 7, "wrong": 0, "url": "https://www.veteransfencing.eu/event/evf-circuit-munich/", "url2": "", "brackets": "F F V2, F M V1, F M V2, F M V4, S F V2, S F V3, S M V2, S M V3", "bhosts": "www.fencingworldwide.com", "burls": 8, "given": "https://www.fencingworldwide.com/en/32812-2025/tournament/"}, {"season": "2025/2026", "code": "PEW62efs-2025-2026", "name": "EVF Circuit – Guildford (GBR)", "date": "2026-01-10", "place": "Guildford, Great Britain", "types": "PEW", "tourns": 16, "with_res": 16, "res": 52, "wrong": 8, "url": "https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/", "url2": "", "brackets": "E F V1, E F V2, E F V3, E M V1, E M V2, E M V3, E M V4, F F V2, F F V3, F F V4, F M V1, F M V2, F M V3, F M V4, S M V1, S M V2", "bhosts": "www.fencingtimelive.com", "burls": 16, "given": "https://www.fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296#today"}, {"season": "2025/2026", "code": "PEW31fs-2025-2026", "name": "EVF Circuit - Faches-Thumesnil (FRA)", "date": "2026-02-07", "place": "Faches, France", "types": "PEW", "tourns": 5, "with_res": 1, "res": 1, "wrong": 0, "url": "https://www.veteransfencing.eu/event/evf-circuit-faches/", "url2": "", "brackets": "F F V2, F M V2, S F V2, S M V1, S M V2", "bhosts": "", "burls": 0, "given": "https://engarde-service.com/tournament/club_des_escrimeurs_de_faches_thumesnil/faches2026"}, {"season": "2025/2026", "code": "PEW4efs-2025-2026", "name": "EVF Circuit Napoli", "date": "2026-03-07", "place": "Napoli, Italy", "types": "PEW", "tourns": 10, "with_res": 10, "res": 28, "wrong": 0, "url": "https://www.4fence.it/FIS/Risultati/2026-03-08-07_Napoli_-_4_Prova_Circuito_Nazionale_Master_2025-2/", "url2": "", "brackets": "E F V1, E F V2, E M V1, E M V2, E M V3, E M V4, F M V1, F M V2, S M V3, S M V4", "bhosts": "", "burls": 0}, {"season": "2025/2026", "code": "PEW5ef-2025-2026", "name": "EVF Circuit – Stockholm (SWE)", "date": "2026-03-14", "place": "Stockholm, Sweden", "types": "PEW", "tourns": 5, "with_res": 5, "res": 10, "wrong": 0, "url": "https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/", "url2": "", "brackets": "E M V1, E M V2, E M V4, F M V1, F M V2", "bhosts": "engarde-service.com", "burls": 5, "given": "https://engarde-service.com/tournament/sthlm/vet2026"}, {"season": "2025/2026", "code": "PEW6efs-2025-2026", "name": "EVF Circuit Jabłonna", "date": "2026-03-28", "place": "Jabłonna, Polska", "types": "PEW", "tourns": 23, "with_res": 23, "res": 109, "wrong": 23, "url": "https://www.fencingtimelive.com/tournaments/eventSchedule/98F13C10A47B49FFA2D39E4D47F1EDA8#today", "url2": "", "brackets": "E F V1, E F V2, E F V3, E F V4, E M V1, E M V2, E M V3, E M V4, F F V1, F F V2, F F V3, F F V4, F M V1, F M V2, F M V3, F M V4, S F V2, S F V3, S F V4, S M V1, S M V2, S M V3, S M V4", "bhosts": "", "burls": 0}, {"season": "2025/2026", "code": "PEW61s-2025-2026", "name": "EVF Circuit – Liège (BEL)", "date": "2026-04-11", "place": "Liège, Belgium", "types": "PEW", "tourns": 2, "with_res": 0, "res": 0, "wrong": 0, "url": "https://www.veteransfencing.eu/event/evf-circuit-liege/", "url2": "", "brackets": "S F V2, S M V2", "bhosts": "", "burls": 0, "given": "https://www.fencingtimelive.com/tournaments/eventSchedule/462810DAB1E843D6B940B538AB7A2B18#today"}, {"season": "2025/2026", "code": "PEW7ef-2025-2026", "name": "EVF Circuit Salzburg", "date": "2026-04-18", "place": "Salzburg, Austria", "types": "PEW", "tourns": 4, "with_res": 4, "res": 7, "wrong": 0, "url": "https://dartagnan.live/turniere/EuropeanVeteransCup_2026/de/index.html", "url2": "", "brackets": "E M V2, E M V3, F M V1, F M V2", "bhosts": "", "burls": 0}, {"season": "2025/2026", "code": "PEW9efs-2025-2026", "name": "EVF Circuit Dublin", "date": "2026-05-30", "place": "Dublin, Ireland", "types": "PEW", "tourns": 10, "with_res": 10, "res": 18, "wrong": 0, "url": "https://www.veteransfencing.eu/event/evf-circuit-dublin-irl/", "url2": "", "brackets": "E F V2, E F V3, E M V1, E M V2, E M V4, F F V2, F M V1, F M V2, S M V2, S M V3", "bhosts": "", "burls": 0, "given": "https://www.fencingtimelive.com/tournaments/eventSchedule/21909B63214C4494B443D157FAE4A61C#today"}];
+  const KEY = 'evf-source-urls-2026-10-01'
+  let saved = {}
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') } catch (e) { saved = {} }
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c])
+  const kind = (u) => {
+    if (!u) return ['none', 'none']
+    if (/veteransfencing\.eu/.test(u)) return ['evf', 'EVF site']
+    const h = (u.match(/:\/\/([^/]+)/) || [,''])[1].replace(/^www\./, '')
+    return ['src', 'results source · ' + h]
+  }
+  const body = document.getElementById('rows')
+  let season = null, html = ''
+  for (const r of ROWS) {
+    if (r.season !== season) {
+      season = r.season
+      const n = ROWS.filter((x) => x.season === season)
+      html += `<tr class="season-row"><td colspan="6">Season ${season} · ${n.length} events · ${n.reduce((a, x) => a + x.wrong, 0)} brackets with N = Poles</td></tr>`
+    }
+    const [k, kl] = kind(r.url)
+    const dmg = r.res === 0 ? '<span class="chip plain">no results</span>'
+      : r.wrong > 0 ? `<span class="chip over">N = Poles</span><span class="sub">${r.wrong} of ${r.with_res} brackets</span>`
+      : `<span class="chip plain">N looks right</span><span class="sub">${r.with_res} brackets</span>`
+    const cur = `<span class="kind ${k}">${esc(kl)}</span>` +
+      (r.url ? `<br><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a>` : '') +
+      (r.url2 ? `<br><a href="${esc(r.url2)}" target="_blank" rel="noopener">${esc(r.url2)}</a>` : '') +
+      (r.burls ? `<span class="sub">per-bracket URLs: ${r.burls} (${esc(r.bhosts)})</span>` : '')
+    const ph = k === 'src' ? 'leave empty to keep the source on the left' : 'paste the results URL'
+    html += `<tr>
+      <td><span class="code">${esc(r.code)}</span><span class="sub">${esc(r.types)}</span></td>
+      <td><span class="n" style="text-align:left">${esc(r.date)}</span><span class="sub">${esc(r.name)}${r.place ? ' · ' + esc(r.place) : ''}</span></td>
+      <td class="brk">${esc(r.brackets)}</td>
+      <td>${dmg}<span class="sub">${r.res} POL results</span></td>
+      <td class="cur">${cur}</td>
+      <td><input type="url" data-code="${esc(r.code)}" placeholder="${ph}" value="${esc(saved[r.code] || r.given || '')}" aria-label="Results URL for ${esc(r.code)}"></td>
+    </tr>`
+  }
+  body.innerHTML = html
+  const inputs = [...body.querySelectorAll('input')]
+  const count = document.getElementById('count')
+  const refresh = () => {
+    const n = inputs.filter((i) => i.value.trim()).length
+    inputs.forEach((i) => i.classList.toggle('filled', !!i.value.trim()))
+    count.textContent = `${n} of ${inputs.length} events filled`
+  }
+  inputs.forEach((i) => i.addEventListener('input', () => {
+    saved[i.dataset.code] = i.value.trim()
+    try { localStorage.setItem(KEY, JSON.stringify(saved)) } catch (e) {}
+    refresh()
+  }))
+  refresh()
+  document.getElementById('copy').addEventListener('click', async () => {
+    const lines = inputs.filter((i) => i.value.trim()).map((i) => `${i.dataset.code}\t${i.value.trim()}`)
+    const text = lines.length ? lines.join('\n') : '(no URLs entered)'
+    try { await navigator.clipboard.writeText(text) } catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy') } catch (e2) {}
+      ta.remove()
+    }
+    const ok = document.getElementById('copied'); ok.hidden = false; setTimeout(() => { ok.hidden = true }, 2500)
+  })
+  document.getElementById('clear').addEventListener('click', () => {
+    if (!confirm('Clear every URL you entered on this page?')) return
+    saved = {}
+    try { localStorage.removeItem(KEY) } catch (e) {}
+    inputs.forEach((i) => { i.value = '' }); refresh()
+  })
+})()
+</script>
+</body>
+</html>

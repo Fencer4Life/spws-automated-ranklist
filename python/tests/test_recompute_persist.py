@@ -148,17 +148,23 @@ class TestRecomputePersist:
         db.clear_tournament_results.assert_not_called()
 
     def test_row_shape_and_status(self):
-        """N9.6 recompute rows carry the RPC shape; loaded AUTO_MATCHED stays
-        AUTO_MATCHED (the fencer is already FK-linked)."""
+        """N9.6 recompute rows carry the RPC shape with the row's stored
+        provenance, not the fencer id as its name and a forced AUTO_MATCHED
+        (amended 2026-10-01, RECOMP.PROV: that shape overwrote every recomputed
+        row's scraped name, confidence and match method)."""
+        m = _m(5, 1, 1980)
+        m.stored_scraped_name = "KOWALSKI Jan"
+        m.stored_confidence = 87.5
+        m.stored_match_method = "USER_CONFIRMED"
         db = _db()
-        _run(_ctx([_m(5, 1, 1980)]), db)
+        _run(_ctx([m]), db)
         (_, rows), kwargs = db.ingest_results.call_args
         assert rows[0] == {
             "id_fencer": 5,
             "int_place": 1,
-            "txt_scraped_name": "5",
-            "num_confidence": 100.0,
-            "enum_match_status": "AUTO_MATCHED",
+            "txt_scraped_name": "KOWALSKI Jan",
+            "num_confidence": 87.5,
+            "enum_match_method": "USER_CONFIRMED",
         }
 
     def test_rows_without_governed_by_skipped(self):
