@@ -1,0 +1,9 @@
+# PEW2efs-2025-2026 — ADR-106 re-staging decisions of 2026-10-02 (doc/plans/adr-106-restage-review-2026-10-02.html).
+# PEW2efs-2025-2026 P1: A — KORONA Przemysåaw → #56
+# PEW2efs-2025-2026 P2: A — KORONA Przemysåaw → #56
+# PEW2efs-2025-2026 R1: A — LYNCH Patrick → #284
+identity:
+- scraped_name: KORONA Przemysåaw
+  id_fencer: 56
+- scraped_name: LYNCH Patrick
+  id_fencer: 284

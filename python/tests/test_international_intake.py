@@ -726,6 +726,38 @@ class TestRepairRunner:
             {"id_fencer": None, "txt_scraped_name": "X", "enum_match_method": None},
         ]
 
+    def test_an_override_identity_entry_confirms_its_alias_pair(self):
+        """ADM.ID.11 an identity entry in the event's override file is a
+        person's decision: at sign-off its pair (scraped name → that fencer)
+        does not block as a suspected wrong match and is written as an alias.
+        "LYNCH Patrick" → LYNCH Pat and "KÁRMÁN Irén" → KARMAN Irene were
+        linked by the user (Q1 A, 2 Oct 2026) and the checker blocked IMEW
+        2024/25. A pair whose entry names another fencer, and a pair with no
+        entry, keep their verdict."""
+        from python.pipeline.alias_writeback import PendingAlias, has_blocking_pairs
+        from python.pipeline.types import IdentityOverride
+        from python.tools.phase5_runner import _confirmed_by_overrides
+
+        ov = Overrides(
+            identity=[
+                IdentityOverride(scraped_name="LYNCH Patrick", id_fencer=284),
+                IdentityOverride(scraped_name="KÁRMÁN Irén", id_fencer=999),
+            ]
+        )
+        pending = [
+            PendingAlias(284, "LYNCH Patrick", "LYNCH Pat", "❌", "different first names"),
+            PendingAlias(117, "KÁRMÁN Irén", "KARMAN Irene", "❌", "different surnames"),
+            PendingAlias(5, "NOWAK Jan", "NOWAK Adam", "❌", "different first names"),
+        ]
+        out = _confirmed_by_overrides(pending, ov)
+        assert [(p.scraped_name, p.icon) for p in out] == [
+            ("LYNCH Patrick", "✓"),
+            ("KÁRMÁN Irén", "❌"),
+            ("NOWAK Jan", "❌"),
+        ]
+        assert "override file" in out[0].reason
+        assert not has_blocking_pairs(out[:1])
+
     def test_staging_writes_aliases_only_from_confirmed_matches(self):
         """INTL.ALIAS.02 for an international event the stage-time flush
         takes only AUTO_MATCHED rows: a PENDING row's fencer is a guess, and

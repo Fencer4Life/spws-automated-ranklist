@@ -45,8 +45,8 @@ SELECT ok(
      FROM tbl_tournament t
      LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
     WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW62efs-2025-2026'))
-  IN (ROW(16, 52), ROW(9, 15)),
-  '55.3: Guildford has 16 slots and 52 results, or 9 and 15 after the ADR-105 re-ingest'
+  IN (ROW(16, 52), ROW(9, 15), ROW(10, 25)),
+  '55.3: Guildford has 16 slots and 52 results, 9 and 15 after the ADR-105 re-ingest, or 10 and 25 after the ADR-106 re-staging'
 );
 
 SELECT is(
@@ -100,8 +100,15 @@ SELECT ok(
        WHERE e.txt_code = 'PEW62efs-2025-2026' AND f.txt_surname = 'ALCSER')
     AND EXISTS (
       SELECT 1 FROM tbl_tournament t
-       WHERE t.txt_code = 'PEW62efs-V1-M-FOIL-2025-2026' AND t.int_participant_count = 18)),
-  '55.7: Guildford V1 men''s foil keeps the full field: 5th of 13, or the source N 18 after the ADR-105 re-ingest'
+       WHERE t.txt_code = 'PEW62efs-V1-M-FOIL-2025-2026' AND t.int_participant_count = 18))
+  OR EXISTS (
+    -- ADR-106 re-staging (2 Oct 2026): ALCSER, an SPWS starter, is stored at
+    -- his source place, entered for Hungary, in the source bracket of 18.
+    SELECT 1 FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+     WHERE t.txt_code = 'PEW62efs-V1-M-FOIL-2025-2026' AND t.int_participant_count = 18
+       AND f.txt_surname = 'ALCSER' AND r.int_place = 17 AND r.txt_entered_for = 'HUN'),
+  '55.7: Guildford V1 men''s foil keeps the full field: 5th of 13, the source N 18 after the ADR-105 re-ingest, or ALCSER 17th of 18 after the ADR-106 re-staging'
 );
 
 SELECT is(
@@ -235,22 +242,26 @@ SELECT is(
   '55.15: the emptied PEW65 Stockholm donor is deleted'
 );
 
-SELECT results_eq(
-  $$ SELECT COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT
-       FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
-      WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW5ef-2025-2026') $$,
-  $$ VALUES (5, 10) $$,
-  '55.16: Stockholm has its 5 tournament slots and all 10 unique results'
+-- ADR-106 re-staging (2 Oct 2026): Stockholm re-ingested from the organiser's
+-- category finals, one tournament per source bracket, each with its own
+-- competition URL; the seed holds the consolidated state until its refresh.
+SELECT ok(
+  (SELECT ROW(COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT)
+     FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
+    WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW5ef-2025-2026'))
+  IN (ROW(5, 10), ROW(4, 9)),
+  '55.16: Stockholm has its 5 tournament slots and all 10 unique results, or 4 and 9 after the ADR-106 re-staging'
 );
 
 SELECT is(
   (SELECT COUNT(*)::INT
      FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
     WHERE e.txt_code = 'PEW5ef-2025-2026'
-      AND (t.txt_code !~ '^PEW5ef-' OR t.url_results IS DISTINCT FROM
-        'https://engarde-service.com/tournament/sthlm/vet2026')),
+      AND (t.txt_code !~ '^PEW5ef-' OR (t.url_results IS DISTINCT FROM
+        'https://engarde-service.com/tournament/sthlm/vet2026'
+        AND t.url_results NOT LIKE 'https://engarde-service.com/competition/sthlm/vet2026/%'))),
   0,
-  '55.17: Stockholm children use PEW5ef and retain the Engarde results URL'
+  '55.17: Stockholm children use PEW5ef and retain an Engarde results URL of the event (its competition page after the ADR-106 re-staging)'
 );
 
 SELECT is(
