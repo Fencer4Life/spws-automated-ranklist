@@ -8,6 +8,10 @@
 -- its own FTL results URL. The seed still holds the consolidation's output
 -- until it is refreshed from PROD after the batch; 55.1, 55.3, 55.6 and 55.7
 -- accept exactly those two states. Drop the consolidation alternative then.
+-- Munich 2025 and Chania 2026 were re-staged from their organisers' Ophardt
+-- pages the same day (doc/plans/evf-four-events-review-2026-10-02.html): the
+-- event URL becomes the Ophardt tournament page and the replace keeps only
+-- brackets with results; 55.8, 55.10 and 55.18 accept exactly both states.
 -- =============================================================================
 
 BEGIN;
@@ -118,10 +122,11 @@ SELECT is(
       AND txt_location = 'Munich' AND txt_country = 'Germany'
       AND dt_start = DATE '2025-12-06' AND dt_end = DATE '2025-12-07'
       AND arr_weapons = ARRAY['FOIL','SABRE']::enum_weapon_type[]
-      AND url_event = 'https://www.veteransfencing.eu/event/evf-circuit-munich/'
+      AND url_event IN ('https://www.veteransfencing.eu/event/evf-circuit-munich/',
+                        'https://www.fencingworldwide.com/en/32812-2025/tournament/')
       AND txt_evf_slug = 'evf-circuit-munich'),
   1,
-  '55.8: PEW3fs is the canonical Munich foil-and-sabre event'
+  '55.8: PEW3fs is the canonical Munich foil-and-sabre event (its URL the EVF page, or the Ophardt tournament page after the re-staging)'
 );
 
 SELECT is(
@@ -134,8 +139,11 @@ SELECT results_eq(
   $$ SELECT COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT
        FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
       WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3fs-2025-2026') $$,
-  $$ VALUES (8, 7) $$,
-  '55.10: Munich has 8 canonical tournament slots and 7 source-verified results'
+  $$ SELECT * FROM (VALUES (8, 7), (5, 7)) v(slots, results)
+      WHERE (slots, results) = (SELECT COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT
+        FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
+       WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW3fs-2025-2026')) $$,
+  '55.10: Munich has 7 source-verified results, in 8 canonical tournament slots or, after the re-staging, the 5 brackets that have them'
 );
 
 SELECT results_eq(
@@ -271,10 +279,11 @@ SELECT is(
       AND txt_location = 'Chania' AND txt_country = 'Greece'
       AND dt_start = DATE '2026-05-02' AND dt_end = DATE '2026-05-03'
       AND arr_weapons = ARRAY['EPEE','SABRE']::enum_weapon_type[]
-      AND url_event = 'https://www.veteransfencing.eu/event/evf-circuit-athens-gre/'
+      AND url_event IN ('https://www.veteransfencing.eu/event/evf-circuit-athens-gre/',
+                        'https://www.fencingworldwide.com/en/32819-2025/tournament/')
       AND txt_evf_slug = 'evf-circuit-athens-gre'),
   1,
-  '55.18: PEW8es is the corrected Chania epee-and-sabre calendar event'
+  '55.18: PEW8es is the corrected Chania epee-and-sabre calendar event (its URL the EVF page, or the Ophardt tournament page after the re-staging)'
 );
 
 SELECT is(

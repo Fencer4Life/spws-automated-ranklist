@@ -66,6 +66,15 @@ def fetch_source_identity(url: str) -> SourceIdentity:
     competitions = (
         get(ENGARDE_LIST_URL.format(org=tournament[0], event=tournament[1])) if tournament else None
     )
+    # An Ophardt page prints "dd.mm." only; its first competition's results
+    # page carries the year (REPAIR.URL.03).
+    from python.pipeline.review_cli import _is_ophardt_tournament
+
+    if _is_ophardt_tournament(url):
+        from python.scrapers.ophardt import parse_tournament_competitions
+
+        kept, _skipped = parse_tournament_competitions(page, url)
+        competitions = get(kept[0]["url"]) if kept else None
     return read_source_identity(url, page, competitions=competitions)
 
 

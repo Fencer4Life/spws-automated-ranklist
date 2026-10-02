@@ -1,0 +1,16 @@
+# PEW7ef-2025-2026 — decisions of 2026-10-02 (doc/plans/evf-four-events-review-2026-10-02.html).
+# Fencers are named, not numbered: ids differ between LOCAL, CERT and PROD (P3.OV19).
+# PEW7ef-2025-2026 P1: A — KORONA Przemysåaw → KORONA Przemysław 1976
+# PEW7ef-2025-2026 P2: A — KORONA Przemysåaw → KORONA Przemysław 1976
+# PEW7ef-2025-2026 R1: A — MCQUEEN Andrew → MCQUEEN Andy 1976
+identity:
+- scraped_name: KORONA Przemysåaw
+  fencer:
+    surname: KORONA
+    first_name: Przemysław
+    birth_year: 1976
+- scraped_name: MCQUEEN Andrew
+  fencer:
+    surname: MCQUEEN
+    first_name: Andy
+    birth_year: 1976

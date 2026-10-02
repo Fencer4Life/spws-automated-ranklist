@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="8889a90671296418e9974adfa0612b4bab5f3e5730d69489bc64ea9334699881">
+<meta name="doc-source-sha256" content="4afc7f7ddfbaaffed62ae03bbeea608b07de24ed0806d06be6cb35cc4622ec5a">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>364 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>368 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1778,7 +1778,7 @@
 </tr>
 <tr>
 <td>REPAIR.URL.01</td>
-<td><code>set_event_source_urls</code> writes an event's result URLs only when every source's date, name and weapons match the event (a person may confirm the name, never the date); FTL, Ophardt, 4fence and d'Artagnan pages are read (Engarde: REPAIR.URL.02); nothing is written when any URL fails.</td>
+<td><code>set_event_source_urls</code> writes an event's result URLs only when every source's date, name and weapons match the event (a person may confirm the name, never the date); FTL, 4fence and d'Artagnan pages are read (Engarde: REPAIR.URL.02; Ophardt: REPAIR.URL.03); nothing is written when any URL fails.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_identity.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
@@ -1795,6 +1795,34 @@
 <td>An Engarde tournament URL expands through Engarde's competition list into one bracket per individual, completed, single-category final, with weapon, gender and category from the title and the competition's own date (01, 03, 04); pool rounds, team events, open competitions and competitions without one category are skipped with a reason (02); N is the number of placed fencers: a fencer listed without a place, DNS (did not start), DNF (did not finish) or DNQ (did not qualify), is not in N although the classification header counts him (05; the header count adopted earlier the same day is withdrawn).</td>
 <td>pytest</td>
 <td><code>python/tests/test_engarde_event_reader.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>REPAIR.URL.03</td>
+<td>An Ophardt tournament page prints &quot;dd.mm.&quot; only and the number in its URL is Ophardt's season, not the year (Chania, 2 May 2026, is <code>32819-2025</code>): its dates take their year from a competition's results page (&quot;Last transmission: 02.05.2026&quot;), within the week after it; alone the page has no date and is refused; last year's edition never reads as this year's; <code>fetch_source_identity</code> fetches the page and its first competition's results page.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_identity.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>OPH.EVT.01–04</td>
+<td>An Ophardt tournament page lists each competition with weapon, gender, EVF category (O40–O70 → V1–V4), title, day and month, and its results page (01); Munich 2024, Munich 2025 and Chania 2026 give 16 brackets each (02); a team event, a mixed event or an age band outside EVF's is skipped with a reason, never mapped to the nearest (03); a competition's year is the latest one putting its day on or before its results page's last transmission, never the URL's number (04).</td>
+<td>pytest</td>
+<td><code>python/tests/test_ophardt_dartagnan_event_readers.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>DART.EVT.01–02</td>
+<td>A d'Artagnan event index lists its single-category competitions with weapon, gender, category and title, and skips the combined pool rounds (&quot;V1/V2 Runde&quot;) with a reason; <code>parse_dartagnan_event_index</code> is unchanged (01); the runner reads each competition's rankings page with the index's weapon, gender and category, and never reads the index as a bracket (02).</td>
+<td>pytest</td>
+<td><code>python/tests/test_ophardt_dartagnan_event_readers.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.EVT.01–02</td>
+<td>The Phase 5 runner expands an Ophardt tournament URL into one bracket per competition, each with its title and its own date (01); an Ophardt results-page URL is still one bracket (02).</td>
+<td>pytest</td>
+<td><code>python/tests/test_ophardt_dartagnan_event_readers.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
@@ -1980,5 +2008,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8889a90671296418e9974adfa0612b4bab5f3e5730d69489bc64ea9334699881</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4afc7f7ddfbaaffed62ae03bbeea608b07de24ed0806d06be6cb35cc4622ec5a</code></footer>
 </div></body></html>
