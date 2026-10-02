@@ -1123,15 +1123,16 @@ class ReviewSession:
             # ADR-105: every linked Pole of an international bracket goes to its
             # one tournament at their source place, a Pole without a birth year
             # too (the BY split leaves them out of vcat_groups). A PENDING row
-            # is not written: its id_fencer is the matcher's guess and the
-            # commit would credit the result to it. It is reported in the
-            # staging summary; an international event never creates a fencer.
+            # (ADR-106 §1, printed POL without an identity match) is written
+            # with no match method: the Phase 5 runner refuses sign-off until
+            # the event's override file resolves it. An international event
+            # never creates a fencer.
             tournament_id = vcat_to_tournament_id.get(international)
             if tournament_id is None:
                 return rows
             for m in ctx.matches:
-                if m.method in ("EXCLUDED", "PENDING"):
-                    continue  # ADR-038 dismissed, or an unconfirmed guess
+                if m.method == "EXCLUDED":
+                    continue  # dismissed by an override (match_method EXCLUDED)
                 rows.append(
                     {
                         "id_fencer": m.id_fencer,
@@ -1141,6 +1142,7 @@ class ReviewSession:
                         "num_match_confidence": m.confidence,
                         "enum_match_method": method_map.get(m.method),  # None for PENDING
                         "enum_source_age_category": international,
+                        "txt_entered_for": m.entered_for,
                     }
                 )
             return rows
@@ -1170,6 +1172,7 @@ class ReviewSession:
                         "num_match_confidence": m.confidence,
                         "enum_match_method": method_map.get(m.method),  # None for PENDING
                         "enum_source_age_category": source_vcat,
+                        "txt_entered_for": m.entered_for,
                     }
                 )
         return rows

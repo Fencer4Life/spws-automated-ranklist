@@ -205,7 +205,7 @@ Phase 3 ships the **unified pipeline body** — Stages 1-7, the override system,
 
 | Q | Decision | Rationale |
 |---|---|---|
-| Q1 | Override YAML — 5 surfaces (identity, splitter, URL, match-method, joint-pool); EVF V0 ack omitted. A sixth, `nationality`, is added by [ADR-105](105-international-results-keep-source-bracket.md) (amendment of 2026-10-02) for an organiser page that prints no nationality | V0+EVF = data corruption per R005b — fix upstream, no override. |
+| Q1 | Override YAML — 5 surfaces (identity, splitter, URL, match-method, joint-pool); EVF V0 ack omitted | V0+EVF = data corruption per R005b — fix upstream, no override. |
 | Q2 | Procedural pipeline + `PipelineContext` dataclass; halt-by-exception | Lower ceremony than class-based; matches existing `process_xml_file` style; cleaner unit tests. |
 | Q3 | Keep `process_xml_file` untouched + deprecation note | Phase 6 deletes it; "shim" framing wrong — back-compat is just "don't touch." |
 | Q4 | Separate `python/pipeline/review_cli.py` module | Own arg surface; zero breakage to ingest_cli. |

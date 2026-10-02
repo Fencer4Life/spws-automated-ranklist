@@ -73,6 +73,7 @@ class LoadCommitted(BasePlugin):
                 stored_scraped_name=r.get("scraped_name"),
                 stored_confidence=r.get("confidence"),
                 stored_match_method=r.get("match_method"),
+                entered_for=r.get("entered_for"),
             )
             for r in rows
         ]

@@ -21,10 +21,12 @@ from datetime import datetime
 from typing import Any
 
 from python.matcher.pipeline import (
+    DOMESTIC_TYPES,
     auto_create_fencer,
     resolve_tournament_results,
 )
 from python.pipeline import stages
+from python.pipeline.international_admission import fold_federation
 from python.pipeline.types import HaltError, Overrides, PipelineContext
 from python.scrapers.fencingtime_xml import (
     detect_categories_from_altname,
@@ -300,13 +302,14 @@ def _process_category(
         tourn_info = f"{weapon} {gender} {category}"
         notifier.notify_duplicate_import(tourn_info)
 
-    # Resolve identities using matcher pipeline (ADR-038: pass countries so
-    # EVF events drop non-POL rows before matching).
+    # Resolve identities using matcher pipeline. An international row is decided
+    # by identity and an SPWS start (ADR-106 §1); the countries are its evidence.
     # ADR-064: bracket_gender threaded so the asymmetric F-bracket filter
     # drops M-gender candidates for domestic events (PPW/MPW). Non-domestic
     # types (PEW/MEW/MSW) ignore bracket_gender per ADR-064 scope.
     scraped_names = [r["fencer_name"] for r in enriched_results]
     scraped_countries = [r.get("country") for r in enriched_results]
+    domestic = t_type in DOMESTIC_TYPES
     resolved = resolve_tournament_results(
         scraped_names,
         fencer_db,
@@ -315,6 +318,7 @@ def _process_category(
         season_end_year,
         scraped_countries=scraped_countries,
         bracket_gender=gender,
+        spws_starters=None if domestic else set(db.fetch_spws_starter_ids()),
     )
 
     # Build JSONB payload for RPC
@@ -370,15 +374,20 @@ def _process_category(
         # Matched or pending
         if match.status == "AUTO_MATCHED":
             result.matched += 1
-            results_json.append(
-                {
-                    "id_fencer": match.id_fencer,
-                    "int_place": place,
-                    "txt_scraped_name": name,
-                    "num_confidence": match.confidence,
-                    "enum_match_status": "AUTO_MATCHED",
-                }
-            )
+            row = {
+                "id_fencer": match.id_fencer,
+                "int_place": place,
+                "txt_scraped_name": name,
+                "num_confidence": match.confidence,
+                "enum_match_status": "AUTO_MATCHED",
+            }
+            if not domestic:
+                row["txt_entered_for"] = fold_federation(r.get("country"))
+            results_json.append(row)
+        elif match.status == "PENDING" and not domestic:
+            # ADR-106 §1: an international PENDING row is resolved by a person
+            # through the Phase 5 runner; this path never stores it.
+            result.pending += 1
         elif match.status == "PENDING":
             result.pending += 1
             results_json.append(

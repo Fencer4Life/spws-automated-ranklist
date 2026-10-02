@@ -521,109 +521,109 @@ class TestDomesticIntake:
 # ---------------------------------------------------------------------------
 # 4.15–4.18  International intake (PEW/MEW): only existing master data
 # ---------------------------------------------------------------------------
+@pytest.fixture
+def intl_roster():
+    """The fencer_db names with birth years: identity (ADR-106 §1) needs a
+    birth year that fits the bracket's category. V2 in 2024/25 is born
+    1966–1975."""
+    return [
+        {
+            "id_fencer": 3,
+            "txt_surname": "KOWALSKI",
+            "txt_first_name": "Jan",
+            "int_birth_year": 1970,
+            "json_name_aliases": None,
+        },
+        {
+            "id_fencer": 4,
+            "txt_surname": "NOWAK",
+            "txt_first_name": "Piotr",
+            "int_birth_year": 1968,
+            "json_name_aliases": ["NOWAK P."],
+        },
+    ]
+
+
+# KOWALSKI Jan has an SPWS start; NOWAK Piotr does not.
+STARTERS = {3}
+
+
+def _intl(names, roster, ttype="PEW", countries=None):
+    return resolve_tournament_results(
+        names, roster, ttype, "V2", 2025, scraped_countries=countries, spws_starters=STARTERS
+    )
+
+
 class TestInternationalIntake:
-    def test_pew_exact_match_imported(self, fencer_db):
-        """4.15 PEW exact match → AUTO_MATCHED, in matched list."""
-        resolved = resolve_tournament_results(["KOWALSKI Jan"], fencer_db, "PEW", "V2", 2025)
-        assert len(resolved.matched) == 1
-        assert resolved.matched[0].status == "AUTO_MATCHED"
-        assert len(resolved.auto_created) == 0
-        assert len(resolved.skipped) == 0
+    """ADR-106 §1 on the Admin scrape path (resolve_tournament_results): the
+    shared admission decides each row; no fencer is ever created."""
 
-    def test_pew_pending_provisionally_linked(self, fencer_db):
-        """4.16 PEW PENDING → provisionally linked, in matched list."""
-        resolved = resolve_tournament_results(["KOWALSKY Jan"], fencer_db, "PEW", "V2", 2025)
-        assert len(resolved.matched) == 1
-        assert resolved.matched[0].status == "PENDING"
-        assert resolved.matched[0].id_fencer == 3
+    def test_pew_exact_match_imported(self, intl_roster):
+        """4.15 PEW identity match to an SPWS starter → AUTO_MATCHED, matched."""
+        resolved = _intl(["KOWALSKI Jan"], intl_roster, countries=["POL"])
+        assert [(m.status, m.id_fencer) for m in resolved.matched] == [("AUTO_MATCHED", 3)]
+        assert resolved.auto_created == [] and resolved.skipped == []
 
-    def test_pew_unmatched_skipped(self, fencer_db):
-        """4.17 PEW UNMATCHED → in skipped list, NOT in matched."""
-        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "PEW", "V2", 2025)
-        assert len(resolved.skipped) == 1
-        assert resolved.skipped[0] == "MÜLLER Hans"
-        assert len(resolved.matched) == 0
-        assert len(resolved.auto_created) == 0
+    def test_pew_pending_provisionally_linked(self, intl_roster):
+        """4.16 PEW near match printed POL → PENDING with the candidate; the
+        caller never stores it automatically."""
+        resolved = _intl(["KOWALSKY Jan"], intl_roster, countries=["POL"])
+        assert [(m.status, m.id_fencer) for m in resolved.matched] == [("PENDING", 3)]
 
-    def test_mew_unmatched_skipped(self, fencer_db):
-        """4.18 MEW UNMATCHED → skipped (same as PEW)."""
-        resolved = resolve_tournament_results(["MÜLLER Hans"], fencer_db, "MEW", "V2", 2025)
-        assert len(resolved.skipped) == 1
-        assert len(resolved.matched) == 0
+    def test_pew_unmatched_skipped(self, intl_roster):
+        """4.17 PEW stranger → skipped, never created."""
+        resolved = _intl(["MÜLLER Hans"], intl_roster, countries=["GER"])
+        assert resolved.skipped == ["MÜLLER Hans"]
+        assert resolved.matched == [] and resolved.auto_created == []
+
+    def test_mew_unmatched_skipped(self, intl_roster):
+        """4.18 MEW stranger → skipped (same as PEW)."""
+        resolved = _intl(["MÜLLER Hans"], intl_roster, ttype="MEW", countries=["GER"])
+        assert resolved.skipped == ["MÜLLER Hans"] and resolved.matched == []
+
+    def test_an_international_call_without_starters_is_refused(self, intl_roster):
+        """ADM.ID.07 the admission needs the SPWS starters; a caller that
+        forgets them is an error, not a silent fallback to the country."""
+        with pytest.raises(ValueError, match="spws_starters"):
+            resolve_tournament_results(["KOWALSKI Jan"], intl_roster, "PEW", "V2", 2025)
 
 
 # ---------------------------------------------------------------------------
-# 4.61–4.67  ADR-038 — EVF-organized tournaments ingest POL-only rows
+# 4.61–4.68  ADR-038's POL-only gate, as ADR-106 §1 now decides it
 # ---------------------------------------------------------------------------
 class TestAdr038PolOnlyGate:
-    """Country gate: non-POL scraped rows at PEW/MEW/MSW are dismissed."""
+    """ADR-106 supersedes ADR-038 in part: identity to an SPWS starter stores a
+    row whatever country is printed; otherwise a row printed POL is PENDING
+    and every other row is skipped."""
 
-    def test_pew_pol_auto_matched_passes(self, fencer_db):
-        """4.61 PEW, country=POL, exact match → AUTO_MATCHED (not filtered)."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"],
-            fencer_db,
-            "PEW",
-            "V2",
-            2025,
-            scraped_countries=["POL"],
-        )
-        assert len(resolved.matched) == 1
-        assert resolved.matched[0].status == "AUTO_MATCHED"
-        assert len(resolved.skipped) == 0
+    def test_pew_pol_auto_matched_passes(self, intl_roster):
+        """4.61 PEW, printed POL, identity to a starter → AUTO_MATCHED."""
+        resolved = _intl(["KOWALSKI Jan"], intl_roster, countries=["POL"])
+        assert [m.status for m in resolved.matched] == ["AUTO_MATCHED"]
+        assert resolved.skipped == []
 
-    def test_pew_non_pol_auto_matched_dismissed(self, fencer_db):
-        """4.62 PEW, country=HUN, would-be exact match → filtered out."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"],
-            fencer_db,
-            "PEW",
-            "V2",
-            2025,
-            scraped_countries=["HUN"],
-        )
-        assert len(resolved.matched) == 0
-        assert len(resolved.auto_created) == 0
-        assert resolved.skipped == ["KOWALSKI Jan"]
+    def test_pew_non_pol_auto_matched_dismissed(self, intl_roster):
+        """4.62 PEW, printed HUN, identity to a starter → stored all the same
+        (ADR-106 §1 reverses ADR-038 here: a Pole entered for another
+        federation is still ours)."""
+        resolved = _intl(["KOWALSKI Jan"], intl_roster, countries=["HUN"])
+        assert [(m.status, m.id_fencer) for m in resolved.matched] == [("AUTO_MATCHED", 3)]
 
-    def test_pew_non_pol_pending_dismissed(self, fencer_db):
-        """4.63 PEW, country=AUT, would-be PENDING → filtered out (no queue entry)."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKY Jan"],
-            fencer_db,
-            "PEW",
-            "V2",
-            2025,
-            scraped_countries=["AUT"],
-        )
-        assert len(resolved.matched) == 0
-        assert resolved.skipped == ["KOWALSKY Jan"]
+    def test_pew_non_pol_pending_dismissed(self, intl_roster):
+        """4.63 PEW, printed AUT, a near match only → skipped, no queue entry."""
+        resolved = _intl(["KOWALSKY Jan"], intl_roster, countries=["AUT"])
+        assert resolved.matched == [] and resolved.skipped == ["KOWALSKY Jan"]
 
-    def test_pew_non_pol_unmatched_dismissed(self, fencer_db):
-        """4.64 PEW, country=GER, UNMATCHED → filtered out (as before, but via country gate)."""
-        resolved = resolve_tournament_results(
-            ["MÜLLER Hans"],
-            fencer_db,
-            "PEW",
-            "V2",
-            2025,
-            scraped_countries=["GER"],
-        )
-        assert len(resolved.matched) == 0
-        assert resolved.skipped == ["MÜLLER Hans"]
+    def test_pew_non_pol_unmatched_dismissed(self, intl_roster):
+        """4.64 PEW, printed GER, no match → skipped."""
+        resolved = _intl(["MÜLLER Hans"], intl_roster, countries=["GER"])
+        assert resolved.matched == [] and resolved.skipped == ["MÜLLER Hans"]
 
-    def test_mew_non_pol_dismissed(self, fencer_db):
-        """4.65 MEW (team) also gated by country."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKI Jan"],
-            fencer_db,
-            "MEW",
-            "V2",
-            2025,
-            scraped_countries=["HUN"],
-        )
-        assert len(resolved.matched) == 0
-        assert resolved.skipped == ["KOWALSKI Jan"]
+    def test_mew_non_pol_dismissed(self, intl_roster):
+        """4.65 MEW, printed HUN, identity to a fencer with no SPWS start →
+        skipped."""
+        resolved = _intl(["NOWAK Piotr"], intl_roster, ttype="MEW", countries=["HUN"])
+        assert resolved.matched == [] and resolved.skipped == ["NOWAK Piotr"]
 
     def test_ppw_non_pol_still_ingested(self, fencer_db):
         """4.66 PPW (domestic) — country filter does NOT apply; all rows go in."""
@@ -640,32 +640,21 @@ class TestAdr038PolOnlyGate:
         assert len(resolved.auto_created) == 1
         assert len(resolved.skipped) == 0
 
-    def test_pew_missing_country_fails_closed(self, fencer_db):
-        """4.67 PEW with scraped_countries list but None entry → row dismissed (fail-closed)."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKI Jan", "PARTICS Péter"],
-            fencer_db,
-            "PEW",
-            "V2",
-            2025,
-            scraped_countries=["POL", None],
-        )
-        assert len(resolved.matched) == 1
-        assert resolved.matched[0].scraped_name == "KOWALSKI Jan"
+    def test_pew_missing_country_fails_closed(self, intl_roster):
+        """4.67 PEW, a row without a country and no identity → skipped; the
+        printed-POL starter beside it is stored."""
+        resolved = _intl(["KOWALSKI Jan", "PARTICS Péter"], intl_roster, countries=["POL", None])
+        assert [m.scraped_name for m in resolved.matched] == ["KOWALSKI Jan"]
         assert resolved.skipped == ["PARTICS Péter"]
 
-    def test_pew_no_countries_backward_compat(self, fencer_db):
-        """4.68 PEW without scraped_countries → legacy behavior (PENDING still provisionally linked)."""
-        resolved = resolve_tournament_results(
-            ["KOWALSKY Jan"],
-            fencer_db,
-            "PEW",
-            "V2",
-            2025,
-        )
-        # Without country info, fall back to pre-ADR-038 behavior (no filter)
-        assert len(resolved.matched) == 1
-        assert resolved.matched[0].status == "PENDING"
+    def test_pew_no_countries_backward_compat(self, intl_roster):
+        """4.68 PEW without any countries (a page headed Club): only identity
+        stores; a near match has no POL to fall back on and is skipped."""
+        resolved = _intl(["KOWALSKI Jan", "KOWALSKY Jan"], intl_roster)
+        assert [(m.scraped_name, m.status) for m in resolved.matched] == [
+            ("KOWALSKI Jan", "AUTO_MATCHED")
+        ]
+        assert resolved.skipped == ["KOWALSKY Jan"]
 
 
 # ---------------------------------------------------------------------------
@@ -878,9 +867,16 @@ class TestDuplicateInPipeline:
         assert resolved.matched[0].status == "AUTO_MATCHED"
 
     def test_pew_duplicate_resolved_via_category(self, fencer_db_with_duplicates):
-        """4.37 PEW tournament with duplicate name → correct fencer via category."""
+        """4.37 PEW tournament with duplicate name → correct fencer via category
+        (ADR-106 §1: the birth year must fit the bracket's category)."""
         resolved = resolve_tournament_results(
-            ["MŁYNEK Janusz"], fencer_db_with_duplicates, "PEW", "V1", 2025
+            ["MŁYNEK Janusz"],
+            fencer_db_with_duplicates,
+            "PEW",
+            "V1",
+            2025,
+            scraped_countries=["POL"],
+            spws_starters={8, 9},
         )
         assert len(resolved.matched) == 1
         assert resolved.matched[0].id_fencer == 9  # born 1984

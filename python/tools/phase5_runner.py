@@ -198,16 +198,17 @@ def _stage_flush_pairs(pairs: list, *, international: bool) -> list:
 
 
 def _unresolved_draft_rows(db, run_id: str) -> list[dict]:
-    """Draft rows that carry a fencer but no match method: unresolved PENDING
-    guesses. Committing them would credit each result to the matcher's guess,
-    so sign-off refuses while any remain (REPAIR.RUN.02)."""
+    """Draft rows without a match method: unresolved PENDING rows, with the
+    matcher's guess or (ADR-106 §1, a Pole the roster does not know) without
+    one. Committing them would credit each result to the guess, so sign-off
+    refuses while any remain (REPAIR.RUN.02, ADM.ID.08)."""
     rows = (
         db._sb.table("tbl_result_draft")
         .select("id_fencer, txt_scraped_name, enum_match_method")
         .eq("txt_run_id", run_id)
         .execute()
     ).data or []
-    return [r for r in rows if r.get("id_fencer") is not None and not r.get("enum_match_method")]
+    return [r for r in rows if not r.get("enum_match_method")]
 
 
 def _flush_source_matches(matches: list, *, international: bool) -> list:
@@ -410,10 +411,17 @@ def main() -> int:
 
         unresolved = _unresolved_draft_rows(db, args.commit_run_id)
         if unresolved:
+            code = args.event_code if args.event_code != "REQUIRED" else ""
+            where = (
+                f"doc/overrides/{code}.yaml (identity → id_fencer, or match_method "
+                "EXCLUDED) and re-stage"
+                if _is_international_intake({"txt_code": code})
+                else "the alias manager, or the event's override file, and re-stage"
+            )
             print(
                 f"⛔ sign-off BLOCKED — {len(unresolved)} unresolved PENDING row(s): the "
-                "fencer is the matcher's guess. Resolve them in the alias manager (or "
-                "confirm an alias and re-stage) before signing off.",
+                f"fencer is the matcher's guess or nobody. Resolve them in {where} "
+                "before signing off.",
                 file=sys.stderr,
             )
             for r in unresolved:
@@ -1795,53 +1803,72 @@ def _format_stage0_section(ctxs: list) -> list[str]:
 
 
 def _format_international_section(event_code: str, ctxs: list) -> list[str]:
-    """Per international bracket: source N, highest place, Polish rows, how
-    many of them are linked to a fencer, and rows dismissed (ADR-105 §5.8).
-    Empty for a domestic event. An unlinked Pole is never auto-created in an
-    international event, so the operator sees the gap here.
+    """Per international bracket (ADR-105 §5.8, ADR-106 §1): the source N, the
+    highest place, the rows stored, how many of those the source did not print
+    POL for, the PENDING rows and the rejected rows. Empty for a domestic event.
 
-    Two cases are flagged: an N equal to the Polish rows (the source may list
-    only the Poles, which is exactly the shape of the old damage), and a
+    Two cases are flagged: an N equal to the rows printed POL (the source may
+    list only the Poles, which is exactly the shape of the old damage), and a
     bracket whose source prints no country at all (an Engarde page headed
-    Club, ENG.NAT.01): its fencers are dismissed unless the event's override
-    file names their federation, and the flag says how many it names.
+    Club, ENG.NAT.01), where only identity can store a row.
+
+    Every PENDING row is listed below the table with its candidate: sign-off
+    refuses until the event's override file resolves it (decision P A).
     """
     from python.pipeline.joined_brackets import BracketField
+    from python.pipeline.types import StageMatchResult
 
     if not _is_international_intake({"txt_code": event_code}):
         return []
     lines = [
-        "## International brackets — source size (ADR-105)",
+        "## International brackets — source size and admission (ADR-105, ADR-106)",
         "",
-        "| Bracket | V-cat | Wpn | Gen | N (source) | Highest place | POL rows | Linked | Non-POL dismissed | Check |",
-        "|---|---|---|---|---:|---:|---:|---:|---:|---|",
+        "| Bracket | V-cat | Wpn | Gen | N (source) | Highest place | Stored | Stored, not printed POL "
+        "| PENDING | Rejected | Check |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|",
     ]
+    pending: list[tuple[str, StageMatchResult]] = []
     for _, parsed, ctx, _err in ctxs:
         if parsed is None or ctx is None:
             continue
         places = [r.place for r in parsed.results]
         n = BracketField.source(places, parsed.raw_pool_size).size
-        poles = len(ctx.matches)
-        linked = sum(1 for m in ctx.matches if m.method != "EXCLUDED")
-        dismissed = ctx.dismissed_non_pol
+        stored = [m for m in ctx.matches if m.method not in ("EXCLUDED", "PENDING")]
+        held = [m for m in ctx.matches if m.method == "PENDING"]
+        printed_pol = sum(1 for r in parsed.results if r.fencer_country == "POL")
         if places and all(r.fencer_country is None for r in parsed.results):
-            check = (
-                f"⚠ the source has no country: {len(ctx.nationality_from_override)} named in "
-                "the override file, every other fencer dismissed"
-            )
-        elif poles and n == poles:
-            check = "⚠ N equals the POL rows: confirm the source lists the whole bracket"
+            check = "⚠ the source has no country: only an identity match is stored"
+        elif printed_pol and n == printed_pol:
+            check = "⚠ N equals the rows printed POL: confirm the source lists the whole bracket"
         else:
             check = "✓"
         name = (
             getattr(parsed, "_ftl_source_name", None) or getattr(parsed, "source_url", None) or "?"
         )
+        bracket = f"{parsed.category_hint or '—'} {parsed.weapon or '?'} {parsed.gender or '?'}"
+        pending.extend((bracket, m) for m in held)
         lines.append(
             f"| {name} | {parsed.category_hint or '—'} | {parsed.weapon or '?'} | "
-            f"{parsed.gender or '?'} | {n} | {max(places, default=0)} | {poles} | {linked} | "
-            f"{len(dismissed)} | {check} |"
+            f"{parsed.gender or '?'} | {n} | {max(places, default=0)} | {len(stored)} | "
+            f"{sum(1 for m in stored if m.entered_for != 'POL')} | {len(held)} | "
+            f"{len(ctx.rejected)} | {check} |"
         )
     lines.append("")
+    if pending:
+        lines += [
+            f"### PENDING — resolve in doc/overrides/{event_code}.yaml before sign-off",
+            "",
+            "Printed POL, no identity match to a fencer with an SPWS start. For each row add "
+            "an identity entry (scraped name → id_fencer) or a match_method entry EXCLUDED, "
+            "then re-stage.",
+            "",
+            "| Bracket | Place | Name | Candidate |",
+            "|---|---:|---|---|",
+        ]
+        for bracket, m in pending:
+            candidate = m.id_fencer if m.id_fencer is not None else "—"
+            lines.append(f"| {bracket} | {m.place} | {m.scraped_name} | {candidate} |")
+        lines.append("")
     return lines
 
 

@@ -86,7 +86,9 @@ if [ -f "$RTM" ]; then
   # 141 since 2026-09-28: +FR-137–FR-142 (2026/2027 scoring engine, ADR-103).
   # 145 since 2026-10-01: +FR-146 (the chosen season's ranking rules, a pill
   #   pinned to the bottom of the ranklist screen and its modal).
-  EXPECTED=145
+  # 146 since 2026-10-02: +FR-147 (nationality per season, fixed for the
+  #   season, ADR-106).
+  EXPECTED=146
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

@@ -3,9 +3,8 @@ Tests for python/pipeline/overrides.py — Phase 3 (ADR-050) override YAML parse
 
 Schema lock 2026-05-02 (5 surfaces, EVF V0 ack deliberately omitted):
   identity / splitter / url / match_method / joint_pool
-A sixth, nationality, added 2026-10-02 (ADR-105 §1.1, decision C A).
 
-Plan IDs P3.OV1-P3.OV18.
+Plan IDs P3.OV1-P3.OV15.
 """
 
 from __future__ import annotations
@@ -283,50 +282,6 @@ class TestErrorPaths:
         tmp_override("EVT-BAD", "identity: [\n  bad")
         with pytest.raises(OverrideValidationError, match="EVT-BAD"):
             load_for_event("EVT-BAD", overrides_dir=tmp_path / "doc" / "overrides")
-
-
-class TestNationality:
-    """A Pole on an organiser page with no nationality column (Budapest 2025,
-    V1 men's épée, headed Club) is named in the event's override file, with
-    the evidence (ADR-105 §1.1, decision C A, 2 Oct 2026)."""
-
-    def test_parses_nationality_entries(self, tmp_override, tmp_path):
-        """P3.OV16: a nationality entry names the fencer, the federation and
-        the evidence; the lookup ignores case."""
-        from python.pipeline.overrides import load_for_event
-
-        tmp_override(
-            "EVT-NAT",
-            dedent("""
-            nationality:
-              - scraped_name: "BOBUSIA Jaroslaw"
-                country: POL
-                evidence: "EVF event 79, V1 men's epee: 5th of 33, POL"
-        """),
-        )
-        result = load_for_event("EVT-NAT", overrides_dir=tmp_path / "doc" / "overrides")
-        assert result.nationality_for("bobusia jaroslaw") == "POL"
-        assert result.nationality_for("KULKA Dawid") is None
-        assert result.nationality[0].evidence.startswith("EVF event 79")
-
-    @pytest.mark.parametrize(
-        "entry, problem",
-        [
-            ('{scraped_name: "X Y", evidence: "EVF"}', "country"),
-            ('{scraped_name: "X Y", country: POL}', "evidence"),
-            ('{country: POL, evidence: "EVF"}', "scraped_name"),
-            ('{scraped_name: "X Y", country: Poland, evidence: "EVF"}', "three-letter"),
-            ('{scraped_name: "X Y", country: POL, evidence: "EVF", place: 5}', "place"),
-        ],
-    )
-    def test_invalid_nationality_entry_raises(self, tmp_override, tmp_path, entry, problem):
-        """P3.OV18: an entry without a name, a three-letter federation code or
-        the evidence, or with an unknown field, is refused."""
-        from python.pipeline.overrides import OverrideValidationError, load_for_event
-
-        tmp_override("EVT-NATBAD", f"nationality:\n  - {entry}\n")
-        with pytest.raises(OverrideValidationError, match=problem):
-            load_for_event("EVT-NATBAD", overrides_dir=tmp_path / "doc" / "overrides")
 
 
 class TestPathResolution:

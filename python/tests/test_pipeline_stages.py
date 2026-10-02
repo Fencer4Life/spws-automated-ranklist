@@ -598,18 +598,28 @@ class TestS6ResolveIdentity:
         assert ctx.matches[0].method == "AUTO_CREATED"
 
     def test_unmatched_international_becomes_excluded(self):
-        """P3.S6.7 low-confidence + international event → EXCLUDED."""
+        """P3.S6.7 an unknown name at an international event is never created
+        (ADR-106 §1): printed POL it is PENDING without a candidate; printed
+        another federation it is rejected and kept out of the matches."""
         from python.pipeline.stages import s6_resolve_identity
 
         # V1 fencer (40+) so no V0+EVF halt
-        results = [_make_result("UNKNOWN PERSON XYZ", 1, birth_year=1970)]
+        results = [
+            _make_result("UNKNOWN PERSON XYZ", 1, birth_year=1970),
+            _make_result("FREMDER Hans", 2, birth_year=1970, fencer_country="GER"),
+        ]
         ctx = _make_ctx(parsed=_make_parsed(results=results, category_hint="V1"))
         ctx.event = {"id_event": 1, "txt_code": "PEW3-2025-2026"}  # PEW = EVF
         db = MagicMock()
         db.fetch_fencer_db.return_value = []
+        db.fetch_spws_starter_ids.return_value = set()
 
         s6_resolve_identity(ctx, db)
-        assert ctx.matches[0].method == "EXCLUDED"
+        assert [(m.scraped_name, m.method, m.id_fencer) for m in ctx.matches] == [
+            ("UNKNOWN PERSON XYZ", "PENDING", None)
+        ]
+        assert [r["name"] for r in ctx.rejected] == ["FREMDER Hans"]
+        db.insert_fencer.assert_not_called()
 
 
 # ===========================================================================

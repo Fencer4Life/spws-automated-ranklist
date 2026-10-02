@@ -780,9 +780,23 @@ def sync_results(
             all_results = scrape_event_results(evf_evt["evf_id"], client=client)
             print(f"  Total: {len(all_results)} fencers")
 
-            # Match ALL EVF fencers against SPWS fencer DB (not just POL)
-            spws_results = _match_against_spws(ref, token, all_results)
+            # ADR-106 §1: every EVF row is decided by identity and an SPWS start.
+            spws_results, pending = _match_against_spws(ref, token, all_results, season_end_year)
             print(f"  SPWS matches: {len(spws_results)}")
+            if pending:
+                lines = [
+                    f"{p['weapon']} {p['gender']} {p['category']} {p['place']}. "
+                    f"{p['fencer_name']} ({p['reason']})"
+                    for p in pending
+                ]
+                print("  PENDING (printed POL, not stored):\n    " + "\n    ".join(lines))
+                _telegram(
+                    bot_token,
+                    chat_id,
+                    f"<b>EVF results: PENDING, not stored</b>\n<pre>{evf_evt['name']}\n"
+                    + "\n".join(lines)
+                    + "</pre>\nResolve through the Phase 5 runner.",
+                )
 
             # Compare with CERT data and optionally ingest (pass all_results for participant count)
             _compare_and_ingest(
@@ -806,37 +820,55 @@ def _match_against_spws(
     ref: str,
     token: str,
     evf_results: list[dict],
-) -> list[dict]:
-    """Match EVF results against SPWS fencer DB using fuzzy matcher with diacritic folding.
+    season_end_year: int,
+) -> tuple[list[dict], list[dict]]:
+    """Decide each EVF row through the international admission (ADR-106 §1).
 
-    Returns only the EVF results that match a known SPWS fencer, enriched with
-    the matched SPWS surname (with proper diacritics) and SPWS birth year
-    (used by the Layer 1E V-cat cross-check).
+    Returns (stored, pending). A stored row matched a roster fencer by identity
+    (SURNAME, first given name, age category) who has a PPW or MPW result; it is
+    enriched with the SPWS surname, id, birth year (for the Layer 1E V-cat
+    cross-check) and the federation EVF printed. A pending row was printed POL
+    without such a match: the sync has no review step, so it is reported and
+    never ingested. Every other row is left out.
     """
-    from python.matcher.fuzzy_match import find_best_match
+    from python.pipeline.international_admission import STORED, admit
 
     fencer_db = _management_query(
-        ref, token, "SELECT id_fencer, txt_surname, txt_first_name, int_birth_year FROM tbl_fencer"
+        ref,
+        token,
+        "SELECT id_fencer, txt_surname, txt_first_name, int_birth_year, "
+        "bool_birth_year_estimated, json_name_aliases FROM tbl_fencer",
     )
-    by_lookup = {f["id_fencer"]: f.get("int_birth_year") for f in fencer_db}
+    starters_rows = _management_query(ref, token, "SELECT fn_spws_starter_ids() AS ids")
+    starters = set((starters_rows[0].get("ids") if starters_rows else None) or [])
+    by_id = {f["id_fencer"]: f for f in fencer_db}
 
-    matched: list[dict] = []
+    stored: list[dict] = []
+    pending: list[dict] = []
     for r in evf_results:
-        m = find_best_match(r["fencer_name"], fencer_db, use_diacritic_folding=True)
-        if m and m.id_fencer and m.confidence >= 85:
-            matched.append(
+        a = admit(
+            r["fencer_name"],
+            r.get("country"),
+            category=r.get("category"),
+            season_end_year=season_end_year,
+            roster=fencer_db,
+            spws_starters=starters,
+        )
+        if a.decision == STORED:
+            f = by_id.get(a.id_fencer) or {}
+            stored.append(
                 {
                     **r,
-                    "spws_surname": m.matched_name.split()[0]
-                    if m.matched_name
-                    else r["fencer_name"].split()[0],
-                    "spws_id": m.id_fencer,
-                    "spws_birth_year": by_lookup.get(m.id_fencer),
-                    "match_confidence": m.confidence,
+                    "spws_surname": f.get("txt_surname") or r["fencer_name"].split()[0],
+                    "spws_id": a.id_fencer,
+                    "spws_birth_year": f.get("int_birth_year"),
+                    "match_confidence": a.confidence,
+                    "entered_for": a.entered_for,
                 }
             )
-
-    return matched
+        elif a.decision == "PENDING":
+            pending.append({**r, "candidate": a.id_fencer, "reason": a.reason})
+    return stored, pending
 
 
 def _compare_and_ingest(
@@ -1142,6 +1174,7 @@ def _ingest_evf_results(
                     "txt_scraped_name": r["fencer_name"],
                     "num_confidence": r["match_confidence"],
                     "enum_match_status": "AUTO_MATCHED",
+                    "txt_entered_for": r.get("entered_for"),
                 }
             )
 

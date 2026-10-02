@@ -4,6 +4,7 @@
 **Date:** 2026-04-20
 **Relates to:** ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)
 **Amended by:** [ADR-105](105-international-results-keep-source-bracket.md) (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)
+Superseded in part by [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (accepted 2026-10-02): the country gate before matching (Decision, points 2 and 4) and the rejection of alternative 1. An international row is admitted by identity and an SPWS start; a printed POL is only the fallback to PENDING.
 
 ## Context
 

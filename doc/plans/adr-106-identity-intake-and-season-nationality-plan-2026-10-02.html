@@ -1,0 +1,382 @@
+<meta charset="utf-8">
+<title>ADR-106 implementation plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · identity · schema · Development Plan · ADR-106</p>
+  <h1>Admit international results by identity; record nationality per season</h1>
+  <p class="dek">Implements <a href="../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>.
+  One admission module replaces four copies of the country rule. A season table and a per-result column record the
+  federation each fencer entered under, fixed for the season. Then the 18 international events with an organiser source
+  are re-staged under the rule, <b>signed off one by one</b>, on LOCAL, CERT and PROD.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>signed off 2 Oct: P A, O1 A, identity = SURNAME, Name, age category</span>
+    <span class="pill"><span class="dot"></span>built on LOCAL 2 Oct: pytest 1527, pgTAP 96 13/13</span>
+    <span class="pill"><span class="dot"></span>migration <code>20261003000001</code></span>
+    <span class="pill"><span class="dot"></span>FR-09 amended · FR-147 new</span>
+    <span class="pill danger"><span class="dot"></span>release dae9c097 held until this lands</span>
+  </div>
+  <p class="mono" style="font-size:16px;color:var(--faint)">Read order: Decide this first → Locked decisions → Scenarios →
+  Tests first → Build → Parity → Data → Release → Documentation gate → Done.</p>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decided 2 October · both A</p>
+    <h2>Two decisions before the build</h2>
+    <p>You chose <b>A</b> for both (“P A, O1 A. proceed”), and set identity as SURNAME, first name and age category, exactly,
+    not a fuzzy score (“SURNAME, Name, Age category”).</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">P</span> How is a POL-fallback PENDING row resolved?</p>
+      <p>Today an international PENDING row is <b>not written</b> as a draft; it is only listed in the staging summary
+      (<code>python/pipeline/review_cli.py:1125–1134</code>), so in practice it is dropped. Under the rule “POL only as
+      PENDING”, someone has to decide each one. Measured: 16 rows over the 18 events (9 at <code>PEW6efs-2025-2026</code>).</p>
+      <ul>
+        <li><b>A</b> the event's commit is refused while a POL-fallback PENDING row is unresolved. You resolve it in the
+        event's override file with the two sections that already exist (ADR-050): <code>identity</code> links it to a
+        fencer (<code>id_fencer</code>), <code>match_method</code> with <code>EXCLUDED</code> and a note dismisses it.
+        The staging summary lists each row with its candidate.</li>
+        <li><b>B</b> as today: listed, not written, not blocking.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> “Only as PENDING” means a person decides. Nothing new to build for the resolution
+      itself, and the decision is written down per event.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">O1</span> The nationality override built on 2 October (ADR-106 open item O1)</p>
+      <p>Commit <code>6630fd67</code> (unpushed) added a <code>nationality</code> section to the override file, the
+      Budapest entry and P3.OV16–18. The identity rule stores BOBUSIA without them.</p>
+      <ul>
+        <li><b>A</b> remove the section, <code>doc/overrides/PEW1efs-2025-2026.yaml</code> and P3.OV16–18. Keep the Engarde
+        heading fix (ENG.NAT.01–02) and the summary's flag for a source without a country.</li>
+        <li><b>B</b> keep it as a second way in.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> One rule, no exceptions file.</p>
+    </div>
+  </section>
+
+  <section id="locked">
+    <p class="kicker">Locked · decided by you on 2 October</p>
+    <h2>What this plan builds</h2>
+    <ul>
+      <li><b>Admission</b> (international events only): identity match (MATCH.ID) <b>and</b> a PPW or MPW result in any
+      season → stored, whatever the printed country; otherwise printed POL → PENDING; otherwise rejected, never PENDING,
+      no fencer created. Past seasons stay ungated.</li>
+      <li><b>One module</b>, <code>python/pipeline/international_admission.py</code>, called by
+      <code>s6_resolve_identity</code>, <code>ResolveFencers</code>, <code>resolve_tournament_results</code> and the EVF
+      sync.</li>
+      <li><b>Nationality</b>: <code>tbl_fencer_nationality</code>, one federation per fencer and season, fixed by the
+      season's earliest stored result whose source printed one; <code>tbl_result.txt_entered_for</code> holds that printed
+      federation as evidence. A later start that season printing another federation does not change it; it is listed as a
+      conflict. Nationality is read by neither the admission, the scoring nor the ranking.</li>
+    </ul>
+  </section>
+
+  <section id="scenarios">
+    <p class="kicker">Scenario walk-throughs</p>
+    <h2>Six cases, surface by surface</h2>
+    <ol class="steps">
+      <li><b>Budapest 2025, V1 men's épée, a page headed Club.</b> Every row has no printed country. BOBUSIA (16 SPWS
+      results), KULKA (5), KORONA Radosław, ALCSER and STOLARIK match by identity and have SPWS starts: stored, with
+      <code>txt_entered_for</code> NULL. Nobody else in the bracket is ours: rejected. No season nationality is set from
+      this event, because it printed none.</li>
+      <li><b>KULKA's 2025/26 nationality.</b> His earliest 2025/26 start that prints a federation prints IRL: his
+      2025/26 row is IRL. Every later 2025/26 start prints IRL too; no conflict. In 2026/27 he may enter for Poland, and
+      the 2026/27 row follows his first start of that season.</li>
+      <li><b>CISZEWSKA Barbara, <code>PEW6efs-2025-2026</code>, V2 women's épée, 1st, printed POL.</b> She is on the
+      roster but has no SPWS start: PENDING. Under P A the event cannot be committed until you link her (an
+      <code>identity</code> entry) or dismiss the row (<code>match_method: EXCLUDED</code>).</li>
+      <li><b>LEAHEY John, Criterium 2025, V2 men's épée, 9th, printed GBR.</b> Our birth year 1976 puts him in V1 for
+      2024/25, so there is no identity match, and GBR is not POL: rejected. Once his birth year is corrected, a re-stage
+      stores it.</li>
+      <li><b>The daily EVF sync on CERT</b> picks up a new EVF event. Each EVF row goes through the same module: a roster
+      fencer with an SPWS start is stored with the federation EVF printed, a Pole without a match is PENDING in the sync's
+      report, the rest are rejected. The sync's own fuzzy-85 match is gone.</li>
+      <li><b>An event is rolled back or replaced</b> (<code>fn_replace_event_from_draft</code>). Its results are deleted,
+      and the trigger recomputes each affected fencer's season row from the results that remain (or removes it if none
+      remain and it was not entered by an admin). A domestic PPW event never touches the table: domestic pages print no
+      federation.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Tests first · RED before GREEN</p>
+    <h2>Acceptance tests</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Assertion</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td><code>ADM.ID.01</code></td><td>An identity match to a fencer with an SPWS start, printed IRL, is stored (KULKA-like).</td><td><code>python/tests/test_international_admission.py</code></td></tr>
+        <tr><td><code>ADM.ID.02</code></td><td>The same with no printed country is stored (BOBUSIA-like).</td><td>same</td></tr>
+        <tr><td><code>ADM.ID.03</code></td><td>An identity match to a fencer with no SPWS start, printed SVK, is rejected (KOLLAR).</td><td>same</td></tr>
+        <tr><td><code>ADM.ID.04</code></td><td>An identity match to a fencer with no SPWS start, printed POL, is PENDING (CISZEWSKA).</td><td>same</td></tr>
+        <tr><td><code>ADM.ID.05</code></td><td>No identity match, printed POL: PENDING, with the candidate when the matcher has one, without when it has none.</td><td>same</td></tr>
+        <tr><td><code>ADM.ID.06</code></td><td>No identity match, printed foreign or blank: rejected, never PENDING (ADR-038's “KOLCZONAY → KOWALCZYK at 64 %”).</td><td>same</td></tr>
+        <tr><td><code>ADM.ID.07</code></td><td>One fixture through <code>s6_resolve_identity</code>, <code>ResolveFencers</code>, <code>resolve_tournament_results</code> and <code>evf_sync._match_against_spws</code> gives the same three decisions.</td><td>same</td></tr>
+        <tr><td><code>ADM.ID.08</code></td><td>The staging summary lists per bracket the rows stored by identity whose printed country is not POL, the PENDING rows and the rejected rows. Under P A, the commit is refused while a POL-fallback PENDING row has neither an <code>identity</code> nor an <code>EXCLUDED</code> entry.</td><td><code>test_international_intake.py</code></td></tr>
+        <tr><td><code>NAT.EVID.01</code></td><td>A draft result carries <code>txt_entered_for</code> from the printed country, folded (PL → POL), NULL when none.</td><td><code>test_international_admission.py</code></td></tr>
+        <tr><td><code>NAT.EVID.02</code></td><td><code>fn_commit_event_draft</code> copies <code>txt_entered_for</code> into <code>tbl_result</code>.</td><td><code>supabase/tests/96_season_nationality.sql</code></td></tr>
+        <tr><td><code>NAT.EVID.03</code></td><td><code>fn_ingest_tournament_results</code> stores an <code>entered_for</code> key (the EVF sync and the Admin scrape).</td><td>same</td></tr>
+        <tr><td><code>NAT.SEASON.01</code></td><td>The table's key is <code>(id_fencer, id_season)</code>; <code>txt_country</code> matches <code>^[A-Z]{3}$</code>.</td><td>same</td></tr>
+        <tr><td><code>NAT.SEASON.02</code></td><td>A stored international result with <code>txt_entered_for</code> creates the fencer's season row.</td><td>same</td></tr>
+        <tr><td><code>NAT.SEASON.03</code></td><td>A later-dated result that season with another federation leaves the row unchanged and appears in <code>vw_fencer_nationality_conflict</code>.</td><td>same</td></tr>
+        <tr><td><code>NAT.SEASON.04</code></td><td>An earlier-dated result stored afterwards takes over the row; the later one becomes the conflict.</td><td>same</td></tr>
+        <tr><td><code>NAT.SEASON.05</code></td><td>Deleting the result that fixed the row recomputes it from the rest, or removes it when none remain; an admin row is kept.</td><td>same</td></tr>
+        <tr><td><code>NAT.SEASON.06</code></td><td>Grants: no <code>anon</code> access; the posture gate passes.</td><td>same</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Amended:</b> INTL.POL.01–06 (the country no longer gates; a foreign namesake without an SPWS start is still
+    rejected; a foreign row never trips the V0 halt), INTL.INV.02–03. <b>Removed under O1 A:</b> P3.OV16–18.</p>
+  </section>
+
+  <section id="build">
+    <p class="kicker">Build · in this order</p>
+    <h2>Files and changes</h2>
+    <ol class="steps">
+      <li><b>Migration <code>supabase/migrations/20261003000001_identity_intake_season_nationality.sql</code>.</b>
+      <code>tbl_result.txt_entered_for</code> and <code>tbl_result_draft.txt_entered_for</code> (char 3, NULL);
+      <code>tbl_fencer_nationality</code> (<code>id_fencer</code>, <code>id_season</code>, <code>txt_country</code>,
+      <code>id_result_first</code>, <code>enum_source</code> SOURCE | ADMIN, <code>ts_created</code>, key
+      <code>(id_fencer, id_season)</code>); <code>fn_refresh_fencer_season_nationality(id_fencer, id_season)</code> and an
+      AFTER INSERT / UPDATE OF <code>txt_entered_for</code> / DELETE trigger on <code>tbl_result</code> that calls it (the
+      earliest <code>tbl_tournament.dt_tournament</code> wins); <code>vw_fencer_nationality_conflict</code>;
+      <code>fn_spws_starter_ids()</code> (one array, service role); <code>fn_commit_event_draft</code> and
+      <code>fn_ingest_tournament_results</code> re-created from their latest definitions to carry the column; grants per
+      ADR-083. One trigger means every path that stores a result keeps the season table, with no Python involved.</li>
+      <li><b>Module <code>python/pipeline/international_admission.py</code></b>: <code>admit(name, printed_country,
+      category, season_end_year, roster, starters) → Admission(decision, id_fencer, confidence, reason)</code>, built on
+      <code>find_best_match</code> (<code>python/matcher/fuzzy_match.py</code>) and <code>stages._norm_nat</code>.
+      <code>DbConnector.fetch_spws_starter_ids()</code> reads the set once per run.</li>
+      <li><b>The four paths.</b> <code>s6_resolve_identity</code> (<code>python/pipeline/stages.py:878</code>) and
+      <code>ResolveFencers</code> (<code>python/pipeline/plugins/resolve_fencers.py:81</code>) call it in place of
+      <code>_keep_pol_rows</code>, which is removed; the identity and match-method overrides still come first.
+      <code>resolve_tournament_results</code> (<code>python/matcher/pipeline.py:207</code>) and
+      <code>evf_sync._match_against_spws</code> (<code>python/scrapers/evf_sync.py:805</code>) call it for international
+      types. <code>StageMatchResult</code> gains <code>entered_for</code>; the draft builder
+      (<code>review_cli.py:1132–1146</code>), <code>scrape_tournament.py</code>'s payload and the EVF sync's JSON carry it.
+      <code>PipelineContext.dismissed_non_pol</code> becomes <code>rejected</code>.</li>
+      <li><b>Staging summary</b> (<code>phase5_runner._format_international_section</code>): stored by identity (not POL),
+      PENDING with candidate, rejected, season conflicts. Under P A, <code>--commit-run-id</code> refuses an unresolved
+      POL-fallback PENDING row.</li>
+      <li><b>O1 A</b>: remove the <code>nationality</code> override section from <code>python/pipeline/overrides.py</code> and
+      <code>types.py</code>, the Budapest file and P3.OV16–18; ADR-050 Q1 back to five surfaces; ADR-105's “A page without a
+      nationality” bullet rewritten to the identity rule.</li>
+    </ol>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">LOCAL · CERT · PROD</p>
+    <h2>Parity matrix</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Item</th><th>LOCAL</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Migration</td><td><code>supabase migration up --local</code> after the tests are written</td><td>CI Release</td><td>CI Release</td></tr>
+        <tr><td>Admission module (Phase 5 runner, review CLI)</td><td>same code</td><td><code>phase5-event-runner.yml</code> runs main</td><td>same</td></tr>
+        <tr><td>Admin per-tournament scrape</td><td>same code</td><td><code>scrape-tournament.yml</code></td><td>same</td></tr>
+        <tr><td>Daily EVF sync</td><td>not scheduled</td><td><code>evf-sync.yml</code> writes results to CERT</td><td>not written by the sync</td></tr>
+        <tr><td>Season table fill</td><td>by the re-staging</td><td>by the re-staging runs</td><td>by the re-staging runs</td></tr>
+        <tr><td>Today's LOCAL work</td><td colspan="3">unchanged until the re-staging: domestic ingestion and the scoring are untouched</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="data">
+    <p class="kicker">Data · per-event sign-off</p>
+    <h2>Re-stage the 18 events under the rule</h2>
+    <ol class="steps">
+      <li>On LOCAL, stage each event; machine-compare its drafts with the stored rows and with the measurement
+      (+130, 16 PENDING, 2 rejected in total); write one review sheet with every event's changes.</li>
+      <li>You sign off <b>each event by name</b> (several may go in one message). An unsigned event is not committed. Under P A
+      you resolve its PENDING rows first.</li>
+      <li>Commit the signed events on LOCAL with <code>--replace-event</code>; check TT.CODE.06, INTL.INV.01, the season
+      table and <code>vw_fencer_nationality_conflict</code>.</li>
+      <li>After the release, run each signed event on CERT, then PROD, through <code>phase5-event-runner.yml</code>, every
+      draft and committed score machine-diffed against LOCAL (PROD keeps its two birth-year corrections).</li>
+    </ol>
+  </section>
+
+  <section id="release">
+    <p class="kicker">Release</p>
+    <h2>One push, after preflight</h2>
+    <p>Commit on <code>claude/joined-engine-2026-2027</code>; <code>scripts/refresh-graph.sh</code> and
+    <code>python3 tools/docs-search/ingest.py</code>; in <code>/Users/aleks/coding/SPWSranklist-integration</code>
+    <code>git merge --ff-only origin/main</code>, <code>scripts/integrate-agent-branch.sh claude/joined-engine-2026-2027</code>,
+    <code>scripts/preflight.sh</code> exit 0, then <code>git push origin integration/main:main</code> (your go for the
+    push is part of signing this plan). The held merge <code>dae9c097</code> goes out with it, since the branch now
+    carries the O1 removal on top. CI and Release are followed to the end; the migration is checked on CERT and PROD.</p>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">☐</span> Documentation coherence gate complete</p>
+<pre class="trace">Impact: domain | architecture | operations | reference
+Canonical docs affected: doc/handbook/subsystems/ingestion.html, doc/handbook/subsystems/identity-and-recompute.html,
+  doc/handbook/architecture/containers-and-data.html, doc/handbook/domain/competition-and-ranking.html,
+  doc/handbook/domain/glossary.html, doc/handbook/reference/security-posture.html,
+  doc/handbook/reference/workflow-catalog.html, doc/handbook/operations/operator-runbooks.html
+ADR impact: new (ADR-106, status updated on landing) | amend (ADR-105, ADR-050) | supersede (ADR-038 in part)
+Operational impact: operator-runbooks.html (resolving an international PENDING row in the override file);
+  workflow-catalog.html (evf-sync results path)
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: yes</pre>
+    </div>
+    <p>Also: RTM FR-09 amended to the three-step rule, FR-147 (nationality per season) added and
+    <code>scripts/check-spec-sync.sh</code>'s expected count 145 → 146; spec Appendix C (ADR-106 row) and Appendix D (pgTAP
+    total + NAT.* assertions); the test IDs above in the RTM.</p>
+  </section>
+
+  <section id="done">
+    <p class="kicker">Definition of done · binary</p>
+    <h2>Done when all of these hold</h2>
+    <ul>
+      <li><code>scripts/preflight.sh</code> exits 0 in the integration checkout; CI and Release succeed; the migration is
+      present on CERT and PROD.</li>
+      <li>Every acceptance test above was RED first and is GREEN.</li>
+      <li>Each of the 18 events is signed off by you and committed on LOCAL, and CERT and PROD are machine-identical to
+      LOCAL for it; TT.CODE.06 and INTL.INV.01 are 0 and no drafts are left on any environment.</li>
+      <li><code>vw_fencer_nationality_conflict</code> is empty, or each row in it has been shown to you.</li>
+      <li>The documentation gate above is complete, and ADR-106's status records the landing.</li>
+    </ul>
+  </section>
+
+  <section id="out">
+    <p class="kicker">Not in this plan</p>
+    <h2>Follow-ups (ADR-106 open items)</h2>
+    <ul>
+      <li><b>O2</b> an admin correction of a recorded season nationality (the table already has <code>enum_source</code>
+      ADMIN; the editor comes later).</li>
+      <li><b>O3</b> what the season nationality decides beyond the record: display, and team-selection eligibility.</li>
+      <li><b>O4</b> retiring <code>tbl_fencer.txt_nationality</code>.</li>
+      <li>LEAHEY John's birth year; the scraped name “167” on his results; the reversed “ANNA-LISE Mion”.</li>
+      <li>Events without an organiser source (2023/24 and part of 2024/25) keep <code>txt_entered_for</code> NULL.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Sign-off</p>
+    <h2>Signed off</h2>
+    <p>Signed off on 2 October with P A and O1 A, including the push. The 18 events still need your sign-off one by one,
+    by name, before each commit.</p>
+  </section>
+
+  <p class="foot">plan · adr-106-identity-intake-and-season-nationality · 2026-10-02 · evidence: brainstorm page and LOCAL measurement of 18 events</p>
+</div>

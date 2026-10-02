@@ -7,28 +7,22 @@ keys log a warning; unknown fields within a known section raise
 OverrideValidationError. Identity entries with neither id_fencer nor
 create_fencer (or with both) raise.
 
-Schema lock 2026-05-02 — five surfaces, and a sixth since 2026-10-02:
+Schema lock 2026-05-02 — five surfaces:
   identity        — list of {scraped_name, id_fencer | create_fencer{...}}
   splitter        — {birth_year_overrides{name: int}, vcat_overrides{name: V0..V4}}
   url             — {validation_url, override_reason}
   match_method    — list of {scraped_name, force_method (enum), note}
   joint_pool      — {force_flag: list of {tournament_code, siblings, note}}
-  nationality     — list of {scraped_name, country, evidence}: the federation a
-                    fencer entered under, where the organiser's page prints no
-                    nationality (ADR-105 §1.1); it fills a blank, never
-                    replaces a printed nationality
 
 EVF V0 ack is deliberately omitted — V0 + EVF/FIE = data corruption per
 R005b; pipeline halts and operator fixes upstream, no override.
 
-Tests: python/tests/test_overrides.py (P3.OV1-P3.OV16, P3.OV18) and
-python/tests/test_international_intake.py (P3.OV17).
+Tests: python/tests/test_overrides.py (15 assertions P3.OV1-P3.OV15).
 """
 
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +32,6 @@ from python.pipeline.types import (
     IdentityOverride,
     JointPoolOverride,
     MatchMethodOverride,
-    NationalityOverride,
     Overrides,
     SplitterOverrides,
     UrlOverride,
@@ -48,9 +41,7 @@ log = logging.getLogger(__name__)
 
 
 VALID_FORCE_METHODS = {"PENDING", "AUTO_MATCHED", "AUTO_CREATED", "EXCLUDED"}
-KNOWN_SECTIONS = {"identity", "splitter", "url", "match_method", "joint_pool", "nationality"}
-NATIONALITY_FIELDS = {"scraped_name", "country", "evidence"}
-_FEDERATION_CODE = re.compile(r"^[A-Z]{3}$")
+KNOWN_SECTIONS = {"identity", "splitter", "url", "match_method", "joint_pool"}
 
 
 class OverrideValidationError(ValueError):
@@ -108,7 +99,6 @@ def load_for_event(event_code: str, overrides_dir: Path | None = None) -> Overri
         url=_parse_url(raw.get("url"), path),
         match_method=_parse_match_method(raw.get("match_method"), path),
         joint_pool=_parse_joint_pool(raw.get("joint_pool"), path),
-        nationality=_parse_nationality(raw.get("nationality"), path),
     )
 
 
@@ -280,44 +270,6 @@ def _parse_joint_pool(section: Any, path: Path) -> list[JointPoolOverride]:
                 tournament_code=str(tournament_code),
                 siblings=[str(s) for s in siblings],
                 note=str(entry.get("note", "")),
-            )
-        )
-    return result
-
-
-def _parse_nationality(section: Any, path: Path) -> list[NationalityOverride]:
-    if section is None:
-        return []
-    if not isinstance(section, list):
-        raise OverrideValidationError(
-            f"{path.name}: 'nationality' must be a list, got {type(section).__name__}"
-        )
-
-    result: list[NationalityOverride] = []
-    for i, entry in enumerate(section):
-        if not isinstance(entry, dict):
-            raise OverrideValidationError(f"{path.name}: nationality[{i}] must be a mapping")
-        unknown = set(entry) - NATIONALITY_FIELDS
-        if unknown:
-            raise OverrideValidationError(
-                f"{path.name}: nationality[{i}] has unknown field(s) {sorted(unknown)}"
-            )
-        for required in ("scraped_name", "country", "evidence"):
-            if not entry.get(required):
-                raise OverrideValidationError(
-                    f"{path.name}: nationality[{i}] missing required field {required!r}"
-                )
-        country = str(entry["country"])
-        if not _FEDERATION_CODE.match(country):
-            raise OverrideValidationError(
-                f"{path.name}: nationality[{i}] country {country!r} is not a three-letter "
-                f"federation code (POL, IRL, ...)"
-            )
-        result.append(
-            NationalityOverride(
-                scraped_name=str(entry["scraped_name"]),
-                country=country,
-                evidence=str(entry["evidence"]),
             )
         )
     return result

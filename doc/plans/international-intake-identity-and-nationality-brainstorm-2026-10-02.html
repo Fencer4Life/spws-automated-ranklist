@@ -1,0 +1,335 @@
+<meta charset="utf-8">
+<title>International intake: identity first, nationality per season</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · international intake · Brainstorm · design in progress</p>
+  <h1>Who an international result belongs to, and which country he fenced for</h1>
+  <p class="dek">Two questions that used to be one. <b>Who is this?</b> is answered by identity, against our roster,
+  for every ingestion path through one shared module. <b>Which country did he fence for?</b> is a fact per season,
+  and a fencer can have more than one. The intake rule is decided; the nationality model is what we are designing now.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>decided: identity first, SPWS start in any season (B)</span>
+    <span class="pill"><span class="dot"></span>decided: N = A, one nationality per season, fixed for the season</span>
+    <span class="pill warn"><span class="dot"></span>recorded as ADR-106 (draft)</span>
+    <span class="pill danger"><span class="dot"></span>release dae9c097 held, not pushed</span>
+    <span class="pill"><span class="dot"></span>measured on LOCAL; nothing changed</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decided 2 October · N = A, with the season lock</p>
+    <h2>How do we model several nationalities per fencer, one chosen per season?</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Your decision: A, and a fencer cannot change nationality within a season</p>
+      <p>The first start recorded with a nationality fixes it until the end of that season; he can change it the next
+      season. So a season holds exactly <b>one</b> nationality per fencer, and different seasons may differ. The
+      <code>bool_chosen</code> flag below is no longer needed: the key is <code>(id_fencer, id_season)</code>. A later
+      start in the same season that prints another country does not change it; it is listed as a conflict for review.
+      Deterministic under re-ingest: the earliest-dated start of the season fixes it. Recorded in
+      <a href="../adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a>.</p>
+    </div>
+    <p>Your requirement: the same fencer may represent different countries in different seasons; we keep every
+    nationality we know of, and mark the one he represents in a given season. KULKA Dawid fences PPW for a Polish club
+    and entered EVF Budapest, Madrid and Liège 2025/26 for <b>Ireland</b>; LEAHEY John is <b>GBR</b> at every EVF event
+    and stored as PL here.</p>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">A</span> A season table: one row per fencer, season and country</p>
+<pre class="trace">tbl_fencer_nationality
+  id_fencer     → tbl_fencer
+  id_season     → tbl_season
+  txt_country   three-letter federation code (POL, IRL, GBR …)
+  bool_chosen   the one he represents in this season
+  enum_source   SOURCE (a result printed it) | ADMIN (entered by hand)
+  primary key (id_fencer, id_season, txt_country)
+  at most one chosen row per (id_fencer, id_season)</pre>
+      <ul>
+        <li><b>Filled by ingestion.</b> When a source prints a federation for a stored result, that country is added
+        for the fencer in that season. The first one of a season becomes the chosen one. A second, different country in
+        the same season is added but not chosen, and is listed for you to review.</li>
+        <li><b>Edited by you</b> in the Admin fencer view: add a country, or change the chosen one.</li>
+        <li>KULKA 2025/26: IRL, chosen. LEAHEY: GBR, chosen, in each season with an international result.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">B</span> Validity periods: a nationality holds from a season until it changes</p>
+      <p><code>(id_fencer, txt_country, season_from, season_to, bool_chosen)</code>. Fewer rows, since a federation change
+      is rare. But one chosen per season becomes a constraint over overlapping ranges, and correcting one season in the
+      middle means splitting a period in two.</p>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">C</span> Evidence only: the printed federation on each result, the season derived</p>
+      <p>Each international result keeps the country its source printed (<code>tbl_result.txt_entered_for</code>); a view
+      lists a fencer's countries per season, and the chosen one is the most frequent, unless you override it. Every claim
+      has a source row. But a season with only domestic results has nothing (domestic pages print no country), and
+      “chosen” is a rule nobody sees.</p>
+    </div>
+    <p><b>Recommendation: A, with C's column as its evidence.</b> A is your model as you stated it: several countries per
+    season, one chosen, editable. The result-level column records what each source printed, so every row in A can be
+    traced to the results that put it there. And timing matters: the 18 international events are about to be
+    re-staged under the new intake rule. If the column exists by then, that one pass also fills 2024/25 and 2025/26.
+    Without it, a second pass would be needed.</p>
+    <p><b>What stays as it is:</b> <code>tbl_fencer.txt_nationality</code> (one value, default PL, read only by the
+    fencer-creation dedup) stays untouched for now and is retired once A is in use. Nationality is <b>not</b> read by the
+    intake: who a result belongs to is decided by identity and SPWS participation alone (below).</p>
+  </section>
+
+  <section id="today">
+    <p class="kicker">What we have today</p>
+    <h2>One nationality field, defaulted to PL, kept by nobody</h2>
+    <ul>
+      <li><code>tbl_fencer.txt_nationality</code>: one value per fencer, <code>NOT NULL DEFAULT 'PL'</code>. On LOCAL:
+      347 PL, 17 POL, one each of CRC, BLR and LTU.</li>
+      <li>Every ingestion path creates a fencer with the country its source printed, or PL when none is printed. Domestic
+      pages print none, so the foreign fencers who came to our events are stored as PL: LYNCH, MURRAY, MCGINNITY (IRL),
+      WHITLEY (USA), GOLD, GERTSMAN (ISR), KUZMICHOVA, PRAHA-TSAREHRADSKA (UKR), LEAHEY (GBR).</li>
+      <li>Nothing maintains it. The Admin UI only displays it (<code>BirthYearReview</code>); Stage 0 uses it as a
+      tiebreak when it deduplicates a fencer it is about to create.</li>
+    </ul>
+  </section>
+
+  <section id="decided">
+    <p class="kicker">Decided · 2 October</p>
+    <h2>The intake rule, one module for every path</h2>
+    <p>For an international event (PEW, MEW, MSW, PSW, the IMEW and IMSW codes included), each row of the source is
+    decided once, in this order:</p>
+    <ol class="steps">
+      <li><b>Identity.</b> Surname, first given name and a birth year that fits the bracket's category match one fencer
+      on our roster (the existing MATCH.ID rule), <b>and</b> that fencer has a PPW or MPW result in any season. The row is
+      stored and linked. The printed country does not matter. ZABŁOCKI, LEAHEY (GBR), KULKA (IRL), BOBUSIA (no country
+      printed).</li>
+      <li><b>Fallback.</b> Otherwise, if the source prints POL, the row goes to review as PENDING. It is never stored
+      automatically.</li>
+      <li><b>Rejected.</b> Everything else is dismissed and listed in the staging summary. It never becomes PENDING.
+      KOLLAR Gabriel (SVK, no SPWS start).</li>
+    </ol>
+    <p>Past seasons stay ungated: the ranking entry gate remains on 2026/27 only. Domestic events are unchanged.</p>
+    <h3>The four paths that will call it</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Path</th><th>Today</th></tr></thead>
+      <tbody>
+        <tr><td>Phase 5 runner and review CLI: <code>s6_resolve_identity</code></td><td><code>stages._keep_pol_rows</code>: country first, then match</td></tr>
+        <tr><td>Plugin pipeline: <code>ResolveFencers</code></td><td>the same helper</td></tr>
+        <tr><td>Admin per-tournament scrape and the legacy orchestrator: <code>resolve_tournament_results</code></td><td>its own copy: country ≠ POL dropped (<code>matcher/pipeline.py:204</code>)</td></tr>
+        <tr><td>Daily EVF sync, results into CERT: <code>evf_sync._match_against_spws</code></td><td>any fuzzy match ≥ 85, no birth-year check, no SPWS check</td></tr>
+      </tbody>
+    </table></div>
+    <p>The module takes a row, its bracket's category and season, the roster and the set of fencers with an SPWS start,
+    and returns one decision: stored, PENDING or rejected, with the fencer and the reason. Each path keeps its own
+    plumbing and calls it.</p>
+  </section>
+
+  <section id="measured">
+    <p class="kicker">Measured on LOCAL · 18 events with an organiser source</p>
+    <h2>The rule stores 130 more international results, of 24 fencers</h2>
+    <p>Each event was staged with the country filter off, every row recorded, the drafts discarded; no alias written,
+    nothing committed. The rows were then decided by the rule above.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Stored today (POL, identity)</th><th>Under the rule</th><th>New</th><th>PENDING</th><th>Rejected identity</th></tr></thead>
+      <tbody>
+        <tr><td><code>IMEW-2024-2025</code></td><td>28</td><td>47</td><td>19</td><td>0</td><td>0</td></tr>
+        <tr><td><code>IMSW-2025-2026</code></td><td>30</td><td>35</td><td>6</td><td>1</td><td>0</td></tr>
+        <tr><td><code>PEW10efs-2024-2025</code> Criterium 2025</td><td>7</td><td>10</td><td>3</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW10efs-2025-2026</code> Criterium 2026</td><td>10</td><td>17</td><td>7</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW1efs-2025-2026</code> Budapest</td><td>25</td><td>43</td><td>18</td><td>0</td><td>1</td></tr>
+        <tr><td><code>PEW2efs-2025-2026</code> Madrid</td><td>5</td><td>18</td><td>13</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW31fs-2025-2026</code> Fâches</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW3fs-2024-2025</code></td><td>0</td><td>3</td><td>3</td><td>1</td><td>0</td></tr>
+        <tr><td><code>PEW4efs-2025-2026</code> Napoli</td><td>23</td><td>29</td><td>6</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW5ef-2025-2026</code> Stockholm</td><td>1</td><td>7</td><td>6</td><td>2</td><td>1</td></tr>
+        <tr><td><code>PEW61s-2025-2026</code></td><td>3</td><td>4</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW62efs-2025-2026</code></td><td>15</td><td>27</td><td>12</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW6efs-2025-2026</code></td><td>129</td><td>144</td><td>19</td><td>9</td><td>0</td></tr>
+        <tr><td><code>PEW7es-2024-2025</code></td><td>76</td><td>83</td><td>8</td><td>3</td><td>0</td></tr>
+        <tr><td><code>PEW9efs-2025-2026</code></td><td>8</td><td>17</td><td>9</td><td>0</td><td>0</td></tr>
+        <tr><td><code>PEW3fs-2025-2026</code>, <code>PEW7ef-2025-2026</code>, <code>PEW8es-2025-2026</code></td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><b>Total</b></td><td><b>361</b></td><td><b>485</b></td><td><b>130</b></td><td><b>16</b></td><td><b>2</b></td></tr>
+      </tbody>
+    </table></div>
+    <p>“Under the rule” is 361 − 6 + 130: six POL rows that match by identity belong to fencers with no SPWS start and
+    move to PENDING.</p>
+    <h3>The 24 fencers who gain results (rows · printed country · SPWS results)</h3>
+    <p class="mono" style="font-size:16px;max-width:none">ALCSER Norbert 17 · HUN/— · 1 &nbsp;|&nbsp; CHIAROMONTE Francesco 11 · ITA · 1 &nbsp;|&nbsp;
+    ZYLKA Henryk 9 · GER · 1 &nbsp;|&nbsp; KORONA Radosław 9 · NED/— · 1 &nbsp;|&nbsp; GINZERY Tomas 8 · SVK · 1 &nbsp;|&nbsp;
+    MCGINNITY Marie 7 · IRL · 1 &nbsp;|&nbsp; SOKOL Vratislav 7 · CZE · 1 &nbsp;|&nbsp; PRAHA-TSAREHRADSKA Nadiia 7 · UKR · 1 &nbsp;|&nbsp;
+    LYNCH Pat 6 · IRL · 1 &nbsp;|&nbsp; KUZMICHOVA Svitlana 6 · UKR · 1 &nbsp;|&nbsp; LEAHEY John 6 · GBR · 1 &nbsp;|&nbsp;
+    SOMERS Jan 5 · NED · 1 &nbsp;|&nbsp; QUEVRAIN Michel 5 · BEL · 1 &nbsp;|&nbsp; MURRAY Claire 5 · IRL · 1 &nbsp;|&nbsp;
+    ANNA-LISE Mion 4 · IRL · 1 &nbsp;|&nbsp; WHITLEY Gary 4 · USA · 8 &nbsp;|&nbsp; STOLARIK Peter 3 · SVK/— · 1 &nbsp;|&nbsp;
+    KULKA Dawid 3 · IRL/— · 5 &nbsp;|&nbsp; MCQUEEN Andy 3 · GBR · 1 &nbsp;|&nbsp; UIJTING Henh 1 · NED · 1 &nbsp;|&nbsp;
+    BOBUSIA Jarosław 1 · — · 16 &nbsp;|&nbsp; GERTSMAN Alex 1 · ISR · 1 &nbsp;|&nbsp; GOLD Oleg 1 · ISR · 1 &nbsp;|&nbsp;
+    TATCHYN Andriy 1 · UKR · 3</p>
+    <p>21 of the 24 have exactly one SPWS result. “—” is a page that prints no country (the three Budapest brackets
+    headed Club).</p>
+    <h3>The 16 PENDING rows</h3>
+    <ul>
+      <li><b>Identity matches, but no SPWS start (6):</b> KOSZYK Agnieszka (IMSW, V1 women's sabre 15th), GOLA Maciej
+      (PEW6efs V1 men's épée 21st; PEW7es 28th), CISZEWSKA Barbara (PEW6efs V2 women's épée 1st), KRAWCZYK Paweł
+      (PEW6efs V4 men's épée 10th), SZUMIELEWICZ Paweł (PEW6efs V1 men's foil 1st).</li>
+      <li><b>A near match or a birth year that does not fit (10):</b> KORONA Przemysław ×3 (PEW3fs 2024/25 V1 foil;
+      Stockholm V2 épée 1st and V2 foil 8th), KURBATSKYI Stepan ×2, NOWAK Szymon, NIECZKOWSKI Tomasz, BEDNARSKA Halina,
+      MŁYNEK Janusz, MIKULICKI Arkadiusz.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> What the measurement does not settle</p>
+      <ul>
+        <li><b>The birth-year check is only as good as our birth years.</b> LEAHEY's three 2024/25 results are rejected:
+        our 1976 puts him in V1 that season, and EVF placed him in V2. A Pole in that position goes to PENDING; a foreign
+        fencer is rejected.</li>
+        <li>Measured with LOCAL's roster. PROD differs by two birth years (STOCKI, STAŃCZYK).</li>
+        <li>Four rows come from combined pools, whose category is set only after the birth-year split; they were
+        measured without one.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="next">
+    <p class="kicker">Next questions · asked one at a time, after N</p>
+    <h2>Still to settle</h2>
+    <ul>
+      <li><b>What the chosen nationality decides.</b> Display only, or also national-team selection (a fencer proposed
+      for Poland only in a season whose chosen nationality is POL). The intake is already decided without it.</li>
+      <li><b>Today's nationality override</b> (<code>doc/overrides/PEW1efs-2025-2026.yaml</code>, in the held commit).
+      The identity rule stores BOBUSIA without it. My recommendation will be to remove the override surface and keep the
+      parser's heading fix and the summary flag.</li>
+      <li><b>The re-staging:</b> all 18 events again under the new rule on LOCAL, one review sheet, your sign-off per
+      event, then CERT and PROD.</li>
+    </ul>
+  </section>
+
+  <section id="held">
+    <p class="kicker">On hold</p>
+    <h2>The release waits for this design</h2>
+    <p><code>dae9c097</code> (the Engarde heading fix and the nationality override) is integrated in the integration
+    checkout, and preflight passed there. It is <b>not pushed</b>. Budapest on LOCAL is committed under that override
+    (26 results); under the new rule it would hold 43.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Sign-off</p>
+    <h2>What I need from you</h2>
+    <p><b>N</b> is decided (A, with the season lock) and recorded in ADR-106, drafted for your sign-off. Next: the
+    questions in “Still to settle”, one at a time.</p>
+  </section>
+
+  <p class="foot">brainstorm · international-intake-identity-and-nationality · 2026-10-02 · evidence: LOCAL roster and 18 measured events (scratchpad measure/), CERT and PROD read-only</p>
+</div>

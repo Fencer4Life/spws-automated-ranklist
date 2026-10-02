@@ -1,16 +1,15 @@
-"""INTL.POL — only Polish rows of an international event reach the matcher.
+"""INTL.POL — an international row is admitted by identity (ADR-106).
 
-ADR-105 §1.1 / §5.1 and ADR-038: for PEW, MEW, MSW and PSW (including the
-IMEW/IMSW alternation codes) every row whose country does not fold to POL is
-dismissed before matching, in both pipelines, so a foreign name can never be
-linked to a Polish fencer. A row with no country is dismissed too (ADR-038
-point 4, fail-closed). Before this, ``s6_resolve_identity`` and
-``ResolveFencers`` matched every row and excluded only the unmatched ones, so
-an exact or near name collision gave a foreign fencer a Polish result
-(KUZMICHOVA Svitlana, MSW Manama 2025, is not a Polish entry on FTL).
+ADR-106 §1 (decided 2 Oct 2026) supersedes ADR-038's country gate. For PEW, MEW,
+MSW and PSW (the IMEW/IMSW alternation codes included) each row is decided once,
+in both pipelines: an identity match to a fencer with a PPW or MPW result is
+stored whatever country the source prints; otherwise a row printed POL is
+PENDING; everything else is rejected and recorded in ``ctx.rejected``. A foreign
+namesake of a fencer who never started at SPWS is still rejected, and no
+fencer is ever created for an international event (ADR-020).
 
-The dismissed rows still count towards the parse's completeness check, so
-S7 compares matches + dismissed with the source bracket size.
+The rejected rows still count towards the parse's completeness check, so S7
+compares matches + rejected with the source bracket size.
 """
 
 from __future__ import annotations
@@ -65,46 +64,55 @@ def _ctx(rows, code, *, raw_pool_size=None):
     return ctx
 
 
-def _db():
+def _db(starters=frozenset({43})):
+    """NOWAK Adam has an SPWS start; KOWALSKI Jan has none."""
     db = MagicMock()
     db.fetch_fencer_db.return_value = [KOWALSKI, NOWAK]
+    db.fetch_spws_starter_ids.return_value = set(starters)
     return db
 
 
 class TestOldPipeline:
-    def test_a_foreign_namesake_is_dismissed_before_matching(self):
-        """INTL.POL.01 in an EVF event a German row named exactly like a Pole
-        is dismissed: no match, no result, recorded as dismissed."""
+    def test_a_foreign_namesake_without_an_spws_start_is_rejected(self):
+        """INTL.POL.01 in an EVF event a German row named exactly like
+        KOWALSKI Jan, who never started at SPWS, is rejected: no match, no
+        result; NOWAK Adam, an SPWS starter, is stored."""
         ctx = _ctx([_row("KOWALSKI Jan", 3, "GER"), _row("NOWAK Adam", 7, "POL")], "PEW3-2025-2026")
         s6_resolve_identity(ctx, _db())
-        assert [(m.scraped_name, m.id_fencer) for m in ctx.matches] == [("NOWAK Adam", 43)]
-        assert ctx.dismissed_non_pol == [{"name": "KOWALSKI Jan", "place": 3, "country": "GER"}]
+        assert [(m.scraped_name, m.id_fencer, m.method) for m in ctx.matches] == [
+            ("NOWAK Adam", 43, "AUTO_MATCHED")
+        ]
+        assert [(d["name"], d["place"], d["country"]) for d in ctx.rejected] == [
+            ("KOWALSKI Jan", 3, "GER")
+        ]
 
     @pytest.mark.parametrize("code", ["IMSW-2025-2026", "IMEW-2024-2025", "MSW-2026-2027"])
     def test_the_alternation_codes_are_international_too(self, code):
-        """INTL.POL.02 IMSW and IMEW (the alternation codes) and MSW filter the
-        same way; a "PL" country folds to POL and is matched."""
+        """INTL.POL.02 IMSW and IMEW (the alternation codes) and MSW are
+        decided the same way; a "PL" country folds to POL."""
         ctx = _ctx([_row("KOWALSKI Jan", 3, "UKR"), _row("NOWAK Adam", 7, "PL")], code)
         s6_resolve_identity(ctx, _db())
         assert [m.id_fencer for m in ctx.matches] == [43]
-        assert [d["name"] for d in ctx.dismissed_non_pol] == ["KOWALSKI Jan"]
+        assert [d["name"] for d in ctx.rejected] == ["KOWALSKI Jan"]
 
-    def test_no_country_is_dismissed_and_domestic_is_unfiltered(self):
-        """INTL.POL.03 a row with no country is dismissed in an international
-        event (ADR-038 point 4); a domestic event filters nothing."""
-        intl = _ctx([_row("NOWAK Adam", 1, None)], "PEW3-2025-2026")
+    def test_no_country_is_decided_by_identity_and_domestic_is_unfiltered(self):
+        """INTL.POL.03 a row with no country is stored when it matches an SPWS
+        starter and rejected otherwise (ADR-106 §1); a domestic event filters
+        nothing."""
+        intl = _ctx([_row("NOWAK Adam", 1, None), _row("KOWALSKI Jan", 2, None)], "PEW3-2025-2026")
         s6_resolve_identity(intl, _db())
-        assert intl.matches == []
-        assert intl.dismissed_non_pol == [{"name": "NOWAK Adam", "place": 1, "country": None}]
+        assert [(m.id_fencer, m.method) for m in intl.matches] == [(43, "AUTO_MATCHED")]
+        assert [d["name"] for d in intl.rejected] == ["KOWALSKI Jan"]
 
         dom = _ctx([_row("KOWALSKI Jan", 1, "GER"), _row("NOWAK Adam", 2, None)], "PPW3-2025-2026")
         s6_resolve_identity(dom, _db())
         assert {m.id_fencer for m in dom.matches} == {42, 43}
-        assert dom.dismissed_non_pol == []
+        assert dom.rejected == []
 
     def test_a_foreign_row_never_trips_the_v0_halt(self):
-        """INTL.POL.04 a dismissed foreign row is gone before the V0 check, so
-        it cannot halt the event; a Polish V0 row in an IMSW event still does."""
+        """INTL.POL.04 a rejected foreign row is gone before the V0 check, so
+        it cannot halt the event; a Polish V0 row in an IMSW event still does
+        (it is PENDING, so it is admitted for review)."""
         ctx = _ctx([_row("YOUNG Foreigner", 1, "FRA")], "IMSW-2025-2026")
         ctx.is_combined_pool = True
         ctx.splits = {"V0": list(ctx.parsed.results)}
@@ -117,9 +125,9 @@ class TestOldPipeline:
         with pytest.raises(HaltError):
             s6_resolve_identity(pole, _db())
 
-    def test_the_count_check_counts_dismissed_rows(self):
-        """INTL.POL.05 S7 compares matches + dismissed with the source bracket:
-        2 Poles and 58 dismissed rows of a 60-fencer bracket pass."""
+    def test_the_count_check_counts_rejected_rows(self):
+        """INTL.POL.05 S7 compares matches + rejected with the source bracket:
+        2 Poles and 58 rejected rows of a 60-fencer bracket pass."""
         rows = [_row("NOWAK Adam", 31, "POL"), _row("KOWALSKI Jan", 48, "POL")]
         rows += [_row(f"FOREIGN {i}", i, "ITA") for i in range(1, 61) if i not in (31, 48)]
         ctx = _ctx(rows, "PEW3-2025-2026", raw_pool_size=60)
@@ -130,10 +138,11 @@ class TestOldPipeline:
 
 
 class TestNewPipeline:
-    def test_resolve_fencers_dismisses_foreign_rows(self):
-        """INTL.POL.06 ResolveFencers dismisses the foreign namesake of an EVF
-        event before the exact and fuzzy phases: no link, no fencer created;
-        a domestic event is unchanged."""
+    def test_resolve_fencers_rejects_foreign_rows_without_an_spws_start(self):
+        """INTL.POL.06 ResolveFencers decides an EVF event's rows through the
+        admission module: no link and no fencer created for the foreign
+        namesake of a fencer who never started at SPWS; a domestic event is
+        unchanged."""
         from python.pipeline.core.contract import Context, Services
         from python.pipeline.plugins.bridge import LEGACY
         from python.pipeline.plugins.resolve_fencers import ResolveFencers
@@ -155,72 +164,14 @@ class TestNewPipeline:
             "PEW3-2025-2026", [_row("KOWALSKI Jan", 3, "GER"), _row("NOWAK Adam", 7, "POL")]
         )
         assert [(m.scraped_name, m.id_fencer) for m in pctx.matches] == [("NOWAK Adam", 43)]
-        assert [d["name"] for d in pctx.dismissed_non_pol] == ["KOWALSKI Jan"]
+        assert [d["name"] for d in pctx.rejected] == ["KOWALSKI Jan"]
         db.insert_fencer.assert_not_called()
 
         pctx, _ = run(
             "PPW3-2025-2026", [_row("KOWALSKI Jan", 3, "GER"), _row("NOWAK Adam", 7, "POL")]
         )
         assert {m.id_fencer for m in pctx.matches} == {42, 43}
-        assert pctx.dismissed_non_pol == []
-
-
-class TestNationalityOverride:
-    """P3.OV17 — a nationality entry in the event's override file fills a
-    blank nationality and never replaces one the source prints (ADR-105 §1.1,
-    decision C A, 2 Oct 2026). Budapest 2025's V1 men's épée page is headed
-    Club: BOBUSIA Jarosław (POL at EVF) is named; KULKA Dawid, on our roster as
-    PL, entered for Ireland and is not."""
-
-    @staticmethod
-    def _rows():
-        return [_row("NOWAK Adam", 5, None), _row("KOWALSKI Jan", 6, "IRL")]
-
-    @staticmethod
-    def _overrides():
-        from python.pipeline.types import NationalityOverride
-
-        return Overrides(
-            nationality=[
-                NationalityOverride("NOWAK Adam", "POL", "EVF: 5th of 33, POL"),
-                NationalityOverride("KOWALSKI Jan", "POL", "never replaces a printed IRL"),
-            ]
-        )
-
-    def _assert_outcome(self, pctx):
-        assert [(m.scraped_name, m.id_fencer) for m in pctx.matches] == [("NOWAK Adam", 43)]
-        assert pctx.dismissed_non_pol == [{"name": "KOWALSKI Jan", "place": 6, "country": "IRL"}]
-        assert pctx.nationality_from_override == [
-            {"name": "NOWAK Adam", "place": 5, "country": "POL"}
-        ]
-
-    def test_old_pipeline_fills_a_blank_never_a_printed_nationality(self):
-        """P3.OV17 s6_resolve_identity: the named row with no country is kept
-        and matched; the named row printed IRL is still dismissed."""
-        ctx = _ctx(self._rows(), "PEW1efs-2025-2026")
-        ctx.overrides = self._overrides()
-        s6_resolve_identity(ctx, _db())
-        self._assert_outcome(ctx)
-
-    def test_new_pipeline_fills_a_blank_never_a_printed_nationality(self):
-        """P3.OV17 ResolveFencers: the same."""
-        from python.pipeline.core.contract import Context, Services
-        from python.pipeline.plugins.bridge import LEGACY
-        from python.pipeline.plugins.resolve_fencers import ResolveFencers
-
-        pctx = _ctx(self._rows(), "PEW1efs-2025-2026")
-        pctx.overrides = self._overrides()
-        ctx = Context()
-        ctx.data[LEGACY] = pctx
-        ctx.data["parsed"] = pctx.parsed
-        ctx.data["event"] = pctx.event
-        db = _db()
-        plugin = ResolveFencers()
-        ctx._begin(plugin)
-        plugin.run(ctx, Services(db=db))
-        ctx._end()
-        self._assert_outcome(pctx)
-        db.insert_fencer.assert_not_called()
+        assert pctx.rejected == []
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +194,7 @@ def _session(event_code):
     return session
 
 
-def _match(id_fencer, place, method="AUTO_MATCHED"):
+def _match(id_fencer, place, method="AUTO_MATCHED", entered_for="POL"):
     from python.pipeline.types import StageMatchResult
 
     return StageMatchResult(
@@ -252,6 +203,7 @@ def _match(id_fencer, place, method="AUTO_MATCHED"):
         id_fencer=id_fencer,
         confidence=99.0,
         method=method,
+        entered_for=entered_for,
     )
 
 
@@ -295,10 +247,12 @@ class TestDraftWriter:
         """INTL.DRAFT.02 every linked Pole is written to that one tournament
         at their source place, labelled with the source category; a Pole with
         no birth year (left out of the split) is written too. An EXCLUDED row
-        is not, and neither is a PENDING one (amended 2 Oct 2026): its fencer
-        is the matcher's guess, and the commit would credit the result to that
-        guess (Jabłonna 2025: BISKUPSKI Marek guessed as MIKULICKI). It is
-        reported in the staging summary instead; N stays the whole bracket."""
+        is not. A PENDING row is written without a match method (ADM.ID.08,
+        decision P A of 2 Oct 2026), so sign-off refuses the run until it is
+        resolved in the event's override file: its fencer is the matcher's
+        guess (Jabłonna 2025: BISKUPSKI Marek guessed as MIKULICKI), and the
+        commit must never credit the result to it. The printed federation is
+        kept on each row (NAT.EVID.01). N stays the whole bracket."""
         a, b = _match(11, 31), _match(12, 48)
         nob = _match(13, 52)  # no birth year: s7 leaves it out of vcat_groups
         pending = _match(14, 55, method="PENDING")
@@ -315,12 +269,15 @@ class TestDraftWriter:
                 r["int_place"],
                 r["id_tournament_draft"],
                 r["enum_source_age_category"],
+                r["enum_match_method"],
+                r["txt_entered_for"],
             )
             for r in rows
         ] == [
-            (11, 31, 701, "V2"),
-            (12, 48, 701, "V2"),
-            (13, 52, 701, "V2"),
+            (11, 31, 701, "V2", "AUTO_MATCH", "POL"),
+            (12, 48, 701, "V2", "AUTO_MATCH", "POL"),
+            (13, 52, 701, "V2", "AUTO_MATCH", "POL"),
+            (14, 55, 701, "V2", None, "POL"),
         ]
 
     def test_no_source_category_is_refused_and_domestic_is_unchanged(self):
@@ -427,26 +384,26 @@ class TestScrapeTournament:
 
 
 class TestStagingSummary:
-    def _ctx(self, n, poles, dismissed_country: str | None = "ITA"):
-        rows = [
-            _row(f"R{p}", p, "POL" if p in poles else dismissed_country) for p in range(1, n + 1)
-        ]
-        ctx = _ctx(rows, "IMSW-2025-2026", raw_pool_size=n)
-        s6_resolve_identity(ctx, MagicMock(fetch_fencer_db=MagicMock(return_value=[])))
+    def _ctx(self, n, poles, other_country: str | None = "ITA", code="IMSW-2025-2026"):
+        rows = [_row(f"R{p}", p, "POL" if p in poles else other_country) for p in range(1, n + 1)]
+        ctx = _ctx(rows, code, raw_pool_size=n)
+        db = MagicMock()
+        db.fetch_fencer_db.return_value = []
+        db.fetch_spws_starter_ids.return_value = set()
+        s6_resolve_identity(ctx, db)
         return ctx.parsed, ctx
 
-    def test_each_bracket_lists_n_highest_place_poles_and_dismissed(self):
+    def test_each_bracket_lists_stored_pending_and_rejected(self):
         """INTL.INV.02 per international bracket the summary shows the source
-        N, the highest place, the Polish rows, how many are linked (none here:
-        the roster is empty and an international Pole is never auto-created)
-        and the rows dismissed; a bracket whose N equals its Polish rows is
-        flagged, and so is one where every row was dismissed for having no
-        country."""
+        N, the highest place, the rows stored, how many of them the source did
+        not print POL for, the PENDING rows and the rejected rows; a bracket
+        whose N equals its rows printed POL is flagged, and so is one whose
+        source prints no country."""
         from python.tools.phase5_runner import _format_international_section
 
         ok = self._ctx(60, {31, 48})
         suspicious = self._ctx(2, {1, 2})
-        no_country = self._ctx(5, set(), dismissed_country=None)
+        no_country = self._ctx(5, set(), other_country=None)
         lines = _format_international_section(
             "IMSW-2025-2026",
             [
@@ -456,27 +413,24 @@ class TestStagingSummary:
             ],
         )
         text = "\n".join(lines)
-        assert "| V2 | EPEE | M | 60 | 60 | 2 | 0 | 58 | ✓ |" in text
-        assert "N equals the POL rows" in text
-        assert "no country" in text
+        assert "| V2 | EPEE | M | 60 | 60 | 0 | 0 | 2 | 58 | ✓ |" in text
+        assert "N equals the rows printed POL" in text
+        assert "the source has no country" in text
 
-    def test_a_bracket_without_a_country_column_is_flagged(self):
-        """INTL.INV.03 a bracket whose source prints no country (Budapest 2025,
-        V1 men's épée, headed Club) is flagged with how many fencers the
-        override file names, even when one of them is kept."""
-        from python.pipeline.types import NationalityOverride
+    def test_pending_rows_are_listed_for_resolution(self):
+        """ADM.ID.08 / INTL.INV.03 every PENDING row is listed with its
+        bracket, place, name and candidate, and the summary says how to
+        resolve it before sign-off: an identity entry or match_method EXCLUDED
+        in the event's override file (decision P A)."""
         from python.tools.phase5_runner import _format_international_section
 
-        ctx = _ctx(
-            [_row(f"R{p}", p, None) for p in range(1, 6)], "PEW1efs-2025-2026", raw_pool_size=5
-        )
-        ctx.overrides = Overrides(nationality=[NationalityOverride("R5", "POL", "EVF")])
-        s6_resolve_identity(ctx, MagicMock(fetch_fencer_db=MagicMock(return_value=[])))
+        ok = self._ctx(60, {31, 48}, code="PEW6efs-2025-2026")
         text = "\n".join(
-            _format_international_section("PEW1efs-2025-2026", [(1, ctx.parsed, ctx, None)])
+            _format_international_section("PEW6efs-2025-2026", [(1, ok[0], ok[1], None)])
         )
-        assert "the source has no country" in text
-        assert "1 named in the override file" in text
+        assert "doc/overrides/PEW6efs-2025-2026.yaml" in text
+        assert "| V2 EPEE M | 31 | R31 | — |" in text
+        assert "| V2 EPEE M | 48 | R48 | — |" in text
 
     def test_a_domestic_event_has_no_section(self):
         """INTL.INV.02 a domestic event gets no international section."""
@@ -748,8 +702,9 @@ class TestRepairRunner:
             _commit_run(MagicMock(), "run-1", None, replace=True)
 
     def test_sign_off_refuses_unresolved_rows(self):
-        """REPAIR.RUN.02 a draft row with a fencer and no match method is an
-        unresolved PENDING guess; sign-off lists it and refuses, for every
+        """REPAIR.RUN.02 a draft row with no match method is an unresolved
+        PENDING row, with the matcher's guess or (ADM.ID.08, a Pole the roster
+        does not know) without one; sign-off lists it and refuses, for every
         event, because the commit would credit the result to the guess. The
         sign-off check that blocks ❌ pairs reads linked rows only, so these
         passed it."""
@@ -767,7 +722,8 @@ class TestRepairRunner:
             {"id_fencer": None, "txt_scraped_name": "X", "enum_match_method": None},
         ]
         assert _unresolved_draft_rows(db, "run-1") == [
-            {"id_fencer": 100, "txt_scraped_name": "BISKUPSKI Marek", "enum_match_method": None}
+            {"id_fencer": 100, "txt_scraped_name": "BISKUPSKI Marek", "enum_match_method": None},
+            {"id_fencer": None, "txt_scraped_name": "X", "enum_match_method": None},
         ]
 
     def test_staging_writes_aliases_only_from_confirmed_matches(self):
