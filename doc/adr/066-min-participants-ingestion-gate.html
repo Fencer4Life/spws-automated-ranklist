@@ -4,21 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="066-min-participants-ingestion-gate.md">
-<meta name="adr-source-sha256" content="680ce30484de0fb457eddd699878792f7bbce99f642ee28e4daf1d94552fad3a">
+<meta name="adr-source-sha256" content="ea9d6c7073678addad7edf9767d749abc12e241074101396d4633a51dc258dfa">
 <title>ADR-066 · Min-participants threshold gates ingestion, not scoring</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 066</p><h1>Min-participants threshold gates ingestion, not scoring</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-05-10) <strong>Related:</strong> ADR-018 (Rolling Score), ADR-046 (PEW weapon-letter suffix — naming-shape sibling), ADR-050 (unified ingestion pipeline), ADR-052 (URL→data validation) <strong>Phase:</strong> 5 (operational rebuild)</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>066-min-participants-ingestion-gate.md</code></dd></div><div><dt>Length</dt><dd class="">97 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (drafted 2026-05-10)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (drafted 2026-05-10; amended 2026-10-02, see the amendment) <strong>Related:</strong> ADR-018 (Rolling Score), ADR-046 (PEW weapon-letter suffix — naming-shape sibling), ADR-050 (unified ingestion pipeline), ADR-052 (URL→data validation) <strong>Phase:</strong> 5 (operational rebuild) <strong>Amended by:</strong> the 2026-10-02 amendment below: EVF events follow EVF's category rule, so the EVF minimum is 1.</dd></div><div><dt>Date</dt><dd class="">Not recorded</dd></div><div><dt>Source</dt><dd class=""><code>066-min-participants-ingestion-gate.md</code></dd></div><div><dt>Length</dt><dd class="">113 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (drafted 2026-05-10; amended 2026-10-02, see the amendment)
 <strong>Related:</strong> ADR-018 (Rolling Score), ADR-046 (PEW weapon-letter suffix — naming-shape sibling), ADR-050 (unified ingestion pipeline), ADR-052 (URL→data validation)
-<strong>Phase:</strong> 5 (operational rebuild)</p>
+<strong>Phase:</strong> 5 (operational rebuild)
+<strong>Amended by:</strong> the 2026-10-02 amendment below: EVF events follow EVF's category rule, so the EVF minimum is 1.</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#walkover-semantics-in-the-ftl-parser">Walkover semantics in the FTL parser</a></li><li class="depth-3"><a href="#implementation-surface">Implementation surface</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#backwards-compatible">Backwards-compatible</a></li><li class="depth-3"><a href="#operationally-visible">Operationally visible</a></li><li class="depth-3"><a href="#schema-unchanged">Schema unchanged</a></li><li class="depth-3"><a href="#re-ingestion-required-for-active-season-ppw2">Re-ingestion required for active-season PPW2</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-3"><a href="#pytest">pytest</a></li><li class="depth-3"><a href="#pgtap">pgTAP</a></li><li class="depth-2"><a href="#originating-adr-rule">Originating ADR / Rule</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#walkover-semantics-in-the-ftl-parser">Walkover semantics in the FTL parser</a></li><li class="depth-3"><a href="#implementation-surface">Implementation surface</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-3"><a href="#backwards-compatible">Backwards-compatible</a></li><li class="depth-3"><a href="#operationally-visible">Operationally visible</a></li><li class="depth-3"><a href="#schema-unchanged">Schema unchanged</a></li><li class="depth-3"><a href="#re-ingestion-required-for-active-season-ppw2">Re-ingestion required for active-season PPW2</a></li><li class="depth-2"><a href="#amendment-2026-10-02-evf-events-follow-evf-s-category-rule">Amendment (2026-10-02) — EVF events follow EVF&#x27;s category rule</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-3"><a href="#pytest">pytest</a></li><li class="depth-3"><a href="#pgtap">pgTAP</a></li><li class="depth-2"><a href="#originating-adr-rule">Originating ADR / Rule</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>tbl_scoring_config.int_min_participants_ppw</code> (default 1) and <code>int_min_participants_evf</code> (default 5) have existed since the initial schema, surfaced through <code>fn_export_scoring_config</code> / <code>fn_import_scoring_config</code> and the admin UI's scoring-config editor. <strong>No code consumed them.</strong> They were declared-but-dead knobs.</p>
 <p>The dead-knob status hit reality during Phase 5 active-season rebuild on 2026-05-10:</p>
@@ -123,6 +124,18 @@
 <li>The active-season PPW2-2025-2026 had 6 FOIL + 2 SABRE single-competitor brackets dropped pre-ADR-066. After the walkover patch + gate, re-running the orchestrator restores them. This is operational, not destructive — the orchestrator is idempotent against the cleared draft tables.</li>
 </ul>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-02-evf-events-follow-evf-s-category-rule">Amendment (2026-10-02) — EVF events follow EVF's category rule</h2>
+<p>EVF ranks every category of its events, however small, a single fencer included, and the association scores an EVF event by EVF's rules. Checked against EVF's results API (ADR-028): Jabłonna 2025 (EVF event 75) and Jabłonna 2026 (event 87) list and score categories of 1, 2, 3 and 4 fencers, and the points EVF awarded equal the plain EVF engine's at the category's own N and place.</p>
+<p>The EVF minimum (<code>int_min_participants_evf</code>, PEW, MEW and MSW) is therefore 1 in every season. The seasons that had scored were revised through ADR-097's procedure on 2026-10-02 (LOCAL revisions 476–478; CERT and PROD with the repair batch), the unlocked 2026/27 through the ordinary configuration write, and 1 is the default for a new season (<code>20261002000006</code>, the season wizard's static default). The domestic minimum is unchanged at 1. The gate remains: a bracket with no fencer is still skipped, and the value stays a per-season setting the administrator can change.</p>
+<p>Consequences:</p>
+<ul>
+<li>Eight Polish results the minimum of 5 had dropped come back at EVF's points: six at Jabłonna 2026 (category brackets of 2–4) and SOSNOWSKA Aniela's two at Jabłonna 2025, reversing that event's decision M A. The rest of the international repair batch is staged with the new value.</li>
+<li>Setting the value to 1 changes no stored score: the minimum is not a scoring input (LOCAL: 0 of 2,741 results moved when all 766 scored tournaments were rescored).</li>
+<li>ADR-097's revision could not run on a season holding a SCORED tournament without results; it now rescores only tournaments with results (<code>20261002000005</code>).</li>
+<li>Tests: pgTAP <code>CFG.EVFMIN.01</code> (<code>93_evf_minimum_default.sql</code>) and <code>REV.EMPTY.01–02</code> (<code>92_revision_skips_empty_tournaments.sql</code>); 1.14b expects 1; pytest <code>INTL.MIN.01</code> (<code>test_min_participants_helper.py</code>) and <code>EVF.PTS.01</code> (<code>test_compare_evf_points.py</code>, with the read-only <code>python/tools/compare_evf_points.py</code>); Vitest <code>WIZ.EVFMIN.01</code>.</li>
+</ul>
+<p>Plan and evidence: <a href="../plans/evf-events-follow-evf-category-rule-2026-10-02.html">doc/plans/evf-events-follow-evf-category-rule-2026-10-02.html</a>.</p>
+</section>
 <section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
 <h3 id="pytest">pytest</h3>
 <ul>
@@ -142,5 +155,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="065-ftl-per-fencer-vcat-marker-check.html">← ADR-065: FTL per-fencer V-cat marker check at the splitter</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="067-structural-pool-only-skip-unified-xml-ingest.html">→ ADR-067: Structural pool-only skip + unified XML ingest pipeline</a></nav>
-<footer class="foot">Generated from <code>066-min-participants-ingestion-gate.md</code> · source SHA-256 <code>680ce30484de0fb457eddd699878792f7bbce99f642ee28e4daf1d94552fad3a</code></footer>
+<footer class="foot">Generated from <code>066-min-participants-ingestion-gate.md</code> · source SHA-256 <code>ea9d6c7073678addad7edf9767d749abc12e241074101396d4633a51dc258dfa</code></footer>
 </div></body></html>

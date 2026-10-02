@@ -133,6 +133,33 @@ class DbConnector:
             .execute()
         )
 
+    def fetch_event_for_source_check(self, event_code: str) -> dict | None:
+        """The event row the URL-identity check compares a source with, by exact
+        code (python/pipeline/source_identity.py)."""
+        resp = (
+            self._sb.table("tbl_event")
+            .select(
+                "id_event, txt_code, txt_name, txt_location, txt_country, dt_start, dt_end, "
+                "arr_weapons, "
+                "url_event, url_event_2, url_event_3, url_event_4, url_event_5"
+            )
+            .eq("txt_code", event_code)
+            .execute()
+        )
+        return resp.data[0] if resp.data else None
+
+    def set_event_source_urls(self, id_event: int, urls: list[str]) -> None:
+        """Replace all five result slots (FR-98) with `urls`, already checked
+        against the event by python/tools/set_event_source_urls.py."""
+        slots = ("url_event", "url_event_2", "url_event_3", "url_event_4", "url_event_5")
+        padded = list(urls) + [None] * (len(slots) - len(urls))
+        (
+            self._sb.table("tbl_event")
+            .update(dict(zip(slots, padded, strict=True)))
+            .eq("id_event", id_event)
+            .execute()
+        )
+
     def set_event_ingest_sources(self, id_event: int, sources: list) -> None:
         """Persist the from-URL ingest's discovered rounds + status for the event
         accordion (N13.4). Display-only JSONB; never enters scored tables."""

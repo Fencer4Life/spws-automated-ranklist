@@ -1,6 +1,13 @@
 -- =============================================================================
 -- Historical EVF result fragments must be consolidated onto their physical
 -- 2025-2026 events without reflowing the season or assigning a Guildford link.
+--
+-- Two known states (2 Oct 2026). ADR-105 repair batch 1 re-ingests Guildford
+-- 2026 from its FTL source: N is the whole source bracket, only Polish fencers
+-- are stored, the FTL schedule becomes the event URL and each tournament keeps
+-- its own FTL results URL. The seed still holds the consolidation's output
+-- until it is refreshed from PROD after the batch; 55.1, 55.3, 55.6 and 55.7
+-- accept exactly those two states. Drop the consolidation alternative then.
 -- =============================================================================
 
 BEGIN;
@@ -15,7 +22,9 @@ SELECT is(
       AND dt_start = DATE '2026-01-10'
       AND dt_end = DATE '2026-01-11'
       AND arr_weapons = ARRAY['EPEE','FOIL','SABRE']::enum_weapon_type[]
-      AND url_event = 'https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/'
+      AND url_event IN (
+            'https://www.veteransfencing.eu/event/evf-circuit-guildford-gbr/',
+            'https://www.fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296')
       AND txt_evf_slug = 'evf-circuit-guildford-gbr'),
   1,
   '55.1: PEW62efs is the canonical Guildford event with official identity'
@@ -31,13 +40,13 @@ SELECT is(
   '55.2: all four Guildford donor events are deleted after consolidation'
 );
 
-SELECT results_eq(
-  $$ SELECT COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT
-       FROM tbl_tournament t
-       LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
-      WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW62efs-2025-2026') $$,
-  $$ VALUES (16, 52) $$,
-  '55.3: Guildford has 16 canonical tournament slots and 52 unique results'
+SELECT ok(
+  (SELECT ROW(COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT)
+     FROM tbl_tournament t
+     LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
+    WHERE t.id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW62efs-2025-2026'))
+  IN (ROW(16, 52), ROW(9, 15)),
+  '55.3: Guildford has 16 slots and 52 results, or 9 and 15 after the ADR-105 re-ingest'
 );
 
 SELECT is(
@@ -66,22 +75,33 @@ SELECT is(
   (SELECT COUNT(*)::INT
      FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
     WHERE e.txt_code = 'PEW62efs-2025-2026'
-      AND t.url_results IS DISTINCT FROM
-          'https://www.fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296#today'),
+      AND (t.url_results IS NULL OR t.url_results NOT LIKE 'https://www.fencingtimelive.com/%')),
   0,
-  '55.6: Guildford results retain the original Fencing Time Live URL'
+  '55.6: every Guildford tournament keeps a Fencing Time Live results URL'
 );
 
-SELECT results_eq(
-  $$ SELECT r.int_place, t.int_participant_count
-       FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
-       JOIN tbl_result r ON r.id_tournament = t.id_tournament
+-- Consolidation: ALCSER Norbert (HUN) 5th of 13, the richer of two conflicting
+-- rows. ADR-105 re-ingest: the source bracket has 18 fencers and a Hungarian
+-- fencer is not stored.
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
+      JOIN tbl_result r ON r.id_tournament = t.id_tournament
       JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
-      WHERE e.txt_code = 'PEW62efs-2025-2026'
-        AND f.txt_surname = 'ALCSER' AND f.txt_first_name = 'Norbert' AND f.int_birth_year = 1985
-        AND t.enum_weapon = 'FOIL' AND t.enum_gender = 'M' AND t.enum_age_category = 'V1' $$,
-  $$ VALUES (5, 13) $$,
-  '55.7: Guildford keeps the richer full-field result when a partial scrape conflicts'
+     WHERE e.txt_code = 'PEW62efs-2025-2026'
+       AND f.txt_surname = 'ALCSER' AND f.txt_first_name = 'Norbert' AND f.int_birth_year = 1985
+       AND t.enum_weapon = 'FOIL' AND t.enum_gender = 'M' AND t.enum_age_category = 'V1'
+       AND r.int_place = 5 AND t.int_participant_count = 13)
+  OR (
+    NOT EXISTS (
+      SELECT 1 FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
+        JOIN tbl_result r ON r.id_tournament = t.id_tournament
+        JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
+       WHERE e.txt_code = 'PEW62efs-2025-2026' AND f.txt_surname = 'ALCSER')
+    AND EXISTS (
+      SELECT 1 FROM tbl_tournament t
+       WHERE t.txt_code = 'PEW62efs-V1-M-FOIL-2025-2026' AND t.int_participant_count = 18)),
+  '55.7: Guildford V1 men''s foil keeps the full field: 5th of 13, or the source N 18 after the ADR-105 re-ingest'
 );
 
 SELECT is(

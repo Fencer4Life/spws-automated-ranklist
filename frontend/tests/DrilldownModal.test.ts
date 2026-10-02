@@ -13,6 +13,7 @@ import DrilldownModal from '../src/components/DrilldownModal.svelte'
 import type { ScoreRow, DrilldownContext, RankingRules } from '../src/lib/types'
 import { setLocale } from '../src/lib/locale.svelte'
 import { exportDrilldown } from '../src/lib/export'
+import { isDomestic, isInternational } from '../src/lib/drilldown-counting'
 
 beforeEach(() => {
   setLocale('en')
@@ -1118,5 +1119,48 @@ describe('DrilldownModal — points order and uncounted results (DD)', () => {
     expect(bg(carriedEvf)).toContain('repeating-linear-gradient')
     expect(bg(currentEvf)).not.toContain('repeating-linear-gradient')
     expect(bg(carriedPzsz)).toContain('repeating-linear-gradient')
+  })
+})
+
+// DD.SECT — which section a result is listed in. On 2 Oct 2026 re-ingested
+// Manama (IMSW) and Guildford (PEW62efs) tournaments were stored typed PPW and
+// the drilldown listed them under domestic tournaments. The section follows
+// enum_type, so these pin the UI half; supabase/tests/90 (TT.CODE) keeps a
+// tournament's type in agreement with its code family.
+describe('DrilldownModal — sections by tournament type', () => {
+  // The roster pinned by supabase/tests/01 (1.1c enum_tournament_type values).
+  const ALL_TYPES = ['PPW', 'MPW', 'PEW', 'MEW', 'MSW', 'PSW', 'PPS', 'MPS'] as const
+  const DOMESTIC = ['PPW', 'MPW']
+
+  function sectionCodes(container: HTMLElement, heading: string): string[] {
+    const h3 = Array.from(container.querySelectorAll('.table-section h3')).find(
+      (h) => h.textContent?.trim() === heading,
+    )
+    const panel = h3?.nextElementSibling
+    if (!panel) return []
+    return Array.from(panel.querySelectorAll('tbody tr')).map(
+      (tr) => tr.querySelector('td')?.textContent?.trim().split(/\s/)[0] ?? '',
+    )
+  }
+
+  it('DD.SECT.01 — an international result is listed under EVF+ tournaments, never under domestic', () => {
+    const scores = ALL_TYPES.map((type, i) =>
+      makeScore({ id_result: i + 1, id_tournament: 100 + i, txt_tournament_code: `${type}-T`, enum_type: type }),
+    )
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'Test', scores, mode: 'RANKING' },
+    })
+    const domestic = sectionCodes(container, 'Domestic Tournaments')
+    const international = sectionCodes(container, 'EVF+ Tournaments')
+    expect(domestic.sort()).toEqual(['MPW-T', 'PPW-T'])
+    expect(international.sort()).toEqual(
+      ALL_TYPES.filter((type) => !DOMESTIC.includes(type)).map((type) => `${type}-T`).sort(),
+    )
+  })
+
+  it('DD.SECT.02 — every tournament type belongs to exactly one section', () => {
+    for (const type of ALL_TYPES) {
+      expect([isDomestic(type), isInternational(type)].filter(Boolean)).toHaveLength(1)
+    }
   })
 })

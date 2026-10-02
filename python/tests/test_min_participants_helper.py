@@ -276,6 +276,22 @@ def test_5_M5_5_pew_below_its_threshold_is_skipped():
     assert "min=5" in reason
 
 
+def test_INTL_MIN_01_a_two_fencer_pew_bracket_is_kept_at_an_evf_minimum_of_1():
+    """INTL.MIN.01 — with the season's EVF minimum at 1 (ADR-066 amendment,
+    2026-10-02: EVF ranks every category, however small), a PEW category
+    bracket of 2 fencers is admitted, as Jabłonna 2026's V4 women's sabre."""
+    from python.pipeline.db_connector import gate_below_min_participants
+
+    db = _stub_db_with_threshold(1)
+    skip, reason = gate_below_min_participants(
+        db,
+        id_season=3,
+        tourn_type="PEW",
+        n_results=2,
+    )
+    assert (skip, reason) == (False, None)
+
+
 # ---------------------------------------------------------------------------
 # 5.M6 — derive_tourn_type_from_event_code maps event txt_code → type
 # ---------------------------------------------------------------------------
