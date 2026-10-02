@@ -140,6 +140,176 @@
 
   <hr class="rule">
 
+  <section id="unplaced-n">
+    <p class="kicker">Decide this first · 2 October, afternoon</p>
+    <h2>N counts placed fencers only; the Criterium 2025 is staged</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> The rule, corrected: a fencer listed without a place is not in N</p>
+      <p><b>DNS</b> means <i>did not start</i>, <b>DNF</b> <i>did not finish</i>, <b>DNQ</b> <i>did not qualify</i>.
+      None of them completed the event, so none is counted: <b>N is the number of fencers the source places</b>. That
+      morning I had made the Engarde parser take N from the classification header (“Classement général (33
+      tireurs)”), which also counts an unplaced fencer, only to match EVF's 33 at the Criterium 2026. EVF is not
+      consistent: it counted the unplaced fencer at the Criterium 2026 and left him out at the Criterium 2025.</p>
+      <ul>
+        <li><b>Fixed test-first:</b> <code>ENG.EVT.05</code> rewritten for DNS, DNF and DNQ, failing first (33 against
+        32), then the parser counts placed fencers again. FTL, d'Artagnan, Ophardt, 4fence and the FTL XML already
+        counted placed rows only. ADR-105, the ingestion handbook page and the RTM say so, with the three meanings in
+        full.</li>
+        <li><b>Effect on the Criterium 2026:</b> one bracket, V2 men's foil, N 33 → 32. KORONA Przemysław stays 29th; his
+        result goes from 12.81 to 2.39, because 32 placed fencers make no table of 64 and so no 10-point win bonus in it.
+        <b>Committed on LOCAL.</b> CERT and PROD still hold 33.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">G</span> Criterium 2025 (<code>PEW10efs-2024-2025</code>) on LOCAL</p>
+      <p>Its event row said 5 July 2025; the organiser's competition list shows 5, 6 and 7 July, and the eight 7 July
+      brackets (PANZ Marian's V4 men's sabre among them) halted at the date check. The end date is corrected to 7 July
+      on LOCAL (CERT and PROD still say 5 July). Staged again (run <code>8bc7856b</code>): the 7 drafts are identical to
+      the stored rows (fencer, birth year, type, N, place), and the stored rows carry EVF's N and points for all 7
+      (event 78). The re-ingest adds each bracket's Engarde results link, which none of the 7 has today. PANZ's row
+      changes nothing in any ranking: a fencer enters the ranking only through a domestic result, and his last one is
+      GP2 2023/24.</p>
+      <ul>
+        <li><b>A</b> commit it on LOCAL.</li>
+        <li><b>B</b> discard the drafts.</li>
+      </ul>
+      <p><b>Recommendation: A.</b></p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">P</span> Release, then correct CERT and PROD</p>
+      <p>CERT and PROD stage with <code>main</code>'s code, so the parser fix must be released first. The release
+      carries: the N rule (ENG.EVT.05), the Engarde source-identity reader (REPAIR.URL.02) and the pgTAP pin that an EVF
+      archive page never replaces an organiser URL (EVF.URL.01–03), with their documentation. Then, on CERT and then
+      PROD, each staged and machine-diffed against LOCAL before its commit: the Criterium 2026 again (V2 men's foil N
+      32), and the Criterium 2025 end date (7 July) with its re-ingest if G is A.</p>
+      <ul>
+        <li><b>A</b> push to <code>main</code> once preflight passes (CI, then the Release workflow deploys CERT and
+        PROD), then run the corrections on CERT and PROD.</li>
+        <li><b>B</b> hold the release.</li>
+      </ul>
+      <p><b>Recommendation: A.</b></p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Also done today</p>
+      <ul>
+        <li><b>Salzburg's results links</b> (<code>PEW7ef-2025-2026</code>): its four tournaments had none on any
+        environment, so the drilldown showed no link. Each is now linked to its own d'Artagnan rankings page on LOCAL,
+        CERT and PROD, after checking each page's N and every Polish place against the stored row.</li>
+        <li><b>The Admin populate-URLs button</b> (event level) works with d'Artagnan: its workflow
+        (<code>populate-urls.yml</code>, run <code>36984879455</code> for Salzburg on CERT) read the d'Artagnan index,
+        found 16 brackets and matched the four tournaments. It fills an empty link only. Its shell interpolates the
+        event code directly (ADR-083 wants an environment variable and a check); listed for the workflow-input task.</li>
+        <li><b>Fâches and Stockholm</b> point at their organiser's Engarde pages again on LOCAL (written through the
+        identity check). The EVF archive page had replaced Stockholm's in the migration of 8 August.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="cert-prod-go">
+    <p class="kicker">Decided 2 October · Q A, Y A · CERT and PROD done</p>
+    <h2>CERT and PROD still hold the wrong N: re-ingest the repaired events there</h2>
+    <p>Only LOCAL is repaired. Read on all three environments today (brackets / results / sum of N / brackets whose
+    N equals their Polish count):</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>LOCAL (repaired)</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td><code>PEW7es-2024-2025</code> Jabłonna 2025</td><td class="mono">14 / 76 / 222 / 0</td><td class="mono">15 / 89 / 89 / 15</td><td class="mono">15 / 89 / 89 / 15</td></tr>
+        <tr><td><code>IMEW-2024-2025</code> Plovdiv</td><td class="mono">16 / 28 / 752 / 0</td><td class="mono">17 / 29 / 29 / 17</td><td class="mono">17 / 29 / 29 / 17</td></tr>
+        <tr><td><code>IMSW-2025-2026</code> Manama</td><td class="mono">14 / 30 / 657 / 0</td><td class="mono">10 / 25 / 25 / 10</td><td class="mono">10 / 25 / 25 / 10</td></tr>
+        <tr><td><code>PEW62efs-2025-2026</code> Guildford</td><td class="mono">9 / 15 / 245 / 0</td><td class="mono">16 / 52 / 106 / 8</td><td class="mono">16 / 52 / 52 / 16</td></tr>
+        <tr><td><code>PEW6efs-2025-2026</code> Jabłonna 2026</td><td class="mono">22 / 93 / 251 / 0</td><td class="mono">23 / 109 / 109 / 23</td><td class="mono">23 / 109 / 109 / 23</td></tr>
+        <tr><td><code>PEW61s-2025-2026</code> Liège</td><td class="mono">2 / 2 / 25 / 0</td><td class="mono">2 empty brackets</td><td class="mono">2 empty brackets</td></tr>
+        <tr><td><code>PEW9efs-2025-2026</code> Dublin</td><td class="mono">4 / 8 / 50 / 0</td><td class="mono">10 / 18 / 94 / 0</td><td class="mono">10 / 18 / 94 / 0</td></tr>
+      </tbody>
+    </table></div>
+    <p>Your screenshot shows the effect: on CERT, Zabłocki's Manama is “1st of 4” and Jabłonna 2026 “1st of 5”; the
+    sources and LOCAL give 5th of 41 and 1st of 12.</p>
+    <p><b>Two things must be in place on each environment first</b>, or its staging cannot equal LOCAL's:</p>
+    <ul>
+      <li><b>The EVF minimum of 1</b> (decision N A). CERT and PROD still read 5 in all four seasons, so the brackets of 2–4
+      fencers at Jabłonna 2025 and 2026 would be skipped. The same steps as LOCAL: the audited
+      <code>fn_revise_and_rescore_season</code> for 2023/24, 2024/25 and 2025/26 (locked), and the ordinary
+      <code>fn_import_scoring_config</code> for 2026/27 (unlocked, no results). On LOCAL it rescored 766 tournaments and
+      changed 0 of 2,741 points. Each season's result count, point total and a checksum are snapshotted before and
+      compared after; a change stops the run.</li>
+      <li><b>The organiser URLs of five events</b>, the exact URLs LOCAL holds, checked against each event before they
+      are written: Jabłonna 2025 and Plovdiv have none on CERT and PROD; Guildford, Liège and Dublin hold EVF's event
+      page. Manama and Jabłonna 2026 already match.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede"><span class="tick">Q</span> The CERT and PROD run</p>
+      <ol>
+        <li>CERT: the EVF minimum of 1 (four seasons) and the five URLs.</li>
+        <li>CERT, per event in date order: stage with <code>phase5-event-runner.yml</code>, machine-diff the drafts
+        against LOCAL (fencer, birth year, type, N, place), commit with <code>commit_run_id</code>, machine-diff the
+        committed scores against LOCAL. Any difference stops the run and comes back to you.</li>
+        <li>CERT verified: the table above equal to LOCAL for all seven; type, place and N guards at 0; Zabłocki's
+        drilldown shows Manama 5th of 41 and Jabłonna 2026 1st of 12.</li>
+        <li>PROD: the same steps, after CERT matches.</li>
+      </ol>
+      <ul>
+        <li><b>A</b> run CERT and then PROD in one go; any difference stops it.</li>
+        <li><b>B</b> CERT only; stop and report before PROD.</li>
+        <li><b>C</b> hold.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> Every event was signed off on LOCAL (R3 A), each environment must reproduce LOCAL
+      exactly, and the run stops on the first difference. Your answer is the go for the configuration revision, the URL
+      writes and the re-ingest on the environments it names.</p>
+    </div>
+    <div class="note accent" id="prod-birth-years">
+      <p class="lede"><span class="tick">Y</span> PROD stopped at its first event: two birth years PROD corrected itself</p>
+      <p>The PROD staging of Jabłonna 2025 (run <code>da6b5018</code>, staged, <b>not committed</b>) differs from LOCAL in
+      one field of one row: STOCKI Piotr's birth year, 1982 on PROD, 1980 on LOCAL. The bracket, N (29), place (2nd) and
+      fencer are the same. PROD's audit log shows the cause: on 25 September 2026 PROD corrected his birth year from 1980
+      to 1982, as a confirmed value. LOCAL and CERT still hold the 12 September seed's 1980.</p>
+      <p>Checked for all 96 fencers of the seven events, there is exactly one more: STAŃCZYK Marcin, corrected on PROD
+      the same day from 1980 to 1979. Both stay in V1 under either year, in 2024/25, 2025/26 and 2026/27, so no category,
+      place or point changes. (KRAWCZYK Paweł and MŁYNEK Janusz are each two different people of the same name, on all
+      three environments.)</p>
+      <ul>
+        <li><b>A</b> continue PROD: the comparison accepts exactly these two corrections (STOCKI 1982, STAŃCZYK 1979) and
+        stops on anything else. Jabłonna 2025's staged run is committed, then the other six events follow. LOCAL and CERT
+        take PROD's two corrected years with the seed refresh after the batch.</li>
+        <li><b>B</b> hold PROD; discard the staged run.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> PROD's birth years are the newer, confirmed values; the results themselves are
+      identical to LOCAL.</p>
+    </div>
+    <div class="note good" id="prod-done">
+      <p class="lede"><span class="tick">✓</span> PROD: done and verified, 2 October (Y A)</p>
+      <ul>
+        <li><b>EVF minimum 1</b>: revisions 4–6 and the 2026/27 import; every season's result count, point total and
+        checksum identical before and after. <b>URLs</b>: the five organiser URLs written.</li>
+        <li><b>Seven events</b>, the same steps and machine diffs as CERT, accepting only PROD's two birth-year
+        corrections of 25 September (STOCKI Piotr 1982, STAŃCZYK Marcin 1979): all identical to LOCAL.</li>
+        <li><b>Verified</b>: every international event of 2024/25 and 2025/26 equals LOCAL except Napoli
+        (<code>PEW4efs-2025-2026</code>), damaged on PROD only (N 28 in all 10 brackets against LOCAL's 389); TT.CODE.06
+        and INTL.INV.01 at 0; no drafts left. Zabłocki's PROD drilldown lists Manama 70.52 and Jabłonna 2026 110.60 as on
+        LOCAL; his total, 375.79, differs from LOCAL's 417.24 by exactly Napoli (82.98 against 124.43).</li>
+      </ul>
+    </div>
+    <div class="note good" id="cert-done">
+      <p class="lede"><span class="tick">✓</span> CERT: done and verified, 2 October</p>
+      <ul>
+        <li><b>EVF minimum 1</b>: revisions 4–6 for 2023/24, 2024/25 and 2025/26, the import for 2026/27. Each season's
+        result count, point total and checksum are identical before and after.</li>
+        <li><b>URLs</b>: the five organiser URLs re-checked against their events, then written.</li>
+        <li><b>Seven events</b>, each staged, its drafts machine-diffed against LOCAL (fencer, birth year, type, N, place),
+        committed through the runner's replace path, and its committed scores machine-diffed against LOCAL: all
+        identical. Jabłonna 2025 76 results replace 89; Plovdiv 28 replace 29; Manama 30 replace 25; Guildford 15 replace
+        52; Jabłonna 2026 93 replace 109; Liège 2 (first ingest); Dublin 8 replace 18.</li>
+        <li><b>Verified</b>: every international event of 2024/25 and 2025/26 now equals LOCAL in brackets, results, N
+        and points; TT.CODE.06 and INTL.INV.01 at 0; no drafts left. Zabłocki's 2026/27 drilldown is LOCAL's: Manama
+        70.52 (5th of 41), Jabłonna 2026 110.60 (1st of 12), total 417.24, 2nd.</li>
+      </ul>
+    </div>
+    <p><b>Not covered by this run.</b> Napoli (<code>PEW4efs-2025-2026</code>) is damaged on PROD only (N = 28 in all 10
+    brackets; LOCAL and CERT hold N 389), and its places are renumbered everywhere; it needs the 4fence nationality
+    reader (R4 A) and a LOCAL repair first. Still damaged on all three environments and not yet repaired on LOCAL:
+    Budapest 2025 (14 of 14 brackets) and Madrid 2025 (13 of 13), both Engarde, then the 2024/25 history events. They
+    follow through LOCAL with your per-event sign-off, then CERT and PROD the same way.</p>
+  </section>
+
   <section id="status">
     <p class="kicker">Status · 2 October</p>
     <h2>Four events repaired on LOCAL; a type defect found and fixed</h2>

@@ -379,3 +379,80 @@ class TestWrite:
         with pytest.raises(ValueError, match="no URL"):
             set_event_source_urls(db, "PEW3fs-2024-2025", [], read=no_fetch)
         assert db.writes == []
+
+
+# ---------------------------------------------------------------------------
+# REPAIR.URL.02 — an Engarde tournament is read from its competition list
+# ---------------------------------------------------------------------------
+
+FIXTURES = __import__("pathlib").Path(__file__).parent / "fixtures" / "engarde"
+CRIT26_URL = "https://engarde-service.com/tournament/fencingaddict/crit26"
+CRIT26_PAGE = """
+<html><head><title>engarde-service: fencing competitions managed with Engarde</title></head><body>
+<div class="tounament-titles"><strong class="tounament-title">Criterium Mondial Vétérans 2026</strong></div>
+<div id="competitionsTab"><table><tbody id="table_comp"></tbody></table></div>
+</body></html>
+"""
+CRIT26 = {
+    "id_event": 7314,
+    "txt_code": "PEW10efs-2025-2026",
+    "txt_name": "EVF Criterium Mondial Vétérans 2026",
+    "txt_location": "Paris",
+    "txt_country": "France",
+    "dt_start": "2026-07-04",
+    "dt_end": "2026-07-06",
+    "arr_weapons": ["EPEE", "FOIL", "SABRE"],
+}
+
+
+class TestEngarde:
+    def _list(self) -> str:
+        return (FIXTURES / "competitions_crit26.xml").read_text(encoding="utf-8")
+
+    def test_the_competition_list_gives_dates_weapons_and_city(self):
+        """REPAIR.URL.02 Engarde builds its competition list in JavaScript, so
+        the page alone shows no date (REPAIR.URL.01). The list it loads
+        (getCompeForDisplay) gives each competition's date, weapon and city:
+        the Criterium 2026 is held 4–6 July 2026 in Paris, in all three
+        weapons."""
+        ident = read_source_identity(CRIT26_URL, CRIT26_PAGE, competitions=self._list())
+        assert ident.title == "Criterium Mondial Vétérans 2026"
+        assert ident.dates == {date(2026, 7, 4), date(2026, 7, 5), date(2026, 7, 6)}
+        assert ident.weapons == {"EPEE", "FOIL", "SABRE"}
+        assert "paris" in ident.text.lower()
+        assert check_event_sources(CRIT26, [ident]) == {}
+
+    def test_another_edition_is_refused(self):
+        """REPAIR.URL.02 the 2026 list does not pass for the 2025 edition
+        (5 July 2025): its dates are a year later."""
+        ident = read_source_identity(CRIT26_URL, CRIT26_PAGE, competitions=self._list())
+        crit25 = {
+            **CRIT26,
+            "txt_code": "PEW10efs-2024-2025",
+            "dt_start": "2025-07-05",
+            "dt_end": "2025-07-05",
+            "txt_name": "EVF Criterium Mondial Vétérans 2025",
+        }
+        problems = check_event_sources(crit25, [ident])
+        assert any("2026-07-04" in p for p in problems[CRIT26_URL])
+
+    def test_fetch_reads_the_page_and_its_competition_list(self, monkeypatch):
+        """REPAIR.URL.02 the tool fetches both the tournament page and the
+        competition list it loads, so the check sees the dates."""
+        import httpx
+
+        from python.scrapers.engarde import ENGARDE_LIST_URL
+        from python.tools.set_event_source_urls import fetch_source_identity
+
+        list_url = ENGARDE_LIST_URL.format(org="fencingaddict", event="crit26")
+        served = {CRIT26_URL: CRIT26_PAGE, list_url: self._list()}
+        fetched: list[str] = []
+
+        def fake_get(url, **kwargs):
+            fetched.append(url)
+            return httpx.Response(200, text=served[url], request=httpx.Request("GET", url))
+
+        monkeypatch.setattr(httpx, "get", fake_get)
+        ident = fetch_source_identity(CRIT26_URL)
+        assert fetched == [CRIT26_URL, list_url]
+        assert check_event_sources(CRIT26, [ident]) == {}

@@ -50,12 +50,23 @@ def fetch_source_identity(url: str) -> SourceIdentity:
             resp.raise_for_status()
             return read_source_identity(url, resp.text)
     import httpx
+    from python.scrapers.engarde import ENGARDE_LIST_URL, engarde_tournament
 
-    resp = httpx.get(
-        url, follow_redirects=True, timeout=30.0, headers={"User-Agent": "Mozilla/5.0"}
+    def get(u: str) -> str:
+        resp = httpx.get(
+            u, follow_redirects=True, timeout=30.0, headers={"User-Agent": "Mozilla/5.0"}
+        )
+        resp.raise_for_status()
+        return resp.text
+
+    page = get(url)
+    # An Engarde page builds its competitions in JavaScript; the list it loads
+    # carries the dates (REPAIR.URL.02).
+    tournament = engarde_tournament(url)
+    competitions = (
+        get(ENGARDE_LIST_URL.format(org=tournament[0], event=tournament[1])) if tournament else None
     )
-    resp.raise_for_status()
-    return read_source_identity(url, resp.text)
+    return read_source_identity(url, page, competitions=competitions)
 
 
 def _report(problems: dict[str, list[str]]) -> str:
