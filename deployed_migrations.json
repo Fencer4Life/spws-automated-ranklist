@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-02T07:03:00Z",
-    "last_sha": "50ac9e5725f7e18229e3cc6d1c4590df2dc28eed",
+    "last_updated": "2026-10-02T14:24:59Z",
+    "last_sha": "85535f2369fafe3aa574fd3a1eb67c7c964d5bc2",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -201,13 +201,14 @@
       "20261002000004_tournament_multiplier_on_update.sql",
       "20261002000005_revision_rescores_tournaments_with_results.sql",
       "20261002000006_evf_minimum_default_one.sql",
-      "20261002000007_carryover_without_successor.sql"
+      "20261002000007_carryover_without_successor.sql",
+      "20261003000001_identity_intake_season_nationality.sql"
     ],
-    "schema_fingerprint": "0f3d86f792db652a62b8bd34b041bb36"
+    "schema_fingerprint": "8ff05641919346228b90696460cab50c"
   },
   "prod": {
-    "last_updated": "2026-10-02T07:03:50Z",
-    "last_sha": "50ac9e5725f7e18229e3cc6d1c4590df2dc28eed",
+    "last_updated": "2026-10-02T14:26:41Z",
+    "last_sha": "85535f2369fafe3aa574fd3a1eb67c7c964d5bc2",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -407,8 +408,9 @@
       "20261002000004_tournament_multiplier_on_update.sql",
       "20261002000005_revision_rescores_tournaments_with_results.sql",
       "20261002000006_evf_minimum_default_one.sql",
-      "20261002000007_carryover_without_successor.sql"
+      "20261002000007_carryover_without_successor.sql",
+      "20261003000001_identity_intake_season_nationality.sql"
     ],
-    "schema_fingerprint": "0f3d86f792db652a62b8bd34b041bb36"
+    "schema_fingerprint": "8ff05641919346228b90696460cab50c"
   }
 }
