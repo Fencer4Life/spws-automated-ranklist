@@ -91,14 +91,23 @@ def _keep_pol_rows(ctx: PipelineContext, rows: list[tuple[Any, Any]]) -> list[tu
 
     ADR-038 / ADR-105 §1.1: only a row whose country folds to POL reaches the
     matcher; a row with any other country, or none, is dismissed (fail-closed)
-    and recorded in ``ctx.dismissed_non_pol``. Every other event keeps all rows.
+    and recorded in ``ctx.dismissed_non_pol``. A row the source printed no
+    country for takes the federation the event's override file names for it
+    (recorded in ``ctx.nationality_from_override`` when that is POL); a printed
+    country is never replaced. Every other event keeps all rows.
     """
     if not _is_international_intake(ctx.event):
         return rows
     kept: list[tuple[Any, Any]] = []
     for cat, r in rows:
         country = getattr(r, "fencer_country", None)
-        if _norm_nat(country) == "POL":
+        named = None if country else ctx.overrides.nationality_for(r.fencer_name)
+        if named is not None and _norm_nat(named) == "POL":
+            kept.append((cat, r))
+            ctx.nationality_from_override.append(
+                {"name": r.fencer_name, "place": r.place, "country": named}
+            )
+        elif _norm_nat(country) == "POL":
             kept.append((cat, r))
         else:
             ctx.dismissed_non_pol.append(

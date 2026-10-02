@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="daa72d0f60a6f94799360434a1d117aaf3d12fac6ff9319854f4db823c3b75a3">
+<meta name="doc-source-sha256" content="816ded8f0a67aaf9ab8e972233c7ba4c50fee9d5bf9d89fbfdc08098921e217e">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>341 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>344 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1150,7 +1150,7 @@
 <tr>
 <td><a href="adr/050-unified-ingestion-pipeline.html">ADR-050</a></td>
 <td>Unified Ingestion Pipeline — IR contract + 8 parsers + parser registry (Phase 1); draft tables + dry-run loop + commit/discard RPCs (Phase 2); pipeline body S1-S7 + override system + alias writeback + 3-way diff + interactive review CLI (Phase 3)</td>
-<td><strong>Phase 1</strong>: <code>python/tests/test_ir.py::ir.1</code>–<code>ir.7</code>; <code>python/tests/test_ir_contracts.py</code> (41 parser-contract assertions across 9 test classes). <strong>Phase 2</strong>: <code>supabase/tests/27_draft_tables.sql::27.1</code>–<code>27.26</code> (30 pgTAP); <code>python/tests/test_draft_store.py::P2.D1</code>–<code>P2.D9</code> (9); <code>python/tests/test_draft_diff.py::P2.M1</code>–<code>P2.M5</code> (5); <code>python/tests/test_ingest_cli.py::P2.C1</code>–<code>P2.C6</code> (6). <strong>Phase 3</strong>: <code>supabase/tests/28_alias_writeback.sql::28.1</code>–<code>28.8</code> (8 pgTAP — fn_update_fencer_aliases NULL init, dedup, trim, empty-reject); <code>python/tests/test_pipeline_types.py::P3.T1</code>–<code>P3.T8</code> (8 — HaltError + Overrides + PipelineContext shape); <code>python/tests/test_overrides.py::P3.OV1</code>–<code>P3.OV15</code> (15 — 5-surface YAML parser); <code>python/tests/test_pipeline_stages.py::P3.RP.x</code> + <code>P3.S1.x</code>–<code>P3.S7.x</code> (29 — dispatcher + per-stage isolation tests for S1-S7); <code>python/tests/test_three_way_diff.py::P3.D1</code>–<code>P3.D12</code> (12 — 4-bucket classifier + histogram + markdown); <code>python/tests/test_review_cli.py::P3.RC1</code>–<code>P3.RC12</code> (15 incl. 3 EVF-API-path tests — interactive review lifecycle); <code>python/tests/test_pipeline_integration.py::P3.INT.1</code>–<code>P3.INT.4</code> (4 — end-to-end against live LOCAL Supabase, skip-on-unreachable)</td>
+<td><strong>Phase 1</strong>: <code>python/tests/test_ir.py::ir.1</code>–<code>ir.7</code>; <code>python/tests/test_ir_contracts.py</code> (41 parser-contract assertions across 9 test classes). <strong>Phase 2</strong>: <code>supabase/tests/27_draft_tables.sql::27.1</code>–<code>27.26</code> (30 pgTAP); <code>python/tests/test_draft_store.py::P2.D1</code>–<code>P2.D9</code> (9); <code>python/tests/test_draft_diff.py::P2.M1</code>–<code>P2.M5</code> (5); <code>python/tests/test_ingest_cli.py::P2.C1</code>–<code>P2.C6</code> (6). <strong>Phase 3</strong>: <code>supabase/tests/28_alias_writeback.sql::28.1</code>–<code>28.8</code> (8 pgTAP — fn_update_fencer_aliases NULL init, dedup, trim, empty-reject); <code>python/tests/test_pipeline_types.py::P3.T1</code>–<code>P3.T8</code> (8 — HaltError + Overrides + PipelineContext shape); <code>python/tests/test_overrides.py::P3.OV1</code>–<code>P3.OV15</code> (15 — 5-surface YAML parser; the sixth surface, <code>nationality</code>, is ADR-105's: P3.OV16–18); <code>python/tests/test_pipeline_stages.py::P3.RP.x</code> + <code>P3.S1.x</code>–<code>P3.S7.x</code> (29 — dispatcher + per-stage isolation tests for S1-S7); <code>python/tests/test_three_way_diff.py::P3.D1</code>–<code>P3.D12</code> (12 — 4-bucket classifier + histogram + markdown); <code>python/tests/test_review_cli.py::P3.RC1</code>–<code>P3.RC12</code> (15 incl. 3 EVF-API-path tests — interactive review lifecycle); <code>python/tests/test_pipeline_integration.py::P3.INT.1</code>–<code>P3.INT.4</code> (4 — end-to-end against live LOCAL Supabase, skip-on-unreachable)</td>
 <td>Covered (Phase 1 2026-05-01; Phase 2 + Phase 3 2026-05-02)</td>
 </tr>
 <tr>
@@ -1665,7 +1665,7 @@
 </tr>
 <tr>
 <td>INTL.INV.02</td>
-<td>The Phase 5 staging summary lists each international bracket's source N, highest place, Polish rows, linked rows and dismissed rows, and flags an N equal to the Polish rows or a bracket whose rows all lacked a country; a domestic event gets no section.</td>
+<td>The Phase 5 staging summary lists each international bracket's source N, highest place, Polish rows, linked rows and dismissed rows, and flags an N equal to the Polish rows or a bracket whose source prints no country (INTL.INV.03); a domestic event gets no section.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
 <td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
@@ -1804,6 +1804,27 @@
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
+<td>ENG.NAT.01–02</td>
+<td>An Engarde classification's nationality is read from the column headed as one (Country, Nation, Nación and their equivalents), whatever column follows (02); a page that prints a Club column there gives every fencer no nationality, never the club (01: Budapest Cup 2025, V1 men's épée, BOBUSIA Jarosław 5th of 33). Both parsers, the pipeline's and the Admin per-tournament scrape's. Decision C A (2026-10-02).</td>
+<td>pytest</td>
+<td><code>python/tests/test_engarde_nationality.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>P3.OV16–18</td>
+<td>The event's override file has a <code>nationality</code> section: an entry names the fencer, a three-letter federation code and the evidence (16); in an international event it fills a blank nationality, so a Pole on a page without a nationality column is kept and matched, and it never replaces a printed nationality (17, both pipelines); an entry without a name, a three-letter code or the evidence, or with an unknown field, is refused (18). Decision C A (2026-10-02).</td>
+<td>pytest</td>
+<td><code>python/tests/test_overrides.py</code> (16, 18); <code>python/tests/test_international_intake.py</code> (17)</td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.INV.03</td>
+<td>The staging summary flags an international bracket whose source prints no country, with the number of fencers the override file names, even when one of them is kept.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
 <td>EVF.CAL.01</td>
 <td>An EVF event with results in a season's dates and no PEW, MEW or MSW event row within two days of it is reported; one event row covers one EVF event; a domestic event covers none. <code>python/tools/evf_event_completeness.py</code> runs it read-only against EVF's results API.</td>
 <td>pytest</td>
@@ -1858,5 +1879,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>daa72d0f60a6f94799360434a1d117aaf3d12fac6ff9319854f4db823c3b75a3</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>816ded8f0a67aaf9ab8e972233c7ba4c50fee9d5bf9d89fbfdc08098921e217e</code></footer>
 </div></body></html>

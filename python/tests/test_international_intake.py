@@ -165,6 +165,64 @@ class TestNewPipeline:
         assert pctx.dismissed_non_pol == []
 
 
+class TestNationalityOverride:
+    """P3.OV17 — a nationality entry in the event's override file fills a
+    blank nationality and never replaces one the source prints (ADR-105 §1.1,
+    decision C A, 2 Oct 2026). Budapest 2025's V1 men's épée page is headed
+    Club: BOBUSIA Jarosław (POL at EVF) is named; KULKA Dawid, on our roster as
+    PL, entered for Ireland and is not."""
+
+    @staticmethod
+    def _rows():
+        return [_row("NOWAK Adam", 5, None), _row("KOWALSKI Jan", 6, "IRL")]
+
+    @staticmethod
+    def _overrides():
+        from python.pipeline.types import NationalityOverride
+
+        return Overrides(
+            nationality=[
+                NationalityOverride("NOWAK Adam", "POL", "EVF: 5th of 33, POL"),
+                NationalityOverride("KOWALSKI Jan", "POL", "never replaces a printed IRL"),
+            ]
+        )
+
+    def _assert_outcome(self, pctx):
+        assert [(m.scraped_name, m.id_fencer) for m in pctx.matches] == [("NOWAK Adam", 43)]
+        assert pctx.dismissed_non_pol == [{"name": "KOWALSKI Jan", "place": 6, "country": "IRL"}]
+        assert pctx.nationality_from_override == [
+            {"name": "NOWAK Adam", "place": 5, "country": "POL"}
+        ]
+
+    def test_old_pipeline_fills_a_blank_never_a_printed_nationality(self):
+        """P3.OV17 s6_resolve_identity: the named row with no country is kept
+        and matched; the named row printed IRL is still dismissed."""
+        ctx = _ctx(self._rows(), "PEW1efs-2025-2026")
+        ctx.overrides = self._overrides()
+        s6_resolve_identity(ctx, _db())
+        self._assert_outcome(ctx)
+
+    def test_new_pipeline_fills_a_blank_never_a_printed_nationality(self):
+        """P3.OV17 ResolveFencers: the same."""
+        from python.pipeline.core.contract import Context, Services
+        from python.pipeline.plugins.bridge import LEGACY
+        from python.pipeline.plugins.resolve_fencers import ResolveFencers
+
+        pctx = _ctx(self._rows(), "PEW1efs-2025-2026")
+        pctx.overrides = self._overrides()
+        ctx = Context()
+        ctx.data[LEGACY] = pctx
+        ctx.data["parsed"] = pctx.parsed
+        ctx.data["event"] = pctx.event
+        db = _db()
+        plugin = ResolveFencers()
+        ctx._begin(plugin)
+        plugin.run(ctx, Services(db=db))
+        ctx._end()
+        self._assert_outcome(pctx)
+        db.insert_fencer.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # INTL.DRAFT — the Phase 5 draft writer files an international bracket whole
 # ---------------------------------------------------------------------------
@@ -401,6 +459,24 @@ class TestStagingSummary:
         assert "| V2 | EPEE | M | 60 | 60 | 2 | 0 | 58 | ✓ |" in text
         assert "N equals the POL rows" in text
         assert "no country" in text
+
+    def test_a_bracket_without_a_country_column_is_flagged(self):
+        """INTL.INV.03 a bracket whose source prints no country (Budapest 2025,
+        V1 men's épée, headed Club) is flagged with how many fencers the
+        override file names, even when one of them is kept."""
+        from python.pipeline.types import NationalityOverride
+        from python.tools.phase5_runner import _format_international_section
+
+        ctx = _ctx(
+            [_row(f"R{p}", p, None) for p in range(1, 6)], "PEW1efs-2025-2026", raw_pool_size=5
+        )
+        ctx.overrides = Overrides(nationality=[NationalityOverride("R5", "POL", "EVF")])
+        s6_resolve_identity(ctx, MagicMock(fetch_fencer_db=MagicMock(return_value=[])))
+        text = "\n".join(
+            _format_international_section("PEW1efs-2025-2026", [(1, ctx.parsed, ctx, None)])
+        )
+        assert "the source has no country" in text
+        assert "1 named in the override file" in text
 
     def test_a_domestic_event_has_no_section(self):
         """INTL.INV.02 a domestic event gets no international section."""
