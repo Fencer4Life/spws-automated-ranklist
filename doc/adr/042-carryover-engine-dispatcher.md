@@ -1,6 +1,6 @@
 # ADR-042: Per-season carry-over engine selection via dispatcher pattern
 
-**Status:** Accepted — Phase 1A + 1B implemented; amended 2026-08-07 to preserve FK carry-over independently of chronological numbering.
+**Status:** Accepted — Phase 1A + 1B implemented; amended 2026-08-07 to preserve FK carry-over independently of chronological numbering; amended 2026-10-02 so a result whose next edition has no row yet still carries.
 **Date:** 2026-04-25 (created), 2026-04-26 (Phase 3 amendment)
 **Relates to:** ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over), ADR-044 (Phase 3 wizard), ADR-045 (engine selector + default flip)
 
@@ -119,3 +119,17 @@ The trigger in
 [`20260807000001_evf_calendar_identity_bound.sql`](../../supabase/migrations/20260807000001_evf_calendar_identity_bound.sql)
 also carries reusable public-calendar identity into a new season skeleton. The
 occurrence-specific EVF results id is deliberately not inherited.
+
+## Amendment (2026-10-02) — a result whose next edition has no row yet still carries
+
+**Decision S B** in `doc/plans/criterium-2026-add-on-all-environments-2026-10-02.html`, signed off 2026-10-02.
+
+**Context.** `vw_eligible_event` carried a previous-season event only through the next season's row linked to it (`id_prior_event`), until that row reached SCORED or COMPLETED. A cancelled or not yet held edition kept carrying, for the season's `int_carryover_days` after the event's end. An event whose next edition had no row at all dropped out at once. The Criterium Mondial Vétérans 2026 (EVF, Paris, July 2026) fell in that gap: EVF publishes the next edition late in the season, so Zabłocki's win (111.69) was missing from the 2026/27 EVF+ rolling score. A hand-made placeholder row would fill the gap, but [ADR-091](091-no-season-skeletons-for-scraped-events.md) forbids undated EVF placeholders (pgTAP 74.9): the calendar sync cannot match one, and a misnumbered one stops the sync at the unique index on (season, prior event).
+
+**Decision.** A third branch of `vw_eligible_event` carries a held event of the season right before into the current season while the current season has no row linked to it, for the same window: its end date plus the current season's `int_carryover_days`. When the next edition's row appears, the linked branch takes over and the new branch stops, so an event is carried once; when that edition is held, the carry stops as before. Migration `20261002000007_carryover_without_successor.sql`; columns and grants are unchanged.
+
+**Consequences.**
+- The four `EVENT_FK_MATCHING` functions read the view, so the drilldown and every ranking (full, kadra, PPW) move together.
+- On PROD on 2 October 2026 every 2025/26 event with results had a 2026/27 row, so the change adds only the Criterium 2026 once it is ingested. On CERT it also carries Stockholm and Jabłonna 2026, which are unlinked there only because CERT's 2026/27 calendar has drifted from PROD's.
+- Tests: pgTAP `supabase/tests/94_carryover_without_successor.sql`, CARRY.NS.01–07 (carried once with no next row or with a linked one; not carried when not held, two seasons back or past the window; the drilldown lists it; the carry stops once the next edition is held).
+- `EVENT_CODE_MATCHING` seasons are unchanged.
