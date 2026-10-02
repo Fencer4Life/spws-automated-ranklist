@@ -163,6 +163,32 @@ def plan_joint_pool_actions(siblings: list[dict], buckets: dict[str, list]) -> d
     return {"is_joint": True, "to_delete": to_delete, "to_flag": to_flag}
 
 
+def international_bucket(
+    anchor: dict, siblings: list[dict], parsed_rows: list[dict]
+) -> tuple[str, list[dict], int] | None:
+    """The single bucket of an international tournament, or None for a domestic one.
+
+    ADR-105: an international tournament is one source bracket. Its rows are
+    never split by birth year or re-ranked; every scraped row goes to the
+    tournament's own category at its scraped place (the non-POL filter runs in
+    ``resolve_tournament_results``), and N is the whole scraped bracket.
+    Returns ``(category, rows, N)``.
+    """
+    from python.pipeline.joined_brackets import INTERNATIONAL_TYPES, BracketField
+
+    if anchor.get("enum_type") not in INTERNATIONAL_TYPES:
+        return None
+    if len(siblings) != 1:
+        codes = ", ".join(sorted(s["txt_code"] for s in siblings))
+        raise ValueError(
+            f"International tournament {anchor['txt_code']} shares its results URL with "
+            f"{codes}; an international tournament is one source bracket (ADR-105). "
+            "Give each bracket its own results URL."
+        )
+    n = BracketField.source((r["place"] for r in parsed_rows), len(parsed_rows)).size
+    return anchor["enum_age_category"], parsed_rows, n
+
+
 def fetch_tournament_with_siblings(supabase_url, headers, tournament_code):
     """Fetch the anchor tournament and every sibling (same event/weapon/gender)
     that shares its url_results.
@@ -293,17 +319,25 @@ def main():
         )
 
     # 3. Fetch fencer DB and split parsed rows per V-cat using birth_year truth
-    from python.pipeline.age_split import split_combined_results
+    from python.pipeline.age_split import SplitResult, split_combined_results
     from python.pipeline.db_connector import DbConnector
     from supabase import create_client
 
     db = DbConnector(create_client(supabase_url, supabase_key))
     fencer_db = db.fetch_fencer_db()
 
-    # split_combined_results uses each fencer's birth_year (from fencer_db) to
-    # assign them to the matching V-cat in `sib_cats`. Re-ranks within each
-    # bucket. Fencers with no DOB lookup go into `unresolved` AND lowest cat.
-    split = split_combined_results(parsed_rows, sib_cats, fencer_db, season_end_year)
+    # ADR-105: an international tournament is one source bracket, never split
+    # or re-ranked, and its N is the whole scraped bracket.
+    intl = international_bucket(anchor, siblings, parsed_rows)
+    intl_n: int | None = None
+    if intl is not None:
+        intl_cat, intl_rows, intl_n = intl
+        split = SplitResult(buckets={intl_cat: intl_rows}, unresolved=[])
+    else:
+        # split_combined_results uses each fencer's birth_year (from fencer_db) to
+        # assign them to the matching V-cat in `sib_cats`. Re-ranks within each
+        # bucket. Fencers with no DOB lookup go into `unresolved` AND lowest cat.
+        split = split_combined_results(parsed_rows, sib_cats, fencer_db, season_end_year)
 
     # 4. Per-V-cat: resolve identities, build payload, ingest into target row
     import json
@@ -382,8 +416,9 @@ def main():
         # or solo — carries its PER-V-CAT slice size as int_participant_count.
         # The earlier full-physical-pool rule for joint pools is reversed:
         # each V-cat is ranked and scored on its own field size, not the
-        # combined pool. See ADR-049 amendment + ADR-069.
-        p_count = len(bucket_rows)
+        # combined pool. See ADR-049 amendment + ADR-069. An international
+        # tournament carries the whole source bracket instead (ADR-105).
+        p_count = intl_n if intl_n is not None else len(bucket_rows)
         ingest_resp = httpx.post(
             f"{supabase_url}/rest/v1/rpc/fn_ingest_tournament_results",
             json={

@@ -15,6 +15,7 @@ from python.pipeline.core.contract import Context, PluginKind, Services
 from python.pipeline.ir import SourceKind
 from python.pipeline.joined_brackets import (
     PER_CATEGORY_RENUMBER,
+    SOURCE_FIELD_PLACE,
     BracketField,
     CategoryPlan,
     JoinedBracketModule,
@@ -403,8 +404,15 @@ class Commit(BasePlugin):
         url_results = _url_results_for(parsed)
 
         module = self._module(db, event, ttype)
-        # The whole listing, matched or not: its size is the joined N.
-        field = BracketField.from_places(r.place for r in parsed.results)
+        # The whole listing, matched or not: its size is the joined N. An
+        # international bracket's N is the size the parser recorded for the
+        # whole source bracket, which no POL filter can shrink (ADR-105).
+        if module.name == SOURCE_FIELD_PLACE:
+            field = BracketField.source(
+                (r.place for r in parsed.results), getattr(parsed, "raw_pool_size", None)
+            )
+        else:
+            field = BracketField.from_places(r.place for r in parsed.results)
         # ADR-104 §§3-4: every categorised fencer, written or not, gives the
         # order; a listed place with no category, or a repeated place in a
         # joined listing, is refused here, before any write.
@@ -480,8 +488,14 @@ class Commit(BasePlugin):
         for m in matches:
             if getattr(m, "id_fencer", None) is None:
                 continue
-            by = getattr(m, "governed_birth_year", None)
-            vcat = vcat_for_age(season_end - by) if (by is not None and season_end) else None
+            if module.name == SOURCE_FIELD_PLACE:
+                # ADR-105: an international result stays in the tournament it is
+                # stored in. Its N is one source bracket's size, and a tournament
+                # cannot hold two source brackets, so it is never re-partitioned.
+                vcat = getattr(m, "stored_vcat", None)
+            else:
+                by = getattr(m, "governed_birth_year", None)
+                vcat = vcat_for_age(season_end - by) if (by is not None and season_end) else None
             if vcat is None:
                 continue
             groups.setdefault((m.weapon, m.gender, vcat), []).append(m)
@@ -499,11 +513,19 @@ class Commit(BasePlugin):
                 plan = module.plan_category(
                     [m.place for m in rows_m], [], BracketField.from_places(())
                 )
+            elif module.name == SOURCE_FIELD_PLACE:
+                plan = self._plan_source_recompute(module, rows_m, (weapon, gender, vcat))
             else:
                 plan, order = self._plan_joined_recompute(
                     module, rows_m, groups, (weapon, gender, vcat)
                 )
-            rows = [self._row(m, r) for m, r in zip(rows_m, plan.rows, strict=True)]
+            rows = [self._recompute_row(m, r) for m, r in zip(rows_m, plan.rows, strict=True)]
+            if module.name == SOURCE_FIELD_PLACE:
+                # ADR-105 with the ADR-056 revision: the stored tournament is the
+                # source bracket the fencer fenced, so it is written as the row's
+                # source category and the V-cat guard trusts it over the BY.
+                for row in rows:
+                    row["enum_source_age_category"] = vcat
             date = _iso_date(rows_m[0].tournament_date)
             tournament_id = db.find_or_create_tournament(
                 event_id, weapon, gender, vcat, date, ttype
@@ -559,6 +581,23 @@ class Commit(BasePlugin):
         if order is not None:
             args["joined_order"] = order
         return args
+
+    @staticmethod
+    def _plan_source_recompute(module, rows_m, key) -> CategoryPlan:
+        """Recompute one international tournament (ADR-105): the stored N and
+        the stored places are written back unchanged, so only the score moves.
+        Its rows share one stored tournament, so they share one stored N."""
+        weapon, gender, vcat = key
+        sizes = {m.bracket_size for m in rows_m}
+        if len(sizes) != 1 or None in sizes:
+            raise ValueError(
+                f"International {weapon}/{gender}/{vcat} has no single stored N "
+                f"({sorted(str(s) for s in sizes)}); recompute never recounts it. "
+                "Re-ingest the event from its source."
+            )
+        field = BracketField.stored(size=sizes.pop(), places=[m.place for m in rows_m])
+        places = [m.place for m in rows_m]
+        return module.plan_category(places, places, field)
 
     @staticmethod
     def _plan_joined_recompute(module, rows_m, groups, key) -> tuple[CategoryPlan, str]:
@@ -626,6 +665,20 @@ class Commit(BasePlugin):
             "txt_scraped_name": m.scraped_name,
             "num_confidence": m.confidence,
             "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
+        }
+
+    @staticmethod
+    def _recompute_row(m, plan: RowPlan) -> dict:
+        """A recomputed row: the module's place, and the provenance stored on
+        the row written back verbatim, NULLs included. The keys are always
+        present, so the RPC keeps a NULL rather than defaulting it; no match
+        status is sent, so the candidate's status follows the stored method."""
+        return {
+            "id_fencer": m.id_fencer,
+            "int_place": plan.place,
+            "txt_scraped_name": m.stored_scraped_name,
+            "num_confidence": m.stored_confidence,
+            "enum_match_method": m.stored_match_method,
         }
 
     @staticmethod

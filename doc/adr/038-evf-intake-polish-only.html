@@ -4,21 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="038-evf-intake-polish-only.md">
-<meta name="adr-source-sha256" content="db66f6ba037955af03d790d3b7cabce93df0ad88ef33f8ee20ecc71bf812b1bb">
+<meta name="adr-source-sha256" content="8e4802f970539da6aa307c7abdd8386b598b9057075069c965bf50ed65a1c787">
 <title>ADR-038 · EVF-Organized Tournaments Ingest POL-Only Rows</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 038</p><h1>EVF-Organized Tournaments Ingest POL-Only Rows</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)</dd></div><div><dt>Source</dt><dd class=""><code>038-evf-intake-polish-only.md</code></dd></div><div><dt>Length</dt><dd class="">57 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion) <strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)</dd></div><div><dt>Source</dt><dd class=""><code>038-evf-intake-polish-only.md</code></dd></div><div><dt>Length</dt><dd class="">69 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2026-04-20
-<strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)</p>
+<strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)
+<strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-06-13-stage-0-reconciliation-skips-international-events">Amendment (2026-06-13) — Stage-0 reconciliation skips international events</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-06-13-stage-0-reconciliation-skips-international-events">Amendment (2026-06-13) — Stage-0 reconciliation skips international events</a></li><li class="depth-2"><a href="#amendment-2026-10-01-n-is-the-whole-bracket-the-place-is-the-fencer-s-own-adr-105-105-international-results-keep-source-bracket-md">Amendment (2026-10-01) — N is the whole bracket, the place is the fencer&#x27;s own ([ADR-105](105-international-results-keep-source-bracket.md))</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>ADR-019 and ADR-020 established the principle that <code>tbl_fencer</code> is the SPWS domestic member pool: domestic (PPW/MPW) tournaments may auto-create unknown fencers, international (PEW/MEW/MSW) tournaments may not.</p>
 <p>The live pipeline (<code>python/matcher/pipeline.py:resolve_tournament_results</code>) implements this rule only for the <strong>UNMATCHED</strong> tier: international unmatched fencers are skipped, no fencer creation. But the pipeline still passes <strong>AUTO_MATCHED</strong> and <strong>PENDING</strong> tiers through for international tournaments — including non-Polish scraped names that fuzzy-glue to Polish SPWS fencers at sub-threshold scores.</p>
@@ -66,8 +67,18 @@ Stage 0 — no creation, no reconciliation — consistent with this ADR's POL-on
 intake. Their <code>int_participant_count</code> is full-field (not per-V-cat) and their
 rosters are not SPWS master data, so Stage 0 must not touch them. The skip is
 keyed on the event-code organizer (EVF/FIE → skip), evaluated before any DB read.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-01-n-is-the-whole-bracket-the-place-is-the-fencer-s-own-adr-105-105-international-results-keep-source-bracket-md">Amendment (2026-10-01) — N is the whole bracket, the place is the fencer's own (<a href="105-international-results-keep-source-bracket.html">ADR-105</a>)</h2>
+<p>Keeping only the Polish rows must not shrink anything else. For PEW, MEW, MSW and PSW, on every path:</p>
+<ul>
+<li>non-POL rows are dismissed <strong>before</strong> matching, in both pipelines, not only in the deprecated <code>resolve_tournament_results</code> (release 2 of ADR-105);</li>
+<li><code>int_participant_count</code> is the whole source bracket, Polish or not, and each <code>int_place</code> is the fencer's own published place;</li>
+<li>neither is recounted afterwards, not at commit, not in recompute, not on promotion;</li>
+<li>the source is the organiser's results; EVF results are used only when nothing else exists.</li>
+</ul>
+<p>Before this, five paths stored the Polish head-count as N and one renumbered the Poles, in 175 of 290 international brackets on CERT and 193 on PROD (2023/24 to 2025/26). The full evidence and the guards are in ADR-105.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="037-derived-display-status-awaiting-results.html">← ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="039-stale-event-gate.html">→ ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate</a></nav>
-<footer class="foot">Generated from <code>038-evf-intake-polish-only.md</code> · source SHA-256 <code>db66f6ba037955af03d790d3b7cabce93df0ad88ef33f8ee20ecc71bf812b1bb</code></footer>
+<footer class="foot">Generated from <code>038-evf-intake-polish-only.md</code> · source SHA-256 <code>8e4802f970539da6aa307c7abdd8386b598b9057075069c965bf50ed65a1c787</code></footer>
 </div></body></html>
