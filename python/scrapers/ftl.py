@@ -20,9 +20,10 @@ from python.pipeline.vcat_marker import split_name_marker
 # Pattern matches a standalone digit (age category) between surname and first name
 # e.g., "ATANASSOW 2 Aleksander" → groups: ("ATANASSOW", "Aleksander")
 _CATEGORY_RE = re.compile(r"^(\S+)\s+\d+\s+(.+)$")
-# Pattern matches a "(N)" suffix at the end (e.g., "PRZYKŁADOWSKA Anna (1)")
-# FTL combined-pool events use this form to tag each fencer's V-cat.
-_SUFFIX_CATEGORY_RE = re.compile(r"^(.+?)\s+\(\d+\)\s*$")
+# Pattern matches a "(N)" or "(VN)" suffix at the end ("PRZYKŁADOWSKA Anna (1)",
+# "KORONA Przemyslaw (V2)"). FTL combined-pool events use this form to tag each
+# fencer's V-cat; the lettered form is the Veteran Irish Open's (FTL.NAME.01).
+_SUFFIX_CATEGORY_RE = re.compile(r"^(.+?)\s+\(V?(\d+)\)\s*$", re.IGNORECASE)
 
 
 def _clean_name(raw_name: str) -> str:
@@ -31,6 +32,7 @@ def _clean_name(raw_name: str) -> str:
     Handles three forms:
       "ATANASSOW 2 Aleksander"     → "ATANASSOW Aleksander"   (mid-name)
       "PRZYKŁADOWSKA Anna (1)"      → "PRZYKŁADOWSKA Anna"      (suffix)
+      "KORONA Przemyslaw (V2)"     → "KORONA Przemyslaw"       (lettered suffix)
       "ATANASSOW Aleksander"       → "ATANASSOW Aleksander"   (no marker)
 
     The marker itself is age-category info; for downstream matching we want
@@ -274,9 +276,7 @@ def _split_name_and_marker(raw: str) -> tuple[str, str | None]:
     # new files carry the mid-name form the canonical writer emits.
     m2 = _SUFFIX_CATEGORY_RE.match(raw)
     if m2:
-        suffix_digit = re.search(r"\((\d+)\)", raw)
-        marker = suffix_digit.group(1) if suffix_digit else None
-        return m2.group(1).strip(), marker
+        return m2.group(1).strip(), m2.group(2)
     return raw, None
 
 

@@ -163,6 +163,77 @@ def _summary_md(event_code: str, url: str, ctx, parsed) -> str:
     return "\n".join(lines)
 
 
+def _weapon_outside_event(parsed, event_row: dict) -> str | None:
+    """Why an international bracket is skipped for its weapon, or None.
+
+    An organiser's schedule can hold brackets of a weapon the event does not
+    have: EVF Circuit Jabłonna 2025 is épée and sabre, and its FTL schedule also
+    lists foil (decision F A, 2 Oct 2026). Such a bracket is not this event's
+    and is skipped; the staging summary lists it. The event's weapons are
+    `arr_weapons`, else its PEW code's letters. A domestic event, or a bracket
+    whose weapon the parser did not read, is never skipped here.
+    """
+    from python.pipeline.source_identity import event_weapons
+
+    weapon = getattr(parsed, "weapon", None)
+    if not weapon or not _is_international_intake(event_row):
+        return None
+    wanted = event_weapons(event_row)
+    if not wanted or str(weapon).upper() in wanted:
+        return None
+    return f"WEAPON_NOT_OF_EVENT ({weapon}; the event is {', '.join(sorted(wanted))})"
+
+
+def _stage_flush_pairs(pairs: list, *, international: bool) -> list:
+    """The alias pairs the stage-time flush writes.
+
+    For an international event a suspected wrong match (❌) is not written
+    (decision W A, 2 Oct 2026): it would sit on the fencer as an alias and
+    match the wrong person on the next run. It stays in the staging summary
+    and blocks sign-off. A domestic event keeps the Option-1 behaviour.
+    """
+    if not international:
+        return list(pairs)
+    return [p for p in pairs if p.icon != "❌"]
+
+
+def _unresolved_draft_rows(db, run_id: str) -> list[dict]:
+    """Draft rows that carry a fencer but no match method: unresolved PENDING
+    guesses. Committing them would credit each result to the matcher's guess,
+    so sign-off refuses while any remain (REPAIR.RUN.02)."""
+    rows = (
+        db._sb.table("tbl_result_draft")
+        .select("id_fencer, txt_scraped_name, enum_match_method")
+        .eq("txt_run_id", run_id)
+        .execute()
+    ).data or []
+    return [r for r in rows if r.get("id_fencer") is not None and not r.get("enum_match_method")]
+
+
+def _flush_source_matches(matches: list, *, international: bool) -> list:
+    """The matches the stage-time alias flush derives pairs from. For an
+    international event only AUTO_MATCHED rows: a PENDING row's fencer is a
+    guess, and its pair can pass the checker as a typo ("ŁOJAK Szymon" →
+    NOWAK Szymon). INTL.ALIAS.02."""
+    with_fencer = [m for m in matches if getattr(m, "id_fencer", None) is not None]
+    if not international:
+        return with_fencer
+    return [m for m in with_fencer if getattr(m, "method", None) == "AUTO_MATCHED"]
+
+
+def _commit_run(db, run_id: str, event_code: str | None, *, replace: bool):
+    """Commit a draft run; with `replace`, atomically replace the event's
+    stored tournaments (fn_replace_event_from_draft: rollback by exact code and
+    commit in one transaction)."""
+    if replace:
+        if not event_code:
+            raise ValueError("--replace-event needs the exact event code (--event-code)")
+        return db._sb.rpc(
+            "fn_replace_event_from_draft", {"p_event_code": event_code, "p_run_id": run_id}
+        ).execute()
+    return db._sb.rpc("fn_commit_event_draft", {"p_run_id": run_id}).execute()
+
+
 def _fetch_event_meta(db, event_code: str) -> dict:
     """Read event metadata + all 5 url_event* slots.
 
@@ -282,6 +353,14 @@ def main() -> int:
     parser.add_argument("--season-end-year", type=int, default=2024)
     parser.add_argument("--staging-dir", default="doc/staging")
     parser.add_argument(
+        "--replace-event",
+        action="store_true",
+        help="With --commit-run-id and --event-code: replace the event's stored "
+        "tournaments by the run's, rollback and commit in one transaction "
+        "(fn_replace_event_from_draft). Used to repair a past event; the seed "
+        "increments file is not appended.",
+    )
+    parser.add_argument(
         "--commit-run-id",
         help="Commit a previously-staged draft run by id and exit. "
         "User reviews the staging .md first; when satisfied, sign off "
@@ -329,6 +408,21 @@ def main() -> int:
             has_blocking_pairs,
         )
 
+        unresolved = _unresolved_draft_rows(db, args.commit_run_id)
+        if unresolved:
+            print(
+                f"⛔ sign-off BLOCKED — {len(unresolved)} unresolved PENDING row(s): the "
+                "fencer is the matcher's guess. Resolve them in the alias manager (or "
+                "confirm an alias and re-stage) before signing off.",
+                file=sys.stderr,
+            )
+            for r in unresolved:
+                print(
+                    f"  ? scraped={r['txt_scraped_name']!r} guess id_fencer={r['id_fencer']}",
+                    file=sys.stderr,
+                )
+            return 2
+
         pending = derive_pending_from_run_id(db, args.commit_run_id)
         if has_blocking_pairs(pending):
             print(
@@ -361,12 +455,20 @@ def main() -> int:
                     file=sys.stderr,
                 )
 
+        replace_code = args.event_code if args.event_code != "REQUIRED" else None
         try:
-            resp = db._sb.rpc("fn_commit_event_draft", {"p_run_id": args.commit_run_id}).execute()
+            resp = _commit_run(db, args.commit_run_id, replace_code, replace=args.replace_event)
             print(f"✅ committed run {args.commit_run_id}: {resp.data}", file=sys.stderr)
         except Exception as e:
             print(f"❌ commit failed for {args.commit_run_id}: {e}", file=sys.stderr)
             return 1
+        if args.replace_event:
+            print(
+                "  replace: seed increments not appended; the seed is refreshed from PROD "
+                "after the repair batch",
+                file=sys.stderr,
+            )
+            return 0
         # Resolve event_code from the commit's history rows (or argv override)
         event_code = args.event_code if args.event_code != "REQUIRED" else None
         if not event_code:
@@ -505,6 +607,16 @@ def main() -> int:
                 )
                 ctxs.append((slot, parsed, None, gate_reason))
                 continue
+            weapon_reason = _weapon_outside_event(parsed, event_meta["_full_row"])
+            if weapon_reason:
+                print(
+                    f"   [{i}/{len(parsed_list)}] {weapon_reason}, skip — "
+                    f"{getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
+                    f"{getattr(parsed, 'age_category', '?')} (n={n_results})",
+                    file=sys.stderr,
+                )
+                ctxs.append((slot, parsed, None, weapon_reason))
+                continue
             print(
                 f"   [{i}/{len(parsed_list)}] Stages 1-7 "
                 f"({getattr(parsed, 'weapon', '?')}/{getattr(parsed, 'gender', '?')}/"
@@ -641,23 +753,31 @@ def main() -> int:
         try:
             all_matches = []
             all_ids = set()
+            intl_event = _is_international_intake({"txt_code": args.event_code})
             for _slot, _parsed, ctx, _err in ctxs:
                 if ctx is None or not getattr(ctx, "matches", None):
                     continue
-                for m in ctx.matches:
-                    if getattr(m, "id_fencer", None) is not None:
-                        all_matches.append(m)
-                        all_ids.add(m.id_fencer)
+                for m in _flush_source_matches(ctx.matches, international=intl_event):
+                    all_matches.append(m)
+                    all_ids.add(m.id_fencer)
             basics = (
                 db.fetch_fencer_basics_batch(sorted(all_ids))
                 if hasattr(db, "fetch_fencer_basics_batch")
                 else {}
             )
             stage_pending = compute_pending_from_matches(all_matches, basics)
-            if stage_pending:
+            intl = _is_international_intake({"txt_code": args.event_code})
+            to_write = _stage_flush_pairs(stage_pending, international=intl)
+            if intl and len(to_write) < len(stage_pending):
+                print(
+                    f"  stage-time alias flush: {len(stage_pending) - len(to_write)} ❌ "
+                    "pair(s) not written (international event; listed in the summary)",
+                    file=sys.stderr,
+                )
+            if to_write:
                 stage_flush = flush_pending_aliases(
                     db,
-                    stage_pending,
+                    to_write,
                     include_all=True,
                 )
                 n_block = sum(1 for p in stage_pending if p.icon == "❌")
@@ -1182,66 +1302,15 @@ def _estimate_birth_year_for_vcat(
 
 
 def _classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
-    """Classify a (scraped, canonical) alias-needed pair.
+    """Classify a (scraped, canonical) alias-needed pair: `✓` (likely the same
+    person), `❌` (probably a wrong match) or `❓` (ambiguous).
 
-    Returns (icon, reason) for the 'Looks like' column. The icon is `✓`
-    (likely same person), `❌` (probably wrong match), or `❓` (ambiguous).
+    The one checker is python/pipeline/name_classify.classify_alias_pair; this
+    name stays for the staging formatter's import.
     """
-    s_full = _name_fold(scraped)
-    c_full = _name_fold(canonical)
-    if s_full == c_full:
-        return "✓", "exact match after normalization"
+    from python.pipeline.name_classify import classify_alias_pair
 
-    s_sur, s_first = _split_polish_name(scraped)
-    c_sur, c_first = _split_polish_name(canonical)
-
-    s_sur_f = _name_fold(s_sur)
-    c_sur_f = _name_fold(c_sur)
-    s_fn_f = _name_fold(s_first)
-    c_fn_f = _name_fold(c_first)
-
-    # Surname analysis — strip hyphens for prefix/suffix containment check
-    s_sur_h = s_sur_f.replace("-", "").replace(" ", "")
-    c_sur_h = c_sur_f.replace("-", "").replace(" ", "")
-    surname_identical = s_sur_f == c_sur_f
-    surname_contained = (
-        bool(s_sur_h) and bool(c_sur_h) and (s_sur_h in c_sur_h or c_sur_h in s_sur_h)
-    )
-    surname_dist = _lev(s_sur_h, c_sur_h) if s_sur_h and c_sur_h else 99
-    surname_close = surname_dist <= 2
-
-    # First name analysis
-    first_identical = s_fn_f == c_fn_f
-    first_dist = _lev(s_fn_f, c_fn_f) if s_fn_f and c_fn_f else 99
-    first_close = first_dist <= 2
-
-    # Verdicts — surname disagreement is the strong "wrong-match" signal
-    if not (surname_identical or surname_contained or surname_close):
-        return "❌", "different surnames — probably wrong match"
-    if not (first_identical or first_close):
-        return "❌", "different first names — probably wrong match"
-
-    # Now classify the kind of legitimate variation
-    if surname_identical and first_identical:
-        if scraped != canonical:
-            return "✓", "case / spacing only"
-        return "✓", "identical"
-
-    if "-" in (scraped + canonical) and surname_contained and not surname_identical:
-        return "✓", "likely same person (short form / married — hyphen variant)"
-    if surname_contained and not surname_identical:
-        return "✓", "surname truncation / expansion"
-    s_norm_strict = s_full.replace(" ", "").replace("-", "")
-    c_norm_strict = c_full.replace(" ", "").replace("-", "")
-    if s_norm_strict == c_norm_strict:
-        return "✓", "space / hyphen normalization"
-    if surname_close and not first_close:
-        return "✓", "likely typo on surname"
-    if first_close and not surname_close:
-        return "✓", "likely typo on first name"
-    if surname_close and first_close:
-        return "✓", "likely typo / transliteration"
-    return "❓", "ambiguous — review by hand"
+    return classify_alias_pair(scraped, canonical)
 
 
 def _build_fencer_matching_summary(db, ctxs: list) -> dict:

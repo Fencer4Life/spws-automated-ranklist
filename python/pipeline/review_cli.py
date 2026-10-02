@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from python.pipeline.ir import ParsedTournament
 
 from python.pipeline.commit_lifecycle import run_post_commit_hooks
-from python.pipeline.db_connector import create_db_connector
+from python.pipeline.db_connector import create_db_connector, derive_tourn_type_from_event_code
 from python.pipeline.draft_store import DraftStore
 from python.pipeline.notifications import TelegramNotifier
 from python.pipeline.orchestrator import run_pipeline
@@ -392,7 +392,44 @@ class Fetcher:
                     )
                     results.append(annotated)
             return results, skipped
+        from python.scrapers.engarde import engarde_tournament
+
+        engarde = engarde_tournament(event_url)
+        if engarde is not None:
+            return self._fetch_engarde_tournament(*engarde)
         return [self.fetch_url(event_url)], skipped
+
+    def _fetch_engarde_tournament(self, org: str, event: str) -> tuple[list, list[dict]]:
+        """An Engarde tournament (ENG.EVT): Engarde's competition list, then the
+        classification page of each category final. Pool rounds, team events
+        and competitions without one category come back as skipped brackets."""
+        import dataclasses as _dc
+
+        from python.scrapers.engarde import ENGARDE_LIST_URL, parse_competition_list, parse_html
+
+        finals, not_finals = parse_competition_list(
+            self._get(ENGARDE_LIST_URL.format(org=org, event=event)), org, event
+        )
+        results: list = []
+        for comp in finals:
+            per_parsed = parse_html(self._get(comp["url"]), source_url=comp["url"])
+            per_parsed = _dc.replace(
+                per_parsed, tournament_name=comp["title"], parsed_date=comp["date"]
+            )
+            results.append(
+                _annotate_parsed(
+                    per_parsed,
+                    weapon=comp["weapon"],
+                    gender=comp["gender"],
+                    age_category=comp["category"],
+                    ftl_source_name=comp["title"],
+                )
+            )
+        skipped = [
+            {"weapon": s["weapon"], "name": s["name"], "url": s["url"], "reason": s["reason"]}
+            for s in not_finals
+        ]
+        return results, skipped
 
     def fetch_event_url(self, event_url: str) -> list[ParsedTournament]:
         """Expand an event-level URL into per-tournament ParsedTournament IRs.
@@ -473,6 +510,10 @@ class Fetcher:
                     )
                 return results
 
+        from python.scrapers.engarde import engarde_tournament
+
+        if engarde_tournament(event_url) is not None:
+            return self.fetch_event_url_with_skips(event_url)[0]
         # Non-FTL-eventSchedule URLs — single-tournament path
         return [self.fetch_url(event_url)]
 
@@ -994,10 +1035,16 @@ class ReviewSession:
         # ranking layer (`fn_effective_gender`) reassigns any women's
         # points to the women's ranklist at query time.
         gender = ctx.parsed.gender or "M"
+        # The type follows the event code (IMSW → MSW, PEW62efs → PEW). A fixed
+        # PPW here typed re-ingested international tournaments PPW, and the
+        # drilldown listed them as domestic (5.M2.4, TT.CODE).
+        tourn_type = derive_tourn_type_from_event_code(self.event_code)
+        if tourn_type is None:
+            raise ValueError(f"event code {self.event_code} maps to no tournament type")
         return {
             "id_event": event_id,
             "txt_code": f"{parent_kind}-{vcat}-{gender}-{ctx.parsed.weapon}-{season}",
-            "enum_type": "PPW",  # caller can override per event type
+            "enum_type": tourn_type,
             "enum_weapon": ctx.parsed.weapon,
             "enum_gender": gender,
             "enum_age_category": vcat,
@@ -1036,15 +1083,18 @@ class ReviewSession:
         rows: list[dict] = []
         international = self._international_category(ctx)
         if international is not None and vcat_to_tournament_id:
-            # ADR-105: every Pole of an international bracket goes to its one
-            # tournament at their source place, a Pole without a birth year too
-            # (the BY split leaves them out of vcat_groups).
+            # ADR-105: every linked Pole of an international bracket goes to its
+            # one tournament at their source place, a Pole without a birth year
+            # too (the BY split leaves them out of vcat_groups). A PENDING row
+            # is not written: its id_fencer is the matcher's guess and the
+            # commit would credit the result to it. It is reported in the
+            # staging summary; an international event never creates a fencer.
             tournament_id = vcat_to_tournament_id.get(international)
             if tournament_id is None:
                 return rows
             for m in ctx.matches:
-                if m.method == "EXCLUDED":
-                    continue  # ADR-038: not linked to a Polish fencer, intentional drop
+                if m.method in ("EXCLUDED", "PENDING"):
+                    continue  # ADR-038 dismissed, or an unconfirmed guess
                 rows.append(
                     {
                         "id_fencer": m.id_fencer,

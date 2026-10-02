@@ -1,0 +1,203 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PEW62efs-2025-2026 review</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Repair batch 1 · fourth event staged · LOCAL drafts · nothing committed</p>
+  <h1>Guildford 2026: the stored results are not Guildford&#x27;s</h1>
+  <p class="dek">EVF Circuit Guildford, 10–11 January 2026 (<code>PEW62efs-2025-2026</code>). LOCAL — and PROD, whose seed it is — stores <b>52 results in 16 brackets</b>. Staged from the organiser's FTL results: <b>15 Poles in 9 whole brackets, every one linked</b>. <b>26 of the stored rows belong to fencers who are not in Guildford's results at all</b>, 21 of them Poles.</p>
+  <div class="note danger" id="correction-type">
+    <p class="lede"><span class="tick">!</span> Correction, 2 October: committed with the wrong tournament type</p>
+    <p>Its 9 tournaments were stored as PPW; they are PEW again. The fencers, places, N and points below are unchanged (PEW and PPW are both 1.0). <b>The ranking table on this page was computed with the wrong type and is void.</b> The corrected 2026/27 ranking effect is in the repair plan, section “Status”.</p>
+  </div>
+  <div class="meta"><span class="pill"><span class="dot"></span>drafts only · run aef4bc45</span><span class="pill">source: FTL, name confirmed by you</span><span class="pill danger"><span class="dot"></span>2026/27 ranking: 65 movements</span></div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Sign off this event</h2>
+    <p>Answer <b>G A</b> to commit, or <b>G B</b> to hold. The evidence is below: the organiser's results, the stored rows, and the 2026/27 ranking before and after.</p>
+    <div class="note danger">
+      <p class="lede"><span class="tick">G</span> Replace Guildford&#x27;s stored results by the organiser&#x27;s</p>
+      <p>21 Polish fencers lose a Guildford result they never fenced — NOWICKI, ZAWROTNIAK, GANSZCZYK, MAZIK, KACZMAREK, WIERZBICKI (sabre), HAŚKO, BAZAK, ŻUKOWSKI, SERAFIN, MALINOWSKI, DRAPELLA, MAŁASIŃSKI, NIKALAICHUK, KIERSZNICKI, BORKOWSKI (foil), TECŁAW, WASILCZUK, SADOWIŃSKA, OWCZAREK, BORKOWSKA. None appears in any of Guildford's 18 FTL brackets under any spelling. Their stored Guildford rows count in the 2026/27 ranking today through carry-over.</p>
+      <ul><li><b>A</b> commit: Guildford holds exactly the organiser's 15 Polish results.</li><li><b>B</b> hold: keep the stored rows and tell me what to check.</li></ul>
+      <p><b>Recommendation: A.</b> The organiser's page is this event (dated 10–11 January 2026, all six brackets, and the URL you gave), it lists the Poles who did travel, and it lists none of the 21. The stored rows look like another event's: see the sabre comparison below.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence</p>
+    <h2>The stored sabre bracket is Jabłonna 2026's, renumbered</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>V2 men's sabre</th><th>Places</th></tr></thead>
+      <tbody>
+        <tr><td>Stored as Guildford (N 8)</td><td>KOŃCZYŁO 1, NOWICKI 1, ZAWROTNIAK 2, GANSZCZYK 3, CHIAROMONTE 4, MAZIK 5, KACZMAREK 6, WIERZBICKI 7</td></tr>
+        <tr><td>Stored as Jabłonna 2026 (N 11)</td><td>NOWICKI 1, KROCHMALSKI 2, ZAWROTNIAK 3, KOŃCZYŁO 4, GANSZCZYK 5, WINGROWICZ 6, SZYMAŃSKI 7, CHIAROMONTE 8, MAZIK 9, KACZMAREK 10, WIERZBICKI 11</td></tr>
+        <tr><td>Guildford, organiser's FTL (N 22)</td><td>one Pole: KONCZYLO Tomasz 3rd (tied); CHIAROMONTE (ITA) 2nd</td></tr>
+      </tbody>
+    </table></div>
+    <p>The stored Guildford order is Jabłonna's order with three fencers missing, renumbered, plus
+    KOŃCZYŁO, who did fence in Guildford, tied at the top. The stored rows carry no source and no
+    ingest history; they reached LOCAL with the PROD seed, so PROD holds the same. The foil brackets
+    show the same pattern. Jabłonna 2026 is repaired later in this batch from its own FTL results.</p>
+  </section><section>
+    <p class="kicker">Source</p>
+    <h2>The URL is this event</h2>
+    <p><a href="https://www.fencingtimelive.com/tournaments/eventSchedule/E2A7B077F2824DD8A7F2E413B4211296">FTL event schedule</a> “BVF 6 Weapon International 2026”, dated 10–11 January
+    2026, all three weapons; the page does not name Guildford, and you gave this URL for this event
+    on 1 October, which the check records as the name confirmation. Six combined brackets
+    (“Category 3 and 4”) have no Pole and are left out; 15 Poles in the other brackets, all linked;
+    a blank-country row near a roster name (ANDERSON 2 Robert, 87% to ANDERSCH) is another person.</p>
+  </section><section>
+    <p class="kicker">Rankings · exact preview</p>
+    <h2>The 2026/27 ranking, before and after</h2>
+    <p>Run inside a transaction and rolled back; every fencer whose rank or total changes in a table
+    holding a Guildford fencer. Rank · total points. Several Poles lose points because a Guildford
+    result they never fenced stops counting.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Ranking</th><th>Fencer</th><th>Now</th><th>After</th><th></th></tr></thead>
+      <tbody><tr><td>V1 women's épée</td><td>KAMIŃSKA Gabriela</td><td class='mono'>1 · 535.74</td><td class='mono'>1 · 464.40</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 women's épée</td><td>STAŃCZYK Agnieszka</td><td class='mono'>2 · 307.67</td><td class='mono'>1 · 307.67</td><td><span class="chip never">up 1</span></td></tr><tr><td>V2 women's épée</td><td>WASILCZUK Beata</td><td class='mono'>3 · 288.44</td><td class='mono'>2 · 288.44</td><td><span class="chip never">up 1</span></td></tr><tr><td>V2 women's épée</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td class='mono'>1 · 337.08</td><td class='mono'>3 · 265.74</td><td><span class="chip over">down 2</span></td></tr><tr><td>V1 men's épée</td><td>STOCKI Piotr</td><td class='mono'>3 · 400.19</td><td class='mono'>3 · 355.17</td><td><span class="chip plain">same place</span></td></tr><tr><td>V1 men's épée</td><td>BOBUSIA Dariusz</td><td class='mono'>15 · 28.06</td><td class='mono'>6 · 112.51</td><td><span class="chip never">up 9</span></td></tr><tr><td>V1 men's épée</td><td>KULKA Dawid</td><td class='mono'>6 · 94.63</td><td class='mono'>7 · 93.63</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>KOWALCZYK Piotr</td><td class='mono'>7 · 81.33</td><td class='mono'>8 · 81.33</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>BOBUSIA Jarosław</td><td class='mono'>8 · 78.50</td><td class='mono'>9 · 78.50</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>TATCHYN Andriy</td><td class='mono'>9 · 65.57</td><td class='mono'>10 · 65.57</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>CZAJKOWSKI Marcin</td><td class='mono'>10 · 65.07</td><td class='mono'>11 · 65.07</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>JASIELCZUK Igor</td><td class='mono'>11 · 55.20</td><td class='mono'>12 · 55.20</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>GROMADA Roland</td><td class='mono'>12 · 35.41</td><td class='mono'>13 · 35.41</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>KOZIEJOWSKI Sebastian</td><td class='mono'>13 · 32.53</td><td class='mono'>14 · 32.53</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's épée</td><td>LELONEK Tomasz</td><td class='mono'>14 · 30.28</td><td class='mono'>15 · 30.28</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's épée</td><td>KORONA Przemysław</td><td class='mono'>1 · 791.47</td><td class='mono'>1 · 767.07</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's épée</td><td>ATANASSOW Aleksander</td><td class='mono'>2 · 503.98</td><td class='mono'>2 · 468.57</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's épée</td><td>WASIOŁKA Sebastian</td><td class='mono'>5 · 240.56</td><td class='mono'>4 · 240.56</td><td><span class="chip never">up 1</span></td></tr><tr><td>V2 men's épée</td><td>LEAHEY John</td><td class='mono'>4 · 262.89</td><td class='mono'>5 · 200.94</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's épée</td><td>JASZCZAK Piotr</td><td class='mono'>6 · 165.98</td><td class='mono'>6 · 143.89</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's épée</td><td>OLSZEWSKI Mikołaj</td><td class='mono'>13 · 46.93</td><td class='mono'>12 · 46.93</td><td><span class="chip never">up 1</span></td></tr><tr><td>V2 men's épée</td><td>PARDUS Borys</td><td class='mono'>12 · 51.68</td><td class='mono'>13 · 46.51</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's épée</td><td>MCQUEEN Andy</td><td class='mono'>21 · 8.01</td><td class='mono'>21 · 7.01</td><td><span class="chip plain">same place</span></td></tr><tr><td>V3 men's épée</td><td>KRZEMIŃSKI Mariusz</td><td class='mono'>2 · 456.05</td><td class='mono'>1 · 418.31</td><td><span class="chip never">up 1</span></td></tr><tr><td>V3 men's épée</td><td>KOSTRZEWA Ireneusz</td><td class='mono'>1 · 470.31</td><td class='mono'>2 · 404.30</td><td><span class="chip over">down 1</span></td></tr><tr><td>V4 men's épée</td><td>SOBIERAJ Wojciech</td><td class='mono'>1 · 386.22</td><td class='mono'>1 · 366.12</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 women's foil</td><td>WASILCZUK Beata</td><td class='mono'>2 · 208.61</td><td class='mono'>2 · 196.53</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 women's foil</td><td>SADOWIŃSKA Adriana</td><td class='mono'>3 · 24.51</td><td class='mono'>3 · 23.51</td><td><span class="chip plain">same place</span></td></tr><tr><td>V4 women's foil</td><td>OWCZAREK Elżbieta</td><td class='mono'>1 · 253.13</td><td class='mono'>1 · 247.80</td><td><span class="chip plain">same place</span></td></tr><tr><td>V4 women's foil</td><td>BORKOWSKA Halina</td><td class='mono'>2 · 202.69</td><td class='mono'>2 · 197.36</td><td><span class="chip plain">same place</span></td></tr><tr><td>V1 men's foil</td><td>PRZYSTAJKO Daniel</td><td class='mono'>– · –</td><td class='mono'>1 · 385.18</td><td><span class="chip fill">enters</span></td></tr><tr><td>V1 men's foil</td><td>MALINOWSKI Piotr</td><td class='mono'>1 · 272.52</td><td class='mono'>2 · 229.00</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's foil</td><td>KOZIEJOWSKI Sebastian</td><td class='mono'>2 · 101.14</td><td class='mono'>3 · 101.14</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's foil</td><td>CHUDY Tomasz</td><td class='mono'>3 · 79.12</td><td class='mono'>4 · 79.12</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's foil</td><td>EJCHSZTET Mariusz</td><td class='mono'>4 · 46.22</td><td class='mono'>5 · 46.22</td><td><span class="chip over">down 1</span></td></tr><tr><td>V1 men's foil</td><td>GIBULA Marcin</td><td class='mono'>5 · 15.93</td><td class='mono'>6 · 15.93</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's foil</td><td>KORONA Przemysław</td><td class='mono'>1 · 591.83</td><td class='mono'>1 · 556.08</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's foil</td><td>KOŃCZYŁO Tomasz</td><td class='mono'>– · –</td><td class='mono'>2 · 345.65</td><td><span class="chip fill">enters</span></td></tr><tr><td>V2 men's foil</td><td>BAZAK Jacek</td><td class='mono'>3 · 256.16</td><td class='mono'>3 · 162.72</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's foil</td><td>HAŚKO Sergiusz</td><td class='mono'>2 · 276.68</td><td class='mono'>4 · 153.54</td><td><span class="chip over">down 2</span></td></tr><tr><td>V2 men's foil</td><td>ŻUKOWSKI Wojciech</td><td class='mono'>4 · 54.11</td><td class='mono'>5 · 15.10</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's foil</td><td>SERWATKA Marek</td><td class='mono'>5 · 8.56</td><td class='mono'>6 · 8.56</td><td><span class="chip over">down 1</span></td></tr><tr><td>V3 men's foil</td><td>DRAPELLA Maciej</td><td class='mono'>1 · 370.51</td><td class='mono'>1 · 291.33</td><td><span class="chip plain">same place</span></td></tr><tr><td>V3 men's foil</td><td>NIKALAICHUK Aliaksandr</td><td class='mono'>2 · 198.43</td><td class='mono'>2 · 144.21</td><td><span class="chip plain">same place</span></td></tr><tr><td>V3 men's foil</td><td>MAŁASIŃSKI Adam</td><td class='mono'>4 · 63.19</td><td class='mono'>4 · 62.19</td><td><span class="chip plain">same place</span></td></tr><tr><td>V4 men's foil</td><td>BORKOWSKI Andrzej</td><td class='mono'>1 · 310.56</td><td class='mono'>1 · 265.54</td><td><span class="chip plain">same place</span></td></tr><tr><td>V4 men's foil</td><td>ZYLKA Henryk</td><td class='mono'>2 · 164.27</td><td class='mono'>2 · 148.34</td><td><span class="chip plain">same place</span></td></tr><tr><td>V4 men's foil</td><td>KIERSZNICKI Ryszard</td><td class='mono'>3 · 157.99</td><td class='mono'>3 · 142.06</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's sabre</td><td>GANSZCZYK Marcin</td><td class='mono'>1 · 520.99</td><td class='mono'>1 · 480.88</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's sabre</td><td>NOWICKI Robert</td><td class='mono'>2 · 464.45</td><td class='mono'>2 · 366.45</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's sabre</td><td>KROCHMALSKI Jakub</td><td class='mono'>4 · 298.50</td><td class='mono'>3 · 298.50</td><td><span class="chip never">up 1</span></td></tr><tr><td>V2 men's sabre</td><td>TECŁAW Robert</td><td class='mono'>3 · 343.35</td><td class='mono'>4 · 272.01</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>MAZIK Aleksander</td><td class='mono'>6 · 207.87</td><td class='mono'>5 · 195.79</td><td><span class="chip never">up 1</span></td></tr><tr><td>V2 men's sabre</td><td>ZAWROTNIAK Przemysław</td><td class='mono'>5 · 239.04</td><td class='mono'>6 · 173.37</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>CHIAROMONTE Francesco</td><td class='mono'>7 · 167.94</td><td class='mono'>7 · 140.61</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's sabre</td><td>KOŃCZYŁO Tomasz</td><td class='mono'>– · –</td><td class='mono'>9 · 112.66</td><td><span class="chip fill">enters</span></td></tr><tr><td>V2 men's sabre</td><td>WIERZBICKI Jacek</td><td class='mono'>9 · 82.11</td><td class='mono'>10 · 77.96</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>PLUCIŃSKI Paweł</td><td class='mono'>10 · 68.40</td><td class='mono'>11 · 68.40</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>SZYMAŃSKI Adam</td><td class='mono'>11 · 66.66</td><td class='mono'>12 · 66.66</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>KACZMAREK Paweł</td><td class='mono'>12 · 59.51</td><td class='mono'>13 · 51.73</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>JAROSZEK Zbigniew</td><td class='mono'>13 · 18.47</td><td class='mono'>14 · 18.47</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>WRONA Piotr</td><td class='mono'>14 · 4.98</td><td class='mono'>15 · 4.98</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>LISOWSKI Robert</td><td class='mono'>15 · 2.00</td><td class='mono'>16 · 2.00</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>RATAJ Marek</td><td class='mono'>16 · 1.20</td><td class='mono'>17 · 1.20</td><td><span class="chip over">down 1</span></td></tr><tr><td>V2 men's sabre</td><td>KOTTS Radosław</td><td class='mono'>17 · 1.00</td><td class='mono'>18 · 1.00</td><td><span class="chip over">down 1</span></td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Per bracket</p>
+    <h2>Stored against the source</h2>
+    <p>N / Polish results. Stored is what LOCAL holds today; staged is the draft written from the source (whole bracket as N, each Pole at their own place).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Bracket</th><th>Stored N / Poles</th><th>Source N / Poles</th><th></th></tr></thead>
+      <tbody><tr><td>V1 women&#x27;s épée</td><td class='mono'>2 / 2</td><td class='mono'>23 / 1</td><td><span class="chip over">N was the Poles</span> </td></tr><tr><td>V2 women&#x27;s épée</td><td class='mono'>2 / 2</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V3 women&#x27;s épée</td><td class='mono'>1 / 1</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V1 men&#x27;s épée</td><td class='mono'>4 / 4</td><td class='mono'>34 / 2</td><td><span class="chip over">N was the Poles</span> </td></tr><tr><td>V2 men&#x27;s épée</td><td class='mono'>6 / 6</td><td class='mono'>42 / 4</td><td><span class="chip over">N was the Poles</span> </td></tr><tr><td>V3 men&#x27;s épée</td><td class='mono'>3 / 3</td><td class='mono'>44 / 2</td><td><span class="chip over">N was the Poles</span> </td></tr><tr><td>V4 men&#x27;s épée</td><td class='mono'>19 / 2</td><td class='mono'>19 / 1</td><td><span class="chip never">kept</span> </td></tr><tr><td>V2 women&#x27;s foil</td><td class='mono'>8 / 2</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V3 women&#x27;s foil</td><td class='mono'>3 / 1</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V4 women&#x27;s foil</td><td class='mono'>3 / 1</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V1 men&#x27;s foil</td><td class='mono'>13 / 5</td><td class='mono'>18 / 1</td><td><span class="chip never">kept</span> </td></tr><tr><td>V2 men&#x27;s foil</td><td class='mono'>17 / 7</td><td class='mono'>30 / 2</td><td><span class="chip never">kept</span> </td></tr><tr><td>V3 men&#x27;s foil</td><td class='mono'>11 / 3</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V4 men&#x27;s foil</td><td class='mono'>4 / 3</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V1 men&#x27;s sabre</td><td class='mono'>2 / 2</td><td class='mono'>13 / 1</td><td><span class="chip over">N was the Poles</span> </td></tr><tr><td>V2 men&#x27;s sabre</td><td class='mono'>8 / 8</td><td class='mono'>22 / 1</td><td><span class="chip over">N was the Poles</span> </td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Per fencer</p>
+    <h2>Place, N and points, before and after</h2>
+    <p>Points use the 2025/26 PEW rules (EVF classic, multiplier 1.0), recomputed at the source N and place. KORONA Przemysław is written “KORONA Przemslaw” by FTL and links at 96.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fencer</th><th>Bracket</th><th>Stored place / N · points</th><th>Staged place / N · points</th><th>Change</th></tr></thead>
+      <tbody><tr><td>ALCSER Norbert</td><td>V1 men&#x27;s épée</td><td class='mono'>3 / 4 · 15.93</td><td>—</td><td><span class='chip over'>goes</span> HUN at the source</td></tr><tr><td>ALCSER Norbert</td><td>V1 men&#x27;s foil</td><td class='mono'>5 / 13 · 29.25</td><td>—</td><td><span class='chip over'>goes</span> HUN at the source</td></tr><tr><td>ANDERSCH Robert</td><td>V2 men&#x27;s foil</td><td class='mono'>3 / 17 · 68.71</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>ANNA-LISE Mion</td><td>V2 women&#x27;s épée</td><td class='mono'>2 / 2 · 8.56</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>ATANASSOW Aleksander</td><td>V2 men&#x27;s épée</td><td class='mono'>3 / 6 · 35.41</td><td class='mono'>14 / 42 · 35.40</td><td><span class='chip over'>-0.01</span></td></tr><tr><td>BAZAK Jacek</td><td>V2 men&#x27;s foil</td><td class='mono'>2 / 17 · 93.44</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>BOBUSIA Dariusz</td><td>V1 men&#x27;s épée</td><td>—</td><td class='mono'>3 / 34 · 84.45</td><td><span class='chip fill'>new</span></td></tr><tr><td>BORKOWSKA Halina</td><td>V4 women&#x27;s foil</td><td class='mono'>3 / 3 · 5.33</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>BORKOWSKI Andrzej</td><td>V4 men&#x27;s foil</td><td class='mono'>2 / 4 · 45.02</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>CHIAROMONTE Francesco</td><td>V2 men&#x27;s sabre</td><td class='mono'>4 / 8 · 27.33</td><td>—</td><td><span class='chip over'>goes</span> ITA at the source</td></tr><tr><td>DRAPELLA Maciej</td><td>V3 men&#x27;s foil</td><td class='mono'>2 / 11 · 79.18</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>GANSZCZYK Marcin</td><td>V2 men&#x27;s sabre</td><td class='mono'>3 / 8 · 40.11</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>GINZERY Tomas</td><td>V1 men&#x27;s foil</td><td class='mono'>1 / 13 · 111.16</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>HAŚKO Sergiusz</td><td>V2 men&#x27;s foil</td><td class='mono'>1 / 17 · 123.14</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>JASZCZAK Piotr</td><td>V2 men&#x27;s épée</td><td class='mono'>4 / 6 · 22.09</td><td class='mono'>16 / 42 · 33.65</td><td><span class='chip never'>+11.56</span></td></tr><tr><td>KACZMAREK Paweł</td><td>V2 men&#x27;s sabre</td><td class='mono'>6 / 8 · 7.78</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>KAMIŃSKA Gabriela</td><td>V1 women&#x27;s épée</td><td class='mono'>1 / 2 · 71.34</td><td class='mono'>8 / 23 · 37.50</td><td><span class='chip over'>-33.84</span></td></tr><tr><td>KAZIK Martin</td><td>V1 men&#x27;s épée</td><td class='mono'>1 / 4 · 84.29</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>KIERSZNICKI Ryszard</td><td>V4 men&#x27;s foil</td><td class='mono'>3 / 4 · 15.93</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>KORONA Przemysław</td><td>V2 men&#x27;s épée</td><td class='mono'>1 / 6 · 96.35</td><td class='mono'>3 / 42 · 86.03</td><td><span class='chip over'>-10.32</span></td></tr><tr><td>KORONA Przemysław</td><td>V2 men&#x27;s foil</td><td class='mono'>4 / 17 · 56.02</td><td class='mono'>16 / 30 · 20.06</td><td><span class='chip over'>-35.96</span></td></tr><tr><td>KOSTRZEWA Ireneusz</td><td>V3 men&#x27;s épée</td><td class='mono'>1 / 3 · 82.98</td><td class='mono'>3 / 44 · 86.37</td><td><span class='chip never'>+3.39</span></td></tr><tr><td>KOŃCZYŁO Tomasz</td><td>V2 men&#x27;s foil</td><td class='mono'>3 / 17 · 68.71</td><td class='mono'>3 / 30 · 73.49</td><td><span class='chip never'>+4.78</span></td></tr><tr><td>KOŃCZYŁO Tomasz</td><td>V2 men&#x27;s sabre</td><td class='mono'>1 / 8 · 98.00</td><td class='mono'>3 / 22 · 70.99</td><td><span class='chip over'>-27.01</span></td></tr><tr><td>KRZEMIŃSKI Mariusz</td><td>V3 men&#x27;s épée</td><td class='mono'>2 / 3 · 37.74</td><td class='mono'>11 / 44 · 38.95</td><td><span class='chip never'>+1.21</span></td></tr><tr><td>KULKA Dawid</td><td>V1 men&#x27;s épée</td><td class='mono'>4 / 4 · 1.00</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source</td></tr><tr><td>LEAHEY John</td><td>V2 men&#x27;s épée</td><td class='mono'>2 / 6 · 61.95</td><td>—</td><td><span class='chip over'>goes</span> GBR at the source</td></tr><tr><td>LYNCH Pat</td><td>V4 men&#x27;s épée</td><td class='mono'>19 / 19 · 1.00</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source</td></tr><tr><td>MALINOWSKI Piotr</td><td>V1 men&#x27;s foil</td><td class='mono'>4 / 13 · 43.52</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>MAZIK Aleksander</td><td>V2 men&#x27;s sabre</td><td class='mono'>5 / 8 · 12.08</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>MAŁASIŃSKI Adam</td><td>V3 men&#x27;s foil</td><td class='mono'>11 / 11 · 1.00</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>MCGINNITY Marie</td><td>V3 women&#x27;s épée</td><td class='mono'>1 / 1 · 59.00</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source</td></tr><tr><td>MCQUEEN Andy</td><td>V2 men&#x27;s épée</td><td class='mono'>6 / 6 · 1.00</td><td>—</td><td><span class='chip over'>goes</span> GBR at the source</td></tr><tr><td>MURRAY Claire</td><td>V1 women&#x27;s épée</td><td class='mono'>2 / 2 · 8.56</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source</td></tr><tr><td>NIKALAICHUK Aliaksandr</td><td>V3 men&#x27;s foil</td><td class='mono'>3 / 11 · 54.22</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>NOWICKI Robert</td><td>V2 men&#x27;s sabre</td><td class='mono'>1 / 8 · 98.00</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>OWCZAREK Elżbieta</td><td>V3 women&#x27;s foil</td><td class='mono'>3 / 3 · 5.33</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>PARDUS Borys</td><td>V2 men&#x27;s épée</td><td class='mono'>5 / 6 · 5.99</td><td class='mono'>34 / 42 · 3.77</td><td><span class='chip over'>-2.22</span></td></tr><tr><td>PRAHA-TSAREHRADSKA Nadiia</td><td>V2 women&#x27;s épée</td><td class='mono'>1 / 2 · 71.34</td><td>—</td><td><span class='chip over'>goes</span> UKR at the source</td></tr><tr><td>PRZYSTAJKO Daniel</td><td>V1 men&#x27;s foil</td><td class='mono'>2 / 13 · 80.87</td><td class='mono'>3 / 18 · 69.24</td><td><span class='chip over'>-11.63</span></td></tr><tr><td>PRZYSTAJKO Daniel</td><td>V1 men&#x27;s sabre</td><td class='mono'>1 / 2 · 71.34</td><td class='mono'>2 / 13 · 80.87</td><td><span class='chip never'>+9.53</span></td></tr><tr><td>SADOWIŃSKA Adriana</td><td>V2 women&#x27;s foil</td><td class='mono'>8 / 8 · 1.00</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>SERAFIN Błażej</td><td>V1 men&#x27;s foil</td><td class='mono'>3 / 13 · 56.07</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>SOBIERAJ Wojciech</td><td>V4 men&#x27;s épée</td><td class='mono'>11 / 19 · 20.10</td><td class='mono'>11 / 19 · 20.10</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>SOKOL Vratislav</td><td>V2 men&#x27;s foil</td><td class='mono'>5 / 17 · 42.17</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>SOMERS Jan</td><td>V3 men&#x27;s épée</td><td class='mono'>3 / 3 · 5.33</td><td>—</td><td><span class='chip over'>goes</span> NED at the source</td></tr><tr><td>STOCKI Piotr</td><td>V1 men&#x27;s épée</td><td class='mono'>2 / 4 · 45.02</td><td class='mono'>17 / 34 · 20.63</td><td><span class='chip over'>-24.39</span></td></tr><tr><td>TECŁAW Robert</td><td>V1 men&#x27;s sabre</td><td class='mono'>1 / 2 · 71.34</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>WASILCZUK Beata</td><td>V2 women&#x27;s foil</td><td class='mono'>5 / 8 · 12.08</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>WIERZBICKI Jacek</td><td>V2 men&#x27;s sabre</td><td class='mono'>7 / 8 · 4.15</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>ZAWROTNIAK Przemysław</td><td>V2 men&#x27;s sabre</td><td class='mono'>2 / 8 · 65.67</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>ZYLKA Henryk</td><td>V4 men&#x27;s foil</td><td class='mono'>3 / 4 · 15.93</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr><tr><td>ŻUKOWSKI Wojciech</td><td>V2 men&#x27;s foil</td><td class='mono'>6 / 17 · 39.01</td><td>—</td><td><span class='chip over'>goes</span> not in Guildford&#x27;s results</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">review · PEW62efs-2025-2026 · repair batch 1 · staged 2 Oct 2026 on LOCAL · run aef4bc45-01b1-4143-b1a2-c3845897d2a7</p>
+</div>

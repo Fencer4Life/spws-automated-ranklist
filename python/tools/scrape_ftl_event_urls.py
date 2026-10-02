@@ -125,8 +125,9 @@ SPWS_BRACKET_FIRST_TOKEN = re.compile(
     # Gender-first English ("Men's Foil…") and gender-first Polish
     r"MEN(?:'S|S)?|WOMEN(?:'S|S)?|"
     r"KOBIET[AYĘ]?|MĘŻCZYZN[IY]?|"
-    # Veteran / age-tier / format markers that may lead the bracket name
-    r"VET(?:ERAN[IY]?)?|SENIOR|MIXED|MIKST|"
+    # Veteran / age-tier / format markers that may lead the bracket name;
+    # category first ("V2 Szpada Mężczyzn", EVF Circuit Jabłonna 2025)
+    r"V[0-4]|VET(?:ERAN[IY]?)?|SENIOR|MIXED|MIKST|"
     r"CAT(?:EGORY)?|KATEGORI[AĘ]"
     r")\b",
     re.IGNORECASE,
@@ -209,10 +210,50 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
                 {"uuid": uuid, "name": name, "reason": "guest event (non-SPWS bracket name)"}
             )
             continue
+        if any(e["uuid"] == uuid for e in kept):
+            # A two-day bracket is listed twice, "(Day 1)" and "(Day 2)", with
+            # one link (EMW Plovdiv 2025): one link is one bracket. Not a skip,
+            # so it never counts as a pool round. INTL.SCHED.04.
+            continue
         kept.append({"uuid": uuid, "name": name})
+    kept, pools = _drop_covered_pool_rounds(kept)
+    skipped.extend(pools)
     if with_skips:
         return kept, skipped
     return kept
+
+
+# A joint pool round ("Szpada Kobiet V3, V4 - runda grupowa") is not a result
+# when the same weapon and gender have their own category brackets on the
+# schedule: those hold each category's final places. Kept otherwise, in case
+# the pool round is the only listing of that weapon and gender.
+_POOL_ROUND_RE = re.compile(r"\b(?:runda\s+grupowa|pool\s+round|poules?)\b", re.IGNORECASE)
+
+
+def _weapon_gender(name: str) -> tuple[str, str] | None:
+    parsed = parse_tournament_name(name)
+    if parsed is None:
+        return None
+    weapon, gender, _ = parsed[0] if isinstance(parsed, list) else parsed
+    return weapon, gender
+
+
+def _drop_covered_pool_rounds(
+    kept: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    covered = {
+        wg
+        for e in kept
+        if not _POOL_ROUND_RE.search(e["name"]) and (wg := _weapon_gender(e["name"]))
+    }
+    out: list[dict[str, str]] = []
+    pools: list[dict[str, str]] = []
+    for e in kept:
+        if _POOL_ROUND_RE.search(e["name"]) and _weapon_gender(e["name"]) in covered:
+            pools.append({**e, "reason": "pool round (its categories have their own brackets)"})
+        else:
+            out.append(e)
+    return out, pools
 
 
 def parse_tournament_name(

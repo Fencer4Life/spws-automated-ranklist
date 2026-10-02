@@ -1,0 +1,295 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paris Criterium 2026</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Calendar · international results · all environments · Development Plan</p>
+  <h1>The 2026 Paris Criterium is missing everywhere</h1>
+  <p class="dek">EVF scored the <b>Criterium Mondial Vétérans 2026</b> (Paris, 4–6 July 2026, 399 fencers, <b>10 Polish results</b>), and it falls inside 2025/26. <b>LOCAL, CERT and PROD have no event for it</b>, so its results are in no ranking, and 2025/26 results carry into 2026/27. This plan adds it on all three environments, from the organiser's Engarde results, checked against EVF's record. It also fixes how CERT and PROD receive any repaired event, which the repair batch needs too.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 2 Oct: E A, P A, K A</span>
+    <span class="pill warn"><span class="dot"></span>LOCAL staged · waiting for G</span>
+    <span class="pill danger"><span class="dot"></span>CERT and PROD writes: your go for each</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decide this first</p>
+    <h2>Three decisions</h2>
+    <p>Answer with the letters, for example <b>E A, P A, K A</b>.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">E</span> The event row</p>
+      <p>Same shape as the 2024/25 edition (<code>PEW10efs-2024-2025</code>, “EVF Criterium Mondial Vétérans 2025”):</p>
+      <ul>
+        <li><b>A</b> code <code>PEW10efs-2025-2026</code> (Paris held PEW10 in 2024/25; PEW10 is free in 2025/26), name “EVF Criterium Mondial Vétérans 2026”, Paris, France, 4–6 July 2026, organiser EVF, épée, foil and sabre, result URL <code>engarde-service.com/tournament/fencingaddict/crit26</code>, EVF slug <code>crit26</code>.</li>
+        <li><b>B</b> another code or name: tell me which.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> It keeps the Paris number and the naming of the edition before.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">P</span> How CERT and PROD receive committed results</p>
+      <p>Found while planning: <code>promote.yml</code> looks an event up only in the <b>active season</b>, which is 2026/27 on CERT and PROD, so it cannot reach a 2025/26 or 2024/25 event. The repair plan's PROD step (“promote.yml per event”) therefore cannot run for any repaired event, nor for this one. And <code>phase5-event-runner.yml</code> only stages: no workflow commits a staged run.</p>
+      <ul>
+        <li><b>A</b> the runner workflow gains a commit step (<code>commit_run_id</code> with the replace option), so CERT and PROD each stage and commit with the same runner and the same sign-off checks as LOCAL. Each environment is then compared with LOCAL, row by row, and with EVF's points.</li>
+        <li><b>B</b> extend <code>promote.py</code> to find an event by its exact code in any season, so PROD copies CERT's committed rows, as the repair plan first said.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> It is the path already tested on LOCAL for seven events, with its replace in one transaction and its checks. <code>promote_event</code> was built for domestic events and its handling of an international bracket's N and match provenance is untested; changing it is the riskier change, on PROD.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">K</span> EVF Circuit Chania 2025, also absent</p>
+      <p>The same check found one more EVF event without a row: Chania (GRE), 3 May 2025, 40 fencers. Its only Polish result is KARATHANASIS Athanasios, 10th of 10 in V2 men's épée, who is not on the roster (as at Jabłonna 2026, where you chose to leave him out).</p>
+      <ul>
+        <li><b>A</b> leave it out: no member fenced, nothing changes in any ranking.</li>
+        <li><b>B</b> add the event row for completeness, with no results.</li>
+      </ul>
+      <p><b>Recommendation: A.</b></p>
+    </div>
+  </section>
+
+  <section id="status">
+    <p class="kicker">Status · 2 October</p>
+    <h2>Where the work is</h2>
+    <ul>
+      <li><b>Step 1 done.</b> Engarde event reader, test-first: <code>ENG.EVT.01–04</code> failed, then
+      passed. The title helpers moved from <code>populate_tournament_urls.py</code> into
+      <code>scrapers/engarde.py</code>, so both paths share one copy. Staging found a DNS fencer listed
+      without a place: the parser now takes N from the page header (<code>ENG.EVT.05</code>, failing
+      first).</li>
+      <li><b>Step 2 done.</b> <code>EVF.CAL.01</code>, test-first. Run live on LOCAL, it reports
+      exactly EVF 92 (2025/26) and EVF 77 Chania (2024/25, left out per K A).</li>
+      <li><b>Step 3: staged, waiting for your sign-off.</b> Event created on LOCAL (one guarded
+      INSERT, status COMPLETED, so the same statement runs on CERT and PROD). Staged: 10 Polish
+      results, EVF.PTS 10 of 10. Review page:
+      <code>doc/staging/PEW10efs-2025-2026.review.html</code>.</li>
+      <li><b>2026/27 carry-over.</b> The results reach the 2026/27 ranking through the 2027 edition.
+      You confirmed EVF will publish it this season; the sync then links it to this event by city.
+      Checked: exactly one Paris event in 2025/26.</li>
+      <li><b>For the PROD order of work.</b> The calendar mirror resolves a prior link by event code.
+      This event must exist on PROD before the 2027 edition is mirrored there, or that row is created
+      unlinked until the next daily run.</li>
+    </ul>
+  </section>
+
+  <section id="evidence">
+    <p class="kicker">What is known · checked 2 October</p>
+    <h2>The event, the source and EVF's record</h2>
+    <ul>
+      <li><b>Absent everywhere.</b> No 2025/26 event on LOCAL, CERT or PROD matches by name, place, date or URL; each has only the 2024/25 edition (<code>crit25</code>, 5 July 2025).</li>
+      <li><b>In the season.</b> 2025/26 runs 1 August 2025 – 11 July 2026; the Criterium is 4–6 July 2026.</li>
+      <li><b>The organiser's results</b> (Engarde, <code>fencingaddict/crit26</code>): 24 category competitions, V1–V4 in each of épée, foil and sabre for men and women, all completed, plus three pool rounds (V3–V4) that are not results.</li>
+      <li><b>EVF's record</b> (results API, event 92, 5 July 2026): the same 24 categories, 399 fencers, and 10 Polish results:</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Category</th><th>Fencer</th><th>Place</th><th>EVF points</th></tr></thead>
+      <tbody>
+        <tr><td>V3 men's sabre</td><td>ZABŁOCKI Michał</td><td class="mono">1 / 14</td><td class="mono">111.69</td></tr>
+        <tr><td>V2 men's sabre</td><td>GANSZCZYK Marcin</td><td class="mono">2 / 13</td><td class="mono">80.87</td></tr>
+        <tr><td>V2 men's sabre</td><td>ZAWROTNIAK Przemysław</td><td class="mono">3 / 13</td><td class="mono">56.07</td></tr>
+        <tr><td>V2 men's sabre</td><td>MAZIK Aleksander</td><td class="mono">10 / 13</td><td class="mono">6.01</td></tr>
+        <tr><td>V2 men's sabre</td><td>WIERZBICKI Jacek</td><td class="mono">11 / 13</td><td class="mono">4.19</td></tr>
+        <tr><td>V2 men's épée</td><td>KORONA Przemysław</td><td class="mono">18 / 72</td><td class="mono">36.88</td></tr>
+        <tr><td>V2 men's épée</td><td>ŻUKOWSKI Wojciech</td><td class="mono">59 / 72</td><td class="mono">13.28</td></tr>
+        <tr><td>V2 men's épée</td><td>PARDUS Borys</td><td class="mono">66 / 72</td><td class="mono">2.00</td></tr>
+        <tr><td>V2 men's foil</td><td>KORONA Przemysław</td><td class="mono">29 / 33</td><td class="mono">12.81</td></tr>
+        <tr><td>V2 women's épée</td><td>GANSZCZYK Anna</td><td class="mono">11 / 21</td><td class="mono">21.41</td></tr>
+      </tbody>
+    </table></div>
+    <p>The staged rows must equal these (EVF.PTS); a difference stops the event for review.</p>
+  </section>
+
+  <section id="cause">
+    <p class="kicker">Why it is missing</p>
+    <h2>No path created it</h2>
+    <ul>
+      <li>The 2024/25 edition came from the initial spreadsheet import (its slug is the Engarde name, <code>crit25</code>; it is in the first PROD seed of 12 April 2026), not from the EVF calendar sync.</li>
+      <li>The 2025/26 events came from the season generator, which has no Criterium entry, and from the EVF calendar sync, which reads EVF's public calendar list and never created it.</li>
+      <li>Nothing compared the season with what EVF actually scored. A scan of EVF's results API for 2024/25 and 2025/26 now does: every EVF event with results has a row except the Criterium 2026 and Chania 2025 (decision K). Event 83 (17 May 2026) has no results at EVF.</li>
+      <li><b>2026/27 has no Criterium either</b>, and its PEW10 is Lausanne. The completeness check below flags the 2027 edition once EVF builds it.</li>
+    </ul>
+  </section>
+
+  <section id="steps">
+    <p class="kicker">Order of work · tests first, RED before GREEN</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li><b>Engarde event reader</b> (needed anyway by five events of the repair batch). RED tests <code>ENG.EVT.01–04</code>: an Engarde tournament URL lists its competitions through Engarde's own list (<code>getCompeForDisplay.php</code>); individual category competitions are kept, pool rounds (“Poules”) and team events are skipped; each competition's classification is read by the existing <code>parse_engarde_html</code>; its title gives weapon, gender and category. GREEN: the runner expands an Engarde tournament URL into brackets as it does an FTL schedule.</li>
+      <li><b>Completeness check</b> <code>EVF.CAL.01</code>: a read-only tool, test-first, that lists every EVF event with results in a season's dates that has no event row. Run after each season's EVF events close.</li>
+      <li><b>LOCAL</b>: create the event (<code>fn_create_event</code>, decision E), write its URL through the identity check, stage it, build its review page with EVF's record and the exact 2026/27 ranking preview, then your sign-off, then commit with replace.</li>
+      <li><b>Runner workflow commit step</b> (if P A): RED contract test <code>WF.P5.01</code> (the workflow accepts <code>commit_run_id</code> and runs the runner's commit with replace; inputs validated before use), then GREEN.</li>
+      <li><b>Docs, preflight, release</b> together with the repair batch's uncommitted work; the repair plan's PROD step is corrected to the path chosen in P.</li>
+      <li><b>CERT</b>, with your go: create the event (<code>scripts/cloud-sql.sh cert</code>, the same <code>fn_create_event</code> call), then stage and commit through the workflow; verify against LOCAL and EVF.</li>
+      <li><b>PROD</b>, with your go: the same, then the seed refresh.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Acceptance</p>
+    <h2>Test IDs</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>ENG.EVT.01–04</code></td><td>pytest</td><td>An Engarde tournament lists its category competitions; pool rounds and team events are skipped; a competition title gives weapon, gender and category; the runner expands an Engarde URL into brackets</td></tr>
+        <tr><td><code>EVF.CAL.01</code></td><td>pytest</td><td>An EVF event with results inside a season's dates and no event row within two days is reported</td></tr>
+        <tr><td><code>WF.P5.01</code></td><td>pytest</td><td>The runner workflow commits a staged run with replace on its target, inputs validated (P A)</td></tr>
+        <tr><td><code>EVF.PTS.01</code></td><td>read-only tool</td><td>On each environment, every committed Polish result of the Criterium equals EVF's points and N</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--accent)">Impact: data | ingestion | operations
+Canonical docs affected: doc/handbook/subsystems/ingestion.html (the Engarde
+  event reader; the runner's commit step);
+  doc/handbook/reference/workflow-catalog.html (phase5-event-runner.yml
+  commits; promote.yml reaches the active season only);
+  doc/handbook/operations/ (adding a missing past event on every
+  environment; the season completeness check);
+  doc/requirements-traceability-matrix.md (+ HTML twin): ENG.EVT.*,
+  EVF.CAL.*, WF.P5.*; spec Appendix D totals
+ADR impact: ADR-105 consequences (the Engarde reader, the CERT/PROD path);
+  no new ADR unless P B is chosen (promotion across seasons)
+Operational impact: CERT and PROD event creation via scripts/cloud-sql.sh
+  with explicit approval; seed refresh after PROD
+Source-map / last-verified updated: yes
+Validation: scripts/preflight.sh exit 0
+Superseded prose archived rather than appended: yes</pre>
+    </div>
+  </section>
+
+  <section id="out">
+    <p class="kicker">Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li><b>The Criterium 2027</b> (2026/27): added when the organiser publishes it; EVF.CAL.01 flags it once EVF has built it.</li>
+      <li><b>EVF event 83</b> (17 May 2026): EVF holds no results for it; nothing to ingest.</li>
+      <li><b>The rest of the repair batch</b> continues under its own plan; the Engarde reader of step 1 also unblocks its five Engarde events.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · Criterium Mondial Vétérans 2026 on all environments · 2 Oct 2026</p>
+</div>
