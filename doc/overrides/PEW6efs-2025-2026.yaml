@@ -1,0 +1,38 @@
+# PEW6efs-2025-2026 — ADR-106 re-staging decisions of 2026-10-02 (doc/plans/adr-106-restage-review-2026-10-02.html).
+# PEW6efs-2025-2026 P1: B — ŁOJAK Szymon
+# PEW6efs-2025-2026 P2: B — WIECZOREK Janusz
+# PEW6efs-2025-2026 P3: A — GOLA Maciej → #3
+# PEW6efs-2025-2026 P4: A — SZUMIELEWICZ Paweł → #18
+# PEW6efs-2025-2026 P5: A — CISZEWSKA Barbara → #17
+# PEW6efs-2025-2026 P6: B — BELIAKOVA Alena
+# PEW6efs-2025-2026 P7: B — KARATHANASIS Atanasis
+# PEW6efs-2025-2026 P8: A — KRAWCZYK Paweł → #6
+# PEW6efs-2025-2026 R1: A — LYNCH Patrick → #284
+identity:
+- scraped_name: GOLA Maciej
+  id_fencer: 3
+- scraped_name: SZUMIELEWICZ Paweł
+  id_fencer: 18
+- scraped_name: CISZEWSKA Barbara
+  id_fencer: 17
+- scraped_name: KRAWCZYK Paweł
+  id_fencer: 6
+- scraped_name: LYNCH Patrick
+  id_fencer: 284
+match_method:
+- scraped_name: ŁOJAK Szymon
+  force_method: EXCLUDED
+  note: 'PEW6efs-2025-2026 P1: B, not this candidate and not on our roster (ADR-106
+    §1)'
+- scraped_name: WIECZOREK Janusz
+  force_method: EXCLUDED
+  note: 'PEW6efs-2025-2026 P2: B, not this candidate and not on our roster (ADR-106
+    §1)'
+- scraped_name: BELIAKOVA Alena
+  force_method: EXCLUDED
+  note: 'PEW6efs-2025-2026 P6: B, not this candidate and not on our roster (ADR-106
+    §1)'
+- scraped_name: KARATHANASIS Atanasis
+  force_method: EXCLUDED
+  note: 'PEW6efs-2025-2026 P7: B, not this candidate and not on our roster (ADR-106
+    §1)'
