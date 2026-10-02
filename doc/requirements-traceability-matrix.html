@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="6222038c3a20610f9fab9b27faeb9772008e9f3601e11837b6c9d4137778748a">
+<meta name="doc-source-sha256" content="3b3d1a73408b0a1b34a2a4fa5e3bc2e668cdcb3d86504c0c10050be62044f2c1">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>337 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>338 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1797,10 +1797,17 @@
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
-<td>WF.P5.01</td>
-<td><code>phase5-event-runner.yml</code> commits a staged run on its target when <code>commit_run_id</code> is set, through the runner's replace path; the run id is validated as a UUID before use and no input is interpolated into a shell script.</td>
+<td>WF.P5.01–02</td>
+<td><code>phase5-event-runner.yml</code> commits a staged run on its target when <code>commit_run_id</code> is set, through the runner's replace path; the run id is validated as a UUID before use and no input is interpolated into a shell script (01). Its input check, run in bash, accepts real event codes with a PEW code's lower-case weapon letters (<code>PEW10efs-2025-2026</code>) and refuses shell metacharacters (02).</td>
 <td>pytest</td>
 <td><code>python/tests/test_phase5_workflow_commit.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>CARRY.NS.01–07</td>
+<td><code>vw_eligible_event</code> carries a held event of the previous season into the current season while no current-season row links to it, within the carry-over window, once; with a linked row it is carried once, through the link; it is not carried when not held, two seasons back or past the window; <code>fn_fencer_scores_rolling</code> (the drilldown) lists it; the carry stops once the next edition is held (<a href="adr/042-carryover-engine-dispatcher.html">ADR-042</a> amendment 2026-10-02).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/94_carryover_without_successor.sql</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
@@ -1830,5 +1837,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>6222038c3a20610f9fab9b27faeb9772008e9f3601e11837b6c9d4137778748a</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>3b3d1a73408b0a1b34a2a4fa5e3bc2e668cdcb3d86504c0c10050be62044f2c1</code></footer>
 </div></body></html>

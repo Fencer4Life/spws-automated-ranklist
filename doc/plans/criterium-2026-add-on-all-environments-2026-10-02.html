@@ -128,7 +128,8 @@
   <p class="dek">EVF scored the <b>Criterium Mondial Vétérans 2026</b> (Paris, 4–6 July 2026, 399 fencers, <b>10 Polish results</b>), and it falls inside 2025/26. <b>LOCAL, CERT and PROD have no event for it</b>, so its results are in no ranking, and 2025/26 results carry into 2026/27. This plan adds it on all three environments, from the organiser's Engarde results, checked against EVF's record. It also fixes how CERT and PROD receive any repaired event, which the repair batch needs too.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>Signed off 2 Oct: E A, P A, K A</span>
-    <span class="pill warn"><span class="dot"></span>LOCAL staged · waiting for G</span>
+    <span class="pill"><span class="dot"></span>LOCAL committed · released to CERT and PROD</span>
+    <span class="pill warn"><span class="dot"></span>CERT: event created · staging after the release</span>
     <span class="pill danger"><span class="dot"></span>CERT and PROD writes: your go for each</span>
   </div>
 
@@ -167,9 +168,81 @@
     </div>
   </section>
 
+  <section id="successor">
+    <p class="kicker">Decide this first · the CERT run is paused</p>
+    <h2>How the Criterium 2026 counts in the 2026/27 rolling score</h2>
+    <p><b>Where it stands.</b> LOCAL shows Zabłocki's win in the 2026/27 EVF+ rolling score (417.24). It does so through
+    a hand-made 2026/27 row, <code>PEW19efs-2026-2027</code> “EVF Criterium Mondial Vétérans 2027”, undated and CREATED,
+    linked to the 2026 event. The same row and the 2026 event are now on CERT. Nothing is staged on CERT: the runner
+    workflow refused the code <code>PEW10efs</code> (its input check allowed only upper-case letters; fixed test-first,
+    WF.P5.02, not yet released).</p>
+    <p><b>What stopped it.</b> pgTAP 74.9 fails on LOCAL: ADR-091 forbids an undated CREATED EVF placeholder anywhere,
+    because such a row is a prediction the calendar sync cannot match and it caused duplicate events. My row is one.
+    Its failure mode is real here too: when EVF publishes the 2027 edition, the sync reuses the row only if EVF's
+    chronological code is exactly PEW19; with any other number it creates a second row, the unique index on (season,
+    prior event) refuses it, and the whole calendar sync stops until someone joins the two by hand.</p>
+    <p><b>What the rule already does.</b> A 2025/26 result carries into 2026/27 for 366 days after its event through
+    the 2026/27 edition's link, until that edition is held; a cancelled or not yet held edition keeps carrying it. Only
+    an event whose next edition has no row at all drops out at once. Measured read-only: on PROD every 2025/26 event with
+    results has a 2026/27 row, so this gap holds only the Criterium.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">S</span> The mechanism</p>
+      <ul>
+        <li><b>A</b> keep the placeholder row on every environment: amend ADR-091 with this exception and pgTAP 74.9 to
+        allow a linked successor, and accept that a misnumbered 2027 edition stops the calendar sync until it is joined
+        by hand.</li>
+        <li><b>B</b> amend the carry-over rule (ADR-042): a result of the previous season whose event has no row in the
+        current season yet carries for the same 366 days. Built test-first in <code>vw_eligible_event</code>, released,
+        then the placeholder rows are removed from LOCAL and CERT. When EVF publishes the 2027 edition, the sync links it
+        by city and the carry continues until that edition is held. On PROD this changes only the Criterium; the 2026/27
+        ranking moves exactly as the preview on the review page (Zabłocki 305.55 → 417.24, eight more rows).</li>
+      </ul>
+      <p><b>Recommendation: B.</b> It is what the rolling score already means for a cancelled or not yet held edition,
+      it needs no prediction of EVF's calendar, and it cannot stop the sync. A keeps a guessed row that ADR-091 was
+      written to remove.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Decided 2 October: B</p>
+      <p>Built test-first: <code>vw_eligible_event</code> gains a third branch (migration
+      <code>20261002000007</code>; pgTAP 94, CARRY.NS.01–07, 01 and 04 failing first); ADR-042 amended. The placeholder
+      rows are removed from LOCAL and CERT (PROD never had one). On LOCAL the rule alone now carries exactly one event, the
+      Criterium 2026: Zabłocki 417.24, his win listed in the drilldown.</p>
+    </div>
+  </section>
+
+  <section id="cert-go">
+    <p class="kicker">Decide this first</p>
+    <h2>Run the Criterium on CERT</h2>
+    <p>The release is live: CI <code>36973805824</code> and Release <code>36973917731</code> passed on
+    <code>c1d7083a</code>, and both environments carry the replace functions, the type guard and the EVF minimum
+    default of 1 (checked read-only). LOCAL holds the committed Criterium: 10 results, EVF.PTS 10 of 10.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">C</span> The CERT run</p>
+      <ol>
+        <li>Create the event with the same guarded <code>INSERT</code> as LOCAL (<code>scripts/cloud-sql.sh cert</code>,
+        printed before it runs). Undo, if needed: delete that one event row, which holds nothing yet.</li>
+        <li><s>Create a 2026/27 placeholder successor.</s> Replaced by decision S B: the carry-over rule carries the
+        Criterium while its 2027 edition has no row.</li>
+        <li>Stage with <code>phase5-event-runner.yml</code> (event <code>PEW10efs-2025-2026</code>, target cert).
+        CERT's 2025/26 EVF minimum is still 5; every bracket with a Pole has 13 or more fencers, so the staging must
+        equal LOCAL's.</li>
+        <li>Compare CERT's drafts with LOCAL's 10 rows and with EVF event 92, row by row (read-only). Any difference
+        stops here and comes back to you.</li>
+        <li>Commit through the same workflow with <code>commit_run_id</code>, then check types, multipliers, N, places
+        and points against EVF on CERT.</li>
+      </ol>
+      <ul>
+        <li><b>A</b> run steps 1–4 on CERT now; stop before PROD and report.</li>
+        <li><b>B</b> hold.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> The same statements and the same runner path as LOCAL, with a comparison before the
+      commit. PROD follows only after CERT is verified, with its own go.</p>
+    </div>
+  </section>
+
   <section id="ci-fix">
-    <p class="kicker">Decide this first · CI is red on main</p>
-    <h2>The release push failed CI; nothing is deployed</h2>
+    <p class="kicker">Resolved · CI was red on main</p>
+    <h2>The first release push failed CI; fixed and released</h2>
     <p>Pushed <code>647f5a2d</code> to main. CI's pgTAP job failed while loading the seed, before any test ran, and the
     Release workflow runs only after a green CI, so CERT and PROD are unchanged.</p>
     <p><b>Cause.</b> The new type guard (TT.CODE, migration <code>20261002000003</code>) maps the code family DMEW to MPW,
