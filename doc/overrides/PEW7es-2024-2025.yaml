@@ -1,16 +1,13 @@
 # PEW7es-2024-2025 — ADR-106 re-staging decisions of 2026-10-02 (doc/plans/adr-106-restage-review-2026-10-02.html).
-# PEW7es-2024-2025 P1: A — GOLA Maciej → #3
+# Fencers are named, not numbered: ids differ between LOCAL, CERT and PROD (P3.OV19).
+# PEW7es-2024-2025 P1: A — GOLA Maciej → GOLA Maciej 1981
 # PEW7es-2024-2025 P2: B — BISKUPSKI Marek
 # PEW7es-2024-2025 P3: B — KARATHANASIS Atanasis
 identity:
 - scraped_name: GOLA Maciej
-  id_fencer: 3
+  fencer: {surname: GOLA, first_name: Maciej, birth_year: 1981}
 match_method:
-- scraped_name: BISKUPSKI Marek
-  force_method: EXCLUDED
-  note: 'PEW7es-2024-2025 P2: B, not this candidate and not on our roster (ADR-106
-    §1)'
-- scraped_name: KARATHANASIS Atanasis
-  force_method: EXCLUDED
-  note: 'PEW7es-2024-2025 P3: B, not this candidate and not on our roster (ADR-106
-    §1)'
+- {scraped_name: BISKUPSKI Marek, force_method: EXCLUDED, note: 'PEW7es-2024-2025
+    P2: B, not this candidate and not on our roster (ADR-106 §1)'}
+- {scraped_name: KARATHANASIS Atanasis, force_method: EXCLUDED, note: 'PEW7es-2024-2025
+    P3: B, not this candidate and not on our roster (ADR-106 §1)'}
