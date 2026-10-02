@@ -223,13 +223,17 @@ class TestFourFenceParser:
         assert "VINCENZI" in first["fencer_name"]
 
     def test_fourfence_participant_count(self):
-        """3.3c 4Fence: participant count matches row count."""
+        """3.3c 4Fence: one result per PLACED fencer. Terni prints 64 rows, of
+        which 3 have no final place (the second bronze, unnamed without the
+        last-four tableau, and two fencers who left): 61 results
+        (FOURFENCE.CLOSE.01)."""
         from python.scrapers.fourfence import parse_fourfence_html
 
         html = (FIXTURES / "fourfence" / "clafinale_terni.html").read_text()
         results = parse_fourfence_html(html)
 
-        assert len(results) == 64
+        assert len(results) == 61
+        assert max(r["place"] for r in results) == 62
 
     def test_fourfence_name_format(self):
         """3.3d 4Fence: name formatted as 'SURNAME FirstName'."""

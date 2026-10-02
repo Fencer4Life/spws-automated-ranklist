@@ -397,7 +397,38 @@ class Fetcher:
         engarde = engarde_tournament(event_url)
         if engarde is not None:
             return self._fetch_engarde_tournament(*engarde)
+        if _is_fourfence_event(event_url):
+            return self._fetch_fourfence_event(event_url), skipped
         return [self.fetch_url(event_url)], skipped
+
+    def _fetch_fourfence_event(self, event_url: str) -> list:
+        """A 4fence event (FOURFENCE.EVT.01): one bracket per weapon, gender and
+        category whose final classification lists fencers. Each bracket reads
+        its final classification and its last-four tableau, which names the
+        second bronze medallist the classification prints without a place."""
+        from python.scrapers.fourfence import parse_html
+        from python.tools.populate_tournament_urls import generate_fourfence_urls
+
+        results: list = []
+        for bracket in generate_fourfence_urls(event_url):
+            url = bracket["url"]
+            parsed = parse_html(
+                self._get(url),
+                source_url=url,
+                tab4_html=self._get(url.replace("f=clafinale", "f=tab4")),
+            )
+            if not parsed.results:
+                continue
+            results.append(
+                _annotate_parsed(
+                    parsed,
+                    weapon=bracket["weapon"],
+                    gender=bracket["gender"],
+                    age_category=bracket["category"],
+                    ftl_source_name=bracket["source_name"],
+                )
+            )
+        return results
 
     def _fetch_engarde_tournament(self, org: str, event: str) -> tuple[list, list[dict]]:
         """An Engarde tournament (ENG.EVT): Engarde's competition list, then the
@@ -512,10 +543,16 @@ class Fetcher:
 
         from python.scrapers.engarde import engarde_tournament
 
-        if engarde_tournament(event_url) is not None:
+        if engarde_tournament(event_url) is not None or _is_fourfence_event(event_url):
             return self.fetch_event_url_with_skips(event_url)[0]
         # Non-FTL-eventSchedule URLs — single-tournament path
         return [self.fetch_url(event_url)]
+
+
+def _is_fourfence_event(url: str) -> bool:
+    """True iff `url` is a 4fence event page (its results folder), not one
+    bracket's page (which carries the `f=` view parameter)."""
+    return bool(url) and "4fence." in url and "/Risultati/" in url and "f=" not in url
 
 
 def _is_ftl_event_schedule(url: str) -> bool:
