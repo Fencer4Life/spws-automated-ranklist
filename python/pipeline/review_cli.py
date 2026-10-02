@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 import uuid
 from collections.abc import Callable
@@ -399,7 +400,92 @@ class Fetcher:
             return self._fetch_engarde_tournament(*engarde)
         if _is_fourfence_event(event_url):
             return self._fetch_fourfence_event(event_url), skipped
+        if _is_ophardt_tournament(event_url):
+            return self._fetch_ophardt_tournament(event_url)
+        if _is_dartagnan_index(event_url):
+            return self._fetch_dartagnan_event(event_url)
         return [self.fetch_url(event_url)], skipped
+
+    def _fetch_ophardt_tournament(self, event_url: str) -> tuple[list, list[dict]]:
+        """An Ophardt tournament page (INTL.EVT.01): one bracket per individual
+        competition of one weapon, gender and EVF age band, read from its
+        results page. The page prints "dd.mm." only; the year comes from when
+        the results page was transmitted, never from the URL (OPH.EVT.04)."""
+        import dataclasses as _dc
+
+        from python.scrapers.ophardt import (
+            parse_results,
+            parse_tournament_competitions,
+            resolve_day_month,
+            transmission_date,
+        )
+
+        kept, skipped = parse_tournament_competitions(self._get(event_url), event_url)
+        results: list = []
+        for comp in kept:
+            html = self._get(comp["url"])
+            parsed = parse_results(html, source_url=comp["url"])
+            if not parsed.results:
+                skipped.append(
+                    {
+                        "weapon": comp["weapon"],
+                        "name": comp["title"],
+                        "url": comp["url"],
+                        "reason": "no results",
+                    }
+                )
+                continue
+            anchor = transmission_date(html)
+            parsed = _dc.replace(
+                parsed,
+                tournament_name=comp["title"],
+                parsed_date=resolve_day_month(comp["day_month"], anchor) if anchor else None,
+            )
+            results.append(
+                _annotate_parsed(
+                    parsed,
+                    weapon=comp["weapon"],
+                    gender=comp["gender"],
+                    age_category=comp["category"],
+                    ftl_source_name=comp["title"],
+                )
+            )
+        return results, skipped
+
+    def _fetch_dartagnan_event(self, index_url: str) -> tuple[list, list[dict]]:
+        """A d'Artagnan event index (DART.EVT.02): one bracket per
+        single-category competition, read from its rankings page with the
+        index's weapon, gender and category. The index itself is never read
+        as a bracket; combined pool rounds come back as skipped."""
+        import dataclasses as _dc
+
+        from python.scrapers.dartagnan import list_dartagnan_competitions, parse_rankings
+
+        kept, skipped = list_dartagnan_competitions(self._get(index_url), index_url)
+        results: list = []
+        for comp in kept:
+            url = comp["rankings_url"]
+            parsed = parse_rankings(self._get(url), source_url=url)
+            if not parsed.results:
+                skipped.append(
+                    {
+                        "weapon": comp["weapon"],
+                        "name": comp["title"],
+                        "url": url,
+                        "reason": "no results",
+                    }
+                )
+                continue
+            results.append(
+                _annotate_parsed(
+                    _dc.replace(parsed, tournament_name=comp["title"]),
+                    weapon=comp["weapon"],
+                    gender=comp["gender"],
+                    age_category=comp["category"],
+                    ftl_source_name=comp["title"],
+                )
+            )
+        return results, skipped
 
     def _fetch_fourfence_event(self, event_url: str) -> list:
         """A 4fence event (FOURFENCE.EVT.01): one bracket per weapon, gender and
@@ -543,7 +629,12 @@ class Fetcher:
 
         from python.scrapers.engarde import engarde_tournament
 
-        if engarde_tournament(event_url) is not None or _is_fourfence_event(event_url):
+        if (
+            engarde_tournament(event_url) is not None
+            or _is_fourfence_event(event_url)
+            or _is_ophardt_tournament(event_url)
+            or _is_dartagnan_index(event_url)
+        ):
             return self.fetch_event_url_with_skips(event_url)[0]
         # Non-FTL-eventSchedule URLs — single-tournament path
         return [self.fetch_url(event_url)]
@@ -553,6 +644,22 @@ def _is_fourfence_event(url: str) -> bool:
     """True iff `url` is a 4fence event page (its results folder), not one
     bracket's page (which carries the `f=` view parameter)."""
     return bool(url) and "4fence." in url and "/Risultati/" in url and "f=" not in url
+
+
+_OPHARDT_TOURNAMENT_RE = re.compile(
+    r"^https?://[^/]*(?:fencingworldwide\.com|ophardt)[^/]*/\w{2}/\d+-\d{4}/tournament/?(?:[?#].*)?$"
+)
+
+
+def _is_ophardt_tournament(url: str) -> bool:
+    """True iff `url` is an Ophardt tournament page (all its competitions),
+    not one competition's results page (INTL.EVT.01-02)."""
+    return bool(url) and bool(_OPHARDT_TOURNAMENT_RE.match(url))
+
+
+def _is_dartagnan_index(url: str) -> bool:
+    """True iff `url` is a d'Artagnan event index, not a rankings page (DART.EVT.02)."""
+    return bool(url) and "dartagnan" in url and re.split(r"[?#]", url)[0].endswith("/index.html")
 
 
 def _is_ftl_event_schedule(url: str) -> bool:

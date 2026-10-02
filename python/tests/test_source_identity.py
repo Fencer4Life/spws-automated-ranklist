@@ -269,14 +269,16 @@ class TestReaders:
         assert ident.dates == {date(2025, 1, 4), date(2025, 1, 5)}
         assert ident.weapons == {"EPEE", "FOIL", "SABRE"}
 
-    def test_ophardt_takes_the_year_from_the_url(self):
-        """REPAIR.URL.01 an Ophardt event page shows "06.12. - 07.12." with no
-        year; the year is the one in its URL."""
+    def test_ophardt_page_alone_shows_no_date(self):
+        """REPAIR.URL.03 an Ophardt event page shows "06.12. - 07.12." with no
+        year, and the number in its URL is Ophardt's season, not the year
+        (Chania, 2 May 2026, is 32819-2025): alone, the page has no date and
+        is refused. Its name and weapons are read."""
         ident = read_source_identity(
             "https://www.fencingworldwide.com/en/32812-2025/tournament/", OPHARDT_EVENT
         )
         assert ident.title == "EVF Circuit Memoriam Max Geuter"
-        assert ident.dates == {date(2025, 12, 6), date(2025, 12, 7)}
+        assert ident.dates == frozenset()
         assert ident.weapons == {"FOIL", "SABRE"}
         assert "münchen" in ident.text.lower()
 
@@ -456,3 +458,79 @@ class TestEngarde:
         ident = fetch_source_identity(CRIT26_URL)
         assert fetched == [CRIT26_URL, list_url]
         assert check_event_sources(CRIT26, [ident]) == {}
+
+
+OPH = __import__("pathlib").Path(__file__).parent / "fixtures" / "ophardt"
+FWW = "https://www.fencingworldwide.com"
+CHANIA_2026 = {
+    "id_event": 8,
+    "txt_code": "PEW8es-2025-2026",
+    "txt_name": "EVF Circuit – Chania (GRE)",
+    "txt_location": "Chania",
+    "txt_country": "Greece",
+    "dt_start": "2026-05-02",
+    "dt_end": "2026-05-03",
+    "arr_weapons": ["EPEE", "SABRE"],
+}
+MUNICH_2025 = {
+    **MUNICH_2024,
+    "txt_code": "PEW3fs-2025-2026",
+    "dt_start": "2025-12-06",
+    "dt_end": "2025-12-07",
+}
+
+
+def _oph(name: str) -> str:
+    return (OPH / name).read_text(encoding="utf-8")
+
+
+class TestOphardtYear:
+    def test_the_results_page_fixes_the_year(self):
+        """REPAIR.URL.03 with a competition's results page, which prints when
+        its results were transmitted, each "dd.mm." of the event page gets
+        its year: Chania's page reads 2–3 May 2026 and passes for Chania 2026."""
+        ident = read_source_identity(
+            f"{FWW}/en/32819-2025/tournament/",
+            _oph("tournament_32819-2025_chania2026.html"),
+            competitions=_oph("results_920967-2025_chania_epee_women_v1.html"),
+        )
+        assert ident.dates == {date(2026, 5, 2), date(2026, 5, 3)}
+        assert ident.weapons == {"EPEE", "SABRE"}
+        assert check_event_sources(CHANIA_2026, [ident]) == {}
+
+    def test_last_years_edition_is_refused(self):
+        """REPAIR.URL.03 Munich 2024's page (7–8 December 2024) never reads as
+        December 2025: it is refused for Munich 2025."""
+        ident = read_source_identity(
+            f"{FWW}/en/30657-2024/tournament/",
+            _oph("tournament_30657-2024_munich2024.html"),
+            competitions=_oph("results_903540-2024_munich_foil_men_v2.html"),
+        )
+        assert ident.dates == {date(2024, 12, 7), date(2024, 12, 8)}
+        assert check_event_sources(MUNICH_2024, [ident]) == {}
+        problems = check_event_sources(MUNICH_2025, [ident])
+        assert any("2024-12-07" in p for p in problems[ident.url])
+
+    def test_fetch_reads_the_page_and_one_results_page(self, monkeypatch):
+        """REPAIR.URL.03 the tool fetches the event page and the results page
+        of its first competition, so the check sees the year."""
+        import httpx
+
+        from python.tools.set_event_source_urls import fetch_source_identity
+
+        url = f"{FWW}/en/32819-2025/tournament/"
+        first = f"{FWW}/en/920967-2025/results/"
+        served = {
+            url: _oph("tournament_32819-2025_chania2026.html"),
+            first: _oph("results_920967-2025_chania_epee_women_v1.html"),
+        }
+        fetched: list[str] = []
+
+        def fake_get(u, **kwargs):
+            fetched.append(u)
+            return httpx.Response(200, text=served[u], request=httpx.Request("GET", u))
+
+        monkeypatch.setattr(httpx, "get", fake_get)
+        ident = fetch_source_identity(url)
+        assert fetched == [url, first]
+        assert check_event_sources(CHANIA_2026, [ident]) == {}
