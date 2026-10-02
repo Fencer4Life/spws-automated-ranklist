@@ -91,6 +91,26 @@ def engarde_tournament(url: str) -> tuple[str, str] | None:
     return (m.group(1), m.group(2)) if m else None
 
 
+def competition_list_facts(xml_text: str) -> tuple[set[date], set[str], set[str]]:
+    """The dates, weapons and places (city, country code) of every competition
+    in an Engarde competition list, whatever its state or kind: what the
+    tournament says about itself, for the URL-identity check (REPAIR.URL.02)."""
+    dates: set[date] = set()
+    weapons: set[str] = set()
+    places: set[str] = set()
+    for comp in ET.fromstring(xml_text).findall("comp"):
+        parts = comp.get("date", "").split()
+        if len(parts) == 3 and all(p.isdigit() for p in parts):
+            try:
+                dates.add(date(int(parts[0]), int(parts[1]), int(parts[2])))
+            except ValueError:
+                pass
+        if weapon := ENGARDE_WEAPON_MAP.get(comp.get("arme", "")):
+            weapons.add(weapon)
+        places.update(p for p in (comp.get("ville"), comp.get("pays")) if p)
+    return dates, weapons, places
+
+
 def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[dict], list[dict]]:
     """Split an Engarde competition list (getCompeForDisplay XML) into the
     category finals and the competitions that are not brackets.
@@ -143,16 +163,6 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
             }
         )
     return kept, skipped
-
-
-def _extract_participant_count(soup: BeautifulSoup) -> int | None:
-    """Extract participant count from <h3> text like 'Overall ranking (57 fencers)'."""
-    for h3 in soup.find_all("h3"):
-        text = h3.get_text()
-        m = re.search(r"\((\d+)\s", text)
-        if m:
-            return int(m.group(1))
-    return None
 
 
 def parse_engarde_html(html: str) -> list[dict]:
@@ -291,12 +301,13 @@ def parse_html(
             )
         )
 
-    # The header counts the whole bracket, including a fencer listed without a
-    # place (DNS); EVF scores with that count (ENG.EVT.05).
-    header_count = _extract_participant_count(soup) or 0
+    # N counts the placed fencers only. The header ("Classement général (33
+    # tireurs)") also counts a fencer listed without a place, DNS (did not
+    # start), DNF (did not finish) or DNQ (did not qualify); such a fencer is
+    # not in N (ENG.EVT.05).
     return ParsedTournament(
         source_kind=SourceKind.ENGARDE,
         results=parsed_results,
-        raw_pool_size=max(header_count, len(parsed_results)),
+        raw_pool_size=len(parsed_results),
         source_url=source_url,
     )

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="603d643469bb2fc5eb4e75659f790d738ebcb4082e8d05d9998f546ba0270ca7">
+<meta name="doc-source-sha256" content="2cd8d32586a838d5f64099da8c67ad1c00ec7077faa39acaafec3b58d70fafc9">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>338 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>340 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1777,14 +1777,21 @@
 </tr>
 <tr>
 <td>REPAIR.URL.01</td>
-<td><code>set_event_source_urls</code> writes an event's result URLs only when every source's date, name and weapons match the event (a person may confirm the name, never the date); FTL, Ophardt, 4fence and d'Artagnan pages are read; nothing is written when any URL fails.</td>
+<td><code>set_event_source_urls</code> writes an event's result URLs only when every source's date, name and weapons match the event (a person may confirm the name, never the date); FTL, Ophardt, 4fence and d'Artagnan pages are read (Engarde: REPAIR.URL.02); nothing is written when any URL fails.</td>
+<td>pytest</td>
+<td><code>python/tests/test_source_identity.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>REPAIR.URL.02</td>
+<td>An Engarde tournament is checked through the competition list its page loads (<code>getCompeForDisplay</code>): every competition's date, weapon and city; the 2026 list does not pass for the 2025 edition; <code>fetch_source_identity</code> fetches the page and the list. Without the list the page has no date and is refused.</td>
 <td>pytest</td>
 <td><code>python/tests/test_source_identity.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
 <td>ENG.EVT.01–05</td>
-<td>An Engarde tournament URL expands through Engarde's competition list into one bracket per individual, completed, single-category final, with weapon, gender and category from the title and the competition's own date (01, 03, 04); pool rounds, team events, open competitions and competitions without one category are skipped with a reason (02); the classification header's count is N, a fencer listed without a place included (05).</td>
+<td>An Engarde tournament URL expands through Engarde's competition list into one bracket per individual, completed, single-category final, with weapon, gender and category from the title and the competition's own date (01, 03, 04); pool rounds, team events, open competitions and competitions without one category are skipped with a reason (02); N is the number of placed fencers: a fencer listed without a place, DNS (did not start), DNF (did not finish) or DNQ (did not qualify), is not in N although the classification header counts him (05; the header count adopted earlier the same day is withdrawn).</td>
 <td>pytest</td>
 <td><code>python/tests/test_engarde_event_reader.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
@@ -1808,6 +1815,13 @@
 <td><code>vw_eligible_event</code> carries a held event of the previous season into the current season while no current-season row links to it, within the carry-over window, once; with a linked row it is carried once, through the link; it is not carried when not held, two seasons back or past the window; <code>fn_fencer_scores_rolling</code> (the drilldown) lists it; the carry stops once the next edition is held (<a href="adr/042-carryover-engine-dispatcher.html">ADR-042</a> amendment 2026-10-02).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/94_carryover_without_successor.sql</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>EVF.URL.01–03</td>
+<td>An EVF archive page (<code>veteransfencing.eu/event/…</code>) never replaces a stored organiser URL: <code>fn_refresh_evf_event_urls</code> (CERT) and <code>fn_mirror_events_to_prod</code> (PROD) fill a blank <code>url_event</code> only, and <code>fn_sync_evf_event_fields</code> does not write it; an event with no organiser URL takes the EVF page.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/95_evf_url_fill_blank_only.sql</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
@@ -1837,5 +1851,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>603d643469bb2fc5eb4e75659f790d738ebcb4082e8d05d9998f546ba0270ca7</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>2cd8d32586a838d5f64099da8c67ad1c00ec7077faa39acaafec3b58d70fafc9</code></footer>
 </div></body></html>
