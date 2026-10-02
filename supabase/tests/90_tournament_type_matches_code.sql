@@ -8,11 +8,17 @@
 -- fn_tournament_type_for_code mirrors the ingest's
 -- derive_tourn_type_from_event_code; the trigger refuses a disagreeing write
 -- on every path, and TT.CODE.06 checks the stored data itself.
+--
+-- DMEW, the team European championship, is never scraped for the ranking
+-- (ADR-021: SPWS does not track team results), so it holds no tournament and
+-- its type is left unclaimed (TT.CODE.09). The seed of 12 Sep 2026 still holds
+-- six DMEW-2025-2026 bracket stubs typed MEW from the retired skeletons; a
+-- mapping to MPW refused them when CI loaded the seed after the migrations.
 -- =============================================================================
 
 BEGIN;
 
-SELECT plan(8);
+SELECT plan(9);
 
 SELECT is(fn_tournament_type_for_code('IMSW-V1-F-FOIL-2025-2026'), 'MSW', 'TT.CODE.01 IMSW is MSW');
 SELECT is(fn_tournament_type_for_code('PEW62efs-V2-M-EPEE-2025-2026'), 'PEW', 'TT.CODE.02 PEW62efs is PEW');
@@ -58,6 +64,18 @@ SELECT throws_like(
   $$UPDATE tbl_tournament SET enum_type = 'PPW' WHERE txt_code = 'IMSW-V1-F-FOIL-2096-2097'$$,
   '%coded IMSW-V1-F-FOIL-2096-2097 but typed PPW%',
   'TT.CODE.08 re-typing it PPW afterwards is refused');
+
+INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status)
+SELECT 'DMEW-2096-2097', 'TT fixture',
+       (SELECT id_season FROM tbl_season ORDER BY id_season DESC LIMIT 1),
+       (SELECT id_organizer FROM tbl_organizer ORDER BY id_organizer LIMIT 1),
+       'PLANNED';
+
+SELECT lives_ok(
+  $$INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament)
+    SELECT id_event, 'DMEW-2096-2097-F-EPEE', 'MEW', 'EPEE', 'F', 'V2', '2026-11-12'
+      FROM tbl_event WHERE txt_code = 'DMEW-2096-2097'$$,
+  'TT.CODE.09 DMEW is unmapped: a team championship stub typed MEW is written');
 
 SELECT * FROM finish();
 ROLLBACK;
