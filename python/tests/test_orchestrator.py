@@ -252,8 +252,8 @@ class TestDomesticInternationalRules:
     def test_pew_ingest_uses_raw_field_size_for_participant_count(self):
         """9.157a Orchestrator passes raw pre-filter scrape size as participant_count.
 
-        ADR-038 bug regression: with POL-only filter active, the payload
-        shrinks (e.g. 5 scraped → 1 POL matched), but int_participant_count
+        ADR-038 bug regression: with the admission active (ADR-106), the payload
+        shrinks (e.g. 5 scraped → 1 admitted), but int_participant_count
         must stay at the actual tournament field size (5). Otherwise scoring
         would deflate for international events that have few Polish fencers.
         """
@@ -269,6 +269,8 @@ class TestDomesticInternationalRules:
             },
         ]
         db = _make_mock_db(fencer_db=fencer_db)
+        # ADR-106 §1: KOWALSKI Jan is stored by identity only with an SPWS start.
+        db.fetch_spws_starter_ids.return_value = {1}
         notifier = _make_silent_notifier()
         process_xml_file(
             file_bytes=_load_fixture("single_category.xml"),
@@ -279,7 +281,7 @@ class TestDomesticInternationalRules:
             tournament_type="PEW",
         )
         assert db.ingest_results.called, (
-            "ingest_results must be called even when only 1 POL fencer matches"
+            "ingest_results must be called even when only 1 fencer is admitted"
         )
         call = db.ingest_results.call_args
         # fixture single_category.xml has 5 fencers (4 POL + 1 GER)

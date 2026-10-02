@@ -2541,7 +2541,7 @@ class TestFilterStale:
         monkeypatch.setattr(evf_sync, "EvfApiClient", FakeClient)
         monkeypatch.setattr(evf_sync, "scrape_event_results", fake_scrape_event_results)
         # Bypass the calendar-events matcher path used inside _compare_and_ingest.
-        monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: [])
+        monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: ([], []))
 
         evf_sync.sync_results(
             ref="ref",
@@ -2634,7 +2634,7 @@ class TestFilterStale:
         monkeypatch.setattr(evf_sync, "_telegram", lambda *a, **kw: None)
         monkeypatch.setattr(evf_sync, "EvfApiClient", FakeClient)
         monkeypatch.setattr(evf_sync, "scrape_event_results", fake_scrape_event_results)
-        monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: [])
+        monkeypatch.setattr(evf_sync, "_match_against_spws", lambda *a, **kw: ([], []))
 
         evf_sync.sync_results(
             ref="ref",

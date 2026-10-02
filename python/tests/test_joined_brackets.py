@@ -174,7 +174,8 @@ class TestPerCategoryRenumber:
 
     def test_commit_rows_byte_identical_under_classic(self):
         """SE27.ING.02 Commit under EVF classic writes exactly the rows and the
-        per-category count it wrote before ADR-103."""
+        per-category count it wrote before ADR-103 (each row now also carries
+        ADR-106's printed federation, None for a domestic source)."""
         fv = {"V1": [_match(101, 1), _match(102, 4)], "V2": [_match(201, 2), _match(202, 3)]}
         db = _db(CLASSIC)
         _run(Commit(), _ctx(fv, _parsed([1, 2, 3, 4])), db)
@@ -187,6 +188,7 @@ class TestPerCategoryRenumber:
                     "txt_scraped_name": "FENCER 101",
                     "num_confidence": 100.0,
                     "enum_match_status": "AUTO_MATCHED",
+                    "txt_entered_for": None,
                 },
                 {
                     "id_fencer": 102,
@@ -194,6 +196,7 @@ class TestPerCategoryRenumber:
                     "txt_scraped_name": "FENCER 102",
                     "num_confidence": 100.0,
                     "enum_match_status": "AUTO_MATCHED",
+                    "txt_entered_for": None,
                 },
             ],
             2,

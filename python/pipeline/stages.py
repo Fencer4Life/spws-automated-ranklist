@@ -26,6 +26,7 @@ from typing import Any
 from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
 from python.matcher.pipeline import _VCAT_ORDER, estimate_birth_year, reconciled_birth_year
 from python.pipeline.age_split import birth_year_to_vcat
+from python.pipeline.international_admission import REJECTED, STORED, admit, fold_federation
 from python.pipeline.types import (
     HaltError,
     HaltReason,
@@ -86,25 +87,61 @@ def _is_international_intake(event: dict | None) -> bool:
     return bool(code) and derive_tourn_type_from_event_code(code) in INTERNATIONAL_TYPES
 
 
-def _keep_pol_rows(ctx: PipelineContext, rows: list[tuple[Any, Any]]) -> list[tuple[Any, Any]]:
-    """The (category, row) pairs of an international event that may be matched.
+def _admit_international_rows(
+    ctx: PipelineContext,
+    rows: list[tuple[Any, Any]],
+    fencer_db: list[dict],
+    db: Any,
+) -> list[tuple[Any, Any, Any]]:
+    """The (category, row, admission) triples of an event that go on to matching.
 
-    ADR-038 / ADR-105 §1.1: only a row whose country folds to POL reaches the
-    matcher; a row with any other country, or none, is dismissed (fail-closed)
-    and recorded in ``ctx.dismissed_non_pol``. Every other event keeps all rows.
+    ADR-106 §1: for an international event every row is decided once by
+    ``international_admission.admit`` — stored by identity (SURNAME, first given
+    name, age category, and an SPWS start), PENDING when printed POL, or
+    rejected and recorded in ``ctx.rejected``. A row the event's override file
+    names (identity or match_method) is a person's decision and keeps its
+    override path (admission None). Every other event keeps all rows, with no
+    admission.
     """
     if not _is_international_intake(ctx.event):
-        return rows
-    kept: list[tuple[Any, Any]] = []
+        return [(cat, r, None) for cat, r in rows]
+    starters = set(db.fetch_spws_starter_ids())
+    kept: list[tuple[Any, Any, Any]] = []
     for cat, r in rows:
+        name = r.fencer_name
+        if ctx.overrides.identity_for(name) or ctx.overrides.match_method_for(name):
+            kept.append((cat, r, None))
+            continue
         country = getattr(r, "fencer_country", None)
-        if _norm_nat(country) == "POL":
-            kept.append((cat, r))
-        else:
-            ctx.dismissed_non_pol.append(
-                {"name": r.fencer_name, "place": r.place, "country": country}
+        a = admit(
+            name,
+            country,
+            category=cat,
+            season_end_year=ctx.season_end_year,
+            roster=fencer_db,
+            spws_starters=starters,
+        )
+        if a.decision == REJECTED:
+            ctx.rejected.append(
+                {"name": name, "place": r.place, "country": country, "reason": a.reason}
             )
+            continue
+        kept.append((cat, r, a))
     return kept
+
+
+def _admitted_match(r: Any, a: Any) -> StageMatchResult:
+    """The match an admission gives: stored is AUTO_MATCHED, PENDING keeps the
+    candidate (possibly none) for a person to resolve (ADR-106 §1)."""
+    return StageMatchResult(
+        scraped_name=r.fencer_name,
+        place=r.place,
+        id_fencer=a.id_fencer,
+        confidence=a.confidence,
+        method="AUTO_MATCHED" if a.decision == STORED else "PENDING",
+        notes=a.reason,
+        entered_for=a.entered_for,
+    )
 
 
 # ===========================================================================
@@ -864,9 +901,11 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
         cat = ctx.parsed.category_hint
         rows = [(cat, r) for r in ctx.parsed.results]
 
-    # ADR-038 / ADR-105: an international event's non-POL rows are dismissed
-    # before anything else looks at them, the V0 check included.
-    rows = _keep_pol_rows(ctx, rows)
+    # ADR-106 §1: an international event's rows are decided by identity before
+    # anything else looks at them, the V0 check included; a rejected row is gone.
+    fencer_db = db.fetch_fencer_db()
+    triples = _admit_international_rows(ctx, rows, fencer_db, db)
+    rows = [(cat, r) for cat, r, _a in triples]
 
     # V0/EVF check FIRST — halt before fetching fencer DB. Keyed on the type,
     # so the IMEW/IMSW alternation codes are checked too.
@@ -882,9 +921,8 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
                     f"{r.fencer_name} (R005b — fix upstream data, no override path)",
                 )
 
-    # Fetch fencer DB once (no per-row queries).
-    fencer_db = db.fetch_fencer_db()
     domestic = _is_domestic(ctx.event)
+    entered = fold_federation if _is_international_intake(ctx.event) else (lambda _c: None)
 
     # ADR-064: asymmetric F-bracket filter — domestic events only. When
     # parsed.gender is 'F' on a SPWS-organized bracket, M-gender candidates
@@ -896,7 +934,10 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
     matcher_bracket_gender = parsed_gender if domestic else None
 
     matches: list[StageMatchResult] = []
-    for cat, r in rows:
+    for cat, r, admission in triples:
+        if admission is not None:
+            matches.append(_admitted_match(r, admission))
+            continue
         # Path 1: identity override
         ovr = ctx.overrides.identity_for(r.fencer_name)
         if ovr is not None:
@@ -909,6 +950,7 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
                         confidence=100.0,
                         method="AUTO_MATCHED",
                         notes="identity override (link)",
+                        entered_for=entered(getattr(r, "fencer_country", None)),
                     )
                 )
             else:
@@ -944,6 +986,7 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
                     confidence=best.confidence,
                     method=mm.force_method,
                     notes=f"match_method override: {mm.note or 'forced'}",
+                    entered_for=entered(getattr(r, "fencer_country", None)),
                 )
             )
             continue
@@ -1001,10 +1044,10 @@ def s7_validate(ctx: PipelineContext, db: Any) -> None:
     )
 
     # ---- (a) Count validation ----
-    # The rows dismissed as non-POL were parsed too: the parse is complete when
-    # matches + dismissed account for the whole source bracket (ADR-105).
+    # The rows the admission rejected were parsed too: the parse is complete
+    # when matches + rejected account for the whole source bracket (ADR-106).
     expected = ctx.parsed.raw_pool_size
-    actual = len(ctx.matches) + len(ctx.dismissed_non_pol)
+    actual = len(ctx.matches) + len(ctx.rejected)
 
     if expected is not None:
         diff = actual - expected

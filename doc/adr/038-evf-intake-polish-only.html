@@ -4,18 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="038-evf-intake-polish-only.md">
-<meta name="adr-source-sha256" content="8e4802f970539da6aa307c7abdd8386b598b9057075069c965bf50ed65a1c787">
+<meta name="adr-source-sha256" content="8ac77bb00770cef0215170e8406f4077f7db2ccb530a4f42f7ea759c20390045">
 <title>ADR-038 · EVF-Organized Tournaments Ingest POL-Only Rows</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 038</p><h1>EVF-Organized Tournaments Ingest POL-Only Rows</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion) <strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)</dd></div><div><dt>Source</dt><dd class=""><code>038-evf-intake-polish-only.md</code></dd></div><div><dt>Length</dt><dd class="">69 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-20 <strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion) <strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source) Superseded in part by <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> (accepted 2026-10-02): the country gate before matching (Decision, points 2 and 4) and the rejection of alternative 1. An international row is admitted by identity and an SPWS start; a printed POL is only the fallback to PENDING.</dd></div><div><dt>Source</dt><dd class=""><code>038-evf-intake-polish-only.md</code></dd></div><div><dt>Length</dt><dd class="">70 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2026-04-20
 <strong>Relates to:</strong> ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)
-<strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)</p>
+<strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)
+Superseded in part by <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> (accepted 2026-10-02): the country gate before matching (Decision, points 2 and 4) and the rejection of alternative 1. An international row is admitted by identity and an SPWS start; a printed POL is only the fallback to PENDING.</p>
 </div>
 </header>
 <div class="layout">
@@ -80,5 +81,5 @@ keyed on the event-code organizer (EVF/FIE → skip), evaluated before any DB re
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="037-derived-display-status-awaiting-results.html">← ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="039-stale-event-gate.html">→ ADR-039: EVF Scraper Dedup Algorithm + Stale-Event Gate</a></nav>
-<footer class="foot">Generated from <code>038-evf-intake-polish-only.md</code> · source SHA-256 <code>8e4802f970539da6aa307c7abdd8386b598b9057075069c965bf50ed65a1c787</code></footer>
+<footer class="foot">Generated from <code>038-evf-intake-polish-only.md</code> · source SHA-256 <code>8ac77bb00770cef0215170e8406f4077f7db2ccb530a4f42f7ea759c20390045</code></footer>
 </div></body></html>

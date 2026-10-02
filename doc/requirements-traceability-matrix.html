@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="daa72d0f60a6f94799360434a1d117aaf3d12fac6ff9319854f4db823c3b75a3">
+<meta name="doc-source-sha256" content="a30ed12d9c8be57195a1c6ac09be451dd68d0073a84b053874d5c6601a6923c6">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>341 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>361 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -89,10 +89,10 @@
 </tr>
 <tr>
 <td>FR-09</td>
-<td>International intake: skip UNMATCHED PEW/MEW fencers</td>
-<td>§8.5</td>
-<td>4.15–4.18</td>
-<td>Covered</td>
+<td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created.</td>
+<td>§8.5, ADR-106</td>
+<td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, INTL.POL.01–06</td>
+<td>Covered (amended 2026-10-02, ADR-106)</td>
 </tr>
 <tr>
 <td>FR-10</td>
@@ -969,7 +969,8 @@
 | FR-143 | <strong><code>SPWS_EVF_JOINED_V1_2026_2027</code> scores a bracket by its size and whether it is joined.</strong> N ≤ 3: N − place + 1 (TABLE). A single-category bracket of 4 or more, and any bracket of 16 or more: EVF classic on the place and N (EVF_CLASSIC). A joined bracket of 4–15: the youngest category scores EVF; an older category scores max(EVF × (1 + 0.05·d), EVF + d), d being the category steps from the youngest category present (EVF_JOINED). <code>fn_score_joined_bracket</code> caps every place at 1 point below the fencer directly ahead, of any category, on unrounded values; the per-type coefficient (PPW 1.0, MPW 1.2) multiplies after the cap, and the final score is rounded once. The engine's constants (meeting up to 3, premium up to 15, 5% per step, 1-point cap) belong to the engine version; <code>frontend/src/lib/scoring.ts</code> mirrors it. | ADR-104 | JB27.ENG.01–06, JB27.CAP.01–04, JB27.UI.01 | Covered (2026-09-30, ADR-104; released 2026-10-01) |
 | FR-144 | <strong>A joined bracket is scored from its stored category order.</strong> Every category tournament of a listing on the new engine stores the listing's category digits per place in <code>tbl_tournament.txt_joined_order</code> (0 = V0 … 4 = V4, length N; <code>tbl_tournament_draft</code> too). The writer scores the whole bracket from the order and updates only its own tournament's rows, so no sibling row is read and rescoring one tournament gives the same numbers as rescoring all; it refuses a missing order and a row whose place carries another category's digit. The preview returns the capped value. | ADR-104, ADR-002, ADR-022 | JB27.ORD.01–02, JB27.PRE.01 | Covered (2026-09-30, ADR-104; released 2026-10-01) |
 | FR-145 | <strong>An automatic check compares each PPW/MPW event's listings with the joining rules.</strong> At the end of each event ingestion run and after each recompute, the pipeline reads the stored orders per weapon and gender, computes the joining rules' grouping with <code>plan_brackets</code>, and stores the verdict in <code>tbl_joining_check</code> (service role only). When the verdict changes — to a mismatch, or back — it sends one Telegram message through <code>TelegramNotifier</code>; a repeat run sends nothing. It never blocks the commit and needs no sign-off; every listing is scored as fenced. | ADR-104 | JB27.JOIN.01–02 | Covered (2026-09-30, ADR-104; released 2026-10-01) |
-| FR-146 | <strong>Ranking rules for the chosen season, one tap from the ranklist.</strong> A pill „Reguły rankingu na sezon {season}” / “Ranking rules for the {season} season” is pinned to the middle of the bottom of the visible screen (<code>position: fixed</code>, above an iPhone's home bar, under the drawer, the modals and the error banner). It names the season chosen in the dropdown, shows only once that season's own rules have arrived, and is absent for a season without stored rules. While it shows, a spacer ends the ranklist view so the last row clears it; the birth-year strip (FR-67) is unchanged. It opens a modal drawn from that season's definition: the sum in the table's column names (SPWS + EVF+ = Razem; one „Punkty” box for a PPW-only season); one card per pool, each bucket with its types, its rule and one ★ per counted result (one ★ per always-counted type, e.g. MPW); who is ranked (<code>entry_types</code>); the rolling-ranking note for the active season only; and the coefficients of the types shown, read on opening from <code>fn_public_scoring_params</code> and left out if they fail to load. Its scoring-table link resolves through <code>assetUrl()</code> so it also works in the WordPress embed. PL+EN, Polish plural forms; ✕, Esc and an outside click close it; a full-screen sheet on a phone. | UC12 | SeasonRulesModal.test.ts SR.MODAL.01–13, SeasonRulesLink.test.ts SR.LINK.01–06, api.test.ts SR.API.01–02 | Covered (2026-10-01; mock doc/mockups/ranking-rules-modal-2026-10-01.html revision 2) |</p>
+| FR-146 | <strong>Ranking rules for the chosen season, one tap from the ranklist.</strong> A pill „Reguły rankingu na sezon {season}” / “Ranking rules for the {season} season” is pinned to the middle of the bottom of the visible screen (<code>position: fixed</code>, above an iPhone's home bar, under the drawer, the modals and the error banner). It names the season chosen in the dropdown, shows only once that season's own rules have arrived, and is absent for a season without stored rules. While it shows, a spacer ends the ranklist view so the last row clears it; the birth-year strip (FR-67) is unchanged. It opens a modal drawn from that season's definition: the sum in the table's column names (SPWS + EVF+ = Razem; one „Punkty” box for a PPW-only season); one card per pool, each bucket with its types, its rule and one ★ per counted result (one ★ per always-counted type, e.g. MPW); who is ranked (<code>entry_types</code>); the rolling-ranking note for the active season only; and the coefficients of the types shown, read on opening from <code>fn_public_scoring_params</code> and left out if they fail to load. Its scoring-table link resolves through <code>assetUrl()</code> so it also works in the WordPress embed. PL+EN, Polish plural forms; ✕, Esc and an outside click close it; a full-screen sheet on a phone. | UC12 | SeasonRulesModal.test.ts SR.MODAL.01–13, SeasonRulesLink.test.ts SR.LINK.01–06, api.test.ts SR.API.01–02 | Covered (2026-10-01; mock doc/mockups/ranking-rules-modal-2026-10-01.html revision 2) |
+| FR-147 | <strong>Nationality per season, fixed for the season</strong> (ADR-106 §3). Each stored international result keeps the federation its source printed (<code>tbl_result.txt_entered_for</code>, three letters, or none). <code>tbl_fencer_nationality</code> holds one federation per fencer and season: that of the season's earliest-dated result carrying one, kept current by a trigger on <code>tbl_result</code> whatever the path or the order of ingestion. A later start in the same season printing another federation does not change it and is listed in <code>vw_fencer_nationality_conflict</code>. An admin entry is kept as entered. Authenticated users read; anon reads nothing. | ADR-106 | pgTAP 96 NAT.SEASON.01–06, NAT.EVID.02–03; NAT.EVID.01, NAT.EVID.04 (pytest) | Covered (2026-10-02, LOCAL) |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery, ADR-080 §5); implementation complete with CERT pilot and PROD cron enablement pending.</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Total active FRs = 131 assigned; 129 covered + 1 implemented/pilot-pending + 1 superseded. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong></p>
 </blockquote>
@@ -1595,10 +1596,10 @@
 </tr>
 <tr>
 <td>INTL.POL.01–06</td>
-<td>For an international event (PEW, MEW, MSW, PSW, including the IMEW and IMSW alternation codes) only POL rows reach the matcher: a foreign namesake of a Pole is dismissed and recorded (01); IMSW, IMEW and MSW filter the same way and &quot;PL&quot; folds to POL (02); a row with no country is dismissed and a domestic event is unfiltered (03); a dismissed foreign row cannot trip the V0 halt, a Polish V0 row still does (04); S7 counts matches plus dismissed rows against the source bracket (05); <code>ResolveFencers</code> dismisses the same rows before its exact and fuzzy phases (06).</td>
+<td>For an international event (PEW, MEW, MSW, PSW, including the IMEW and IMSW alternation codes) the shared admission decides each row (amended 2026-10-02, ADR-106): a foreign namesake without an SPWS start is rejected and recorded in <code>ctx.rejected</code> (01); IMSW, IMEW and MSW decide the same way and &quot;PL&quot; folds to POL (02); a row with no country and no identity is rejected, and a domestic event is not admitted at all (03); a rejected foreign row cannot trip the V0 halt, a Polish V0 row still does (04); S7 counts matches plus rejected rows against the source bracket (05); <code>ResolveFencers</code> decides the same rows before its exact and fuzzy phases (06).</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
-<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+<td><strong>Landed</strong> (2026-10-01; amended 2026-10-02, LOCAL)</td>
 </tr>
 <tr>
 <td>INTL.DRAFT.01–04</td>
@@ -1665,10 +1666,10 @@
 </tr>
 <tr>
 <td>INTL.INV.02</td>
-<td>The Phase 5 staging summary lists each international bracket's source N, highest place, Polish rows, linked rows and dismissed rows, and flags an N equal to the Polish rows or a bracket whose rows all lacked a country; a domestic event gets no section.</td>
+<td>The Phase 5 staging summary lists each international bracket's source N, highest place, rows stored, rows stored that were not printed POL, PENDING rows and rejected rows (amended 2026-10-02, ADR-106), and flags an N equal to the rows printed POL or a bracket whose source prints no country; a domestic event gets no section.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
-<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+<td><strong>Landed</strong> (2026-10-01; amended 2026-10-02, LOCAL)</td>
 </tr>
 <tr>
 <td>TT.CODE.01–09</td>
@@ -1770,7 +1771,7 @@
 </tr>
 <tr>
 <td>REPAIR.RUN.01–02</td>
-<td><code>phase5_runner --replace-event</code> commits through <code>fn_replace_event_from_draft</code> (01); sign-off refuses a run holding a draft row with a fencer and no match method, for every event (02).</td>
+<td><code>phase5_runner --replace-event</code> commits through <code>fn_replace_event_from_draft</code> (01); sign-off refuses a run holding a draft row with no match method, with or without a fencer, for every event (02; amended 2026-10-02, ADR-106).</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
@@ -1801,6 +1802,27 @@
 <td>A 4fence final classification: the place is CLASS, never the pool ranking “Cla Gir” (PLACE); the country is the federation code, EE + IOC, an Italian club ITA (NAT); the semi-final loser printed without a place, named by the last-four tableau, is 3rd and in N (BRONZE); any other fencer without a place is not in N and the places below him close up, a place being 1 + the placed fencers ahead (CLOSE); without the tableau the bronze counts in N, unnamed (NOTAB); a 4fence event URL expands into its category brackets, each read with its tableau (EVT). Decisions R4 A, B A, W A (2026-10-02).</td>
 <td>pytest</td>
 <td><code>python/tests/test_fourfence_classification.py</code>; 3.3c, 3.18 and fourfence_ir.1/.3 amended</td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>ENG.NAT.01–02</td>
+<td>An Engarde classification's nationality is read from the column headed as one (Country, Nation, Nación and their equivalents), whatever column follows (02); a page that prints a Club column there gives every fencer no nationality, never the club (01: Budapest Cup 2025, V1 men's épée, BOBUSIA Jarosław 5th of 33). Both parsers, the pipeline's and the Admin per-tournament scrape's. Decision C A (2026-10-02).</td>
+<td>pytest</td>
+<td><code>python/tests/test_engarde_nationality.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>P3.OV16–18</td>
+<td>The override file's <code>nationality</code> section (decision C A, 2026-10-02). <strong>Removed</strong> before release with the section and the Budapest override file: ADR-106 stores such a fencer by identity (decision O1 A).</td>
+<td>—</td>
+<td>—</td>
+<td><strong>Removed</strong> (2026-10-02, ADR-106)</td>
+</tr>
+<tr>
+<td>INTL.INV.03</td>
+<td>Every PENDING row of an international event is listed below the staging summary's table with its bracket, place, name and candidate, under the override file that resolves it (<code>doc/overrides/&lt;event&gt;.yaml</code>: an identity entry or <code>match_method</code> EXCLUDED). Amended 2026-10-02 by ADR-106 (P A); the override count it showed went with the <code>nationality</code> section.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
@@ -1848,6 +1870,85 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.<em>, NAT.</em>)</h2>
+<p>Acceptance IDs for <a href="adr/106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> and <a href="plans/adr-106-identity-intake-and-season-nationality-plan-2026-10-02.html">doc/plans/adr-106-identity-intake-and-season-nationality-plan-2026-10-02.html</a>. FR-09 and FR-147.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADM.ID.01–06</td>
+<td><code>international_admission.admit</code>: an identity match to a fencer with an SPWS start is stored whatever the printed country (01: KULKA Dawid, IRL); a page without a country stores by identity, with no federation recorded (02: BOBUSIA Jarosław); an identity match without an SPWS start is rejected when printed foreign (03) and PENDING when printed POL (04); printed POL without identity is PENDING, with or without a candidate (05); a foreign or blank row without identity is rejected, never PENDING (06).</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>ADM.ID.07</td>
+<td>The same six rows give the same decisions on every path: <code>s6_resolve_identity</code>, <code>ResolveFencers</code>, <code>resolve_tournament_results</code> and the EVF sync, which stores the admitted rows and reports the PENDING ones.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>ADM.ID.08</td>
+<td>A PENDING row is written to the Phase 5 draft with no match method; the staging summary lists it with its candidate and the override file that resolves it; sign-off refuses while one remains (with REPAIR.RUN.02, INTL.INV.03).</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>ADM.ID.09</td>
+<td><code>fn_spws_starter_ids()</code> lists a fencer with a PPW or MPW result, not one with international results only.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/96_season_nationality.sql</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>ADM.ID.10</td>
+<td>Identity is SURNAME, first given name and age category, exactly: &quot;GOLA Marcin&quot; against GOLA Maciej and &quot;KOWALCZYK Pjotr&quot; against KOWALCZYK Piotr are not identities; a second given name in the source, a compound surname and folded Polish letters still match; two fencers who both fit, a birth year outside the category or an unknown birth year do not.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>NAT.SEASON.01–06</td>
+<td><code>tbl_fencer_nationality</code> is keyed (fencer, season) and admits three-letter codes only (01); a stored result with a federation creates the season row (02); a later start printing another federation leaves it and is listed as a conflict (03); an earlier start stored afterwards takes over (04); deleting the deciding result recomputes, no result left removes the row, an admin entry is kept (05); anon reads and runs nothing and authenticated cannot write (06).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/96_season_nationality.sql</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>NAT.EVID.01</td>
+<td>The printed federation is folded: &quot;PL&quot; and &quot; pol &quot; to POL; an empty cell or anything not three letters is no federation.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>NAT.EVID.02–03</td>
+<td><code>fn_commit_event_draft</code> copies <code>txt_entered_for</code> from the draft (02); <code>fn_ingest_tournament_results</code> stores it from the payload (03).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/96_season_nationality.sql</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>NAT.EVID.04</td>
+<td>The CERT → PROD event promotion selects <code>txt_entered_for</code>, so PROD's payload keeps it.</td>
+<td>pytest</td>
+<td><code>python/tests/test_promote.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -1858,5 +1959,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>daa72d0f60a6f94799360434a1d117aaf3d12fac6ff9319854f4db823c3b75a3</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a30ed12d9c8be57195a1c6ac09be451dd68d0073a84b053874d5c6601a6923c6</code></footer>
 </div></body></html>
