@@ -1,8 +1,9 @@
 # ADR-066: Min-participants threshold gates ingestion, not scoring
 
-**Status:** Accepted (drafted 2026-05-10)
+**Status:** Accepted (drafted 2026-05-10; amended 2026-10-02, see the amendment)
 **Related:** ADR-018 (Rolling Score), ADR-046 (PEW weapon-letter suffix — naming-shape sibling), ADR-050 (unified ingestion pipeline), ADR-052 (URL→data validation)
 **Phase:** 5 (operational rebuild)
+**Amended by:** the 2026-10-02 amendment below: EVF events follow EVF's category rule, so the EVF minimum is 1.
 
 ## Context
 
@@ -79,6 +80,21 @@ A prerequisite for `threshold=1` to do the right thing: the FTL parser must actu
 ### Re-ingestion required for active-season PPW2
 
 - The active-season PPW2-2025-2026 had 6 FOIL + 2 SABRE single-competitor brackets dropped pre-ADR-066. After the walkover patch + gate, re-running the orchestrator restores them. This is operational, not destructive — the orchestrator is idempotent against the cleared draft tables.
+
+## Amendment (2026-10-02) — EVF events follow EVF's category rule
+
+EVF ranks every category of its events, however small, a single fencer included, and the association scores an EVF event by EVF's rules. Checked against EVF's results API (ADR-028): Jabłonna 2025 (EVF event 75) and Jabłonna 2026 (event 87) list and score categories of 1, 2, 3 and 4 fencers, and the points EVF awarded equal the plain EVF engine's at the category's own N and place.
+
+The EVF minimum (`int_min_participants_evf`, PEW, MEW and MSW) is therefore 1 in every season. The seasons that had scored were revised through ADR-097's procedure on 2026-10-02 (LOCAL revisions 476–478; CERT and PROD with the repair batch), the unlocked 2026/27 through the ordinary configuration write, and 1 is the default for a new season (`20261002000006`, the season wizard's static default). The domestic minimum is unchanged at 1. The gate remains: a bracket with no fencer is still skipped, and the value stays a per-season setting the administrator can change.
+
+Consequences:
+
+- Eight Polish results the minimum of 5 had dropped come back at EVF's points: six at Jabłonna 2026 (category brackets of 2–4) and SOSNOWSKA Aniela's two at Jabłonna 2025, reversing that event's decision M A. The rest of the international repair batch is staged with the new value.
+- Setting the value to 1 changes no stored score: the minimum is not a scoring input (LOCAL: 0 of 2,741 results moved when all 766 scored tournaments were rescored).
+- ADR-097's revision could not run on a season holding a SCORED tournament without results; it now rescores only tournaments with results (`20261002000005`).
+- Tests: pgTAP `CFG.EVFMIN.01` (`93_evf_minimum_default.sql`) and `REV.EMPTY.01–02` (`92_revision_skips_empty_tournaments.sql`); 1.14b expects 1; pytest `INTL.MIN.01` (`test_min_participants_helper.py`) and `EVF.PTS.01` (`test_compare_evf_points.py`, with the read-only `python/tools/compare_evf_points.py`); Vitest `WIZ.EVFMIN.01`.
+
+Plan and evidence: [doc/plans/evf-events-follow-evf-category-rule-2026-10-02.html](../plans/evf-events-follow-evf-category-rule-2026-10-02.html).
 
 ## Tests
 

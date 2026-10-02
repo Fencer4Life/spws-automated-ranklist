@@ -90,11 +90,17 @@ SELECT results_eq(
   $$ VALUES (7,12) $$, '56.12: Terni 2025 conserves 7 slots and 12 results'
 );
 
-SELECT results_eq(
-  $$ SELECT COUNT(DISTINCT t.id_tournament)::INT,COUNT(r.id_result)::INT
-       FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
-      WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW7es-2024-2025') $$,
-  $$ VALUES (15,89) $$, '56.13: Warsaw-Jablonna conserves 15 slots and 89 results'
+-- Two known states (2 Oct 2026): the fragment repair's output, and the ADR-105
+-- repair batch 1 re-ingest from the source (N the whole bracket, Polish fencers
+-- only). The seed holds the first until it is refreshed from PROD after the
+-- batch; drop that alternative then. Each further re-ingested event moves
+-- 56.10–56.12 and 56.26 the same way.
+SELECT ok(
+  (SELECT ROW(COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT)
+     FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
+    WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW7es-2024-2025'))
+  IN (ROW(15,89), ROW(14,76)),
+  '56.13: Warsaw-Jablonna conserves 15 slots and 89 results, or 14 and 76 after the ADR-105 re-ingest'
 );
 
 SELECT is(
@@ -183,12 +189,12 @@ SELECT results_eq(
   '56.25: only the seven approved donor rows reduce predecessor PEW counts'
 );
 
-SELECT is(
+SELECT ok(
   (SELECT COUNT(*)::INT FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
     JOIN tbl_event e ON e.id_event=t.id_event WHERE e.txt_code IN (
       'PEW5efs-2023-2024','PEW8efs-2023-2024','PEW9ef-2023-2024',
-      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')),
-  157, '56.26: all 157 reviewed predecessor results are conserved'
+      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')) IN (157, 144),
+  '56.26: all 157 reviewed predecessor results are conserved, or 144 after the ADR-105 re-ingest of Jabłonna'
 );
 
 SELECT * FROM finish();

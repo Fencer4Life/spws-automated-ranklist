@@ -1,0 +1,316 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EVF Category Rule</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Scoring configuration · international events · Development Plan</p>
+  <h1>EVF events take EVF's category rule: no minimum of 5</h1>
+  <p class="dek">EVF scores every category of its events, however small: one fencer, two, three. SPWS's season configuration sets a minimum of 5 for EVF-ranked types (PEW, MEW, MSW), so ingestion drops what EVF scores. Per your decision, the fix is <b>the season configuration</b>: the EVF minimum becomes <b>1 in every season</b>, through the audited revision procedure for the locked seasons. Then <b>8 Polish results</b> come back: 6 at Jabłonna 2026 and 2 at Jabłonna 2025, at exactly EVF's points.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Signed off 2 Oct: N A, R A, ADR A</span><span class="pill"><span class="dot"></span>implemented on LOCAL; CERT/PROD with the batch</span>
+    <span class="pill"><span class="dot"></span>Decided: season-level configuration (2 Oct)</span>
+
+    <span class="pill warn"><span class="dot"></span>reverses Jabłonna 2025's M A</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="status">
+    <p class="kicker">Status · 2 October</p>
+    <h2>Done on LOCAL</h2>
+    <ul>
+      <li><b>Revision procedure fixed</b>, test-first: REV.EMPTY.01–02 failed (“Tournament … has no participant count”), migration <code>20261002000005</code>, then GREEN.</li>
+      <li><b>New-season default 1</b>, test-first: CFG.EVFMIN.01 and WIZ.EVFMIN.01 failed (5), migration <code>20261002000006</code> and the wizard default, then GREEN; pgTAP 1.14b now expects 1.</li>
+      <li><b>INTL.MIN.01</b> passed on first run: the gate already reads the season's value, so it pins behaviour rather than fixing it.</li>
+      <li><b>Configuration changed</b> in all four seasons: the EVF minimum reads 1 for PEW, MEW and MSW; 766 tournaments rescored, 0 of 2,741 results changed points. The three locked seasons have audited revisions 476–478. <b>Correction:</b> I also ran the audited procedure on 2026/27, which is not locked (no scored result, here or on CERT and PROD); it created revision 479, which blocked the season deletes in pgTAP 19 and 74 and does not match CERT or PROD. Revision 479 is removed (no result referenced it); 2026/27 keeps the value 1 and stays unlocked.</li>
+      <li><b>pgTAP 9.37b</b> read <code>tbl_scoring_config LIMIT 1</code> without an order, so the configuration writes changed the row it saw; it now checks the column default it describes.</li>
+      <li><b>Jabłonna 2026 and Jabłonna 2025 staged again</b>: the difference from what was stored was exactly the 6 and 2 listed rows at the listed points, nothing removed or changed (R A), so both were committed: 93 results in 22 brackets and 76 in 14.</li>
+      <li><b>Verified</b>: EVF.PTS.01 finds 93 of 93 and 76 of 76 results at EVF's N and points; TT.CODE.06, TT.MULT.03, INTL.INV.01 at 0; SOSNOWSKA Aniela's drilldown lists both results under EVF+.</li>
+      <li><b>Docs</b>: ADR-066 and ADR-097 amended (twins regenerated), spec §8.5 row 16, ERD default and Appendix C, RTM FR-111 and the new test rows, the handbook's thresholds and revision text.</li>
+      <li><b>Still to do with the batch</b>, on CERT and on PROD (your go for each, after the release carries the migrations): <code>fn_revise_and_rescore_season</code> for 2023/24, 2024/25 and 2025/26 (locked), and the ordinary <code>fn_import_scoring_config</code> for 2026/27 (unlocked), each with <code>{"min_participants_evf": 1}</code>.</li>
+      <li><b>pgTAP 55 and 56</b> still fail on LOCAL only: they pin Guildford's and Jabłonna 2025's pre-repair counts. CI's seed is pre-repair, so they pass there; they are rewritten in the batch's documentation pass to hold in both states.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">Decide this first</p>
+    <h2>Three decisions · answered N A, R A, ADR A</h2>
+    <div class="note accent">
+      <p class="lede"><span class="tick">N</span> The default for a new season</p>
+      <p>Today a new season gets an EVF minimum of 5: the column default and the season wizard both say 5. Setting the four existing seasons to 1 leaves the next season at 5 unless someone changes it.</p>
+      <ul>
+        <li><b>A</b> change the default to 1, in the column and the wizard. The administrator can still set another value per season.</li>
+        <li><b>B</b> keep 5 as the default and set each new season by hand.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> The rule is that EVF events follow EVF, which has no minimum; a default of 5 would quietly bring the old rule back each season.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">R</span> How the 8 results are added</p>
+      <p>After the configuration change, Jabłonna 2026 and Jabłonna 2025 are staged again and replaced through the runner, as before.</p>
+      <ul>
+        <li><b>A</b> commit each without a new review page if, and only if, the difference from what is stored is exactly the rows listed below at the points listed. Anything else stops and gets a review page.</li>
+        <li><b>B</b> a review page for each event, each with its own sign-off.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> You have the rows and points here, checked against EVF's own results; a page would repeat this table. The strict condition keeps any surprise from slipping through.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">ADR</span> The amendment to ADR-066, as drafted below</p>
+      <ul>
+        <li><b>A</b> approve the text in “The amendment” section.</li>
+        <li><b>B</b> tell me what to change.</li>
+      </ul>
+      <p><b>Recommendation: A.</b></p>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <p class="kicker">What EVF does · checked 2 October</p>
+    <h2>EVF lists and scores every category, whatever its size</h2>
+    <p>Read from EVF's results API (<code>api.veteransfencing.eu</code>, ADR-028), the data behind the results page on veteransfencing.eu: Jabłonna 2026 is EVF event 87 with 23 per-category competitions, Jabłonna 2025 is event 75 with 24. Every category under five fencers is listed with ranking points:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Category</th><th>N</th><th>Poles and EVF's points</th></tr></thead>
+      <tbody>
+        <tr><td>Jabłonna 2026</td><td>V1 women's foil</td><td class="mono">4</td><td>LIPKOWSKA Dominika 3rd= · <b>15.93</b></td></tr>
+        <tr><td>Jabłonna 2026</td><td>V3 women's foil</td><td class="mono">3</td><td>OWCZAREK Elżbieta 3rd · <b>5.33</b></td></tr>
+        <tr><td>Jabłonna 2026</td><td>V4 women's foil</td><td class="mono">3</td><td>BORKOWSKA Halina 3rd · <b>5.33</b></td></tr>
+        <tr><td>Jabłonna 2026</td><td>V4 men's foil</td><td class="mono">4</td><td>BORKOWSKI Andrzej 2nd · <b>45.02</b>; KIERSZNICKI Ryszard 3rd= · <b>15.93</b></td></tr>
+        <tr><td>Jabłonna 2026</td><td>V4 women's sabre</td><td class="mono">2</td><td>SOSNOWSKA Aniela 2nd · <b>8.56</b></td></tr>
+        <tr><td>Jabłonna 2025</td><td>V4 women's épée</td><td class="mono">4</td><td>SOSNOWSKA Aniela 3rd= · <b>15.93</b></td></tr>
+        <tr><td>Jabłonna 2025</td><td>V4 women's sabre</td><td class="mono">3</td><td>SOSNOWSKA Aniela 3rd · <b>5.33</b></td></tr>
+        <tr><td>Jabłonna 2025</td><td>V1 women's sabre</td><td class="mono">1</td><td>no Pole (OSTRIKOFF, 59.00 points: even one fencer is scored)</td></tr>
+        <tr><td>Jabłonna 2025</td><td>V4 women's foil</td><td class="mono">2</td><td>no Pole</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Our EVF engine is EVF's formula</p>
+      <p>All 87 Jabłonna 2026 results committed on LOCAL today carry exactly EVF's points and EVF's N. The values above are what our engine gives at the category's own N and place: the scoring needs no change, only the admission.</p>
+    </div>
+    <p>EVF also marks some rows “ranked: N”. The flag occurs inside these small categories and outside them, among Poles too (ATANASSOW, 2nd in V2 men's épée), so it is not a size rule. It is about EVF's own ranking and is not used here.</p>
+  </section>
+
+  <section id="today">
+    <p class="kicker">What SPWS does today</p>
+    <h2>The minimum of 5 is SPWS's own setting</h2>
+    <ul>
+      <li>Each season's scoring configuration has two minimums (ADR-066): domestic <code>int_min_participants_ppw</code> = 1 (PPW, MPW, PSW) and EVF <code>int_min_participants_evf</code> = 5 (PEW, MEW, MSW). It is the same in all four seasons, LOCAL, CERT and PROD.</li>
+      <li>The minimum gates ingestion, not scoring: a bracket below it is skipped before any row is written. Changing it rewrites nothing already stored.</li>
+      <li>The EVF minimum is a locked field once a season has scored (ADR-097). The only way to change it then is <code>fn_revise_and_rescore_season</code>, which records the actor, the reason and a new revision, and rescores the season.</li>
+      <li>The scoring itself already matches EVF in every season, 2026/27 included: PEW, MEW and MSW use the plain EVF engine; the joined-bracket rules (ADR-104) apply only to PPW and MPW.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The change moves no existing points</p>
+      <p>Rolled back on LOCAL: the EVF minimum set to 1 in all four seasons and all 766 scored tournaments rescored. <b>0 of 2,741 results change points.</b> The minimum is not a scoring input.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> Found: the revision procedure cannot run on these seasons</p>
+      <p><code>fn_revise_and_rescore_season</code> rescores every tournament of the season, including empty ones, and stops at the first without a participant count (“Tournament 408 has no participant count”). 2023/24, 2024/25 and 2025/26 hold such empty tournaments in every environment (18 on CERT and on PROD, none with results). So no locked season can be revised today. Fixed test-first in step 1: the rescore covers the tournaments that have results.</p>
+    </div>
+  </section>
+
+  <section id="effect">
+    <p class="kicker">What changes</p>
+    <h2>Eight results, and the rest of the batch</h2>
+    <ul>
+      <li><b>Jabłonna 2026:</b> the 6 results above (decision C of its review page). They are out of LOCAL since today's commit and come back at EVF's points.</li>
+      <li><b>Jabłonna 2025:</b> SOSNOWSKA Aniela's 2 results. You decided M A (apply the minimum) on 2 October; this plan <b>reverses M A</b>. Her other Jabłonna 2025 results are unchanged.</li>
+      <li><b>Plovdiv, Manama, Guildford:</b> no bracket was skipped for size, so nothing changes.</li>
+      <li><b>The events still to repair</b> (Liège, Dublin, the Engarde, Ophardt, 4fence and d'Artagnan events) are staged after the change and keep their small categories from the start.</li>
+      <li><b>Domestic events:</b> unchanged; their minimum is already 1.</li>
+    </ul>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">Draft · signed off with this plan</p>
+    <h2>The amendment to ADR-066</h2>
+    <div class="note accent">
+      <p class="lede">Amendment 2026-10-02 · EVF events follow EVF's category rule</p>
+      <p>EVF ranks every category of its events, however small, a single fencer included, and the association scores an EVF event by EVF's rules. The EVF minimum (<code>int_min_participants_evf</code>, PEW, MEW and MSW) is therefore 1 in every season. The seasons that had scored were revised through ADR-097's procedure on 2026-10-02, and 1 is the default for a new season. The domestic minimum is unchanged at 1. The gate remains: a bracket with no fencer is still skipped, and the value stays a per-season setting the administrator can change.</p>
+    </div>
+    <p>Also recorded: ADR-097 gains a note that its revision rescores only tournaments with results; ADR-105's consequences list this as a repair-batch decision; spec Appendix C updates the ADR-066 and ADR-097 entries.</p>
+  </section>
+
+  <section id="steps">
+    <p class="kicker">Order of work · tests first, RED before GREEN</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li><b>Revision procedure.</b> RED pgTAP <code>REV.EMPTY.01–02</code>: a season holding an empty tournament is revised and rescored, and the empty tournament is left alone. GREEN: migration amending <code>fn_revise_and_rescore_season</code> to rescore only tournaments with results.</li>
+      <li><b>New-season default</b> (if N A). RED pgTAP <code>CFG.EVFMIN.01</code> (column default is 1) and Vitest <code>WIZ.EVFMIN.01</code> (the wizard proposes 1). GREEN: migration and wizard default.</li>
+      <li><b>Configuration on LOCAL.</b> <code>fn_revise_and_rescore_season</code> for each locked season, and the ordinary configuration write for an unlocked one, with <code>{"min_participants_evf": 1}</code>, actor and reason recorded (“EVF events follow EVF's category rule, decision of 2 Oct 2026”). Verify the minimum reads 1 for PEW, MEW and MSW in every season, and that no result's points changed.</li>
+      <li><b>Jabłonna 2026 and Jabłonna 2025.</b> Stage each again; the difference from what is stored must be exactly the listed rows at the listed points (R A), then commit with <code>--replace-event</code>.</li>
+      <li><b>Verify</b>: TT.CODE.06, TT.MULT.03, INTL.INV.01 at 0; the drilldown data of one of the eight fencers; and every committed Polish result of both events against EVF's points (<code>EVF.PTS.01</code>, a read-only comparison script kept with the repair tools).</li>
+      <li><b>Docs, then the release with the batch.</b> CERT and PROD get the migrations through the release; the configuration revision runs once per environment, with your go for each, before the batch's re-ingest there.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Acceptance</p>
+    <h2>Test IDs</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>REV.EMPTY.01–02</code></td><td>pgTAP</td><td>The governed revision runs on a season with an empty tournament, rescores the tournaments with results and leaves the empty one alone</td></tr>
+        <tr><td><code>CFG.EVFMIN.01</code></td><td>pgTAP</td><td>A new season's EVF minimum defaults to 1 (N A)</td></tr>
+        <tr><td><code>WIZ.EVFMIN.01</code></td><td>Vitest</td><td>The season wizard proposes an EVF minimum of 1 (N A)</td></tr>
+        <tr><td><code>INTL.MIN.01</code></td><td>pytest</td><td>With the season's EVF minimum at 1, the runner admits a 2-fencer PEW category bracket</td></tr>
+        <tr><td><code>EVF.PTS.01</code></td><td>read-only script</td><td>Every committed Polish result of an EVF event equals EVF's points and N</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--accent)">Impact: configuration | data | scoring governance
+Canonical docs affected: doc/handbook/domain/competition-and-ranking.html
+  (#thresholds: EVF events follow EVF's category rule, minimum 1);
+  doc/handbook/subsystems/ingestion.html (the gate's per-season values);
+  doc/handbook/subsystems/scoring-and-ranking.html (the revision rescores
+  tournaments with results);
+  doc/requirements-traceability-matrix.md (+ HTML twin): FR-111 amended,
+  REV.EMPTY.*, CFG.EVFMIN.*, WIZ.EVFMIN.*, INTL.MIN.*, EVF.PTS.*;
+  spec: §8.5 table row 16 and the ERD default (5 → 1), Appendix C
+  (ADR-066, ADR-097 entries), Appendix D pgTAP and Vitest totals
+ADR impact: ADR-066 amended (text above); ADR-097 note; ADR-105
+  consequences; HTML twins regenerated (render_adrs.py)
+Operational impact: doc/handbook/operations/ gains the per-environment
+  revision step of the repair batch
+Source-map / last-verified updated: yes
+Validation: scripts/preflight.sh exit 0
+Superseded prose archived rather than appended: yes</pre>
+    </div>
+  </section>
+
+  <section id="out">
+    <p class="kicker">Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li><b>EVF's “ranked” flag.</b> Not a size rule and not used by the SPWS ranking, which applies its own best-N counting.</li>
+      <li><b>Combined listings</b> (“V3, V4”): still refused under ADR-105 §5.3; EVF itself lists those categories separately, as the per-category brackets that are read.</li>
+      <li><b>The domestic minimum and the joined-bracket rules</b> (ADR-104): unchanged.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · EVF events follow EVF's category rule · repair batch 1 · 2 Oct 2026</p>
+</div>

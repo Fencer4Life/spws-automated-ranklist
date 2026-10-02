@@ -124,7 +124,9 @@ def classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
         bool(s_sur_h) and bool(c_sur_h) and (s_sur_h in c_sur_h or c_sur_h in s_sur_h)
     )
     surname_dist = levenshtein(s_sur_h, c_sur_h) if s_sur_h and c_sur_h else 99
-    surname_close = surname_dist <= 2
+    # A short surname allows one letter of typo, a longer one two: ŁOJAK and
+    # NOWAK are two letters apart in five, two surnames (NAME.CLS.04).
+    surname_close = surname_dist <= (1 if max(len(s_sur_h), len(c_sur_h)) <= 6 else 2)
 
     # First-name analysis
     first_identical = s_fn_f == c_fn_f
@@ -134,6 +136,13 @@ def classify_alias_pair(scraped: str, canonical: str) -> tuple[str, str]:
     # Strong "wrong-match" signals: surname or first-name disagreement
     if not (surname_identical or surname_contained or surname_close):
         return "❌", "different surnames — probably wrong match"
+    # A second given name: Polish fencers often carry two and a source lists
+    # one ("SZKODA Marek" for SZKODA Marek Tomasz). The first given names agree.
+    s_given, c_given = s_fn_f.split(), c_fn_f.split()
+    if s_given and c_given and s_given != c_given:
+        shorter, longer = sorted((s_given, c_given), key=len)
+        if longer[: len(shorter)] == shorter:
+            return "✓", "second given name"
     if not (first_identical or first_close):
         return "❌", "different first names — probably wrong match"
 

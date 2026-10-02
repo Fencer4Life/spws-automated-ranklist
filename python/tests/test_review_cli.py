@@ -55,7 +55,8 @@ def _make_session(prompt_answers, db=None, store=None, fetcher=None, output_line
     output_lines = output_lines if output_lines is not None else []
 
     session = ReviewSession(
-        event_code="TEST-EVT-1",
+        # A real family: the draft builder types a tournament from it (5.M2.4).
+        event_code="PPW9-2025-2026",
         db=db,
         draft_store=store,
         prompt=_scripted_prompt(prompt_answers),
@@ -83,7 +84,7 @@ class TestSourceChoice:
         # Event has recorded url_results
         db.find_event_by_code.return_value = {
             "id_event": 1,
-            "txt_code": "TEST-EVT-1",
+            "txt_code": "PPW9-2025-2026",
             "url_results": "https://recorded.example/foo",
         }
         choice = session.prompt_source_choice()
@@ -120,14 +121,14 @@ class TestSourceChoice:
         session, *_ = _make_session(prompt_answers=["4"])
         choice = session.prompt_source_choice()
         assert choice.kind == "evf_api"
-        assert choice.value == "TEST-EVT-1"
+        assert choice.value == "PPW9-2025-2026"
 
     def test_invalid_choice_reprompts(self):
         """P3.RC5 invalid choice re-prompts until valid."""
         session, *_ = _make_session(prompt_answers=["foo", "9", "1"])
         session.db.find_event_by_code.return_value = {
             "id_event": 1,
-            "txt_code": "TEST-EVT-1",
+            "txt_code": "PPW9-2025-2026",
             "url_results": "https://recorded.example/x",
         }
         choice = session.prompt_source_choice()
@@ -153,7 +154,7 @@ class TestFetcher:
         session, db, *_ = _make_session(prompt_answers=[], fetcher=fetcher)
         db.find_event_by_code.return_value = {
             "id_event": 1,
-            "txt_code": "TEST-EVT-1",
+            "txt_code": "PPW9-2025-2026",
             "url_results": "https://recorded.example/x",
         }
 
@@ -213,8 +214,8 @@ class TestFetcher:
         session, db, *_ = _make_session(prompt_answers=[], fetcher=fetcher)
         db.find_event_by_code.return_value = None  # event missing
 
-        with pytest.raises(ValueError, match="event TEST-EVT-1 not found"):
-            session.fetch_source(SourceChoice(kind="evf_api", value="TEST-EVT-1"))
+        with pytest.raises(ValueError, match="event PPW9-2025-2026 not found"):
+            session.fetch_source(SourceChoice(kind="evf_api", value="PPW9-2025-2026"))
         fetcher.fetch_evf_api.assert_not_called()
 
     def test_fetch_evf_api_real_impl_decodes_json_before_parsing(self):
@@ -272,7 +273,7 @@ class TestRunIteration:
             ctx = PipelineContext(
                 parsed=parsed, overrides=overrides or Overrides(), season_end_year=season_end_year
             )
-            ctx.event = {"id_event": 1, "txt_code": "TEST-EVT-1"}
+            ctx.event = {"id_event": 1, "txt_code": "PPW9-2025-2026"}
             ctx.matches = [
                 StageMatchResult(
                     scraped_name="X", place=1, id_fencer=42, confidence=99.0, method="AUTO_MATCHED"
@@ -311,7 +312,7 @@ class TestRunIteration:
         store.write_result_drafts.assert_called()
         assert diff_path.exists()
         content = diff_path.read_text()
-        assert "TEST-EVT-1" in content
+        assert "PPW9-2025-2026" in content
 
 
 # ---------------------------------------------------------------------------
@@ -374,7 +375,7 @@ class TestJointFlagAndUrlTransform:
             category_hint=category_hint,
         )
         ctx = PipelineContext(parsed=parsed, overrides=Overrides(), season_end_year=2026)
-        ctx.event = {"id_event": 99, "txt_code": "TEST-EVT-1"}
+        ctx.event = {"id_event": 99, "txt_code": "PPW9-2025-2026"}
         ctx.vcat_groups = vcat_groups
         ctx.is_joint_pool = len(vcat_groups) >= 2
         return ctx
@@ -486,7 +487,7 @@ class TestRun:
         session, db, store, *_ = _make_session(prompt_answers=["q"])
         db.find_event_by_code.return_value = {
             "id_event": 1,
-            "txt_code": "TEST-EVT-1",
+            "txt_code": "PPW9-2025-2026",
             "url_results": "https://x",
         }
         result = session.run()

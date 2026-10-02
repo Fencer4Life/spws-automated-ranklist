@@ -234,10 +234,13 @@ class TestDraftWriter:
         ] == [("V2", 60, False)]
 
     def test_every_pole_keeps_the_source_place(self):
-        """INTL.DRAFT.02 every matched or pending Pole is written to that one
-        tournament at their source place, labelled with the source category;
-        a Pole with no birth year (left out of the split) is written too; an
-        EXCLUDED row is not."""
+        """INTL.DRAFT.02 every linked Pole is written to that one tournament
+        at their source place, labelled with the source category; a Pole with
+        no birth year (left out of the split) is written too. An EXCLUDED row
+        is not, and neither is a PENDING one (amended 2 Oct 2026): its fencer
+        is the matcher's guess, and the commit would credit the result to that
+        guess (Jabłonna 2025: BISKUPSKI Marek guessed as MIKULICKI). It is
+        reported in the staging summary instead; N stays the whole bracket."""
         a, b = _match(11, 31), _match(12, 48)
         nob = _match(13, 52)  # no birth year: s7 leaves it out of vcat_groups
         pending = _match(14, 55, method="PENDING")
@@ -260,7 +263,6 @@ class TestDraftWriter:
             (11, 31, 701, "V2"),
             (12, 48, 701, "V2"),
             (13, 52, 701, "V2"),
-            (14, 55, 701, "V2"),
         ]
 
     def test_no_source_category_is_refused_and_domestic_is_unchanged(self):
@@ -441,6 +443,70 @@ class TestTeamBracketsAndDuplicateCodes:
 
         assert _skip_reason(name) is None
 
+    @staticmethod
+    def _schedule(*names: str) -> str:
+        links = "".join(f'<a href="/events/view/U{i:03d}">{n}</a>' for i, n in enumerate(names))
+        return f"<html><body>{links}</body></html>"
+
+    def test_category_first_names_are_brackets_not_guests(self):
+        """INTL.SCHED.02 EVF Circuit Jabłonna 2025 names its brackets with the
+        category first ("V2 Szpada Mężczyzn"). The guest-event guard (5.21)
+        skipped all 24 of them; a real guest event is still skipped."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        kept, skipped = parse_event_schedule(
+            self._schedule(
+                "V2 Szpada Mężczyzn", "V4 Szabla Kobiet", "Akademickie Mistrzostwa Warszawy"
+            ),
+            with_skips=True,
+        )
+        assert [e["name"] for e in kept] == ["V2 Szpada Mężczyzn", "V4 Szabla Kobiet"]
+        assert [s["name"] for s in skipped] == ["Akademickie Mistrzostwa Warszawy"]
+
+    def test_a_pool_round_is_skipped_when_its_categories_have_brackets(self):
+        """INTL.SCHED.03 a joint pool round ("Szpada Kobiet V3, V4 - runda
+        grupowa") is not a result when the same weapon and gender have their
+        own category brackets on the schedule; those are the results. A pool
+        round with no category bracket beside it is kept."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        kept, skipped = parse_event_schedule(
+            self._schedule(
+                "Szpada Kobiet V3, V4 - runda grupowa",
+                "V3 Szpada Kobiet",
+                "V4 Szpada Kobiet",
+                "Floret Mężczyzn V3, V4 - runda grupowa",
+            ),
+            with_skips=True,
+        )
+        assert [e["name"] for e in kept] == [
+            "V3 Szpada Kobiet",
+            "V4 Szpada Kobiet",
+            "Floret Mężczyzn V3, V4 - runda grupowa",
+        ]
+        assert [(s["name"], s["reason"]) for s in skipped] == [
+            (
+                "Szpada Kobiet V3, V4 - runda grupowa",
+                "pool round (its categories have their own brackets)",
+            )
+        ]
+
+    def test_a_bracket_listed_for_two_days_is_one_bracket(self):
+        """INTL.SCHED.04 FTL lists a two-day bracket twice, "(Day 1)" and
+        "(Day 2)", with the same link (EMW Plovdiv 2025, men's épée V1–V3).
+        One link is one bracket: it is read once. The repeat is not a skip, so
+        it does not count as a pool round."""
+        from python.tools.scrape_ftl_event_urls import parse_event_schedule
+
+        html = (
+            '<a href="/events/view/C69C">Vet-60 Men\'s Epee EM3\n (Day 1)</a>'
+            '<a href="/events/view/D3C6">Vet-60 Women\'s Epee EW3</a>'
+            '<a href="/events/view/C69C">Vet-60 Men\'s Epee EM3\n (Day 2)</a>'
+        )
+        kept, skipped = parse_event_schedule(html, with_skips=True)
+        assert [e["uuid"] for e in kept] == ["C69C", "D3C6"]
+        assert skipped == []
+
     def _sb(self, drafts, results_per_draft):
         """A Supabase client mock whose table mocks are cached per name, so a
         test can assert what was (not) updated or deleted."""
@@ -540,3 +606,106 @@ class TestStageZero:
         s0_reconcile_roster(ctx, db)
         db.insert_fencer.assert_not_called()
         assert ctx.created_fencers == []
+
+
+class TestRepairRunner:
+    """The runner steps the international data repair needs
+    (doc/plans/international-data-repair-batch-1-2026-10-01.html)."""
+
+    def test_a_weapon_outside_the_event_is_skipped(self):
+        """INTL.WPN.01 an international bracket whose weapon is not one of
+        the event's weapons is skipped with a reason: EVF Circuit Jabłonna
+        2025 is épée and sabre, its organiser's schedule also has foil
+        (decision F A, 2 Oct 2026). A domestic event, and a bracket with no
+        weapon, are never skipped this way."""
+        from types import SimpleNamespace
+
+        from python.tools.phase5_runner import _weapon_outside_event
+
+        jab = {"txt_code": "PEW7es-2024-2025", "arr_weapons": ["EPEE", "SABRE"]}
+        foil = SimpleNamespace(weapon="FOIL")
+        assert "FOIL" in (_weapon_outside_event(foil, jab) or "")
+        assert _weapon_outside_event(SimpleNamespace(weapon="EPEE"), jab) is None
+        assert _weapon_outside_event(SimpleNamespace(weapon=None), jab) is None
+        assert (
+            _weapon_outside_event(foil, {"txt_code": "PPW1-2026-2027", "arr_weapons": ["EPEE"]})
+            is None
+        )
+        # No stored weapons: the PEW code's letters decide.
+        assert _weapon_outside_event(foil, {"txt_code": "PEW7es-2024-2025", "arr_weapons": None})
+
+    def test_wrong_match_pairs_are_not_flushed_for_an_international_event(self):
+        """INTL.ALIAS.01 the stage-time alias flush writes no ❌ pair for an
+        international event (decision W A, 2 Oct 2026): staging Jabłonna 2025
+        wrote "BISKUPSKI Marek" onto MIKULICKI, and a later run would match by
+        that alias. ✓ and ❓ pairs are still written; a domestic event keeps
+        the Option-1 behaviour."""
+        from types import SimpleNamespace
+
+        from python.tools.phase5_runner import _stage_flush_pairs
+
+        pairs = [SimpleNamespace(icon=i) for i in ("✓", "❓", "❌")]
+        assert [p.icon for p in _stage_flush_pairs(pairs, international=True)] == ["✓", "❓"]
+        assert [p.icon for p in _stage_flush_pairs(pairs, international=False)] == [
+            "✓",
+            "❓",
+            "❌",
+        ]
+
+    def test_replace_event_commits_through_the_atomic_replace(self):
+        """REPAIR.RUN.01 with --replace-event the commit calls
+        fn_replace_event_from_draft (rollback by exact code and commit in one
+        transaction); without it, fn_commit_event_draft as before. A replace
+        needs the exact event code."""
+        from python.tools.phase5_runner import _commit_run
+
+        db = MagicMock()
+        _commit_run(db, "run-1", "PEW7es-2024-2025", replace=True)
+        db._sb.rpc.assert_called_once_with(
+            "fn_replace_event_from_draft",
+            {"p_event_code": "PEW7es-2024-2025", "p_run_id": "run-1"},
+        )
+        db = MagicMock()
+        _commit_run(db, "run-1", None, replace=False)
+        db._sb.rpc.assert_called_once_with("fn_commit_event_draft", {"p_run_id": "run-1"})
+        with pytest.raises(ValueError, match="event code"):
+            _commit_run(MagicMock(), "run-1", None, replace=True)
+
+    def test_sign_off_refuses_unresolved_rows(self):
+        """REPAIR.RUN.02 a draft row with a fencer and no match method is an
+        unresolved PENDING guess; sign-off lists it and refuses, for every
+        event, because the commit would credit the result to the guess. The
+        sign-off check that blocks ❌ pairs reads linked rows only, so these
+        passed it."""
+        from python.tools.phase5_runner import _unresolved_draft_rows
+
+        db = MagicMock()
+        q = db._sb.table.return_value.select.return_value.eq.return_value
+        q.execute.return_value.data = [
+            {"id_fencer": 100, "txt_scraped_name": "BISKUPSKI Marek", "enum_match_method": None},
+            {
+                "id_fencer": 109,
+                "txt_scraped_name": "SZKODA Marek",
+                "enum_match_method": "AUTO_MATCH",
+            },
+            {"id_fencer": None, "txt_scraped_name": "X", "enum_match_method": None},
+        ]
+        assert _unresolved_draft_rows(db, "run-1") == [
+            {"id_fencer": 100, "txt_scraped_name": "BISKUPSKI Marek", "enum_match_method": None}
+        ]
+
+    def test_staging_writes_aliases_only_from_confirmed_matches(self):
+        """INTL.ALIAS.02 for an international event the stage-time flush
+        takes only AUTO_MATCHED rows: a PENDING row's fencer is a guess, and
+        its pair can look like a typo to the checker ("ŁOJAK Szymon" →
+        NOWAK Szymon, Jabłonna 2026). A domestic event keeps every row with a
+        fencer (Option-1)."""
+        from types import SimpleNamespace
+
+        from python.tools.phase5_runner import _flush_source_matches
+
+        auto = SimpleNamespace(id_fencer=1, method="AUTO_MATCHED")
+        guess = SimpleNamespace(id_fencer=2, method="PENDING")
+        none = SimpleNamespace(id_fencer=None, method="EXCLUDED")
+        assert _flush_source_matches([auto, guess, none], international=True) == [auto]
+        assert _flush_source_matches([auto, guess, none], international=False) == [auto, guess]

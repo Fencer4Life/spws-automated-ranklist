@@ -180,6 +180,17 @@ def birth_year_matches_category(
     return age_range[0] <= age <= age_range[1]
 
 
+def _word_matches(scraped_word: str, roster_word: str) -> bool:
+    """One name word: equal, or written without Polish letters and equal to the
+    roster word once its letters are folded."""
+    if scraped_word == roster_word:
+        return True
+    return (
+        scraped_word == fold_diacritics(scraped_word)
+        and fold_diacritics(roster_word) == scraped_word
+    )
+
+
 def _score_against_fencer(
     scraped: str,
     fencer: dict,
@@ -203,6 +214,37 @@ def _score_against_fencer(
     # Full name fuzzy comparison
     full_name = _build_full_name(fencer)
     full_name_norm = normalize_name(full_name, use_diacritic_folding)
+
+    # A source that drops the Polish letters (FTL, Engarde: "ZUKOWSKI Wojciech"
+    # for ŻUKOWSKI) is the same name: 99, one below an exact match so an exact
+    # namesake still wins. Only when the scraped name has no Polish letter at
+    # all — a source that writes them ("MAŁEK") wrote them on purpose.
+    # Unfolded, each missing letter cost ~6 points and left the right fencer
+    # PENDING (MŚW Manama: 8 of 8). MATCH.FOLD.01–05.
+    # SURNAME + first given name: second given names are dropped on both sides
+    # ("SZKODA Marek" is SZKODA Marek Tomasz). MATCH.ID.01–02. Polish letters
+    # fold word by word: a word written without them may match the roster word
+    # once folded ("KOSINSKI Łukasz", "ZUKOWSKI"); a word written with them must
+    # match exactly ("MAŁEK" is not "MALEK"). Folded matches score 99, one
+    # below an exact match. MATCH.FOLD.01–06.
+    s_sur, s_first = parse_scraped_name(scraped)
+    f_first_all = fencer.get("txt_first_name") or ""
+    if s_first and f_first_all:
+        s_key = (normalize_name(s_sur), normalize_name(s_first).split()[0])
+        f_key = (normalize_name(fencer["txt_surname"]), normalize_name(f_first_all).split()[0])
+        if s_key == f_key:
+            return 100.0
+        if all(_word_matches(a, b) for a, b in zip(s_key, f_key, strict=True)):
+            return 99.0
+
+    s_words = sorted(normalize_name(scraped).split(), key=fold_diacritics)
+    f_words = sorted(normalize_name(full_name).split(), key=fold_diacritics)
+    if (
+        s_words != f_words
+        and len(s_words) == len(f_words)
+        and all(_word_matches(a, b) for a, b in zip(s_words, f_words, strict=True))
+    ):
+        return 99.0
 
     # Use token_sort_ratio: order-independent, handles "Jan KOWALSKI" vs "KOWALSKI Jan"
     score = fuzz.token_sort_ratio(scraped_norm, full_name_norm)
@@ -240,6 +282,25 @@ def _score_against_fencer(
             score = min(score, 60)
 
     return score
+
+
+def _birth_year_contradicts(
+    fencer: dict, age_category: str | None, season_end_year: int | None
+) -> bool:
+    """True when the fencer's confirmed birth year puts them outside the
+    bracket's category. Unknown or estimated birth years contradict nothing.
+    The year before the season's end year is accepted too: EVF categories go by
+    calendar year, so an autumn event's bracket is a year "younger".
+    MATCH.ID.03, 05–07."""
+    if age_category is None or season_end_year is None:
+        return False
+    by = fencer.get("int_birth_year")
+    if by is None or fencer.get("bool_birth_year_estimated"):
+        return False
+    return not any(
+        birth_year_matches_category(by, age_category, y)
+        for y in (season_end_year, season_end_year - 1)
+    )
 
 
 def find_best_match(
@@ -356,11 +417,18 @@ def find_best_match(
             matched_name=best_name,
         )
     elif best_score >= auto_thresh:
+        # The association's identity rule: surname, first name and a birth
+        # year inside the bracket's category. A contradiction never links.
+        status = (
+            "PENDING"
+            if _birth_year_contradicts(best_fencer, age_category, season_end_year)
+            else "AUTO_MATCHED"
+        )
         return MatchResult(
             scraped_name=scraped_name,
             id_fencer=best_fencer_id,
             confidence=best_score,
-            status="AUTO_MATCHED",
+            status=status,
             matched_name=best_name,
         )
     elif best_score >= pend_thresh:
