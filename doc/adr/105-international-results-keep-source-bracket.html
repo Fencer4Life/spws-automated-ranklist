@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="105-international-results-keep-source-bracket.md">
+<meta name="adr-source-sha256" content="ab76c49d73585a65898e9951e2ceca4eeb1dcbe5f3869be0e30c07f4a245d825">
+<title>ADR-105 · International Results Keep the Whole Source Bracket and Their Own Place</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 105</p><h1>International Results Keep the Whole Source Bracket and Their Own Place</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Draft (proposed 2026-10-01; the rule and its plan were signed off on 2026-10-01 with D1 A, D2 A and D3 A, and D4 A on 2026-10-02; this text awaits sign-off). §§2–5 are implemented, in <code>supabase/migrations/20261001000002_international_field_size.sql</code> and the pipeline, and ship as one release (D4 = A).</dd></div><div><dt>Date</dt><dd class="">2026-10-01</dd></div><div><dt>Source</dt><dd class=""><code>105-international-results-keep-source-bracket.md</code></dd></div><div><dt>Length</dt><dd class="">131 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-10-01; the rule and its plan were signed off on 2026-10-01 with D1 A, D2 A and D3 A, and D4 A on 2026-10-02; this text awaits sign-off). §§2–5 are implemented, in <code>supabase/migrations/20261001000002_international_field_size.sql</code> and the pipeline, and ship as one release (D4 = A).
+<strong>Date:</strong> 2026-10-01
+<strong>Amends:</strong> <a href="038-evf-intake-polish-only.html">ADR-038</a> (the POL-only intake gains the rule for N and place, on every path, with the organiser's results as the primary source), <a href="049-joint-pool-split-flag.html">ADR-049</a> (the 2026-06-04 per-category count and the 2026-06-27 bracket-relative place are domestic only; the 2026-06-27 claim that international results never reach <code>Commit</code> is corrected), <a href="072-cdc-recompute-debounce.html">ADR-072</a> (a recompute keeps an international result in its stored tournament, with its N and place), <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> §4 and <a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a> (a third joined-bracket module, selected by tournament type rather than by engine)
+<strong>Relates to:</strong> <a href="056-vcat-from-birthyear.html">ADR-056</a> (the bracket label wins, and a season's category is frozen; §3 writes the stored bracket as the label), <a href="050-unified-ingestion-pipeline.html">ADR-050</a> (EVF is a backup source, not the primary one), <a href="022-ingestion-db-transaction.html">ADR-022</a> (the atomic ingest RPC gains the guard), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (PZSz senior results already keep the full field), <a href="069-participant-count-url-validator.html">ADR-069</a> (international counts stay outside the URL count check, unchanged), <a href="066-min-participants-ingestion-gate.html">ADR-066</a> (the EVF minimum-field gate reads the whole bracket, which is what §1 stores), <a href="008-psw-msw-international-pool.html">ADR-008</a> (PSW is reserved for a future FIE tournament; none has been announced or stored, and the rule covers it in advance), <a href="083-server-enforced-authorization.html">ADR-083</a> (grants unchanged). The ADR-072 amendment of the same day, on recompute provenance, was found during this work and is recorded there. Checked and clean: <a href="096-no-bracket-stubs-before-results.html">ADR-096</a>.
+<strong>Source:</strong> <code>doc/plans/international-field-size-root-cause-fix-2026-10-01.html</code>; source-URL sheet <code>doc/plans/evf-source-urls-2026-10-01.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-rule">1 · The rule</a></li><li class="depth-3"><a href="#2-a-source-field-module-selected-by-type">2 · A source-field module, selected by type</a></li><li class="depth-3"><a href="#3-a-recompute-keeps-an-international-result-where-it-is-stored">3 · A recompute keeps an international result where it is stored</a></li><li class="depth-3"><a href="#4-two-database-guards">4 · Two database guards</a></li><li class="depth-3"><a href="#5-every-ingestion-path-files-an-international-bracket-whole">5 · Every ingestion path files an international bracket whole</a></li><li class="depth-3"><a href="#6-no-stored-row-is-repaired-here">6 · No stored row is repaired here</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>SPWS writes only its Polish fencers for an international tournament (PEW, MEW, MSW, PSW; ADR-038). The rows a tournament holds are therefore never its bracket. Five code paths counted those rows anyway and stored the Polish head-count as N, and one renumbered the Poles' places among themselves. A Polish fencer who was 31st of 60 became 2nd of 3.</p>
+<p><strong>Measured on 2026-10-01, read-only.</strong> A bracket is counted when its stored N equals its number of Polish results:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Season</th>
+<th>Type</th>
+<th>Brackets</th>
+<th>LOCAL</th>
+<th>CERT</th>
+<th>PROD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2023/24</td>
+<td>PEW</td>
+<td>77</td>
+<td>34</td>
+<td>34</td>
+<td>34</td>
+</tr>
+<tr>
+<td>2023/24</td>
+<td>MEW</td>
+<td>16</td>
+<td>16</td>
+<td>16</td>
+<td>16</td>
+</tr>
+<tr>
+<td>2024/25</td>
+<td>PEW</td>
+<td>73</td>
+<td>44</td>
+<td>44</td>
+<td>44</td>
+</tr>
+<tr>
+<td>2024/25</td>
+<td>MEW</td>
+<td>16</td>
+<td>16</td>
+<td>16</td>
+<td>16</td>
+</tr>
+<tr>
+<td>2025/26</td>
+<td>PEW</td>
+<td>98</td>
+<td>55</td>
+<td>55</td>
+<td>73</td>
+</tr>
+<tr>
+<td>2025/26</td>
+<td>MSW</td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td><strong>290</strong></td>
+<td><strong>175</strong></td>
+<td><strong>175</strong></td>
+<td><strong>193</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>PROD is worse than CERT because its recompute drain kept re-damaging events after fencer edits. MSW Manama 2025, checked against FTL: STAŃCZYK Agnieszka was stored as 2nd of 3 and was 31st of 60; GANSZCZYK Anna 3rd of 3 and 48th of 60; ZIELIŃSKI Dariusz 2nd of 3 and 7th of 76; BAZAK Jacek 1st of 1 and 25th of 47. KUZMICHOVA Svitlana holds a result although she is not a Polish entry on FTL.</p>
+<p><strong>The shared mistake is counting the rows kept instead of the bracket fenced.</strong> For a domestic event the two are the same, because everyone is kept. The paths:</p>
+<ul>
+<li><strong>RC1 · N recounted from kept rows.</strong>
+<ul>
+<li><code>python/pipeline/review_cli.py:899</code> sets the draft N to <code>len(ctx.vcat_groups[vcat])</code>.</li>
+<li><code>fn_commit_event_draft</code> sets every joint-pool sibling to <code>COUNT(tbl_result)</code>, the ADR-049 2026-06-04 rule.</li>
+<li><code>fn_ingest_tournament_results</code> falls back to <code>jsonb_array_length(p_results)</code> when no count is passed (<code>supabase/migrations/20260930000003_spws_evf_joined_engine.sql:591</code>).</li>
+<li><code>PerCategoryRenumber</code> writes <code>participant_count=len(kept)</code> (<code>python/pipeline/joined_brackets/__init__.py:219</code>).</li>
+<li><code>python/tools/scrape_tournament.py:386</code> passes <code>p_count = len(bucket_rows)</code>.</li>
+</ul>
+</li>
+<li><strong>RC2 · Places renumbered among kept rows.</strong> <code>PerCategoryRenumber</code> dense-ranks the kept places, at ingest and in recompute.</li>
+<li><strong>RC3 · The recompute re-applies RC1 and RC2.</strong> <code>RECOMPUTE_DOMESTIC</code> loads every result of an event, with no type filter, and commits it through the EVF classic module. <code>trg_fencer_change_enqueue</code> fires it; <code>recompute-drain.yml</code> (CERT) and <code>recompute-drain-prod.yml</code> drain it. ADR-049's 2026-06-27 amendment says international results &quot;never reach&quot; <code>Commit</code>. That was true of ingestion, not of the recompute.</li>
+<li><strong>RC4 · Foreign rows reach the matcher.</strong> <code>s6_resolve_identity</code> (<code>python/pipeline/stages.py:805</code>) and <code>ResolveFencers</code> (<code>python/pipeline/plugins/resolve_fencers.py:44</code>) match every row and exclude only the unmatched ones. Only the deprecated legacy path still drops non-POL rows first (<code>python/matcher/pipeline.py:204</code>), as ADR-038 requires.</li>
+</ul>
+<p>Every parser records <code>raw_pool_size</code> as the whole bracket. The legacy orchestrator, the PZSz senior commit (<code>full_n</code>, ADR-100) and the parsers themselves are correct. Promotion to PROD and <code>cert_ref</code> copy whatever is stored.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-the-rule">1 · The rule</h3>
+<p>For every international result, on every path:</p>
+<ol>
+<li><strong>Only Polish fencers are ingested</strong> (ADR-038). Non-POL rows are dismissed before matching, so no foreign name can be matched to a Polish fencer.</li>
+<li><strong>N is the whole source bracket</strong>: every fencer who fenced it, Polish or not.</li>
+<li><strong>The place is the fencer's own place in that bracket</strong>, as published. It is never renumbered among the Poles.</li>
+<li><strong>Neither is ever recounted afterwards</strong>: not at commit, not in recompute, not on promotion.</li>
+<li><strong>The source is the organiser's results</strong> (FTL, Engarde, 4fence, d'Artagnan, Ophardt, FencingWorldwide). EVF results are a secondary source, used only when nothing else exists.</li>
+</ol>
+<p>A place above N is corrupt input and is refused, never clamped.</p>
+<h3 id="2-a-source-field-module-selected-by-type">2 · A source-field module, selected by type</h3>
+<p><code>python/pipeline/joined_brackets/</code> gains <code>SOURCE_FIELD_PLACE</code> (<code>SourceFieldPlace</code>, line 255). It plans every category of a bracket with <code>participant_count = field.size</code> and the fencer's own place. At ingest, <code>field.size</code> is <code>BracketField.source(places, parsed.raw_pool_size)</code>: the size the parser recorded, never less than the highest place listed. At recompute, it is the stored N.</p>
+<p><code>module_for</code> (line 290) selects it for every type in <code>INTERNATIONAL_TYPES</code> (PEW, MEW, MSW, PSW), whatever engine the type is assigned. A joined engine on an international type is still refused (<code>JoinedBracketNotAllowed</code>), and an unknown engine still raises. Domestic selection is unchanged: EVF classic keeps <code>PER_CATEGORY_RENUMBER</code>, and the 2026/27 engine keeps <code>JOINED_BRACKET_CATEGORY_PLACE</code>.</p>
+<h3 id="3-a-recompute-keeps-an-international-result-where-it-is-stored">3 · A recompute keeps an international result where it is stored</h3>
+<p><code>RECOMPUTE_DOMESTIC</code> never moves an international result to the category re-derived from a corrected birth year:</p>
+<ul>
+<li>The stored tournament is the bracket the fencer fenced, and a correction in our roster does not change which bracket that was.</li>
+<li>One tournament holds one source bracket's N. A moved result would carry its place in one bracket under another bracket's N.</li>
+<li>This also follows ADR-056's revision: the bracket label wins, and a season's category is frozen at ingestion.</li>
+</ul>
+<p>The recompute therefore:</p>
+<ul>
+<li>groups an international result by its stored category (<code>StageMatchResult.stored_vcat</code>);</li>
+<li>writes back the stored N and place (<code>Commit._plan_source_recompute</code>). It refuses a tournament whose rows do not share one stored N, and tells the operator to re-ingest;</li>
+<li>writes the stored bracket's category as <code>enum_source_age_category</code> (<code>python/pipeline/plugins/ingest.py:528</code>). <code>fn_assert_result_vcat</code> trusts a bracket label (ADR-056), so a result whose fencer's corrected birth year points elsewhere stays in its bracket. Without the label, the guard rejects the write and halts the drain. No international row carried a label before this; it was found that way on LOCAL, at PEW7es-2024-2025.</li>
+</ul>
+<h3 id="4-two-database-guards">4 · Two database guards</h3>
+<p>Migration <code>20261001000002_international_field_size.sql</code>:</p>
+<ul>
+<li><strong><code>fn_commit_event_draft</code></strong> recounts a joint-pool sibling only when its type is PPW or MPW. International siblings keep the N the draft carried. PZSz PPS/MPS keep theirs too, because their stored veterans are a subset of a senior field.</li>
+<li><strong><code>fn_ingest_tournament_results</code></strong> checks two things for PEW, MEW, MSW and PSW, before anything is deleted. It raises when <code>p_participant_count</code> is NULL, and when the highest place written is above it. A refused call leaves the stored result untouched. Domestic writes keep the fallback.</li>
+</ul>
+<h3 id="5-every-ingestion-path-files-an-international-bracket-whole">5 · Every ingestion path files an international bracket whole</h3>
+<ol>
+<li><strong>Only POL rows reach the matcher.</strong> <code>s6_resolve_identity</code> and <code>ResolveFencers</code> call <code>stages._keep_pol_rows</code>. For an international event, a row whose country does not fold to POL, or has none, is dismissed before anything else looks at it, the V0 check included. It is recorded in <code>PipelineContext.dismissed_non_pol</code>. S7's count check adds the dismissed rows to the matches, so a filtered parse still accounts for the whole source bracket.</li>
+<li><strong>International is decided by tournament type.</strong> <code>stages._is_international_intake</code> tests the event's type against PEW, MEW, MSW and PSW. <code>_organizer_for_event</code> reads a code prefix and reports the IMEW and IMSW alternation codes as UNKNOWN. The POL filter, the V0 check and the Stage 0 skip all use the type, so Stage 0 never creates or recalibrates a fencer for an international event. Keyed on the prefix, it had created every participant of MSW Manama, foreign ones included.</li>
+<li><strong>The Phase 5 draft writer files one tournament per source bracket</strong> (<code>review_cli.ReviewSession._build_tournament_draft_rows</code>). It uses the bracket's own category (<code>category_hint</code>), with <code>N = BracketField.source(places, raw_pool_size).size</code> and every Pole at their source place, a Pole without a birth year included. A bracket without a single V0–V4 source category is refused: no category is invented from a birth year.</li>
+<li><strong>Two source brackets never share one tournament.</strong> <code>phase5_runner._consolidate_duplicate_codes</code> refuses to merge duplicate codes for an international event and names both URLs. For a domestic event it merges as before, recounting N to the merged rows (ADR-056 revision).</li>
+<li><strong>Team brackets are skipped when an FTL schedule is read</strong> (<code>scrape_ftl_event_urls._TEAM_RE</code>, also part of <code>SKIP_PATTERNS</code>). They list teams, not individual places. MSW Manama's &quot;Vet Team …&quot; brackets had been parsed as Vet-40 and merged with it.</li>
+<li><strong>The new pipeline's event URL path</strong> (<code>ingest_cli.ingest_event_from_url</code>) refuses an international event before anything is written or fetched, and names the Phase 5 runner. This holds until the international flow (design §12) exists (D2 = A).</li>
+<li><strong><code>scrape_tournament</code></strong> ingests an international tournament whole (<code>international_bucket</code>): no birth-year split, no re-rank, N = the scraped bracket. A results URL shared with a sibling is refused.</li>
+<li><strong>A standing check.</strong>
+<ul>
+<li>pgTAP <code>INTL.INV.01</code> checks that no international result has a place above its tournament's N.</li>
+<li>The Phase 5 staging summary lists each international bracket's source N, highest place, Polish rows, linked rows and dismissed rows.</li>
+<li>It flags an N equal to the Polish rows, which is the shape of the old damage, and a bracket whose rows all lacked a country.</li>
+</ul>
+</li>
+</ol>
+<p>A parser that records no country (4fence) has every row of an international bracket dismissed. ADR-038 point 4 makes that fail-closed on purpose. Napoli 2026 is repaired by teaching the 4fence parser to read nationality (repair plan R4 = A).</p>
+<p>Replayed on LOCAL against MSW Manama 2025, the path drafts 30 Polish results in 14 brackets, exactly the FTL figures, and creates no fencer (<code>doc/plans/msw-manama-replay-review-2026-10-01.html</code>).</p>
+<h3 id="6-no-stored-row-is-repaired-here">6 · No stored row is repaired here</h3>
+<p>The damaged brackets are re-ingested from their organisers' results under a separate plan. The plan starts once the source-URL sheet is complete. Each event gets its own staging summary and sign-off, and CERT and PROD each get their own go.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Let a recompute move an international result to the re-derived category, keeping its place and taking the destination's N.</strong> This was the plan's first wording. Rejected: the destination tournament is a different source bracket, so the moved place would be compared with the wrong N (31st of 60 in Vet-50 filed under a Vet-60 bracket of 74). The fencer did not fence there.</li>
+<li><strong>Keep the Polish count in N and add a separate &quot;field size&quot; column.</strong> Rejected: N is the field. Every scoring engine, the rolling functions and the public pages read <code>int_participant_count</code> as the bracket size. A second column would leave the wrong value where every reader looks.</li>
+<li><strong>Exclude international events from <code>RECOMPUTE_DOMESTIC</code> altogether.</strong> Safe today, because an international score depends on nothing the trigger watches. Not chosen, for two reasons. One recompute path for every event keeps a later fencer-dependent rule effective on international results. And the label write gives stored international rows the source category ADR-056 expects.</li>
+<li><strong>Clamp a place above N to N.</strong> Rejected: such a place means the N or the place is wrong, and a clamped value hides which. The RPC refuses it, so the operator re-ingests from the source.</li>
+<li><strong>Keep <code>PER_CATEGORY_RENUMBER</code> for international brackets and fix only its count.</strong> Rejected: its dense rank is the defect for international results (RC2). A module whose purpose is to renumber cannot also keep source places.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>New or changed files.</strong>
+<ul>
+<li>Source: <code>python/pipeline/joined_brackets/__init__.py</code> (the module and its selection) and <code>python/pipeline/plugins/ingest.py</code> (ingest field size, recompute grouping, <code>_plan_source_recompute</code>, the label write).</li>
+<li>Types and loading: <code>python/pipeline/types.py</code> (<code>stored_vcat</code>, <code>PipelineContext.dismissed_non_pol</code>) and <code>python/pipeline/plugins/recompute.py</code>.</li>
+<li>Intake: <code>python/pipeline/stages.py</code>, <code>python/pipeline/plugins/resolve_fencers.py</code>, <code>python/pipeline/review_cli.py</code>, <code>python/pipeline/ingest_cli.py</code>, <code>python/tools/phase5_runner.py</code>, <code>python/tools/scrape_tournament.py</code> and <code>python/tools/scrape_ftl_event_urls.py</code>.</li>
+<li>The migration <code>20261001000002_international_field_size.sql</code>.</li>
+</ul>
+</li>
+<li><strong>Tests.</strong>
+<ul>
+<li>pytest <code>python/tests/test_international_field.py</code>: INTL.MOD.01–06 and INTL.RECOMP.01–04.</li>
+<li>pgTAP <code>supabase/tests/86_international_field.sql</code>: INTL.RPC.01–06.</li>
+<li>SE27.ING.09 in <code>test_joined_brackets.py</code> is amended: under EVF classic an international type now selects <code>SOURCE_FIELD_PLACE</code>, not <code>PER_CATEGORY_RENUMBER</code>.</li>
+<li>pytest <code>python/tests/test_international_intake.py</code>: INTL.POL.01–06, INTL.DRAFT.01–04, INTL.URL.01, INTL.SCRAPE.01, INTL.SCHED.01, INTL.S0.01 and INTL.INV.02.</li>
+<li>pgTAP <code>supabase/tests/88_international_invariant.sql</code>: INTL.INV.01.</li>
+</ul>
+</li>
+<li><strong>Callers that pass no count now fail closed</strong> for international types. <code>python/scrapers/evf_sync.py</code> omits the count when EVF gives no total. Its write is then refused and logged, instead of storing the Polish count. EVF is a secondary source (§1.5).</li>
+<li><strong>The release stops the live damage.</strong> Once it is deployed, a fencer edit no longer changes any international N or place on CERT or PROD. The 193 damaged PROD brackets stay as they are until the repair plan runs.</li>
+<li><strong>Defects found and deliberately not fixed here:</strong>
+<ul>
+<li><strong>Domestic place drift in recompute (D3 = A, planned separately).</strong> Under EVF classic a domestic category stores places renumbered within it. A fencer moved out and back by two birth-year edits returns with a place that ties another fencer (LOCAL, GP3-2023-2024 V4: 325's 4th place became a tie at 3rd).</li>
+<li><strong>Foreign names stored in PEW events</strong> (for example PEW9efs-2025-2026). This is RC4 evidence. The re-ingest removes them; §5.1 stops new ones.</li>
+<li><strong>ADR-066 lists PSW as a domestic type</strong> in its threshold routing table, while ADR-008 reserves PSW for a future FIE tournament. No PSW tournament exists, so nothing is affected today. The routing is corrected when the first PSW event is announced.</li>
+</ul>
+</li>
+<li><strong>Memory correction.</strong> The &quot;two denominators&quot; project memory said both placings were correct. Only the whole-bracket one is a stored fact. The SPWS-category placing of an international result is derived, never stored.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="104-spws-evf-joined-engine-replaces-place-medal.html">← ADR-104: SPWS 2026/2027 — the Place-and-Medal Engine and Its Columns Are Removed; EVF with a Joined-Bracket Premium and a Whole-Bracket Cap Replaces It</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>105-international-results-keep-source-bracket.md</code> · source SHA-256 <code>ab76c49d73585a65898e9951e2ceca4eeb1dcbe5f3869be0e30c07f4a245d825</code></footer>
+</div></body></html>

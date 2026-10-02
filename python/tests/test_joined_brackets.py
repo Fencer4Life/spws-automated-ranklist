@@ -32,6 +32,7 @@ from python.pipeline.joined_brackets import (
     JOINED_BRACKET_CATEGORY_PLACE,
     MODULE_BY_ENGINE,
     PER_CATEGORY_RENUMBER,
+    SOURCE_FIELD_PLACE,
     BracketField,
     JoinedBracketNotAllowed,
     RowPlan,
@@ -361,10 +362,13 @@ class TestInternational:
     @pytest.mark.parametrize("ttype", ["PEW", "MEW", "MSW", "PSW"])
     def test_international_type_refuses_the_joined_module(self, ttype):
         """SE27.ING.09 EVF and FIE publish per category; an international type
-        assigned the joined module is refused rather than re-joined."""
+        assigned the joined module is refused rather than re-joined. Amended by
+        ADR-105: under EVF classic it is filed by the source-field module (whole
+        source bracket as N, own place), never PER_CATEGORY_RENUMBER —
+        python/tests/test_international_field.py INTL.MOD.01."""
         with pytest.raises(JoinedBracketNotAllowed):
             module_for(JOINED, ttype)
-        assert module_for(CLASSIC, ttype).name == PER_CATEGORY_RENUMBER
+        assert module_for(CLASSIC, ttype).name == SOURCE_FIELD_PLACE
 
 
 # ---------------------------------------------------------------------------
