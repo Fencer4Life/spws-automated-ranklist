@@ -128,15 +128,64 @@
   <p class="dek">EVF scored the <b>Criterium Mondial Vétérans 2026</b> (Paris, 4–6 July 2026, 399 fencers, <b>10 Polish results</b>), and it falls inside 2025/26. <b>LOCAL, CERT and PROD have no event for it</b>, so its results are in no ranking, and 2025/26 results carry into 2026/27. This plan adds it on all three environments, from the organiser's Engarde results, checked against EVF's record. It also fixes how CERT and PROD receive any repaired event, which the repair batch needs too.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>Signed off 2 Oct: E A, P A, K A</span>
-    <span class="pill"><span class="dot"></span>LOCAL committed · released to CERT and PROD</span>
-    <span class="pill warn"><span class="dot"></span>CERT: event created · staging after the release</span>
-    <span class="pill danger"><span class="dot"></span>CERT and PROD writes: your go for each</span>
+    <span class="pill"><span class="dot"></span>Done on LOCAL, CERT and PROD · verified 2 Oct</span>
   </div>
 
   <hr class="rule">
 
+  <section id="prod-go">
+    <p class="kicker">Done · 2 October · R A</p>
+    <h2>Run the Criterium on PROD</h2>
+    <p><b>CERT is done and matches LOCAL exactly.</b> The staging run <code>36977847558</code> produced 10 drafts. Each
+    fencer, birth year, N and place equals LOCAL. The commit run <code>36978061206</code> committed 5 tournaments and
+    10 results, all scored. Every committed row on CERT equals LOCAL to the cent: type PEW, multiplier 1, place points,
+    DE bonus, podium bonus and final score. LOCAL matched EVF event 92 on all 10, so CERT does too. The UI path is
+    checked as well: in the 2026/27 V3 men's sabre, the drilldown (<code>fn_fencer_scores_rolling</code>) lists
+    <code>PEW10efs-V3-M-SABRE-2025-2026</code>, PEW, 111.69, carried. The ranklist (<code>fn_ranking_full</code>,
+    rolling) has Zabłocki 2nd with 432.65.</p>
+    <p><b>PROD today.</b> The event <code>PEW10efs-2025-2026</code> does not exist on PROD, and PROD has no 2026/27
+    placeholder row. Zabłocki's 2026/27 EVF+ rolling score is 279.51, from three results: IMSW 101.14, PEW6efs 95.39
+    and PEW4efs 82.98. After the run, the Criterium adds a fourth result of 111.69, so the expected total is
+    <b>391.20, still 2nd</b>. That is lower than CERT's 432.65 because PROD's PEW4efs stores 82.98 where CERT and
+    LOCAL store 124.43. That difference is outside this plan; it belongs to the repair batch.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">R</span> The PROD run, the same steps as CERT</p>
+      <ol>
+        <li>Create the event with the same guarded <code>INSERT</code> (<code>scripts/cloud-sql.sh prod</code>, printed
+        before it runs; a second run inserts nothing). To undo: delete that one event row, which holds nothing yet.</li>
+        <li>Stage with <code>phase5-event-runner.yml</code> (event <code>PEW10efs-2025-2026</code>, target prod).
+        PROD's 2025/26 EVF minimum is 5, as it is on CERT, and every bracket with a Pole has 13 or more fencers.</li>
+        <li>Compare PROD's drafts with the 10 rows on LOCAL and CERT, row by row, read-only. If anything differs, I stop
+        and report back to you.</li>
+        <li>Commit through the same workflow with <code>commit_run_id</code>. Then check the scores against CERT and
+        LOCAL, and check Zabłocki's 2026/27 drilldown line and total (expected 391.20).</li>
+      </ol>
+      <ul>
+        <li><b>A</b> run steps 1–4 on PROD now and report.</li>
+        <li><b>B</b> hold.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> It runs the statements, workflow and comparisons that just produced an exact match on
+      CERT. The PROD site shows the Criterium as soon as the commit lands, and no release is needed.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Decided 2 October: A · done and verified</p>
+      <ul>
+        <li>Event <b>152</b> was created on PROD by the guarded INSERT.</li>
+        <li>Staging run <code>36978484538</code> produced 10 drafts. A machine diff against LOCAL's committed rows
+        (fencer, birth year, type, N, place) was identical. It skipped the same four small brackets as CERT, none of
+        them with a Polish fencer.</li>
+        <li>Commit run <code>36978664925</code> committed run <code>c4ef3f9c</code>: 5 tournaments and 10 results,
+        all scored. No drafts are left.</li>
+        <li>A machine diff of every committed score on PROD against LOCAL (type, multiplier, N, place, place points,
+        DE bonus, podium bonus, final score) was identical, so PROD matches EVF event 92 as LOCAL does.</li>
+        <li>The UI path: in the 2026/27 V3 men's sabre, the drilldown lists the Criterium, PEW, 111.69, carried. The
+        rolling ranklist has <b>Zabłocki 2nd with 391.20</b>, up from 279.51, exactly as predicted.</li>
+      </ul>
+    </div>
+  </section>
+
   <section id="decide">
-    <p class="kicker">Decide this first</p>
+    <p class="kicker">Decided 2 October · E A, P A, K A</p>
     <h2>Three decisions</h2>
     <p>Answer with the letters, for example <b>E A, P A, K A</b>.</p>
     <div class="note accent">
@@ -169,7 +218,7 @@
   </section>
 
   <section id="successor">
-    <p class="kicker">Decide this first · the CERT run is paused</p>
+    <p class="kicker">Decided 2 October · S B</p>
     <h2>How the Criterium 2026 counts in the 2026/27 rolling score</h2>
     <p><b>Where it stands.</b> LOCAL shows Zabłocki's win in the 2026/27 EVF+ rolling score (417.24). It does so through
     a hand-made 2026/27 row, <code>PEW19efs-2026-2027</code> “EVF Criterium Mondial Vétérans 2027”, undated and CREATED,
@@ -211,7 +260,7 @@
   </section>
 
   <section id="cert-go">
-    <p class="kicker">Decide this first</p>
+    <p class="kicker">Done · 2 October · C A</p>
     <h2>Run the Criterium on CERT</h2>
     <p>The release is live: CI <code>36973805824</code> and Release <code>36973917731</code> passed on
     <code>c1d7083a</code>, and both environments carry the replace functions, the type guard and the EVF minimum
@@ -237,6 +286,15 @@
       </ul>
       <p><b>Recommendation: A.</b> The same statements and the same runner path as LOCAL, with a comparison before the
       commit. PROD follows only after CERT is verified, with its own go.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Decided 2 October: A · done and verified</p>
+      <p>Event 154 was created. The first staging run (<code>36976671690</code>) stopped at the staging report, whose
+      code check also allowed only upper-case letters. That was fixed test-first (5.6.8) and released as
+      <code>962dadb6</code>. The 5 draft tournaments and 10 draft results that run left behind were discarded.
+      Staging run <code>36977847558</code> then matched LOCAL, and commit run <code>36978061206</code> committed
+      run <code>cc46775b</code>: 5 tournaments and 10 results. Every committed score equals LOCAL. Details are in
+      <a href="#prod-go">the PROD section</a>.</p>
     </div>
   </section>
 
@@ -280,13 +338,14 @@
       first).</li>
       <li><b>Step 2 done.</b> <code>EVF.CAL.01</code>, test-first. Run live on LOCAL, it reports
       exactly EVF 92 (2025/26) and EVF 77 Chania (2024/25, left out per K A).</li>
-      <li><b>Step 3: staged, waiting for your sign-off.</b> Event created on LOCAL (one guarded
-      INSERT, status COMPLETED, so the same statement runs on CERT and PROD). Staged: 10 Polish
-      results, EVF.PTS 10 of 10. Review page:
+      <li><b>Step 3 done on LOCAL and CERT.</b> The event was created with one guarded INSERT
+      (status COMPLETED, the same statement on every environment) and committed: 10 Polish results,
+      EVF.PTS 10 of 10. CERT and PROD equal LOCAL row for row (<a href="#prod-go">R</a>). Review page:
       <code>doc/staging/PEW10efs-2025-2026.review.html</code>.</li>
-      <li><b>2026/27 carry-over.</b> The results reach the 2026/27 ranking through the 2027 edition.
-      You confirmed EVF will publish it this season; the sync then links it to this event by city.
-      Checked: exactly one Paris event in 2025/26.</li>
+      <li><b>2026/27 carry-over.</b> The amended carry-over rule (S B) carries the results while the 2027
+      edition has no row. When EVF publishes that edition, the sync links it to this event by city, and the
+      carry continues through that link until the 2027 edition is held. Checked: exactly one Paris
+      event in 2025/26.</li>
       <li><b>For the PROD order of work.</b> The calendar mirror resolves a prior link by event code.
       This event must exist on PROD before the 2027 edition is mirrored there, or that row is created
       unlinked until the next daily run.</li>
