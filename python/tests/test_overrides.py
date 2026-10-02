@@ -4,7 +4,7 @@ Tests for python/pipeline/overrides.py — Phase 3 (ADR-050) override YAML parse
 Schema lock 2026-05-02 (5 surfaces, EVF V0 ack deliberately omitted):
   identity / splitter / url / match_method / joint_pool
 
-Plan IDs P3.OV1-P3.OV15.
+Plan IDs P3.OV1-P3.OV15, P3.OV19-20 (P3.OV16-18 retired with ADR-106 O1 A).
 """
 
 from __future__ import annotations
@@ -292,3 +292,84 @@ class TestPathResolution:
         # No override file in default dir → empty result, no exception
         result = load_for_event("DOES-NOT-EXIST")
         assert result.identity == []
+
+
+# ---------------------------------------------------------------------------
+# P3.OV19–20 — an identity entry may name the fencer instead of an id
+# ---------------------------------------------------------------------------
+# Fencer ids differ between LOCAL, CERT and PROD (2 Oct 2026: LOCAL's #284 is
+# LYNCH Pat, PROD's #284 is STOLARIK Peter). An override file is committed once
+# and read on every environment, so an entry names the fencer by surname, first
+# name and birth year, resolved against each environment's own roster.
+
+
+class TestFencerKey:
+    def test_parses_a_fencer_key(self, tmp_override, tmp_path):
+        """P3.OV19: an identity entry may give `fencer: {surname, first_name,
+        birth_year}` in place of id_fencer; it is exclusive with id_fencer and
+        create_fencer, needs a surname and a first name, and admits no other
+        field."""
+        from python.pipeline.overrides import OverrideValidationError, load_for_event
+
+        d = tmp_path / "doc" / "overrides"
+        tmp_override(
+            "K-1",
+            dedent("""
+                identity:
+                  - scraped_name: "LYNCH Patrick"
+                    fencer: {surname: LYNCH, first_name: Pat, birth_year: 1930}
+            """),
+        )
+        e = load_for_event("K-1", overrides_dir=d).identity[0]
+        assert (e.id_fencer, e.fencer) == (
+            None,
+            {"surname": "LYNCH", "first_name": "Pat", "birth_year": 1930},
+        )
+        for body in (
+            "fencer: {surname: LYNCH, first_name: Pat}\n    id_fencer: 3",
+            "fencer: {surname: LYNCH}",
+            "fencer: {surname: LYNCH, first_name: Pat, club: X}",
+        ):
+            tmp_override("K-2", f'identity:\n  - scraped_name: "X"\n    {body}\n')
+            with pytest.raises(OverrideValidationError):
+                load_for_event("K-2", overrides_dir=d)
+
+    def test_a_fencer_key_resolves_against_the_roster(self):
+        """P3.OV20: resolve_fencer_keys gives each keyed entry the id of the
+        one roster fencer it names (names compared case-insensitively, the
+        birth year telling namesakes apart); no fencer, or two, is refused.
+        The same file resolves to each environment's own id."""
+        from python.pipeline.overrides import OverrideValidationError, resolve_fencer_keys
+        from python.pipeline.types import IdentityOverride, Overrides
+
+        key = {"surname": "KRAWCZYK", "first_name": "Paweł", "birth_year": 1954}
+        ov = Overrides(identity=[IdentityOverride(scraped_name="KRAWCZYK Paweł", fencer=key)])
+        local = [
+            {
+                "id_fencer": 6,
+                "txt_surname": "KRAWCZYK",
+                "txt_first_name": "Paweł",
+                "int_birth_year": 1954,
+            },
+            {
+                "id_fencer": 5,
+                "txt_surname": "KRAWCZYK",
+                "txt_first_name": "Paweł",
+                "int_birth_year": 1989,
+            },
+        ]
+        prod = [dict(f, id_fencer=f["id_fencer"] + 349) for f in local]
+        assert resolve_fencer_keys(ov, local).identity[0].id_fencer == 6
+        assert resolve_fencer_keys(ov, prod).identity[0].id_fencer == 355
+        no_by = Overrides(
+            identity=[
+                IdentityOverride(
+                    scraped_name="KRAWCZYK Paweł",
+                    fencer={"surname": "krawczyk", "first_name": "PAWEŁ"},
+                )
+            ]
+        )
+        with pytest.raises(OverrideValidationError, match="2 roster fencers"):
+            resolve_fencer_keys(no_by, local)
+        with pytest.raises(OverrideValidationError, match="0 roster fencers"):
+            resolve_fencer_keys(ov, [])

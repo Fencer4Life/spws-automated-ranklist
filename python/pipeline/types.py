@@ -67,11 +67,16 @@ class HaltError(Exception):
 
 @dataclass(frozen=True)
 class IdentityOverride:
-    """Single identity override entry. Either id_fencer (link) OR create_fencer."""
+    """Single identity override entry: id_fencer (link), fencer (link by name,
+    resolved against the run's roster), or create_fencer."""
 
     scraped_name: str
     id_fencer: int | None = None
     create_fencer: dict[str, Any] | None = None  # {surname, first_name, birth_year, nationality}
+    # P3.OV19: {surname, first_name, birth_year?} — fencer ids differ between
+    # LOCAL, CERT and PROD, so a committed file names the fencer instead;
+    # overrides.resolve_fencer_keys fills id_fencer from the run's roster.
+    fencer: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
