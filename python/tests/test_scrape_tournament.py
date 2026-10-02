@@ -131,7 +131,7 @@ SCRAPER_FIXTURES = [
         "fourfence",
         "https://www.4fence.it/FIS/Risultati/2025/index.php?a=SP&s=M&c=7&f=clafinale",
         FIXTURES / "fourfence" / "clafinale_terni.html",
-        64,
+        61,  # placed fencers; 3 of the 64 rows have no final place (FOURFENCE.CLOSE.01)
         id="fourfence",
     ),
     pytest.param(

@@ -123,7 +123,10 @@ def scrape_and_parse(url: str | None) -> list[dict]:
     elif platform == "fourfence":
         resp = httpx.get(url, follow_redirects=True, timeout=15)
         resp.raise_for_status()
-        return parse_fourfence_html(resp.text)
+        # The last-four tableau names the second bronze, whom the final
+        # classification prints without a place (FOURFENCE.BRONZE.01).
+        tab4 = httpx.get(url.replace("f=clafinale", "f=tab4"), follow_redirects=True, timeout=15)
+        return parse_fourfence_html(resp.text, tab4.text if tab4.status_code == 200 else None)
 
     elif platform == "dartagnan":
         resp = httpx.get(url, follow_redirects=True, timeout=15)
