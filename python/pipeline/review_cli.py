@@ -873,6 +873,21 @@ class ReviewSession:
         event_id = (ctx.event or {}).get("id_event")
         rows = []
 
+        international = self._international_category(ctx)
+        if international is not None:
+            # ADR-105: an international bracket is one source bracket. It is
+            # filed whole under its own category, with N = the whole bracket the
+            # parser recorded, never the Poles kept or a category re-derived
+            # from their birth years.
+            from python.pipeline.joined_brackets import BracketField
+
+            row = self._draft_row_skeleton(ctx, event_id, international)
+            row["bool_joint_pool_split"] = False
+            row["int_participant_count"] = BracketField.source(
+                (r.place for r in ctx.parsed.results), ctx.parsed.raw_pool_size
+            ).size
+            return [row]
+
         if getattr(ctx, "vcat_groups", None):
             # ADR-049 refinement: bool_joint_pool_split flags only the
             # OUTLIER V-cat children — i.e. groups whose V-cat differs from
@@ -904,6 +919,26 @@ class ReviewSession:
         else:
             rows.append(self._draft_row_skeleton(ctx, event_id, ctx.parsed.category_hint or "V1"))
         return rows
+
+    @staticmethod
+    def _international_category(ctx) -> str | None:
+        """The source category of an international bracket, or None for a
+        domestic one. An international bracket without a single V0-V4 source
+        category is refused: no category is invented from a birth year
+        (ADR-105)."""
+        from python.pipeline.stages import _is_international_intake
+
+        if not _is_international_intake(ctx.event):
+            return None
+        hint = getattr(ctx.parsed, "category_hint", None)
+        if hint not in ("V0", "V1", "V2", "V3", "V4"):
+            raise ValueError(
+                f"International bracket {getattr(ctx.parsed, 'source_url', None)!r} has no single "
+                f"source category (category_hint={hint!r}); its results are filed under the "
+                "bracket's own category and none is derived from birth years (ADR-105). "
+                "Check the bracket name the parser read."
+            )
+        return hint
 
     def _validate_draft_urls(self, tournament_rows: list[dict]) -> None:
         """Fetch every draft `url_results` and store the verdict on self.
@@ -999,6 +1034,29 @@ class ReviewSession:
             "BY_ESTIMATED": "BY_ESTIMATED",
         }
         rows: list[dict] = []
+        international = self._international_category(ctx)
+        if international is not None and vcat_to_tournament_id:
+            # ADR-105: every Pole of an international bracket goes to its one
+            # tournament at their source place, a Pole without a birth year too
+            # (the BY split leaves them out of vcat_groups).
+            tournament_id = vcat_to_tournament_id.get(international)
+            if tournament_id is None:
+                return rows
+            for m in ctx.matches:
+                if m.method == "EXCLUDED":
+                    continue  # ADR-038: not linked to a Polish fencer, intentional drop
+                rows.append(
+                    {
+                        "id_fencer": m.id_fencer,
+                        "id_tournament_draft": tournament_id,
+                        "int_place": m.place,
+                        "txt_scraped_name": m.scraped_name,
+                        "num_match_confidence": m.confidence,
+                        "enum_match_method": method_map.get(m.method),  # None for PENDING
+                        "enum_source_age_category": international,
+                    }
+                )
+            return rows
         if not getattr(ctx, "vcat_groups", None) or not vcat_to_tournament_id:
             return rows
         # Source V-cat (5.18) — captured from parsed.category_hint, NOT from

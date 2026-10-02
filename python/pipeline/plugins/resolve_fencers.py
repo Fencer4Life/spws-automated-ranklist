@@ -35,6 +35,7 @@ from python.pipeline.stages import (
     _bracket_mixed_gender,
     _find_exact_fencer,
     _is_domestic,
+    _keep_pol_rows,
     _row_authoritative_vcat,
     reconcile_fencer_birth_year,
 )
@@ -75,6 +76,9 @@ class ResolveFencers(BasePlugin):
             for r in pctx.parsed.results
             if not getattr(r, "bool_excluded", False)
         ]
+        # ADR-038 / ADR-105: an international event's non-POL rows never reach
+        # the exact or fuzzy phase, so no foreign name links or creates a fencer.
+        rows = _keep_pol_rows(pctx, rows)
 
         matches: list[StageMatchResult] = []
         touched: dict[int, str] = {}

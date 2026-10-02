@@ -2,8 +2,14 @@
 
 **Status:** Accepted; implemented LOCAL/CERT/PROD 2026-04-30. Backfill executed on all three, then retired 2026-10-01; ingester contract enforced by pytest.
 **Date:** 2026-04-30
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`); [ADR-105](105-international-results-keep-source-bracket.md) (2026-10-01 — the per-category count and the bracket-relative place are domestic only).
 **Relates to:** ADR-024 (Combined Category Splitting), ADR-038 (per-cat field count), ADR-047 (V-cat invariant trigger), ADR-048 (Source-vs-DB audit). Supersedes the "Joint-pool reference field — also deferred" subsection of ADR-048.
+
+## Amendment (2026-10-01 — the count and place rules are domestic only)
+
+The 2026-06-04 per-category count and the 2026-06-27 bracket-relative place hold for domestic events, where every fencer is stored. They never apply to an international tournament, which holds only its Polish rows ([ADR-105](105-international-results-keep-source-bracket.md)). `fn_commit_event_draft` now recounts a joint-pool sibling only when its type is PPW or MPW (migration `20261001000002_international_field_size.sql`), and an international bracket is filed by `SOURCE_FIELD_PLACE`, never by `PER_CATEGORY_RENUMBER`.
+
+The 2026-06-27 amendment's scope note says international results "never reach" `Commit`. That held for ingestion only. `RECOMPUTE_DOMESTIC` loaded every result of an event and renumbered international brackets too, which kept re-damaging them on CERT and PROD until ADR-105.
 
 ## Amendment (2026-10-01 — the backfill function is retired)
 

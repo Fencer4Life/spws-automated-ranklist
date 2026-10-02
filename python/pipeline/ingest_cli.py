@@ -610,6 +610,18 @@ def ingest_event_from_url(
     event = db.find_event_by_code(event_code)
     if event is None:
         raise ValueError(f"Event {event_code!r} not found in tbl_event.")
+    # ADR-105 §5.6 (D2 = A): this path ingests every event as SPWS domestic
+    # (INGEST_DOMESTIC, organizer_hint="SPWS"), which would recount and renumber
+    # an international bracket. Refuse before anything is written or fetched.
+    from python.pipeline.stages import _is_international_intake
+
+    if _is_international_intake(event):
+        raise ValueError(
+            f"Event {event_code!r} is international (PEW/MEW/MSW/PSW). This path ingests "
+            "domestic events only; stage it with the Phase 5 runner "
+            "(python -m python.tools.phase5_runner, or phase5-event-runner.yml), which keeps "
+            "the whole source bracket as N and each fencer's own place (ADR-105)."
+        )
     # N15: the Telegram `ingest <prefix> <url>` command supplies the FTL URL. It is an
     # admin-managed write to tbl_event.url_event (operator-entered, never auto-scraped),
     # then we ingest from it.

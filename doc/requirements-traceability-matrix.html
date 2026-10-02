@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="85fca7fbe4a9ce542cc8f0519e38b028d05e5b482ae997344c64918825282f55">
+<meta name="doc-source-sha256" content="d8d154190ae6b27e64e7fd3ef652bb982c74062199a1cfef3d8ae54a95ea1fc7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>295 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>315 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -826,7 +826,7 @@
 <td>FR-115</td>
 <td><strong>Self-healing recompute</strong> (NEW design): a master-data change auto-triggers <code>RECOMPUTE_DOMESTIC</code> — re-derive V-cats + re-score the affected <strong>event</strong> from stored FK-linked results (no source, no re-match). Event-granular (relocation crosses brackets); column-aware CDC trigger + <code>tbl_recompute_queue</code> + debounced worker; convergent (Commit effects=live ⇒ no re-trigger).</td>
 <td>ADR-072</td>
-<td>pgTAP 44.1–44.8 (column-aware trigger enqueues on BY/nationality, no-op on name; dedup coalesce; watermark); N4.1–N4.6 (recompute re-partitions by governed BY, boundary-crossing, twice==once); N5.1–N5.4 (debounce/claim/quiescence); <strong>deterministic CLAIMED recovery</strong> — <code>claim_recompute_batch</code> reclaims orphaned CLAIMED rows (PENDING+CLAIMED, single-writer; no stale-claim timeout, ADR-072 amend 2026-06-26) in <code>test_db_connector.py</code>; N9.1–N9.7 (test_recompute_persist.py): RECOMPUTE Commit write-back re-partitions by (weapon, gender, governed-V-cat), relocates across brackets, clears emptied brackets, skips BY-null rows; N5.7 (worker --drain CLI for the recompute-drain.yml scheduler); live LOCAL heal E2E (BY correction → CDC enqueue → debounced worker → fencer relocated V2→V3 + V2 re-scored on new field, no human action)</td>
+<td>pgTAP 44.1–44.8 (column-aware trigger enqueues on BY/nationality, no-op on name; dedup coalesce; watermark); N4.1–N4.6 (recompute re-partitions by governed BY, boundary-crossing, twice==once); N5.1–N5.4 (debounce/claim/quiescence); <strong>deterministic CLAIMED recovery</strong> — <code>claim_recompute_batch</code> reclaims orphaned CLAIMED rows (PENDING+CLAIMED, single-writer; no stale-claim timeout, ADR-072 amend 2026-06-26) in <code>test_db_connector.py</code>; N9.1–N9.7 (test_recompute_persist.py): RECOMPUTE Commit write-back re-partitions by (weapon, gender, governed-V-cat), relocates across brackets, clears emptied brackets, skips BY-null rows; INTL.RECOMP.01–04 (an international result stays in its stored tournament with its N and place, ADR-105); RECOMP.PROV.01–05 + pgTAP 87 RECOMP.PROV.RPC.01–05 (the stored scraped name, confidence and match method are written back verbatim, ADR-072 amend 2026-10-01; N9.6 amended); N5.7 (worker --drain CLI for the recompute-drain.yml scheduler); live LOCAL heal E2E (BY correction → CDC enqueue → debounced worker → fencer relocated V2→V3 + V2 re-scored on new field, no human action)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -1559,6 +1559,113 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.<em>, RECOMP.PROV.</em>)</h2>
+<p>Acceptance IDs for <a href="plans/international-field-size-root-cause-fix-2026-10-01.html">doc/plans/international-field-size-root-cause-fix-2026-10-01.html</a> (releases 1 and 2, shipped together), <a href="adr/105-international-results-keep-source-bracket.html">ADR-105</a> and the 2026-10-01 provenance amendment of <a href="adr/072-cdc-recompute-debounce.html">ADR-072</a>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>INTL.MOD.01–06</td>
+<td>Every international type (PEW, MEW, MSW, PSW) selects <code>SOURCE_FIELD_PLACE</code> whatever its engine; an EVF bracket of 60 with two Poles at 31 and 48 plans N 60 and places 31 and 48; domestic selection is unchanged; selection fails closed; a place above N is refused; the ingest commit writes N 60 even when the listing was filtered to the Poles. SE27.ING.09 amended.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_field.py</code>, <code>python/tests/test_joined_brackets.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.RECOMP.01–04</td>
+<td>A recompute writes back an international result's stored N and place; a fencer whose re-derived category changed stays in the stored tournament and nothing is cleared; each stored tournament keeps its own N; each row is written with its stored bracket as <code>enum_source_age_category</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_field.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.RPC.01–06</td>
+<td><code>fn_commit_event_draft</code> keeps an international joint sibling's N (01) and still recounts a domestic one (02); <code>fn_ingest_tournament_results</code> refuses an international write with no count (03) or a place above it (04), stores the source N and each Pole's own place (05), and keeps the domestic fallback (06).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/86_international_field.sql</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.POL.01–06</td>
+<td>For an international event (PEW, MEW, MSW, PSW, including the IMEW and IMSW alternation codes) only POL rows reach the matcher: a foreign namesake of a Pole is dismissed and recorded (01); IMSW, IMEW and MSW filter the same way and &quot;PL&quot; folds to POL (02); a row with no country is dismissed and a domestic event is unfiltered (03); a dismissed foreign row cannot trip the V0 halt, a Polish V0 row still does (04); S7 counts matches plus dismissed rows against the source bracket (05); <code>ResolveFencers</code> dismisses the same rows before its exact and fuzzy phases (06).</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.DRAFT.01–04</td>
+<td>The Phase 5 draft writer files an international bracket as one tournament in its source category with N = the whole bracket (01); every matched or pending Pole, one without a birth year included, keeps the source place (02); a bracket without a single source category is refused and a domestic bracket still drafts per V-cat (03); two source brackets mapping to one international code are refused, a domestic duplicate still merges (04).</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.URL.01</td>
+<td><code>ingest_event_from_url</code> refuses an international event before anything is written or fetched and names the Phase 5 runner; a domestic event still reaches the source fetch.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.SCRAPE.01</td>
+<td><code>scrape_tournament</code> files an international tournament whole (no birth-year split, no re-rank, N = the scraped bracket); a results URL shared with a sibling is refused; a domestic tournament keeps the per-V-cat split.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.SCHED.01</td>
+<td>A team bracket (&quot;Vet Team …&quot;, drużynowe, équipe, Mannschaft) is skipped when an FTL schedule is read; an individual bracket is kept.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.S0.01</td>
+<td><code>s0_reconcile_roster</code> creates or recalibrates no fencer for an international event, the IMEW and IMSW codes included.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.INV.01</td>
+<td>No stored international result has a place above its tournament's N.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/88_international_invariant.sql</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>INTL.INV.02</td>
+<td>The Phase 5 staging summary lists each international bracket's source N, highest place, Polish rows, linked rows and dismissed rows, and flags an N equal to the Polish rows or a bracket whose rows all lacked a country; a domestic event gets no section.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_intake.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RECOMP.PROV.01–05</td>
+<td><code>fetch_event_results</code> returns each row's stored scraped name, confidence and match method (01); <code>LoadCommitted</code> carries them (02); a domestic recompute writes them back verbatim and sends no match status (03); a row stored without them is written with all three null (04); the international path does the same (05). N9.6 amended.</td>
+<td>pytest</td>
+<td><code>python/tests/test_recompute_provenance.py</code>, <code>python/tests/test_recompute_persist.py</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+<tr>
+<td>RECOMP.PROV.RPC.01–05</td>
+<td>The ingest RPC writes a row with no scraped name instead of failing on its match candidate (01); writes a stored name, confidence and method verbatim (02); keeps a null name, confidence and method NULL (03); gives the named row a candidate whose status follows its method, and the unnamed row none (04); still writes 100 when no confidence key is sent (05).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/87_recompute_provenance.sql</code></td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -1569,5 +1676,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>85fca7fbe4a9ce542cc8f0519e38b028d05e5b482ae997344c64918825282f55</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>d8d154190ae6b27e64e7fd3ef652bb982c74062199a1cfef3d8ae54a95ea1fc7</code></footer>
 </div></body></html>

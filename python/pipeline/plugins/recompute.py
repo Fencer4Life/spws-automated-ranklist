@@ -47,7 +47,9 @@ class LoadCommitted(BasePlugin):
         rows = db.fetch_event_results(id_event)
         matches = [
             StageMatchResult(
-                scraped_name=str(r.get("id_fencer")),
+                # The stored name labels the row in reports; the id only when
+                # none was ever stored. Neither is written: see stored_* below.
+                scraped_name=r.get("scraped_name") or str(r.get("id_fencer")),
                 place=r.get("place"),
                 id_fencer=r.get("id_fencer"),
                 confidence=100.0,
@@ -63,6 +65,14 @@ class LoadCommitted(BasePlugin):
                 bracket_size=r.get("participant_count"),
                 bracket_key=r.get("url_results"),
                 joined_order=r.get("joined_order"),
+                # ADR-105: where the row is stored; an international result stays.
+                stored_vcat=r.get("enum_age_category"),
+                # Written back verbatim, NULLs included: a recompute has no
+                # source and no re-match, so who the row is and how it was
+                # matched never change.
+                stored_scraped_name=r.get("scraped_name"),
+                stored_confidence=r.get("confidence"),
+                stored_match_method=r.get("match_method"),
             )
             for r in rows
         ]

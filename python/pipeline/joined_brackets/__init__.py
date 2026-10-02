@@ -19,6 +19,12 @@ txt_joined_bracket_module`` admits. The registry is the only place an engine
 code chooses a module, and an unknown code is refused, as the SQL dispatcher
 refuses it. International results never reach the joined module: EVF and FIE
 publish per category (ADR-103 Context).
+
+International types are not filed by their engine's module at all (ADR-105).
+Only Polish fencers are written (ADR-038), so the rows kept are never the
+bracket: ``SOURCE_FIELD_PLACE`` stores the whole source bracket as N and each
+fencer's own published place, whatever engine scores them. It is chosen by
+the tournament type, not registered against an engine.
 """
 
 from __future__ import annotations
@@ -31,6 +37,7 @@ from typing import Protocol
 
 PER_CATEGORY_RENUMBER = "PER_CATEGORY_RENUMBER"
 JOINED_BRACKET_CATEGORY_PLACE = "JOINED_BRACKET_CATEGORY_PLACE"
+SOURCE_FIELD_PLACE = "SOURCE_FIELD_PLACE"
 
 MODULE_BY_ENGINE: dict[str, str] = {
     "EVF_CLASSIC_V1_2025_2026": PER_CATEGORY_RENUMBER,
@@ -75,6 +82,14 @@ class BracketField:
         """Ingestion: every listed fencer's place, matched or not."""
         ps = tuple(places)
         return cls(size=len(ps), places=ps)
+
+    @classmethod
+    def source(cls, places: Iterable[int], recorded_size: int | None) -> BracketField:
+        """Ingestion of an international bracket: the size the parser recorded
+        for the whole source bracket (``raw_pool_size``), which a POL filter
+        cannot shrink; the listed places when no size was recorded."""
+        ps = tuple(places)
+        return cls(size=max(recorded_size or 0, len(ps)), places=ps)
 
     @classmethod
     def stored(cls, size: int, places: Iterable[int]) -> BracketField:
@@ -237,14 +252,44 @@ class JoinedBracketCategoryPlace:
         return listing_order(categories, listing) if listing else None
 
 
+class SourceFieldPlace:
+    """An international result (ADR-105): the whole source bracket as N and the
+    fencer's own published place. Only Polish rows are written (ADR-038), so the
+    rows kept are a sample of the bracket, never the bracket."""
+
+    name = SOURCE_FIELD_PLACE
+
+    def plan_category(
+        self, kept: Sequence[int], category: Sequence[int], field: BracketField
+    ) -> CategoryPlan:
+        del category  # the place is the fencer's own; nothing is recounted
+        for place in kept:
+            if place < 1 or place > field.size:
+                raise ValueError(
+                    f"Place {place} exceeds the source bracket of {field.size}; "
+                    "a place outside the bracket is corrupt input."
+                )
+        return CategoryPlan(
+            participant_count=field.size, rows=tuple(RowPlan(place=p) for p in kept)
+        )
+
+    def listing_order(
+        self, categories: Sequence[tuple[int, str]], listing: Sequence[int]
+    ) -> str | None:
+        del categories, listing  # scored per tournament on its N and place
+        return None
+
+
 _MODULES: dict[str, JoinedBracketModule] = {
     PER_CATEGORY_RENUMBER: PerCategoryRenumber(),
     JOINED_BRACKET_CATEGORY_PLACE: JoinedBracketCategoryPlace(),
+    SOURCE_FIELD_PLACE: SourceFieldPlace(),
 }
 
 
 def module_for(engine_code: str | None, tourn_type: str | None) -> JoinedBracketModule:
-    """The module paired with the engine assigned to a tournament type.
+    """The module paired with the engine assigned to a tournament type; for an
+    international type, the source-field module (ADR-105).
 
     Raises ``UnknownScoringEngine`` for a code the pipeline does not know, and
     ``JoinedBracketNotAllowed`` for an international type assigned the joined
@@ -261,6 +306,8 @@ def module_for(engine_code: str | None, tourn_type: str | None) -> JoinedBracket
             f"{tourn_type} is international and is published per category; it cannot "
             f"be filed by {JOINED_BRACKET_CATEGORY_PLACE} (engine {engine_code})."
         )
+    if tourn_type in INTERNATIONAL_TYPES:
+        return _MODULES[SOURCE_FIELD_PLACE]
     return _MODULES[name]
 
 
@@ -269,6 +316,7 @@ __all__ = [
     "JOINED_BRACKET_CATEGORY_PLACE",
     "MODULE_BY_ENGINE",
     "PER_CATEGORY_RENUMBER",
+    "SOURCE_FIELD_PLACE",
     "BracketField",
     "CategoryPlan",
     "JoinedBracketModule",

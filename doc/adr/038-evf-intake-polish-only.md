@@ -3,6 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-04-20
 **Relates to:** ADR-019 (Domestic-Only Fencer Seed), ADR-020 (Seed Generator Domestic Auto-Create), ADR-025 (Event-Centric Ingestion)
+**Amended by:** [ADR-105](105-international-results-keep-source-bracket.md) (2026-10-01 — the rule for N and place on every path; the organiser's results are the primary source)
 
 ## Context
 
@@ -55,3 +56,14 @@ Stage 0 — no creation, no reconciliation — consistent with this ADR's POL-on
 intake. Their `int_participant_count` is full-field (not per-V-cat) and their
 rosters are not SPWS master data, so Stage 0 must not touch them. The skip is
 keyed on the event-code organizer (EVF/FIE → skip), evaluated before any DB read.
+
+## Amendment (2026-10-01) — N is the whole bracket, the place is the fencer's own ([ADR-105](105-international-results-keep-source-bracket.md))
+
+Keeping only the Polish rows must not shrink anything else. For PEW, MEW, MSW and PSW, on every path:
+
+- non-POL rows are dismissed **before** matching, in both pipelines, not only in the deprecated `resolve_tournament_results` (release 2 of ADR-105);
+- `int_participant_count` is the whole source bracket, Polish or not, and each `int_place` is the fencer's own published place;
+- neither is recounted afterwards, not at commit, not in recompute, not on promotion;
+- the source is the organiser's results; EVF results are used only when nothing else exists.
+
+Before this, five paths stored the Polish head-count as N and one renumbered the Poles, in 175 of 290 international brackets on CERT and 193 on PROD (2023/24 to 2025/26). The full evidence and the guards are in ADR-105.

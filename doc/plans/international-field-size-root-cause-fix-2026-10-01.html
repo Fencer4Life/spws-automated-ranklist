@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>International Field Fix</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · scoring data · Development Plan · root cause</p>
+  <h1>International results keep the whole field and the real place</h1>
+  <p class="dek">Every PEW, MEW and MSW result stored for <b>2023/24, 2024/25 and 2025/26</b> is at risk. In <b>193 of 290</b> brackets on PROD, N is the Polish head-count instead of the whole bracket, and places are renumbered among the Poles. Four code defects cause it. One of them <b>is still damaging PROD</b> every time a fencer is edited. This plan fixes every ingestion path and stops the damage. The stored data is repaired by a second plan once you have sent the source URLs.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>Signed off 1 Oct (D1 A, D2 A) · release 1 in development</span>
+    <span class="pill good"><span class="dot"></span>D3 = A (1 Oct)</span>
+    <span class="pill good"><span class="dot"></span>release 2 built and GREEN on LOCAL; Manama replay matches FTL</span>
+    <span class="pill good"><span class="dot"></span>D4 = A (2 Oct): one combined release</span>
+    <span class="pill danger"><span class="dot"></span>live: PROD re-damages on every fencer edit</span>
+    <span class="pill danger"><span class="dot"></span>MSW Tbilisi 9–13 Oct must ingest correctly</span>
+    <span class="pill"><span class="dot"></span>code + 1 migration + ADR-105</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide-d4">
+    <p class="kicker">Decided 2 October · D4 = A</p>
+    <h2>D4 · Releases 1 and 2 ship together</h2>
+    <div class="note warn">
+      <p>Both releases are built and uncommitted, and <code>scripts/preflight.sh</code> exits 0 with all 15 gates passing. D1 = A planned release 1 first. Release 2 was then built straight after and proven on MSW Manama.</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (chosen 2 October): together, as one release, after the release-2 documentation pass.</b> That pass covers ADR-105's status, the RTM rows for the new test IDs and the handbook's ingestion warning, about an hour of work. It stops the live PROD damage and makes the fixed path available before MŚW Tbilisi (9–13 October) in one push to <code>main</code>, with one CI and Release run to follow. The two releases also share two files (<code>types.py</code> and the spec's pgTAP total), and shipping them together avoids staging those files partially.</li>
+        <li><b>B: release 1 now, release 2 afterwards</b>, as D1 = A first said. It stops the damage a little sooner, but means two pushes to <code>main</code> (each deploys PROD), partial staging of the shared files, and the handbook warning updated in between.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="decide-new">
+    <p class="kicker">Decided 1 October · D3 = A</p>
+    <h2>The domestic place drift is planned separately</h2>
+    <div class="note warn">
+      <p class="lede">D3 · A domestic recompute does not restore places when a fencer moves out of a category and back</p>
+      <p>Found during the LOCAL recompute proof (<a href="#found">details below</a>). In GP3 2023/24 men's épée, V4 placed 250, 101, SCHOLZ, 325 as 1–4. A birth-year edit moved SCHOLZ to V3, and the recompute renumbered 325 to 3rd. Restoring the birth year moved SCHOLZ back with his stored 3rd place, so <b>325 and SCHOLZ now tie at 3rd</b>. 325's 4th place is lost, and so are its points (1.00 became 15.93).</p>
+      <p>The cause: under EVF classic, a domestic category stores places renumbered within that category, 1 to K. When a fencer moves, the recompute only has that renumbered place, not the fencer's place in the pool all categories were fenced in. So it cannot put the fencer in the right position in the other category. International results are not affected (they never move, see below).</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (chosen 1 October): keep it out of release 1 and plan it separately.</b> It needs a design choice about what the recompute keeps. Store the pool place next to the category place, or keep the category order as the 2026/27 joined module already does. It only matters when a birth-year correction moves a fencer across a category boundary in a split pool. Release 1 does not make it worse.</li>
+        <li><b>B: fix it inside release 1.</b> This adds a column, a migration and a backfill from source to a release whose job is to stop the live PEW/MEW damage. It would delay that.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">Signed off 1 October</p>
+    <h2>Two decisions</h2>
+    <div class="note accent">
+      <p class="lede">D1 · How do we stop the live damage while the fix is built?</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended): ship release 1 first.</b> It holds only the recompute fix and the two database guards (steps 1–4 below). It is small and test-first. It stops the damage at the root and keeps the domestic self-heal running. Until it ships, a fencer edit on PROD can still re-damage an EVF event.</li>
+        <li><b>B: switch off the two drain schedules today</b> (<code>recompute-drain.yml</code> for CERT and <code>recompute-drain-prod.yml</code>) until release 1 ships. That stops the damage within the hour, but it also stops domestic self-heal, and it is itself a push to <code>main</code>, which deploys PROD.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede">D2 · Which path re-ingests the damaged events (and Tbilisi)?</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended): fix the Phase 5 runner path</b> (<code>phase5_runner</code> → <code>review_cli</code> → <code>fn_commit_event_draft</code>). It already reads several URLs per event, writes a staging summary for your review and commits only on your sign-off. It needs steps 5–7 below. The new pipeline's event URL path refuses EVF/FIE events until its international flow (design §12) is built.</li>
+        <li><b>B: build the new pipeline's international flow now</b> (<code>FRESH_INGEST_INTERNATIONAL</code>, deferred since June). It is cleaner in the long run but much larger, and it would not be ready for Tbilisi.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="rule">
+    <p class="kicker">The rule, as you stated it</p>
+    <h2>One rule for every international result</h2>
+    <ol>
+      <li><b>Only Polish fencers are ingested</b> (ADR-038). Non-POL rows are dismissed <b>before</b> matching, so no foreign name can ever be matched to a Polish fencer.</li>
+      <li><b>N is the whole source bracket</b>: every fencer who fenced it, Polish or not.</li>
+      <li><b>The place is the fencer's own place in that bracket</b>, as published. It is never renumbered among the Poles.</li>
+      <li><b>Neither is ever recounted afterwards</b>: not at commit, not in recompute, not on promotion to PROD.</li>
+      <li><b>The source is the organiser's results</b> (FTL, Engarde, 4fence, d'Artagnan, Ophardt, FencingWorldwide). EVF results are a secondary source, used only when nothing else exists.</li>
+    </ol>
+    <p>It applies to PEW, MEW, MSW and PSW. PZSz senior brackets already follow points 2–3 (ADR-100). The rule becomes <b>ADR-105</b>, a draft for your sign-off. It amends ADR-038 (adds points 1–4 for every path) and ADR-049 (the 4 June per-V-category count is domestic only). It also amends ADR-072 (recompute keeps an international N and place) and ADR-103/104 (which module an international bracket uses).</p>
+  </section>
+
+  <section id="scope">
+    <p class="kicker">Measured today · read-only</p>
+    <h2>How far back, how much, where</h2>
+    <p>The database starts with season 2023/24, and <b>every closed season with international results is affected</b>. Counts are brackets with results where the stored N equals the number of POL results:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Type</th><th>Brackets</th><th>POL results</th><th>LOCAL</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>2023/24</td><td>PEW</td><td>77</td><td>189</td><td>34</td><td>34</td><td>34</td></tr>
+        <tr><td>2023/24</td><td>MEW</td><td>16</td><td>52</td><td>16</td><td>16</td><td>16</td></tr>
+        <tr><td>2024/25</td><td>PEW</td><td>73</td><td>206</td><td>44</td><td>44</td><td>44</td></tr>
+        <tr><td>2024/25</td><td>MEW</td><td>16</td><td>29</td><td>16</td><td>16</td><td>16</td></tr>
+        <tr><td>2025/26</td><td>PEW</td><td>98</td><td>301</td><td>55</td><td>55</td><td><b>73</b></td></tr>
+        <tr><td>2025/26</td><td>MSW</td><td>10</td><td>25</td><td>10</td><td>10</td><td>10</td></tr>
+        <tr><td colspan="4"><b>Total</b></td><td>175</td><td>175</td><td><b>193</b></td></tr>
+      </tbody>
+    </table></div>
+    <p>PROD is worse than CERT because its recompute drain has re-processed more events after fencer edits (root cause 3). The other ~100 brackets also get checked against the source: some are right, and some hold a Polish count that happens to differ from the row count.</p>
+    <p><b>What it does to a result</b>, from MSW Manama 2025 (LOCAL against FTL):</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fencer</th><th>Bracket</th><th>Stored</th><th>Real (FTL)</th></tr></thead>
+      <tbody>
+        <tr><td>STAŃCZYK Agnieszka</td><td>Vet-50 Women's Épée</td><td>2nd of 3</td><td>31st of 60</td></tr>
+        <tr><td>GANSZCZYK Anna</td><td>Vet-50 Women's Épée</td><td>3rd of 3</td><td>48th of 60</td></tr>
+        <tr><td>ZIELIŃSKI Dariusz</td><td>Vet-50 Men's Épée</td><td>2nd of 3</td><td>7th of 76</td></tr>
+        <tr><td>BAZAK Jacek</td><td>Vet-50 Men's Foil</td><td>1st of 1</td><td>25th of 47</td></tr>
+        <tr><td>GANSZCZYK Marcin</td><td>Vet-50 Men's Saber</td><td>1st of 4</td><td>3rd of 53</td></tr>
+        <tr><td>KUZMICHOVA Svitlana</td><td>Vet-50 Women's Épée</td><td>1st of 3</td><td>not a POL entry on FTL</td></tr>
+      </tbody>
+    </table></div>
+    <p>LOCAL also misses the Vet-40 (V1) brackets altogether: 8 POL results in the true 30. These results feed the 2026/27 ranking through carry-over until each event's 2026/27 edition is scored.</p>
+  </section>
+
+  <section id="audit">
+    <p class="kicker">Every ingestion path, checked</p>
+    <h2>The audit</h2>
+    <p>Legend: <span class="chip never">correct</span> keeps the whole field and the real place · <span class="chip over">defect</span> writes a Polish-only N, renumbers places, or lets foreigners match · <span class="chip warn">propagates</span> copies whatever is stored.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Path</th><th>Evidence</th><th>N</th><th>Place</th><th>POL filter</th></tr></thead>
+      <tbody>
+        <tr><td><b>All parsers</b>: FTL, Engarde, 4fence, d'Artagnan, Ophardt, FencingTime XML, file import, EVF API, JSON/XLSX/CSV</td><td><code>raw_pool_size=len(all rows)</code> in each parser; none filters by country (EVF's <code>country_filter</code> is never passed)</td><td><span class="chip never">correct</span></td><td><span class="chip never">correct</span></td><td>—</td></tr>
+        <tr><td>Phase 5 draft writer</td><td><code>review_cli.py:899</code>: <code>len(ctx.vcat_groups[vcat])</code> (commit <code>fc5ac389</code>, 2 May 2026)</td><td><span class="chip over">defect</span></td><td><span class="chip never">source place</span></td><td>—</td></tr>
+        <tr><td>Old pipeline matching (S6)</td><td><code>stages.py:806–920</code>: matcher runs on every row; only unmatched rows become <code>EXCLUDED</code></td><td>—</td><td>—</td><td><span class="chip over">defect</span></td></tr>
+        <tr><td>Commit RPC <code>fn_commit_event_draft</code></td><td><code>20260930000003</code>: joint siblings get <code>COUNT(results)</code> (ADR-049, 4 June amendment)</td><td><span class="chip over">defect</span></td><td>—</td><td>—</td></tr>
+        <tr><td>RPC <code>fn_ingest_tournament_results</code></td><td><code>COALESCE(p_participant_count, jsonb_array_length(p_results))</code>: a missing count silently becomes the rows passed in</td><td><span class="chip over">defect</span></td><td>—</td><td>—</td></tr>
+        <tr><td>New pipeline commit: <code>PerCategoryRenumber</code></td><td><code>joined_brackets/__init__.py:194–206</code>: <code>participant_count=len(kept)</code>, <code>dense_rank(kept)</code></td><td><span class="chip over">defect</span></td><td><span class="chip over">renumbers</span></td><td>—</td></tr>
+        <tr><td>New pipeline matching: <code>ResolveFencers</code></td><td><code>plugins/resolve_fencers.py</code>: matches every row; only unmatched rows are <code>EXCLUDED</code></td><td>—</td><td>—</td><td><span class="chip over">defect</span></td></tr>
+        <tr><td><b>Recompute</b> <code>RECOMPUTE_DOMESTIC</code></td><td><code>plugins/recompute.py</code> loads every result of the event, with no type filter, then commits through <code>PerCategoryRenumber</code>. Fired by <code>trg_fencer_change_enqueue</code>, drained by <code>recompute-drain.yml</code> (CERT, every 15 min) and <code>recompute-drain-prod.yml</code></td><td><span class="chip over">live defect</span></td><td><span class="chip over">renumbers</span></td><td>—</td></tr>
+        <tr><td>New pipeline event URL path</td><td><code>ingest_cli.py:585</code> <code>ingest_event_from_url</code>: every event treated as SPWS domestic (<code>organizer_hint="SPWS"</code>, <code>INGEST_DOMESTIC</code>)</td><td><span class="chip over">defect</span></td><td><span class="chip over">defect</span></td><td><span class="chip over">defect</span></td></tr>
+        <tr><td><code>scrape_tournament.py</code> (runs in <code>scrape-tournament.yml</code>)</td><td><code>:386</code> <code>p_count = len(bucket_rows)</code>, the per-V-category slice</td><td><span class="chip over">defect for EVF</span></td><td>—</td><td>—</td></tr>
+        <tr><td>Legacy orchestrator (deprecated)</td><td><code>orchestrator.py:426</code> passes all scraped rows; <code>matcher/pipeline.py:204</code> drops non-POL before matching</td><td><span class="chip never">correct</span></td><td><span class="chip never">correct</span></td><td><span class="chip never">correct</span></td></tr>
+        <tr><td>PZSz senior commit</td><td><code>plugins/pzsz_commit.py:125</code> <code>participant_count=full_n</code> (ADR-100)</td><td><span class="chip never">correct</span></td><td><span class="chip never">correct</span></td><td>—</td></tr>
+        <tr><td>Promotion CERT → PROD, <code>cert_ref</code></td><td><code>promote.py:272</code>, <code>cert_ref.py:73</code> copy the stored N</td><td><span class="chip warn">propagates</span></td><td><span class="chip warn">propagates</span></td><td>—</td></tr>
+        <tr><td>One-off tools: <code>import_events_from_excel</code>, <code>populate_staging</code>, <code>fix_cert_gaps</code>, <code>refix_combined_pools</code>, <code>replay_vcat_violations</code>, <code>recreate_active_season_2025_2026</code>, <code>import_ppw4_gdansk</code></td><td>Not run by any workflow. They are domestic or historical one-offs.</td><td colspan="3">Left as they are, listed so the next reader does not re-check them.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="causes">
+    <p class="kicker">Root causes</p>
+    <h2>Four defects, one shared mistake</h2>
+    <p>The shared mistake is <b>counting the rows we keep instead of the bracket that was fenced</b>. For a domestic event the two are the same, because everyone is kept. For an international event we keep only the Poles.</p>
+    <ol>
+      <li><b>RC1 · N recounted from kept rows.</b> The Phase 5 draft writer, the commit RPC's joint-sibling recount, the ingest RPC's silent fallback, <code>PerCategoryRenumber</code> and <code>scrape_tournament</code>.</li>
+      <li><b>RC2 · Places renumbered among kept rows.</b> <code>PerCategoryRenumber</code> dense-ranks, in ingest and in recompute.</li>
+      <li><b>RC3 · Recompute re-applies RC1 and RC2 to international events.</b> This happens on CERT and PROD whenever a fencer row changes. A repaired event would be damaged again.</li>
+      <li><b>RC4 · Foreign rows reach the matcher</b> in both pipelines. A foreign name that matches a Polish fencer gets a result (KUZMICHOVA). ADR-038 says they are dismissed first, and only the deprecated legacy path still does that.</li>
+    </ol>
+  </section>
+
+  <section id="found">
+    <p class="kicker">Found during development · 1 October</p>
+    <h2>Two more recompute defects, and one change to step 2</h2>
+
+    <h3>RC5 · Every recompute overwrote each result's scraped name and match provenance</h3>
+    <p>When <code>RECOMPUTE_DOMESTIC</code> rewrites a result, it deletes and re-inserts the row. It rebuilt each row from the fencer id alone. So every recompute stored the <b>fencer id as <code>txt_scraped_name</code></b>, reset <code>enum_match_method</code> to <code>AUTO_MATCH</code> and set the confidence to 100. Test N9.6 had pinned that shape. This affects domestic and international events alike.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Read-only, 1 Oct</th><th>Results</th><th>Scraped name = own fencer id</th><th>No scraped name</th><th>USER_CONFIRMED</th><th>AUTO_CREATED</th></tr></thead>
+      <tbody>
+        <tr><td>CERT</td><td>2,811</td><td><b>2,610</b></td><td>183</td><td>0</td><td>0</td></tr>
+        <tr><td>PROD</td><td>2,811</td><td><b>2,661</b></td><td>132</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>What it costs:</b> no score, place or identity link changes, because <code>id_fencer</code> is intact. What is lost is the audit trail. The admin Identity Manager shows numbers where scraped names belong, and every manual identity confirmation is now recorded as an automatic match. Alias write-back is not affected, because it reads drafts at sign-off. The original names exist only in the sources, so they come back only through re-ingestion. The data-repair plan restores them for every event it re-ingests.</p>
+    <p><b>Fixed in release 1</b> (<span class="chip never">built, GREEN</span>):</p>
+    <ul>
+      <li><code>fetch_event_results</code> reads each row's stored scraped name, confidence and match method. <code>LoadCommitted</code> carries them, and the recompute writes them back verbatim, NULLs included. It no longer sends a forced <code>AUTO_MATCHED</code> status, so the match candidate's status follows the stored method.</li>
+      <li>Migration <code>20261001000003_recompute_keeps_provenance.sql</code>: the ingest RPC keeps an explicit <code>null</code> confidence as NULL instead of 100. An absent key still means 100, and no source write sends an explicit null. A row with no scraped name gets no match candidate, because the candidate's name is NOT NULL. The 183 early EVF rows stored that way have none today, and the recompute used to fail on them.</li>
+      <li>Tests <code>RECOMP.PROV.01–05</code> (pytest) and <code>RECOMP.PROV.RPC.01–05</code> (pgTAP 87). <code>N9.6</code> is amended to the corrected row shape.</li>
+    </ul>
+
+    <h3>Step 2 changed: an international result stays in its stored tournament</h3>
+    <p>Step 2 said a recompute "may still move" an international result to the fencer's re-derived category. It does not move it any more. A moved result would carry its place from one source bracket under another bracket's N (31st of 60 in Vet-50 filed as 31st of 74 in Vet-60). The stored tournament <b>is</b> the bracket the fencer fenced, and a birth-year correction in our roster does not change that.</p>
+    <p>The LOCAL proof then failed on <code>fn_assert_result_vcat</code>. That guard requires every result to sit in the category its birth year implies, unless the row carries a source bracket label (ADR-056 revision, "bracket-label wins"). No international result had one. The recompute now writes the stored bracket's category as <code>enum_source_age_category</code>, so the guard trusts the bracket. Test <code>INTL.RECOMP.04</code>. ADR-105 records this choice for your sign-off.</p>
+
+    <h3>Release 2 · built on 1 October, uncommitted</h3>
+    <p>Steps 5–10 are built test-first. Replaying them on MSW Manama found four more defects, and all four are fixed in the same release:</p>
+    <ul>
+      <li><b>The organiser test missed IMSW and IMEW.</b> <code>_organizer_for_event</code> reads a code prefix, so the alternation codes were "unknown". The POL filter, the V0 check and the Stage 0 skip now key on the tournament type (<code>_is_international_intake</code>).</li>
+      <li><b>Stage 0 created every participant of an MSW event.</b> That included foreign ones: 911 fencers in one staging run on LOCAL (<code>INTL.S0.01</code>).</li>
+      <li><b>Team brackets were ingested as individual results</b> and merged with Vet-40 (<code>INTL.SCHED.01</code>).</li>
+      <li><b>The duplicate-code merge recounted N</b> to the merged Polish rows. For an international event it now refuses (<code>INTL.DRAFT.04</code>).</li>
+    </ul>
+    <p>The earlier staging run had also written foreign names as aliases onto 53 Polish fencers on LOCAL. That is restored from the audit log, the 1,167 junk fencers are deleted, and LOCAL is back to 367 fencers. CERT and PROD were checked read-only and are clean. Replay 3 drafts <b>30 Polish results in 14 brackets</b>, exactly FTL's, and creates no fencer: <a href="msw-manama-replay-review-2026-10-01.html">replay review</a>. Tests: <code>INTL.POL.01–06</code>, <code>INTL.DRAFT.01–04</code>, <code>INTL.URL.01</code>, <code>INTL.SCRAPE.01</code>, <code>INTL.SCHED.01</code>, <code>INTL.S0.01</code>, <code>INTL.INV.01–02</code> (<code>python/tests/test_international_intake.py</code>, pgTAP 88).</p>
+
+    <h3>LOCAL proof · done</h3>
+    <ul>
+      <li>SCHOLZ's birth year was moved across V4/V3. Three events were drained: GP3-2023-2024, PEW7es-2024-2025 and PEW4efs-2025-2026. Then it was moved back and drained again.</li>
+      <li>On both PEW events, every N, place and score is unchanged through both drains. Scraped name, confidence and method are unchanged on all three events.</li>
+      <li>The one difference is GP3 V4 (D3 above). LOCAL's GP3 results were then restored from the seed, and LOCAL matches the first snapshot again.</li>
+    </ul>
+  </section>
+
+  <section id="fix">
+    <p class="kicker">The fix · tests first, RED before GREEN</p>
+    <h2>Steps</h2>
+    <h3>Release 1 · stop the damage and close the database traps</h3>
+    <ol class="steps">
+      <li><b>A source-field module for international brackets.</b> In <code>python/pipeline/joined_brackets/</code>, an international intake (organiser EVF or FIE, or types PEW/MEW/MSW/PSW) always uses the module that keeps the source place and <code>N = field.size</code>. That is the existing <code>JoinedBracketCategoryPlace</code> behaviour, selected by intake rather than by engine; domestic selection is unchanged. <code>field.size</code> is <code>parsed.raw_pool_size</code> at ingest and the stored N at recompute. Tests <code>INTL.MOD.01–04</code>: an EVF bracket of 60 with 2 Poles at 31 and 48 stores N 60 and places 31 and 48; a domestic split still renumbers; selection does not depend on the engine.</li>
+      <li><b>Recompute keeps an international N and place.</b> <code>RECOMPUTE_DOMESTIC</code> goes through step 1, keeps each international result in the tournament it is stored in (<a href="#found">changed during development</a>), writes that bracket's category as its source label, re-scores it, and never recounts. Tests <code>INTL.RECOMP.01–04</code>: an international event recomputed after a fencer's birth year changes keeps every N and place; a domestic event recomputes exactly as before.</li>
+      <li><b>Commit RPC: the joint-sibling recount is domestic only.</b> A migration replaces <code>fn_commit_event_draft</code>. The recount <code>UPDATE</code> gains <code>AND t.enum_type IN ('PPW','MPW')</code>. pgTAP <code>INTL.RPC.01–02</code>.</li>
+      <li><b>Ingest RPC: no silent fallback for international types.</b> In the same migration, <code>fn_ingest_tournament_results</code> raises when <code>p_participant_count</code> is NULL for PEW/MEW/MSW/PSW, and when N is smaller than the highest place written. pgTAP <code>INTL.RPC.03–05</code>. Callers are checked: the orchestrator, PZSz and the new pipeline already pass a count, and step 8 fixes <code>scrape_tournament</code>.</li>
+    </ol>
+    <h3>Release 2 · every ingestion path ingests international results correctly</h3>
+    <ol class="steps" start="5">
+      <li><b>POL filter before matching, in both pipelines.</b> <code>stages.py</code> S6 and <code>plugins/resolve_fencers.py</code> drop non-POL rows of an EVF/FIE event before the matcher runs. They reuse the fold in <code>stages.py:83</code> (PL → POL) and match the legacy rule in <code>matcher/pipeline.py:204</code>. Tests <code>INTL.POL.01–03</code>: a foreign row whose name exactly matches a Pole is dismissed, writes no result and joins no review queue; a POL row matches as before.</li>
+      <li><b>Phase 5 draft writer.</b> <code>review_cli.py:899</code> writes <code>N = parsed.raw_pool_size</code> for an international bracket, places stay as scraped, and no V-category is invented from a matched birth year. Tests <code>INTL.DRAFT.01–03</code>.</li>
+      <li><b>The new pipeline's event URL path refuses EVF/FIE events</b> with a clear message naming the Phase 5 runner, until the international flow exists (D2 = A). Test <code>INTL.URL.01</code>.</li>
+      <li><b><code>scrape_tournament</code></b> passes the source bracket size for an international tournament. Test <code>INTL.SCRAPE.01</code>.</li>
+      <li><b>A standing check.</b> A pgTAP invariant (no international result has a place above its tournament's N) and a post-commit line in the staging summary: N, the highest place and the POL count, per international bracket.</li>
+      <li><b>Replay MSW Manama on LOCAL</b> through the fixed Phase 5 path (drafts only). Expect 30 POL results in 14 brackets with the FTL places and field sizes shown above, no V0 bracket, no pool-round halt and no foreign match. The output goes on a review page for you; nothing is committed.</li>
+    </ol>
+    <p>Before step 1, the drafts from my earlier MSW staging run are discarded on LOCAL: <code>fn_discard_event_draft('ac7bfe0f-64d6-46ff-9089-d8b7a34a6174')</code>, 24 tournament drafts. No live row is touched.</p>
+  </section>
+
+  <section id="repair">
+    <p class="kicker">Next plan · after your URLs</p>
+    <h2>Repairing the stored data</h2>
+    <p><b>Batch 1 is planned</b> in <a href="international-data-repair-batch-1-2026-10-01.html">international-data-repair-batch-1-2026-10-01.html</a>: 16 events, all 12 of 2025/26 plus 4 of 2024/25, from the 8 URLs you sent on 1 October and the organiser URLs already stored. In outline:</p>
+    <ul>
+      <li>Per event, oldest first, roll back and re-ingest from the organiser's source through the fixed path. The staging summary is reviewed and you sign off each event before it is committed. EVF results are used only where you give no source.</li>
+      <li>Verify every committed bracket against its source: N, places, and the POL count.</li>
+      <li>Re-score, check the effect on the 2026/27 rolling ranking, and refresh the seed files so a LOCAL reset reproduces the repaired data.</li>
+      <li>Then CERT and PROD, each with your go.</li>
+    </ul>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Acceptance tests</p>
+    <h2>Test IDs</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>INTL.MOD.01–04</code></td><td>pytest</td><td>International brackets keep the source N and place; domestic splits unchanged; selection is by intake, not engine</td></tr>
+        <tr><td><code>INTL.RECOMP.01–04</code></td><td>pytest</td><td>Recompute of an international event preserves N and place and keeps each result in its stored bracket, written as its source category; domestic recompute unchanged</td></tr>
+        <tr><td><code>RECOMP.PROV.01–05</code></td><td>pytest</td><td>Recompute reads and writes back each result's stored scraped name, confidence and match method verbatim, NULLs included, domestic and international (N9.6 amended)</td></tr>
+        <tr><td><code>RECOMP.PROV.RPC.01–05</code></td><td>pgTAP 87</td><td>The ingest RPC keeps an explicit null confidence, writes a row without a scraped name with no match candidate, and still writes 100 when no confidence is sent</td></tr>
+        <tr><td><code>INTL.RPC.01–06</code></td><td>pgTAP 86</td><td>The commit RPC does not recount an international tournament; the ingest RPC refuses a missing count or an N below the highest place for international types</td></tr>
+        <tr><td><code>INTL.POL.01–03</code></td><td>pytest</td><td>Non-POL rows are dismissed before matching in both pipelines</td></tr>
+        <tr><td><code>INTL.DRAFT.01–03</code></td><td>pytest</td><td>Phase 5 drafts store N = source field and the source places for international brackets</td></tr>
+        <tr><td><code>INTL.URL.01</code>, <code>INTL.SCRAPE.01</code></td><td>pytest</td><td>The event URL path refuses EVF/FIE events; <code>scrape_tournament</code> passes the source field size</td></tr>
+        <tr><td><code>INTL.INV.01</code></td><td>pgTAP</td><td>No international result has a place above its tournament's N</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <pre class="trace" style="border-left-color:var(--accent)">Impact: domain | architecture | operations
+Canonical docs affected: doc/handbook/subsystems/ingestion.html;
+  doc/handbook/subsystems/identity-and-recompute.html;
+  doc/handbook/domain/competition-and-ranking.html;
+  doc/requirements-traceability-matrix.md (+ HTML twin);
+  spec Appendix C (ADR-105; amended 038, 049, 072, 103/104)
+ADR impact: new ADR-105; amend ADR-038, ADR-049, ADR-072 (incl. recompute
+  writes stored provenance back verbatim), ADR-103/104
+Operational impact: doc/handbook/reference/workflow-catalog.html
+  (recompute drains keep international N and place)
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: yes</pre>
+      <p style="margin-bottom:0">The box is binary: it stays unchecked until every field is resolved and the validator passes. The project memory that frames this as "two correct denominators" gets corrected in the same change.</p>
+    </div>
+  </section>
+
+  <section id="verify">
+    <p class="kicker">Done when</p>
+    <h2>Verification</h2>
+    <ul>
+      <li>Every new test was RED first and is now GREEN; <b><code>scripts/preflight.sh</code> exits 0</b>; <code>postgrestools check</code> is clean on the migration.</li>
+      <li><b>LOCAL recompute proof:</b> edit a Polish fencer who has an MSW result, drain the queue, and see every N and place of that event unchanged.</li>
+      <li><b>LOCAL replay:</b> MSW Manama drafts match FTL: 30 POL results, real places and field sizes.</li>
+      <li>Release 1 and release 2 each go out only with your go, followed through CI and Release to green, then checked read-only on CERT and PROD.</li>
+    </ul>
+  </section>
+
+  <section id="out">
+    <p class="kicker">Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li>Repairing the stored data: the next plan, after the URL sheet.</li>
+      <li>The new pipeline's full international flow (design §12), unless you choose D2 = B.</li>
+      <li>The one-off tools listed in the audit.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Sign-off</p>
+    <h2>What I need from you</h2>
+    <p>The plan, D1 = A and D2 = A were signed off on 1 October. Steps 1–4 and the RC5 fix are built and GREEN on LOCAL. D3 = A was chosen the same day. Next: ADR-105 for your sign-off and the documentation pass, then your go to commit and release release 1.</p>
+  </section>
+
+  <p class="foot">plan · international-field-size-root-cause-fix · 2026-10-01 · evidence: LOCAL, CERT and PROD read-only</p>
+</div>
+</body>
+</html>
