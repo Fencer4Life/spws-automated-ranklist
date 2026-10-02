@@ -127,24 +127,26 @@
 <div class="wrap">
   <p class="eyebrow">LOCAL · ADR-106 · per-event sign-off</p>
   <h1>Re-staging the 18 international events under the identity rule</h1>
-  <p class="dek">Each event was staged on LOCAL under ADR-106 and nothing was committed. For each event: what the rule adds, what it removes and why, place or N changes, and the PENDING rows that need your decision. You sign off each event by name; then it is committed on LOCAL and run on CERT and PROD.</p>
+  <p class="dek">Each event was staged on LOCAL under ADR-106 and reviewed here before anything was committed. For each event: what the rule adds, what it removes and why, place or N changes, and the PENDING rows that need your decision. You sign off each event by name; then it is committed on LOCAL and run on CERT and PROD.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>14 of 18 events staged · 4 not ready</span>
     <span class="pill"><span class="dot"></span>18 PENDING rows</span>
-    <span class="pill"><span class="dot"></span>11 committed on LOCAL</span>
-    <span class="pill"><span class="dot"></span>release 85535f23 on CERT and PROD</span>
+    <span class="pill"><span class="dot"></span>14 committed on LOCAL</span>
+    <span class="pill"><span class="dot"></span>11 committed on CERT, equal to LOCAL</span>
   </div>
   <hr class="rule">
-  <section id="status"><p class="kicker">Status · 2 October, evening</p><h2>Where each event stands</h2>
-    <div class="note good"><p class="lede"><span class="tick">11</span> Signed off and committed on LOCAL</p>
-    <p>IMEW-2024-2025 (48 results), IMSW-2025-2026 (36), PEW1efs-2025-2026 (44), PEW2efs-2025-2026 (18), PEW4efs-2025-2026 (28), PEW5ef-2025-2026 (9), PEW61s-2025-2026 (3), PEW62efs-2025-2026 (25), PEW6efs-2025-2026 (108), PEW7es-2024-2025 (84), PEW9efs-2025-2026 (16): 419 results. Q1 A; every P and R row as recommended (IMSW P1, PEW2efs P1–P2 as you gave them). Each was re-staged with its override file, checked (no PENDING left, the decided rows as chosen, nothing else changed) and committed; the stored rows equal the drafts, the printed federation is recorded, 199 season nationalities are fixed, with no conflict.</p>
-    <p>The first commit was refused: the alias check took “LYNCH Patrick” and “KÁRMÁN Irén”, which you linked, for wrong matches. An identity entry in the override file now confirms its pair at sign-off (ADM.ID.11). CERT and PROD need that fix, so they follow its release.</p></div>
-    <div class="note warn"><p class="lede"><span class="tick">3</span> Not in your list: staged, not committed</p>
-    <p>PEW10efs-2024-2025 (Criterium 2025, R1 KAZIK Tomas: B), PEW10efs-2025-2026 (Criterium 2026, R1 KÁRMÁN Irén: A), PEW31fs-2025-2026 (Faches, no rows). Name them to commit them.</p></div>
+  <section id="status"><p class="kicker">Status · 2 October, night</p><h2>Where each event stands</h2>
+    <div class="note good"><p class="lede"><span class="tick">14</span> Signed off and committed on LOCAL</p>
+    <p>IMEW-2024-2025 (48 results), IMSW-2025-2026 (36), PEW1efs-2025-2026 (44), PEW2efs-2025-2026 (18), PEW4efs-2025-2026 (28), PEW5ef-2025-2026 (9), PEW61s-2025-2026 (3), PEW62efs-2025-2026 (25), PEW6efs-2025-2026 (108), PEW7es-2024-2025 (84), PEW9efs-2025-2026 (16): 419 results. Q1 A; every P and R row as recommended (IMSW P1, PEW2efs P1–P2 as you gave them). Then, on “accept all”, PEW10efs-2024-2025 (Criterium 2025, 10; R1 KAZIK Tomas B), PEW10efs-2025-2026 (Criterium 2026, 19; R1 KÁRMÁN Irén A, linked to KARMAN Irene 1970) and PEW31fs-2025-2026 (Faches, 1): 449 results in all. Each was re-staged with its override file, checked (no PENDING left, the decided rows as chosen, nothing else changed) and committed; the stored rows equal the drafts, the printed federation is recorded. LOCAL now holds 201 season nationalities, 41 of them not POL, with no conflict and TT.CODE.06 0.</p>
+    <p>The first commit was refused: the alias check took “LYNCH Patrick” and “KÁRMÁN Irén”, which you linked, for wrong matches. An identity entry in the override file now confirms its pair at sign-off (ADM.ID.11). CERT and PROD need that fix, so they follow its release.</p>
+    <p>Before the CERT and PROD runs a second defect was caught: the override files linked by <code>id_fencer</code>, and the ids were LOCAL's. On PROD, LOCAL's LYNCH Pat id belongs to STOLARIK Peter; none of the twelve linked fencers has the same id on LOCAL, CERT and PROD. An entry now names its fencer (surname, first name, birth year) and each run resolves it against its own roster (P3.OV19–20, ADM.ID.12). Every file resolves on LOCAL to the ids it was committed with, so LOCAL's data stands, and on CERT and PROD to exactly one fencer. Nothing ran on CERT or PROD with the old files.</p></div>
+    <div class="note good"><p class="lede"><span class="tick">✓</span> CERT and PROD</p>
+    <p>The first 11 ran on CERT one at a time through the Phase 5 runner, each machine-checked against LOCAL: the staged drafts equal LOCAL's committed rows (tournament, N, place, fencer, printed federation) before the commit, and every stored score equals LOCAL's after it. All 11 are committed on CERT (199 season nationalities, 40 not POL, no conflict). Stockholm (PEW7es-2024-2025) first stopped on CERT because its event link on CERT and PROD was the EVF archive page; it now points to the Engarde results, as on LOCAL. PROD runs the same 11 with the same check; its two birth-year corrections (STAŃCZYK Marcin 1979, STOCKI Piotr 1982) are the only differences it accepts.</p>
+    <p>The last three follow on CERT and PROD the same way. Criterium 2026 needs its override file on <code>main</code> first, because the runner reads the file from <code>main</code>.</p></div>
     <div class="note"><p class="lede"><span class="tick">4</span> Not ready</p><p>PEW3fs-2024-2025, PEW3fs-2025-2026, PEW7ef-2025-2026, PEW8es-2025-2026: see each event below.</p></div>
   </section>
   <section id="decide"><p class="kicker">Decide this first</p><h2>What I need from you</h2>
-    <p>For each event: “sign off &lt;event code&gt;”. For each P row (PENDING, printed POL) and each R row (rejected, but the surname is an SPWS starter's), listed under its event: <b>A</b> link it to the candidate (written to the event's override file as an identity entry), or <b>B</b> EXCLUDED (a match_method entry). The recommendation is in the row. An event with PENDING rows is re-staged with the override file, then committed.</p>
+    <p>For each event: “sign off &lt;event code&gt;”. Each P row (PENDING, printed POL) and each R row (rejected, but the surname is an SPWS starter's), listed under its event, is either <b>A</b> linked to the candidate (written to the event's override file as an identity entry) or <b>B</b> EXCLUDED (a match_method entry). The recommendation is in the row and applies unless you say otherwise. An event with PENDING rows is re-staged with the override file, then committed.</p>
     <div class="note accent">
       <p class="lede"><span class="tick">Q1</span> A first name in another form (Pat / Patrick, Andy / Andrew, Alex / Alexandr, Irene / Irén)</p>
       <p>The rule compares the first name exactly, so an SPWS starter printed under another form of his name is rejected when the source does not print POL. LYNCH Pat is printed “LYNCH Patrick” in six of these events, MCQUEEN Andy “MCQUEEN Andrew” in two. The R rows list every case found.</p>
@@ -156,9 +158,9 @@
     </div>
     <div class="note good">
       <p class="lede"><span class="tick">→</span> How to answer</p>
-      <p><b>Shortest:</b> “accept all”. That is Q1 A, every P and R row as recommended, and all 14 staged events signed off.</p>
-      <p><b>Per event:</b> “sign off PEW2efs-2025-2026 P1=A P2=A R1=A”, with a letter for each of its P and R rows. Faches (PEW31fs-2025-2026) and Liège (PEW61s-2025-2026) have none, so their name alone is enough.</p>
-      <p>Each signed-off event then gets its override file, is re-staged and checked (no PENDING left, the decided rows as chosen, nothing else changed), and is committed on LOCAL. CERT and PROD follow once release <code>85535f23</code> is on <code>main</code>, because their runs need its migration and the override files.</p>
+      <p><b>Shortest:</b> “accept all”: every staged event signed off, every P and R row as recommended.</p>
+      <p><b>Per event:</b> name the events, e.g. “sign off PEW10efs-2025-2026”. A named event takes every row's written recommendation; say so only where you want a row the other way.</p>
+      <p>Each signed-off event then gets its override file, is re-staged and checked (no PENDING left, the decided rows as chosen, nothing else changed), committed on LOCAL, and run on CERT and PROD, each machine-checked against LOCAL.</p>
     </div>
     <p>Rows <b>added</b> are roster fencers with a PPW or MPW result who entered the event for any federation (the user's rule of 2 October: a foreign fencer enters our ranklist only through SPWS participation). Rows <b>removed</b> are stored today but are not an exact identity of an SPWS starter; the reason is given per row.</p>
   </section>
