@@ -31,6 +31,7 @@ from python.matcher.fuzzy_match import find_best_match
 from python.matcher.pipeline import estimate_birth_year
 from python.pipeline.core.contract import Context, PluginKind, Services
 from python.pipeline.international_admission import fold_federation
+from python.pipeline.overrides import resolve_fencer_keys
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import get_pctx
 from python.pipeline.stages import (
@@ -75,6 +76,9 @@ class ResolveFencers(BasePlugin):
         auto_thresh = (svc.config or {}).get("auto_link_threshold")  # optional recalibration knob
 
         fencer_db = db.fetch_fencer_db()
+        # P3.OV20: an override entry that names its fencer gets this
+        # environment's id (fencer ids differ between LOCAL, CERT and PROD).
+        pctx.overrides = resolve_fencer_keys(pctx.overrides, fencer_db)
         rows = [
             (_row_authoritative_vcat(pctx, r), r)
             for r in pctx.parsed.results

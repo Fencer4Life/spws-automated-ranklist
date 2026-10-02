@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="70161cf8d883206d83854749f90857ea0deb6ce76088f150d7123beca60a0311">
+<meta name="doc-source-sha256" content="8889a90671296418e9974adfa0612b4bab5f3e5730d69489bc64ea9334699881">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>362 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>364 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1919,6 +1919,20 @@
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
+<td>ADM.ID.12</td>
+<td>An override identity entry that names its fencer links the row to that fencer's id in the roster the run reads, so one committed override file serves LOCAL, CERT and PROD; it reaches a rejected row too.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
+<td>P3.OV19–20</td>
+<td>An identity entry may give <code>fencer: {surname, first_name, birth_year}</code> instead of <code>id_fencer</code>, exclusive with <code>id_fencer</code> and <code>create_fencer</code>, with no other field (19); <code>resolve_fencer_keys</code> gives it the id of the one roster fencer it names, the birth year telling namesakes apart, and refuses none or two (20). Found 2026-10-02: fencer ids differ between environments (LOCAL's #284 is LYNCH Pat, PROD's STOLARIK Peter).</td>
+<td>pytest</td>
+<td><code>python/tests/test_overrides.py</code></td>
+<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+</tr>
+<tr>
 <td>ADM.ID.10</td>
 <td>Identity is SURNAME, first given name and age category, exactly: &quot;GOLA Marcin&quot; against GOLA Maciej and &quot;KOWALCZYK Pjotr&quot; against KOWALCZYK Piotr are not identities; a second given name in the source, a compound surname and folded Polish letters still match; two fencers who both fit, a birth year outside the category or an unknown birth year do not.</td>
 <td>pytest</td>
@@ -1966,5 +1980,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>70161cf8d883206d83854749f90857ea0deb6ce76088f150d7123beca60a0311</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8889a90671296418e9974adfa0612b4bab5f3e5730d69489bc64ea9334699881</code></footer>
 </div></body></html>

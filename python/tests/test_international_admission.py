@@ -290,3 +290,37 @@ def test_ADM_ID_07_evf_sync(monkeypatch):
     }
     assert {r["fencer_name"] for r in pending} == {"GOLA Maciej", "NOWAK Szymon"}
     assert stored[0]["entered_for"] == "IRL"
+
+
+def test_ADM_ID_12_a_named_override_links_each_environment_s_own_fencer():
+    """ADM.ID.12 an override identity entry that names the fencer (surname,
+    first name, birth year) links the row to the id that fencer has in the
+    roster the run reads, so one committed file serves LOCAL, CERT and PROD;
+    it reaches a rejected row too ("LYNCH Patrick", IRL, roster LYNCH Pat)."""
+    from python.pipeline.stages import s6_resolve_identity
+    from python.pipeline.types import IdentityOverride
+
+    def run(lynch_id):
+        roster = ROSTER + [_f(lynch_id, "LYNCH", "Pat", 1980)]
+        ctx = _pctx()
+        ctx.parsed.results.append(
+            ParsedResult(
+                source_row_id="t:L", fencer_name="LYNCH Patrick", place=7, fencer_country="IRL"
+            )
+        )
+        ctx.overrides = Overrides(
+            identity=[
+                IdentityOverride(
+                    scraped_name="LYNCH Patrick",
+                    fencer={"surname": "LYNCH", "first_name": "Pat", "birth_year": 1980},
+                )
+            ]
+        )
+        db = MagicMock()
+        db.fetch_fencer_db.return_value = roster
+        db.fetch_spws_starter_ids.return_value = STARTERS
+        s6_resolve_identity(ctx, db)
+        return {m.scraped_name: (m.id_fencer, m.entered_for) for m in ctx.matches}["LYNCH Patrick"]
+
+    assert run(284) == (284, "IRL")
+    assert run(174) == (174, "IRL")
