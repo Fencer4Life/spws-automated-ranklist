@@ -421,11 +421,30 @@ class Commit(BasePlugin):
             [r.place for r in parsed.results],
         )
 
+        # ADR-106 §1: a PENDING row is a person's decision, never written; an
+        # international event with one is resolved through the Phase 5 runner.
+        pending = [
+            m.scraped_name
+            for members in final_vcats.values()
+            for m in members
+            if getattr(m, "method", None) == "PENDING"
+        ]
+        if pending and module.name == SOURCE_FIELD_PLACE:
+            raise ValueError(
+                "international PENDING rows must be resolved before commit "
+                f"(Phase 5 runner, override file): {', '.join(pending)}"
+            )
+
         written: list[dict] = []
         held: list[str] = []
         for vcat in sorted(final_vcats.keys()):
             members = final_vcats[vcat]
-            kept = [m for m in members if getattr(m, "id_fencer", None) is not None]
+            kept = [
+                m
+                for m in members
+                if getattr(m, "id_fencer", None) is not None
+                and getattr(m, "method", None) != "PENDING"
+            ]
             if not kept:
                 continue
             plan = module.plan_category([m.place for m in kept], [m.place for m in members], field)
@@ -665,6 +684,7 @@ class Commit(BasePlugin):
             "txt_scraped_name": m.scraped_name,
             "num_confidence": m.confidence,
             "enum_match_status": self._METHOD_TO_STATUS.get(m.method, m.method),
+            "txt_entered_for": m.entered_for,
         }
 
     @staticmethod
@@ -679,6 +699,7 @@ class Commit(BasePlugin):
             "txt_scraped_name": m.stored_scraped_name,
             "num_confidence": m.stored_confidence,
             "enum_match_method": m.stored_match_method,
+            "txt_entered_for": m.entered_for,
         }
 
     @staticmethod

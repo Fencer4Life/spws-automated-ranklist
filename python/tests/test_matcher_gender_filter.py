@@ -23,7 +23,7 @@ Test coverage:
   4.65  M bracket + F-only candidate → matches F (no filter, ADR-034 path)
   4.66  M bracket + mixed candidates → matches best by name (no filter)
   4.67  PEW + F bracket + only-M candidate → matches M (filter NOT applied;
-        international intake out of scope per ADR-038)
+        international intake is decided by ADR-106's admission)
   4.68  MEW + F bracket + only-M candidate → matches M (filter NOT applied)
   4.69  MSW + F bracket + only-M candidate → matches M (filter NOT applied)
   4.70  bracket_gender=None (compound bracket pre-V-cat-split) → no filter
@@ -227,6 +227,7 @@ def _assert_filter_bypassed(tournament_type: str, fencer_db: list[dict]):
         age_category="V1",
         season_end_year=2026,
         scraped_countries=["POL"],
+        spws_starters=set(),
     )
     # `common`'s inferred type collapses to a union of all its values' types once
     # spread via **common — pyright can't verify per-key types through a plain
@@ -246,9 +247,9 @@ def _assert_filter_bypassed(tournament_type: str, fencer_db: list[dict]):
 # 4.67  PEW + F bracket: bracket_gender has NO effect (filter bypassed)
 # ===========================================================================
 def test_4_67_pew_f_bracket_no_filter(fencer_db_with_genders):
-    """ADR-064 scope: filter is domestic-only. PEW (international) keeps
-    current behavior — international intake follows AUTO_MATCHED-only rule
-    per feedback_international_no_pending.md, separate from this ADR.
+    """ADR-064 scope: filter is domestic-only. PEW (international) is decided
+    by ADR-106's admission (identity, then printed POL as PENDING), separate
+    from this ADR.
     Verified by asserting bracket_gender='F' produces identical output to
     bracket_gender=None for PEW."""
     _assert_filter_bypassed("PEW", fencer_db_with_genders)

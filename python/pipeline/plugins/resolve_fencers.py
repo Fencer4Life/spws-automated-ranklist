@@ -24,18 +24,22 @@ effects: master_data — emits the change that drives self-healing recompute (AD
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from python.matcher.fuzzy_match import find_best_match
 from python.matcher.pipeline import estimate_birth_year
 from python.pipeline.core.contract import Context, PluginKind, Services
+from python.pipeline.international_admission import fold_federation
 from python.pipeline.plugins.base import BasePlugin
 from python.pipeline.plugins.bridge import get_pctx
 from python.pipeline.stages import (
+    _admit_international_rows,
+    _admitted_match,
     _bracket_mixed_gender,
     _find_exact_fencer,
     _is_domestic,
-    _keep_pol_rows,
+    _is_international_intake,
     _row_authoritative_vcat,
     reconcile_fencer_birth_year,
 )
@@ -76,9 +80,13 @@ class ResolveFencers(BasePlugin):
             for r in pctx.parsed.results
             if not getattr(r, "bool_excluded", False)
         ]
-        # ADR-038 / ADR-105: an international event's non-POL rows never reach
-        # the exact or fuzzy phase, so no foreign name links or creates a fencer.
-        rows = _keep_pol_rows(pctx, rows)
+        # ADR-106 §1: an international event's rows are decided by identity and
+        # never reach the exact or fuzzy phase, so no foreign name links or
+        # creates a fencer. A row the override file names keeps its override.
+        if _is_international_intake(pctx.event):
+            matches = self._international(pctx, rows, db, fencer_db, season_end)
+            self._finish(ctx, pctx, matches, [])
+            return
 
         matches: list[StageMatchResult] = []
         touched: dict[int, str] = {}
@@ -243,6 +251,39 @@ class ResolveFencers(BasePlugin):
                     )
                 )
 
+        self._finish(ctx, pctx, matches, alias_writebacks)
+
+    def _international(self, pctx, rows, db, fencer_db, season_end) -> list[StageMatchResult]:
+        """ADR-106 §1: each row's admission, or its override."""
+        matches: list[StageMatchResult] = []
+        for vcat, r, admission in _admit_international_rows(pctx, rows, fencer_db, db):
+            if admission is not None:
+                matches.append(_admitted_match(r, admission))
+                continue
+            entered_for = fold_federation(getattr(r, "fencer_country", None))
+            ovr = pctx.overrides.identity_for(r.fencer_name)
+            if ovr is not None:
+                m = self._from_override(r, ovr, fencer_db, season_end, vcat)
+                matches.append(replace(m, entered_for=entered_for))
+                continue
+            mm = pctx.overrides.match_method_for(r.fencer_name)
+            best = find_best_match(
+                r.fencer_name, fencer_db, age_category=vcat, season_end_year=season_end
+            )
+            matches.append(
+                StageMatchResult(
+                    scraped_name=r.fencer_name,
+                    place=r.place,
+                    id_fencer=best.id_fencer,
+                    confidence=best.confidence,
+                    method=mm.force_method if mm is not None else "EXCLUDED",
+                    notes=f"match_method override: {mm.note or 'forced'}" if mm else "",
+                    entered_for=entered_for,
+                )
+            )
+        return matches
+
+    def _finish(self, ctx, pctx, matches, alias_writebacks) -> None:
         pctx.matches = matches
         ctx.set("matches", matches)
         # ADR-075: serialize identity resolution to the staging report. The legacy

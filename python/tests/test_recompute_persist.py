@@ -151,11 +151,14 @@ class TestRecomputePersist:
         """N9.6 recompute rows carry the RPC shape with the row's stored
         provenance, not the fencer id as its name and a forced AUTO_MATCHED
         (amended 2026-10-01, RECOMP.PROV: that shape overwrote every recomputed
-        row's scraped name, confidence and match method)."""
+        row's scraped name, confidence and match method). The printed
+        federation (ADR-106 §3) is written back too: a recompute has no source
+        to read it from again."""
         m = _m(5, 1, 1980)
         m.stored_scraped_name = "KOWALSKI Jan"
         m.stored_confidence = 87.5
         m.stored_match_method = "USER_CONFIRMED"
+        m.entered_for = "IRL"
         db = _db()
         _run(_ctx([m]), db)
         (_, rows), kwargs = db.ingest_results.call_args
@@ -165,6 +168,7 @@ class TestRecomputePersist:
             "txt_scraped_name": "KOWALSKI Jan",
             "num_confidence": 87.5,
             "enum_match_method": "USER_CONFIRMED",
+            "txt_entered_for": "IRL",
         }
 
     def test_rows_without_governed_by_skipped(self):

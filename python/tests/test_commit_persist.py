@@ -128,7 +128,8 @@ class TestPerBracketPersist:
 
     def test_ingest_rows_shape_and_count(self):
         """N7.2 ingest_results gets RPC-shaped rows + the bracket's OWN count as
-        participant_count (ADR-049 amend: per-V-cat, never the summed pool)."""
+        participant_count (ADR-049 amend: per-V-cat, never the summed pool).
+        Each row carries the printed federation (ADR-106 §3), None here."""
         fv = {"V1": [_match(101, 1, "KOWALSKI Jan"), _match(102, 2, "NOWAK Adam")]}
         db = _db()
         _run(_ctx(fv), db)
@@ -142,6 +143,7 @@ class TestPerBracketPersist:
                 "txt_scraped_name": "KOWALSKI Jan",
                 "num_confidence": 100.0,
                 "enum_match_status": "AUTO_MATCHED",
+                "txt_entered_for": None,
             },
             {
                 "id_fencer": 102,
@@ -149,6 +151,7 @@ class TestPerBracketPersist:
                 "txt_scraped_name": "NOWAK Adam",
                 "num_confidence": 100.0,
                 "enum_match_status": "AUTO_MATCHED",
+                "txt_entered_for": None,
             },
         ]
 

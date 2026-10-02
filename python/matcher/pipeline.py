@@ -167,6 +167,7 @@ def resolve_tournament_results(
     season_end_year: int,
     scraped_countries: list[str | None] | None = None,
     bracket_gender: str | None = None,
+    spws_starters: set[int] | None = None,
 ) -> ResolvedTournament:
     """Match scraped names against master data with tournament-type rules.
 
@@ -177,20 +178,21 @@ def resolve_tournament_results(
         tournament_type: PPW, MPW, PEW, MEW, or MSW
         age_category: V0, V1, V2, V3, or V4
         season_end_year: End year of the season (e.g., 2025 for SPWS-2024-2025)
-        scraped_countries: Optional parallel list of 3-letter ISO codes per row.
-            When provided for EVF-organized (international) tournaments, rows
-            whose country != "POL" are dismissed before matching — no match,
-            no auto-create, no queue entry (ADR-038). Missing/None country
-            at an international tournament also dismisses the row
-            (fail-closed). SPWS-organized (domestic) tournaments ignore this
-            parameter; all rows pass to the matcher.
+        scraped_countries: Optional parallel list of 3-letter codes per row, the
+            federation each source row printed. SPWS-organized (domestic)
+            tournaments ignore it; all rows pass to the matcher.
+        spws_starters: The fencers with a PPW or MPW result (any season).
+            Required for an international tournament: each row is decided by
+            ``international_admission.admit`` (ADR-106 §1) — stored by
+            identity (AUTO_MATCHED), PENDING when printed POL (the candidate,
+            possibly none), otherwise skipped. No fencer is created.
         bracket_gender: Bracket gender for ADR-064 asymmetric filter. Forwarded
             to find_best_match ONLY for domestic events (PPW/MPW). When 'F'
             in a domestic bracket, M-gender candidates are dropped from the
             matcher's candidate set; rows that fall through to UNMATCHED are
             auto-created with enum_gender='F' inherited from the bracket.
             International tournaments ignore this parameter (out of scope per
-            ADR-064; international intake follows ADR-038's POL-only rule).
+            ADR-064; international intake follows ADR-106's admission).
 
     Returns:
         ResolvedTournament with matched, auto_created, and skipped lists
@@ -200,14 +202,40 @@ def resolve_tournament_results(
     # ADR-064: filter is domestic-only. International intake out of scope.
     effective_bracket_gender = bracket_gender if is_domestic else None
 
-    for idx, name in enumerate(scraped_names):
-        # ADR-038: EVF events — drop non-POL rows before matching.
-        if not is_domestic and scraped_countries is not None:
-            country = scraped_countries[idx] if idx < len(scraped_countries) else None
-            if country != "POL":
+    if not is_domestic:
+        from python.pipeline.international_admission import STORED, admit
+
+        if spws_starters is None:
+            raise ValueError("an international tournament needs spws_starters (ADR-106 §1)")
+        for idx, name in enumerate(scraped_names):
+            country = (
+                scraped_countries[idx]
+                if scraped_countries is not None and idx < len(scraped_countries)
+                else None
+            )
+            a = admit(
+                name,
+                country,
+                category=age_category,
+                season_end_year=season_end_year,
+                roster=fencer_db,
+                spws_starters=spws_starters,
+            )
+            if a.decision == "REJECTED":
                 result.skipped.append(name)
                 continue
+            result.matched.append(
+                MatchResult(
+                    scraped_name=name,
+                    id_fencer=a.id_fencer,
+                    confidence=a.confidence,
+                    status="AUTO_MATCHED" if a.decision == STORED else "PENDING",
+                    matched_name=None,
+                )
+            )
+        return result
 
+    for name in scraped_names:
         match = find_best_match(
             name,
             fencer_db,
