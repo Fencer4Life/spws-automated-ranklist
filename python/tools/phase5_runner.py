@@ -449,9 +449,12 @@ def main() -> int:
 
         pending = derive_pending_from_run_id(db, args.commit_run_id)
         if args.event_code != "REQUIRED":
-            from python.pipeline.overrides import load_for_event
+            from python.pipeline.overrides import load_for_event, resolve_fencer_keys
 
-            pending = _confirmed_by_overrides(pending, load_for_event(args.event_code))
+            event_overrides = resolve_fencer_keys(
+                load_for_event(args.event_code), db.fetch_fencer_db()
+            )
+            pending = _confirmed_by_overrides(pending, event_overrides)
         if has_blocking_pairs(pending):
             print(
                 f"⛔ sign-off BLOCKED — {sum(1 for p in pending if p.icon == '❌')} "

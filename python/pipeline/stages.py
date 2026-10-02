@@ -27,6 +27,7 @@ from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_sc
 from python.matcher.pipeline import _VCAT_ORDER, estimate_birth_year, reconciled_birth_year
 from python.pipeline.age_split import birth_year_to_vcat
 from python.pipeline.international_admission import REJECTED, STORED, admit, fold_federation
+from python.pipeline.overrides import OverrideValidationError, resolve_fencer_keys
 from python.pipeline.types import (
     HaltError,
     HaltReason,
@@ -904,6 +905,10 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
     # ADR-106 §1: an international event's rows are decided by identity before
     # anything else looks at them, the V0 check included; a rejected row is gone.
     fencer_db = db.fetch_fencer_db()
+    try:
+        ctx.overrides = resolve_fencer_keys(ctx.overrides, fencer_db)
+    except OverrideValidationError as e:
+        raise HaltError(HaltReason.OVERRIDE_INVALID, str(e)) from e
     triples = _admit_international_rows(ctx, rows, fencer_db, db)
     rows = [(cat, r) for cat, r, _a in triples]
 

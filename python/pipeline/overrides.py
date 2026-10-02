@@ -8,7 +8,9 @@ OverrideValidationError. Identity entries with neither id_fencer nor
 create_fencer (or with both) raise.
 
 Schema lock 2026-05-02 — five surfaces:
-  identity        — list of {scraped_name, id_fencer | create_fencer{...}}
+  identity        — list of {scraped_name, id_fencer | fencer{surname, first_name,
+                    birth_year?} | create_fencer{...}}; `fencer` names the fencer,
+                    resolved by resolve_fencer_keys against the run's roster (P3.OV19-20)
   splitter        — {birth_year_overrides{name: int}, vcat_overrides{name: V0..V4}}
   url             — {validation_url, override_reason}
   match_method    — list of {scraped_name, force_method (enum), note}
@@ -126,27 +128,91 @@ def _parse_identity(section: Any, path: Path) -> list[IdentityOverride]:
             )
         id_fencer = entry.get("id_fencer")
         create_fencer = entry.get("create_fencer")
-        if id_fencer is None and create_fencer is None:
+        fencer = entry.get("fencer")
+        given = [
+            k
+            for k, v in (
+                ("id_fencer", id_fencer),
+                ("create_fencer", create_fencer),
+                ("fencer", fencer),
+            )
+            if v is not None
+        ]
+        if not given:
             raise OverrideValidationError(
                 f"{path.name}: identity[{i}] ({scraped_name!r}) must specify "
-                f"either 'id_fencer' (link) or 'create_fencer' (auto-create)"
+                f"'id_fencer' or 'fencer' (link) or 'create_fencer' (auto-create)"
             )
-        if id_fencer is not None and create_fencer is not None:
+        if len(given) > 1:
             raise OverrideValidationError(
-                f"{path.name}: identity[{i}] ({scraped_name!r}) has both 'id_fencer' "
-                f"and 'create_fencer' — these are mutually exclusive (conflict)"
+                f"{path.name}: identity[{i}] ({scraped_name!r}) has {' and '.join(given)} "
+                f"— these are mutually exclusive (conflict)"
             )
         if create_fencer is not None:
             _validate_create_fencer(create_fencer, scraped_name, i, path)
+        if fencer is not None:
+            fencer = _validate_fencer_key(fencer, scraped_name, i, path)
 
         result.append(
             IdentityOverride(
                 scraped_name=str(scraped_name),
                 id_fencer=int(id_fencer) if id_fencer is not None else None,
                 create_fencer=create_fencer,
+                fencer=fencer,
             )
         )
     return result
+
+
+def _validate_fencer_key(key: Any, scraped_name: str, idx: int, path: Path) -> dict:
+    """P3.OV19: `fencer: {surname, first_name, birth_year?}`, nothing else."""
+    where = f"{path.name}: identity[{idx}] ({scraped_name!r}) fencer"
+    if not isinstance(key, dict):
+        raise OverrideValidationError(f"{where} must be a mapping")
+    unknown = set(key) - {"surname", "first_name", "birth_year"}
+    if unknown:
+        raise OverrideValidationError(f"{where} has unknown field(s) {sorted(unknown)}")
+    if not key.get("surname") or not key.get("first_name"):
+        raise OverrideValidationError(f"{where} needs a surname and a first_name")
+    by = key.get("birth_year")
+    if by is not None and not isinstance(by, int):
+        raise OverrideValidationError(f"{where} birth_year must be a year")
+    out: dict[str, Any] = {"surname": str(key["surname"]), "first_name": str(key["first_name"])}
+    if by is not None:
+        out["birth_year"] = by
+    return out
+
+
+def resolve_fencer_keys(overrides: Overrides, fencer_db: list[dict]) -> Overrides:
+    """P3.OV20: give each identity entry that names its fencer the id of the
+    one roster fencer it names, in the roster the run reads (names compared
+    case-insensitively; the birth year, when given, tells namesakes apart).
+    No fencer, or more than one, is refused."""
+    from dataclasses import replace
+
+    if not any(e.fencer for e in overrides.identity):
+        return overrides
+    resolved = []
+    for e in overrides.identity:
+        if e.fencer is None:
+            resolved.append(e)
+            continue
+        sur, first = e.fencer["surname"].casefold(), e.fencer["first_name"].casefold()
+        by = e.fencer.get("birth_year")
+        hits = [
+            f["id_fencer"]
+            for f in fencer_db
+            if (f.get("txt_surname") or "").casefold() == sur
+            and (f.get("txt_first_name") or "").casefold() == first
+            and (by is None or f.get("int_birth_year") == by)
+        ]
+        if len(hits) != 1:
+            raise OverrideValidationError(
+                f"identity {e.scraped_name!r}: fencer {e.fencer} matches "
+                f"{len(hits)} roster fencers; it must name exactly one"
+            )
+        resolved.append(replace(e, id_fencer=hits[0]))
+    return replace(overrides, identity=resolved)
 
 
 def _validate_create_fencer(cf: Any, scraped_name: str, idx: int, path: Path) -> None:
