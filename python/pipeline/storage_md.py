@@ -22,7 +22,8 @@ from __future__ import annotations
 
 import re
 
-_EVENT_CODE_RE = re.compile(r"^[A-Z0-9_-]+$")
+# Lower-case letters are a PEW code's weapon letters (ADR-046): PEW10efs-2025-2026.
+_EVENT_CODE_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class StorageMdHandler:
@@ -78,7 +79,7 @@ class StorageMdHandler:
         single event), so it lives under a dedicated `reconcile/` prefix to
         keep run logs from mingling with the per-event scrape reports.
         """
-        self._validate_event_code(season)  # season codes match [A-Z0-9_-]+
+        self._validate_event_code(season)  # season codes match [A-Za-z0-9_-]+
         if not re.match(r"^\d{8}-\d{6}Z$", timestamp):
             raise ValueError(f"invalid timestamp {timestamp!r}: expected yyyyMMdd-HHmmssZ")
         path = f"reconcile/{season}/{timestamp}.md"
