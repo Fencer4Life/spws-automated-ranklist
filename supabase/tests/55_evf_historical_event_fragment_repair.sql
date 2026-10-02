@@ -219,7 +219,11 @@ SELECT is(
       AND txt_location = 'Stockholm' AND txt_country = 'Sweden'
       AND dt_start = DATE '2026-03-14' AND dt_end = DATE '2026-03-14'
       AND arr_weapons = ARRAY['EPEE','FOIL']::enum_weapon_type[]
-      AND url_event = 'https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/'
+      -- The fragment repair stored EVF's archive page; the ADR-105 repair writes
+      -- back the organiser's Engarde page, which an EVF page never replaces
+      -- (EVF.URL.01). Either state is the canonical Stockholm event.
+      AND url_event IN ('https://www.veteransfencing.eu/event/evf-circuit-stockholm-swe/',
+                        'https://engarde-service.com/tournament/sthlm/vet2026')
       AND txt_evf_slug = 'evf-circuit-stockholm-swe'),
   1,
   '55.14: PEW5ef is the canonical Stockholm epee-and-foil event'

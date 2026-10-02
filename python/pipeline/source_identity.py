@@ -27,13 +27,14 @@ Readers are per platform, from the HTML a URL serves:
   * FTL event schedule — <title>, "Month D, YYYY" day headings, bracket names;
   * Ophardt (fencingworldwide) — <h1>, "dd.mm. - dd.mm." with the year taken
     from the URL (".../32812-2025/...");
-  * Engarde — `.tounament-title`; its competition list (and so its dates) is
-    built in JavaScript, so it has no date and is refused until a reader
-    exists;
+  * Engarde — `.tounament-title`; the page builds its competition list in
+    JavaScript, so the dates, weapons and city come from the list it loads
+    (getCompeForDisplay, passed as `competitions`); without it the page has
+    no date and is refused;
   * anything else (4fence, d'Artagnan, ...) — <title> and the text, with the
     generic date and weapon patterns.
 
-Tests: python/tests/test_source_identity.py (REPAIR.URL.01).
+Tests: python/tests/test_source_identity.py (REPAIR.URL.01, REPAIR.URL.02).
 """
 
 from __future__ import annotations
@@ -160,8 +161,12 @@ def _title_tag(soup: BeautifulSoup) -> str:
     return soup.title.get_text(strip=True) if soup.title else ""
 
 
-def read_source_identity(url: str, html: str) -> SourceIdentity:
-    """Read a source page's own name, dates and weapons, by platform."""
+def read_source_identity(url: str, html: str, competitions: str | None = None) -> SourceIdentity:
+    """Read a source page's own name, dates and weapons, by platform.
+
+    `competitions` is an Engarde tournament's competition list (the
+    getCompeForDisplay XML its page loads); the page alone has no date.
+    """
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(" ", strip=True)
     host = url.lower()
@@ -192,12 +197,17 @@ def read_source_identity(url: str, html: str) -> SourceIdentity:
 
     if "engarde" in host:
         t = soup.select_one(".tounament-title")
+        dates, weapons, places = set(), set(), set()
+        if competitions:
+            from python.scrapers.engarde import competition_list_facts
+
+            dates, weapons, places = competition_list_facts(competitions)
         return SourceIdentity(
             url=url,
             title=t.get_text(" ", strip=True) if t else _title_tag(soup),
-            text=text,
-            dates=frozenset(find_dates(text)),
-            weapons=frozenset(find_weapons(text)),
+            text=" ".join([text, *sorted(places)]),
+            dates=frozenset(dates or find_dates(text)),
+            weapons=frozenset(weapons or find_weapons(text)),
         )
 
     return SourceIdentity(
