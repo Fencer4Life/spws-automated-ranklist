@@ -43,7 +43,7 @@ def write_for_event(
     """Persist a rendered .md for one event to the chosen target(s).
 
     Args:
-        event_code: e.g. "EVENT-A-2024-2025". Must match [A-Z0-9_-]+ for the
+        event_code: e.g. "EVENT-A-2024-2025". Must match [A-Za-z0-9_-]+ for the
             storage path; for the local path, used as the filename stem.
         md_text: full markdown body (already rendered upstream).
         target: "local" (filesystem), "storage" (Supabase Storage),

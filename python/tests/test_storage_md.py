@@ -110,3 +110,17 @@ def test_storage_md_bucket_constant():
     from python.pipeline.storage_md import StorageMdHandler
 
     assert StorageMdHandler.BUCKET == "staging-reports"
+
+
+def test_storage_md_accepts_a_pew_code_with_weapon_letters():
+    # 5.6.8 — a PEW code carries lower-case weapon letters (ADR-046): the
+    # staging report of PEW10efs-2025-2026 was refused on CERT (2 Oct 2026).
+    from python.pipeline.storage_md import StorageMdHandler
+
+    client = MagicMock()
+    handler = StorageMdHandler(client)
+    path = handler.upload_full("PEW10efs-2025-2026", b"# x")
+    assert path == "PEW10efs-2025-2026/full.md"
+    for bad in ("PEW10efs/../x", "pew 1", "PEW1;rm"):
+        with pytest.raises(ValueError, match="invalid event_code"):
+            handler.upload_full(bad, b"# x")

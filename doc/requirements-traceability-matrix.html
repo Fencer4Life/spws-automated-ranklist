@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="3b3d1a73408b0a1b34a2a4fa5e3bc2e668cdcb3d86504c0c10050be62044f2c1">
+<meta name="doc-source-sha256" content="603d643469bb2fc5eb4e75659f790d738ebcb4082e8d05d9998f546ba0270ca7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1798,7 +1798,7 @@
 </tr>
 <tr>
 <td>WF.P5.01–02</td>
-<td><code>phase5-event-runner.yml</code> commits a staged run on its target when <code>commit_run_id</code> is set, through the runner's replace path; the run id is validated as a UUID before use and no input is interpolated into a shell script (01). Its input check, run in bash, accepts real event codes with a PEW code's lower-case weapon letters (<code>PEW10efs-2025-2026</code>) and refuses shell metacharacters (02).</td>
+<td><code>phase5-event-runner.yml</code> commits a staged run on its target when <code>commit_run_id</code> is set, through the runner's replace path; the run id is validated as a UUID before use and no input is interpolated into a shell script (01). Its input check, run in bash, accepts real event codes with a PEW code's lower-case weapon letters (<code>PEW10efs-2025-2026</code>) and refuses shell metacharacters (02). The staging report's Storage key takes the same codes (<code>python/tests/test_storage_md.py</code> 5.6.8).</td>
 <td>pytest</td>
 <td><code>python/tests/test_phase5_workflow_commit.py</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
@@ -1837,5 +1837,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>3b3d1a73408b0a1b34a2a4fa5e3bc2e668cdcb3d86504c0c10050be62044f2c1</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>603d643469bb2fc5eb4e75659f790d738ebcb4082e8d05d9998f546ba0270ca7</code></footer>
 </div></body></html>
