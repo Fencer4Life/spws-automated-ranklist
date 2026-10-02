@@ -140,9 +140,96 @@
 
   <hr class="rule">
 
+  <section id="napoli">
+    <p class="kicker">Decide this first · Napoli (PEW4efs-2025-2026) · B A, W A decided · sign-off N</p>
+    <h2>Napoli's 4fence pages: two parser defects, and blanks that are not all the same</h2>
+    <p><b>What is stored is wrong on every environment</b> (on PROD its N is the Polish count too). Only 9 of LOCAL's 28 rows
+    match EVF's record (event 85); 19 are not in it. The stored places are renumbered among the Poles: V1 men's épée holds
+    places 1–4 of 59, where the source has STOCKI Piotr 13th and KORNAŚ Jarosław 30th.</p>
+    <p><b>Two parser defects, to fix test-first whatever you decide below:</b></p>
+    <ul>
+      <li>The 4fence parser takes the place from the column “Cla Gir”, the <b>pool</b> ranking, instead of “CLASS”, the
+      final classification. At Napoli the V1 men's épée winner (CLASS 1) is parsed as 2nd, his pool rank.</li>
+      <li>It reads no nationality, so the POL-only rule dismisses every row (R4). The page carries it: a foreign entry is
+      listed under its federation, “Federazione POLONIA” (short table <code>EEPOL</code>); an Italian under his club.</li>
+    </ul>
+    <p><b>The blanks.</b> Every Napoli bracket skips place 4 and lists one fencer with no place. That fencer is the
+    second bronze medallist: GAJDA Leszek (V3 sabre) and KORONA Przemysław (V2 foil) have no place on the page, and EVF
+    and the stored row give each 3rd. Five brackets have a second kind of blank as well: a fencer with no place whose
+    number the page also skips (V2 men's épée 26 and 37, V3 men's épée 35, V2 women's épée 15, V2 men's foil 21),
+    unlabelled, fencers who left during the direct elimination. EVF counts both kinds in N.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">B</span> The second bronze (blank, place 4 skipped)</p>
+      <ul>
+        <li><b>A</b> he is 3rd, joint bronze, and placed fencers count him in N. Where a bracket has two blanks, the bronze
+        is the one EVF lists 3rd.</li>
+        <li><b>B</b> he has no place: not in N, and his result is dropped (GAJDA's 3rd and KORONA's 3rd would go).</li>
+      </ul>
+      <p><b>Recommendation: A.</b> He won his quarter-final and lost a semi-final; the page omits a number it cannot
+      print twice.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">W</span> A fencer who left during the direct elimination, whose number the page skips</p>
+      <p>Your rule: he did not finish, so he is not in N. The page still numbers everyone after him as if he were there, so
+      in those five brackets the last place exceeds N (V2 men's épée: 76 placed, last place 79). A place above N cannot be
+      scored (the formula needs place ≤ N) and the database refuses it (INTL.INV.01).</p>
+      <ul>
+        <li><b>A</b> not in N, and the places after his skipped number close up by one each (PARDUS Borys 58th → 56th of
+        77, with the bronze counted).</li>
+        <li><b>B</b> not in N, places kept as printed, and those five brackets are held back until he is identified on
+        another source.</li>
+        <li><b>C</b> in N as the page numbers him: N is the last place number (EVF's count).</li>
+      </ul>
+      <p><b>Recommendation: A.</b> It keeps your rule (he is not in N) and every Pole's order in the bracket; only the
+      numbers below him move, by the count of fencers who left above.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Built test-first (B A, W A)</p>
+      <p><code>FOURFENCE.PLACE.01, NAT.01, BRONZE.01, CLOSE.01, NOTAB.01, EVT.01</code>, from the real Napoli pages, all
+      failing first. The second bronze is named by the organiser's own last-four tableau (<code>f=tab4</code>): in V2 men's
+      foil KORONA Przemysław lost his semi-final 3–10, in V3 sabre GAJDA Leszek 8–10, in V1 men's épée SQUEO Benedetto
+      3–10. It agrees with EVF. Three older tests that pinned the pool-rank column and the 64 printed rows of Terni are
+      amended; the Admin per-tournament scrape reads the tableau too. ADR-105, the ingestion page and the RTM say so.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">N</span> Napoli staged on LOCAL (run <code>fdd1fc86</code>): commit it?</p>
+      <p><b>22 Polish results in 11 brackets</b> replace the 28 stored rows. Two brackets were never ingested: V1 men's
+      sabre (TECŁAW Robert 2nd of 17) and V2 men's sabre (six Poles: NOWICKI Robert 3rd, ZAWROTNIAK 6th, GANSZCZYK
+      Marcin 9th, MAZIK 21st, KACZMAREK 28th, WIERZBICKI 31st, of 32). The V0 men's épée bracket is left out (R005b: EVF
+      has no V0).</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Bracket</th><th>Stored</th><th>Source, as staged</th></tr></thead>
+        <tbody>
+          <tr><td>V1 men's épée</td><td class="mono">KORONA 1, ALCSER 2, STOCKI 3, KORNAŚ 4 of 59</td><td class="mono">STOCKI 13, KORNAŚ 30 of 59 (KORONA Radosław enters for the Netherlands, ALCSER for Hungary: dismissed)</td></tr>
+          <tr><td>V1 women's épée</td><td class="mono">KAMIŃSKA 1 of 34</td><td class="mono">KAMIŃSKA 13 of 34</td></tr>
+          <tr><td>V2 women's épée</td><td class="mono">5 rows, places 1–5 of 49</td><td class="mono">STAŃCZYK 17, GANSZCZYK 27 of 48</td></tr>
+          <tr><td>V2 men's épée</td><td class="mono">KORONA 5, LISOWSKI 53, PARDUS 58 of 79</td><td class="mono">KORONA 5, PARDUS 56 of 77 (LISOWSKI is not in the source)</td></tr>
+          <tr><td>V2 men's foil</td><td class="mono">KOŃCZYŁO 1, BAZAK 2, KORONA 3, ANDERSCH 4 of 23</td><td class="mono">KORONA 3, BAZAK 13 of 22</td></tr>
+          <tr><td>V3 men's sabre</td><td class="mono">ZABŁOCKI 1, GAJDA 3, WOJCIECHOWSKI 20 of 20</td><td class="mono">the same</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>2026/27 ranking, previewed in a rolled-back replace:</b> 27 rows move. KAMIŃSKA stays 1st in V1 women's épée
+      (475.88 → 371.08); WASILCZUK Beata becomes 1st in V2 women's épée and STAŃCZYK 2nd; STOCKI goes 3rd → 2nd in V1
+      men's épée and KORONA Radosław 2nd → 3rd; BAZAK 2nd → 3rd in V2 men's foil; TECŁAW and NOWICKI gain in V2 men's
+      sabre; LISOWSKI leaves V2 men's épée, his only épée row being this fabricated one. Foreign-federation entries
+      (KORONA Radosław, ALCSER, KUZMICHOVA, PRAHA-TSAREHRADSKA) lose their Napoli rows; their domestic results stay.</p>
+      <ul>
+        <li><b>A</b> commit Napoli on LOCAL; then, after a release carrying the 4fence reader, run it on CERT and PROD the
+        same staged and machine-diffed way (your go for the push included).</li>
+        <li><b>B</b> discard the drafts.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> Every row is now the organiser's place and field, and Napoli is the last event in
+      which PROD differs from LOCAL.</p>
+      <p><b>Decided A, committed on LOCAL</b> (run <code>fdd1fc86</code>): 22 results in 11 brackets; TT.CODE.06 and
+      INTL.INV.01 at 0. EVF's record (event 85) agrees on 15 of 22. The other 7 differ exactly as W A decides: EVF counts
+      the fencers who left in N (V2 men's épée 79 against 77, V3 men's épée 74 against 73, V2 men's foil 23 against 22)
+      and keeps the places printed below them (PARDUS 58th, where he is 56th of 77).</p>
+    </div>
+  </section>
+
   <section id="unplaced-n">
-    <p class="kicker">Decide this first · 2 October, afternoon</p>
-    <h2>N counts placed fencers only; the Criterium 2025 is staged</h2>
+    <p class="kicker">Decided 2 October, afternoon · G A, P A</p>
+    <h2>N counts placed fencers only; the Criterium 2025 is repaired</h2>
     <div class="note danger">
       <p class="lede"><span class="tick">!</span> The rule, corrected: a fencer listed without a place is not in N</p>
       <p><b>DNS</b> means <i>did not start</i>, <b>DNF</b> <i>did not finish</i>, <b>DNQ</b> <i>did not qualify</i>.
@@ -174,6 +261,8 @@
         <li><b>B</b> discard the drafts.</li>
       </ul>
       <p><b>Recommendation: A.</b></p>
+      <p><b>Decided A, done on LOCAL:</b> committed (run <code>8bc7856b</code>); 7 of 7 results carry EVF's N and points
+      (EVF.PTS.01, event 78), and every bracket links to its Engarde results page.</p>
     </div>
     <div class="note accent">
       <p class="lede"><span class="tick">P</span> Release, then correct CERT and PROD</p>
@@ -188,6 +277,11 @@
         <li><b>B</b> hold the release.</li>
       </ul>
       <p><b>Recommendation: A.</b></p>
+      <p><b>Decided A, done:</b> released as <code>35effd3d</code> (CI <code>36986367351</code>, Release
+      <code>36986509618</code>: CERT, PROD and pages deployed). On CERT and then PROD the Criterium 2025's end date is
+      7 July; both Criterium events were staged, machine-diffed against LOCAL, committed and their scores diffed again:
+      identical. KORONA Przemysław's V2 men's foil row is 29th of 32 (2.39) on every environment. CERT now equals LOCAL
+      for every international event of 2024/25 and 2025/26; PROD equals it except Napoli, damaged on PROD only.</p>
     </div>
     <div class="note good">
       <p class="lede"><span class="tick">✓</span> Also done today</p>

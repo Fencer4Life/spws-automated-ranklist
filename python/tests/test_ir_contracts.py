@@ -364,7 +364,9 @@ class TestFourFenceIRContract:
         assert isinstance(pt, ParsedTournament)
         assert pt.source_kind == SourceKind.FOURFENCE
         assert len(pt.results) > 0
-        assert pt.raw_pool_size == len(pt.results)
+        # N counts the second bronze, whom Terni prints without a place and,
+        # without the last-four tableau, cannot be named (FOURFENCE.NOTAB.01).
+        assert pt.raw_pool_size == len(pt.results) + 1
 
     def test_parse_html_synthetic_id_format(self):
         """fourfence_ir.2: 4Fence has no native ID; uses synthetic format `fourfence:row1:place1:`."""
@@ -376,15 +378,18 @@ class TestFourFenceIRContract:
         first = pt.results[0]
         assert first.source_row_id.startswith("fourfence:row1:place1:")
 
-    def test_parse_html_country_is_none(self):
-        """fourfence_ir.3: 4Fence doesn't surface country reliably — IR shows None, not empty string."""
+    def test_parse_html_country_is_the_federation(self):
+        """fourfence_ir.3: the country is the federation a fencer enters under
+        (short-table code EEPOL → POL); an Italian club is ITA
+        (FOURFENCE.NAT.01)."""
         from python.scrapers.fourfence import parse_html
 
         html = self.FIXTURE.read_text()
-        pt = parse_html(html)
+        by_name = {r.fencer_name: r.fencer_country for r in parse_html(html).results}
 
-        for r in pt.results:
-            assert r.fencer_country is None, f"expected None country, got {r.fencer_country!r}"
+        assert by_name["ATANASSOW Aleksander"] == "POL"
+        assert by_name["KOEMETS Sven"] == "EST"
+        assert by_name["VINCENZI Gabriele"] == "ITA"
 
     def test_parse_html_results_well_formed(self):
         """fourfence_ir.4: each result has non-empty name + valid place."""
