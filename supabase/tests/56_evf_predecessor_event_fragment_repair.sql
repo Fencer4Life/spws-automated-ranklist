@@ -99,8 +99,8 @@ SELECT ok(
   (SELECT ROW(COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT)
      FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
     WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW7es-2024-2025'))
-  IN (ROW(15,89), ROW(14,76)),
-  '56.13: Warsaw-Jablonna conserves 15 slots and 89 results, or 14 and 76 after the ADR-105 re-ingest'
+  IN (ROW(15,89), ROW(14,76), ROW(14,84)),
+  '56.13: Warsaw-Jablonna conserves 15 slots and 89 results, 14 and 76 after the ADR-105 re-ingest, or 14 and 84 after the ADR-106 re-staging'
 );
 
 SELECT is(
@@ -193,8 +193,8 @@ SELECT ok(
   (SELECT COUNT(*)::INT FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
     JOIN tbl_event e ON e.id_event=t.id_event WHERE e.txt_code IN (
       'PEW5efs-2023-2024','PEW8efs-2023-2024','PEW9ef-2023-2024',
-      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')) IN (157, 144),
-  '56.26: all 157 reviewed predecessor results are conserved, or 144 after the ADR-105 re-ingest of Jabłonna'
+      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')) IN (157, 144, 152),
+  '56.26: all 157 reviewed predecessor results are conserved, 144 after the ADR-105 re-ingest of Jabłonna, or 152 after its ADR-106 re-staging'
 );
 
 SELECT * FROM finish();

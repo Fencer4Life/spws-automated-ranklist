@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADR-106 re-staging review</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">LOCAL · ADR-106 · per-event sign-off</p>
+  <h1>Re-staging the 18 international events under the identity rule</h1>
+  <p class="dek">Each event was staged on LOCAL under ADR-106 and nothing was committed. For each event: what the rule adds, what it removes and why, place or N changes, and the PENDING rows that need your decision. You sign off each event by name; then it is committed on LOCAL and run on CERT and PROD.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>14 of 18 events staged · 4 not ready</span>
+    <span class="pill"><span class="dot"></span>18 PENDING rows</span>
+    <span class="pill"><span class="dot"></span>11 committed on LOCAL</span>
+    <span class="pill"><span class="dot"></span>release 85535f23 on CERT and PROD</span>
+  </div>
+  <hr class="rule">
+  <section id="status"><p class="kicker">Status · 2 October, evening</p><h2>Where each event stands</h2>
+    <div class="note good"><p class="lede"><span class="tick">11</span> Signed off and committed on LOCAL</p>
+    <p>IMEW-2024-2025 (48 results), IMSW-2025-2026 (36), PEW1efs-2025-2026 (44), PEW2efs-2025-2026 (18), PEW4efs-2025-2026 (28), PEW5ef-2025-2026 (9), PEW61s-2025-2026 (3), PEW62efs-2025-2026 (25), PEW6efs-2025-2026 (108), PEW7es-2024-2025 (84), PEW9efs-2025-2026 (16): 419 results. Q1 A; every P and R row as recommended (IMSW P1, PEW2efs P1–P2 as you gave them). Each was re-staged with its override file, checked (no PENDING left, the decided rows as chosen, nothing else changed) and committed; the stored rows equal the drafts, the printed federation is recorded, 199 season nationalities are fixed, with no conflict.</p>
+    <p>The first commit was refused: the alias check took “LYNCH Patrick” and “KÁRMÁN Irén”, which you linked, for wrong matches. An identity entry in the override file now confirms its pair at sign-off (ADM.ID.11). CERT and PROD need that fix, so they follow its release.</p></div>
+    <div class="note warn"><p class="lede"><span class="tick">3</span> Not in your list: staged, not committed</p>
+    <p>PEW10efs-2024-2025 (Criterium 2025, R1 KAZIK Tomas: B), PEW10efs-2025-2026 (Criterium 2026, R1 KÁRMÁN Irén: A), PEW31fs-2025-2026 (Faches, no rows). Name them to commit them.</p></div>
+    <div class="note"><p class="lede"><span class="tick">4</span> Not ready</p><p>PEW3fs-2024-2025, PEW3fs-2025-2026, PEW7ef-2025-2026, PEW8es-2025-2026: see each event below.</p></div>
+  </section>
+  <section id="decide"><p class="kicker">Decide this first</p><h2>What I need from you</h2>
+    <p>For each event: “sign off &lt;event code&gt;”. For each P row (PENDING, printed POL) and each R row (rejected, but the surname is an SPWS starter's), listed under its event: <b>A</b> link it to the candidate (written to the event's override file as an identity entry), or <b>B</b> EXCLUDED (a match_method entry). The recommendation is in the row. An event with PENDING rows is re-staged with the override file, then committed.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">Q1</span> A first name in another form (Pat / Patrick, Andy / Andrew, Alex / Alexandr, Irene / Irén)</p>
+      <p>The rule compares the first name exactly, so an SPWS starter printed under another form of his name is rejected when the source does not print POL. LYNCH Pat is printed “LYNCH Patrick” in six of these events, MCQUEEN Andy “MCQUEEN Andrew” in two. The R rows list every case found.</p>
+      <ul>
+        <li><b>A</b> an identity entry in each event's override file, row by row, as recommended in the R rows. Explicit and audited per event; no rule change.</li>
+        <li><b>B</b> amend ADR-106: a confirmed alias of an SPWS starter (an admin-confirmed entry in the fencer's aliases) counts as his name for identity. One entry per fencer instead of one per event; a rule and code change, with its own tests.</li>
+      </ul>
+      <p><b>Recommendation: A</b> for this pass, so the 14 events are not held up; B later if the variants keep recurring.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> How to answer</p>
+      <p><b>Shortest:</b> “accept all”. That is Q1 A, every P and R row as recommended, and all 14 staged events signed off.</p>
+      <p><b>Per event:</b> “sign off PEW2efs-2025-2026 P1=A P2=A R1=A”, with a letter for each of its P and R rows. Faches (PEW31fs-2025-2026) and Liège (PEW61s-2025-2026) have none, so their name alone is enough.</p>
+      <p>Each signed-off event then gets its override file, is re-staged and checked (no PENDING left, the decided rows as chosen, nothing else changed), and is committed on LOCAL. CERT and PROD follow once release <code>85535f23</code> is on <code>main</code>, because their runs need its migration and the override files.</p>
+    </div>
+    <p>Rows <b>added</b> are roster fencers with a PPW or MPW result who entered the event for any federation (the user's rule of 2 October: a foreign fencer enters our ranklist only through SPWS participation). Rows <b>removed</b> are stored today but are not an exact identity of an SPWS starter; the reason is given per row.</p>
+  </section>
+  <section id="summary"><p class="kicker">All events</p><h2>Summary</h2>
+  <div class="tablewrap"><table><thead><tr><th>Event</th><th>Stored now</th><th>Under the rule</th><th>Added</th><th>Removed</th><th>Changed</th><th>PENDING</th><th>Rejected</th><th>Flags</th></tr></thead><tbody><tr><td><a href="#IMEW-2024-2025">IMEW-2024-2025</a> European Veterans Championships 2025</td><td>28</td><td>45</td><td>17</td><td>0</td><td>0</td><td>0</td><td>921</td><td></td></tr><tr><td><a href="#IMSW-2025-2026">IMSW-2025-2026</a> IMSW</td><td>30</td><td>35</td><td>6</td><td>1</td><td>0</td><td>1</td><td>974</td><td></td></tr><tr><td><a href="#PEW10efs-2024-2025">PEW10efs-2024-2025</a> EVF Criterium Mondial Vétérans 2025</td><td>7</td><td>10</td><td>3</td><td>0</td><td>0</td><td>0</td><td>411</td><td></td></tr><tr><td><a href="#PEW10efs-2025-2026">PEW10efs-2025-2026</a> EVF Criterium Mondial Vétérans 2026</td><td>10</td><td>18</td><td>8</td><td>0</td><td>0</td><td>0</td><td>379</td><td></td></tr><tr><td><a href="#PEW1efs-2025-2026">PEW1efs-2025-2026</a> EVF Circuit Budapest</td><td>26</td><td>42</td><td>16</td><td>0</td><td>0</td><td>0</td><td>337</td><td>3</td></tr><tr><td><a href="#PEW2efs-2025-2026">PEW2efs-2025-2026</a> EVF Circuit Madrid</td><td>19</td><td>15</td><td>0</td><td>4</td><td>15</td><td>2</td><td>268</td><td></td></tr><tr><td><a href="#PEW31fs-2025-2026">PEW31fs-2025-2026</a> EVF Circuit - Faches-Thumesnil (FRA)</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>276</td><td></td></tr><tr><td><a href="#PEW3fs-2024-2025">PEW3fs-2024-2025</a> PEW3</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>not ready</td></tr><tr><td><a href="#PEW3fs-2025-2026">PEW3fs-2025-2026</a> EVF Circuit Memoriam Max Geuter – Munich (GER)</td><td>7</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>not ready</td></tr><tr><td><a href="#PEW4efs-2025-2026">PEW4efs-2025-2026</a> EVF Circuit Napoli</td><td>22</td><td>27</td><td>5</td><td>0</td><td>0</td><td>0</td><td>692</td><td></td></tr><tr><td><a href="#PEW5ef-2025-2026">PEW5ef-2025-2026</a> EVF Circuit – Stockholm (SWE)</td><td>10</td><td>6</td><td>0</td><td>4</td><td>2</td><td>2</td><td>158</td><td></td></tr><tr><td><a href="#PEW61s-2025-2026">PEW61s-2025-2026</a> EVF Circuit – Liège (BEL)</td><td>2</td><td>3</td><td>1</td><td>0</td><td>0</td><td>0</td><td>68</td><td></td></tr><tr><td><a href="#PEW62efs-2025-2026">PEW62efs-2025-2026</a> EVF Circuit – Guildford (GBR)</td><td>15</td><td>21</td><td>8</td><td>2</td><td>0</td><td>2</td><td>299</td><td></td></tr><tr><td><a href="#PEW6efs-2025-2026">PEW6efs-2025-2026</a> EVF Circuit Jabłonna</td><td>93</td><td>103</td><td>14</td><td>4</td><td>0</td><td>8</td><td>149</td><td></td></tr><tr><td><a href="#PEW7ef-2025-2026">PEW7ef-2025-2026</a> EVF Circuit Salzburg</td><td>7</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>not ready</td></tr><tr><td><a href="#PEW7es-2024-2025">PEW7es-2024-2025</a> European Veterans Circuit – Jabłonna (POL)</td><td>76</td><td>83</td><td>8</td><td>1</td><td>0</td><td>3</td><td>149</td><td></td></tr><tr><td><a href="#PEW8es-2025-2026">PEW8es-2025-2026</a> EVF Circuit – Chania (GRE)</td><td>0</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>not ready</td></tr><tr><td><a href="#PEW9efs-2025-2026">PEW9efs-2025-2026</a> EVF Circuit Dublin</td><td>8</td><td>15</td><td>7</td><td>0</td><td>0</td><td>0</td><td>137</td><td></td></tr><tr><td><b>Total, events staged</b></td><td><b>347</b></td><td><b>424</b></td><td><b>93</b></td><td><b>16</b></td><td><b>17</b></td><td><b>18</b></td><td><b>5218</b></td><td></td></tr></tbody></table></div>
+  </section>
+  <section id="conflicts"><p class="kicker">Nationality per season</p><h2>Two federations in one season</h2><p>None: no fencer entered for two federations within one season in these events.</p></section>
+  <section id="IMEW-2024-2025"><p class="kicker">2025-05-28 · Plovdiv</p>
+<h2>IMEW-2024-2025 — European Veterans Championships 2025</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>4004ff4f-7f20-4412-a189-1e990a73026e</code></p>
+<p>Stored now <b>28</b> · under the rule <b>45</b> · added <b>17</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>921</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>31 of 46</td><td>MURRAY Claire</td><td>IRL</td><td>MURRAY Claire (1985, #55)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>33 of 67</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>42 of 67</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V1 Epee M</td><td>61 of 67</td><td>STOLARIK Peter</td><td>SVK</td><td>STOLARIK Peter (1984, #321)</td><td>1 (GP6-2023-2024)</td></tr>
+<tr><td>V1 Epee M</td><td>64 of 67</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V1 Foil M</td><td>8 of 29</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>21 of 29</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>27 of 29</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Epee F</td><td>36 of 83</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee F</td><td>55 of 83</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Sabre M</td><td>29 of 55</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee F</td><td>23 of 44</td><td>MCGINNITY Marie</td><td>IRL</td><td>MCGINNITY Marie (1960, #364)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V3 Epee M</td><td>23 of 76</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>70 of 76</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V3 Sabre M</td><td>36 of 39</td><td>FARAGÓ József</td><td>HUN</td><td>FARAGO József (1959, #262)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V4 Epee M</td><td>23 of 50</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+<tr><td>V4 Foil M</td><td>20 of 23</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>IMEW-2024-2025 R1</b></td><td>V1 Epee M</td><td>31</td><td>KAZIK Tomas · SVK</td><td>KAZIK Martin (1984, #176)</td><td>1 (GP3-2023-2024)</td><td>B leave rejected: another person. Separately, our “KAZIK Martin” record looks corrupt (gender F, one men&#x27;s épée result stored as “122”)</td></tr>
+<tr><td><b>IMEW-2024-2025 R2</b></td><td>V2 Epee F</td><td>59</td><td>KÁRMÁN Irén · HUN</td><td>KARMAN Irene (1970, #117)</td><td>2 (GP8-2023-2024, PPW1-2025-2026)</td><td>A link: Irene and Irén are one name in two forms</td></tr>
+<tr><td><b>IMEW-2024-2025 R3</b></td><td>V4 Epee M</td><td>7</td><td>UIJTING Henk · NED</td><td>UIJTING Henh (1954, #250)</td><td>1 (GP3-2023-2024)</td><td>A link, and correct our roster&#x27;s typo “Henh” to Henk, which makes it an identity in every event</td></tr>
+<tr><td><b>IMEW-2024-2025 R4</b></td><td>V4 Epee M</td><td>32</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off IMEW-2024-2025” with a letter for each P and R row.</p></section><section id="IMSW-2025-2026"><p class="kicker">2025-11-12 · Manama</p>
+<h2>IMSW-2025-2026 — IMSW</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>74279257-9abf-4e65-bff1-66ce93e03fc7</code></p>
+<p>Stored now <b>30</b> · under the rule <b>35</b> · added <b>6</b> · removed <b>1</b> · place or N changed <b>0</b> · PENDING <b>1</b> · rejected <b>974</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>38 of 59</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V1 Foil M</td><td>28 of 44</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>44 of 44</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Epee F</td><td>26 of 60</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>67 of 71</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V4 Foil M</td><td>27 of 33</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Sabre F</td><td>15 of 30</td><td>KOSZYK Agnieszka</td><td>KOSZYK Agnieszka (1980, #16)</td><td>25.18</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>IMSW-2025-2026 P1</b></td><td>V1 Sabre F</td><td>15 of 30</td><td>KOSZYK Agnieszka · POL</td><td>KOSZYK Agnieszka (1980, #16)</td><td>none</td><td>A link: printed POL and exactly this roster fencer; PENDING only because she has no PPW or MPW result</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off IMSW-2025-2026” with a letter for each P and R row.</p></section><section id="PEW10efs-2024-2025"><p class="kicker">2025-07-05 · Paris</p>
+<h2>PEW10efs-2024-2025 — EVF Criterium Mondial Vétérans 2025</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>ff75bd93-3953-4e37-941c-91e9e4970abf</code></p>
+<p>Stored now <b>7</b> · under the rule <b>10</b> · added <b>3</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>411</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V2 Sabre M</td><td>3 of 12</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>13 of 48</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>37 of 48</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW10efs-2024-2025 R1</b></td><td>V1 Epee M</td><td>15</td><td>KAZIK Tomas · SVK</td><td>KAZIK Martin (1984, #176)</td><td>1 (GP3-2023-2024)</td><td>B leave rejected: another person. Separately, our “KAZIK Martin” record looks corrupt (gender F, one men&#x27;s épée result stored as “122”)</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW10efs-2024-2025” with a letter for each P and R row.</p></section><section id="PEW10efs-2025-2026"><p class="kicker">2026-07-04 · Paris</p>
+<h2>PEW10efs-2025-2026 — EVF Criterium Mondial Vétérans 2026</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>61a42a7d-7325-4dcd-9237-ef2d63f39c43</code></p>
+<p>Stored now <b>10</b> · under the rule <b>18</b> · added <b>8</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>379</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>6 of 28</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>18 of 28</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Epee F</td><td>15 of 21</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee M</td><td>22 of 72</td><td>LEAHEY John</td><td>GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Sabre M</td><td>5 of 13</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>18 of 51</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>46 of 51</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V3 Sabre M</td><td>14 of 14</td><td>FARAGÓ József</td><td>HUN</td><td>FARAGO József (1959, #262)</td><td>1 (GP8-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW10efs-2025-2026 R1</b></td><td>V2 Epee F</td><td>10</td><td>KÁRMÁN Irén · HUN</td><td>KARMAN Irene (1970, #117)</td><td>2 (GP8-2023-2024, PPW1-2025-2026)</td><td>A link: Irene and Irén are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW10efs-2025-2026” with a letter for each P and R row.</p></section><section id="PEW1efs-2025-2026"><p class="kicker">2025-09-20 · Budapest</p>
+<h2>PEW1efs-2025-2026 — EVF Circuit Budapest</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>2689ca9a-4da1-48d3-8302-71968d497d86</code></p>
+<p>Stored now <b>26</b> · under the rule <b>42</b> · added <b>16</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>337</b></p>
+<div class="note warn"><p>V1 Epee M: ⚠ the source has no country: only an identity match is stored</p></div>
+<div class="note warn"><p>V4 Foil F: ⚠ the source has no country: only an identity match is stored</p></div>
+<div class="note warn"><p>V4 Sabre M: ⚠ the source has no country: only an identity match is stored</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>12 of 17</td><td>MURRAY Claire</td><td>IRL</td><td>MURRAY Claire (1985, #55)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>6 of 33</td><td>KULKA Dawid</td><td>—</td><td>KULKA Dawid (1979, #124)</td><td>5 (GP5-2023-2024, GP8-2023-2024…)</td></tr>
+<tr><td>V1 Epee M</td><td>14 of 33</td><td>KORONA Radoslaw</td><td>—</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>20 of 33</td><td>ALCSER Norbert</td><td>—</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>25 of 33</td><td>STOLARIK Peter</td><td>—</td><td>STOLARIK Peter (1984, #321)</td><td>1 (GP6-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 10</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>10 of 10</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Epee F</td><td>2 of 27</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee F</td><td>23 of 27</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee M</td><td>11 of 57</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V2 Epee M</td><td>49 of 57</td><td>GOLD Oleg</td><td>ISR</td><td>GOLD Oleg (1976, #223)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Foil M</td><td>12 of 25</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V2 Sabre M</td><td>5 of 22</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee F</td><td>5 of 10</td><td>MCGINNITY Marie</td><td>IRL</td><td>MCGINNITY Marie (1960, #364)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V3 Epee M</td><td>27 of 34</td><td>WHITLEY Gary</td><td>USA</td><td>WHITLEY Gary (1961, #114)</td><td>8 (GP2-2023-2024, GP3-2023-2024…)</td></tr>
+<tr><td>V3 Sabre M</td><td>15 of 17</td><td>FARAGÓ József</td><td>HUN</td><td>FARAGO József (1959, #262)</td><td>1 (GP8-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW1efs-2025-2026 R1</b></td><td>V2 Epee M</td><td>48</td><td>GERTSMAN Alexandr · ISR</td><td>GERTSMAN Alex (1976, #242)</td><td>1 (PPW3-2025-2026)</td><td>A link: Alex and Alexandr are one name in two forms</td></tr>
+<tr><td><b>PEW1efs-2025-2026 R2</b></td><td>V4 Epee M</td><td>14</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW1efs-2025-2026” with a letter for each P and R row.</p></section><section id="PEW2efs-2025-2026"><p class="kicker">2025-11-01 · Madrid</p>
+<h2>PEW2efs-2025-2026 — EVF Circuit Madrid</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>4fad9454-5b91-4705-94d3-b3b9cf0ac20d</code></p>
+<p>Stored now <b>19</b> · under the rule <b>15</b> · added <b>0</b> · removed <b>4</b> · place or N changed <b>15</b> · PENDING <b>2</b> · rejected <b>268</b></p>
+<div class="note accent"><p>Madrid had not been repaired under ADR-105: its stored rows carry the old EVF import&#x27;s damage (scraped names stored as numbers, N of 1–5). The place and N changes below restore the organiser&#x27;s brackets.</p></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Sabre F</td><td>1 of 1</td><td>122</td><td>KAZIK Martin (1984, #176)</td><td>59.00</td><td>not in the organiser's results for this bracket (stored from the old EVF import)</td></tr>
+<tr><td>V2 Epee M</td><td>1 of 4</td><td>139</td><td>KORONA Przemysław (1976, #56)</td><td>84.29</td><td>PENDING now (below)</td></tr>
+<tr><td>V2 Foil M</td><td>1 of 1</td><td>139</td><td>KORONA Przemysław (1976, #56)</td><td>59.00</td><td>PENDING now (below)</td></tr>
+<tr><td>V4 Epee M</td><td>1 of 1</td><td>174</td><td>LYNCH Pat (1930, #284)</td><td>59.00</td><td>the source prints LYNCH Patrick (IRL), place 9: first name differs from the roster's Pat</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>MURRAY Claire</td><td>1 of 1</td><td>6 of 10</td></tr>
+<tr><td>V1 Epee M</td><td>KORONA Radosław</td><td>1 of 5</td><td>1 of 26</td></tr>
+<tr><td>V1 Epee M</td><td>STOCKI Piotr</td><td>2 of 5</td><td>7 of 26</td></tr>
+<tr><td>V1 Epee M</td><td>KULKA Dawid</td><td>3 of 5</td><td>10 of 26</td></tr>
+<tr><td>V1 Epee M</td><td>ALCSER Norbert</td><td>4 of 5</td><td>18 of 26</td></tr>
+<tr><td>V1 Epee M</td><td>STOLARIK Peter</td><td>5 of 5</td><td>19 of 26</td></tr>
+<tr><td>V1 Foil M</td><td>GINZERY Tomas</td><td>1 of 2</td><td>3 of 11</td></tr>
+<tr><td>V1 Foil M</td><td>ALCSER Norbert</td><td>2 of 2</td><td>11 of 11</td></tr>
+<tr><td>V2 Epee M</td><td>LEAHEY John</td><td>2 of 4</td><td>3 of 33</td></tr>
+<tr><td>V2 Epee M</td><td>PARDUS Borys</td><td>3 of 4</td><td>24 of 33</td></tr>
+<tr><td>V2 Epee M</td><td>MCQUEEN Andy</td><td>4 of 4</td><td>31 of 33</td></tr>
+<tr><td>V2 Sabre M</td><td>CHIAROMONTE Francesco</td><td>1 of 1</td><td>2 of 19</td></tr>
+<tr><td>V3 Epee F</td><td>MCGINNITY Marie</td><td>1 of 1</td><td>15 of 16</td></tr>
+<tr><td>V3 Epee M</td><td>KOSTRZEWA Ireneusz</td><td>2 of 2</td><td>8 of 28</td></tr>
+<tr><td>V3 Epee M</td><td>WHITLEY Gary</td><td>1 of 2</td><td>17 of 28</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW2efs-2025-2026 P1</b></td><td>V2 Epee M</td><td>1 of 33</td><td>KORONA Przemysåaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter; the organiser&#x27;s page itself prints ł as å (bytes checked)</td></tr>
+<tr><td><b>PEW2efs-2025-2026 P2</b></td><td>V2 Foil M</td><td>8 of 17</td><td>KORONA Przemysåaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter; the organiser&#x27;s page itself prints ł as å (bytes checked)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW2efs-2025-2026 R1</b></td><td>V4 Epee M</td><td>9</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW2efs-2025-2026” with a letter for each P and R row.</p></section><section id="PEW31fs-2025-2026"><p class="kicker">2026-02-07 · Faches</p>
+<h2>PEW31fs-2025-2026 — EVF Circuit - Faches-Thumesnil (FRA)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>82ae86db-fa60-4f5e-a763-4438d4776ad2</code></p>
+<p>Stored now <b>1</b> · under the rule <b>1</b> · added <b>0</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>276</b></p>
+<div class="note good"><p>No change: the rule stores exactly what is stored now.</p></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW31fs-2025-2026”.</p></section><section id="PEW3fs-2024-2025"><p class="kicker">2024-12-07 · Munich</p><h2>PEW3fs-2024-2025 — PEW3</h2><div class="note warn"><p class="lede">Not ready: no sign-off asked</p><p>Refused at staging, unchanged from before ADR-106: three FTL brackets have no single category, and two brackets map to the one V3 women&#x27;s foil code (ADR-105). Its partial drafts were discarded. It needs its own decision on those brackets; stored results stay as they are.</p><p>Stored now: 10 results.</p></div></section><section id="PEW3fs-2025-2026"><p class="kicker">2025-12-06 · Munich</p><h2>PEW3fs-2025-2026 — EVF Circuit Memoriam Max Geuter – Munich (GER)</h2><div class="note warn"><p class="lede">Not ready: no sign-off asked</p><p>No organiser source on LOCAL: its only URL is the EVF archive page, which is not a results source. It stays on the list of events still to repair; stored results stay as they are.</p><p>Stored now: 7 results.</p></div></section><section id="PEW4efs-2025-2026"><p class="kicker">2026-03-07 · Napoli</p>
+<h2>PEW4efs-2025-2026 — EVF Circuit Napoli</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>b7eca756-0f0b-4207-845c-72be934b036c</code></p>
+<p>Stored now <b>22</b> · under the rule <b>27</b> · added <b>5</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>692</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>3 of 59</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>11 of 59</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V1 Foil M</td><td>12 of 13</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Sabre M</td><td>13 of 32</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>32 of 73</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW4efs-2025-2026 R1</b></td><td>V2 Epee F</td><td>3</td><td>KUZMICHOVA Svitalina · UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td><td>A link: Svitlana and Svitalina are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW4efs-2025-2026” with a letter for each P and R row.</p></section><section id="PEW5ef-2025-2026"><p class="kicker">2026-03-14 · Stockholm</p>
+<h2>PEW5ef-2025-2026 — EVF Circuit – Stockholm (SWE)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>08c1f7cf-db20-4abb-afa4-cd5b17b8cdf9</code></p>
+<p>Stored now <b>10</b> · under the rule <b>6</b> · added <b>0</b> · removed <b>4</b> · place or N changed <b>2</b> · PENDING <b>2</b> · rejected <b>158</b></p>
+<div class="note accent"><p>Stockholm had not been repaired under ADR-105: the stored N of 20 in V1 men&#x27;s foil is the four-category pool round; the category final placed 3. The changes restore the organiser&#x27;s brackets.</p></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V2 Epee M</td><td>1 of 50</td><td></td><td>KORONA Przemysław (1976, #56)</td><td>143.16</td><td>PENDING now (below)</td></tr>
+<tr><td>V2 Epee M</td><td>39 of 50</td><td></td><td>MCQUEEN Andy (1976, #142)</td><td>4.11</td><td>the source prints MCQUEEN Andrew (GBR), place 39: first name differs from the roster's Andy</td></tr>
+<tr><td>V2 Foil M</td><td>8 of 9</td><td></td><td>KORONA Przemysław (1976, #56)</td><td>13.63</td><td>PENDING now (below)</td></tr>
+<tr><td>V4 Epee M</td><td>1 of 9</td><td></td><td>KOLLAR Gabriel (1930, #294)</td><td>108.72</td><td>the source prints KOLLAR Gabriel (SVK), place 5: no PPW or MPW result</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V1 Foil M</td><td>GINZERY Tomas</td><td>1 of 20</td><td>1 of 3</td></tr>
+<tr><td>V1 Foil M</td><td>ALCSER Norbert</td><td>2 of 20</td><td>3 of 3</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW5ef-2025-2026 P1</b></td><td>V2 Epee M</td><td>1 of 50</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+<tr><td><b>PEW5ef-2025-2026 P2</b></td><td>V2 Foil M</td><td>8 of 9</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW5ef-2025-2026 R1</b></td><td>V2 Epee M</td><td>39</td><td>MCQUEEN Andrew · GBR</td><td>MCQUEEN Andy (1976, #142)</td><td>1 (PPW3-2025-2026)</td><td>A link: Andy and Andrew are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW5ef-2025-2026” with a letter for each P and R row.</p></section><section id="PEW61s-2025-2026"><p class="kicker">2026-04-11 · Liège</p>
+<h2>PEW61s-2025-2026 — EVF Circuit – Liège (BEL)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>d7e87bcc-310f-4bee-a055-531c203f8c85</code></p>
+<p>Stored now <b>2</b> · under the rule <b>3</b> · added <b>1</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>68</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V2 Sabre M</td><td>1 of 15</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW61s-2025-2026”.</p></section><section id="PEW62efs-2025-2026"><p class="kicker">2026-01-10 · Guildford</p>
+<h2>PEW62efs-2025-2026 — EVF Circuit – Guildford (GBR)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>8ea2f112-5d1d-48ac-9450-84f8ac40d74f</code></p>
+<p>Stored now <b>15</b> · under the rule <b>21</b> · added <b>8</b> · removed <b>2</b> · place or N changed <b>0</b> · PENDING <b>2</b> · rejected <b>299</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>21 of 23</td><td>MURRAY Claire</td><td>IRL</td><td>MURRAY Claire (1985, #55)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>21 of 34</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>22 of 34</td><td>KULKA Dawid</td><td>IRL</td><td>KULKA Dawid (1979, #124)</td><td>5 (GP5-2023-2024, GP8-2023-2024…)</td></tr>
+<tr><td>V1 Foil M</td><td>17 of 18</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Epee F</td><td>12 of 25</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee M</td><td>13 of 42</td><td>LEAHEY John</td><td>GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Sabre M</td><td>2 of 22</td><td>CHIAROMONTE francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>21 of 44</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V2 Epee M</td><td>3 of 42</td><td>KORONA Przemslaw</td><td>KORONA Przemysław (1976, #56)</td><td>86.03</td><td>PENDING now (below)</td></tr>
+<tr><td>V2 Foil M</td><td>16 of 30</td><td>KORONA Przemslaw</td><td>KORONA Przemysław (1976, #56)</td><td>20.06</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW62efs-2025-2026 P1</b></td><td>V2 Epee M</td><td>3 of 42</td><td>KORONA Przemslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter; a letter missing in the organiser&#x27;s entry</td></tr>
+<tr><td><b>PEW62efs-2025-2026 P2</b></td><td>V2 Foil M</td><td>16 of 30</td><td>KORONA Przemslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter; a letter missing in the organiser&#x27;s entry</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW62efs-2025-2026 R1</b></td><td>V1 Epee M</td><td>11</td><td>KAZIK Tomas · SVK</td><td>KAZIK Martin (1984, #176)</td><td>1 (GP3-2023-2024)</td><td>B leave rejected: another person. Separately, our “KAZIK Martin” record looks corrupt (gender F, one men&#x27;s épée result stored as “122”)</td></tr>
+<tr><td><b>PEW62efs-2025-2026 R2</b></td><td>V2 Epee M</td><td>35</td><td>MCQUEEN Andrew · GBR</td><td>MCQUEEN Andy (1976, #142)</td><td>1 (PPW3-2025-2026)</td><td>A link: Andy and Andrew are one name in two forms</td></tr>
+<tr><td><b>PEW62efs-2025-2026 R3</b></td><td>V4 Epee M</td><td>19</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW62efs-2025-2026” with a letter for each P and R row.</p></section><section id="PEW6efs-2025-2026"><p class="kicker">2026-03-28 · Jabłonna</p>
+<h2>PEW6efs-2025-2026 — EVF Circuit Jabłonna</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>630116bf-9e57-45f5-b28b-7c6a61f12d15</code></p>
+<p>Stored now <b>93</b> · under the rule <b>103</b> · added <b>14</b> · removed <b>4</b> · place or N changed <b>0</b> · PENDING <b>8</b> · rejected <b>149</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>11 of 12</td><td>MURRAY Claire</td><td>IRL</td><td>MURRAY Claire (1985, #55)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>6 of 24</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>11 of 24</td><td>TATCHYN Andriy</td><td>UKR</td><td>TATCHYN Andriy (1980, #286)</td><td>3 (PPW1-2025-2026, PPW3-2025-2026…)</td></tr>
+<tr><td>V1 Foil M</td><td>3 of 13</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V2 Epee F</td><td>9 of 19</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee F</td><td>12 of 19</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee M</td><td>9 of 38</td><td>LEAHEY John</td><td>GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee M</td><td>22 of 38</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V2 Foil M</td><td>13 of 17</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V2 Sabre M</td><td>7 of 16</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee F</td><td>6 of 9</td><td>MCGINNITY Marie</td><td>IRL</td><td>MCGINNITY Marie (1960, #364)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V3 Epee M</td><td>11 of 18</td><td>WHITLEY Gary</td><td>USA</td><td>WHITLEY Gary (1961, #114)</td><td>8 (GP2-2023-2024, GP3-2023-2024…)</td></tr>
+<tr><td>V4 Epee M</td><td>2 of 13</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+<tr><td>V4 Foil M</td><td>3 of 4</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>21 of 24</td><td>GOLA Maciej</td><td>GOLA Maciej (1981, #3)</td><td>3.06</td><td>PENDING now (below)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 13</td><td>SZUMIELEWICZ Paweł</td><td>SZUMIELEWICZ Paweł (1986, #18)</td><td>111.16</td><td>PENDING now (below)</td></tr>
+<tr><td>V2 Epee F</td><td>1 of 19</td><td>CISZEWSKA Barbara</td><td>CISZEWSKA Barbara (1974, #17)</td><td>124.02</td><td>PENDING now (below)</td></tr>
+<tr><td>V4 Epee M</td><td>10 of 13</td><td>KRAWCZYK Paweł</td><td>KRAWCZYK Paweł (1954, #6)</td><td>6.01</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW6efs-2025-2026 P1</b></td><td>V1 Epee M</td><td>13 of 24</td><td>ŁOJAK Szymon · POL</td><td>NOWAK Szymon (1990, #172)</td><td>9 (GP2-2023-2024, GP3-2023-2024…)</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P2</b></td><td>V1 Epee M</td><td>18 of 24</td><td>WIECZOREK Janusz · POL</td><td>NIECZKOWSKI Tomasz (1977, #206)</td><td>none</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P3</b></td><td>V1 Epee M</td><td>21 of 24</td><td>GOLA Maciej · POL</td><td>GOLA Maciej (1981, #3)</td><td>none</td><td>A link: printed POL and exactly this roster fencer; PENDING only because he has no PPW or MPW result</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P4</b></td><td>V1 Foil M</td><td>1 of 13</td><td>SZUMIELEWICZ Paweł · POL</td><td>SZUMIELEWICZ Paweł (1986, #18)</td><td>none</td><td>A link: printed POL and exactly this roster fencer; PENDING only because he has no PPW or MPW result</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P5</b></td><td>V2 Epee F</td><td>1 of 19</td><td>CISZEWSKA Barbara · POL</td><td>CISZEWSKA Barbara (1974, #17)</td><td>none</td><td>A link: printed POL and exactly this roster fencer; PENDING only because she has no PPW or MPW result</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P6</b></td><td>V2 Epee F</td><td>18 of 19</td><td>BELIAKOVA Alena · POL</td><td>BEDNARSKA Halina (1968, #79)</td><td>none</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P7</b></td><td>V3 Epee M</td><td>18 of 18</td><td>KARATHANASIS Atanasis · POL</td><td>KURBATSKYI Stepan (1991, #264)</td><td>1 (PPW1-2025-2026)</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+<tr><td><b>PEW6efs-2025-2026 P8</b></td><td>V4 Epee M</td><td>10 of 13</td><td>KRAWCZYK Paweł · POL</td><td>KRAWCZYK Paweł (1954, #6)</td><td>none</td><td>A link: printed POL and exactly this roster fencer; PENDING only because he has no PPW or MPW result</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW6efs-2025-2026 R1</b></td><td>V4 Epee M</td><td>7</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW6efs-2025-2026” with a letter for each P and R row.</p></section><section id="PEW7ef-2025-2026"><p class="kicker">2026-04-18 · Salzburg</p><h2>PEW7ef-2025-2026 — EVF Circuit Salzburg</h2><div class="note warn"><p class="lede">Not ready: no sign-off asked</p><p>The runner does not expand a d&#x27;Artagnan event page into its brackets (it read the index as one empty bracket). Re-staging needs that support first; stored results stay as they are.</p><p>Stored now: 7 results.</p></div></section><section id="PEW7es-2024-2025"><p class="kicker">2025-03-29 · Jabłonna</p>
+<h2>PEW7es-2024-2025 — European Veterans Circuit – Jabłonna (POL)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>a7ce6c7b-a235-4c54-8750-46979fb9e7ca</code></p>
+<p>Stored now <b>76</b> · under the rule <b>83</b> · added <b>8</b> · removed <b>1</b> · place or N changed <b>0</b> · PENDING <b>3</b> · rejected <b>149</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>8 of 29</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>9 of 29</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V2 Epee F</td><td>3 of 18</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee F</td><td>11 of 18</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Sabre M</td><td>11 of 22</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>19 of 27</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>20 of 27</td><td>WHITLEY Gary</td><td>USA</td><td>WHITLEY Gary (1961, #114)</td><td>8 (GP2-2023-2024, GP3-2023-2024…)</td></tr>
+<tr><td>V4 Epee M</td><td>5 of 12</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>28 of 29</td><td>GOLA Maciej</td><td>GOLA Maciej (1981, #3)</td><td>1.51</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW7es-2024-2025 P1</b></td><td>V1 Epee M</td><td>28 of 29</td><td>GOLA Maciej · POL</td><td>GOLA Maciej (1981, #3)</td><td>none</td><td>A link: printed POL and exactly this roster fencer; PENDING only because he has no PPW or MPW result</td></tr>
+<tr><td><b>PEW7es-2024-2025 P2</b></td><td>V2 Epee M</td><td>45 of 45</td><td>BISKUPSKI Marek · POL</td><td>MIKULICKI Arkadiusz (1979, #100)</td><td>2 (GP8-2023-2024, MPW-2023-2024)</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+<tr><td><b>PEW7es-2024-2025 P3</b></td><td>V3 Epee M</td><td>26 of 27</td><td>KARATHANASIS Atanasis · POL</td><td>KURBATSKYI Stepan (1991, #264)</td><td>1 (PPW1-2025-2026)</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW7es-2024-2025” with a letter for each P and R row.</p></section><section id="PEW8es-2025-2026"><p class="kicker">2026-05-02 · Chania</p><h2>PEW8es-2025-2026 — EVF Circuit – Chania (GRE)</h2><div class="note warn"><p class="lede">Not ready: no sign-off asked</p><p>No organiser source on LOCAL (the EVF archive page only) and no stored results. Nothing to do now.</p><p>Stored now: 0 results.</p></div></section><section id="PEW9efs-2025-2026"><p class="kicker">2026-05-30 · Dublin</p>
+<h2>PEW9efs-2025-2026 — EVF Circuit Dublin</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>42655285-f0ae-48f6-9eca-e6def510ca62</code></p>
+<p>Stored now <b>8</b> · under the rule <b>15</b> · added <b>7</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>137</b></p>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>3 of 11</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>7 of 11</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 5</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>5 of 5</td><td>ALCSER Norbert</td><td>HUN</td><td>ALCSER Norbert (1985, #258)</td><td>1 (PPW3-2024-2025)</td></tr>
+<tr><td>V2 Epee F</td><td>3 of 11</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee M</td><td>10 of 25</td><td>LEAHEY John</td><td>GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V3 Epee F</td><td>5 of 7</td><td>MCGINNITY Marie</td><td>IRL</td><td>MCGINNITY Marie (1960, #364)</td><td>1 (PPW1-2024-2025)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW9efs-2025-2026 R1</b></td><td>V4 Epee M</td><td>3</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW9efs-2025-2026” with a letter for each P and R row.</p></section>
+  <p class="foot">review · adr-106 re-staging · 2026-10-02 · source: LOCAL drafts and staging summaries</p>
+</div>
+</body>
+</html>

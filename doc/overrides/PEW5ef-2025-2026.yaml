@@ -1,0 +1,9 @@
+# PEW5ef-2025-2026 — ADR-106 re-staging decisions of 2026-10-02 (doc/plans/adr-106-restage-review-2026-10-02.html).
+# PEW5ef-2025-2026 P1: A — KORONA-TRZEBSKI Przemyslaw → #56
+# PEW5ef-2025-2026 P2: A — KORONA-TRZEBSKI Przemyslaw → #56
+# PEW5ef-2025-2026 R1: A — MCQUEEN Andrew → #142
+identity:
+- scraped_name: KORONA-TRZEBSKI Przemyslaw
+  id_fencer: 56
+- scraped_name: MCQUEEN Andrew
+  id_fencer: 142

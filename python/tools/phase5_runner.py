@@ -211,6 +211,22 @@ def _unresolved_draft_rows(db, run_id: str) -> list[dict]:
     return [r for r in rows if not r.get("enum_match_method")]
 
 
+def _confirmed_by_overrides(pending: list, overrides) -> list:
+    """The sign-off alias pairs, with each pair the event's override file links
+    (an identity entry naming that fencer) marked confirmed: a person decided
+    the link, so it neither blocks as a suspected wrong match nor waits as
+    ambiguous, and it is written as an alias. ADM.ID.11."""
+    from dataclasses import replace
+
+    out = []
+    for p in pending:
+        entry = overrides.identity_for(p.scraped_name)
+        if entry is not None and entry.id_fencer == p.id_fencer and p.icon != "✓":
+            p = replace(p, icon="✓", reason=f"linked by the event's override file ({p.reason})")
+        out.append(p)
+    return out
+
+
 def _flush_source_matches(matches: list, *, international: bool) -> list:
     """The matches the stage-time alias flush derives pairs from. For an
     international event only AUTO_MATCHED rows: a PENDING row's fencer is a
@@ -432,6 +448,10 @@ def main() -> int:
             return 2
 
         pending = derive_pending_from_run_id(db, args.commit_run_id)
+        if args.event_code != "REQUIRED":
+            from python.pipeline.overrides import load_for_event
+
+            pending = _confirmed_by_overrides(pending, load_for_event(args.event_code))
         if has_blocking_pairs(pending):
             print(
                 f"⛔ sign-off BLOCKED — {sum(1 for p in pending if p.icon == '❌')} "
