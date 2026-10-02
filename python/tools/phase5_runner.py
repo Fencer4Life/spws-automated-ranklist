@@ -1802,8 +1802,9 @@ def _format_international_section(event_code: str, ctxs: list) -> list[str]:
 
     Two cases are flagged: an N equal to the Polish rows (the source may list
     only the Poles, which is exactly the shape of the old damage), and a
-    bracket whose rows were all dismissed for having no country (a parser
-    without a country column, such as 4fence).
+    bracket whose source prints no country at all (an Engarde page headed
+    Club, ENG.NAT.01): its fencers are dismissed unless the event's override
+    file names their federation, and the flag says how many it names.
     """
     from python.pipeline.joined_brackets import BracketField
 
@@ -1823,12 +1824,11 @@ def _format_international_section(event_code: str, ctxs: list) -> list[str]:
         poles = len(ctx.matches)
         linked = sum(1 for m in ctx.matches if m.method != "EXCLUDED")
         dismissed = ctx.dismissed_non_pol
-        if (
-            places
-            and len(dismissed) == len(places)
-            and all(d["country"] is None for d in dismissed)
-        ):
-            check = "⚠ every row dismissed: the source has no country"
+        if places and all(r.fencer_country is None for r in parsed.results):
+            check = (
+                f"⚠ the source has no country: {len(ctx.nationality_from_override)} named in "
+                "the override file, every other fencer dismissed"
+            )
         elif poles and n == poles:
             check = "⚠ N equals the POL rows: confirm the source lists the whole bracket"
         else:

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="050-unified-ingestion-pipeline.md">
-<meta name="adr-source-sha256" content="e87d88a35994756b533ebb2c49dfd7685bf0dcd50f76b4b85e0589b4fffbf46a">
+<meta name="adr-source-sha256" content="3f40352af012ca73c1fd870e3fb5799f9889ca137e9b33b630e59c8da9d1f946">
 <title>ADR-050 · Unified Ingestion Pipeline (rebuild — Phases 0–6)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -285,7 +285,7 @@ table. The full stage tuple is now:
 <tbody>
 <tr>
 <td>Q1</td>
-<td>Override YAML — 5 surfaces (identity, splitter, URL, match-method, joint-pool); EVF V0 ack omitted</td>
+<td>Override YAML — 5 surfaces (identity, splitter, URL, match-method, joint-pool); EVF V0 ack omitted. A sixth, <code>nationality</code>, is added by <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (amendment of 2026-10-02) for an organiser page that prints no nationality</td>
 <td>V0+EVF = data corruption per R005b — fix upstream, no override.</td>
 </tr>
 <tr>
@@ -389,5 +389,5 @@ table. The full stage tuple is now:
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="049-joint-pool-split-flag.html">← ADR-049: Joint-pool split flag on tbl_tournament</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="052-url-data-validation.html">→ ADR-052: URL→data validation enforcement at Stage 7</a></nav>
-<footer class="foot">Generated from <code>050-unified-ingestion-pipeline.md</code> · source SHA-256 <code>e87d88a35994756b533ebb2c49dfd7685bf0dcd50f76b4b85e0589b4fffbf46a</code></footer>
+<footer class="foot">Generated from <code>050-unified-ingestion-pipeline.md</code> · source SHA-256 <code>3f40352af012ca73c1fd870e3fb5799f9889ca137e9b33b630e59c8da9d1f946</code></footer>
 </div></body></html>
