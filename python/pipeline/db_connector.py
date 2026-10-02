@@ -16,6 +16,13 @@ class DbConnector:
     def __init__(self, supabase_client) -> None:
         self._sb = supabase_client
 
+    def fetch_spws_starter_ids(self) -> set[int]:
+        """The fencers with a PPW or MPW result in any season: the only ones an
+        international result is stored for by identity (ADR-106 §1). One call,
+        one array (``fn_spws_starter_ids``)."""
+        resp = self._sb.rpc("fn_spws_starter_ids", {}).execute()
+        return set(resp.data or [])
+
     def fetch_fencer_db(self) -> list[dict]:
         """Return all fencers with fields needed for fuzzy matching.
 
@@ -291,7 +298,7 @@ class DbConnector:
             self._sb.table("tbl_result")
             .select(
                 "id_fencer,int_place,id_tournament,"
-                "txt_scraped_name,num_match_confidence,enum_match_method"
+                "txt_scraped_name,num_match_confidence,enum_match_method,txt_entered_for"
             )
             .in_("id_tournament", list(tmeta))
             .execute()
@@ -315,6 +322,7 @@ class DbConnector:
                 "scraped_name": r.get("txt_scraped_name"),
                 "confidence": r.get("num_match_confidence"),
                 "match_method": r.get("enum_match_method"),
+                "entered_for": r.get("txt_entered_for"),
             }
             for r in rows
         ]

@@ -133,6 +133,7 @@
   <p class="dek">With your 8 URLs and the organiser URLs already stored, <b>16 events</b> have an organiser source: <b>all 12 of 2025/26</b> and 4 of 2024/25, including the biennial European Championships. The 2025/26 ones are the international results the 2026/27 ranking carries over; the 2024/25 ones are history. Each is rolled back and re-ingested from the organiser's results through the fixed path, on LOCAL first, <b>one event at a time, with your sign-off on each</b>. Then CERT, then PROD. It repairs N, the places and the lost scraped names together.</p>
   <div class="meta">
     <span class="pill good"><span class="dot"></span>Signed off 2 Oct: R1–R4 = A</span>
+    <span class="pill accent"><span class="dot"></span>Budapest: C A, D A · LOCAL done</span>
     <span class="pill"><span class="dot"></span>per-event sign-off still applies</span>
     <span class="pill"><span class="dot"></span>16 events · 150 brackets · 461 POL results</span>
     <span class="pill danger"><span class="dot"></span>needs ADR-105 release 1 deployed and release 2 built</span>
@@ -140,8 +141,105 @@
 
   <hr class="rule">
 
+  <section id="budapest">
+    <p class="kicker">Decided 2 October · Budapest 2025 (PEW1efs-2025-2026) · C A, D A · committed on LOCAL; CERT and PROD after the release</p>
+    <h2>Budapest: one organiser page prints the club where the nation should be</h2>
+    <p><b>What is stored is wrong on every environment</b>, and worse than the N. Every bracket is renumbered among a few
+    fencers, foreign fencers are stored as ours, and three men sit in <b>V2 women's épée</b> (ATANASSOW 1st, KORONA
+    Przemysław 4th, WIERZBICKI 8th of 8). LOCAL, CERT and PROD hold the same 50 rows: V1 men's épée has N 5, with
+    BOBUSIA Jarosław 1st (95.39 points).</p>
+    <p><b>Staged on LOCAL</b> (run <code>74e319d3</code>) from the three Engarde tournaments of the Budapest Cup:
+    <b>25 Polish results in 10 brackets</b>. Each one has the same N and place as EVF's own record (event 79).
+    One Pole is missing.</p>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> BOBUSIA Jarosław, 5th of 33 in V1 men's épée, is dismissed</p>
+      <p>Three Budapest brackets, V1 men's épée (<code>me40</code>), V4 women's foil (<code>wf70</code>) and V4 men's
+      sabre (<code>ms70</code>), print a <b>Club</b> column where the others print <b>Country</b>. The fencer list on
+      those pages has no nationality either. The Engarde parser takes the fourth column as the country whatever its
+      heading, so it reads BOBUSIA's club, <code>UKSSMK</code>, as his country. The POL-only rule (R4) then dismisses him,
+      and the staging summary marks the bracket ✓ with 33 dismissed, without a warning.</p>
+      <p>I checked the headers of every bracket of all eight Engarde tournaments in the batch: <b>these three are the only
+      ones</b>. EVF lists no Pole in <code>wf70</code> or <code>ms70</code>, so <b>BOBUSIA is the only Polish result
+      affected</b>. EVF records him as POL, 5th of 33.</p>
+    </div>
+    <p><b>What the parser fix is, whatever you decide below</b> (test-first): the parser finds the nationality column by its
+    heading (Country, Nation, Nación and the other languages Engarde uses). When a page has no such column, it leaves the
+    nationality blank and does not read the club as a country. Such a bracket gets a warning in the staging summary's
+    Check column: “no nationality column — every fencer dismissed unless named in the override file”.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">C</span> Where the organiser's page has no nationality, how is a Pole recognised?</p>
+      <ul>
+        <li><b>A</b> a <b>nationality</b> entry in the event's override file, <code>doc/overrides/PEW1efs-2025-2026.yaml</code>.
+        It names the fencer and the country and states the evidence (EVF event 79, V1 men's épée, 5th of 33, POL).
+        It only fills a blank nationality and never replaces one the page prints. The file is committed, so CERT and PROD
+        apply it identically. It is a sixth section of the override file that already carries identity, splitter, URL,
+        match-method and joint-pool corrections (ADR-050).</li>
+        <li><b>B</b> the runner fetches EVF's results for the bracket and takes the nationality from there automatically.</li>
+        <li><b>C</b> leave him out: the rule stays fail-closed, and BOBUSIA has no Budapest result.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> One fencer in the whole batch needs it. A written entry with its evidence is reviewed
+      like any other correction. B adds a dependency on EVF's API to every run: that API sits behind a bot check, and
+      Budapest has no EVF event id stored on LOCAL. All of that would serve one row. C drops a Pole who placed 5th of 33.</p>
+      <p><b>Why not recognise a Pole by our roster?</b> KULKA Dawid, 6th in the same bracket, is on our roster as PL, but he
+      entered for <b>Ireland</b> (EVF: IRL, club Brian Boru FC). A roster match would make him Polish. The nationality
+      entered under is what counts (R4), and only the override states it explicitly.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Bracket</th><th>Stored (all environments)</th><th>Source, as staged (+ BOBUSIA under C A)</th></tr></thead>
+      <tbody>
+        <tr><td>V1 men's épée</td><td class="mono">BOBUSIA 1, KULKA 2, KORONA R. 3, ALCSER 4, STOLARIK 5 of 5</td><td class="mono">BOBUSIA 5 of 33 (KULKA IRL, KORONA NED, ALCSER HUN, STOLARIK SVK: dismissed)</td></tr>
+        <tr><td>V2 women's épée</td><td class="mono">8 of 8, three of them men; WASILCZUK 3, GANSZCZYK 7</td><td class="mono">WASILCZUK 10, GANSZCZYK Anna 25 of 27</td></tr>
+        <tr><td>V2 men's épée</td><td class="mono">ATANASSOW 1, KORONA 3, WIERZBICKI 4 of 6</td><td class="mono">ATANASSOW 1, KORONA 14, WIERZBICKI 43 of 57</td></tr>
+        <tr><td>V2 men's sabre</td><td class="mono">KOŃCZYŁO 1, GANSZCZYK 2, ZAWROTNIAK 4, NOWICKI 5, MAZIK 6, WIERZBICKI 7 of 7</td><td class="mono">GANSZCZYK 3, KOŃCZYŁO 3, ZAWROTNIAK 6, NOWICKI 10, MAZIK 14, WIERZBICKI 15 of 22</td></tr>
+        <tr><td>V3 men's épée</td><td class="mono">KRZEMIŃSKI 1, DRAPELLA 2, HERONIMEK 3, ĆWIORO 4 of 5</td><td class="mono">KRZEMIŃSKI 6, DRAPELLA 14, HERONIMEK 15, ĆWIORO 22 of 34</td></tr>
+        <tr><td>V2 men's foil</td><td class="mono">KORONA 1, KOŃCZYŁO 4 of 4</td><td class="mono">KORONA 2, KOŃCZYŁO 18 of 25</td></tr>
+        <tr><td>V3 men's foil</td><td class="mono">NIKALAICHUK 1, DRAPELLA 2, ĆWIORO 3 of 3</td><td class="mono">NIKALAICHUK 7, DRAPELLA 9, ĆWIORO 21 of 21</td></tr>
+        <tr><td>V4 men's épée</td><td class="mono">SZCZĘSNY 1, SOBIERAJ 2 of 4</td><td class="mono">SZCZĘSNY 6, SOBIERAJ 8 of 17</td></tr>
+        <tr><td>V1 women's épée / foil</td><td class="mono">SAMECKA-NACZYŃSKA 1 of 2 / 1 of 1</td><td class="mono">7 of 17 / 9 of 9</td></tr>
+        <tr><td>V2 women's foil</td><td class="mono">WASILCZUK 1 of 1</td><td class="mono">WASILCZUK 9 of 13</td></tr>
+        <tr><td>V1 men's foil, V3 women's épée, V3 men's sabre</td><td class="mono">foreign fencers only (GINZERY, MCGINNITY, FARAGO…)</td><td class="mono">no Pole: the brackets go</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">D</span> Commit Budapest?</p>
+      <ul>
+        <li><b>A</b> once C is built, re-stage. Commit on LOCAL <b>only if the drafts are exactly these 26 rows</b> in 11
+        brackets (the 25 staged plus BOBUSIA 5th of 33), each machine-checked against EVF's record on N and place. Then
+        release (the parser and override code: your go for the push included) and run Budapest on CERT and PROD the same
+        staged, machine-diffed way.</li>
+        <li><b>B</b> show me the re-staged drafts before committing.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> The 25 rows already agree with EVF one for one, and the condition is checked by machine,
+      not by eye. Any difference stops the commit and comes back to you.</p>
+    </div>
+    <div class="note good" id="budapest-done">
+      <p class="lede"><span class="tick">✓</span> Built test-first and committed on LOCAL (C A, D A)</p>
+      <p><b>Code.</b> Both Engarde parsers find the nationality column by its heading; a page headed Club gives no
+      nationality. The override file gains a <code>nationality</code> section, which fills a blank nationality and never
+      replaces a printed one, in both pipelines (the shared POL filter, <code>stages._keep_pol_rows</code>). The staging
+      summary flags the three Budapest brackets: “⚠ the source has no country: 1 named in the override file, every other
+      fencer dismissed” on <code>me40</code>, 0 named on <code>wf70</code> and <code>ms70</code>. Ten tests failed first;
+      the Python suite then passed (1517).</p>
+      <p><b>Data.</b> <code>doc/overrides/PEW1efs-2025-2026.yaml</code> names BOBUSIA Jaroslaw POL, with EVF's record as
+      evidence. Re-staged (run <code>280f0caa</code>): <b>26 rows in 11 brackets, every one equal to EVF's record</b> on
+      bracket, N and place, all typed PEW. Under D A that was the condition, so the run was committed with
+      <code>--replace-event</code>: 26 results in 11 tournaments replace 50 in 14. TT.CODE.06 and INTL.INV.01 are 0, and
+      no drafts are left.</p>
+      <p><b>What the 2026/27 ranking reads.</b> BOBUSIA's Budapest result is 5th of 33, 57.45 points, typed PEW. The damaged
+      “1st of 5” had given him 95.39; his better international result, Fâches (71.71), now counts in its place. He is 7th
+      in V1 men's épée with 95.99.</p>
+      <p><b>Next:</b> commit and release the code and the override file (your go for the push is part of D A). Then stage
+      Budapest on CERT and PROD, compare their drafts and committed scores with LOCAL by machine, and commit.</p>
+    </div>
+    <p><b>Tests, failing first:</b> <code>ENG.NAT.01</code> (a page headed Club yields no nationality, from the real
+    <code>me40</code> page), <code>ENG.NAT.02</code> (Country, Nation and Nación are read as before),
+    <code>P3.OV16–18</code> (a nationality entry fills a blank, never replaces a printed nationality, and rejects an unknown
+    field), and a staging-summary test for the warning. <b>Documentation:</b> ADR-105 §1.1 and ADR-050's override list,
+    the ingestion handbook page, the RTM and Appendix D totals; then the docs index and graph refresh.</p>
+  </section>
+
   <section id="napoli">
-    <p class="kicker">Decide this first · Napoli (PEW4efs-2025-2026) · B A, W A decided · sign-off N</p>
+    <p class="kicker">Done 2 October · Napoli (PEW4efs-2025-2026) · B A, W A, N A · LOCAL, CERT and PROD agree</p>
     <h2>Napoli's 4fence pages: two parser defects, and blanks that are not all the same</h2>
     <p><b>What is stored is wrong on every environment</b> (on PROD its N is the Polish count too). Only 9 of LOCAL's 28 rows
     match EVF's record (event 85); 19 are not in it. The stored places are renumbered among the Poles: V1 men's épée holds
@@ -224,6 +322,11 @@
       INTL.INV.01 at 0. EVF's record (event 85) agrees on 15 of 22. The other 7 differ exactly as W A decides: EVF counts
       the fencers who left in N (V2 men's épée 79 against 77, V3 men's épée 74 against 73, V2 men's foil 23 against 22)
       and keeps the places printed below them (PARDUS 58th, where he is 56th of 77).</p>
+      <p><b>Released and run on CERT and PROD:</b> <code>de8c3146</code> (CI <code>36989872665</code>, Release
+      <code>36990010735</code>). Napoli staged on each, its drafts and committed scores machine-diffed against LOCAL:
+      identical (on PROD with its two birth-year corrections). <b>LOCAL, CERT and PROD now hold the same data for all 25
+      international events of 2024/25 and 2025/26</b> (brackets, results, N, points); TT.CODE.06 and INTL.INV.01 at 0 and
+      no drafts left on each. Zabłocki's 2026/27 total is 417.24, 2nd, on all three.</p>
     </div>
   </section>
 
@@ -655,7 +758,10 @@ Superseded prose archived rather than appended: yes</pre>
   <section>
     <p class="kicker">Sign-off</p>
     <h2>What I need from you</h2>
-    <p>Sign-off of this plan, with R1, R2, R3 and R4 (I recommend A for each). The fixed Phase 5 path is already proven on MSW Manama: <a href="msw-manama-replay-review-2026-10-01.html">replay review</a>. Then I build the rollback RPC and the URL check test-first, alongside release 2. The first event to stage is <code>PEW3fs-2024-2025</code> (Munich, 7 December 2024), the oldest in the batch.</p>
+    <p><b>Now: C and D for Budapest</b> (<a href="#budapest">above</a>; I recommend A for each). After Budapest: Madrid
+    2025, then Fâches and Stockholm (their organiser URLs are on LOCAL only so far), Munich 2025, the 2024/25 history
+    events, and the seed refresh that also carries PROD's two birth-year corrections to LOCAL and CERT.</p>
+    <p class="mono" style="color:var(--faint)">Signed off earlier: R1–R4 A (plan), R A, Q A, Y A, G A, P A, B A, W A, N A.</p>
   </section>
 
   <p class="foot">plan · international-data-repair-batch-1 · 2026-10-01 · evidence: LOCAL counts; source sheet doc/plans/evf-source-urls-2026-10-01.html</p>

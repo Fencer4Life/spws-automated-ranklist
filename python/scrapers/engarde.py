@@ -7,13 +7,15 @@ Handles multilingual headers (EN, FR, ES, IT, DE, PL, HU).
 Structure:
 - <table class="liste"> contains the results
 - First column (class="GBD") = place/rank
-- Subsequent columns = surname, first name, country
+- Subsequent columns = surname, first name, then the nationality column,
+  found by its heading (ENG.NAT.01): some organisers print a club there
 - Participant count in <h3> text: "Overall ranking (57 fencers)"
 """
 
 from __future__ import annotations
 
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 from datetime import date
 
@@ -30,6 +32,26 @@ ENGARDE_LIST_URL = (
 )
 _TOURNAMENT_RE = re.compile(r"engarde-service\.com/tournament/([^/?#]+)/([^/?#]+)", re.IGNORECASE)
 _POOL_RE = re.compile(r"\b(poules?|pools?)\b", re.IGNORECASE)
+# The headings Engarde gives the nationality column, by language, folded (lower
+# case, no accents, letters only). A column headed anything else is not a
+# nationality: the Budapest Cup 2025 prints "Club" there on three brackets
+# (ENG.NAT.01).
+_NATIONALITY_HEADINGS = frozenset(
+    {
+        "country",
+        "nation",
+        "nationality",
+        "nacion",
+        "nazione",
+        "nazionalita",
+        "nationalite",
+        "pays",
+        "land",
+        "kraj",
+        "orszag",
+        "nat",
+    }
+)
 
 
 def parse_engarde_category(slug: str, titre: str) -> list[str]:
@@ -165,6 +187,34 @@ def parse_competition_list(xml_text: str, org: str, event: str) -> tuple[list[di
     return kept, skipped
 
 
+def _fold(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if c.isalpha()).lower()
+
+
+def _nationality_column(table) -> int | None:
+    """The index of the classification's nationality column, found by its
+    heading; None when the page has none, and its fencers then carry no
+    nationality. A table without a heading row keeps the fourth column."""
+    header = next((tr for tr in table.find_all("tr") if tr.find("th")), None)
+    if header is None:
+        return 3
+    for i, cell in enumerate(header.find_all(["th", "td"])):
+        if _fold(cell.get_text(strip=True)) in _NATIONALITY_HEADINGS:
+            return i
+    return None
+
+
+def _country(cells, column: int | None) -> str | None:
+    """The nationality in a row's cells, or None (no column, or an empty cell)."""
+    if column is None or column >= len(cells):
+        return None
+    cell = cells[column]
+    span = cell.find("span", attrs={"translate": "no"})
+    text = span.get_text(strip=True) if span else cell.get_text(strip=True)
+    return text.replace("\xa0", "") or None
+
+
 def parse_engarde_html(html: str) -> list[dict]:
     """Parse Engarde final classification HTML into standardized result list.
 
@@ -183,6 +233,7 @@ def parse_engarde_html(html: str) -> list[dict]:
 
     results = []
     rows = table.find_all("tr")
+    nationality = _nationality_column(table)
 
     for row in rows:
         # Skip header rows (contain <th>)
@@ -204,13 +255,9 @@ def parse_engarde_html(html: str) -> list[dict]:
         surname = cells[1].get_text(strip=True).replace("\xa0", "")
         firstname = cells[2].get_text(strip=True).replace("\xa0", "")
 
-        # Fourth cell = country (may have a <span> inside)
-        country_cell = cells[3]
-        country_span = country_cell.find("span", attrs={"translate": "no"})
-        if country_span:
-            country = country_span.get_text(strip=True)
-        else:
-            country = country_cell.get_text(strip=True).replace("\xa0", "")
+        # The nationality, from the column headed as one (may have a <span>
+        # inside); None when the page has no such column.
+        country = _country(cells, nationality)
 
         fencer_name = f"{surname} {firstname}".strip()
         if not fencer_name:
@@ -259,6 +306,7 @@ def parse_html(
 
     parsed_results: list[ParsedResult] = []
     row_index = 0
+    nationality = _nationality_column(table)
 
     for row in table.find_all("tr"):
         if row.find("th"):
@@ -275,12 +323,7 @@ def parse_html(
         surname = cells[1].get_text(strip=True).replace("\xa0", "")
         firstname = cells[2].get_text(strip=True).replace("\xa0", "")
 
-        country_cell = cells[3]
-        country_span = country_cell.find("span", attrs={"translate": "no"})
-        if country_span:
-            country = country_span.get_text(strip=True)
-        else:
-            country = country_cell.get_text(strip=True).replace("\xa0", "")
+        country = _country(cells, nationality)
 
         fencer_name = f"{surname} {firstname}".strip()
         if not fencer_name:
@@ -297,7 +340,7 @@ def parse_html(
                 ),
                 fencer_name=fencer_name,
                 place=place,
-                fencer_country=country or None,
+                fencer_country=country,
             )
         )
 

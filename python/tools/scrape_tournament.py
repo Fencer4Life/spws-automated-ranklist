@@ -15,6 +15,7 @@ import os
 import sys
 
 import httpx
+from python.pipeline.international_admission import fold_federation
 from python.scrapers.base import detect_platform
 from python.scrapers.dartagnan import parse_dartagnan_rankings_html
 from python.scrapers.engarde import parse_engarde_html
@@ -333,6 +334,8 @@ def main():
     # or re-ranked, and its N is the whole scraped bracket.
     intl = international_bucket(anchor, siblings, parsed_rows)
     intl_n: int | None = None
+    # ADR-106 §1: an international row is stored only for an SPWS starter.
+    starters = set(db.fetch_spws_starter_ids()) if intl is not None else None
     if intl is not None:
         intl_cat, intl_rows, intl_n = intl
         split = SplitResult(buckets={intl_cat: intl_rows}, unresolved=[])
@@ -395,6 +398,7 @@ def main():
             cat,
             season_end_year,
             scraped_countries=scraped_countries,
+            spws_starters=starters,
         )
 
         payload = []
@@ -405,15 +409,25 @@ def main():
             )
             if m is None:
                 continue
-            payload.append(
-                {
-                    "id_fencer": m.id_fencer,
-                    "int_place": r["place"],
-                    "txt_scraped_name": r["fencer_name"],
-                    "num_confidence": float(m.confidence) if m.confidence else 0,
-                    "enum_match_status": m.status,
-                }
-            )
+            if intl is not None and m.status != "AUTO_MATCHED":
+                # ADR-106 §1: a PENDING row is resolved by a person; this tool
+                # has no review step, so it is reported, never stored.
+                print(
+                    f"  PENDING {r['fencer_name']} (place {r['place']}): not stored; "
+                    "re-ingest the event through the Phase 5 runner to resolve it",
+                    file=sys.stderr,
+                )
+                continue
+            row = {
+                "id_fencer": m.id_fencer,
+                "int_place": r["place"],
+                "txt_scraped_name": r["fencer_name"],
+                "num_confidence": float(m.confidence) if m.confidence else 0,
+                "enum_match_status": m.status,
+            }
+            if intl is not None:
+                row["txt_entered_for"] = fold_federation(r.get("country"))
+            payload.append(row)
 
         # ADR-049 (amended 2026-06-04): every tournament — joint-pool sibling
         # or solo — carries its PER-V-CAT slice size as int_participant_count.

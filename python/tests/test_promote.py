@@ -136,6 +136,36 @@ class TestPromoteEvent:
         assert len(result["tournaments"]) == 1
         assert 100 in result["results"]
 
+    def test_cert_results_carry_the_printed_federation(self):
+        """NAT.EVID.04 the CERT result read selects txt_entered_for, so the
+        PROD payload (rows passed through to fn_ingest_tournament_results)
+        keeps the federation the source printed (ADR-106 §3)."""
+        from python.pipeline.promote import read_cert_event
+
+        seen: list[str] = []
+
+        def mock_query(sql):
+            seen.append(sql)
+            if "FROM tbl_event" in sql:
+                return [
+                    {
+                        "event_code": "PEW1efs-2025-2026",
+                        "event_name": "EVF Circuit Budapest",
+                        "id_event": 9,
+                        "id_season": 3,
+                        "id_organizer": 1,
+                        "dt_start": "2025-09-20",
+                        "enum_status": "COMPLETED",
+                    }
+                ]
+            if "FROM tbl_tournament" in sql:
+                return [{"id_tournament": 7, "txt_code": "T"}]
+            return []
+
+        read_cert_event("PEW1efs", query_fn=mock_query)
+        result_sql = next(q for q in seen if "FROM tbl_result" in q)
+        assert "r.txt_entered_for" in result_sql
+
     def test_creates_tournaments_on_prod(self):
         """9.205 promote_event creates tournaments on PROD."""
         from python.pipeline.promote import write_prod_tournament

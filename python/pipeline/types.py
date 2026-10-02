@@ -194,6 +194,9 @@ class StageMatchResult:
     stored_scraped_name: str | None = None
     stored_confidence: float | None = None
     stored_match_method: str | None = None
+    # ADR-106 §3: the federation the source printed for this result (three
+    # letters, PL → POL), or None; on a recompute, the stored value written back.
+    entered_for: str | None = None
 
 
 @dataclass
@@ -233,10 +236,11 @@ class PipelineContext:
     splits: dict[str, list] | None = None  # S4 writes: {V-cat: [ParsedResult, ...]}
     joint_pool_siblings: list[str] = field(default_factory=list)  # S5 writes (tournament_codes)
     matches: list[StageMatchResult] = field(default_factory=list)  # S6 writes
-    # ADR-105 §5.1 / ADR-038: rows of an international event dismissed before
-    # matching (country not POL, or none), as {name, place, country}. S6 and
-    # ResolveFencers write it; S7's count check and the staging summary read it.
-    dismissed_non_pol: list[dict] = field(default_factory=list)
+    # ADR-106 §1: rows of an international event the admission rejected (no
+    # identity match to an SPWS starter, and not printed POL), as {name, place,
+    # country, reason}. S6 and ResolveFencers write it; S7's count check and the
+    # staging summary read it.
+    rejected: list[dict] = field(default_factory=list)
     count_validation: dict | None = None  # S7 writes: {expected, actual, ok}
     url_validation: Any = None  # S7 writes: ValidationResult (Phase 4 ADR-052)
     pew_cascade_pending: bool = False  # S7 sets True on PEW weapon-mismatch (ADR-046)
