@@ -17,6 +17,8 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 FIXTURES = Path(__file__).parent / "fixtures" / "engarde"
 
 
@@ -141,14 +143,19 @@ def test_ENG_EVT_04_the_runner_expands_an_engarde_tournament_into_annotated_brac
     assert len(http.urls) == 25
 
 
-def test_ENG_EVT_05_the_header_count_is_the_bracket_including_a_fencer_without_a_place():
-    """V2 men's foil: "Classement général (33 tireurs)", 32 places and one DNS
-    fencer listed without a place. EVF scores it as 33 (entry 33)."""
+@pytest.mark.parametrize("status", ["DNS", "DNF", "DNQ"])
+def test_ENG_EVT_05_a_fencer_without_a_place_does_not_count_in_N(status):
+    """V2 men's foil: "Classement général (33 tireurs)", 32 places and one
+    fencer listed without a place. DNS (did not start), DNF (did not finish)
+    and DNQ (did not qualify) are not placed, so N is 32, not the header's 33
+    (the user's rule, 2 Oct 2026)."""
     from python.scrapers.engarde import parse_html
 
     page = (FIXTURES / "competition_crit26_fhv2.html").read_text()
+    page = page.replace("&nbsp;DNS&nbsp;", f"&nbsp;{status}&nbsp;")
+    assert f"&nbsp;{status}&nbsp;" in page
     parsed = parse_html(page, source_url="https://engarde-service.com/competition/x/y/fhv2")
 
     assert len(parsed.results) == 32
-    assert parsed.raw_pool_size == 33
+    assert parsed.raw_pool_size == 32
     assert [r.place for r in parsed.results if r.fencer_country == "POL"] == [29]

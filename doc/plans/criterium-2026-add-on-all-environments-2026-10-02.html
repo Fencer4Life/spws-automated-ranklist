@@ -334,8 +334,10 @@
       <li><b>Step 1 done.</b> Engarde event reader, test-first: <code>ENG.EVT.01–04</code> failed, then
       passed. The title helpers moved from <code>populate_tournament_urls.py</code> into
       <code>scrapers/engarde.py</code>, so both paths share one copy. Staging found a DNS fencer listed
-      without a place: the parser now takes N from the page header (<code>ENG.EVT.05</code>, failing
-      first).</li>
+      without a place, and the parser was changed to take N from the page header.
+      <b>Corrected the same day:</b> a fencer listed without a place, DNS (did not start), DNF (did not finish) or DNQ (did not qualify), is not in N, so N
+      is the number of placed fencers again (<code>ENG.EVT.05</code>, rewritten and failing first).
+      Korona's V2 foil bracket is 29th of 32; the Criterium 2026 is restaged on every environment.</li>
       <li><b>Step 2 done.</b> <code>EVF.CAL.01</code>, test-first. Run live on LOCAL, it reports
       exactly EVF 92 (2025/26) and EVF 77 Chania (2024/25, left out per K A).</li>
       <li><b>Step 3 done on LOCAL and CERT.</b> The event was created with one guarded INSERT
