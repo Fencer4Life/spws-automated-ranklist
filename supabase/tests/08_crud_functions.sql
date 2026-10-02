@@ -372,9 +372,13 @@ SELECT has_column(
   'tbl_scoring_config', 'bool_show_evf_toggle',
   '9.37: tbl_scoring_config has bool_show_evf_toggle column'
 );
+-- The column default, not an arbitrary row: LIMIT 1 without ORDER BY read
+-- whichever row came first, which a config write reorders (2026-10-02).
 SELECT is(
-  (SELECT bool_show_evf_toggle FROM tbl_scoring_config LIMIT 1),
-  FALSE,
+  (SELECT column_default FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tbl_scoring_config'
+      AND column_name = 'bool_show_evf_toggle'),
+  'false',
   '9.37b: bool_show_evf_toggle defaults to FALSE'
 );
 

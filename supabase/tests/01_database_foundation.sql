@@ -310,7 +310,8 @@ SELECT ok(
       AND num_pew_multiplier = 1.0 AND int_pew_best_count = 3
       AND num_mew_multiplier = 2.0 AND bool_mew_droppable = TRUE
       AND num_msw_multiplier = 2.0
-      AND int_min_participants_evf = 5 AND int_min_participants_ppw = 1
+      -- EVF minimum 1 since 2026-10-02: EVF ranks every category (ADR-066 amendment)
+      AND int_min_participants_evf = 1 AND int_min_participants_ppw = 1
    FROM tbl_scoring_config sc
    JOIN tbl_season s ON s.id_season = sc.id_season
    WHERE s.txt_code = 'TEST-SEASON-9999'),

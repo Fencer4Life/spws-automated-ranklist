@@ -916,10 +916,14 @@ class TestDiacriticFolding:
         assert result.status == "AUTO_MATCHED"
 
     def test_diacritic_folding_off_lower_score(self, fencer_db):
-        """4.41 Without folding, 'BARANSKI Witold' vs 'BARAŃSKI Witold' scores lower."""
+        """4.41 Without folding, a source that drops the Polish letters still
+        links: 'BARANSKI Witold' is 'BARAŃSKI Witold' at 99, one below the
+        folded exact match (amended 2 Oct 2026, MATCH.FOLD.01). A name that
+        differs in its own Polish letters still scores lower."""
         result = find_best_match("BARANSKI Witold", fencer_db, use_diacritic_folding=False)
-        # Without folding, the ń→n difference lowers the score
-        assert result.confidence < 95 or result.status != "AUTO_MATCHED"
+        assert (result.id_fencer, result.confidence, result.status) == (1, 99.0, "AUTO_MATCHED")
+        other = find_best_match("BARAŃSKA Witold", fencer_db, use_diacritic_folding=False)
+        assert other.confidence < 99
 
 
 # ---------------------------------------------------------------------------
@@ -1151,3 +1155,270 @@ class TestBrotherDisambiguation:
         assert result.status == "AUTO_MATCHED"
         assert result.id_fencer == 20
         assert result.confidence >= 95
+
+
+class TestSourceWithoutPolishLetters:
+    """MATCH.FOLD.01–05 — a source that drops the Polish letters is the same
+    name (2 Oct 2026).
+
+    FTL, Engarde and most foreign platforms write "ZUKOWSKI Wojciech" for
+    ŻUKOWSKI. Compared unfolded, each missing letter costs about six points, so
+    all eight of MŚW Manama's PENDING rows (93–94%, 88% for two letters) were
+    the right fencer left for a person to confirm. When the scraped name has no
+    Polish letter at all and equals the fencer's name once the fencer's letters
+    are folded, it is the same name: 99, linked automatically. An exact
+    unfolded match (100) still wins, and a source that writes Polish letters
+    of its own is compared as written.
+    """
+
+    ROSTER = [
+        {
+            "id_fencer": 1,
+            "txt_surname": "STAŃCZYK",
+            "txt_first_name": "Agnieszka",
+            "json_name_aliases": None,
+            "int_birth_year": 1971,
+        },
+        {
+            "id_fencer": 2,
+            "txt_surname": "ŻUKOWSKI",
+            "txt_first_name": "Wojciech",
+            "json_name_aliases": None,
+            "int_birth_year": 1969,
+        },
+        {
+            "id_fencer": 3,
+            "txt_surname": "ZABŁOCKI",
+            "txt_first_name": "Michał",
+            "json_name_aliases": None,
+            "int_birth_year": 1964,
+        },
+        {
+            "id_fencer": 4,
+            "txt_surname": "KOSIŃSKI",
+            "txt_first_name": "Łukasz",
+            "json_name_aliases": None,
+            "int_birth_year": 1983,
+        },
+        {
+            "id_fencer": 5,
+            "txt_surname": "MALEK",
+            "txt_first_name": "Jan",
+            "json_name_aliases": None,
+            "int_birth_year": 1970,
+        },
+    ]
+
+    @pytest.mark.parametrize(
+        "scraped,expected",
+        [
+            ("STANCZYK Agnieszka", 1),
+            ("ZUKOWSKI Wojciech", 2),
+            ("ZABLOCKI Michal", 3),
+            ("KOSINSKI Lukasz", 4),
+        ],
+    )
+    def test_a_name_without_polish_letters_is_linked(self, scraped, expected):
+        """MATCH.FOLD.01 one or two missing letters: linked at 99."""
+        best = find_best_match(scraped, self.ROSTER)
+        assert (best.id_fencer, best.status, best.confidence) == (expected, "AUTO_MATCHED", 99.0)
+
+    def test_an_exact_match_wins_over_a_folded_one(self):
+        """MATCH.FOLD.02 when the roster holds both SEKOWSKI and SĘKOWSKI
+        Maciej, the scraped "SEKOWSKI Maciej" is the one written exactly."""
+        roster = [
+            {
+                "id_fencer": 10,
+                "txt_surname": "SĘKOWSKI",
+                "txt_first_name": "Maciej",
+                "json_name_aliases": None,
+                "int_birth_year": 1981,
+            },
+            {
+                "id_fencer": 11,
+                "txt_surname": "SEKOWSKI",
+                "txt_first_name": "Maciej",
+                "json_name_aliases": None,
+                "int_birth_year": 1981,
+            },
+        ]
+        best = find_best_match("SEKOWSKI Maciej", roster)
+        assert (best.id_fencer, best.status, best.confidence) == (11, "AUTO_MATCHED", 100.0)
+
+    def test_a_source_with_its_own_polish_letters_is_compared_as_written(self):
+        """MATCH.FOLD.03 "MAŁEK Jan" is not "MALEK Jan": a source that writes
+        Polish letters wrote this one on purpose, so nothing is folded."""
+        best = find_best_match("MAŁEK Jan", self.ROSTER)
+        assert best.status != "AUTO_MATCHED"
+
+    def test_another_first_name_is_not_linked(self):
+        """MATCH.FOLD.04 folding never links another person: "ZUKOWSKI Piotr"
+        is not ŻUKOWSKI Wojciech."""
+        best = find_best_match("ZUKOWSKI Piotr", self.ROSTER)
+        assert best.status != "AUTO_MATCHED"
+
+    def test_two_fencers_folding_to_the_same_name_go_to_disambiguation(self):
+        """MATCH.FOLD.05 two roster fencers that fold to the scraped name tie
+        at 99; the age category decides as for any duplicate name, and with
+        no category the row stays PENDING."""
+        roster = [
+            {
+                "id_fencer": 20,
+                "txt_surname": "ŻUKOWSKI",
+                "txt_first_name": "Wojciech",
+                "json_name_aliases": None,
+                "int_birth_year": 1969,
+            },
+            {
+                "id_fencer": 21,
+                "txt_surname": "ŹUKOWSKI",
+                "txt_first_name": "Wojciech",
+                "json_name_aliases": None,
+                "int_birth_year": 1985,
+            },
+        ]
+        assert find_best_match("ZUKOWSKI Wojciech", roster).status == "PENDING"
+        by_cat = find_best_match(
+            "ZUKOWSKI Wojciech", roster, age_category="V2", season_end_year=2026
+        )
+        assert (by_cat.id_fencer, by_cat.status) == (20, "AUTO_MATCHED")
+
+
+class TestIdentityRule:
+    """MATCH.ID.01–08 — SURNAME, first given name, birth year in the category.
+
+    The association's identity is surname, first name and birth year
+    (registration, seed export, ADR-079). A result source carries no birth
+    year, only its bracket's age category, so an automatic link needs: the
+    same surname; the same FIRST given name, second names dropped on both
+    sides (FTL "SZKODA Marek" is SZKODA Marek Tomasz); and a birth year inside
+    the bracket's category. A birth year that contradicts the category never
+    links automatically (2 Oct 2026). EVF categories go by calendar year and
+    SPWS by season end year, so the category check allows the year before the
+    season's end year (an autumn EVF event).
+    """
+
+    @staticmethod
+    def _f(fid, sur, first, by, est=False):
+        return {
+            "id_fencer": fid,
+            "txt_surname": sur,
+            "txt_first_name": first,
+            "json_name_aliases": None,
+            "int_birth_year": by,
+            "bool_birth_year_estimated": est,
+        }
+
+    def test_a_second_given_name_is_dropped(self):
+        """MATCH.ID.01 "SZKODA Marek" is SZKODA Marek Tomasz, born 1969, in a
+        V2 bracket of 2024/25: linked at 100."""
+        roster = [self._f(109, "SZKODA", "Marek Tomasz", 1969)]
+        best = find_best_match("SZKODA Marek", roster, age_category="V2", season_end_year=2025)
+        assert (best.id_fencer, best.status, best.confidence) == (109, "AUTO_MATCHED", 100.0)
+
+    def test_a_second_given_name_in_the_source_is_dropped(self):
+        """MATCH.ID.02 a source with two given names links to the one-name
+        roster entry; without Polish letters it is 99."""
+        roster = [self._f(1, "KOWALSKI", "Jan", 1970), self._f(2, "ŻUKOWSKI", "Wojciech", 1969)]
+        a = find_best_match("KOWALSKI Jan Paweł", roster, age_category="V2", season_end_year=2025)
+        b = find_best_match(
+            "ZUKOWSKI Wojciech Jan", roster, age_category="V2", season_end_year=2025
+        )
+        assert (a.id_fencer, a.status, a.confidence) == (1, "AUTO_MATCHED", 100.0)
+        assert (b.id_fencer, b.status, b.confidence) == (2, "AUTO_MATCHED", 99.0)
+
+    def test_a_birth_year_outside_the_category_is_never_automatic(self):
+        """MATCH.ID.03 the same name with a birth year that puts the fencer in
+        another category (1990: V0 in 2024/25, not V2) is PENDING."""
+        roster = [self._f(5, "NOWAK", "Adam", 1990)]
+        best = find_best_match("NOWAK Adam", roster, age_category="V2", season_end_year=2025)
+        assert (best.id_fencer, best.status) == (5, "PENDING")
+
+    def test_the_category_picks_between_namesakes(self):
+        """MATCH.ID.04 two KRAWCZYK Paweł, 1954 and 1989: a V4 bracket links
+        the one born 1954."""
+        roster = [self._f(7, "KRAWCZYK", "Paweł", 1954), self._f(8, "KRAWCZYK", "Paweł", 1989)]
+        best = find_best_match("KRAWCZYK Pawel", roster, age_category="V4", season_end_year=2025)
+        assert (best.id_fencer, best.status) == (7, "AUTO_MATCHED")
+
+    def test_an_unknown_or_estimated_birth_year_does_not_veto(self):
+        """MATCH.ID.05 a fencer with no birth year, or an estimated one, is
+        linked on the name: there is nothing confirmed to contradict."""
+        none_by = [self._f(9, "LIS", "Ewa", None)]
+        est_by = [self._f(10, "LIS", "Ewa", 1990, est=True)]
+        assert (
+            find_best_match("LIS Ewa", none_by, age_category="V2", season_end_year=2025).status
+            == "AUTO_MATCHED"
+        )
+        assert (
+            find_best_match("LIS Ewa", est_by, age_category="V2", season_end_year=2025).status
+            == "AUTO_MATCHED"
+        )
+
+    def test_an_autumn_evf_category_is_accepted(self):
+        """MATCH.ID.06 born 1976 and in a V1 bracket at MŚW Manama (November
+        2025, season 2025/26): 49 in the calendar year, 50 by the season's end
+        year. The year before the season's end year is accepted."""
+        roster = [self._f(11, "STOCKI", "Piotr", 1976)]
+        best = find_best_match("STOCKI Piotr", roster, age_category="V1", season_end_year=2026)
+        assert (best.id_fencer, best.status) == (11, "AUTO_MATCHED")
+
+    def test_a_typo_match_is_gated_by_the_birth_year_too(self):
+        """MATCH.ID.07 a fuzzy match above 95 (a one-letter typo) links only
+        when the birth year fits; otherwise it is PENDING."""
+        roster = [self._f(12, "KACZMARCZYK", "Robert", 1990)]
+        best = find_best_match(
+            "KACZMARCZYK Robret", roster, age_category="V2", season_end_year=2025
+        )
+        assert best.status == "PENDING"
+        ok = [self._f(12, "KACZMARCZYK", "Robert", 1970)]
+        assert (
+            find_best_match(
+                "KACZMARCZYK Robret", ok, age_category="V2", season_end_year=2025
+            ).status
+            == "AUTO_MATCHED"
+        )
+
+    def test_two_namesakes_both_fitting_stay_pending(self):
+        """MATCH.ID.08 two fencers with the same surname and first given name
+        whose birth years both fit the category cannot be told apart: PENDING,
+        software never chooses between two people."""
+        roster = [self._f(13, "NOWAK", "Jan", 1970), self._f(14, "NOWAK", "Jan Maria", 1972)]
+        assert (
+            find_best_match("NOWAK Jan", roster, age_category="V2", season_end_year=2025).status
+            == "PENDING"
+        )
+
+
+class TestMixedPolishLetters:
+    def test_a_word_without_polish_letters_folds_word_by_word(self):
+        """MATCH.FOLD.06 FTL wrote "KOSINSKI Łukasz" at Jabłonna 2026: the ń
+        dropped, the Ł kept. Folding is per word: a word written without Polish
+        letters may match the roster word once folded; a word written with them
+        must match exactly. KOSIŃSKI Łukasz links at 99; "MAŁEK Jan" still does
+        not become MALEK (MATCH.FOLD.03)."""
+        roster = [
+            {
+                "id_fencer": 367,
+                "txt_surname": "KOSIŃSKI",
+                "txt_first_name": "Łukasz",
+                "json_name_aliases": None,
+                "int_birth_year": 1983,
+            },
+            {
+                "id_fencer": 5,
+                "txt_surname": "MALEK",
+                "txt_first_name": "Jan",
+                "json_name_aliases": None,
+                "int_birth_year": 1970,
+            },
+        ]
+        best = find_best_match("KOSINSKI Łukasz", roster, age_category="V1", season_end_year=2026)
+        assert (best.id_fencer, best.status, best.confidence) == (367, "AUTO_MATCHED", 99.0)
+        assert find_best_match("MAŁEK Jan", roster).status != "AUTO_MATCHED"
+        assert (
+            find_best_match(
+                "KOSIŃSKI Lukasz", roster, age_category="V1", season_end_year=2026
+            ).confidence
+            == 99.0
+        )

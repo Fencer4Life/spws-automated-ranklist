@@ -1,0 +1,213 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PEW9efs-2025-2026 review</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Repair batch 1 · seventh event staged · LOCAL drafts · nothing committed</p>
+  <h1>Dublin 2026: the re-ingest, for your sign-off</h1>
+  <p class="dek">EVF Circuit Dublin, the Veteran Irish Open, 30–31 May 2026 (<code>PEW9efs-2025-2026</code>). LOCAL stores <b>18 results in 10 brackets</b>; its 8 Polish rows already carry the right N and places. Staged from the organiser's FTL results: <b>the same 8 Poles, unchanged, all at exactly EVF's points</b>; the <b>10 rows of foreign fencers</b> go.</p>
+  <div class="meta"><span class="pill"><span class="dot"></span>drafts only · run afe58be3</span><span class="pill">source: FTL, checked against the event</span><span class="pill"><span class="dot"></span>EVF.PTS: 8 of 8</span><span class="pill"><span class="dot"></span>2026/27 ranking: no Pole moves</span></div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Sign off this event</h2>
+    <p>No open question. Answer <b>G A</b> to commit, or <b>G B</b> to hold.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">G</span> Commit Dublin 2026 on LOCAL</p>
+      <p>The stored 18 rows are replaced by the 8 staged ones in one transaction, through the runner's sign-off check.</p>
+      <ul><li><b>A</b> commit as staged.</li><li><b>B</b> hold: tell me what to look at.</li></ul>
+      <p><b>Recommendation: A.</b> The Poles are unchanged and equal EVF's record; only foreign fencers' rows go.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Source</p>
+    <h2>The URL is this event</h2>
+    <p><a href="https://www.fencingtimelive.com/tournaments/eventSchedule/21909B63214C4494B443D157FAE4A61C">FTL event schedule</a> “Veteran Irish Open 2026”, 30–31 May 2026, all three
+    weapons; the URL-identity check passed and the URL is now the event's first result slot (it held
+    the EVF event page, which stays in the event's EVF slug). FTL lists 22 category brackets; the
+    seven pool rounds are skipped.</p>
+    <ul>
+      <li><b>8 Poles, all linked automatically</b>: KORONA Przemysław (2nd of 25, V2 men's épée; 3rd=
+      of 12, V2 men's foil), ŻUKOWSKI Wojciech (11th of 25 and 11th of 12), GANSZCZYK Marcin, MAZIK
+      Aleksander and WIERZBICKI Jacek (1st, 2nd and 3rd of 6, V2 men's sabre), GAJDA Leszek (1st of 7,
+      V3 men's sabre).</li>
+      <li><b>Combined brackets.</b> Men's épée “V4/V5” (3 fencers) and men's sabre “V4/V5” (2) are read
+      as V4, as EVF files them; women's foil “V3/V4” (7) has no single category and is refused
+      (ADR-105 §5.3). None of the three holds a Pole. EVF files the women's foil one as V3 with N 7:
+      noted for the open item on combined brackets.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> EVF's own record agrees (EVF.PTS)</p>
+      <p>EVF event 91 (31 May 2026, 22 competitions) lists exactly these 8 Poles, at the same places,
+      N and points.</p>
+    </div>
+  </section><section>
+    <p class="kicker">Checked against the source</p>
+    <h2>Why 10 stored rows go</h2>
+    <p>All belong to foreign fencers, by their country at the source: KORONA Radosław (NED), ALCSER
+    Norbert (HUN, épée and foil), GINZERY Tomas (SVK), PRAHA-TSAREHRADSKA Nadiia (UKR), MION
+    Anna-Lise (IRL, épée and foil; stored as “ANNA-LISE Mion”), LEAHEY John (GBR), MCGINNITY Marie
+    (IRL), LYNCH Patrick (IRL). They keep their SPWS domestic results.</p>
+  </section><section>
+    <p class="kicker">Found while staging · fixed, test-first, on LOCAL</p>
+    <h2>A category tag in the name</h2>
+    <p>This FTL page writes each fencer's category into the name: “KORONA Przemyslaw (V2)”. The
+    parser stripped “(1)” and a mid-name digit but not a lettered “(V2)”, so the first staging kept
+    the tag in the scraped names and wrote six aliases carrying it (“GAJDA Leszek (V3)” and five
+    more). The parser now strips the lettered form (FTL.NAME.01, failing first); the six aliases are
+    removed, the run discarded and the event staged again with plain names.</p>
+  </section><section>
+    <p class="kicker">Rankings · exact preview</p>
+    <h2>The 2026/27 ranking, before and after</h2>
+    <p>Rolled-back replace, full 2026/27 ranking with carry-over. No Pole moves; three foreign
+    fencers, still ranked through their domestic results, lose their Dublin row. Rank · total
+    points.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Ranking</th><th>Fencer</th><th>Now</th><th>After</th><th></th></tr></thead>
+      <tbody><tr><td>V2 women's épée</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td class='mono'>5 · 188.72</td><td class='mono'>5 · 134.50</td><td><span class="chip plain">same place</span></td></tr><tr><td>V1 men's épée</td><td>KORONA Radosław</td><td class='mono'>2 · 486.52</td><td class='mono'>2 · 431.32</td><td><span class="chip plain">same place</span></td></tr><tr><td>V2 men's épée</td><td>LEAHEY John</td><td class='mono'>6 · 169.38</td><td class='mono'>6 · 144.43</td><td><span class="chip plain">same place</span></td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Per bracket</p>
+    <h2>Stored against the source</h2>
+    <p>N / Polish results. Stored is what LOCAL holds today; staged is the draft written from the source (whole bracket as N, each Pole at their own place).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Bracket</th><th>Stored N / Poles</th><th>Source N / Poles</th><th></th></tr></thead>
+      <tbody><tr><td>V2 women&#x27;s épée</td><td class='mono'>11 / 2</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V3 women&#x27;s épée</td><td class='mono'>7 / 1</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V1 men&#x27;s épée</td><td class='mono'>12 / 2</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V2 men&#x27;s épée</td><td class='mono'>25 / 3</td><td class='mono'>25 / 2</td><td><span class="chip never">kept</span> </td></tr><tr><td>V4 men&#x27;s épée</td><td class='mono'>3 / 1</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V2 women&#x27;s foil</td><td class='mono'>6 / 1</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V1 men&#x27;s foil</td><td class='mono'>5 / 2</td><td class='mono'>– / 0</td><td><span class="chip plain">no source bracket</span> </td></tr><tr><td>V2 men&#x27;s foil</td><td class='mono'>12 / 2</td><td class='mono'>12 / 2</td><td><span class="chip never">kept</span> </td></tr><tr><td>V2 men&#x27;s sabre</td><td class='mono'>6 / 3</td><td class='mono'>6 / 3</td><td><span class="chip never">kept</span> </td></tr><tr><td>V3 men&#x27;s sabre</td><td class='mono'>7 / 1</td><td class='mono'>7 / 1</td><td><span class="chip never">kept</span> </td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Per fencer</p>
+    <h2>Place, N and points, before and after</h2>
+    <p>Points use the 2025/26 PEW rules (EVF classic, multiplier 1.0), at the source N and place.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fencer</th><th>Bracket</th><th>Stored place / N · points</th><th>Staged place / N · points</th><th>Change</th></tr></thead>
+      <tbody><tr><td>ALCSER Norbert</td><td>V1 men&#x27;s épée</td><td class='mono'>7 / 12 · 21.63</td><td>—</td><td><span class='chip over'>goes</span> HUN at the source</td></tr><tr><td>ALCSER Norbert</td><td>V1 men&#x27;s foil</td><td class='mono'>5 / 5 · 1.00</td><td>—</td><td><span class='chip over'>goes</span> HUN at the source</td></tr><tr><td>ANNA-LISE Mion</td><td>V2 women&#x27;s épée</td><td class='mono'>5 / 11 · 27.11</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source (MION Anna-Lise)</td></tr><tr><td>ANNA-LISE Mion</td><td>V2 women&#x27;s foil</td><td class='mono'>5 / 6 · 5.99</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source (MION Anna-Lise)</td></tr><tr><td>GAJDA Leszek</td><td>V3 men&#x27;s sabre</td><td class='mono'>1 / 7 · 97.22</td><td class='mono'>1 / 7 · 97.22</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>GANSZCZYK Marcin</td><td>V2 men&#x27;s sabre</td><td class='mono'>1 / 6 · 96.35</td><td class='mono'>1 / 6 · 96.35</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>GINZERY Tomas</td><td>V1 men&#x27;s foil</td><td class='mono'>1 / 5 · 95.39</td><td>—</td><td><span class='chip over'>goes</span> SVK at the source</td></tr><tr><td>KORONA Przemysław</td><td>V2 men&#x27;s épée</td><td class='mono'>2 / 25 · 96.99</td><td class='mono'>2 / 25 · 96.99</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>KORONA Przemysław</td><td>V2 men&#x27;s foil</td><td class='mono'>3 / 12 · 55.20</td><td class='mono'>3 / 12 · 55.20</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>KORONA Radosław</td><td>V1 men&#x27;s épée</td><td class='mono'>3 / 12 · 55.20</td><td>—</td><td><span class='chip over'>goes</span> NED at the source</td></tr><tr><td>LEAHEY John</td><td>V2 men&#x27;s épée</td><td class='mono'>10 / 25 · 24.95</td><td>—</td><td><span class='chip over'>goes</span> GBR at the source</td></tr><tr><td>LYNCH Pat</td><td>V4 men&#x27;s épée</td><td class='mono'>3 / 3 · 5.33</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source</td></tr><tr><td>MAZIK Aleksander</td><td>V2 men&#x27;s sabre</td><td class='mono'>2 / 6 · 61.95</td><td class='mono'>2 / 6 · 61.95</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>MCGINNITY Marie</td><td>V3 women&#x27;s épée</td><td class='mono'>5 / 7 · 9.47</td><td>—</td><td><span class='chip over'>goes</span> IRL at the source</td></tr><tr><td>PRAHA-TSAREHRADSKA Nadiia</td><td>V2 women&#x27;s épée</td><td class='mono'>3 / 11 · 54.22</td><td>—</td><td><span class='chip over'>goes</span> UKR at the source</td></tr><tr><td>WIERZBICKI Jacek</td><td>V2 men&#x27;s sabre</td><td class='mono'>3 / 6 · 35.41</td><td class='mono'>3 / 6 · 35.41</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>ŻUKOWSKI Wojciech</td><td>V2 men&#x27;s épée</td><td class='mono'>11 / 25 · 23.50</td><td class='mono'>11 / 25 · 23.50</td><td><span class='chip plain'>+0.00</span></td></tr><tr><td>ŻUKOWSKI Wojciech</td><td>V2 men&#x27;s foil</td><td class='mono'>11 / 12 · 2.72</td><td class='mono'>11 / 12 · 2.72</td><td><span class='chip plain'>+0.00</span></td></tr></tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">review · PEW9efs-2025-2026 · repair batch 1 · staged 2 Oct 2026 on LOCAL · run afe58be3-bc91-49da-aa25-e44b42447646</p>
+</div>

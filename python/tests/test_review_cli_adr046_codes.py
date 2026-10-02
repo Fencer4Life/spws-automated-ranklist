@@ -91,3 +91,31 @@ def test_5_M2_3_mpw_no_suffix_handled():
     assert row["txt_code"] == "MPW-V0-F-FOIL-2024-2025", (
         f"expected MPW-V0-F-FOIL-2024-2025, got {row['txt_code']!r}"
     )
+
+
+def test_5_M2_4_draft_tournament_type_follows_the_event_code():
+    """5.M2.4 — the draft tournament's type comes from the event code, not a
+    fixed PPW. A fixed PPW typed the re-ingested Manama, Plovdiv, Guildford and
+    Gdańsk tournaments PPW on LOCAL (2 Oct 2026), and the drilldown listed them
+    under domestic tournaments."""
+    cases = {
+        "PPW2-2025-2026": "PPW",
+        "MPW-2024-2025": "MPW",
+        "PEW62efs-2025-2026": "PEW",
+        "IMEW-2024-2025": "MEW",
+        "IMSW-2025-2026": "MSW",
+    }
+    for event_code, expected in cases.items():
+        sess = _session_with_event(event_code)
+        row = sess._draft_row_skeleton(_ctx(event_id=1, weapon="EPEE", gender="M"), 1, "V2")
+        assert row["enum_type"] == expected, f"{event_code}: {row['enum_type']!r}"
+
+
+def test_5_M2_5_unknown_event_family_is_refused():
+    """5.M2.5 — an event code whose family maps to no tournament type is
+    refused rather than typed PPW."""
+    import pytest
+
+    sess = _session_with_event("XYZ1-2025-2026")
+    with pytest.raises(ValueError, match="XYZ1-2025-2026"):
+        sess._draft_row_skeleton(_ctx(event_id=1, weapon="EPEE", gender="M"), 1, "V2")

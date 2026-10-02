@@ -129,11 +129,13 @@ def test_4_61_f_bracket_only_m_candidate_unmatched(fencer_db_only_male):
 # 4.62  F bracket + F candidate present → matches F
 # ===========================================================================
 def test_4_62_f_bracket_matches_f_candidate(fencer_db_with_genders):
-    """F bracket with both M and F candidates: filter drops M, F wins."""
+    """F bracket with both M and F candidates: filter drops M, F wins. (V2:
+    KOWALSKA Anna, born 1972, is V2 in 2025/26; a V1 bracket would contradict
+    her birth year, which never links automatically — MATCH.ID.03.)"""
     result = find_best_match(
         "KOWALSKA Anna",
         fencer_db_with_genders,
-        age_category="V1",
+        age_category="V2",
         season_end_year=2026,
         bracket_gender="F",
     )
@@ -189,7 +191,7 @@ def test_4_65_m_bracket_no_filter_allows_f(fencer_db_with_genders):
     result = find_best_match(
         "KOWALSKA Anna",
         db,
-        age_category="V1",
+        age_category="V2",
         season_end_year=2026,
         bracket_gender="M",
     )

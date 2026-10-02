@@ -514,10 +514,11 @@ class TestS6ResolveIdentity:
         assert len(ctx.matches) == 1
 
     def test_high_confidence_match_classified_auto_matched(self):
-        """P3.S6.3 ≥95 confidence → AUTO_MATCHED."""
+        """P3.S6.3 ≥95 confidence → AUTO_MATCHED (birth year 1980 fits the V1
+        bracket of 2025/26; one that contradicts it is PENDING, MATCH.ID.03)."""
         from python.pipeline.stages import s6_resolve_identity
 
-        results = [_make_result("KOWALSKI Jan", 1, birth_year=1970)]
+        results = [_make_result("KOWALSKI Jan", 1, birth_year=1980)]
         ctx = _make_ctx(parsed=_make_parsed(results=results))
         ctx.event = {"id_event": 1, "txt_code": "PPW3-2025-2026"}
         db = MagicMock()
@@ -526,7 +527,7 @@ class TestS6ResolveIdentity:
                 "id_fencer": 42,
                 "txt_surname": "KOWALSKI",
                 "txt_first_name": "Jan",
-                "int_birth_year": 1970,
+                "int_birth_year": 1980,
                 "json_name_aliases": None,
             },
         ]

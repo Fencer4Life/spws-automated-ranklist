@@ -207,6 +207,31 @@ describe('SeasonManagerWizard (Phase 3b)', () => {
     })
   })
 
+  // WIZ.EVFMIN.01 (ADR-066 amendment, 2026-10-02): EVF ranks every category,
+  // however small, so a first season proposes an EVF minimum of 1.
+  it('WIZ.EVFMIN.01: a first-ever season proposes an EVF minimum of 1', async () => {
+    const onloadpriorconfig = vi.fn().mockResolvedValue({
+      priorConfig: null,
+      priorCode: null,
+      priorBreakdown: null,
+    })
+    const { container } = render(SeasonManagerWizard, { props: defaultProps({ onloadpriorconfig }) })
+    await fillStep1(container, 'SPWS-1900-1901')
+    await fireEvent.input(
+      container.querySelector('[data-field="wizard-dt-start"]') as HTMLInputElement,
+      { target: { value: '1900-09-01' } },
+    )
+    await fireEvent.input(
+      container.querySelector('[data-field="wizard-dt-end"]') as HTMLInputElement,
+      { target: { value: '1901-06-30' } },
+    )
+    await fireEvent.click(container.querySelector('[data-field="wizard-next-btn"]')!)
+    await vi.waitFor(() => {
+      const input = container.querySelector('[data-field="min_participants_evf"]') as HTMLInputElement | null
+      expect(input?.value).toBe('1')
+    })
+  })
+
   // ph3.27 — step 3 shows skeleton count breakdown
   it('ph3.27: step 3 shows skeleton breakdown from prior season', async () => {
     const { container } = render(SeasonManagerWizard, { props: defaultProps() })

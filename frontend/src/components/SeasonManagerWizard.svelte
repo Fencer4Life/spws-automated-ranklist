@@ -252,7 +252,7 @@
     psw_multiplier: 2.0,
     pps_multiplier: 1.0,
     mps_multiplier: 1.0,
-    min_participants_evf: 5,
+    min_participants_evf: 1,
     min_participants_ppw: 1,
     show_evf_toggle: false,
     ranking_rules: null,
