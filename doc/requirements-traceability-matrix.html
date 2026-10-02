@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="78fd8c42b5ffefc28f89e28af58855dd78d79b762c498594d21c82416b633eeb">
+<meta name="doc-source-sha256" content="6222038c3a20610f9fab9b27faeb9772008e9f3601e11837b6c9d4137778748a">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1671,8 +1671,8 @@
 <td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
 </tr>
 <tr>
-<td>TT.CODE.01–08</td>
-<td><code>fn_tournament_type_for_code</code> maps a code family to its type (IMSW → MSW, PEW62efs → PEW, IMEW → MEW, PPWn, MPW, PPS, MPS; GP unmapped); a trigger refuses a tournament insert or update whose type disagrees with its code family; no stored tournament disagrees (06). Found 2026-10-02: re-ingested international tournaments had been typed PPW and were listed as domestic.</td>
+<td>TT.CODE.01–09</td>
+<td><code>fn_tournament_type_for_code</code> maps a code family to its type (IMSW → MSW, PEW62efs → PEW, IMEW → MEW, PPWn, MPW, PPS, MPS; GP unmapped; DMEW unmapped, since the team championship is never scraped for the ranking, ADR-021, 09); a trigger refuses a tournament insert or update whose type disagrees with its code family; no stored tournament disagrees (06). Found 2026-10-02: re-ingested international tournaments had been typed PPW and were listed as domestic.</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/90_tournament_type_matches_code.sql</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
@@ -1830,5 +1830,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>78fd8c42b5ffefc28f89e28af58855dd78d79b762c498594d21c82416b633eeb</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>6222038c3a20610f9fab9b27faeb9772008e9f3601e11837b6c9d4137778748a</code></footer>
 </div></body></html>

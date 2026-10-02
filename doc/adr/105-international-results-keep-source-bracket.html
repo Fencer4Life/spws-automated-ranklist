@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="105-international-results-keep-source-bracket.md">
-<meta name="adr-source-sha256" content="81846540f1b311519b43297b6a9756aeaa3fe9011bdce5d13b2531bc6e17ba5a">
+<meta name="adr-source-sha256" content="0a18dffbc16162d20fa0b697685302567ac720269eac0ba2d50628a74e0c334d">
 <title>ADR-105 · International Results Keep the Whole Source Bracket and Their Own Place</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -212,7 +212,7 @@
 <ul>
 <li><strong>Replace by exact code.</strong> <code>fn_rollback_event</code> resolves a code prefix in the active season only. <code>fn_rollback_event_by_code</code> takes the exact code in any season. <code>fn_replace_event_from_draft</code> rolls the event back and commits a draft run in one transaction, and refuses a run of another event or one with an unresolved PENDING row (REPAIR.RB.01–09, migrations <code>20261002000001</code> and <code>20261002000002</code>). <code>phase5_runner --replace-event</code> uses it, and sign-off refuses unresolved PENDING rows for every event (REPAIR.RUN.01–02).</li>
 <li><strong>CERT and PROD receive a repaired event through the runner (decision P A).</strong> <code>promote.yml</code> finds events in the active season only, so it cannot carry a past-season event. <code>phase5-event-runner.yml</code> stages on its target and, given <code>commit_run_id</code>, commits that run through the same replace path (WF.P5.01). Each environment is compared with LOCAL and with EVF before its commit.</li>
-<li><strong>A tournament's type follows its code.</strong> The draft writer typed every Phase 5 draft tournament PPW, so re-ingested international tournaments were listed as domestic. Drafts are now typed from the event code (5.M2.4–5). A trigger refuses a tournament whose type disagrees with its code family (TT.CODE.01–08, <code>20261002000003</code>). The cached multiplier follows a retype (TT.MULT.01–04, <code>20261002000004</code>).</li>
+<li><strong>A tournament's type follows its code.</strong> The draft writer typed every Phase 5 draft tournament PPW, so re-ingested international tournaments were listed as domestic. Drafts are now typed from the event code (5.M2.4–5). A trigger refuses a tournament whose type disagrees with its code family (TT.CODE.01–09, <code>20261002000003</code>); DMEW, the team championship, is never scraped for the ranking (<a href="021-imew-biennial-carry-over.html">ADR-021</a>) and is left unmapped. The cached multiplier follows a retype (TT.MULT.01–04, <code>20261002000004</code>).</li>
 <li><strong>Source identity before a URL is written.</strong> <code>set_event_source_urls</code> writes an event's result URLs only when each source's date, name and weapons match the event (REPAIR.URL.01). It cannot yet read an Engarde tournament page's date.</li>
 <li><strong>Matching an international row.</strong> An automatic link needs the same surname, the same first given name and a confirmed birth year that fits the bracket's category (MATCH.ID.01–08). A source word written without Polish letters matches once folded (MATCH.FOLD.01–06). The alias checker compares the first given name and allows one letter of typo in a surname of up to six letters, two in a longer one (NAME.CLS.01–04). For an international event the stage-time alias flush writes pairs of automatically linked rows only, never a ❌ pair (INTL.ALIAS.01–02).</li>
 <li><strong>Schedules.</strong> A category-first bracket name is a bracket (INTL.SCHED.02). A joint pool round beside its category brackets is not a result (INTL.SCHED.03), and a bracket listed for two days is read once (INTL.SCHED.04). A bracket whose weapon is not the event's is skipped (INTL.WPN.01). An FTL name's lettered category tag, “(V2)”, is stripped (FTL.NAME.01).</li>
@@ -223,5 +223,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="104-spws-evf-joined-engine-replaces-place-medal.html">← ADR-104: SPWS 2026/2027 — the Place-and-Medal Engine and Its Columns Are Removed; EVF with a Joined-Bracket Premium and a Whole-Bracket Cap Replaces It</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>105-international-results-keep-source-bracket.md</code> · source SHA-256 <code>81846540f1b311519b43297b6a9756aeaa3fe9011bdce5d13b2531bc6e17ba5a</code></footer>
+<footer class="foot">Generated from <code>105-international-results-keep-source-bracket.md</code> · source SHA-256 <code>0a18dffbc16162d20fa0b697685302567ac720269eac0ba2d50628a74e0c334d</code></footer>
 </div></body></html>

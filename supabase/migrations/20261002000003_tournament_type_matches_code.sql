@@ -28,7 +28,8 @@ AS $$
     WHEN f = 'PSW' THEN 'PSW'
     WHEN f ~* '^PEW[0-9]+[efs]*$' THEN 'PEW'
     WHEN f IN ('MEW', 'IMEW') THEN 'MEW'
-    WHEN f = 'DMEW' THEN 'MPW'
+    -- DMEW, the team European championship, is never scraped for the ranking
+    -- (ADR-021): it holds no tournament and its type is left unclaimed.
     WHEN f IN ('MSW', 'IMSW') THEN 'MSW'
     WHEN f ~ '^PPS[0-9]+[WM]?[efsEFS]*$' THEN 'PPS'
     WHEN f ~ '^MPS[WM]?[efsEFS]*$' THEN 'MPS'
