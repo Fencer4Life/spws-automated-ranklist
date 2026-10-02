@@ -167,6 +167,35 @@
     </div>
   </section>
 
+  <section id="ci-fix">
+    <p class="kicker">Decide this first · CI is red on main</p>
+    <h2>The release push failed CI; nothing is deployed</h2>
+    <p>Pushed <code>647f5a2d</code> to main. CI's pgTAP job failed while loading the seed, before any test ran, and the
+    Release workflow runs only after a green CI, so CERT and PROD are unchanged.</p>
+    <p><b>Cause.</b> The new type guard (TT.CODE, migration <code>20261002000003</code>) maps the code family DMEW to MPW,
+    copied from <code>derive_tourn_type_from_event_code</code>, which routes the team championship to the MPW threshold.
+    The seed (<code>seed_prod_latest.sql</code>, 12 September) still holds six bracket stubs of
+    <code>DMEW-2025-2026</code> typed <b>MEW</b>. CI applies migrations before the seed, so the guard refuses the first
+    one. LOCAL passed because its database was not rebuilt and the guard checks writes only. CERT and PROD hold no DMEW
+    tournament today (the event is PLANNED, with 0 tournaments), so the mismatch exists only in the seed.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">T</span> How DMEW is typed</p>
+      <ul>
+        <li><b>A</b> the guard leaves DMEW unmapped: it checks every other family and says nothing about DMEW until its
+        type is decided. Seed loads, nothing else changes. One-line migration fix plus a test pinning it.</li>
+        <li><b>B</b> DMEW is MEW in the guard and in <code>derive_tourn_type_from_event_code</code>; ADR-066 threshold
+        routing for the team championship then moves from MPW to MEW.</li>
+        <li><b>C</b> DMEW stays MPW everywhere, and the six stale stubs are removed from the seed.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> It unblocks CI without deciding what a team championship scores as, which no stored
+      result depends on today. B and C each change a rule or the seed beyond this fix.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Decided 2 October: A</p>
+      <p>DMEW is the team European championship, held every two years; IMEW, the individual one, in the other years. DMEW is never scraped for the ranking (ADR-021: SPWS does not track team results), so it holds no tournament and its type is never used. The guard leaves it unmapped (TT.CODE.09, failing first). All 879 seed tournament rows now pass the guard; the six DMEW stubs leave the seed with its next refresh from PROD, which holds none.</p>
+    </div>
+  </section>
+
   <section id="status">
     <p class="kicker">Status · 2 October</p>
     <h2>Where the work is</h2>
