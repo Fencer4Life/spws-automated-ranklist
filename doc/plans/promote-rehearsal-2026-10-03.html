@@ -122,19 +122,32 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">ADR-108 · build step 13 · Decide this next</p>
-  <h1>Promote rehearsal: passed. The real promote is next</h1>
-  <p class="dek">Steps 10&ndash;12 are released on CERT and PROD (main <code>0c35d799</code>). CERT holds a recorded, gated run of PPW1 2026/27, and promote replayed it on LOCAL, a copy of PROD, ending on exactly CERT&rsquo;s result. What remains is the real promote to PROD, which is your decision.</p>
+  <p class="eyebrow">ADR-108 · build step 13 · done</p>
+  <h1>PPW1 2026/27 is on PROD, replayed from CERT</h1>
+  <p class="dek">Promote replayed CERT run 1 of PPW1 2026/27 on PROD on 3 Oct 2026 at 19:49 UTC: 57 writes in one transaction through PROD&rsquo;s service-role API, ending on exactly CERT&rsquo;s result. The rehearsal on LOCAL and a dry run on PROD came first.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Released, verified on CERT and PROD</span>
-    <span class="pill"><span class="dot"></span>CERT run 1 FINISHED, gate passed</span>
-    <span class="pill"><span class="dot"></span>Rehearsal: LOCAL equals CERT</span>
-    <span class="pill warn"><span class="dot"></span>real promote waits for you</span>
+    <span class="pill"><span class="dot"></span>PROD equals CERT</span>
+    <span class="pill"><span class="dot"></span>COMPLETED on both</span>
+    <span class="pill"><span class="dot"></span>seed exported (e897fec3)</span>
   </div>
   <hr class="rule">
 
   <section>
-    <p class="kicker">Decide this next</p>
+    <p class="kicker">The real promote · 3 Oct 2026</p>
+    <h2>Dry run, then promote (your answer: A)</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>First dry run</td><td><code>promote.yml</code> run 37148655306 stopped in its resolve job before reading PROD: that job did not install <code>beautifulsoup4</code>, which the notifier needs. Fixed test-first (the resolve job installs the promote job&rsquo;s packages, PROMO.REPLAY.24), preflight exit 0 after resetting LOCAL from the rehearsal, pushed as <code>a9832e46</code>.</td></tr>
+        <tr><td>Dry run</td><td>Run 37149039033: CERT run 1 at <code>d950fbcc</code>; gate passed against PROD; plan 57 writes, status COMPLETED, no prior result; the dry run through PROD&rsquo;s API ended on <code>1819ebc0ceb2</code>, CERT&rsquo;s fingerprint. Nothing written; PROD&rsquo;s PPW1 read PLANNED with no results afterwards.</td></tr>
+        <tr><td>Promote</td><td>Run 37149182858: the same checks, then 57 writes in one call of <code>fn_promote_event_apply</code>, status COMPLETED, nothing to drain, no difference from CERT. The seed job exported PROD&rsquo;s seed and pushed <code>e897fec3</code>.</td></tr>
+        <tr><td>Checked afterwards</td><td>PROD against CERT: the same result fingerprint, 25 tournaments, 102 results all scored, COMPLETED, the FTL URL, the 6 new fencers at #368&ndash;373, sequence 373, the season locked by its first scores. Through what the public pages read: the calendar shows COMPLETED, all 25 tournaments are typed PPW, and the men&rsquo;s épée V2 ranking lists the same 8 fencers with the same scores on both.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Decided 3 Oct: A</p>
     <h2>Promote PPW1 2026/27 to PROD now?</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>Option</th><th>What happens</th></tr></thead>

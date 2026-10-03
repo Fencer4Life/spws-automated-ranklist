@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="1590cd98c6a74deaeb57ca2ffc8c448f91f1411731fdcae7a6aa44c0ec311ac7">
+<meta name="adr-source-sha256" content="da447e0f6fa94dec034b93fe7aa889ae73adec3e69903a85326cc68b80fc8420">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">328 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">330 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
@@ -291,6 +291,7 @@
 <li><strong>§9.</strong> <code>ingest-event.yml</code> refuses <code>target: prod</code> (every event it accepts is domestic: ADR-105 refuses an international one), always records the run, and joins <code>cert-write</code>; <code>recompute-drain.yml</code> leaves <code>cert-recompute</code> for <code>cert-write</code>.</li>
 <li><strong>Tests.</strong> pytest <code>test_promotion_replay.py</code> (PROMO.REPLAY.01–25, 27–28; 13 mutants caught) and <code>test_promote.py</code> (PROMO.REPLAY.26). On LOCAL the readers ran read-only, a write was refused by PostgreSQL, and the apply's dry run on PPW1 2026/27 through LOCAL's API raised <code>PROMOTE_DRY_RUN_OK</code> with the event's fingerprint in 0.04 s and left it PLANNED. On PROD, read only: <code>service_role</code> may execute <code>fn_promote_event_apply</code>, and the PROD drain's runs of 3 Oct used the same API and key.</li>
 </ul>
+<p><strong>First promote 2026-10-03 (build step 13).</strong> PPW1 2026/27: CERT rolled back, refreshed from PROD and re-ingested as recorded run 1; the gate passed. A rehearsal with LOCAL standing in for PROD and a dry run on PROD came first; then <code>promote.yml</code> replayed the run on PROD at 19:49 UTC, 57 writes in one transaction, status COMPLETED. PROD equals CERT by result fingerprint, and the public calendar and ranking agree. Record: <code>doc/plans/promote-rehearsal-2026-10-03.html</code>.</p>
 <h3 id="7-event-lifecycle-completed-once-everything-is-final-and-the-end-date-has-passed">7 · Event lifecycle: COMPLETED once everything is final and the end date has passed</h3>
 <div class="tablewrap"><table>
 <thead>
@@ -417,5 +418,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>1590cd98c6a74deaeb57ca2ffc8c448f91f1411731fdcae7a6aa44c0ec311ac7</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>da447e0f6fa94dec034b93fe7aa889ae73adec3e69903a85326cc68b80fc8420</code></footer>
 </div></body></html>
