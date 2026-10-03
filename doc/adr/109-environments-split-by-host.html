@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="adr-source" content="108-environments-split-by-host.md">
-<meta name="adr-source-sha256" content="cd03a83673f79f510f7ac38517b4388676acbbe63486e2b31a674c9f5ccc8d92">
-<title>ADR-108 · The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</title>
+<meta name="adr-source" content="109-environments-split-by-host.md">
+<meta name="adr-source-sha256" content="fa338c4bcf57a1801d0aae24d06a3052c313a5fb260f886e7a2522ba8fe2d44e">
+<title>ADR-109 · The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
-  <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-10-03; signed off by the user 2026-10-03, with Q8 decided A the same day). Implementation pending: steps 1–13 of the development plan.</dd></div><div><dt>Date</dt><dd class="">2026-10-03 <strong>Supersedes in part:</strong> <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> — the runtime CERT/PROD toggle. Its single GitHub Pages site and its build-time credential injection stand. <strong>Relates to:</strong> <a href="090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> (weteraniszermierki.pl is the PROD surface; amended the same day), <a href="011-artifact-release-pipeline.html">ADR-011</a> (the release order below), <a href="079-event-self-registration-identity.html">ADR-079</a> (<code>register.html</code> stays PROD), <a href="041-edge-function-dispatch.html">ADR-041</a> (dispatch targets), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a>, <a href="092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> and <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the published documents) <strong>Development plan:</strong> <a href="../plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html"><code>doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html</code></a> — steps §04, tests §05 (WP.ENV.*, WP.REL.01), definition of done §08, and Part II, the PROD manual.</dd></div><div><dt>Source</dt><dd class=""><code>108-environments-split-by-host.md</code></dd></div><div><dt>Length</dt><dd class="">51 lines</dd></div></dl></aside>
+  <div><p class="eyebrow">Architecture Decision Record · 109</p><h1>The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-10-03; signed off by the user 2026-10-03, with Q8 decided A the same day). Implementation pending: steps 1–13 of the development plan.</dd></div><div><dt>Date</dt><dd class="">2026-10-03 <strong>Supersedes in part:</strong> <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> — the runtime CERT/PROD toggle. Its single GitHub Pages site and its build-time credential injection stand. <strong>Relates to:</strong> <a href="090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> (weteraniszermierki.pl is the PROD surface; amended the same day), <a href="011-artifact-release-pipeline.html">ADR-011</a> (the release order below), <a href="079-event-self-registration-identity.html">ADR-079</a> (<code>register.html</code> stays PROD), <a href="041-edge-function-dispatch.html">ADR-041</a> (dispatch targets), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a>, <a href="092-scoring-table-annex-bilingual-static-page.html">ADR-092</a> and <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the published documents) <strong>Development plan:</strong> <a href="../plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html"><code>doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html</code></a> — steps §04, tests §05 (WP.ENV.*, WP.REL.01), definition of done §08, and Part II, the PROD manual.</dd></div><div><dt>Source</dt><dd class=""><code>109-environments-split-by-host.md</code></dd></div><div><dt>Length</dt><dd class="">51 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-10-03; signed off by the user 2026-10-03, with Q8 decided A the same day). Implementation pending: steps 1–13 of the development plan.
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes in part:</strong> <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> — the runtime CERT/PROD toggle. Its single GitHub Pages site and its build-time credential injection stand.
@@ -51,7 +51,7 @@
 </li>
 </ol>
 <p><strong>The chosen mocks</strong> (W3; drawn, 3 October 2026). Before: github.io with the switch. Chosen: github.io as CERT under the ribbon, on a computer and on a phone. The PL/EN switch stays in the bar (ADR-090, amendment 2026-10-03, Q2 C).</p>
-<p><img src="assets/adr-108-ribbon.png" alt="github.io before and after: the CT/PD switch is removed and the yellow TEST ribbon is added" /></p>
+<p><img src="assets/adr-109-ribbon.png" alt="github.io before and after: the CT/PD switch is removed and the yellow TEST ribbon is added" /></p>
 </section>
 <section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
 <ol>
@@ -72,5 +72,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-environments-split-by-host.md</code> · source SHA-256 <code>cd03a83673f79f510f7ac38517b4388676acbbe63486e2b31a674c9f5ccc8d92</code></footer>
+<footer class="foot">Generated from <code>109-environments-split-by-host.md</code> · source SHA-256 <code>fa338c4bcf57a1801d0aae24d06a3052c313a5fb260f886e7a2522ba8fe2d44e</code></footer>
 </div></body></html>

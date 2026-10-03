@@ -1,4 +1,4 @@
-# ADR-108: The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD
+# ADR-109: The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD
 
 **Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03, with Q8 decided A the same day). Implementation pending: steps 1–13 of the development plan.
 **Date:** 2026-10-03
@@ -33,7 +33,7 @@ One more fact shapes this decision. A release deploys GitHub Pages and CERT at t
 
 **The chosen mocks** (W3; drawn, 3 October 2026). Before: github.io with the switch. Chosen: github.io as CERT under the ribbon, on a computer and on a phone. The PL/EN switch stays in the bar (ADR-090, amendment 2026-10-03, Q2 C).
 
-![github.io before and after: the CT/PD switch is removed and the yellow TEST ribbon is added](assets/adr-108-ribbon.png)
+![github.io before and after: the CT/PD switch is removed and the yellow TEST ribbon is added](assets/adr-109-ribbon.png)
 
 ## Alternatives considered
 

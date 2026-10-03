@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (`chrome="site"`), and §3 is amended so that `/ranking/?admin=1` opens the PROD sign-in; see [ADR-108](108-environments-split-by-host.md) for the environment split.)
+**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (`chrome="site"`), and §3 is amended so that `/ranking/?admin=1` opens the PROD sign-in; see [ADR-109](109-environments-split-by-host.md) for the environment split.)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -362,7 +362,7 @@ See ADR-080's 2026-09-12 amendment (h) for the first use.
 
 **Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implementation pending: steps 1–13 of the development plan.
 **Development plan:** [`doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html`](../plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html) — steps §04, tests §05 (WP.BAR.\*, WP.NAV.\*, WP.ADM.\*, WP.DOC.\*, WP.CALC.01, WP.PAGE.\*, WP.COMP.01), definition of done §08, and Part II, the PROD manual.
-**Relates to:** [ADR-108](108-environments-split-by-host.md) (the environments split by host, decided the same day)
+**Relates to:** [ADR-109](109-environments-split-by-host.md) (the environments split by host, decided the same day)
 
 ### Context
 
@@ -378,7 +378,7 @@ See ADR-080's 2026-09-12 amendment (h) for the first use.
 1. **A third mode, `chrome="site"`.** It draws the bar (☰, the SPWS logo as the link home, the title, the PL/EN switch) and a drawer whose entries are same-tab links. The page passes the addresses in as `href-home`, `href-ranking`, `href-calendar`, `href-calculator` and `href-table`. On phones narrower than 430 px the bar keeps the PL/EN switch and shows short titles: Ranking, Kalendarz, Kalkulator, Tabela (EN: Ranklist, Calendar, Calculator, Table) (Q2 C). `none` keeps working until `/znajdz-zawody/` is republished, and is retired later.
 2. **§3 is amended.** `?admin=1` is honoured on an element that carries `admin-entry`, and only `/ranking/` carries it. The sign-in modal opens at load, then TOTP. The drawer shows the admin section after sign-in and never holds a sign-in entry. There is no PROD tag (Q1).
 3. **The drawer floats over the page on every device, and opens only on ☰** (Q4, Q5). It closes on a choice, a tap outside or Esc. It stays closed after sign-in.
-4. **A new element, `<spws-document doc="…">`,** shows the PROD copy of the calculator or the annex (under `embed/` on the file host; ADR-108 §4) in a frame under the bar. The frame grows to the document's reported height, and accepts that report only from the asset base's origin. The maths stays in the shared generated module (ADR-102).
+4. **A new element, `<spws-document doc="…">`,** shows the PROD copy of the calculator or the annex (under `embed/` on the file host; ADR-109 §4) in a frame under the bar. The frame grows to the document's reported height, and accepts that report only from the asset base's origin. The maths stays in the shared generated module (ADR-102).
 5. **A page body is the theme style block (§7) plus one element.** Its reference copy lives in `doc/wordpress/`, with the PROD anon key replaced by the same placeholder `doc/wordpress/pliki-zasilajace-xml-ftl.html` already uses. `scripts/wp_publish_page.py` fills the placeholder, never prints the key, and refuses to publish a body that still holds it.
 6. **The menu item is "Ranking", first under KLASYFIKACJA,** linking to `/ranking/` and built in wp-admin, as open item 2 requires. `/klasyfikacja/` is untouched.
 7. **The calculator** is titled „Kalkulator punktów" on computers and „Kalkulator" on phones. Every number box is narrow, right-aligned and vertically centred, as the Table shows numbers (W4).
@@ -392,7 +392,7 @@ The phone bar, Q2 C (real renders at 360 px):
 ![Tabela bar at 360 px](assets/adr-090-phone-bar-tabela.png)
 ![Kalendarz bar at 360 px](assets/adr-090-phone-bar-kalendarz.png)
 
-The drawer floats over the page, opened by ☰ (real render at 1280 px; the CT/PD switch under the list is removed by ADR-108):
+The drawer floats over the page, opened by ☰ (real render at 1280 px; the CT/PD switch under the list is removed by ADR-109):
 
 ![The drawer open over the list at 1280 px](assets/adr-090-drawer-floating.jpeg)
 
@@ -413,7 +413,7 @@ The menu item (the live weteraniszermierki.pl menu, with "Ranking" added in the 
 ### Alternatives considered
 
 1. **WordPress's own menu as the navigation.** Rejected: WordPress is not trusted, and a move to another CMS is possible (Q3).
-2. **Framing the whole github.io app.** Rejected: that app is CERT (ADR-108).
+2. **Framing the whole github.io app.** Rejected: that app is CERT (ADR-109).
 3. **A separate admin page or file.** Rejected by the user (W2).
 4. **Opening the drawer on arrival.** Rejected by the user (Q5).
 
