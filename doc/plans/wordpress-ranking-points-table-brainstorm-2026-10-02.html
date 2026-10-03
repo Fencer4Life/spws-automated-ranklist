@@ -301,12 +301,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 8 · 3 October 2026</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 9 · 3 October 2026</p>
   <h1>WordPress UI: the plan, and a PROD manual for the next administrator</h1>
-  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Nothing is open: the next move is step 1, on your word.</p>
+  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Step 1 is done; the next move is step 2, the tests written RED, on your word.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>ADRs signed off and on disk</span>
-    <span class="pill warn"><span class="dot"></span>Next: step 1, on your word</span>
+    <span class="pill"><span class="dot"></span>Step 1 done</span>
+    <span class="pill warn"><span class="dot"></span>Next: step 2 (tests RED), on your word</span>
     <span class="pill"><span class="dot"></span>Q7 = C (deferred) · Q8 = A</span>
     <span class="pill"><span class="dot"></span>Part I: 13 steps, tests first</span>
     <span class="pill"><span class="dot"></span>Part II: PROD manual, facts read live on 3 Oct</span>
@@ -515,7 +516,7 @@
     <p class="kicker">04 · The steps</p>
     <h2>Thirteen steps, tests first, nothing published without your word</h2>
     <ol class="steps">
-      <li><b>Paperwork first.</b> Write the RTM rows FR-148 to FR-151 and every plan-test ID (§05). Set <code>EXPECTED=150</code> in <code>scripts/check-spec-sync.sh</code>. The ADR files are already done: signed off and written on 3 Oct, with every mock saved as an image under <code>doc/adr/assets/</code> and a link back to this plan.</li>
+      <li><span class="chip fill">done 3 Oct</span> <b>Paperwork first.</b> Write the RTM rows FR-148 to FR-151 and every plan-test ID (§05). Set <code>EXPECTED=150</code> in <code>scripts/check-spec-sync.sh</code>. The ADR files are already done: signed off and written on 3 Oct, with every mock saved as an image under <code>doc/adr/assets/</code> and a link back to this plan. <b>Done 3 Oct:</b> FR-148 – FR-151 and the 19 WP.* IDs are in the RTM as Planned, each naming its test file. FR-42 carries a note that FR-151 replaces it; the row is retired in the change that removes the switch. FR-59 and FR-130 are amended in place. <code>EXPECTED=150</code>, and spec sync passes.</li>
       <li><b>Tests first, all RED.</b> Write every WP.* test in §05 and run it, confirming it fails for the stated reason. A test that passes before its code exists gets rewritten.</li>
       <li><b>The bar and the drawer, <code>chrome="site"</code>.</b>
         <ul>
@@ -1185,5 +1186,5 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
     </ul>
   </section>
 
-  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 8 · 3 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 9 · 3 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
 </div>
