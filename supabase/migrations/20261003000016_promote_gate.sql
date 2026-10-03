@@ -34,9 +34,11 @@
 -- the calendar year of the tournament (the rule vw_vcat_violation accepts).
 CREATE OR REPLACE FUNCTION fn_fencer_fitting_birth_years(p_id_fencer INT)
 RETURNS INT[]
-LANGUAGE sql STABLE
+LANGUAGE plpgsql STABLE
 SET search_path = public
 AS $$
+BEGIN
+  RETURN (
   WITH res AS (
     SELECT t.enum_age_category AS cat,
            r.enum_source_age_category AS label,
@@ -54,7 +56,8 @@ AS $$
            SELECT 1 FROM res
             WHERE fn_age_category(y, res.season_end) IS DISTINCT FROM res.cat
               AND NOT (res.label IS NOT NULL AND res.label = res.cat
-                       AND fn_age_category(y, COALESCE(res.cal_year, res.season_end)) IS NOT DISTINCT FROM res.cat));
+                       AND fn_age_category(y, COALESCE(res.cal_year, res.season_end)) IS NOT DISTINCT FROM res.cat)));
+END;
 $$;
 
 COMMENT ON FUNCTION fn_fencer_fitting_birth_years(INT) IS
