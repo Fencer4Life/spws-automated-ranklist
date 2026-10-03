@@ -166,7 +166,7 @@ ADR-074 is unchanged: CERT commits automatically. The gate blocks only the PROD 
 - The run record carries what the gate reads from the run. Each listing keeps its source rows and its identity report: fencers created with their nearest existing name, reconciled years with their anchor, conflicts, and PENDING rows. A refused listing ends the run with a `ListingRefused` naming its kind, `identity` or `joined_bracket`. It is still a `ValueError`.
 - The gate reads PROD through a read-only transport only. It writes nothing but its outcome, on the run row (`fn_ingest_run_gate`).
 - **The duplicate check applies the birth year.** A new fencer the typo rule calls an existing one blocks unless two different confirmed birth years tell them apart, which is then information. On PPW1, PERKOWSKI Maciej (declared 1984) and SĘKOWSKI Maciej (#263, 1981) are such a pair.
-- **G2 is open.** A declaration that overwrites a confirmed year is checked by rule A, the recommendation (`DECLARATION_RULE`): it blocks unless the fencer's results allow only that year. Rule B reports it only.
+- **G2 A (decided 2026-10-03).** A declaration that overwrites a confirmed year stands only when the fencer's results allow no other year (`fn_fencer_fitting_birth_years`), which is information. Any other such overwrite blocks as an identity issue, and the year is decided by name on PROD. There is no second rule to switch to.
 - On LOCAL, after a refresh from PROD and a recorded PPW1 run, the gate against PROD found no identity, scoring or joined-bracket issue. The only findings were the schema and registrations parts, both waiting on PROD's deploy of the same migrations.
 
 ### 6 · Promote on PROD
@@ -235,7 +235,7 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 
 1. **Decided 2026-10-03 (G1 A), recorded in §5.** How §5 compares the season lock. The season's first scored result locks it (`fn_ensure_active_scoring_revision`). So the ingestion of a season's first event changes the lock on CERT, and any later CERT re-run of that event starts locked while PROD is not. On 3 October 2026 the 2026/27 season was locked on CERT and unlocked on PROD. Compared literally, "lock state equal" refuses every re-ingested first event of a season. The run record therefore keeps the lock as a part of its own. **Recommendation:** compare the scoring settings and engines value by value, and refuse on the lock only when PROD is locked and CERT is not. That case means PROD scored results CERT never had.
 
-2. **G2, a declaration against a confirmed birth year (open).** D5 moves a confirmed year to a declared one whenever the declaration fits the bracket. **Recommendation A:** that overwrite stands only when the fencer's results allow no other year; any other case blocks promote as an identity issue, and the year is decided by name. B: the declaration wins and the gate reports it. The gate is built with A.
+2. **Decided 2026-10-03 (G2 A), recorded in §5.** A declaration against a confirmed birth year. D5 moves a confirmed year to a declared one whenever the declaration fits the bracket. **A (chosen):** that overwrite stands only when the fencer's results allow no other year; any other case blocks promote as an identity issue, and the year is decided by name. B, not chosen: the declaration wins and the gate reports it.
 
 ## Consequences
 

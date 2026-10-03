@@ -61,7 +61,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION fn_fencer_fitting_birth_years(INT) IS
-  'ADR-108 §5 (G2): the birth years in which every categorised result of the fencer fits its category; empty when none does or he has none.';
+  'ADR-108 §5 (G2): the birth years in which every categorised result of the fencer fits its category; empty when none does or the fencer has none.';
 
 CREATE OR REPLACE FUNCTION fn_promote_gate_checks(p_event_code TEXT, p_fencer_ids INT[] DEFAULT '{}')
 RETURNS JSONB

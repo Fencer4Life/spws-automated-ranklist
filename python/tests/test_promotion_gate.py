@@ -7,7 +7,7 @@ kinds of issue block, each fixed at its source, then CERT is re-ingested:
                   PENDING row; a participant whose birth year is an estimate; a
                   declaration that contradicts the bracket; a confirmed year
                   moved by the bracket alone; a confirmed year overwritten by a
-                  declaration the results do not force (G2, recommendation A);
+                  declaration the results do not force (G2 A);
                   a new fencer the alias checker's typo rule calls an existing one
   scoring         a result without a score or components; not exactly one
                   active revision, or a result not stamped with it; a stored
@@ -314,7 +314,7 @@ class TestIdentity:
         assert _kinds(_eval(run=run)) == [("identity", "identity.confirmed_moved_by_bracket")]
 
     def test_a_declaration_over_a_confirmed_year_blocks_unless_the_results_force_it(self):
-        """PROMO.GATE.16 — G2, recommendation A."""
+        """PROMO.GATE.16 — G2 A (decided 3 Oct): the only rule; no rule B to switch to."""
         moved = {
             "id_fencer": 282,
             "scraped_name": "STANISŁAWSKI Albert",
@@ -329,10 +329,11 @@ class TestIdentity:
         assert _kinds(forced) == [("information", "info.declaration_forced")]
         open_ = _eval(run=run, checks=_checks(fitting_years={"282": [1985, 1986, 1987]}))
         assert _kinds(open_) == [("identity", "identity.declaration_over_confirmed")]
-        rule_b = _eval(
-            run=run, checks=_checks(fitting_years={"282": [1985, 1986, 1987]}), declaration_rule="B"
-        )
-        assert rule_b.passed
+        assert "their results allow no other year" in forced.findings[0].message
+        assert "their results allow 1985–1987" in open_.findings[0].message
+        assert not hasattr(g, "DECLARATION_RULE")
+        with pytest.raises(TypeError):
+            _eval(run=run, declaration_rule="B")
 
     def test_a_new_fencer_the_typo_rule_calls_an_existing_one_blocks(self):
         """PROMO.GATE.17 — NAME.CLS, unless confirmed birth years tell them apart;
