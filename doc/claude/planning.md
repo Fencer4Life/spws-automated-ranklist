@@ -165,7 +165,7 @@ When the plan touches:
 - A new Telegram-fired event → update GAS `/help` command in
   [scripts/gas_email_ingestion.js](../../scripts/gas_email_ingestion.js).
 - A new operator command → add Telegram command case in GAS + document in
-  `/help`.
+  `/help`. `python/tests/test_gas_bot.py` fails until the case and its help entry agree; then the file is pasted into the Apps Script project ([operator runbooks](../handbook/operations/operator-runbooks.html#telegram-bot), Change the Telegram bot).
 
 ## 9. Plan file readability for future sessions
 

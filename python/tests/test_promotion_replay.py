@@ -650,5 +650,5 @@ class TestWiring:
 
         ingest_cli._send_staging_via_telegram(N(), CODE, {"_rendered_md": "# r"})
         assert sent[0]["extras"]["promote_hint"] == f"reply `promote {CODE}` to push to PROD"
-        gas = (ROOT / "doc/gas/Code.gs").read_text()
+        gas = (ROOT / "scripts/gas_email_ingestion.js").read_text()
         assert "promote &lt;exact code&gt;" in gas
