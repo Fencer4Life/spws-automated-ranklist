@@ -127,7 +127,7 @@
 <div class="wrap">
   <p class="eyebrow">LOCAL · ADR-105 §5 · ADR-106 · per-event sign-off</p>
   <h1>Six 2024/25 EVF circuit events, staged from their organisers</h1>
-  <p class="dek">Madrid 2024, Guildford 2025, Fâches 2025, Terni 2025, Stockholm 2025 and Jabłonna 2025’s foil, each staged on LOCAL under ADR-106 from its organiser’s results, after the record corrections you signed off (N A, W B, J B). All six are signed off and committed on LOCAL (status below). Budapest 2024 is not here: its source was not found. For each event: what the rule adds, what it removes and why, place or N changes, and the PENDING rows with a recommendation each.</p>
+  <p class="dek">Madrid 2024, Guildford 2025, Fâches 2025, Terni 2025, Stockholm 2025 and Jabłonna 2025’s foil, each staged on LOCAL under ADR-106 from its organiser’s results, after the record corrections you signed off (N A, W B, J B). All six are signed off and committed on LOCAL; Fâches and Stockholm 2025 are renamed PEW5fs and PEW13ef (W2 A, status below). Budapest 2024 is not here: its source was not found. For each event: what the rule adds, what it removes and why, place or N changes, and the PENDING rows with a recommendation each.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>6 of 6 events staged</span>
     <span class="pill"><span class="dot"></span>8 PENDING rows</span>
@@ -135,16 +135,19 @@
     <span class="pill warn"><span class="dot"></span>3 committed on LOCAL · 3 waiting</span>
   </div>
   <hr class="rule">
-  <section id="status"><p class="kicker">Status · 3 October</p><h2>All six signed off and committed on LOCAL</h2>
+  <section id="status"><p class="kicker">Status · 3 October</p><h2>All six on LOCAL; W2 A taken; release next</h2>
     <div class="note good"><p class="lede"><span class="tick">6</span> Committed on LOCAL, every row as recommended</p>
     <ul>
-      <li>Madrid 2024: 31 results · Guildford 2025: 20 · Terni 2025: 15 · Fâches 2025: 5 · Stockholm 2025: 13 · Jabłonna 2025’s foil: 22. Each stored result equals its draft; every tournament is typed PEW (TT.CODE.06 0).</li>
+      <li>Madrid 2024: 31 results · Guildford 2025: 20 · Terni 2025: 15 · Fâches 2025: 5 · Stockholm 2025: 13 · Jabłonna 2025’s foil: 22. Each stored result equals its draft; every tournament is typed PEW (TT.CODE.06 0). LOCAL: 218 season nationalities, 45 not Polish, 0 conflicts.</li>
       <li><b>L A</b> (your “accept all”, 3 Oct): LEAHEY John is linked by an identity entry in each event’s override file and stored in V2, as printed: Madrid 21st, Guildford 19th, Terni 27th, and Stockholm 6th. Stockholm’s row (R1 below, recommendation A) surfaced after Stockholm was first committed; it was re-committed with him, the other twelve rows unchanged.</li>
-      <li><b>Terni</b> includes GINZERY Tomas (V1 men’s foil) and CHIAROMONTE Francesco (V2 men’s sabre), both 3rd: 4fence prints the second bronze without a place, and Terni’s last-four tableau prints names as plain text, which our reader now reads (FOURFENCE.BRONZE.02; Napoli’s 30 brackets read exactly as before).</li>
-      <li>LOCAL after the six: 218 season nationalities, 45 not Polish, 0 conflicts.</li>
+      <li><b>Terni</b> includes GINZERY Tomas (V1 men’s foil) and CHIAROMONTE Francesco (V2 men’s sabre), both 3rd (FOURFENCE.BRONZE.02).</li>
     </ul></div>
+    <div class="note good"><p class="lede"><span class="tick">W2</span> A (your “accept all”, 3 Oct): Fâches and Stockholm 2025 renamed</p>
+    <p><code>PEW5s-2024-2025</code> is <code>PEW5fs-2024-2025</code> and <code>PEW13e-2024-2025</code> is <code>PEW13ef-2024-2025</code> on LOCAL, through the admin rename path’s own steps (<code>fn_rebuild_tournament_codes</code>, then the event code), so the weapon letters match the corrected weapons (ADR-046; pgTAP 71.5 passes). Their override files moved with them. Re-staged under the new codes, both give exactly the committed rows (5 and 13). Measured before the rename: across all 30 sub-rankings, the PPW and kadra rankings of 2024/25 and 2025/26 that the site shows do not change.</p>
+    <p>The row ids on this page keep the old codes (<code>PEW5s-2024-2025 R1</code>, <code>PEW13e-2024-2025 R1</code>) as you signed them off.</p>
+    <p>Earlier on this page, W B was recommended with two wrong statements: that nothing else changes, and that no tool renames an event with results. pgTAP 71.5 caught it before release.</p></div>
     <div class="note"><p class="lede">Next</p>
-    <p>Release (scripts/preflight.sh exit 0 first), then CERT and PROD as the signed-off plan sets out: the record corrections and source links by scoped updates, then each event through the runner, one at a time, checked against LOCAL. LEAHEY’s roster birth year (1976; EVF has 1969) stays a separate master-data correction, on your go; it would also move his V1 result at the 2023/24 European Championships.</p></div>
+    <p>Release (scripts/preflight.sh exit 0 first), then CERT and PROD as the signed-off plan sets out: the same rename, the record corrections and source links by scoped updates, then each event through the runner, one at a time, checked against LOCAL.</p></div>
 </section>
   <section id="decide"><p class="kicker">Decide this first</p><h2>What I need from you</h2>
     <p>Sign off each event by name. Each P row (PENDING, printed POL) and each R row (rejected, but the surname is an SPWS starter's), listed under its event, is either <b>A</b> linked to the candidate (an identity entry in the event's override file, the fencer named) or <b>B</b> EXCLUDED. The recommendation is in the row and applies unless you say otherwise.</p>
