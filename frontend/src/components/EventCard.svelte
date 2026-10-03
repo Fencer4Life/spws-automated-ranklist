@@ -325,9 +325,12 @@
     const out: Pill[] = []
 
     // ADR-040: slots are equal-status, so labels are by DAY, never by weapon,
-    // and are derived here at render time rather than stored.
+    // and are derived here at render time rather than stored. ADR-108 §7: an
+    // event stays IN_PROGRESS until its end date has passed, with results
+    // already published, so the links show then too.
     const urls = resultUrls(event)
-    if (event.enum_status === 'COMPLETED' && urls.length > 0) {
+    const hasResults = event.enum_status === 'COMPLETED' || event.enum_status === 'IN_PROGRESS'
+    if (hasResults && urls.length > 0) {
       urls.forEach((href, i) => {
         out.push({
           kind: 'results-link',

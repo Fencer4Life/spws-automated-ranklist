@@ -277,6 +277,9 @@ class Plan:
     ops: list[dict] = field(default_factory=list)
     created: list[dict] = field(default_factory=list)
     listings: dict = field(default_factory=dict)
+    # ADR-108 §7: the status the lifecycle rule gives PROD's event after the
+    # apply, or None when the run committed nothing.
+    status: str | None = None
 
     def to_json(self) -> dict:
         return {
@@ -285,6 +288,7 @@ class Plan:
             "ops": self.ops,
             "created": self.created,
             "listings": self.listings,
+            "status": self.status,
         }
 
 
@@ -299,6 +303,7 @@ def plan_event(
     """Plan the CERT run of `event_code` on PROD. `prod` is read only; `url_event`
     is the URL the CERT run ingested; `created` its created fencers."""
     from python.pipeline import ingest_cli
+    from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
     from python.pipeline.stages import _is_international_intake
 
@@ -334,14 +339,29 @@ def plan_event(
         run=log,
         post_run=False,
     )
-    return Plan(event_code, url_event, recorder.ops, recorder.created, log.listings())
+    listings = log.listings()
+    end = event.get("dt_end") or event.get("dt_start")
+    status = (
+        lifecycle.target_status(
+            listings, dt_end=lifecycle.as_date(end), today=lifecycle.warsaw_today()
+        )
+        if end
+        else None
+    )
+    return Plan(event_code, url_event, recorder.ops, recorder.created, listings, status)
 
 
-def apply_plan(ops: Sequence[Mapping[str, Any]], db: Any) -> dict[int, int]:
+def apply_plan(
+    ops: Sequence[Mapping[str, Any]],
+    db: Any,
+    *,
+    status: str | None = None,
+    event_code: str | None = None,
+) -> dict[int, int]:
     """The reference apply: every operation through the ordinary connector, in
-    order. Returns each tournament reference with the id it resolved to. Not
-    atomic, so it runs in tests and on LOCAL only; PROD's apply is
-    fn_promote_event_apply (build step 9)."""
+    order, then the plan's status (ADR-108 §7) when one is given. Returns each
+    tournament reference with the id it resolved to. Not atomic, so it runs in
+    tests and on LOCAL only; PROD's apply is fn_promote_event_apply (build step 9)."""
     refs: dict[int, int] = {}
     for op in ops:
         kind = op["op"]
@@ -384,4 +404,12 @@ def apply_plan(ops: Sequence[Mapping[str, Any]], db: Any) -> dict[int, int]:
             db.set_event_ingest_sources(op["id_event"], op["sources"])
         else:
             raise ValueError(f"unknown plan operation {kind!r}")
+    if status is not None:
+        from python.pipeline.promotion import lifecycle
+
+        event = db.find_event_by_code(event_code) if event_code else None
+        if event is None:
+            raise ValueError(f"a status needs an existing event, not {event_code!r}")
+        for step in lifecycle.steps(event.get("enum_status"), status):
+            db.set_event_status(event["id_event"], step)
     return refs

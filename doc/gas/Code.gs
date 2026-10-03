@@ -143,6 +143,7 @@ function handleCommand(props, command, arg) {
         + 'Pending: <b>' + (statusData.pending_count || 0) + '</b>';
 
     case 'complete':
+      // ADR-108 §7: an exact event code; a prefix is refused with the matching codes.
       callRpc(supabaseUrl, supabaseKey, 'fn_complete_event', { p_prefix: arg });
       // Trigger seed export from CERT (ADR-027)
       var githubPatC = props.getProperty('GITHUB_PAT');
@@ -412,8 +413,8 @@ function handleCommand(props, command, arg) {
         '<pre>status &lt;event&gt;</pre>',
         'Event status, tournament + result counts',
         '',
-        '<pre>complete &lt;event&gt;</pre>',
-        'Mark event done, trigger seed export',
+        '<pre>complete &lt;exact code&gt;</pre>',
+        'Manual close: IN_PROGRESS → COMPLETED (e.g. PPW1-2026-2027); the daily close does this after the end date',
         '',
         '<pre>rollback &lt;event&gt;</pre>',
         'Delete all ingested data, reset to PLANNED',

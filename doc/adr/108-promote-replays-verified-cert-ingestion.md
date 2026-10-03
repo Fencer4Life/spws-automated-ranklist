@@ -230,6 +230,16 @@ The apply runs over a direct database connection with its own `statement_timeout
   - It is idempotent, and a failure alerts.
 - **The manual close.** The Telegram `complete` command stays as a manual close, takes an exact code, and does not check the end date.
 
+**Implemented 2026-10-03 (build step 11).**
+
+- **Finished.** `parse_event_schedule` gives every listing `finished` (its schedule row says Finished; a listing shown on two days needs both rows) and `day` (the date heading above it). The domestic ingestion moves a listing that is not final to the schedule's skips, with the reason "not final"; the run record, promote's source check and the admin accordion all show it, and the run record keeps the latest listing day.
+- **The rule.** `python/pipeline/promotion/lifecycle.py`: COMPLETED when every listing is final and read, none is dated after the end date, and today in Warsaw is later than the end date; otherwise IN_PROGRESS. A run that committed nothing leaves the status alone (ADR-037). Writes go through the validator's pairs: PLANNED steps through IN_PROGRESS, and an unchanged status is not written.
+- **Who applies it.** Every domestic ingestion through `ingest_event_from_url` (CERT and LOCAL) ends by applying it. `plan_event` carries it as the plan's status, which promote passes to `fn_promote_event_apply` and `apply_plan` sets.
+- **The daily close.** `python/pipeline/promotion/close.py`, run by `.github/workflows/event-close.yml` at 04:00 UTC in `prod-write`: each domestic event of the active season IN_PROGRESS on CERT or PROD with its end date passed is completed on CERT and then PROD when every listing is final and none is dated after the end date, the schedule hashes as the latest finished CERT run read it, that run read every listing, and both environments hold its result fingerprint. Otherwise it writes nothing and sends one Telegram message per event saying what to do. An environment already COMPLETED is not written again; a failure raises and the workflow alerts. A manual run is a dry run unless unticked.
+- **The manual close.** `fn_complete_event` takes an exact code and refuses a prefix or an unknown code, listing the active season's codes that start with it (migration `20261003000019`; the parameter keeps the name `p_prefix` for the deployed GAS).
+- **The calendar card** shows results links for an IN_PROGRESS event as well as a COMPLETED one.
+- **Tests.** pytest `test_promotion_lifecycle.py` (PROMO.LIFE.01–17); pgTAP `105_complete_event_exact_code.sql` (COMPLETE.01–06); Vitest EC.65.
+
 ### 8 · A carry stops on results, per weapon and gender (decision P6 A)
 
 The `EVENT_FK_MATCHING` ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender and itself counts (any status `vw_eligible_event` counts: IN_PROGRESS, SCORED or COMPLETED). A COMPLETED or SCORED current edition stops every carry from its previous edition, as today. The stop applies to every linked event, whatever its type (decided 3 October 2026): the link means the new edition replaces the old one ([ADR-018](018-rolling-score.md) §3, §7). Implemented in `supabase/migrations/20261003000018_carry_stop_results.sql`; tests `supabase/tests/104_carry_stop_results.sql`, CARRY.RS.01–11.

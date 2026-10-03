@@ -1,0 +1,66 @@
+name: Daily Event Close
+
+# ADR-108 §7 (decision P4b A): the last promote of a domestic event usually runs
+# on its final day, before the end date has passed, so the event stays
+# IN_PROGRESS. Every morning this completes, on CERT and then on PROD, each
+# domestic event of the active season still IN_PROGRESS whose end date has
+# passed, once every listing is final, the organiser has published nothing new
+# since the CERT run, and both environments hold that run's result. Otherwise it
+# changes nothing and says on Telegram what to do. Idempotent; a failure alerts.
+on:
+  schedule:
+    # 04:00 UTC is 05:00 or 06:00 in Warsaw: the day after an event ends.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report only, write nothing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# A PROD write: serialised with promote and the other prod-write members.
+concurrency:
+  group: prod-write
+  cancel-in-progress: false
+  # queue: max on EVERY member of prod-write (rationale: pzsz-sync.yml).
+  queue: max
+
+jobs:
+  close:
+    name: Close finished events
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx rapidfuzz beautifulsoup4 pyyaml
+
+      - name: Close events
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # A scheduled run writes; a manual run writes only when dry_run is unticked.
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            python -m python.pipeline.promotion.close --dry-run
+          else
+            python -m python.pipeline.promotion.close
+          fi
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="Daily event close FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

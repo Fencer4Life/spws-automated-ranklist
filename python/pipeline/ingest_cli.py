@@ -633,6 +633,12 @@ def ingest_event_from_url(
             season_end_year=season_end_year,
             url_event=url_event,
         )
+    from python.pipeline.promotion import lifecycle
+    from python.pipeline.promotion.run_record import ListingLog
+
+    # ADR-108 §7: every run keeps the listings it read, recorded or not, so the
+    # lifecycle rule can set the event's status at the end.
+    log = run if run is not None else ListingLog()
     try:
         contexts = _ingest_event_rounds(
             event,
@@ -645,7 +651,7 @@ def ingest_event_from_url(
             replace=replace,
             send_telegram=send_telegram,
             md_target=md_target,
-            run=run,
+            run=log,
         )
     except BaseException as e:
         if run is not None:
@@ -656,6 +662,10 @@ def ingest_event_from_url(
         raise
     if run is not None:
         run.finish()
+    if hasattr(db, "set_event_status"):
+        current = db.find_event_by_code(event_code)
+        if current is not None:
+            lifecycle.apply(db, current, log.listings(), lifecycle.warsaw_today())
     return contexts
 
 
@@ -709,6 +719,12 @@ def _ingest_event_rounds(
         sched = client.get(normalize_ftl_url(url_event))
         sched.raise_for_status()
         kept, skipped = parse_event_schedule(sched.text, with_skips=True)
+        # ADR-108 §7: a listing whose schedule row does not say Finished is
+        # skipped and listed; it keeps the event IN_PROGRESS.
+        from python.pipeline.promotion.lifecycle import split_final
+
+        kept, not_final = split_final(kept)
+        skipped = [*skipped, *not_final]
         print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
         for s in skipped:
             print(f"  schedule-skip {s['name']!r}: {s['reason']}")

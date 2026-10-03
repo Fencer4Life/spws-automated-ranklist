@@ -141,7 +141,7 @@ def _ingest(db, *, record_run, run_flow=_committed_ctx, env=None):
         patch(
             "python.tools.scrape_ftl_event_urls.parse_event_schedule",
             return_value=(
-                [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}],
+                [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
                 [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}],
             ),
         ),
@@ -184,7 +184,7 @@ class TestRecordedRun:
         run_id, listings = db.finish_ingest_run.call_args.args
         assert run_id == 41
         assert listings["schedule"]["sha256"] == rr.schedule_sha256(
-            [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}],
+            [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
             [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}],
         )
         (round_,) = listings["rounds"]

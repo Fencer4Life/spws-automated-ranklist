@@ -85,6 +85,7 @@ class MemoryDb:
         "ingest_results",
         "set_event_url_event",
         "set_event_ingest_sources",
+        "set_event_status",
     )
 
     def __init__(self, fencers, events, registrations=(), tournaments=()):
@@ -96,6 +97,7 @@ class MemoryDb:
         self.inserted: list[int] = []
         self._seq = 1000
         self._tseq = 500
+        self.status_writes: list[str] = []
 
     # reads
     def fetch_spws_starter_ids(self):
@@ -227,6 +229,10 @@ class MemoryDb:
 
     def set_event_ingest_sources(self, id_event, sources):
         self.events[id_event]["json_ingest_sources"] = copy.deepcopy(sources)
+
+    def set_event_status(self, id_event, status):
+        self.events[id_event]["enum_status"] = status
+        self.status_writes.append(status)
 
     def state(self) -> dict:
         """Everything a run can change, keyed by what does not depend on
@@ -474,7 +480,10 @@ class _Ftl:
 
 
 def _drive(ftl: _Ftl, fn, *args, **kwargs):
-    kept = [{"uuid": u, "name": name} for u, (name, _) in ftl.listings.items()]
+    kept = [
+        {"uuid": u, "name": name, "finished": True, "day": None}
+        for u, (name, _) in ftl.listings.items()
+    ]
     with (
         patch("python.scrapers.ftl_auth.get_authed_ftl_client", return_value=ftl),
         patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u),
@@ -512,7 +521,8 @@ def _plan_then_apply(db: MemoryDb, ftl: _Ftl, event_code: str, season_end: int, 
     assert db.state() == before, "planning wrote to the database"
     staging.assert_not_called()
     joining.assert_not_called()
-    pl.apply_plan(json.loads(json.dumps(plan.to_json()))["ops"], db)
+    payload = json.loads(json.dumps(plan.to_json()))
+    pl.apply_plan(payload["ops"], db, status=payload["status"], event_code=event_code)
     return plan
 
 
