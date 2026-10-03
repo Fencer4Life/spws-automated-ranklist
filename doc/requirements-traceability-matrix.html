@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="4e325673bda26976be718d9b95c5db64f77fb738aac455f34c16f037ea08cda0">
+<meta name="doc-source-sha256" content="01dee62cd146d8de6d7d00457bacc797e165f258d14c076e81c71ebac7c7ec41">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2062,42 +2062,42 @@
 <td><code>chrome=&quot;site&quot;</code> renders ☰, the logo linking to <code>href-home</code>, the title and the PL/EN switch, and no CT/PD switch.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/SiteChrome.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.BAR.02</td>
 <td>The bar carries the long title and the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table) in the active language; below 430 px the short one shows. jsdom evaluates no media query, so the switch itself is measured by WP.BAR.03.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/SiteChrome.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.BAR.03</td>
 <td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the short title unwrapped and no sideways scroll; the long title shows from 430 px up. Against the custom-element build WordPress loads.</td>
 <td>Playwright</td>
 <td><code>frontend/e2e/site-chrome.spec.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Planned</strong> (2026-10-03); the ranking and calendar pages GREEN 2026-10-04 (LOCAL), the two document pages land with <code>&lt;spws-document&gt;</code> (plan step 6)</td>
 </tr>
 <tr>
 <td>WP.NAV.01</td>
-<td>On <code>site</code>, the drawer entries are same-tab links to the four <code>href-*</code> values; the current page is marked; none opens a new tab.</td>
+<td>On <code>site</code>, the drawer entries are same-tab links to the four <code>href-*</code> values; the current page is marked; none opens a new tab. The entry for the page already open only closes the drawer, and a signed-in admin's Ranking entry returns to the list in place, because following it would reload /ranking/ and end the session.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/Sidebar.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.NAV.02</td>
 <td>The drawer opens only on ☰, and closes on a choice, a tap outside and Esc, in every mode.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/Sidebar.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.NAV.03</td>
 <td>No mode shows a sign-in entry in the drawer, signed in or not.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/Sidebar.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.ADM.01</td>
@@ -2203,5 +2203,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4e325673bda26976be718d9b95c5db64f77fb738aac455f34c16f037ea08cda0</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>01dee62cd146d8de6d7d00457bacc797e165f258d14c076e81c71ebac7c7ec41</code></footer>
 </div></body></html>

@@ -25,6 +25,19 @@ export interface RankingRules {
 // calls fn_ranking_full (schema v2, ADR-098); PPW is unchanged (fn_ranking_ppw).
 export type RankingMode = 'PPW' | 'RANKING'
 export type AppView = 'ranklist' | 'calendar' | 'admin_seasons' | 'admin_events' | 'admin_fencers'
+// ADR-090 amendment 2026-10-03 (FR-148). On the association's WordPress pages
+// every drawer entry is its own page, so the drawer marks one of four pages as
+// current; the calculator and the points table are pages there, not app views.
+export type SitePage = 'ranklist' | 'calendar' | 'calculator' | 'table'
+// The addresses a WordPress page body gives the bar and the drawer
+// (href-home, href-ranking, href-calendar, href-calculator, href-table).
+export interface SiteLinks {
+  home: string
+  ranking: string
+  calendar: string
+  calculator: string
+  table: string
+}
 export type FencerTab = 'identities' | 'birth_year_review' | 'aliases'
 
 // Phase 4 (ADR-050) alias UI — vw_fencer_aliases shape.

@@ -4,14 +4,22 @@
     currentView={currentView}
     isAdmin={isAdmin}
     {adminTimerText}
+    links={siteLinks}
     onnavigate={(view) => { navigateTo(view) }}
     onclose={() => { sidebarOpen = false }}
     onlogout={() => { signOut() }}
   />
 {/if}
 
-<div class="ranklist-app" class:embedded>
-  {#if !embedded}
+<div class="ranklist-app" class:embedded class:site-fill={site && currentView === 'calendar'}>
+  {#if site}
+    <SiteBar
+      homeHref={siteLinks?.home ?? ''}
+      longTitle={siteTitles.long}
+      shortTitle={siteTitles.short}
+      onmenu={() => { sidebarOpen = true }}
+    />
+  {:else if !embedded}
     <header class="app-header">
       <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
       <h2 class="app-title">
@@ -310,6 +318,7 @@
     Filters,
     RankingRules,
     AppView,
+    SiteLinks,
     CalendarEvent,
     TournamentType,
   } from './lib/types'
@@ -381,6 +390,7 @@
   import { shouldUseRolling } from './lib/rolling'
   import { t } from './lib/locale.svelte'
   import Sidebar from './components/Sidebar.svelte'
+  import SiteBar from './components/SiteBar.svelte'
   import CalendarView from './components/CalendarView.svelte'
   import FilterBar from './components/FilterBar.svelte'
   import LangToggle from './components/LangToggle.svelte'
@@ -414,10 +424,20 @@
     // with `view="calendar" chrome="none"`. Both default to the Pages app's
     // existing behaviour, so nothing on GitHub Pages changes.
     view = 'ranklist',
+    // 'site' (ADR-090 amendment 2026-10-03, FR-148): the association's
+    // WordPress pages, with our own bar and a drawer whose entries are the
+    // site's pages. 'none' stays until /znajdz-zawody/ is republished.
     chrome = 'full',
     // Where the static marks live. Empty (the Pages default) leaves every asset
     // path exactly as it is today; the embed points it at the Pages origin.
     'asset-base': assetBase = '',
+    // The addresses the bar and the drawer lead to on chrome="site", given by
+    // the page body, so nothing about navigation is taken from the CMS.
+    'href-home': hrefHome = '',
+    'href-ranking': hrefRanking = '',
+    'href-calendar': hrefCalendar = '',
+    'href-calculator': hrefCalculator = '',
+    'href-table': hrefTable = '',
     demo = false,
   }: {
     'supabase-cert-url'?: string
@@ -425,8 +445,13 @@
     'supabase-prod-url'?: string
     'supabase-prod-key'?: string
     view?: AppView
-    chrome?: 'full' | 'none'
+    chrome?: 'full' | 'site' | 'none'
     'asset-base'?: string
+    'href-home'?: string
+    'href-ranking'?: string
+    'href-calendar'?: string
+    'href-calculator'?: string
+    'href-table'?: string
     demo?: boolean
   } = $props()
 
@@ -441,6 +466,24 @@
   // to point at.
   const embedded = $derived(chrome === 'none')
 
+  // chrome="site": the SPWS bar and a drawer of the site's pages. The addresses
+  // are static attributes of the element, like the credentials.
+  const site = $derived(chrome === 'site')
+  const siteLinks: SiteLinks | undefined = $derived(site
+    ? { home: hrefHome, ranking: hrefRanking, calendar: hrefCalendar, calculator: hrefCalculator, table: hrefTable }
+    : undefined)
+  // The bar's title: the page's name, and below 430 px the short one (Q2 = C).
+  // A signed-in admin on /ranking/ sees the admin view's name in both.
+  const siteTitles = $derived.by(() => {
+    switch (currentView) {
+      case 'ranklist': return { long: t('app_title'), short: t('site_title_short_ranking') }
+      case 'calendar': return { long: t('embed_page_title'), short: t('site_title_short_calendar') }
+      default: {
+        const name = t(`nav_${currentView}`)
+        return { long: name, short: name }
+      }
+    }
+  })
 
   // The one-shot capture is the point: `view` is the STARTING view, and
   // navigateTo() owns it from then on. Re-deriving it from the prop would undo
@@ -1652,8 +1695,10 @@
   /* ---- WordPress embed (chrome="none") ------------------------------------
      Full viewport height by default: the barrel is built from geometry and the
      WordPress page gives it no height of its own. `dvh` rather than `vh` so a
-     phone's collapsing address bar does not crop the last row. */
-  .ranklist-app.embedded {
+     phone's collapsing address bar does not crop the last row. The calendar
+     page on chrome="site" (.site-fill) needs the same column. */
+  .ranklist-app.embedded,
+  .ranklist-app.site-fill {
     max-width: none;
     /* The event card's entry animation is a perspective rotateX, and while it
        plays the card's bounding box is a few px wider than its container. On a
@@ -1709,12 +1754,14 @@
   }
   /* The calendar takes the remaining height; the barrel scrolls inside it
      rather than growing the page. */
-  .ranklist-app.embedded :global(.calendar-view) {
+  .ranklist-app.embedded :global(.calendar-view),
+  .ranklist-app.site-fill :global(.calendar-view) {
     flex: 1 1 auto;
     min-height: 0;
   }
   @media (max-width: 600px) {
-    .ranklist-app.embedded {
+    .ranklist-app.embedded,
+    .ranklist-app.site-fill {
       padding: 8px;
     }
     .embed-title {
@@ -1734,7 +1781,8 @@
      19px plus a 6px bar gap gives the English 6.7px of headroom and the Polish
      41.1px, both on one line, with the SPWS mark left at its full 84px. */
   @media (max-width: 430px) {
-    .ranklist-app.embedded {
+    .ranklist-app.embedded,
+    .ranklist-app.site-fill {
       padding-left: 10px;
       padding-right: 10px;
     }
