@@ -32,9 +32,10 @@ jobs:
   drain:
     name: Drain recompute queue (CERT)
     runs-on: ubuntu-latest
-    # Serialise with other CERT writers so a recompute never races an ingest.
+    # Serialise with other CERT writers so a recompute never races an ingest:
+    # cert-write is shared with ingest-event.yml and the refresh (ADR-108 §9).
     concurrency:
-      group: cert-recompute
+      group: cert-write
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="4e06ecdb7747cbd024c2b0adc58e89cf7e9d72eb6f71f853c98ec94e06c1f819">
+<meta name="doc-source-sha256" content="ab3ac09a3d6c7bbc178330368ac2047ad76bbde8bec90fefdfd02486076518cb">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>372 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>374 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -544,24 +544,24 @@
 </tr>
 <tr>
 <td>FR-75</td>
-<td>Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging</td>
+<td><s>Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging</s> — <strong>withdrawn 2026-10-03</strong> (ADR-023 amendment: the e-mail intake is retired)</td>
 <td>ADR-023</td>
 <td>Manual E2E ✓</td>
-<td>Covered</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-76</td>
-<td>GitHub Actions <code>ingest.yml</code> downloads from Storage staging → processes → archives</td>
+<td><s>GitHub Actions <code>ingest.yml</code> downloads from Storage staging → processes → archives</s> — <strong>withdrawn 2026-10-03</strong> (ADR-023 amendment: the e-mail intake is retired)</td>
 <td>ADR-023</td>
 <td>Manual E2E ✓</td>
-<td>Covered</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-77</td>
-<td>Processed .zip archived to <code>archive/{season}/{event}.zip</code>; staging cleaned; previous event compressed</td>
+<td><s>Processed .zip archived to <code>archive/{season}/{event}.zip</code>; staging cleaned; previous event compressed</s> — <strong>withdrawn 2026-10-03</strong> (ADR-023 amendment: the e-mail intake is retired)</td>
 <td>ADR-023</td>
 <td>9.169–9.172, 9.191–9.192</td>
-<td>Covered</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-78</td>
@@ -586,9 +586,9 @@
 </tr>
 <tr>
 <td>FR-81</td>
-<td>Telegram command interface: 20+ admin commands for lifecycle, review, storage, season, PROD, URLs, emergency</td>
+<td>Telegram command interface: 21 admin commands for lifecycle, review, season, ingestion, EVF, PROD reads and seed; the bot's <code>help</code> is the command list and every entry names CERT or PROD</td>
 <td>ADR-025</td>
-<td>10.16–10.22</td>
+<td>10.16–10.22; GAS.SRC.01–03, GAS.HELP.01–04 (<code>test_gas_bot.py</code>)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -622,8 +622,8 @@
 <tr>
 <td>FR-86</td>
 <td>CERT → PROD promotion: whole active-season event reconciliation plus event/results promotion; stable identities and environment-local FKs are resolved rather than copied; <code>id_evf_calendar_event</code> is carried on create/fill and the active-season mismatch/delete guards remain fail-closed.</td>
-<td>ADR-026, ADR-028, ADR-081</td>
-<td>pgTAP 51.*, 53.13; pytest <code>test_promote.py</code></td>
+<td>ADR-026, ADR-028, ADR-081, ADR-108</td>
+<td>pgTAP 51.*, 53.13, 97 (ALIGN.01–28), 98 (REG.01–08), 99 (SEED.01–08), 100 (RUN.01–13), 102 (GATE.DB.01–16), 103 (APPLY.01–11), 105 (COMPLETE.01–06); pytest <code>test_promote.py</code> (calendar mode; PROMO.REPLAY.26), <code>test_promotion_replay.py</code> (PROMO.REPLAY.01–25, 27–28), <code>test_promotion_identity.py</code> (PROMO.ID.01–16), <code>test_promotion_refresh.py</code> (PROMO.REFRESH.01–23), <code>test_seed_export.py</code> (PROMO.SEED.01–05), <code>test_ingest_run.py</code> (PROMO.RUN.01–12), <code>test_promotion_gate.py</code> (PROMO.GATE.01–22), <code>test_promotion_plan.py</code> (PROMO.PLAN.01–13), <code>test_promotion_lifecycle.py</code> (PROMO.LIFE.01–17); Vitest <code>EventCard.test.ts</code> (EC.65)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -684,7 +684,7 @@
 </tr>
 <tr>
 <td>FR-95</td>
-<td>Event deletion admin tool: <code>fn_delete_event(prefix)</code> RPC (+ Telegram <code>delete &lt;prefix&gt;</code> command) performs rollback + removal of <code>tbl_event</code> row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than <code>rollback</code> (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses <code>_resolve_event_prefix</code> + <code>fn_delete_tournament_cascade</code> helpers. Admin-only (REVOKE anon, GRANT authenticated).</td>
+<td>Event deletion admin tool: <code>fn_delete_event(prefix)</code> RPC (the Telegram <code>delete &lt;prefix&gt;</code> command of the 2026-04-21 amendment was never added to the bot) performs rollback + removal of <code>tbl_event</code> row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than <code>rollback</code> (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses <code>_resolve_event_prefix</code> + <code>fn_delete_tournament_cascade</code> helpers. Admin-only (REVOKE anon, GRANT authenticated).</td>
 <td>UC22(e), UC27, ADR-025 (amendment 2026-04-21)</td>
 <td>10.29–10.32</td>
 <td>Covered</td>
@@ -775,10 +775,10 @@
 </tr>
 <tr>
 <td>FR-108</td>
-<td>Telegram operator commands (extends ADR-025): <code>/regen &lt;event_code&gt;</code>, <code>/stage &lt;event_code&gt;</code>, <code>/parity &lt;event_code&gt;</code>, <code>/verdict &lt;event_code&gt;</code> — all dispatched from GAS <code>checkTelegramCommands</code> to GitHub workflows or Storage downloads. <code>/help</code> text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired).</td>
+<td><s>Telegram operator commands (extends ADR-025): <code>/regen &lt;event_code&gt;</code>, <code>/stage &lt;event_code&gt;</code>, <code>/parity &lt;event_code&gt;</code>, <code>/verdict &lt;event_code&gt;</code> — all dispatched from GAS <code>checkTelegramCommands</code> to GitHub workflows or Storage downloads. <code>/help</code> text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired).</s> — <strong>withdrawn 2026-10-03</strong> (ADR-061 amendment: never deployed; <code>parity</code> could not work)</td>
 <td>ADR-061</td>
-<td>C16 (CERT smoke — manual)</td>
-<td>Pending (GAS extension + smoke)</td>
+<td>—</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-109</td>
@@ -880,9 +880,9 @@
 </tr>
 <tr>
 <td>FR-123</td>
-<td><strong>Public entry-list view</strong> (<code>vw_registration_entry_list</code>): surname/first name/gender/weapons/<strong>age category</strong> per registration, <strong>every declared registration, no payment gate</strong> (corrected 2026-07-04 — this system does not track payment completion; the organizer verifies it in person at the venue) — explicitly <strong>excludes birth year and club</strong> (GDPR minimisation, matches the public roster mockup). <strong>Reaffirmed 2026-09-13:</strong> when <code>tbl_registration</code> gained a real <code>txt_club</code> column (FR-120 amendment), this view's own SELECT list was deliberately left untouched — pgTAP 49.16 keeps pinning the exclusion, and the club reaches only the token-gated FR-136 export, never this public projection. <strong>Category column/filter added 2026-07-05</strong> — <code>enum_age_category</code> (via <code>fn_age_category</code>, joining <code>tbl_event</code>/<code>tbl_season</code> for the season end year) now exposed on the view and rendered as a badge + filter in <code>EntryList.svelte</code> (matching <code>FilterBar.svelte</code>'s V0 (30+)…V4 (70+) option convention), closing a gap where the view/component previously omitted it despite the mockup showing it. <strong>Mobile layout fix (same day, user-reported on-device regression):</strong> the ≤480px row layout previously collapsed every <code>&lt;td&gt;</code> to its own block (5 stacked lines per fencer); <code>EntryList.svelte</code> now renders one non-wrapping flex row per fencer (name left, ellipsis-truncated; category+weapon badges packed right). Dropped the redundant <code>Lp</code> (row number) and <code>Gender</code> display columns (gender stays filterable, just not shown as a column) — surname/first name make gender/Lp redundant. The three filter dropdowns (weapon/category/gender) now sit in a 3-column grid, each under its own <code>&lt;label&gt;</code> (<code>Broń</code>/<code>Kategoria</code>/<code>Płeć</code>) with a <code>--</code> placeholder option, replacing the old folded-in &quot;Weapon: all&quot; style option text; select font bumped to 16px (legible + avoids iOS auto-zoom-on-focus). View column list and <code>enum_gender</code> filter semantics unchanged. Readable by <code>anon</code> (view owner bypasses the base table's restrictive RLS, the same pattern used by every other <code>vw_*</code> in this codebase).</td>
+<td><strong>Public entry-list view</strong> (<code>vw_registration_entry_list</code>): surname/first name/gender/weapons/<strong>age category</strong> per registration, <strong>every declared registration, no payment gate</strong> (corrected 2026-07-04 — this system does not track payment completion; the organizer verifies it in person at the venue) — explicitly <strong>excludes birth year and club</strong> (GDPR minimisation, matches the public roster mockup). <strong>Reaffirmed 2026-09-13:</strong> when <code>tbl_registration</code> gained a real <code>txt_club</code> column (FR-120 amendment), this view's own SELECT list was deliberately left untouched — pgTAP 49.16 keeps pinning the exclusion, and the club reaches only the token-gated FR-136 export, never this public projection. <strong>Category column/filter added 2026-07-05</strong> — <code>enum_age_category</code> (via <code>fn_age_category</code>, joining <code>tbl_event</code>/<code>tbl_season</code> for the season end year) now exposed on the view and rendered as a badge + filter in <code>EntryList.svelte</code> (matching <code>FilterBar.svelte</code>'s V0 (30+)…V4 (70+) option convention), closing a gap where the view/component previously omitted it despite the mockup showing it. <strong>Mobile layout fix (same day, user-reported on-device regression):</strong> the ≤480px row layout previously collapsed every <code>&lt;td&gt;</code> to its own block (5 stacked lines per fencer); <code>EntryList.svelte</code> now renders one non-wrapping flex row per fencer (name left, ellipsis-truncated; category+weapon badges packed right). Dropped the redundant <code>Lp</code> (row number) and <code>Gender</code> display columns (gender stays filterable, just not shown as a column) — surname/first name make gender/Lp redundant. The three filter dropdowns (weapon/category/gender) now sit in a 3-column grid, each under its own <code>&lt;label&gt;</code> (<code>Broń</code>/<code>Kategoria</code>/<code>Płeć</code>) with a <code>--</code> placeholder option, replacing the old folded-in &quot;Weapon: all&quot; style option text; select font bumped to 16px (legible + avoids iOS auto-zoom-on-focus). View column list and <code>enum_gender</code> filter semantics unchanged. Readable by <code>anon</code> (view owner bypasses the base table's restrictive RLS, the same pattern used by every other <code>vw_*</code> in this codebase). <strong>Amended 2026-10-03 (ADR-079):</strong> a linked registration carries its fencer's roster name, so the list shows the roster's spelling with Polish diacritics; an unlinked registration shows the name as typed.</td>
 <td>ADR-079 §5, ADR-078 (minimisation), spec §5.2 invariants</td>
-<td>49.15–49.17, 49.17b, 49.25–49.27 (pgTAP: view excludes BY/club, anon SELECT succeeds, unpaid/PENDING registration still appears, category column type + computed value + BY-still-excluded regression guard); vitest <code>EntryList.test.ts</code> 12 total (8→11, +3 category badge/filter/options 2026-07-05 AM; 11→12, +1 filter-label/placeholder convention 2026-07-05 PM mobile fix)</td>
+<td>101 REGNAME.01–09 (pgTAP: the roster name on a linked registration); 49.15–49.17, 49.17b, 49.25–49.27 (pgTAP: view excludes BY/club, anon SELECT succeeds, unpaid/PENDING registration still appears, category column type + computed value + BY-still-excluded regression guard); vitest <code>EntryList.test.ts</code> 12 total (8→11, +3 category badge/filter/options 2026-07-05 AM; 11→12, +1 filter-label/placeholder convention 2026-07-05 PM mobile fix)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -939,7 +939,7 @@
 <td><strong>Organizer FTL seed delivery — WITHDRAWN, never in service:</strong> authenticated admin UI and allowlisted Telegram command dispatch <code>ftl-seed.yml</code> for an explicit CERT/PROD event; Python generates a fresh, non-empty mix-all ZIP in memory, sends it as the SPWS Gmail over verified <code>SMTP_SSL</code>/465, and stamps <code>ts_ftl_sent</code> only after SMTP acceptance through service-role-only <code>fn_mark_ftl_sent</code>. Manual dispatch is an explicit re-send. The daily PROD deadline sweep is at-least-once, selects only unstamped live events after cutoff, skips empty bundles, serializes with <code>prod-write</code>, and remains disabled until <code>ENABLE_FTL_DEADLINE_SEND=true</code> after the CERT pilot.</td>
 <td>ADR-080 §5, spec §5.2</td>
 <td><code>FTLDEL-PY-01</code>–<code>FTLDEL-PY-07</code> (<code>test_ftl_feed_seed_send.py</code>, exporter/orchestration compatibility); <code>FTLDEL-DB-01</code>–<code>FTLDEL-DB-03</code> (pgTAP 49.28–49.33, 8.25); <code>FTLDEL-UI-01</code>–<code>FTLDEL-UI-02</code> (<code>EventManager.test.ts</code>); <code>FTLDEL-OPS-01</code> (<code>test_ftl_seed_workflow_contract.py</code>)</td>
-<td><strong>WITHDRAWN 2026-09-25 — never commissioned.</strong> Code exists and its tests pass, but the requirement was never satisfied in service: outbound e-mail needs a registered sending identity the association does not hold. <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events carry <code>ts_ftl_sent</code> on either CERT or PROD. Superseded by FR-132's download page as the organizer handoff. See ADR-080 amendment 2026-09-25. The listed tests are retained but exercise an unused path.</td>
+<td><strong>WITHDRAWN 2026-09-25 — never commissioned.</strong> Code exists and its tests pass, but the requirement was never satisfied in service: outbound e-mail needs a registered sending identity the association does not hold. <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events carry <code>ts_ftl_sent</code> on either CERT or PROD. Superseded by FR-132's download page as the organizer handoff. See ADR-080 amendment 2026-09-25. The listed tests are retained but exercise an unused path. The bot's <code>send</code> command was removed on 2026-10-03; <code>FTLDEL-OPS-01</code> now checks that it is gone.</td>
 </tr>
 <tr>
 <td>FR-132</td>
@@ -1763,6 +1763,13 @@
 <td><strong>Landed</strong> (2026-10-03, LOCAL)</td>
 </tr>
 <tr>
+<td>DECL.RF.01–07</td>
+<td>On the <code>ingest-event.yml</code> path (<code>ResolveFencers</code>) a new fencer takes the birth year declared at registration for the event, confirmed, when it fits the bracket (01); a declared year contradicting the bracket takes neither, the midpoint is estimated and the conflict reported (02); without a registration the midpoint stays (03); a matched fencer's move uses the declaration, confirmed (04); a name registered under two different years is not used (05); the staging report names the declared year against the bracket (06) and shows a declared move as confirmed, never a downgrade (07).</td>
+<td>pytest</td>
+<td><code>python/tests/test_resolve_fencers_declared.py</code></td>
+<td><strong>Landed</strong> (2026-10-03, LOCAL)</td>
+</tr>
+<tr>
 <td>MATCH.FOLD.01–06</td>
 <td>A source word written without Polish letters matches the roster word once folded, at 99, one below an exact match (01, 06); an exact spelling wins over a folded one (02); a word written with Polish letters is compared as written (03); folding never links another first name (04); two roster fencers folding to one name go to category disambiguation (05).</td>
 <td>pytest</td>
@@ -1903,6 +1910,13 @@
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
 </tr>
 <tr>
+<td>CARRY.RS.01–11</td>
+<td>In the four <code>EVENT_FK_MATCHING</code> functions a linked carry of any type stops for a weapon and gender as soon as the linked current edition counts (IN_PROGRESS, SCORED or COMPLETED) and has a scored result in that weapon and gender (01, 04; 03 a PEW one); a weapon not yet fenced keeps its carry (02, 06, 07); a result without a score, a result of the other gender or a current edition that does not count stops nothing (08, 09, 11); a COMPLETED edition still stops every carry (10); Ranking mode counts the current editions once (05) (<a href="adr/018-rolling-score.html">ADR-018</a> §7, <a href="adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §8).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/104_carry_stop_results.sql</code></td>
+<td><strong>Landed</strong> (2026-10-03, LOCAL)</td>
+</tr>
+<tr>
 <td>EVF.URL.01–03</td>
 <td>An EVF archive page (<code>veteransfencing.eu/event/…</code>) never replaces a stored organiser URL: <code>fn_refresh_evf_event_urls</code> (CERT) and <code>fn_mirror_events_to_prod</code> (PROD) fill a blank <code>url_event</code> only, and <code>fn_sync_evf_event_fields</code> does not write it; an event with no organiser URL takes the EVF page.</td>
 <td>pgTAP</td>
@@ -2018,10 +2032,10 @@
 </tr>
 <tr>
 <td>NAT.EVID.04</td>
-<td>The CERT → PROD event promotion selects <code>txt_entered_for</code>, so PROD's payload keeps it.</td>
-<td>pytest</td>
-<td><code>python/tests/test_promote.py</code></td>
-<td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
+<td><s>The CERT → PROD event promotion selects <code>txt_entered_for</code>, so PROD's payload keeps it.</s> <strong>Retired 2026-10-03</strong> with the per-result copy (ADR-108 §6): promote replays the ingestion on PROD, and the apply refuses unless PROD's result fingerprint, which holds every result column including <code>txt_entered_for</code>, equals the CERT run's.</td>
+<td>pytest, pgTAP</td>
+<td><code>python/tests/test_promotion_replay.py</code> (PROMO.REPLAY.15–16), <code>supabase/tests/103_promote_apply.sql</code></td>
+<td>Superseded</td>
 </tr>
 </tbody>
 </table></div>
@@ -2036,5 +2050,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4e06ecdb7747cbd024c2b0adc58e89cf7e9d72eb6f71f853c98ec94e06c1f819</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ab3ac09a3d6c7bbc178330368ac2047ad76bbde8bec90fefdfd02486076518cb</code></footer>
 </div></body></html>

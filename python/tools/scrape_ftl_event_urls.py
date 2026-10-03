@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import datetime
 from typing import Literal, overload
 
 from bs4 import BeautifulSoup
@@ -173,15 +174,16 @@ FTL_RESULTS_BASE = "https://www.fencingtimelive.com/events/results"
 
 
 @overload
-def parse_event_schedule(
-    html: str, *, with_skips: Literal[False] = False
-) -> list[dict[str, str]]: ...
+def parse_event_schedule(html: str, *, with_skips: Literal[False] = False) -> list[dict]: ...
 @overload
 def parse_event_schedule(
     html: str, *, with_skips: Literal[True]
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]: ...
+) -> tuple[list[dict], list[dict]]: ...
 def parse_event_schedule(html: str, *, with_skips: bool = False):
     """Extract tournament links from an FTL event schedule page.
+
+    Every entry also carries ``finished`` (its schedule row says Finished, ADR-108
+    §7) and ``day`` (the ISO date of the heading it is listed under, or None).
 
     Default mode (`with_skips=False`): returns list of dicts ``{uuid, name}``
     for brackets that pass the skip filters (Mixed/MIKST, DE, amateur, etc.).
@@ -194,33 +196,76 @@ def parse_event_schedule(html: str, *, with_skips: bool = False):
     soup = BeautifulSoup(html, "html.parser")
     links = soup.find_all("a", href=lambda h: bool(h) and "/events/view/" in h)
 
-    kept: list[dict[str, str]] = []
-    skipped: list[dict[str, str]] = []
+    kept: list[dict] = []
+    skipped: list[dict] = []
     for link in links:
         name = link.get_text(strip=True)
         uuid = str(link["href"]).split("/events/view/")[-1]
+        # ADR-108 §7: whether the row says Finished, and the day it is listed on.
+        finished, day = _row_finished(link), _row_day(link)
         reason = _skip_reason(name)
         if reason:
-            skipped.append({"uuid": uuid, "name": name, "reason": reason})
+            skipped.append(
+                {"uuid": uuid, "name": name, "reason": reason, "finished": finished, "day": day}
+            )
             continue
         if not SPWS_BRACKET_FIRST_TOKEN.match(name):
             # 5.21 — guest event hosted on the same FTL schedule page;
             # see comment on SPWS_BRACKET_FIRST_TOKEN above.
             skipped.append(
-                {"uuid": uuid, "name": name, "reason": "guest event (non-SPWS bracket name)"}
+                {
+                    "uuid": uuid,
+                    "name": name,
+                    "reason": "guest event (non-SPWS bracket name)",
+                    "finished": finished,
+                    "day": day,
+                }
             )
             continue
-        if any(e["uuid"] == uuid for e in kept):
+        twin = next((e for e in kept if e["uuid"] == uuid), None)
+        if twin is not None:
             # A two-day bracket is listed twice, "(Day 1)" and "(Day 2)", with
             # one link (EMW Plovdiv 2025): one link is one bracket. Not a skip,
-            # so it never counts as a pool round. INTL.SCHED.04.
+            # so it never counts as a pool round. INTL.SCHED.04. It is final
+            # only when both rows say Finished, and it is listed on its later day.
+            twin["finished"] = twin["finished"] and finished
+            twin["day"] = max(filter(None, (twin["day"], day)), default=None)
             continue
-        kept.append({"uuid": uuid, "name": name})
+        kept.append({"uuid": uuid, "name": name, "finished": finished, "day": day})
     kept, pools = _drop_covered_pool_rounds(kept)
     skipped.extend(pools)
     if with_skips:
         return kept, skipped
     return kept
+
+
+def _row_finished(link) -> bool:
+    """A schedule row is final when its status cell says Finished (FTL shows a
+    green check and "Finished at 1:06 PM"); any other status is not."""
+    row = link.find_parent("tr")
+    if row is None:
+        return False
+    cells = row.find_all("td")
+    if not cells:
+        return False
+    status = cells[-1]
+    return (
+        "Finished" in status.get_text(" ", strip=True)
+        or status.find("i", class_="fa-check") is not None
+    )
+
+
+def _row_day(link) -> str | None:
+    """The day a row is listed on: the date heading above its table
+    ("Saturday October 25, 2025"), as an ISO date, or None."""
+    heading = link.find_previous("h5")
+    if heading is None:
+        return None
+    text = " ".join(heading.get_text(" ", strip=True).split())
+    try:
+        return datetime.strptime(text, "%A %B %d, %Y").date().isoformat()
+    except ValueError:
+        return None
 
 
 # A joint pool round ("Szpada Kobiet V3, V4 - runda grupowa") is not a result
@@ -239,15 +284,15 @@ def _weapon_gender(name: str) -> tuple[str, str] | None:
 
 
 def _drop_covered_pool_rounds(
-    kept: list[dict[str, str]],
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    kept: list[dict],
+) -> tuple[list[dict], list[dict]]:
     covered = {
         wg
         for e in kept
         if not _POOL_ROUND_RE.search(e["name"]) and (wg := _weapon_gender(e["name"]))
     }
-    out: list[dict[str, str]] = []
-    pools: list[dict[str, str]] = []
+    out: list[dict] = []
+    pools: list[dict] = []
     for e in kept:
         if _POOL_ROUND_RE.search(e["name"]) and _weapon_gender(e["name"]) in covered:
             pools.append({**e, "reason": "pool round (its categories have their own brackets)"})

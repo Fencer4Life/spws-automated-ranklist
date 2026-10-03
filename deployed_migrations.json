@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-02T14:24:59Z",
-    "last_sha": "85535f2369fafe3aa574fd3a1eb67c7c964d5bc2",
+    "last_updated": "2026-10-03T18:41:12Z",
+    "last_sha": "0c35d7992cd84a61788d36899477e558efeef12f",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -202,13 +202,23 @@
       "20261002000005_revision_rescores_tournaments_with_results.sql",
       "20261002000006_evf_minimum_default_one.sql",
       "20261002000007_carryover_without_successor.sql",
-      "20261003000001_identity_intake_season_nationality.sql"
+      "20261003000001_identity_intake_season_nationality.sql",
+      "20261003000010_align_fencers_to.sql",
+      "20261003000011_replace_event_registrations.sql",
+      "20261003000012_vcat_violation_calendar_year.sql",
+      "20261003000013_seed_load_fencers.sql",
+      "20261003000014_ingest_run.sql",
+      "20261003000015_registration_roster_name.sql",
+      "20261003000016_promote_gate.sql",
+      "20261003000017_promote_apply.sql",
+      "20261003000018_carry_stop_results.sql",
+      "20261003000019_complete_event_exact_code.sql"
     ],
-    "schema_fingerprint": "8ff05641919346228b90696460cab50c"
+    "schema_fingerprint": "850b2e7faa79da9bd78d96488eec4986"
   },
   "prod": {
-    "last_updated": "2026-10-02T14:26:41Z",
-    "last_sha": "85535f2369fafe3aa574fd3a1eb67c7c964d5bc2",
+    "last_updated": "2026-10-03T18:42:30Z",
+    "last_sha": "0c35d7992cd84a61788d36899477e558efeef12f",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -409,8 +419,18 @@
       "20261002000005_revision_rescores_tournaments_with_results.sql",
       "20261002000006_evf_minimum_default_one.sql",
       "20261002000007_carryover_without_successor.sql",
-      "20261003000001_identity_intake_season_nationality.sql"
+      "20261003000001_identity_intake_season_nationality.sql",
+      "20261003000010_align_fencers_to.sql",
+      "20261003000011_replace_event_registrations.sql",
+      "20261003000012_vcat_violation_calendar_year.sql",
+      "20261003000013_seed_load_fencers.sql",
+      "20261003000014_ingest_run.sql",
+      "20261003000015_registration_roster_name.sql",
+      "20261003000016_promote_gate.sql",
+      "20261003000017_promote_apply.sql",
+      "20261003000018_carry_stop_results.sql",
+      "20261003000019_complete_event_exact_code.sql"
     ],
-    "schema_fingerprint": "8ff05641919346228b90696460cab50c"
+    "schema_fingerprint": "850b2e7faa79da9bd78d96488eec4986"
   }
 }

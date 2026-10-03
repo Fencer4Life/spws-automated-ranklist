@@ -314,6 +314,29 @@ describe('EventCard — links and weapons', () => {
     ])
   })
 
+  // EC.65 — ADR-108 §7: a domestic event stays IN_PROGRESS until its end date
+  // has passed, with its results already published, so the link shows then too.
+  // An event without results (PLANNED) shows none.
+  it('EC.65: shows results links for an IN_PROGRESS event, not for a PLANNED one', () => {
+    const running = card({
+      txt_code: 'PPW1-2026-2027',
+      enum_status: 'IN_PROGRESS',
+      dt_end: '2026-09-27',
+      url_event: 'https://r1.test',
+    })
+    expect([...running.querySelectorAll('.results-link')].map((a) => a.getAttribute('href'))).toEqual([
+      'https://r1.test',
+    ])
+
+    const planned = card({
+      txt_code: 'PPW2-2026-2027',
+      enum_status: 'PLANNED',
+      dt_end: '2026-10-25',
+      url_event: 'https://r2.test',
+    })
+    expect(planned.querySelectorAll('.results-link')).toHaveLength(0)
+  })
+
   // EC.26 — weapons close the card as small pills, read from the code suffix.
   it('EC.26: renders weapon pills from arr_weapons, not the code suffix', () => {
     // Was "from the code suffix". The suffix differentiates EVF events; it is

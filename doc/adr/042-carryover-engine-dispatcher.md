@@ -1,6 +1,6 @@
 # ADR-042: Per-season carry-over engine selection via dispatcher pattern
 
-**Status:** Accepted — Phase 1A + 1B implemented; amended 2026-08-07 to preserve FK carry-over independently of chronological numbering; amended 2026-10-02 so a result whose next edition has no row yet still carries.
+**Status:** Accepted — Phase 1A + 1B implemented; amended 2026-08-07 to preserve FK carry-over independently of chronological numbering; amended 2026-10-02 so a result whose next edition has no row yet still carries; amended 2026-10-03 (ADR-108) so a carry stops on results, per weapon and gender.
 **Date:** 2026-04-25 (created), 2026-04-26 (Phase 3 amendment)
 **Relates to:** ADR-018 (Rolling Score for Active Season), ADR-021 (IMEW biennial carry-over), ADR-044 (Phase 3 wizard), ADR-045 (engine selector + default flip)
 
@@ -133,3 +133,13 @@ occurrence-specific EVF results id is deliberately not inherited.
 - On PROD on 2 October 2026 every 2025/26 event with results had a 2026/27 row, so the change adds only the Criterium 2026 once it is ingested. On CERT it also carries Stockholm and Jabłonna 2026, which are unlinked there only because CERT's 2026/27 calendar has drifted from PROD's.
 - Tests: pgTAP `supabase/tests/94_carryover_without_successor.sql`, CARRY.NS.01–07 (carried once with no next row or with a linked one; not carried when not held, two seasons back or past the window; the drilldown lists it; the carry stops once the next edition is held).
 - `EVENT_CODE_MATCHING` seasons are unchanged.
+
+## Amendment (2026-10-03) — a carry stops on results, per weapon and gender
+
+**Decision P6 A** in `doc/plans/promote-verified-replay-2026-10-03.html`, recorded in [ADR-108](108-promote-replays-verified-cert-ingestion.md) §8.
+
+**Context.** The linked branch of `vw_eligible_event` carries the previous edition until the current edition reaches SCORED or COMPLETED, while the first branch counts the current edition from IN_PROGRESS on. While an event is IN_PROGRESS, a fencer who fenced both editions therefore has both results counted. Today's promote jumps straight to COMPLETED, which hid this on PROD. ADR-108 §7 keeps an event IN_PROGRESS until its end date has passed, which makes the overlap the normal case.
+
+**Decision.** In the four `EVENT_FK_MATCHING` functions, the previous edition stops carrying for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender. A SCORED or COMPLETED current edition still stops every carry from its previous edition. The view alone cannot see weapons, so the stop lives in the functions, which read the view together. The third branch (2026-10-02) is unchanged.
+
+**Consequences.** There is no double count while an event is IN_PROGRESS, and no empty slot for a weapon fenced on a later day. The engines now share ADR-018's rule. The pgTAP test for the change is written RED first, reproducing the double count, and `94_carryover_without_successor.sql` (CARRY.NS.01–07) stays green.

@@ -75,7 +75,10 @@ def _patches(seen):
         patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u),
         patch(
             "python.tools.scrape_ftl_event_urls.parse_event_schedule",
-            return_value=([{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}], []),
+            return_value=(
+                [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
+                [],
+            ),
         ),
         patch("python.pipeline.run.run_flow", side_effect=fake_run_flow),
     ]
@@ -152,7 +155,17 @@ class TestStagingToTelegram:
             ),
             patch(
                 "python.tools.scrape_ftl_event_urls.parse_event_schedule",
-                return_value=([{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}], []),
+                return_value=(
+                    [
+                        {
+                            "uuid": "U1",
+                            "name": "Szpada Mężczyzn kat. 2",
+                            "finished": True,
+                            "day": None,
+                        }
+                    ],
+                    [],
+                ),
             ),
             patch(
                 "python.pipeline.run.run_flow",
@@ -182,7 +195,17 @@ class TestStagingToTelegram:
             ),
             patch(
                 "python.tools.scrape_ftl_event_urls.parse_event_schedule",
-                return_value=([{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}], []),
+                return_value=(
+                    [
+                        {
+                            "uuid": "U1",
+                            "name": "Szpada Mężczyzn kat. 2",
+                            "finished": True,
+                            "day": None,
+                        }
+                    ],
+                    [],
+                ),
             ),
             patch(
                 "python.pipeline.run.run_flow",

@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
+<meta name="adr-source-sha256" content="da447e0f6fa94dec034b93fe7aa889ae73adec3e69903a85326cc68b80fc8420">
+<title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">330 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
+<strong>Date:</strong> 2026-10-03
+<strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
+<strong>Amends:</strong> <a href="025-event-centric-ingestion-telegram.html">ADR-025</a> (N15: <code>ingest … prod</code> is refused for a domestic event; <code>promote</code> and <code>complete</code> take an exact event code), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the seed carries PROD's fencer ids; CERT's master data is refreshed from PROD), <a href="042-carryover-engine-dispatcher.html">ADR-042</a> and <a href="018-rolling-score.html">ADR-018</a> (the FK engine stops a carry on results, per weapon and gender), <a href="072-cdc-recompute-debounce.html">ADR-072</a> (the CERT drain joins the new <code>cert-write</code> group), <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> (§1: who sets IN_PROGRESS and COMPLETED, and when; §5: results are replayed, not copied, and fencer ids are identical)
+<strong>Relates to:</strong> <a href="037-derived-display-status-awaiting-results.html">ADR-037</a> (a new edition replaces the carry only once it has data), <a href="047-vcat-invariant-trigger-and-splitter-consolidation.html">ADR-047</a> (the V-category trigger the renumbering keeps satisfied), <a href="055-ingest-traceability.html">ADR-055</a> (ingest history, which the run record does not replace), <a href="056-vcat-from-birthyear.html">ADR-056</a> and <a href="093-registration-as-birth-year-source.html">ADR-093</a> (the identity rules the gate enforces), <a href="074-no-halt-fault-resolution.html">ADR-074</a> and <a href="075-staging-report-fragment-channel.html">ADR-075</a> (CERT still commits automatically, and the staging report stays informational), <a href="083-server-enforced-authorization.html">ADR-083</a> (grants for the new table and functions), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (field tiers: <code>url_event</code> is fill-blank), <a href="097-scoring-governance-lock-and-privileged-revision.html">ADR-097</a> (the season lock rolls back with a failed apply), <a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a> (joined-bracket order is replayed and checked), <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (international events keep the Phase 5 runner on each environment)
+<strong>Source:</strong> <code>doc/plans/promote-verified-replay-2026-10-03.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-promote-copies-nothing">1 · Promote copies nothing</a></li><li class="depth-3"><a href="#2-every-cert-ingestion-starts-with-a-master-data-refresh-from-prod">2 · Every CERT ingestion starts with a master-data refresh from PROD</a></li><li class="depth-3"><a href="#3-fencer-ids-are-identical-on-local-cert-and-prod">3 · Fencer ids are identical on LOCAL, CERT and PROD</a></li><li class="depth-3"><a href="#4-the-cert-run-record">4 · The CERT run record</a></li><li class="depth-3"><a href="#5-the-cert-gate">5 · The CERT gate</a></li><li class="depth-3"><a href="#6-promote-on-prod">6 · Promote on PROD</a></li><li class="depth-3"><a href="#7-event-lifecycle-completed-once-everything-is-final-and-the-end-date-has-passed">7 · Event lifecycle: COMPLETED once everything is final and the end date has passed</a></li><li class="depth-3"><a href="#8-a-carry-stops-on-results-per-weapon-and-gender-decision-p6-a">8 · A carry stops on results, per weapon and gender (decision P6 A)</a></li><li class="depth-3"><a href="#9-who-may-write-and-when">9 · Who may write, and when</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>PPW1 2026/27 was the first domestic event of the season to reach the promote step, and promote could not carry it safely. <code>python/pipeline/promote.py</code> copies CERT's rows to PROD, and it has five defects:</p>
+<ol>
+<li><strong>It sends CERT's fencer ids.</strong> <code>read_cert_event</code> (line 71) selects <code>r.id_fencer</code> (line 123), and <code>write_prod_results</code> passes it to PROD's <code>fn_ingest_tournament_results</code>. On 3 October 2026, <strong>344 of the 367 fencers had different ids on CERT and PROD</strong>; only 19 matched. The same fencer is 37 on CERT and 38 on PROD.</li>
+<li><strong>It creates no fencers.</strong> A fencer the CERT ingestion created does not exist on PROD.</li>
+<li><strong>It drops the joined-bracket order.</strong> It never passes <code>p_joined_order</code>, which ADR-104 §3 needs.</li>
+<li><strong>It continues after a failure.</strong> A failing tournament is appended to <code>errors</code> (line 287) and the loop carries on. Nothing is rolled back.</li>
+<li><strong>It always sets COMPLETED</strong> (lines 289–303), whether or not the fencing is over. It finds the event with <code>LIKE '&lt;prefix&gt;%'</code> in the active season only (line 91).</li>
+</ol>
+<p>Three further facts shaped the decision:</p>
+<ul>
+<li><strong>Birth years are corrected on PROD.</strong> Registrations on PROD declare birth years (ADR-093), so after any registration period CERT's roster is stale. On 3 October, 10 birth years differed between CERT and PROD, all on unique names and each by four years or less.</li>
+<li><strong>LOCAL numbers fencers its own way.</strong> The seed export drops <code>id_fencer</code> (<code>python/pipeline/export_seed.py</code> lines 29 and 82) and points each result at its fencer through a name and birth-year lookup (<code>fencer_lookup</code>, line 161). LOCAL held 373 fencers with ids up to 971.</li>
+<li><strong>Nothing serialises CERT's writers.</strong> <code>ingest-event.yml</code> belongs to no concurrency group and accepts <code>target: prod</code>, so a direct PROD ingest can overlap the PROD drain and a promote, both of which are in <code>prod-write</code>.</li>
+</ul>
+<p>Build step 1 of the plan (3 October) added four findings:</p>
+<ul>
+<li><strong>FTL marks each listing as finished.</strong> The organiser's schedule shows a green check and &quot;Finished at …&quot; per listing; the results data JSON carries no status.</li>
+<li><strong>The renumbering cannot be a plain update.</strong> All six foreign keys to <code>tbl_fencer</code> are <code>ON UPDATE NO ACTION</code> and not deferrable. Two of them (<code>tbl_fencer_nationality</code>, <code>tbl_registration_identity_override</code>) cascade on delete. <code>tbl_result_draft.id_fencer</code> has no foreign key, and <code>tbl_audit_log</code> holds fencer ids in <code>id_row</code> and in JSON (on CERT: 1,408 fencer rows and 40,526 result rows).</li>
+<li><strong>The FK carry-over engine counts two editions at once.</strong> Season 2026/27 runs <code>EVENT_FK_MATCHING</code> on all three environments. <code>vw_eligible_event</code> counts the new edition from IN_PROGRESS on, and keeps carrying the previous edition until the new one is SCORED or COMPLETED. So while an event is IN_PROGRESS, a fencer who fenced both editions has both results counted. Today's promote jumps straight to COMPLETED, which hid this on PROD. On PROD, 13 of the 14 dated 2026/27 events start inside their previous edition's 366-day window. ADR-018's amendment of 2026-06-26 had already moved the older engine to a results-based stop, &quot;regardless of lifecycle status&quot;, and recorded the FK engine as &quot;a known boundary divergence if ever activated&quot;.</li>
+<li><strong>No automated test reads CERT data.</strong> Playwright runs against a LOCAL build; the Release CERT job checks schema and security only. CERT's only data of its own is 8 test registrations on PPW1-2026-2027.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-promote-copies-nothing">1 · Promote copies nothing</h3>
+<p>Promote checks two things: that CERT and PROD started from the same inputs, and that CERT's committed result holds no open issue. It then <strong>runs the same ingestion on PROD</strong> and writes the result <strong>in one transaction that rolls itself back</strong> if the result differs from CERT's. A domestic event's results reach PROD only this way.</p>
+<p>The sequence for every domestic event is:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Where</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 · Refresh</td>
+<td>PROD → CERT</td>
+<td>Master data and the event's registrations; identical fencer ids (§2, §3)</td>
+</tr>
+<tr>
+<td>1 · Ingest</td>
+<td>CERT</td>
+<td><code>ingest-event.yml</code> target <code>cert</code>, plus a run record (§4)</td>
+</tr>
+<tr>
+<td>2 · Gate</td>
+<td>CERT</td>
+<td>Blocking issues and preconditions (§5)</td>
+</tr>
+<tr>
+<td>3 · Promote</td>
+<td>PROD</td>
+<td>Plan, compare, apply in one transaction (§6)</td>
+</tr>
+<tr>
+<td>4 · Lifecycle</td>
+<td>CERT and PROD</td>
+<td>IN_PROGRESS or COMPLETED by one rule (§7)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2-every-cert-ingestion-starts-with-a-master-data-refresh-from-prod">2 · Every CERT ingestion starts with a master-data refresh from PROD</h3>
+<p>The refresh reads PROD over a read-only connection (<code>default_transaction_read_only</code>) and writes CERT only. It covers the <strong>whole roster</strong>: surname, first name, birth year and its estimated flag, gender, nationality and aliases.</p>
+<p>For the event being ingested, PROD's registrations replace CERT's. Copied: surname, first name, gender, declared birth year, weapons, FTL name, club and <code>id_fencer</code>. <strong>Not copied:</strong> e-mail hash, edit token and consent stamp, which the ingestion does not read (data minimisation). CERT's copy follows PROD's retention, and any future registration purge runs only after the event is COMPLETED on PROD.</p>
+<p>CERT's recompute queue then drains to empty, and only then may the CERT ingestion start.</p>
+<p>The refresh also compares, without copying:</p>
+<ul>
+<li>the schema fingerprints;</li>
+<li>the season's scoring settings, engines and lock state;</li>
+<li>the event row as the ingestion reads it;</li>
+<li>the commit of the override file.</li>
+</ul>
+<p>Any difference refuses. An <strong>input fingerprint</strong>, a hash of these inputs normalised by identity and never by id, is recorded for both environments.</p>
+<p>Every refresh first runs dry and lists every change. The first refresh, and any later refresh that renumbers a fencer, waits for the administrator's sign-off.</p>
+<h3 id="3-fencer-ids-are-identical-on-local-cert-and-prod">3 · Fencer ids are identical on LOCAL, CERT and PROD</h3>
+<p>The administrator's rule: <strong>the fencer id is the same everywhere, and nothing is guessed.</strong></p>
+<p><strong>Matching</strong>, per folded surname and first name:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>One fencer of that name on each side</td>
+<td>The same person; PROD's values win</td>
+</tr>
+<tr>
+<td>Namesakes on either side</td>
+<td>Paired only by an equal confirmed birth year</td>
+</tr>
+<tr>
+<td>Only on PROD</td>
+<td>Created on CERT with PROD's id</td>
+</tr>
+<tr>
+<td>Only on CERT</td>
+<td>Deleted when nothing refers to it</td>
+</tr>
+<tr>
+<td>Anything left unpaired</td>
+<td>The refresh stops before writing and lists it; the administrator decides in <code>doc/overrides/fencer-alignment.yaml</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Renumbering</strong> is done by <code>fn_align_fencers_to(pairs, prod_roster)</code> in one transaction, in two phases, with plain statements and no trigger switched off:</p>
+<ol>
+<li>Each moving fencer is copied to a temporary negative id, without aliases, because the alias-uniqueness trigger would refuse a second holder.</li>
+<li>Every reference moves to the copy: the six foreign keys found from the catalogue, plus the listed soft references (<code>tbl_result_draft.id_fencer</code>; <code>tbl_audit_log.id_row</code> of fencer rows and <code>id_fencer</code> in result rows' values).</li>
+<li>The old row is deleted. References always move first, because two of them cascade on delete.</li>
+<li>The same steps repeat from the temporary id to PROD's id.</li>
+</ol>
+<p>During the move each row keeps CERT's own birth year, so the V-category trigger (ADR-047) is satisfied as before. The function checks that trigger's condition before writing and lists any result that would fail it: on 3 October none on CERT or PROD, and 3 on LOCAL.</p>
+<p>After the move, PROD's values are copied onto each pair with ordinary updates, so a moved birth year queues recomputes through <code>trg_fencer_change_enqueue</code>, exactly as a correction on PROD does. The id sequence is set to PROD's.</p>
+<p><strong>Before commit,</strong> CERT's roster (id, names, birth year, confirmed flag, gender) must equal PROD's exactly, and each person must hold the same number of results as before. Any difference raises. One audit row records the whole old-to-new map.</p>
+<p>A test fails when a column whose name contains <code>fencer</code> appears that is on neither the foreign-key list nor the soft-reference list.</p>
+<p><strong>New fencers.</strong> CERT stays the sole allocator of new ids (ADR-077 §5). A fencer the CERT ingestion creates keeps that id on PROD, and the promote apply refuses if the id is taken there.</p>
+<p><strong>LOCAL.</strong> The seed export keeps PROD's <code>id_fencer</code> and writes every reference with the id itself. The seed load renumbers the fencers that data migrations created during a fresh bootstrap, using the same <code>fn_align_fencers_to</code>, and then sets the sequence. <code>scripts/mirror-prod-local.sh</code> and the CI bootstrap compare LOCAL's roster with PROD's, id for id, and fail on any difference.</p>
+<h3 id="4-the-cert-run-record">4 · The CERT run record</h3>
+<p><code>ingest-event.yml</code> with target <code>cert</code> writes a row to a new <code>tbl_ingest_run</code> (service role only, ADR-083). The row holds:</p>
+<ul>
+<li>the event code, the environment and the git commit that ran;</li>
+<li>the schema fingerprint and the input fingerprint;</li>
+<li>a hash of each source listing as parsed;</li>
+<li>the result fingerprint from <code>fn_event_result_fingerprint</code>;</li>
+<li>the master-data changes (fencers created, birth years moved, aliases added);</li>
+<li>the gate outcome.</li>
+</ul>
+<p>The fingerprint is computed by one canonical SQL function and never by Python, so formatting cannot differ between the two sides.</p>
+<p><strong>Implemented 2026-10-03 (build step 6).</strong> Migration <code>20261003000014_ingest_run.sql</code>; <code>python/pipeline/promotion/run_record.py</code>; <code>ingest_cli --record-run</code>, which <code>ingest-event.yml</code> passes for target <code>cert</code>.</p>
+<ul>
+<li><code>fn_ingest_run_open</code> writes the row before the ingestion writes anything. It holds the input fingerprint and the roster as the run found it (<code>fn_roster_snapshot</code>), plus the event URL the run ingests and the season end year. A run of the same event and environment still <code>RUNNING</code> becomes <code>ABANDONED</code>.</li>
+<li><code>fn_ingest_run_finish</code> closes the row <code>FINISHED</code> with its listings. <code>fn_ingest_run_fail</code> closes it <code>FAILED</code> with the error. Both record the master-data changes since the row opened.</li>
+<li><code>fn_event_input_fingerprint</code> returns one hash, plus one part per input:
+<ul>
+<li><code>schema</code>: <code>fn_schema_fingerprint</code>, the query of <code>scripts/schema-fingerprint.sh</code>;</li>
+<li><code>roster</code>: every column the refresh copies, by person, never by id;</li>
+<li><code>registrations</code>: the columns the refresh copies, with the fencer link as that fencer's name and birth year;</li>
+<li><code>season</code>: dates, engines by code, and the scoring and per-type settings. The EVF toggles and the default ranking mode are display switches, not scoring settings.</li>
+<li><code>lock</code>;</li>
+<li><code>event</code>: code, dates, season, previous edition, and the admin's skip/process choices. Not the URL, which promote writes.</li>
+</ul>
+</li>
+<li><code>fn_roster_changes</code> lists the fencers created (with the id each got), the fencers deleted, the birth years moved, the aliases added, and any other column that changed.</li>
+<li>The listing hashes are the one part computed in Python, because the listings are parsed there (<code>listing_sha256</code>, <code>schedule_sha256</code>). Promote recomputes them with the same functions.</li>
+<li><code>txt_result_fingerprint</code> and <code>jsonb_gate</code> stay empty until build steps 9 and 7.</li>
+</ul>
+<h3 id="5-the-cert-gate">5 · The CERT gate</h3>
+<p>Three kinds of issue block promote. Each one is fixed at its source, CERT is re-ingested, and the gate runs again; there is no acknowledge step.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Blocking checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Identity</strong></td>
+<td>A listing refused for namesakes the birth year does not decide, or for a two-category gap; any PENDING row; a 2026/27 domestic participant whose birth year is still an estimate; a declared year that contradicts the bracket fenced (<code>declared_vs_bracket</code>); a confirmed year moved by the bracket alone; a new fencer the alias checker's typo rule (NAME.CLS) would call an existing one</td>
+</tr>
+<tr>
+<td><strong>Scoring</strong></td>
+<td>A result without a score or its components; not exactly one active scoring revision, or a 2026/27 result not stamped with it; a stored score the engine's preview does not reproduce (the SS26.PARITY contract, for every result of the event); a tournament whose type does not match its code (TT.CODE.06)</td>
+</tr>
+<tr>
+<td><strong>Joined bracket</strong></td>
+<td>A listing refused for a repeated place or a place without a category; N or a place different from the source; siblings of one joined listing that disagree on N or on the category order; an order whose length is not N, or whose digit does not match the stored fencer's category</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Preconditions</strong> are always required:</p>
+<ul>
+<li>the run finished and every kept listing committed;</li>
+<li>CERT's queue drained for every event the run touched;</li>
+<li>PROD's input fingerprint still equals the one recorded. Every part is compared except the season lock, which refuses only when PROD is locked and CERT was not: the season's first scored result locks it, so CERT locked with PROD unlocked is the expected state for a season's first event (G1 A, 2026-10-03);</li>
+<li>the schemas are equal;</li>
+<li>every fencer the run created has an id that is still free on PROD.</li>
+</ul>
+<p><strong>Information only:</strong> a loose name similarity; a one-category move that follows a declaration; and the ADR-104 §7 joining check, because the results are correct as fenced.</p>
+<p>ADR-074 is unchanged: CERT commits automatically. The gate blocks only the PROD write.</p>
+<p><strong>Implemented 2026-10-03 (build step 7).</strong> <code>python/pipeline/promotion/gate.py</code> (<code>evaluate</code>, <code>run_gate</code>, a CLI); migration <code>20261003000016_promote_gate.sql</code>.</p>
+<ul>
+<li><code>fn_promote_gate_checks(event, fencer ids)</code> reads the target's committed state:
+<ul>
+<li>estimated birth years;</li>
+<li>PENDING match candidates;</li>
+<li>results without a score or a component;</li>
+<li>the active revision and its stamp;</li>
+<li>the SS26.PARITY preview for every scored result;</li>
+<li>TT.CODE.06;</li>
+<li>sibling N and order, and order digits;</li>
+<li>the queue for the event and for every event where a fencer the run touched has a result;</li>
+<li>the birth years each named fencer's results allow (<code>fn_fencer_fitting_birth_years</code>);</li>
+<li>the joining check;</li>
+<li>the stored tournaments.</li>
+</ul>
+</li>
+<li>An order whose length is not N cannot be stored (<code>chk_tournament_joined_order</code>), so the gate does not look for one.</li>
+<li>The run record carries what the gate reads from the run. Each listing keeps its source rows and its identity report: fencers created with their nearest existing name, reconciled years with their anchor, conflicts, and PENDING rows. A refused listing ends the run with a <code>ListingRefused</code> naming its kind, <code>identity</code> or <code>joined_bracket</code>. It is still a <code>ValueError</code>.</li>
+<li>The gate reads PROD through a read-only transport only. It writes nothing but its outcome, on the run row (<code>fn_ingest_run_gate</code>).</li>
+<li><strong>The duplicate check applies the birth year.</strong> A new fencer the typo rule calls an existing one blocks unless two different confirmed birth years tell them apart, which is then information. On PPW1, PERKOWSKI Maciej (declared 1984) and SĘKOWSKI Maciej (#263, 1981) are such a pair.</li>
+<li><strong>G2 A (decided 2026-10-03).</strong> A declaration that overwrites a confirmed year stands only when the fencer's results allow no other year (<code>fn_fencer_fitting_birth_years</code>), which is information. Any other such overwrite blocks as an identity issue, and the year is decided by name on PROD. There is no second rule to switch to.</li>
+<li>On LOCAL, after a refresh from PROD and a recorded PPW1 run, the gate against PROD found no identity, scoring or joined-bracket issue. The only findings were the schema and registrations parts, both waiting on PROD's deploy of the same migrations.</li>
+</ul>
+<h3 id="6-promote-on-prod">6 · Promote on PROD</h3>
+<ol>
+<li><strong>Trigger.</strong> <code>promote &lt;exact code&gt;</code> from Telegram, or <code>gh workflow run promote.yml -f event_code=…</code>, dispatches <code>promote.yml</code> in <code>prod-write</code>. The event is found by its exact code; a prefix is answered with the matching exact codes.</li>
+<li><strong>Exact code.</strong> The job checks out the commit the CERT run recorded, not <code>main</code>.</li>
+<li><strong>Re-check.</strong> Every gate check and precondition runs again. PROD's event must be one of:
+<ul>
+<li>PLANNED;</li>
+<li>IN_PROGRESS holding exactly the previous promoted run (day 2 of a multi-day event);</li>
+<li>COMPLETED, for a CERT run newer than the last promote (a correction).</li>
+</ul>
+</li>
+<li><strong>Source unchanged.</strong> Each listing is fetched and hashed; a hash different from the CERT run's refuses before anything is written.</li>
+<li><strong>Plan.</strong> The <code>INGEST_DOMESTIC</code> flow runs against PROD with a recording connector. It reads PROD and records every write; reads of its own writes are answered from the record.</li>
+<li><strong>Compare.</strong> With identical ids, the plan must equal CERT's result fingerprint and master-data changes, id for id. A difference refuses with a diff table, and nothing has been written.</li>
+<li><strong>Dry apply.</strong> <code>fn_promote_event_apply(plan, expected_fingerprint, p_dry_run =&gt; true)</code> makes every write, scores, computes PROD's fingerprint and always raises at the end.</li>
+<li><strong>Apply.</strong> The same function with <code>p_dry_run =&gt; false</code> runs in one transaction. It locks the participants' fencer rows and the event row, and recomputes the input fingerprint inside the transaction. Any difference from CERT raises, and PostgreSQL undoes everything: new fencers, birth years, aliases, results, scores, the season's first scoring revision and its lock (ADR-097, with no privileged unlock), and the queued recomputes.</li>
+<li><strong>URL.</strong> Inside the apply, PROD's <code>url_event</code> takes CERT's value when it is blank and is left alone when equal. A different non-blank value refuses, following ADR-086's fill-blank tier.</li>
+<li><strong>Status.</strong> The status follows §7, inside the same transaction.</li>
+<li><strong>After commit.</strong> The joining check runs and the report goes to Storage and Telegram, labelled PROD. Promote waits for the PROD drain and compares the affected events with CERT. A difference here cannot be rolled back, so it is reported loudly.</li>
+<li><strong>Idempotent.</strong> When PROD already equals CERT's fingerprint, the apply is skipped and only the remaining steps run.</li>
+<li><strong>Seed export</strong> is its own job after promote, with a rebase and retry. Its failure alerts but does not mark the promote failed.</li>
+</ol>
+<p>The apply runs over a direct database connection with its own <code>statement_timeout</code>, not through the Management API.</p>
+<p><strong>Amended 2026-10-03 (decision B, the administrator's).</strong> The apply is one call of PROD's service-role API (<code>SUPABASE_PROD_URL</code> with <code>SUPABASE_PROD_SERVICE_ROLE_KEY</code>, the pair the ingestion and the PROD drain already use), not a direct connection: no repository secret holds the database password, and the administrator chose not to add one. The call is still one transaction, because <code>fn_promote_event_apply</code> is one function call. Its time limit is the API's: calls inherit the <code>authenticator</code> role's <code>statement_timeout</code> and <code>lock_timeout</code> of 8 s (the same on LOCAL and PROD, read 3 Oct; <code>service_role</code> sets none). A call cut off by them is cancelled and rolled back, so promote refuses with nothing written. The full PPW1 2026/27 apply (58 writes, 102 results scored) ran within that limit through LOCAL's API in build step 9's acceptance. A direct connection (option A) remains the way out for an event too large for the limit.</p>
+<p><strong>Plan mode implemented 2026-10-03 (build step 8).</strong> <code>python/pipeline/promotion/plan.py</code>:</p>
+<ul>
+<li>The <code>RecordingConnector</code> gives the domestic driver (<code>_ingest_event_rounds</code>, INGEST_DOMESTIC per listing) the connector's surface. Reads go to PROD; every write is recorded as an operation: <code>insert_fencer</code>, <code>update_fencer_birth_year</code>, <code>find_or_create_tournament</code>, <code>ingest_results</code>, <code>set_event_url_event</code>, <code>set_event_ingest_sources</code>.</li>
+<li>A read of the run's own writes is answered from the record: the roster with created fencers and moved birth years, the batch reads, the event's URL and sources. A tournament PROD has keeps its id; a new one gets a negative placeholder the apply replaces.</li>
+<li>A new fencer takes the CERT run's id for the same surname and first name. <code>PlanRefused</code> stops the plan, with nothing written, for a fencer the CERT run did not create, a CERT id PROD already uses, a different non-blank PROD URL (ADR-086's fill-blank tier), an international event, or a write a domestic ingestion never makes (merge, clear, participant count, joining check).</li>
+<li><code>plan_event</code> runs the driver with <code>post_run=False</code>: the staging report, the joining check and Telegram run after the apply. The plan carries every listing's hash (<code>ListingLog</code>) for the source check.</li>
+<li><code>apply_plan</code> is the reference apply through the ordinary connector. It is not atomic and runs in tests and on LOCAL only; <code>fn_promote_event_apply</code> (build step 9) applies the same operations in one transaction.</li>
+<li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>promotion/plan_check.py</code>, one event per reset): <strong>PPW1 2026/27 planned and applied equals its live run</strong> (25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move). Past scored events of a closed season are never re-ingested, so they are not acceptance input: in the next season the year categories are computed from has shifted (the season's later year), and an ingestion run in the active season on a previous season's event would have to be aware of that change.</li>
+</ul>
+<p><strong>Apply implemented 2026-10-03 (build step 9).</strong> Migration <code>20261003000017_promote_apply.sql</code>:</p>
+<ul>
+<li><code>fn_event_result_document(event)</code> is what an ingestion left for an event: the event's URL, every tournament, every result with its score, and the participants' roster rows, by codes and fencer ids, without generated ids or timestamps. <code>fn_event_result_fingerprint(event)</code> is its SHA-256. <code>fn_ingest_run_close</code> records it on a FINISHED run.</li>
+<li><code>fn_promote_event_apply(event, plan, expected fingerprint, expected inputs, prior fingerprint, status, dry run)</code>:
+<ul>
+<li>skips the writes when PROD already holds the expected fingerprint;</li>
+<li>otherwise requires PROD to hold no result for the event (no prior named) or exactly the prior fingerprint;</li>
+<li>locks the event row and the participants' rows, then compares the input parts with the CERT run's (the lock refuses only when PROD is locked and CERT was not);</li>
+<li>steps a COMPLETED event to IN_PROGRESS, applies the operations in order (a CERT id PROD uses, a tournament that moved, a different non-blank URL or an unknown operation refuses), and compares the result fingerprint;</li>
+<li>sets the requested status, IN_PROGRESS or COMPLETED, through the transition validator, never writing an unchanged status;</li>
+<li>on a dry run raises <code>PROMOTE_DRY_RUN_OK &lt;fingerprint&gt;</code>; after a real apply with new fencers moves the fencer sequence past their ids.</li>
+</ul>
+</li>
+<li>Every refusal is an exception, so nothing the apply wrote survives it. pgTAP APPLY.01–11 (<code>103_promote_apply.sql</code>).</li>
+<li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>plan_check plan --apply sql</code>): <strong>PPW1 2026/27 planned, dry-run and applied through <code>fn_promote_event_apply</code> equals its live run</strong>, fingerprint for fingerprint and row for row (58 writes; 25 tournaments, 102 results, 373 fencers).</li>
+</ul>
+<p><strong>Wiring implemented 2026-10-03 (build step 12).</strong> <code>python/pipeline/promotion/replay.py</code>:</p>
+<ul>
+<li><strong>The order.</strong> The exact code (a prefix is answered with the active season's codes it starts); the latest CERT run, whose commit must be the one checked out; the gate again, reading CERT and PROD only; what PROD holds; the plan against PROD; the source check (the schedule's hash and every listing's hash against the run's); the master-data check (created fencers by id and name, birth-year moves by id, year and estimate flag, against the run's; a write that leaves PROD's value is not a move); the plan's status, which must exist; the dry apply, whose <code>PROMOTE_DRY_RUN_OK</code> must carry the run's result fingerprint; the apply.</li>
+<li><strong>What PROD may hold.</strong> Nothing; the result of an earlier FINISHED CERT run of the event, which becomes the apply's prior fingerprint (day 2, or a correction after COMPLETED); or this run's result, which the apply skips. Anything else refuses: results no recorded CERT run produced are never overwritten.</li>
+<li><strong>The API (decision B).</strong> The dry run and the apply are each one call of the target's service-role API (<code>ApiApplier</code>; LOCAL's API for the rehearsal). A database error is certain: PostgreSQL rolled the call back, and promote refuses with nothing written; a statement or lock timeout says so and names the way out. A call that ends without an answer is uncertain: promote reads PROD again, counts the apply as committed when PROD holds the run's result, and otherwise refuses and says to run promote again, which skips what PROD already holds. The plan reads PROD through the same API with the recording connector; the gate and the comparisons read through the Management API inside read-only transactions, and LOCAL in a read-only session (<code>default_transaction_read_only</code>). <code>SUPABASE_URL</code> must be the target's API.</li>
+<li><strong>After the commit.</strong> The staging report goes to PROD's Storage and to Telegram (reason &quot;promoted to PROD&quot;), the joining check runs, and PROD's recompute queue drains to empty. Promote holds <code>prod-write</code>, and the drain workflow is a member of it, so a queued drain would wait for promote; promote therefore drains with the same worker (<code>drain_recompute_queue</code>, no debounce) instead of waiting. Every drained event and the promoted one are then compared with CERT by result fingerprint; a difference is sent to Telegram and the job exits 2. The seed job still runs, because the apply has committed.</li>
+<li><strong><code>promote.yml</code>.</strong> Job <code>resolve</code> (read only) finds the run's commit, refuses a commit that is not on main or predates the replay, and passes the exact code on. Job <code>promote</code>, in <code>prod-write</code> with <code>queue: max</code>, checks that commit out and runs the replay (<code>dry_run</code> input: plan, compare and dry apply only). Job <code>seed</code> exports PROD's seed after an applied promote, rebasing and retrying its push; it alerts on failure and does not fail the workflow. <code>promote.py --mode event</code> hands off to the replay; the per-result copy (<code>read_cert_event</code>, <code>write_prod_tournament</code>, <code>write_prod_results</code>, <code>promote_event</code>) and its tests are retired.</li>
+<li><strong>Exact codes elsewhere.</strong> The CERT staging report's hint reads <code>promote &lt;exact code&gt;</code>; the GAS <code>promote</code> text and <code>/help</code> name an exact code; the GAS <code>ingest</code> command refuses <code>prod</code> and names promote.</li>
+<li><strong>§9.</strong> <code>ingest-event.yml</code> refuses <code>target: prod</code> (every event it accepts is domestic: ADR-105 refuses an international one), always records the run, and joins <code>cert-write</code>; <code>recompute-drain.yml</code> leaves <code>cert-recompute</code> for <code>cert-write</code>.</li>
+<li><strong>Tests.</strong> pytest <code>test_promotion_replay.py</code> (PROMO.REPLAY.01–25, 27–28; 13 mutants caught) and <code>test_promote.py</code> (PROMO.REPLAY.26). On LOCAL the readers ran read-only, a write was refused by PostgreSQL, and the apply's dry run on PPW1 2026/27 through LOCAL's API raised <code>PROMOTE_DRY_RUN_OK</code> with the event's fingerprint in 0.04 s and left it PLANNED. On PROD, read only: <code>service_role</code> may execute <code>fn_promote_event_apply</code>, and the PROD drain's runs of 3 Oct used the same API and key.</li>
+</ul>
+<p><strong>First promote 2026-10-03 (build step 13).</strong> PPW1 2026/27: CERT rolled back, refreshed from PROD and re-ingested as recorded run 1; the gate passed. A rehearsal with LOCAL standing in for PROD and a dry run on PROD came first; then <code>promote.yml</code> replayed the run on PROD at 19:49 UTC, 57 writes in one transaction, status COMPLETED. PROD equals CERT by result fingerprint, and the public calendar and ranking agree. Record: <code>doc/plans/promote-rehearsal-2026-10-03.html</code>.</p>
+<h3 id="7-event-lifecycle-completed-once-everything-is-final-and-the-end-date-has-passed">7 · Event lifecycle: COMPLETED once everything is final and the end date has passed</h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>State of the event</th>
+<th>Status on CERT and PROD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Some scheduled individual listings final and committed, others not</td>
+<td>IN_PROGRESS</td>
+</tr>
+<tr>
+<td>Every listing final and committed, but the end date has not passed (the last day included)</td>
+<td>IN_PROGRESS</td>
+</tr>
+<tr>
+<td>Every listing final and committed, and today in Warsaw is later than the end date</td>
+<td>COMPLETED</td>
+</tr>
+<tr>
+<td>Promote refused or rolled back</td>
+<td>unchanged</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>What counts as final.</strong> A listing is final only when its schedule row says Finished. Pools-only rounds and team rounds are excluded. A listing that is not final is skipped, listed, and keeps the event IN_PROGRESS.</li>
+<li><strong>Why the end date matters.</strong> Organisers sometimes add a tournament the next day, so every listing being in does not prove the fencing is over.</li>
+<li><strong>Who sets the status.</strong> The same rule runs on CERT and PROD. SCORED is never set by automation.</li>
+<li><strong>The daily close.</strong> <code>event-close.yml</code> runs in <code>prod-write</code>. For each domestic event still IN_PROGRESS whose end date has passed, it re-reads the schedule:
+<ul>
+<li>If everything is committed on both environments and nothing new was published, it sets COMPLETED on CERT and then on PROD.</li>
+<li>If not, it changes nothing and sends a Telegram message.</li>
+<li>It is idempotent, and a failure alerts.</li>
+</ul>
+</li>
+<li><strong>The manual close.</strong> The Telegram <code>complete</code> command stays as a manual close, takes an exact code, and does not check the end date.</li>
+</ul>
+<p><strong>Implemented 2026-10-03 (build step 11).</strong></p>
+<ul>
+<li><strong>Finished.</strong> <code>parse_event_schedule</code> gives every listing <code>finished</code> (its schedule row says Finished; a listing shown on two days needs both rows) and <code>day</code> (the date heading above it). The domestic ingestion moves a listing that is not final to the schedule's skips, with the reason &quot;not final&quot;; the run record, promote's source check and the admin accordion all show it, and the run record keeps the latest listing day.</li>
+<li><strong>The rule.</strong> <code>python/pipeline/promotion/lifecycle.py</code>: COMPLETED when every listing is final and read, none is dated after the end date, and today in Warsaw is later than the end date; otherwise IN_PROGRESS. A run that committed nothing leaves the status alone (ADR-037). Writes go through the validator's pairs: PLANNED steps through IN_PROGRESS, and an unchanged status is not written.</li>
+<li><strong>Who applies it.</strong> Every domestic ingestion through <code>ingest_event_from_url</code> (CERT and LOCAL) ends by applying it. <code>plan_event</code> carries it as the plan's status, which promote passes to <code>fn_promote_event_apply</code> and <code>apply_plan</code> sets.</li>
+<li><strong>The daily close.</strong> <code>python/pipeline/promotion/close.py</code>, run by <code>.github/workflows/event-close.yml</code> at 04:00 UTC in <code>prod-write</code>: each domestic event of the active season IN_PROGRESS on CERT or PROD with its end date passed is completed on CERT and then PROD when every listing is final and none is dated after the end date, the schedule hashes as the latest finished CERT run read it, that run read every listing, and both environments hold its result fingerprint. Otherwise it writes nothing and sends one Telegram message per event saying what to do. An environment already COMPLETED is not written again; a failure raises and the workflow alerts. A manual run is a dry run unless unticked.</li>
+<li><strong>The manual close.</strong> <code>fn_complete_event</code> takes an exact code and refuses a prefix or an unknown code, listing the active season's codes that start with it (migration <code>20261003000019</code>; the parameter keeps the name <code>p_prefix</code> for the deployed GAS).</li>
+<li><strong>The calendar card</strong> shows results links for an IN_PROGRESS event as well as a COMPLETED one.</li>
+<li><strong>Tests.</strong> pytest <code>test_promotion_lifecycle.py</code> (PROMO.LIFE.01–17); pgTAP <code>105_complete_event_exact_code.sql</code> (COMPLETE.01–06); Vitest EC.65.</li>
+</ul>
+<h3 id="8-a-carry-stops-on-results-per-weapon-and-gender-decision-p6-a">8 · A carry stops on results, per weapon and gender (decision P6 A)</h3>
+<p>The <code>EVENT_FK_MATCHING</code> ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender and itself counts (any status <code>vw_eligible_event</code> counts: IN_PROGRESS, SCORED or COMPLETED). A COMPLETED or SCORED current edition stops every carry from its previous edition, as today. The stop applies to every linked event, whatever its type (decided 3 October 2026): the link means the new edition replaces the old one (<a href="018-rolling-score.html">ADR-018</a> §3, §7). Implemented in <code>supabase/migrations/20261003000018_carry_stop_results.sql</code>; tests <code>supabase/tests/104_carry_stop_results.sql</code>, CARRY.RS.01–11.</p>
+<p>This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes the divergence that ADR-018 recorded. There is no double count while an event is IN_PROGRESS, and no empty slot for a weapon fenced on a later day. The view alone cannot see weapons, so the change covers the four FK functions, which read the view together.</p>
+<h3 id="9-who-may-write-and-when">9 · Who may write, and when</h3>
+<ul>
+<li><strong><code>cert-write</code>:</strong> the refresh, the CERT ingest and the CERT recompute drain. The drain leaves <code>cert-recompute</code>.</li>
+<li><strong><code>prod-write</code>:</strong> promote, the PROD drain, the daily close and the existing calendar and season promotions.</li>
+<li><strong><code>ingest-event.yml</code></strong> refuses <code>target: prod</code> for a domestic event. International events keep the Phase 5 runner on each environment (ADR-105), and promote refuses them by name.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep copying rows and translate ids by name at promote time.</strong> Rejected. CERT's identity decisions would still be copied without being re-derived on PROD, master-data drift between the environments would land silently, and nothing would prove that PROD's inputs equal CERT's.</li>
+<li><strong>A live ingestion on PROD with a write journal and an undo step (plan option P3 B).</strong> Rejected. PROD would show a partial event while the job runs, and undoing the season lock would need the privileged unlock that ADR-097 forbids.</li>
+<li><strong>Stage into the draft tables and commit in one transaction (P3 C).</strong> Rejected. That covers results only; new fencers and birth years would still be written live, before any comparison.</li>
+<li><strong>Match CERT to PROD at each refresh but leave the ids different.</strong> Rejected by the administrator's rule. Every consumer of an id would need a translation, and LOCAL tests would keep running against a differently numbered roster.</li>
+<li><strong>Make the foreign keys <code>ON UPDATE CASCADE</code> and renumber with plain updates.</strong> Rejected. It changes PROD's schema to serve CERT's maintenance, and an accidental id update on PROD would then cascade silently instead of failing. The copy-and-move renumbering needs no schema change.</li>
+<li><strong>Refresh only the event's participants.</strong> Rejected. Admin edits and merges made on PROD elsewhere in the roster would be missed. The whole roster is about 370 rows.</li>
+<li><strong>COMPLETED as soon as every listing is in.</strong> Rejected, because organisers add tournaments the next day (§7).</li>
+<li><strong>Stop the carry at event level (P6 B), or set SCORED while partial (P6 C).</strong> Rejected. Both leave an empty slot overnight for a weapon fenced on a later day, and C would have automation set SCORED.</li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li>
+<p><strong>Decided 2026-10-03 (G1 A), recorded in §5.</strong> How §5 compares the season lock. The season's first scored result locks it (<code>fn_ensure_active_scoring_revision</code>). So the ingestion of a season's first event changes the lock on CERT, and any later CERT re-run of that event starts locked while PROD is not. On 3 October 2026 the 2026/27 season was locked on CERT and unlocked on PROD. Compared literally, &quot;lock state equal&quot; refuses every re-ingested first event of a season. The run record therefore keeps the lock as a part of its own. <strong>Recommendation:</strong> compare the scoring settings and engines value by value, and refuse on the lock only when PROD is locked and CERT is not. That case means PROD scored results CERT never had.</p>
+</li>
+<li>
+<p><strong>Decided 2026-10-03 (G2 A), recorded in §5.</strong> A declaration against a confirmed birth year. D5 moves a confirmed year to a declared one whenever the declaration fits the bracket. <strong>A (chosen):</strong> that overwrite stands only when the fencer's results allow no other year; any other case blocks promote as an identity issue, and the year is decided by name. B, not chosen: the declaration wins and the gate reports it.</p>
+</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New code:</strong></p>
+<ul>
+<li><code>python/pipeline/promotion/</code> with <code>identity.py</code>, <code>refresh.py</code>, <code>gate.py</code>, <code>lifecycle.py</code> and the recording connector;</li>
+<li>migrations for <code>fn_align_fencers_to</code>, <code>tbl_ingest_run</code>, <code>fn_event_result_fingerprint</code>, <code>fn_promote_event_apply</code> and the results-based carry stop;</li>
+<li><code>.github/workflows/event-close.yml</code> and the <code>cert-write</code> group.</li>
+</ul>
+<p><strong>Rewritten:</strong></p>
+<ul>
+<li><code>promote.py --mode event</code>;</li>
+<li><code>promote.yml</code>, which takes an exact code and moves the seed export to its own job;</li>
+<li><code>ingest-event.yml</code>, which refuses a domestic PROD target;</li>
+<li><code>export_seed.py</code>, which keeps fencer ids;</li>
+<li>the GAS <code>promote</code> and <code>complete</code> commands and <code>/help</code>.</li>
+</ul>
+<p><strong>Behaviour change on the calendar.</strong> <code>EventCard.svelte:330</code> shows result links only for COMPLETED. Because promote no longer sets COMPLETED at once, the card also shows them for IN_PROGRESS when a results URL exists. This keeps today's visible behaviour on the evening of an event.</p>
+<p><strong>Tests, written RED first:</strong></p>
+<ul>
+<li><code>PROMO.ID.*</code>, <code>PROMO.REFRESH.*</code>, <code>PROMO.SEED.*</code>, <code>PROMO.RUN.*</code>, <code>PROMO.GATE.*</code>, <code>PROMO.PLAN.*</code> (including &quot;plan, then apply, equals a live run&quot; on PPW1 2026/27 on LOCAL; past scored events of a closed season are never re-ingested), <code>PROMO.APPLY.*</code> (atomicity, lock and queue rollback, dry run persists nothing, URL rule, status pairs, idempotence) and <code>PROMO.LIFE.*</code>;</li>
+<li>pgTAP for the renumbering and for the carry stop, whose first test reproduces the double count. The existing <code>94_carryover_without_successor.sql</code> (CARRY.NS.01–07) must stay green.</li>
+</ul>
+<p><strong>Operations:</strong></p>
+<ul>
+<li>The first CERT alignment renumbers about 344 fencers. It is rehearsed on LOCAL, preceded by a backup artifact with a tested restore, run dry, and applied only after sign-off.</li>
+<li>After it, a full CERT-against-PROD results comparison by id, across all seasons, resolves every difference before the first promote.</li>
+<li>The end-to-end rehearsal is <code>promote --prod-target local</code>.</li>
+</ul>
+<p><strong>PPW1 2026/27</strong> reaches PROD only through this promote, after that rehearsal.</p>
+<p><strong>Audit history is re-pointed</strong> to the new ids. Nothing reads the audit log back: nine functions write it and none reads it. The one alignment audit row keeps the map.</p>
+<p><strong>Not changed:</strong></p>
+<ul>
+<li>the calendar mode of <code>promote.py</code>;</li>
+<li>international ingestion;</li>
+<li>the staging report's informational role;</li>
+<li><code>EVENT_CODE_MATCHING</code> seasons.</li>
+</ul>
+<p><strong>Found and deliberately not fixed here:</strong></p>
+<ul>
+<li><code>evf_sync._heal_future_completed</code> carries a stale comment claiming the validator forbids leaving COMPLETED; it is corrected in the lifecycle build step.</li>
+<li>LOCAL's 3 results that fail the V-category condition are LOCAL data, and they disappear with the seed reload that keeps PROD's ids.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="109-environments-split-by-host.html">→ ADR-109: The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</a></nav>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>da447e0f6fa94dec034b93fe7aa889ae73adec3e69903a85326cc68b80fc8420</code></footer>
+</div></body></html>

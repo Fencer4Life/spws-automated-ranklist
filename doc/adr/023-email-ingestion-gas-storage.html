@@ -4,20 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="023-email-ingestion-gas-storage.md">
-<meta name="adr-source-sha256" content="a3e6700489cd18e384b9d8e78dbeb8ae04adb6378000144c4f570df4ab7564ed">
+<meta name="adr-source-sha256" content="d43e91d9a3576f9be7c4220cec2e083528f6359ba0ac2ae7cdaecabe9237b768">
 <title>ADR-023 · Email Ingestion via Google Apps Script + Supabase Storage</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 023</p><h1>Email Ingestion via Google Apps Script + Supabase Storage</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-05 (Go-to-PROD)</dd></div><div><dt>Source</dt><dd class=""><code>023-email-ingestion-gas-storage.md</code></dd></div><div><dt>Length</dt><dd class="">78 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="superseded">Superseded (2026-10-03: the e-mail intake is retired; results reach CERT from the organiser's results URL, ADR-050 and ADR-108)</dd></div><div><dt>Date</dt><dd class="">2026-04-05 (Go-to-PROD)</dd></div><div><dt>Source</dt><dd class=""><code>023-email-ingestion-gas-storage.md</code></dd></div><div><dt>Length</dt><dd class="">84 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Superseded (2026-10-03: the e-mail intake is retired; results reach CERT from the organiser's results URL, ADR-050 and ADR-108)
 <strong>Date:</strong> 2026-04-05 (Go-to-PROD)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#flow">Flow</a></li><li class="depth-3"><a href="#archive-strategy">Archive Strategy</a></li><li class="depth-3"><a href="#storage-budget">Storage Budget</a></li><li class="depth-3"><a href="#gas-script-configuration-script-properties">GAS Script Configuration (Script Properties)</a></li><li class="depth-3"><a href="#supabase-storage-setup">Supabase Storage Setup</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#flow">Flow</a></li><li class="depth-3"><a href="#archive-strategy">Archive Strategy</a></li><li class="depth-3"><a href="#storage-budget">Storage Budget</a></li><li class="depth-3"><a href="#gas-script-configuration-script-properties">GAS Script Configuration (Script Properties)</a></li><li class="depth-3"><a href="#supabase-storage-setup">Supabase Storage Setup</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-10-03-the-e-mail-intake-is-retired">Amendment 2026-10-03 — the e-mail intake is retired</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Domestic PPW/MPW tournament results arrive as FencingTime Live XML files, typically emailed as <code>.zip</code> archives to <code>spws.weterani@gmail.com</code> by the tournament organizer. The system needs an automated path from email attachment to the ingestion pipeline, with an admin upload form as backup.</p>
 <p>Key constraints:</p>
@@ -94,8 +94,12 @@
 <li>Archive <code>.zip</code> files enable re-import without digging through email</li>
 <li><code>PROCESSED</code> Gmail label prevents double-processing of the same email</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-the-e-mail-intake-is-retired">Amendment 2026-10-03 — the e-mail intake is retired</h2>
+<p>The e-mail intake had been unused since 11 April 2026 and had drifted from the system around it. <code>ingest.yml</code> ran <code>ingest_cli --from-storage --season-end-year 2026</code>: the deprecated direct write, with no draft review, no recorded run and a hard-coded season. Results now reach CERT from the organiser's results URL as a recorded run (<code>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</code>, ADR-050, ADR-108), and reach PROD only through promote.</p>
+<p>Removed: the GAS e-mail check (<code>checkEmailForResults</code>) and its storage helpers; the Telegram commands <code>ingest</code> (no arguments), <code>staging</code>, <code>cleanup</code>, <code>pause</code> and <code>resume</code>; and <code>.github/workflows/ingest.yml</code>. The bot no longer reads <code>SUPABASE_URL</code> or <code>SUPABASE_SERVICE_ROLE_KEY</code>. Kept: the <code>xml-inbox</code> bucket and its files, and the deprecated <code>ingest_cli --from-storage</code> code, which nothing starts. FR-75–FR-77 are withdrawn. <code>scripts/gas_email_ingestion.js</code> is no longer a reference copy: the live Apps Script project runs it unchanged.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="022-ingestion-db-transaction.html">← ADR-022: Ingestion DB Transaction Strategy</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="024-combined-category-splitting.html">→ ADR-024: Combined Category Splitting Strategy</a></nav>
-<footer class="foot">Generated from <code>023-email-ingestion-gas-storage.md</code> · source SHA-256 <code>a3e6700489cd18e384b9d8e78dbeb8ae04adb6378000144c4f570df4ab7564ed</code></footer>
+<footer class="foot">Generated from <code>023-email-ingestion-gas-storage.md</code> · source SHA-256 <code>d43e91d9a3576f9be7c4220cec2e083528f6359ba0ac2ae7cdaecabe9237b768</code></footer>
 </div></body></html>

@@ -1,0 +1,249 @@
+<meta charset="utf-8">
+<title>Promote rehearsal</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">ADR-108 · build step 13 · done</p>
+  <h1>PPW1 2026/27 is on PROD, replayed from CERT</h1>
+  <p class="dek">Promote replayed CERT run 1 of PPW1 2026/27 on PROD on 3 Oct 2026 at 19:49 UTC: 57 writes in one transaction through PROD&rsquo;s service-role API, ending on exactly CERT&rsquo;s result. The rehearsal on LOCAL and a dry run on PROD came first.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>PROD equals CERT</span>
+    <span class="pill"><span class="dot"></span>COMPLETED on both</span>
+    <span class="pill"><span class="dot"></span>seed exported (e897fec3)</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The real promote · 3 Oct 2026</p>
+    <h2>Dry run, then promote (your answer: A)</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>First dry run</td><td><code>promote.yml</code> run 37148655306 stopped in its resolve job before reading PROD: that job did not install <code>beautifulsoup4</code>, which the notifier needs. Fixed test-first (the resolve job installs the promote job&rsquo;s packages, PROMO.REPLAY.24), preflight exit 0 after resetting LOCAL from the rehearsal, pushed as <code>a9832e46</code>.</td></tr>
+        <tr><td>Dry run</td><td>Run 37149039033: CERT run 1 at <code>d950fbcc</code>; gate passed against PROD; plan 57 writes, status COMPLETED, no prior result; the dry run through PROD&rsquo;s API ended on <code>1819ebc0ceb2</code>, CERT&rsquo;s fingerprint. Nothing written; PROD&rsquo;s PPW1 read PLANNED with no results afterwards.</td></tr>
+        <tr><td>Promote</td><td>Run 37149182858: the same checks, then 57 writes in one call of <code>fn_promote_event_apply</code>, status COMPLETED, nothing to drain, no difference from CERT. The seed job exported PROD&rsquo;s seed and pushed <code>e897fec3</code>.</td></tr>
+        <tr><td>Checked afterwards</td><td>PROD against CERT: the same result fingerprint, 25 tournaments, 102 results all scored, COMPLETED, the FTL URL, the 6 new fencers at #368&ndash;373, sequence 373, the season locked by its first scores. Through what the public pages read: the calendar shows COMPLETED, all 25 tournaments are typed PPW, and the men&rsquo;s épée V2 ranking lists the same 8 fencers with the same scores on both.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Decided 3 Oct: A</p>
+    <h2>Promote PPW1 2026/27 to PROD now?</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b> (recommended)</td><td>I run <code>promote.yml</code> with <code>dry_run</code> ticked: everything on PROD up to and including the apply&rsquo;s dry run, which writes nothing. If it ends on the CERT run&rsquo;s fingerprint, I run it again without <code>dry_run</code>, then check PROD against CERT and report.</td></tr>
+        <tr><td><b>B</b></td><td>The real promote straight away (<code>promote PPW1-2026-2027</code> on Telegram, or <code>promote.yml</code>).</td></tr>
+        <tr><td><b>C</b></td><td>Wait.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: A.</b> The dry run is the first time promote talks to PROD&rsquo;s own API with the service-role key from GitHub, and it costs a minute. A registration on PROD after 18:48 UTC would change the inputs; the gate would then refuse, and the fix is to refresh CERT again, re-ingest it and promote (steps 4&ndash;6).</p>
+  </section>
+
+  <section>
+    <p class="kicker">Done · 3 Oct 2026, 18:44&ndash;18:54 UTC</p>
+    <h2>What each step showed</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Release</td><td>Pushed <code>0c35d799</code>; CI and Release green, PROD approved by you. On CERT and PROD: the carry stop in all 4 ranking functions, <code>fn_complete_event</code> takes only an exact code, <code>fn_promote_event_apply</code> in place; <code>promote.yml</code>, <code>ingest-event.yml</code> and <code>event-close.yml</code> active.</td></tr>
+        <tr><td>2 · Secret</td><td>Not needed: decision B, the apply goes through <code>SUPABASE_PROD_URL</code> with the service-role key. GAS file pasted.</td></tr>
+        <tr><td>3 · CERT rollback</td><td><code>fn_rollback_event</code>: 25 tournaments and 102 results deleted, PPW1 PLANNED. Nothing else referred to the 6 CERT-only fencers; CERT&rsquo;s queue held nothing pending.</td></tr>
+        <tr><td>4 · CERT refresh</td><td>Plan, then apply with a restore point: 367 paired at the ids they had, 0 renumbered, 0 values changed, 6 deleted (#368&ndash;373), PROD&rsquo;s 90 PPW1 registrations copied, sequence 367. CERT&rsquo;s roster equals PROD&rsquo;s, id for id. Nothing queued, so no drain.</td></tr>
+        <tr><td>5 · CERT ingest</td><td><code>ingest-event.yml</code> run 37145638514 at commit <code>d950fbcc</code>: CERT run 1 FINISHED. 14 listings read and committed (3 pools-only eliminations skipped, none unfinished), last day 27 Sep. 25 tournaments, 102 results. The 6 new fencers again at #368&ndash;373; no birth year moved, no alias added. The lifecycle rule set COMPLETED (everything final, end date passed). Result fingerprint <code>1819ebc0&hellip;</code>, the same as before the rollback.</td></tr>
+        <tr><td>6 · Gate</td><td>Passed, recorded on the run. Seven information findings only: each new name resembles an existing fencer; PERKOWSKI Maciej and SĘKOWSKI Maciej are told apart by their confirmed birth years.</td></tr>
+        <tr><td>7 · LOCAL from PROD</td><td><code>mirror-prod-local.sh</code>: 367 fencers, roster equal to PROD&rsquo;s id for id. Its registrations did not equal PROD&rsquo;s (the input part differed although both hold 90), so the first rehearsal stopped at the gate with <code>input.registrations</code> and wrote nothing. The refresh&rsquo;s own copy (<code>refresh --target local --mode apply</code>) made LOCAL&rsquo;s inputs equal PROD&rsquo;s and the CERT run&rsquo;s in every part but the lock (CERT locked by its scores, PROD not: allowed).</td></tr>
+        <tr><td>8 · Rehearsal</td><td><code>replay --prod-target local</code> from <code>d950fbcc</code>, 21 s in all: gate passed; plan 57 writes, status COMPLETED, no prior result; dry run ended on <code>1819ebc0ceb2</code>; apply wrote 57 in one call of LOCAL&rsquo;s API (the same 8 s limit as PROD&rsquo;s); nothing to drain; no difference from CERT. Checked afterwards, LOCAL against CERT: the same fingerprint, 25 tournaments, 102 results all scored, COMPLETED, the same 6 fencers at #368&ndash;373, sequence 373, season locked. Step 9&rsquo;s acceptance had 58 writes; the one fewer is STANISŁAWSKI&rsquo;s birth year, which PROD already holds.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Found on the way: the LOCAL mirror loads registrations differently</p>
+      <p><code>mirror-prod-local.sh</code> step 5 loads PROD&rsquo;s registrations in a way whose fingerprint part differs from PROD&rsquo;s, so a LOCAL rehearsal needs the refresh&rsquo;s copy after the mirror. Offered as a separate task.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Answered 3 Oct: A</p>
+    <h2>The earlier question, kept for the record</h2>
+  </section>
+
+  <section>
+    <p class="kicker">Decided 3 Oct: A</p>
+    <h2>May I run the CERT steps myself once main is released?</h2>
+    <p>Steps 3 to 6 below write CERT only. Nothing in them touches PROD.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b> (recommended)</td><td>I run steps 3, 4, 5 and 6 in order, stop at the first refusal, and report it with what to do. The refresh writes its restore point before it writes anything, and I show you its plan in chat before the apply.</td></tr>
+        <tr><td><b>B</b></td><td>You send <code>rollback PPW1-2026-2027</code> and <code>ingest PPW1-2026-2027 &lt;url&gt;</code> on Telegram (steps 3 and 5); I run the refresh and the gate (steps 4 and 6).</td></tr>
+        <tr><td><b>C</b></td><td>Wait: nothing on CERT changes now.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: A.</b> The order matters: the refresh refuses while CERT&rsquo;s PPW1 results exist, and the ingestion must start from the refreshed roster. Running them as one sequence avoids an ingestion against the wrong roster.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Read only, 3 Oct 2026</p>
+    <h2>Where PPW1 2026/27 stands</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Status</td><td>IN_PROGRESS, with results</td><td>PLANNED, no results</td></tr>
+        <tr><td>Recorded runs (<code>tbl_ingest_run</code>)</td><td>none: it was ingested before run records existed</td><td>&mdash;</td></tr>
+        <tr><td>Roster</td><td>PROD&rsquo;s, id for id, plus 6 fencers</td><td>highest id 367</td></tr>
+      </tbody>
+    </table></div>
+    <p>The 6 fencers exist only on CERT. The CERT ingestion of PPW1 created them, and each holds PPW1 results there: ZANEUSKAYA Hanna (#368), MARSZAŁEK Anna (#369), KANIECKI Rafał (#370), TYLSKI Łukasz (#371), PERKOWSKI Maciej (#372), KOSZMIDER Marek (#373).</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Why promote would refuse today</p>
+      <p>No recorded run, so the gate finds <code>run.missing</code>. CERT&rsquo;s roster differs from PROD&rsquo;s, so the input check would also refuse (<code>input.roster</code>). And a new run would not count the 6 as created, because they already exist on CERT, so the plan on PROD would refuse to create them.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The sequence</p>
+    <h2>Nine steps, in this order</h2>
+    <ol class="steps">
+      <li><b>You push main</b> from the integration checkout: <code>cd /Users/aleks/coding/SPWSranklist-integration &amp;&amp; git push origin integration/main:main</code>. CI and Release deploy CERT, then PROD after your approval: migrations <code>20261003000018</code> (the carry stops on results) and <code>20261003000019</code> (<code>complete</code> takes an exact code), the lifecycle rule, the daily close, and the replay. I watch both runs in the background and verify CERT and PROD afterwards. Then paste <code>doc/gas/Code.gs</code> into the GAS project: the <code>promote</code>, <code>ingest</code>, <code>complete</code> and <code>/help</code> texts changed.</li>
+      <li><s>You add a repository secret</s> &mdash; <b>not needed</b> (decision B, 3 Oct): the apply goes through PROD&rsquo;s service-role API with the secrets already there. The GAS file is pasted (3 Oct).</li>
+      <li><b>CERT: roll back PPW1 2026/27.</b> Its tournaments and results on CERT are deleted and its status returns to PLANNED. This frees the 6 fencers from every reference.</li>
+      <li><b>CERT: refresh from PROD.</b> First the plan (read only), shown to you. Then the apply, with a restore point written first. It deletes the 6 unreferenced CERT fencers, copies PROD&rsquo;s PPW1 registrations, sets CERT&rsquo;s fencer sequence to PROD&rsquo;s, drains CERT&rsquo;s queue, and checks that CERT&rsquo;s roster equals PROD&rsquo;s, id for id.</li>
+      <li><b>CERT: ingest PPW1 2026/27</b> (<code>ingest-event.yml</code>, target cert). The run is recorded at the released commit. It creates the 6 fencers again, with ids from 368 up, and records them as the run&rsquo;s created fencers.</li>
+      <li><b>CERT: the gate.</b> Identity, scoring and joined-bracket checks, and the preconditions. A finding is fixed at its source, then steps 5 and 6 run again.</li>
+      <li><b>LOCAL: mirror PROD</b> (<code>scripts/mirror-prod-local.sh</code>; it reads PROD and writes only LOCAL).</li>
+      <li><b>The rehearsal</b>: <code>python -m python.pipeline.promotion.replay --event PPW1-2026-2027 --prod-target local</code>, from the CERT run&rsquo;s commit. Expected: the plan equals the run (listing hashes, the 6 created fencers by id, birth-year moves), the dry run reports the CERT run&rsquo;s fingerprint, the apply writes LOCAL, LOCAL&rsquo;s PPW1 fingerprint equals CERT&rsquo;s, and the drained events equal CERT&rsquo;s. Telegram stays silent during the rehearsal. I report the result in an HTML page.</li>
+      <li><b>The first real promote</b>: <code>promote PPW1-2026-2027</code> on Telegram, or <code>promote.yml</code> with <code>dry_run</code> first. Your decision, after reading the rehearsal result.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Meanwhile</p>
+    <h2>What changes on Telegram once main is released</h2>
+    <ul>
+      <li>The daily close (04:00 UTC) sends one message per domestic event still IN_PROGRESS after its end date. CERT&rsquo;s PPW1 is such an event until step 3, so expect that message each morning until then.</li>
+      <li><code>ingest &lt;code&gt; &lt;url&gt; prod</code> is refused with the promote instruction. <code>promote</code> and <code>complete</code> take an exact code; a prefix is answered with the matching codes.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · promote rehearsal · ADR-108 build step 13 · 3 Oct 2026</p>
+</div>

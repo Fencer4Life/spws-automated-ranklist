@@ -94,7 +94,7 @@ BEGIN
 
   -- Five fencers, created here rather than looked up by surname: a lookup
   -- silently binds the first row when two fencers share a name (the defect
-  -- fixed in export_seed.py::fencer_lookup()).
+  -- the seed's own name lookup once had).
   FOR i IN 1..5 LOOP
     INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
     VALUES ('SS26-GOLD-' || i, 'Test', 1970) RETURNING id_fencer INTO v_id;
@@ -677,6 +677,26 @@ SELECT is(pg_temp.auto_multiplier_psw_pps(), 'BOTH_NON_NULL',
 -- SeasonManager.test.ts) and are not in this file.
 -- =============================================================================
 
+-- SPWS-2026-2027 is scored since its first event was promoted (PPW1, 3 Oct 2026),
+-- so its configuration is locked (ADR-097, no unlock). The checks that need a
+-- season before its first scored result use an unscored copy of its
+-- configuration: a test season far in the future, rolled back with the file.
+CREATE FUNCTION pg_temp.unlocked_season() RETURNS INT
+LANGUAGE plpgsql AS $us$
+DECLARE v_id INT;
+BEGIN
+  SELECT id_season INTO v_id FROM tbl_season WHERE txt_code = 'SPWS-2095-2096';
+  IF v_id IS NULL THEN
+    INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+         VALUES ('SPWS-2095-2096', DATE '2095-09-01', DATE '2096-06-30')
+      RETURNING id_season INTO v_id;
+    PERFORM fn_import_scoring_config(
+      fn_export_scoring_config((SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'))
+      || jsonb_build_object('id_season', v_id));
+  END IF;
+  RETURN v_id;
+END $us$;
+
 -- Attempt one field change via fn_import_scoring_config and classify the
 -- result. Shared by SS26.LOCK.01 (expects OK) and .02 (expects REJECTED).
 CREATE FUNCTION pg_temp.lock_try_field(p_season INT, p_key TEXT, p_new_value NUMERIC)
@@ -691,8 +711,7 @@ EXCEPTION WHEN OTHERS THEN
 END $ltf$;
 
 -- SS26.LOCK.01 — every governed field is writable before the season's first
--- scored result. SPWS-2026-2027 carries zero scores in the base seed
--- (confirmed by scripts/check-scoring-migration-preflight.sh's SSP-06).
+-- scored result, on the unscored copy of SPWS-2026-2027's configuration.
 CREATE FUNCTION pg_temp.lock01_all_editable_unlocked()
 RETURNS TEXT
 LANGUAGE plpgsql AS $l01$
@@ -706,7 +725,7 @@ DECLARE
   v_result   TEXT;
   v_failures TEXT := '';
 BEGIN
-  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  v_season := pg_temp.unlocked_season();
   FOREACH v_field IN ARRAY v_fields LOOP
     v_result := pg_temp.lock_try_field(v_season, v_field, 9);
     IF v_result <> 'OK' THEN
@@ -1319,7 +1338,7 @@ DECLARE
   v_unlocked INT;
   v_locked   INT;
 BEGIN
-  SELECT id_season INTO v_unlocked FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  v_unlocked := pg_temp.unlocked_season();
   SELECT id_season INTO v_locked   FROM tbl_season WHERE txt_code = 'SPWS-2023-2024';
 
   PERFORM fn_import_scoring_config(jsonb_build_object(
