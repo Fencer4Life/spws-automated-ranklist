@@ -82,13 +82,35 @@ describe('WP.ENV.01 — github.io (both pairs) is CERT only', () => {
     ] as never)
   })
 
+  // The ribbon as signed off with ADR-109 (doc/adr/assets/adr-109-ribbon.png):
+  // "ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl", the short
+  // "ŚRODOWISKO TESTOWE · TEST" on a phone, leading to the real site.
+  const expectRibbon = (container: HTMLElement) => {
+    const ribbon = container.querySelector('a.env-ribbon') as HTMLAnchorElement | null
+    expect(ribbon).not.toBeNull()
+    expect(ribbon!.getAttribute('href')).toBe('https://weteraniszermierki.pl')
+    expect(ribbon!.querySelector('.env-ribbon-long')?.textContent?.trim())
+      .toBe('ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl')
+    expect(ribbon!.querySelector('.env-ribbon-short')?.textContent?.trim())
+      .toBe('ŚRODOWISKO TESTOWE · TEST')
+  }
+
   it('shows no CT/PD switch and a TEST ribbon, and works on CERT', () => {
     const { container } = render(App, { props: BOTH })
     expect(container.querySelector('.env-toggle')).toBeNull()
     expect(container.querySelector('.env-btn')).toBeNull()
-    expect(container.querySelector('.env-ribbon')?.textContent?.trim()).toBe('TEST')
+    expectRibbon(container)
     expect(initClient).toHaveBeenCalledWith(CERT_URL, CERT_KEY)
     expect(initClient).not.toHaveBeenCalledWith(PROD_URL, PROD_KEY)
+  })
+
+  it('the calendar view shows no switch either, and keeps the ribbon', async () => {
+    const { container } = render(App, { props: { ...BOTH, view: 'calendar' } })
+    await tick()
+    expect(container.querySelector('.calendar-view')).not.toBeNull()
+    expect(container.querySelector('.env-toggle')).toBeNull()
+    expect(container.querySelector('.env-btn')).toBeNull()
+    expectRibbon(container)
   })
 
   it('still reads from PROD which seasons are already there (promotion, ADR-077)', async () => {

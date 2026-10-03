@@ -1,3 +1,12 @@
+{#if activeEnv === 'CERT'}
+  <!-- ADR-109 (W3, FR-151): github.io is CERT. Any surface running on the CERT
+       pair says so, on screen the whole time, and leads to the real site. -->
+  <a class="env-ribbon" href="https://weteraniszermierki.pl">
+    <span class="env-ribbon-long">ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → <span class="env-ribbon-site">weteraniszermierki.pl</span></span>
+    <span class="env-ribbon-short">ŚRODOWISKO TESTOWE · TEST</span>
+  </a>
+{/if}
+
 {#if !embedded}
   <Sidebar
     open={sidebarOpen}
@@ -119,19 +128,9 @@
       onclose={() => { rulesModalOpen = false }}
     />
 
-    {#if dualEnv}
-      <div class="env-footer">
-        <div class="env-toggle">
-          <button class="env-btn" class:active={activeEnv === 'CERT'}
-            onclick={() => { activeEnv = 'CERT' }}>CT</button>
-          <button class="env-btn" class:active={activeEnv === 'PROD'}
-            onclick={() => { activeEnv = 'PROD' }}>PD</button>
-        </div>
-      </div>
-    {/if}
     {#if rulesSeason}
-      <!-- Room at the end of the list, so the last row and the CT/PD switch
-           scroll clear of the pinned pill. -->
+      <!-- Room at the end of the list, so the last row scrolls clear of the
+           pinned pill. -->
       <div class="rules-float-space" aria-hidden="true"></div>
     {/if}
   {:else if currentView === 'calendar'}
@@ -142,7 +141,7 @@
          2026-09-02 looked like from the outside. The boundary keeps a calendar
          failure inside the calendar. -->
     <svelte:boundary>
-      <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} {dualEnv} bind:activeEnv />
+      <CalendarView events={calendarEvents} showEvfToggle={showEvfToggleCalendar} />
       {#snippet failed(err: unknown)}
         <div class="calendar-failed" role="alert">
           <p>{t('calendar_render_failed')}</p>
@@ -539,14 +538,17 @@
 
   let adminTimerText = $derived(formatAdminTimer(adminRemainingMs))
 
-  // Open on the environment we actually hold credentials for. The WordPress
-  // embed is given ONLY the PROD pair; with a hardcoded 'CERT' start the
-  // derivations below fell through to an empty certUrl, the init effect's
-  // `supabaseUrl && supabaseKey` guard never passed, and the embed rendered
-  // blank with no error anywhere. Both pairs present still opens on CERT, so
-  // the Pages app is unchanged and its CT/PD toggle keeps its meaning.
+  // Each host serves one environment (ADR-109, FR-151), so there is no CT/PD
+  // switch: the surface runs on the CERT pair whenever it holds one (github.io,
+  // LOCAL), and on PROD otherwise (the WordPress pages, which are given ONLY the
+  // PROD pair). A one-shot const: the credential attributes are static. Every
+  // read, write and dispatch goes through the client built from this pair, so
+  // dispatches reach the host's own environment's Edge Function.
   // svelte-ignore state_referenced_locally
-  let activeEnv: Environment = $state((certUrl && certKey ? 'CERT' : 'PROD') as Environment)
+  const activeEnv: Environment = certUrl && certKey ? 'CERT' : 'PROD'
+  // Both pairs are held only on github.io, which keeps the PROD pair for one
+  // read-only purpose: which seasons already exist on PROD (ADR-077 promotion,
+  // refreshPromotionState below). It never switches the page to PROD.
   let dualEnv = $derived(!!(certUrl && certKey && prodUrl && prodKey))
   let supabaseUrl = $derived(activeEnv === 'PROD' && prodUrl ? prodUrl : certUrl)
   let supabaseKey = $derived(activeEnv === 'PROD' && prodKey ? prodKey : certKey)
@@ -1902,33 +1904,39 @@
       font-size: 13px;
     }
   }
-  .env-footer {
-    display: flex;
-    justify-content: center;
-    padding: 16px 0;
-  }
-  .env-toggle {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  /* The TEST ribbon (ADR-109, W3; the signed-off mock is
+     doc/adr/assets/adr-109-ribbon.png): a yellow band across the top that
+     stays on screen while the page scrolls. It sits under the drawer (99/100)
+     and the modals, like the rules pill. */
+  .env-ribbon {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    display: block;
+    padding: 5px 12px;
+    background: #f5c518;
+    color: #1f2328;
+    font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .env-btn {
-    padding: 4px 10px;
-    border: none;
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
+  .env-ribbon:hover .env-ribbon-site {
+    text-decoration: underline;
   }
-  .env-btn:first-child {
-    border-right: 1px solid #ccc;
+  .env-ribbon-short {
+    display: none;
   }
-  .env-btn.active {
-    background: #4a90d9;
-    color: #fff;
+  @media (max-width: 429.98px) {
+    .env-ribbon-long {
+      display: none;
+    }
+    .env-ribbon-short {
+      display: inline;
+    }
   }
   .calendar-failed {
     max-width: 46rem;
