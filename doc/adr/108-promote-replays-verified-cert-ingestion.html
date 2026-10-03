@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="6931d2033feaa4da39e33fb1a7ed3c9ecf096e0521596621ac62eec47351b854">
+<meta name="adr-source-sha256" content="033664da6b1a7a46e73599b8ce0f6ba515edd2daa8a25bb5d098441aa77b918e">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -320,7 +320,7 @@
 <li><strong>The manual close.</strong> The Telegram <code>complete</code> command stays as a manual close, takes an exact code, and does not check the end date.</li>
 </ul>
 <h3 id="8-a-carry-stops-on-results-per-weapon-and-gender-decision-p6-a">8 · A carry stops on results, per weapon and gender (decision P6 A)</h3>
-<p>The <code>EVENT_FK_MATCHING</code> ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender. This holds whatever the current edition's status is. A COMPLETED or SCORED current edition stops every carry from its previous edition, as today.</p>
+<p>The <code>EVENT_FK_MATCHING</code> ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender and itself counts (any status <code>vw_eligible_event</code> counts: IN_PROGRESS, SCORED or COMPLETED). A COMPLETED or SCORED current edition stops every carry from its previous edition, as today. The stop applies to every linked event, whatever its type (decided 3 October 2026): the link means the new edition replaces the old one (<a href="018-rolling-score.html">ADR-018</a> §3, §7). Implemented in <code>supabase/migrations/20261003000018_carry_stop_results.sql</code>; tests <code>supabase/tests/104_carry_stop_results.sql</code>, CARRY.RS.01–11.</p>
 <p>This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes the divergence that ADR-018 recorded. There is no double count while an event is IN_PROGRESS, and no empty slot for a weapon fenced on a later day. The view alone cannot see weapons, so the change covers the four FK functions, which read the view together.</p>
 <h3 id="9-who-may-write-and-when">9 · Who may write, and when</h3>
 <ul>
@@ -395,5 +395,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>6931d2033feaa4da39e33fb1a7ed3c9ecf096e0521596621ac62eec47351b854</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>033664da6b1a7a46e73599b8ce0f6ba515edd2daa8a25bb5d098441aa77b918e</code></footer>
 </div></body></html>

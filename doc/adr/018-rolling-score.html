@@ -4,368 +4,300 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="018-rolling-score.md">
-<meta name="adr-source-sha256" content="1175ec39d625946ed9488dea6c37190a6ed374ae8da6bd11498e10e076fde4e6">
-<title>ADR-018 · Rolling Score for Active Season</title>
+<meta name="adr-source-sha256" content="3135248059081bd3b35a301de7abfcca5de87eaa69377bdcb0af92d3c95128d3">
+<title>ADR-018 · Rolling Score for the Active Season</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
-  <div><p class="eyebrow">Architecture Decision Record · 018</p><h1>Rolling Score for Active Season</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted; <strong>amended 2026-06-26</strong> (results-based carry-stop), <strong>amended 2026-08-09</strong> (calendar progress strip retired), <strong>amended 2026-10-03</strong> (the FK engine stops a carry on results too, ADR-108)</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M10) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (withdraws the calendar rolling-progress strip and retires tests R.23–R.25; the scoring rule is unaffected)</dd></div><div><dt>Source</dt><dd class=""><code>018-rolling-score.md</code></dd></div><div><dt>Length</dt><dd class="">199 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted; <strong>amended 2026-06-26</strong> (results-based carry-stop), <strong>amended 2026-08-09</strong> (calendar progress strip retired), <strong>amended 2026-10-03</strong> (the FK engine stops a carry on results too, ADR-108)
-<strong>Date:</strong> 2026-03-29 (M10)
-<strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (withdraws the calendar rolling-progress strip and retires tests R.23–R.25; the scoring rule is unaffected)</p>
+  <div><p class="eyebrow">Architecture Decision Record · 018</p><h1>Rolling Score for the Active Season</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-03-29); rewritten 2026-10-03 as the single current record of the rolling score. The FK engine's results-based stop for every linked event (ADR-108 §8, decision P6 A; scope decided 3 October 2026) is implemented and not yet released.</dd></div><div><dt>Date</dt><dd class="">2026-03-29 (M10); rewritten 2026-10-03 <strong>Tag:</strong> ROLLING SCORING — rolling score, carry-over, ranking kroczący, przenoszenie wyników</dd></div><div><dt>Source</dt><dd class=""><code>018-rolling-score.md</code></dd></div><div><dt>Length</dt><dd class="">146 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-03-29); rewritten 2026-10-03 as the single current record of the rolling score. The FK engine's results-based stop for every linked event (ADR-108 §8, decision P6 A; scope decided 3 October 2026) is implemented and not yet released.
+<strong>Date:</strong> 2026-03-29 (M10); rewritten 2026-10-03
+<strong>Tag:</strong> ROLLING SCORING — rolling score, carry-over, ranking kroczący, przenoszenie wyników
+<strong>Amends:</strong> nothing. It restates its own amendments of 2026-06-26, 2026-08-09 and 2026-10-03 in one text.
+<strong>Relates to:</strong> <a href="010-age-category-by-birth-year.html">ADR-010</a> (category by birth year), <a href="021-imew-biennial-carry-over.html">ADR-021</a> (types from the season's rules), <a href="031-auto-active-season.html">ADR-031</a> (active season by date), <a href="034-cross-gender-tournament-scoring.html">ADR-034</a> (effective gender), <a href="037-derived-display-status-awaiting-results.html">ADR-037</a> (a new event replaces a carry only once it has results), <a href="042-carryover-engine-dispatcher.html">ADR-042</a> (engine per season, <code>vw_eligible_event</code>), <a href="044-phase3-wizard.html">ADR-044</a> (window default, prior-event picker), <a href="045-engine-selector-default-flip.html">ADR-045</a> (FK engine by default), <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> §3 (skeletons linked to their predecessors), <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (calendar strip withdrawn), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (PPS/MPS not carried), <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> §6 (ranking entry), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7–§8 (promote lifecycle, results-based stop)
+<strong>Source:</strong> <code>supabase/migrations/20261002000007_carryover_without_successor.sql</code>, <code>supabase/migrations/20260425000008_fn_event_fk_matching_engines.sql</code>, <code>supabase/migrations/20260928000001_spws_place_medal_engine.sql</code>, <code>supabase/migrations/20260930000001_remove_place_medal_engine.sql</code>, <code>supabase/migrations/20260930000003_spws_evf_joined_engine.sql</code>, <code>supabase/migrations/20260906000001_no_evf_season_skeletons.sql</code>, <code>python/pipeline/promote.py</code>, <code>frontend/src/lib/rolling.ts</code>; analysis <code>doc/plans/carry-over-logic-as-built-2026-10-03.html</code> (ROLLING SCORING)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#three-state-position-logic">Three-State Position Logic</a></li><li class="depth-3"><a href="#position-extraction">Position Extraction</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#implementation-mechanics">Implementation Mechanics</a></li><li class="depth-3"><a href="#new-drilldown-function">New Drilldown Function</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-3"><a href="#why-option-c">Why Option C</a></li><li class="depth-2"><a href="#visual-distinction">Visual Distinction</a></li><li class="depth-2"><a href="#db-schema">DB Schema</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#test-coverage">Test Coverage</a></li><li class="depth-2"><a href="#amendment-2026-08-09-the-calendar-progress-strip-is-withdrawn">Amendment (2026-08-09 — the calendar progress strip is withdrawn)</a></li><li class="depth-2"><a href="#test-maintenance-note-2026-06-28">Test maintenance note (2026-06-28)</a></li><li class="depth-2"><a href="#amendment-2026-10-03-the-fk-engine-now-stops-a-carry-on-results-too">Amendment (2026-10-03) — the FK engine now stops a carry on results too</a></li></ol></nav>
-  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-06-26-results-based-carry-stop">Amendment (2026-06-26 — results-based carry-stop)</h2>
-<p>The carry-stop trigger for the <strong>EVENT_CODE_MATCHING</strong> engine changes from event <em>status</em> to the <em>existence of a current-season scored result</em> for the position. <code>completed_positions</code> is redefined from &quot;active-season events at status <code>COMPLETED</code>&quot; (later <code>COMPLETED</code>/<code>IN_PROGRESS</code> via <code>20260406000006</code>) to <strong>&quot;positions for which the active season already has a scored result&quot;</strong>, scoped to the queried <strong>weapon+gender</strong>. This makes the rule a strict per-(position, weapon, gender) <strong>either/or</strong> — a current result supersedes the carried prior-season equivalent the moment it exists, regardless of lifecycle status — removing the dependence on <code>SCHEDULED→IN_PROGRESS→COMPLETED</code> hygiene (an ingested <code>SCHEDULED</code> event with results previously showed <strong>both</strong> seasons). <strong>Supersedes <code>20260406000006</code>.</strong> Migration <code>20260626120000</code>; tests R.22–R.24 (R.6/R.18 reworked status→results, R.10 recalibrated 196.78→135.88). The inactive <strong>EVENT_FK_MATCHING</strong> engine (ADR-042) keys carry-stop on <code>SCORED</code> and is unchanged — a known boundary divergence if ever activated.</p>
-<p>The &quot;Three-State Position Logic&quot; table below is superseded by:</p>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-when-a-ranking-rolls">1 · When a ranking rolls</a></li><li class="depth-3"><a href="#2-what-can-carry">2 · What can carry</a></li><li class="depth-3"><a href="#3-the-link-to-the-next-edition">3 · The link to the next edition</a></li><li class="depth-3"><a href="#4-when-a-carried-result-stops-counting-fk-engine-as-released">4 · When a carried result stops counting (FK engine, as released)</a></li><li class="depth-3"><a href="#5-how-carried-results-count">5 · How carried results count</a></li><li class="depth-3"><a href="#6-the-older-engine-event-code-matching">6 · The older engine, `EVENT_CODE_MATCHING`</a></li><li class="depth-3"><a href="#7-the-results-based-stop-for-the-fk-engine-decided-implemented-not-yet-released">7 · The results-based stop for the FK engine (decided, implemented, not yet released)</a></li><li class="depth-3"><a href="#8-api-and-display">8 · API and display</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#tests">Tests</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#history">History</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>At the start of a season nobody has a result yet. The ranking stays continuous by counting the previous season's results until this season's results replace them. By the end of the season every result is current and the rolling score has no effect.</p>
+<p>The rule grew in eight steps across this ADR's amendments and seven other ADRs (see History). By October 2026 nobody could state it from the documents: the 2026-10-03 amendment described code that is not released as current, and the event-status page credited SCORED to a pipeline that never sets it. This rewrite states the rule once, as it runs on 3 October 2026, with source references, and keeps the decided change that is not yet released apart (§7).</p>
+<p>Each season names its carry-over engine (<code>tbl_season.enum_carryover_engine</code>, ADR-042):</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
-<th>Active-season position N (this weapon+gender)</th>
-<th>Previous-season result at position N</th>
-<th>Effect</th>
+<th>Season</th>
+<th>Engine</th>
+<th>Window (<code>int_carryover_days</code>)</th>
+<th>Rolling on screen</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>No current-season scored result</td>
-<td>Exists</td>
-<td><strong>Carried over</strong> — previous result used</td>
+<td>2023/24, 2024/25, 2025/26</td>
+<td><code>EVENT_CODE_MATCHING</code></td>
+<td>366, not read by this engine</td>
+<td>no, closed</td>
 </tr>
 <tr>
-<td>Has a current-season scored result</td>
-<td>Exists</td>
-<td><strong>Replaced</strong> — current result used (carry dropped)</td>
-</tr>
-<tr>
-<td>No current-season scored result</td>
-<td>Does not exist</td>
-<td><strong>Empty slot</strong> — nothing to carry</td>
+<td>2026/27</td>
+<td><code>EVENT_FK_MATCHING</code></td>
+<td>366</td>
+<td>yes, active</td>
 </tr>
 </tbody>
 </table></div>
-</section>
-<section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
-<p>At the start of each active season the ranking is empty — no events have been completed yet. Stakeholders want <strong>ranking continuity</strong>: the previous season's results serve as a starting baseline that is progressively replaced as current-season events complete. By season end, all results are current and rolling has no effect.</p>
-<p>The rolling mechanism must:</p>
-<ol>
-<li>Be <strong>position-matched</strong> — PP1-current replaces PP1-previous (not arbitrary substitution)</li>
-<li>Require a <strong>declared counterpart</strong> — previous-season results only carry over if the active season has a declared event at the same position (any status except COMPLETED)</li>
-<li>Support <strong>category crossing</strong> — a fencer aging V2→V3 gets previous V2 results placed into the V3 ranking</li>
-<li>Preserve <strong>Best-K selection</strong> — bucket rules operate on the merged pool (current + carried-over)</li>
-<li>Use carried-over <code>num_final_score</code> as-is (multiplier already baked in at scoring time)</li>
-<li>Only affect the <strong>active season</strong> — past and future (not yet active) seasons are never modified. A future season that is not yet active shows an empty ranklist by design; rolling carry-over only kicks in when the season actually becomes active (per ADR-031 auto-activation rules)</li>
-</ol>
-<p><strong>Verified with real data (2026-03-30):</strong> V1 M Epee seed data added for 2024-25 season (14 tournaments, 97 matched results from <code>SZPADA-1-2024-2025.xlsx</code>). Korona (born 1976) was V1 in 2024-25 and aged to V2 in 2025-26. Rolling carry-over correctly includes PP4-V1 (12.08 pts), MPW-V1 (32.53 pts), and IMEW-V1 (119.38 pts) in the V2 ranking — confirmed by pgTAP test R.13 (kadra total 535.93).</p>
-<h3 id="three-state-position-logic">Three-State Position Logic</h3>
-<div class="tablewrap"><table>
-<thead>
-<tr>
-<th>Active-season event at position N</th>
-<th>Previous-season result at position N</th>
-<th>Effect</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Does not exist (not declared)</td>
-<td>Exists</td>
-<td><strong>Dropped</strong> — not in ranking</td>
-</tr>
-<tr>
-<td>Exists, NOT yet completed</td>
-<td>Exists</td>
-<td><strong>Carried over</strong> — previous result used</td>
-</tr>
-<tr>
-<td>Exists, COMPLETED</td>
-<td>Exists</td>
-<td><strong>Replaced</strong> — current result used</td>
-</tr>
-<tr>
-<td>Exists, NOT completed</td>
-<td>Does not exist</td>
-<td><strong>Empty slot</strong> — nothing to carry</td>
-</tr>
-</tbody>
-</table></div>
-<h3 id="position-extraction">Position Extraction</h3>
-<p>Event position is the tournament-type prefix extracted from <code>txt_code</code>: <code>split_part(txt_code, '-', 1)</code>.</p>
-<p>Examples: <code>PP1-2024-2025</code> → <code>PP1</code>, <code>MPW-2024-2025</code> → <code>MPW</code>, <code>PEW1-2025-2026</code> → <code>PEW1</code>.</p>
 </section>
 <section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
-<p><strong>Option C: Parameter Extension</strong> — add <code>p_rolling BOOLEAN DEFAULT FALSE</code> to existing <code>fn_ranking_ppw</code> and <code>fn_ranking_kadra</code>. When TRUE, the <code>eligible</code> CTE expands to include previous-season carry-over results. Return type extended with <code>bool_has_carryover BOOLEAN</code>.</p>
-<h3 id="implementation-mechanics">Implementation Mechanics</h3>
+<h3 id="1-when-a-ranking-rolls">1 · When a ranking rolls</h3>
+<p>The UI asks for a rolling ranking (<code>p_rolling = TRUE</code>) for the active season, or for a season whose end date is today or later (<code>frontend/src/lib/rolling.ts:16-24</code>, used at <code>App.svelte:538</code>). A closed season's ranking shows only its own results. Every ranking function keeps <code>p_rolling BOOLEAN DEFAULT FALSE</code>, so a caller that does not ask gets the season alone.</p>
+<h3 id="2-what-can-carry">2 · What can carry</h3>
+<ul>
+<li><strong>Only the season right before.</strong> Two seasons back never carries.</li>
+<li><strong>Only an event that was held:</strong> its status is not CREATED, PLANNED, SCHEDULED, CHANGED or CANCELLED.</li>
+<li><strong>Only a result with a score</strong> (<code>num_final_score IS NOT NULL</code>).</li>
+<li><strong>Only a type in the season's ranking rules</strong> (ADR-021): the domestic rules for the PPW ranking, the international rules for the kadra ranking, both for the drilldown.</li>
+<li><strong>PPS and MPS never carry in Ranking mode</strong> (<code>fn_ranking_full</code>, ADR-098, SS26.RANK.12). The drilldown still lists them as carried.</li>
+</ul>
+<h3 id="3-the-link-to-the-next-edition">3 · The link to the next edition</h3>
+<p><code>tbl_event.id_prior_event</code> names the previous season's event that a current event follows. It means <strong>&quot;this event replaces that one&quot;</strong>.</p>
+<ul>
+<li><strong>Who sets it.</strong> The season wizard's <code>fn_init_season</code> creates every PPWn, MPW and MSW skeleton linked to the previous season's event of the same name, in the same INSERT (<code>20260906000001_no_evf_season_skeletons.sql:114-125, 136-146, 152-162</code>; ADR-077 §3, ADR-045). The EVF calendar sync links an EVF event by the previous season's city (ADR-043, ADR-028 rev 6). An admin sets or clears it in the event form, „Poprzednik (carry-over)” (<code>EventManager.svelte:177-193</code>; <code>-1</code> clears it, ADR-044 amendment 2026-06-27). That list offers only events of the season right before.</li>
+<li><strong>One claimant per season.</strong> <code>idx_event_prior_unique</code> allows one event per season to name a given predecessor (<code>20260425000005_fk_carryover_schema.sql:26</code>).</li>
+<li><strong>Carried to PROD</strong> by the CERT→PROD event mirror, matched by event code (ADR-081 amendment 2026-08-29). Promote's input check includes the predecessor's code (<code>20261003000014_ingest_run.sql:143</code>).</li>
+<li><strong>Not read</strong> by the older engine, and shown on no public page.</li>
+</ul>
+<h3 id="4-when-a-carried-result-stops-counting-fk-engine-as-released">4 · When a carried result stops counting (FK engine, as released)</h3>
+<p><code>vw_eligible_event</code> (<code>20261002000007_carryover_without_successor.sql:26-69</code>) is the only source of carried events for the four <code>EVENT_FK_MATCHING</code> functions. It works on events, so it does not distinguish types.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Linked (branch 2, L36-48)</th>
+<th>Not linked (branch 3, L50-69, since 2026-10-02)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The next edition is SCORED or COMPLETED</td>
+<td>stops, for every weapon and gender at once</td>
+<td>does not apply</td>
+</tr>
+<tr>
+<td>End date + <code>int_carryover_days</code> has passed</td>
+<td>stops</td>
+<td>stops</td>
+</tr>
+<tr>
+<td>The next edition is CANCELLED</td>
+<td>carries until the window ends</td>
+<td>does not apply</td>
+</tr>
+<tr>
+<td>The next edition has results but is IN_PROGRESS</td>
+<td><strong>both count</strong></td>
+<td>both count</td>
+</tr>
+</tbody>
+</table></div>
+<p>The window is inclusive: the result still counts on its end date plus 366 days. The current event counts from IN_PROGRESS on (branch 1, L27-34), and <code>fn_ingest_tournament_results</code> sets IN_PROGRESS when the first result arrives.</p>
+<p><strong>On PROD a linked result is replaced as soon as the new edition's results arrive.</strong> The current promote writes the results and sets COMPLETED in the same run (<code>python/pipeline/promote.py:290-298</code>), so no IN_PROGRESS interval exists on PROD. This is the intended behaviour: ADR-037 records that a new event replaces the carry only once it has results. On CERT and LOCAL an ingestion leaves the event IN_PROGRESS, so both editions count there until the event is completed.</p>
+<p><strong>Without a link, a result is time-bound only.</strong> It counts for the window whether or not its next edition was held. A result whose next edition has no row yet (the Criterium 2026, published late by EVF) is carried this way (ADR-042 amendment 2026-10-02).</p>
+<p><strong>The window also ends a linked result</strong> whose next edition has no results on PROD yet. On 3 October 2026 this is the case for PPW1: PPW1-2025-2026 (ended 28 Sep 2025) counted through 29 Sep 2026, and PPW1-2026-2027 (fenced 26–27 Sep 2026) is not yet promoted (open item 1).</p>
+<h3 id="5-how-carried-results-count">5 · How carried results count</h3>
+<ul>
+<li><strong>One pool.</strong> Carried and current results go into the same pool; the season's buckets pick from it (2026/27: PPW best 2 and MPW always for SPWS; best 5 of PEW, MEW, MSW, PSW, PPS, MPS for EVF+).</li>
+<li><strong>Stored points.</strong> A carried result keeps the <code>num_final_score</code> it was given under its own season's rules. Nothing is re-scored.</li>
+<li><strong>Category from the current season.</strong> A carried result goes into the category given by the birth year against the current season's later calendar year (<code>fn_age_category(birth_year, v_season_end_yr)</code>, <code>20260930000001_remove_place_medal_engine.sql:571, 609</code>; ADR-010). Someone born in 1977 is V1 in 2025/26 and V2 in 2026/27, and their 2025/26 results count in V2.</li>
+<li><strong>Effective gender</strong> as for every ranking (ADR-034).</li>
+<li><strong>Ranking entry.</strong> In Ranking mode a fencer appears only with a PPW or MPW result in the ranked season or, when rolling, anywhere in the previous season, in any weapon (<code>20260928000001_spws_place_medal_engine.sql:1312-1324</code>, ADR-103 §6). This check reads the whole previous season, not the window.</li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Function</th>
+<th>UI</th>
+<th>Carried rows count when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fn_ranking_full_event_fk_matching</code></td>
+<td>Ranking mode (<code>App.svelte:763</code>)</td>
+<td><code>p_rolling</code>; type in a bucket; not PPS or MPS (<code>20260928000001…:1290, 1296, 1306</code>)</td>
+</tr>
+<tr>
+<td><code>fn_ranking_ppw_event_fk_matching</code></td>
+<td>PPW mode (<code>App.svelte:746</code>)</td>
+<td><code>p_rolling</code>; type in the domestic rules (<code>20260425000008…:160, 166</code>)</td>
+</tr>
+<tr>
+<td><code>fn_fencer_scores_rolling_event_fk_matching</code></td>
+<td>drilldown (<code>App.svelte:818</code>)</td>
+<td>always listed, marked carried; type in either rules section (<code>20260930000001…:599-611</code>)</td>
+</tr>
+<tr>
+<td><code>fn_ranking_kadra_event_fk_matching</code></td>
+<td>not called by the UI (pgTAP parity oracle for <code>fn_ranking_full</code>)</td>
+<td><code>p_rolling</code>; type in the international rules (<code>20260425000008…:362, 368</code>)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="6-the-older-engine-event-code-matching">6 · The older engine, <code>EVENT_CODE_MATCHING</code></h3>
+<p>A previous-season result carries while the current season has no scored result at the same <strong>position</strong>, in the same weapon and gender. The position is the event code's prefix (<code>fn_event_position</code>: <code>PPW1</code>, <code>MPW</code>, <code>PEW3</code>). There is no window and no status test (<code>20260930000003_spws_evf_joined_engine.sql:938-942, 954-963, 1012-1024</code>). Positions taken from EVF venue slugs collide, which is why ADR-042 introduced the FK engine. All three seasons on this engine are closed and shown without rolling, so it affects no ranking on screen today.</p>
+<h3 id="7-the-results-based-stop-for-the-fk-engine-decided-implemented-not-yet-released">7 · The results-based stop for the FK engine (decided, implemented, not yet released)</h3>
+<p>ADR-108 §7 keeps an event IN_PROGRESS until its end date has passed, and sets COMPLETED afterwards. Under §4 both editions of a linked event would then count for that whole time, and the immediate replacement PROD has today would be lost. Decision P6 A (3 October 2026, <code>doc/plans/promote-verified-replay-2026-10-03.html</code>) keeps it: a linked carry stops for a weapon and gender as soon as the linked current edition counts (branch 1 statuses) and has a scored result in that weapon and gender. <strong>It applies to every linked event, whatever its type</strong> (decision A, 3 October 2026): the link, not the type, decides that the new edition replaces the old one. A SCORED or COMPLETED edition still stops every carry, and the window still applies. It is the rule §6 already applies to the older engine.</p>
+<ul>
+<li><strong>Implementation.</strong> <code>supabase/migrations/20261003000018_carry_stop_results.sql</code> adds <code>fn_carry_stopped_by_results</code> and one filter line after each FK function's carry filter. The view cannot see weapons, so the stop lives in the functions. Tests: <code>supabase/tests/104_carry_stop_results.sql</code>, CARRY.RS.01–11.</li>
+<li><strong>Scope history.</strong> For a few hours on 3 October a version narrowed to PPW and MPW (a fifth parameter, <code>p_type</code>) stood on LOCAL without sign-off. It was removed the same day under decision A; RS.03 and RS.05 failed against it and pass against the version for every linked event. The full pgTAP suite passes on LOCAL (1,385 assertions).</li>
+</ul>
+<h3 id="8-api-and-display">8 · API and display</h3>
+<ul>
+<li><strong>Option C, a parameter</strong> (the original decision): <code>p_rolling BOOLEAN DEFAULT FALSE</code> on each ranking function. Totals include carried results because the database computes them, and existing callers are unchanged.</li>
+<li><strong>Drilldown.</strong> <code>fn_fencer_scores_rolling(p_fencer, p_weapon, p_gender, p_category, p_season)</code> returns the score rows plus <code>bool_carried_over</code> and <code>txt_source_season_code</code>. Ranking rows carry <code>bool_has_carryover</code>. All three are dispatchers on the season's engine (ADR-042).</li>
+<li><strong>Display.</strong> A carried result keeps grey text and a striped bar, and is marked „↩ Wynik z poprzedniego sezonu” with its source season. It carries ★ when the ranking counts it, like any other result. The amber banner was removed on 2026-10-01 (<code>doc/plans/drilldown-points-order-and-uncounted-2026-10-01.html</code>). The calendar progress strip was withdrawn by ADR-084: carry-over is a ranking concept, not a calendar one.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
 <ol>
-<li><strong>Position helper:</strong> New <code>fn_event_position(txt_code TEXT) RETURNS TEXT</code> extracts the position prefix</li>
-<li><strong>Previous season resolution:</strong> <code>SELECT id_season FROM tbl_season WHERE dt_end &lt; current.dt_start ORDER BY dt_end DESC LIMIT 1</code></li>
-<li><strong>Declared positions CTE:</strong> <code>SELECT DISTINCT fn_event_position(e.txt_code) FROM tbl_event WHERE id_season = active_season</code></li>
-<li><strong>Completed positions CTE:</strong> Subset of declared where at least one event at that position has status <code>COMPLETED</code></li>
-<li><strong>Eligible CTE expansion:</strong> UNION ALL of:
-<ul>
-<li>Current-season results (unchanged)</li>
-<li>Previous-season results WHERE position IN declared AND position NOT IN completed</li>
-</ul>
-</li>
-<li><strong>Category crossing:</strong> Carried-over results evaluated with <code>fn_age_category(birth_year, current_season_end_year)</code> — NOT previous season's end year</li>
-<li><strong><code>bool_has_carryover</code>:</strong> TRUE in final SELECT if any carried-over scores contributed to the fencer's total</li>
+<li><strong>Rolling always on, no parameter.</strong> Rejected in March 2026: it changes every caller's results implicitly and cannot be regression-tested.</li>
+<li><strong>Separate <code>*_rolling</code> functions.</strong> Rejected: they duplicate bucket selection and drift.</li>
+<li><strong>Merging in the frontend.</strong> Rejected: ranking totals would differ from the drilldown, Best-K and the category crossing would be re-implemented in JavaScript.</li>
+<li><strong>Status-based stop for the older engine.</strong> Rejected on 2026-06-26: an ingested event left at SCHEDULED showed both seasons. A current scored result is the trigger instead.</li>
+<li><strong>A placeholder row for an event whose next edition is not published yet.</strong> Rejected on 2026-10-02: ADR-091 forbids undated EVF placeholders. Branch 3 carries such an event directly.</li>
+<li><strong>A rule per type</strong> (PPW and MPW roll without a window, other types time-bound only, links ignored). Rejected on 2026-10-03 (decision A): it departs from the link meaning &quot;replaces&quot; for EVF events and changes the view as well as the functions.</li>
+<li><strong>The results-based stop for PPW and MPW only.</strong> Rejected on 2026-10-03 (decision A): once promote leaves events IN_PROGRESS (ADR-108 §7), a linked EVF result would count twice for that time.</li>
 </ol>
-<h3 id="new-drilldown-function">New Drilldown Function</h3>
-<p><code>fn_fencer_scores_rolling(p_fencer, p_weapon, p_gender, p_category, p_season)</code> returns <code>ScoreRow</code> columns plus:</p>
-<ul>
-<li><code>bool_carried_over BOOLEAN</code> — TRUE for previous-season rows</li>
-<li><code>txt_source_season_code TEXT</code> — source season code for carried-over rows</li>
-</ul>
-<p>Same declared/completed position logic as the ranking functions.</p>
-</section>
-<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives Considered</h2>
-<ol>
-<li>
-<p><strong>Option A: Modify existing functions in-place (rolling always on for active season)</strong></p>
-<ul>
-<li>Effort: HIGH (3-4 days). Risk: MEDIUM-HIGH.</li>
-<li>Rolling always on — no toggle. Changes return type for all callers. Hard to regression-test since behavior changes implicitly.</li>
-</ul>
-</li>
-<li>
-<p><strong>Option B: New wrapper functions (<code>fn_ranking_ppw_rolling</code>)</strong></p>
-<ul>
-<li>Effort: MEDIUM-HIGH (2-3 days). Risk: MEDIUM.</li>
-<li>Existing functions untouched but <strong>duplicates bucket selection logic</strong> — divergence risk over time. Frontend must know which function to call.</li>
-</ul>
-</li>
-<li>
-<p><strong>Option C: Parameter extension (<code>p_rolling BOOLEAN DEFAULT FALSE</code>)</strong> — CHOSEN</p>
-<ul>
-<li>Effort: MEDIUM (2-3 days). Risk: MEDIUM.</li>
-<li>Single function per ranking type. Backward compatible. Clean API. Testable for both modes.</li>
-</ul>
-</li>
-<li>
-<p><strong>Option D: Frontend-only merge (fetch both seasons client-side)</strong></p>
-<ul>
-<li>Effort: LOW (1 day). Risk: <strong>VERY HIGH</strong>.</li>
-<li><strong>FATAL:</strong> Ranking totals would be wrong — <code>fn_ranking_ppw</code> still sees only current season, so ranking table shows different totals than drilldown. Must recompute Best-K in JS (logic duplication). Category crossing broken. 2x API calls.</li>
-</ul>
-</li>
-</ol>
-<h3 id="why-option-c">Why Option C</h3>
-<ul>
-<li><strong>Correctness</strong> — ranking totals MUST include carried-over scores (eliminates D)</li>
-<li><strong>No duplication</strong> — single function per ranking type (eliminates B)</li>
-<li><strong>Backward compatibility</strong> — <code>p_rolling=FALSE</code> default preserves all existing behavior (better than A)</li>
-<li><strong>Legacy path unchanged</strong> — active season always has JSONB rules, so only the JSONB path needs rolling logic. <strong>Prerequisites:</strong> (1) <code>fn_auto_create_scoring_config</code> trigger copies <code>json_ranking_rules</code> from the previous season (migration <code>20260411000002</code>); (2) &quot;active season&quot; is auto-derived from dates per ADR-031 — future seasons become active via the nearest-future fallback rule, which means rolling carry-over activates automatically without admin intervention</li>
-<li><strong>Testable</strong> — call with <code>p_rolling := TRUE/FALSE</code> to verify both behaviors independently</li>
-</ul>
-</section>
-<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="visual-distinction">Visual Distinction</h2>
-<p>Carried-over scores are visually distinguished from current-season results:</p>
-<ul>
-<li><strong>Chart bars:</strong> Grey striped pattern (not solid blue/gold)</li>
-<li><strong>Marker:</strong> <code>↩</code> for carried-over items (alongside existing <code>★</code> / <code>✓</code>)</li>
-<li><strong>Tournament table:</strong> Carried-over rows in grey text with badge showing source season</li>
-<li><strong>Rolling info banner:</strong> Amber banner at top of drilldown when carried-over scores present</li>
-<li><strong>Calendar progress:</strong> Slot bar above timeline for active season — green ✓ = completed, amber ↩ = carried, grey — = empty</li>
-</ul>
-<p>Mockups: <code>doc/mockups/m10_drilldown_rolling.html</code>, <code>doc/mockups/m10_calendar_rolling.html</code></p>
-</section>
-<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="db-schema">DB Schema</h2>
-<p>No new columns on existing tables. Changes:</p>
-<pre><code class="language-sql">-- New helper function
-CREATE FUNCTION fn_event_position(p_code TEXT) RETURNS TEXT
-  AS $$ SELECT split_part(p_code, '-', 1) $$;
-
--- Modified function signatures (DROP + recreate)
-fn_ranking_ppw(p_weapon, p_gender, p_category, p_season, p_rolling BOOLEAN DEFAULT FALSE)
-  RETURNS TABLE(rank, id_fencer, fencer_name, ppw_score, mpw_score, total_score, bool_has_carryover)
-
-fn_ranking_kadra(p_weapon, p_gender, p_category, p_season, p_rolling BOOLEAN DEFAULT FALSE)
-  RETURNS TABLE(rank, id_fencer, fencer_name, ppw_total, pew_total, total_score, bool_has_carryover)
-
--- New function
-fn_fencer_scores_rolling(p_fencer, p_weapon, p_gender, p_category, p_season)
-  RETURNS TABLE(... ScoreRow columns ..., bool_carried_over, txt_source_season_code)
-</code></pre>
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
 <ul>
-<li><code>fn_ranking_ppw</code> and <code>fn_ranking_kadra</code> must be DROPped and recreated (return type change) — migration discipline required</li>
-<li>All existing callers unchanged (<code>p_rolling</code> defaults to FALSE)</li>
-<li>Frontend passes <code>p_rolling: true</code> when season is active — API layer change</li>
-<li>New frontend types: <code>bool_carried_over</code> on <code>ScoreRow</code>, <code>bool_has_carryover</code> on ranking rows</li>
-<li>DrilldownModal gains carried-over visual styling (grey striped bars, <code>↩</code> markers, info banner)</li>
-<li>CalendarView gains rolling progress indicator (slot bar for active season)</li>
-<li>Seed data augmented: PP4+PP5 events added to previous season, declared (not completed) in active season</li>
-<li>~18 pgTAP + ~7 vitest new test assertions</li>
+<li>The rolling score has one current description, this ADR. ADR-021, ADR-037, ADR-042 and ADR-108 keep their own decisions and point here for the combined rule.</li>
+<li>The ranking rule book describes §1–§5 as today's behaviour.</li>
+<li>Corrected with this rewrite: the handbook page <code>doc/handbook/reference/event-status-lifecycle.html</code> credited SCORED to the scoring pipeline; no code sets an event to SCORED (only <code>tbl_tournament.enum_import_status</code> becomes SCORED). ADR-108 §8 said the stop holds &quot;whatever the current edition's status is&quot;; the current edition must itself count (CARRY.RS.11).</li>
 </ul>
 </section>
-<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-coverage">Test Coverage</h2>
+<section class="section-card adr-section tests"><p class="kicker">tests</p><h2 id="tests">Tests</h2>
 <div class="tablewrap"><table>
 <thead>
 <tr>
-<th>Test ID</th>
 <th>Suite</th>
-<th>What it verifies</th>
+<th>IDs</th>
+<th>What they pin</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>R.1</td>
-<td>pgTAP</td>
-<td><code>fn_event_position('PP1-2024-2025')</code> → <code>'PP1'</code></td>
+<td><code>supabase/tests/09_rolling_score.sql</code></td>
+<td>R.1–R.24</td>
+<td>older engine: position helper, rolling on/off, merged Best-K, category crossing, results-based stop per weapon and gender, biennial IMEW, never both</td>
 </tr>
 <tr>
-<td>R.2</td>
-<td>pgTAP</td>
-<td><code>fn_event_position('MPW-2024-2025')</code> → <code>'MPW'</code></td>
+<td><code>supabase/tests/17_fk_carryover.sql</code></td>
+<td>F.1–F.26</td>
+<td>FK schema, wizard links, <code>vw_eligible_event</code> (SCORED/COMPLETED stop, window cap), FK functions and dispatcher, day-1 parity</td>
 </tr>
 <tr>
-<td>R.3</td>
-<td>pgTAP</td>
-<td><code>fn_event_position('PEW1-2025-2026')</code> → <code>'PEW1'</code></td>
+<td><code>supabase/tests/94_carryover_without_successor.sql</code></td>
+<td>CARRY.NS.01–07</td>
+<td>branch 3: carried once with or without a next row, not when not held or two seasons back, past the window, stop once held</td>
 </tr>
 <tr>
-<td>R.4</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=FALSE)</code> regression — same results as before</td>
+<td><code>supabase/tests/104_carry_stop_results.sql</code></td>
+<td>CARRY.RS.01–11</td>
+<td>§7: results stop per weapon and gender for every linked event (RS.03: a PEW one), no empty slot, current edition must count, COMPLETED still stops all</td>
 </tr>
 <tr>
-<td>R.5</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> no previous season → same as non-rolling</td>
+<td><code>supabase/tests/80_season_scoring_contract.sql</code></td>
+<td>SS26.RANK.12</td>
+<td>PPS and MPS not carried in Ranking mode</td>
 </tr>
 <tr>
-<td>R.6</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> all current events completed → no carry-over</td>
-</tr>
-<tr>
-<td>R.7</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> partial: current + carried-over in pool</td>
-</tr>
-<tr>
-<td>R.8</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> best-K selection on merged pool</td>
-</tr>
-<tr>
-<td>R.9</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> category crossing: V2→V3</td>
-</tr>
-<tr>
-<td>R.10</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> new fencer (not in prev season) → zero carryover</td>
-</tr>
-<tr>
-<td>R.11</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> no counterpart: prev PP5 not carried when PP5 not declared</td>
-</tr>
-<tr>
-<td>R.12</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_ppw(rolling:=TRUE)</code> event deleted → carry-over for that position drops</td>
-</tr>
-<tr>
-<td>R.13</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_kadra(rolling:=TRUE)</code> domestic + international carry-over</td>
-</tr>
-<tr>
-<td>R.14</td>
-<td>pgTAP</td>
-<td><code>fn_ranking_kadra(rolling:=FALSE)</code> regression</td>
-</tr>
-<tr>
-<td>R.15</td>
-<td>pgTAP</td>
-<td><code>fn_fencer_scores_rolling</code> returns <code>bool_carried_over=TRUE</code> for prev-season rows</td>
-</tr>
-<tr>
-<td>R.16</td>
-<td>pgTAP</td>
-<td><code>fn_fencer_scores_rolling</code> returns <code>bool_carried_over=FALSE</code> for current rows</td>
-</tr>
-<tr>
-<td>R.17</td>
-<td>pgTAP</td>
-<td><code>fn_fencer_scores_rolling</code> position match: current replaces previous</td>
-</tr>
-<tr>
-<td>R.18</td>
-<td>pgTAP</td>
-<td><code>fn_fencer_scores_rolling</code> no counterpart: prev PP5 excluded when not declared</td>
-</tr>
-<tr>
-<td>R.19</td>
-<td>vitest</td>
-<td>DrilldownModal: carried-over rows have <code>.carried-row</code> class</td>
-</tr>
-<tr>
-<td>R.20</td>
-<td>vitest</td>
-<td>DrilldownModal: chart items for carried-over have <code>↩</code> marker</td>
-</tr>
-<tr>
-<td>R.21</td>
-<td>vitest</td>
-<td>DrilldownModal: rolling info banner shows when carried-over present</td>
-</tr>
-<tr>
-<td>R.22</td>
-<td>vitest</td>
-<td>DrilldownModal: non-carried scores render normally (regression)</td>
-</tr>
-<tr>
-<td><s>R.23</s></td>
-<td><s>vitest</s></td>
-<td><strong>Retired 2026-08-09 by <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a></strong> — CalendarView: progress slots render for active season</td>
-</tr>
-<tr>
-<td><s>R.24</s></td>
-<td><s>vitest</s></td>
-<td><strong>Retired 2026-08-09 by <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a></strong> — CalendarView: progress hidden for non-active season</td>
-</tr>
-<tr>
-<td><s>R.25</s></td>
-<td><s>vitest</s></td>
-<td><strong>Retired 2026-08-09 by <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a></strong> — CalendarView: correct slot states (completed/carried/missing)</td>
+<td><code>frontend/tests/DrilldownModal.test.ts</code></td>
+<td>R.19, R.20, R.22</td>
+<td>carried row class, ↩ marker, current rows unchanged</td>
 </tr>
 </tbody>
 </table></div>
+<p>Retired: R.21 (vitest, the banner, 2026-10-01); R.23–R.25 (vitest, the calendar strip, ADR-084).</p>
 </section>
-<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-09-the-calendar-progress-strip-is-withdrawn">Amendment (2026-08-09 — the calendar progress strip is withdrawn)</h2>
-<p><a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> replaces <code>CalendarView.svelte</code>'s flat rolling-progress strip with the quarter barrel. The strip's DOM contract — <code>.rolling-progress</code>, <code>.slot</code>, and <code>.slot.completed</code>/<code>.slot.planned</code> — no longer exists, so <strong>tests R.23, R.24 and R.25 are retired</strong> rather than rewritten. They are struck through in the table above.</p>
-<p><strong>The scoring rule in this ADR is untouched.</strong> What is withdrawn is one <em>presentation</em> of it. Three points worth keeping, because the strip and this ADR were less connected than the table implied:</p>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ol>
-<li>The strip only ever rendered <strong>two</strong> states. This ADR's &quot;Three-State Position Logic&quot; describes <code>completed</code> / <code>carried</code> / <code>missing</code>, but <code>positionSlots</code> computed a single boolean, <code>completed</code>, and the template rendered <code>class:completed</code>/<code>class:planned</code>. R.25's name — &quot;correct slot states (completed/carried/missing)&quot; — described a third state the component never had.</li>
-<li><strong>Carry-over is a ranking concept, not a calendar one.</strong> It surfaces in <code>DrilldownModal.svelte</code> via <code>bool_has_carryover</code>, which is what R.19–R.22 pin and which is unaffected. A calendar has no carried state to lose.</li>
-<li>The barrel encodes completion on its own channel — fill for completed, ring for next-upcoming, hue for event type — which is what the strip got wrong by encoding type as hue and completion as lightness of that same hue.</li>
+<li><strong>Should the window end a linked PPW or MPW result before its next edition's results are on PROD?</strong> Today it does (PPW1 from 30 Sep 2026; PPW2 if its 2026/27 results arrive after 27 Oct 2026). <strong>Recommendation:</strong> a linked PPW or MPW result counts until its next edition's results replace it; the one-season bound still ends it. The window stays for unlinked results.</li>
 </ol>
 </section>
-<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="test-maintenance-note-2026-06-28">Test maintenance note (2026-06-28)</h2>
-<p>The pgTAP carry-stop suite (<code>supabase/tests/09_rolling_score.sql</code>, and the cross-gender
-<code>14_cross_gender_scoring.sql</code> for ADR-034) is now <strong>fixture-self-contained</strong>: each subtest builds
-its own synthetic two-season world (<code>TST-PREV</code>/<code>TST-CURR</code>, plus <code>TST-ROOT</code> for the no-previous
-branch) with a cloned scoring config and synthetic fencers on isolated <code>(weapon, gender)</code> lanes,
-then <code>ROLLBACK</code>s. Expected values are engine-derived or structural — no named production fencers,
-no seed-state assumptions, no production magic-number scores. This removes the recalibration
-treadmill (the tests previously broke on every reingest/season rollover). Carry-stop behaviour
-itself (ADR-018/021, results-based amendment <code>20260626120000</code>) is unchanged. See the 2026-06-28
-entry in <code>doc/archive/legacy-2026-07/development_history.md</code>.</p>
-</section>
-<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-the-fk-engine-now-stops-a-carry-on-results-too">Amendment (2026-10-03) — the FK engine now stops a carry on results too</h2>
-<p><a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §8 (decision P6 A) closes the &quot;known boundary divergence&quot; recorded in the 2026-06-26 amendment. The <strong>EVENT_FK_MATCHING</strong> ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender. This holds whatever the current edition's status is. A SCORED or COMPLETED edition still stops every carry from its previous edition.</p>
-<p>The change was needed because ADR-108 §7 keeps an event IN_PROGRESS on PROD until its end date has passed. Under the status-based stop, both editions would have counted during that time, and on 3 October 2026, 13 of the 14 dated 2026/27 events on PROD started inside their previous edition's carry-over window. Both engines now share one rule.</p>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="history">History</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Change</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-03-29</td>
+<td>Rolling score with <code>p_rolling</code>; position-matched carry; a declared counterpart required; stop when the counterpart is COMPLETED</td>
+<td>this ADR</td>
+</tr>
+<tr>
+<td>2026-04-04</td>
+<td>Carry by type in the season's rules instead of a declared counterpart (biennial IMEW)</td>
+<td>ADR-021</td>
+</tr>
+<tr>
+<td>2026-04-06</td>
+<td>Stop when the counterpart is IN_PROGRESS as well</td>
+<td>migration <code>20260406000006</code></td>
+</tr>
+<tr>
+<td>2026-04-25/26</td>
+<td>Engine per season; <code>id_prior_event</code>; <code>vw_eligible_event</code>; window <code>int_carryover_days</code>, default 366</td>
+<td>ADR-042, ADR-044</td>
+</tr>
+<tr>
+<td>2026-04-26</td>
+<td>FK engine is the default for new seasons; the wizard links skeletons</td>
+<td>ADR-045</td>
+</tr>
+<tr>
+<td>2026-06-26</td>
+<td>Older engine: stop on a current scored result per position, weapon and gender</td>
+<td>migration <code>20260626120000</code></td>
+</tr>
+<tr>
+<td>2026-06-28</td>
+<td>Rolling tests made fixture-self-contained</td>
+<td><code>09_rolling_score.sql</code></td>
+</tr>
+<tr>
+<td>2026-08-09</td>
+<td>Calendar progress strip withdrawn</td>
+<td>ADR-084</td>
+</tr>
+<tr>
+<td>2026-09-19</td>
+<td><code>fn_ranking_full</code>; PPS and MPS never carried</td>
+<td>ADR-098</td>
+</tr>
+<tr>
+<td>2026-10-02</td>
+<td>Branch 3: an event whose next edition has no row carries for the window</td>
+<td>ADR-042</td>
+</tr>
+<tr>
+<td>2026-10-03</td>
+<td>Results-based stop for the FK engine decided (P6 A), for every linked event (decision A); this ADR rewritten</td>
+<td>ADR-108 §8</td>
+</tr>
+</tbody>
+</table></div>
+<p>The text before this rewrite is in git at commit <code>8271dd65</code>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="017-season-configurable-evf-toggle.html">← ADR-017: Season-Configurable EVF Toggle</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="019-domestic-only-fencer-seed.html">→ ADR-019: Domestic-Only Fencer Seed</a></nav>
-<footer class="foot">Generated from <code>018-rolling-score.md</code> · source SHA-256 <code>1175ec39d625946ed9488dea6c37190a6ed374ae8da6bd11498e10e076fde4e6</code></footer>
+<footer class="foot">Generated from <code>018-rolling-score.md</code> · source SHA-256 <code>3135248059081bd3b35a301de7abfcca5de87eaa69377bdcb0af92d3c95128d3</code></footer>
 </div></body></html>

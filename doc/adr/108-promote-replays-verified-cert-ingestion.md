@@ -232,7 +232,7 @@ The apply runs over a direct database connection with its own `statement_timeout
 
 ### 8 · A carry stops on results, per weapon and gender (decision P6 A)
 
-The `EVENT_FK_MATCHING` ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender. This holds whatever the current edition's status is. A COMPLETED or SCORED current edition stops every carry from its previous edition, as today.
+The `EVENT_FK_MATCHING` ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender and itself counts (any status `vw_eligible_event` counts: IN_PROGRESS, SCORED or COMPLETED). A COMPLETED or SCORED current edition stops every carry from its previous edition, as today. The stop applies to every linked event, whatever its type (decided 3 October 2026): the link means the new edition replaces the old one ([ADR-018](018-rolling-score.md) §3, §7). Implemented in `supabase/migrations/20261003000018_carry_stop_results.sql`; tests `supabase/tests/104_carry_stop_results.sql`, CARRY.RS.01–11.
 
 This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes the divergence that ADR-018 recorded. There is no double count while an event is IN_PROGRESS, and no empty slot for a weapon fenced on a later day. The view alone cannot see weapons, so the change covers the four FK functions, which read the view together.
 
