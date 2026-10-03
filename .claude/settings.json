@@ -15,5 +15,31 @@
     "firecrawl@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "telegram@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/scripts/session_start.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/scripts/session_start.py\" || true",
+            "timeout": 300,
+            "statusMessage": "SPWS session start: worktree, graph, RAG, cleanup"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR/scripts/session_start.py\" ] && python3 \"$CLAUDE_PROJECT_DIR/scripts/session_start.py\" --end || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }

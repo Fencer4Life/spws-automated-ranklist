@@ -140,6 +140,30 @@ code -n /Users/aleks/coding/SPWSranklist-claude-calendar-docs</code></pre></div>
       </tbody></table></div>
     </section>
 
+    <section id="session-start">
+      <p class="kicker">Every Claude session</p>
+      <h2>A Claude session starts in its own worker automatically</h2>
+      <p>The <code>SessionStart</code> hook in <code>.claude/settings.json</code> runs <code>scripts/session_start.py</code> on startup, <code>/clear</code> and resume. It does not prompt and it never blocks the session.</p>
+      <div class="tablewrap"><table><thead><tr><th>Step</th><th>What happens</th></tr></thead><tbody>
+        <tr><td>Isolate</td><td>A session that starts or <code>/clear</code>s in a shared checkout gets its own worker. Shared checkouts are the primary <code>/Users/aleks/coding/SPWSranklist</code> and the registered integration checkout. The hook calls <code>scripts/start-agent-worktree.sh claude session-&lt;date&gt;-&lt;time&gt;-&lt;id&gt;</code> from the integration checkout. Claude's first action is <code>EnterWorktree</code> with the path the report names. Once the task is clear, the session renames its branch with <code>git branch -m claude/&lt;task&gt;</code>. A resumed session, or one opened inside a worker, stays where it is.</td></tr>
+        <tr><td>Seed</td><td>The new worker receives the four portable Graphify files listed under <a href="#graphify">Give each worker its own Graphify cache</a>. It also gets symlinks to the primary's <code>.venv</code>, <code>frontend/node_modules</code> and <code>tools/docs-search/.env</code>, which holds the documentation index key. The anchored entries in <code>.git/info/exclude</code> keep those symlinks out of <code>git status</code>.</td></tr>
+        <tr><td>Baseline</td><td>The hook fetches <code>origin</code> (bounded to 20 s) and reports commits ahead of and behind <code>origin/main</code>. A clean worker with no commits of its own is fast-forwarded. A checkout that is behind is reported as <strong>STALE</strong>.</td></tr>
+        <tr><td>Clean up</td><td>See below.</td></tr>
+        <tr><td>Graph</td><td>A full-code refresh: every code file is re-extracted, at zero tokens. It uses the protocol's own copy of <code>scripts/graphify_refresh.py</code>. Nodes of files the tree lacks are pruned, and any file still on disk that lost nodes is named in the report.</td></tr>
+        <tr><td>RAG</td><td>The shared <code>spws_docs</code> index is rebuilt only from a checkout that is not behind <code>origin/main</code>, one rebuild at a time. The ingest deletes whatever its tree lacks, so a stale checkout would remove newer documents for every session. A document that exists only as an untracked file in one worktree leaves the index when another checkout rebuilds it. Commit plans that other sessions need to find.</td></tr>
+      </tbody></table></div>
+      <h3>Cleanup removes only what can lose nothing</h3>
+      <p>A worktree is removed when all of these hold:</p>
+      <ul>
+        <li>its branch is <code>claude/*</code>;</li>
+        <li>it has no uncommitted or untracked files;</li>
+        <li>every commit is contained in <code>origin/main</code>;</li>
+        <li>its session ended, as recorded by the <code>SessionEnd</code> hook under the shared Git directory, or it has been idle for 30 days.</li>
+      </ul>
+      <p>Removal is <code>git worktree remove</code> without <code>--force</code>, followed by deleting the local branch. The remote branch stays.</p>
+      <p>Cleanup never touches <code>codex/*</code>, the primary checkout, the integration checkout or the session's own worktree. A dirty or unmerged Claude worktree is listed for a decision instead. A squash-merged branch counts as unmerged, so it is listed rather than removed.</p>
+    </section>
+
     <section id="ownership">
       <p class="kicker">Before prompting either agent</p>
       <h2>Assign tasks with explicit file ownership</h2>
@@ -232,7 +256,7 @@ cp /Users/aleks/coding/SPWSranklist/graphify-out/graph.json graphify-out/
 cp /Users/aleks/coding/SPWSranklist/graphify-out/manifest.json graphify-out/
 cp /Users/aleks/coding/SPWSranklist/graphify-out/.graphify_labels.json graphify-out/
 cp /Users/aleks/coding/SPWSranklist/graphify-out/GRAPH_REPORT.md graphify-out/</code></pre>
-      <p>These are portable baseline files. Do not copy <code>.graphify_root</code>, <code>.graphify_python</code>, logs, cost history or <code>.DS_Store</code>. Each worker refreshes its own cache for its branch; agents must not write to one shared live <code>graphify-out/</code> simultaneously.</p>
+      <p>These are portable baseline files. Do not copy <code>.graphify_root</code>, <code>.graphify_python</code>, logs, cost history or <code>.DS_Store</code>. Each worker refreshes its own cache for its branch; agents must not write to one shared live <code>graphify-out/</code> simultaneously. For a Claude session worker, <code>scripts/session_start.py</code> copies exactly these four files, then runs the full-code refresh.</p>
     </section>
 
     <section id="rules">
