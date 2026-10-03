@@ -1,6 +1,6 @@
 # ADR-077: Event lifecycle, season-skeleton provisioning & CERT→PROD calendar promotion
 
-**Status:** Accepted · **Date:** 2026-06-28
+**Status:** Accepted (amended 2026-07-11, 2026-08-28 and 2026-10-03; the last by ADR-108: results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule) · **Date:** 2026-06-28
 
 **Relates to:** **narrows** ADR-050's supersession of **ADR-025** to its *ingestion mechanism* only
 (the event-status lifecycle + Telegram admin surface live on **here**); **ADR-044** (wizard introduced
@@ -299,3 +299,23 @@ What `CHANGED` was meant to flag — EVF moving a date — becomes a **pill on t
 Tests: `65_prod_mirror_planning_status.sql` (both directions of the boundary), `66_event_status_deprecations.sql` (the retired states are unreachable; an unweaponed EVF event can still be cancelled), `67_event_first_published_date.sql` (the anchor holds the first date across repeated moves). Tests 1.20, 1.23 and 9.86–9.89 in `01_database_foundation.sql` pinned the retired transitions and are rewritten to the surviving spine.
 
 **Operational reference:** [Event status lifecycle](../handbook/reference/event-status-lifecycle.html) — what each status means, what the calendar shows, both automations side by side, the pill, and the troubleshooting path for an event missing from PROD.
+
+## Amendment (2026-10-03) — results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule (ADR-108)
+
+[ADR-108](108-promote-replays-verified-cert-ingestion.md) changes two sections of this ADR.
+
+**§1, the status table:**
+
+- **IN_PROGRESS is no longer transient.** It holds while any scheduled individual listing is not yet final, or while the end date has not passed.
+- **COMPLETED** is no longer "admin-confirmed final; promotable". It is set by one rule on CERT and on PROD: every scheduled individual listing is final (its schedule row says Finished) and committed, **and** today in Warsaw is later than the end date. Organisers sometimes add tournaments the next day, which is why the end date matters.
+- **Who sets it.** Promote sets the status inside its apply transaction, and the daily close (`event-close.yml`) completes an event once its end date has passed.
+- The Telegram `complete` command stays as a manual close and takes an exact code. SCORED is not set by automation.
+- The validator is unchanged. IN_PROGRESS → COMPLETED and COMPLETED → IN_PROGRESS, which a correction needs, are both allowed.
+
+**§5, environment data-flow:**
+
+- **CERT stays the sole allocator of new ids, now for fencers too.** After a one-time alignment, fencer ids are identical on all three environments. A fencer the CERT ingestion creates keeps that id on PROD.
+- **Results are replayed on PROD, not copied.** The "verbatim row copy with explicit ids" applies to season and event skeletons only.
+- **The 2026-06-28 note.** It judged a full re-alignment of legacy ids "not needed for correctness". That stays true for event ids, which are still matched by code. Fencer ids are re-aligned, because they are what a replay compares.
+
+The 2026-08-28 boundary stands: the calendar mirror never writes the results half of the status, and only promote and the daily close do.

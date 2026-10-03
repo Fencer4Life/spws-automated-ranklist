@@ -1,6 +1,6 @@
 # ADR-018: Rolling Score for Active Season
 
-**Status:** Accepted; **amended 2026-06-26** (results-based carry-stop), **amended 2026-08-09** (calendar progress strip retired)
+**Status:** Accepted; **amended 2026-06-26** (results-based carry-stop), **amended 2026-08-09** (calendar progress strip retired), **amended 2026-10-03** (the FK engine stops a carry on results too, ADR-108)
 **Date:** 2026-03-29 (M10)
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (withdraws the calendar rolling-progress strip and retires tests R.23–R.25; the scoring rule is unaffected)
 
@@ -191,3 +191,9 @@ no seed-state assumptions, no production magic-number scores. This removes the r
 treadmill (the tests previously broke on every reingest/season rollover). Carry-stop behaviour
 itself (ADR-018/021, results-based amendment `20260626120000`) is unchanged. See the 2026-06-28
 entry in `doc/archive/legacy-2026-07/development_history.md`.
+
+## Amendment (2026-10-03) — the FK engine now stops a carry on results too
+
+[ADR-108](108-promote-replays-verified-cert-ingestion.md) §8 (decision P6 A) closes the "known boundary divergence" recorded in the 2026-06-26 amendment. The **EVENT_FK_MATCHING** ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender. This holds whatever the current edition's status is. A SCORED or COMPLETED edition still stops every carry from its previous edition.
+
+The change was needed because ADR-108 §7 keeps an event IN_PROGRESS on PROD until its end date has passed. Under the status-based stop, both editions would have counted during that time, and on 3 October 2026, 13 of the 14 dated 2026/27 events on PROD started inside their previous edition's carry-over window. Both engines now share one rule.
