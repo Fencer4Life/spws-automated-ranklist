@@ -515,7 +515,13 @@
           <li>ADR-086 is related, not amended: <code>url_event</code> keeps its fill-blank tier.</li>
         </ul></li>
       <li><b>Investigations, before code</b> (<b>done 3 Oct</b>, results above): FTL&rsquo;s finished-event signal; the inventory of status consumers; the inventory of soft fencer-id references; CERT-only data that tests rely on.</li>
-      <li><b>Identity comparison</b> (<code>python/pipeline/promotion/identity.py</code>): normalise a result set or an input set by surname, first name and birth year, never by id, and diff two of them. Tests <code>PROMO.ID.*</code>.</li>
+      <li><b>Identity comparison</b> (<code>python/pipeline/promotion/identity.py</code>; <b>done 3 Oct</b>): normalise a result set or an input set by surname, first name and birth year, never by id, and diff two of them. Tests <code>PROMO.ID.01–15</code>, written RED first.
+        <ul>
+          <li>Names are folded by the ingestion&rsquo;s own <code>normalize_name</code>, so CERT, PROD and the exact-name step agree on who is the same person.</li>
+          <li>A birth-year difference is two people, never a changed field. Two rows sharing one identity are reported as ambiguous and never collapsed.</li>
+          <li>The column decides what a number is: only <code>num_*</code> columns compare numerically, so a joined order such as "023" keeps its leading zero.</li>
+          <li>Run over the 3 Oct CERT and PROD rosters, it gives 367 distinct identities on each side, none ambiguous. The 10 birth-year differences show as 10 people on each side, and nothing else differs.</li>
+        </ul></li>
       <li><b>Refresh with identical ids</b>:
         <ul>
           <li><code>promotion/refresh.py</code> holds the pairing rule and the dry-run report; <code>fn_align_fencers_to(pairs, prod_roster)</code> does the renumber, copy and check in one transaction; then the registrations and the drain. Tests <code>PROMO.REFRESH.*</code>, plus pgTAP for the transaction: renumbering with colliding ids, every referencing table followed, results-per-person unchanged, any difference rolls back.</li>
