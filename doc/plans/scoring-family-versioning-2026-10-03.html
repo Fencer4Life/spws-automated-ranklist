@@ -1,0 +1,325 @@
+<meta charset="utf-8">
+<title>Scoring family: engine, Points Table and Calculator per season</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Scoring family · engine · Points Table · Calculator · season · plan · 3 October 2026</p>
+  <h1>The engine, the Points Table and the Calculator change together, per season</h1>
+  <p class="dek">You asked whether the three are tied to the season by version, naming or anything else. <b>Partly.</b> One engine code that names its season ties them, and the season lock freezes all three at once. But <b>nothing declares them a group</b>, <b>nothing stops a released engine from being edited in place</b>, and <b>nothing checks at season rollover</b> that the pages know the new season. This plan adds that contract: one manifest, fingerprints of what was released, and checks in preflight, CI and release.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Plan · awaiting your sign-off</span>
+    <span class="pill"><span class="dot"></span>ADR-107 draft in §07</span>
+    <span class="pill warn"><span class="dot"></span>5 decisions, each with a recommendation</span>
+    <span class="pill"><span class="dot"></span>no score changes · no migration</span>
+  </div>
+
+  <nav class="toc" aria-label="Contents" style="margin-top:28px">
+    <strong>Read in this order</strong>
+    <ol>
+      <li><a href="#today">What ties the three today</a></li>
+      <li><a href="#gaps">The four gaps</a></li>
+      <li><a href="#proposal">The proposal: one declared family per engine</a></li>
+      <li><a href="#scenario">Walk-through: the 2027/2028 season</a></li>
+      <li><a href="#decide">Decide these</a></li>
+      <li><a href="#tests">Tests first</a></li>
+      <li><a href="#adr">ADR-107 draft</a></li>
+      <li><a href="#build">Build order, done, documentation gate</a></li>
+    </ol>
+  </nav>
+
+  <hr class="rule">
+
+  <section id="today">
+    <p class="kicker">01 · The answer, with evidence</p>
+    <h2>What ties the three today</h2>
+    <p>Each row was found through the RAG (ADR-097, ADR-102, ADR-104 and the handbook's scoring subsystem) and the graph (<code>fn_score_by_engine</code>, <code>scoring.ts</code>, <code>build-scoring-pages.mjs</code>). The literal was then confirmed in the file.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Tie</th><th>Where</th><th>What it guarantees</th></tr></thead>
+      <tbody>
+        <tr><td><b>The engine code names its season</b></td><td>SQL strategy <code>fn_score_spws_evf_joined_v1_2026_2027</code> (migration <code>20260930000003</code>, L148), reached through the static dispatcher <code>fn_score_by_engine</code>. <code>scoring.ts</code> L37–39: <code>CLASSIC_ENGINE</code>, <code>JOINED_ENGINE = 'SPWS_EVF_JOINED_V1_2026_2027'</code>.</td><td>The database, the module and the pages use one name for one formula.</td></tr>
+        <tr><td><b>One module in both pages</b></td><td><code>build-scoring-pages.mjs</code> L57–69 generates <code>scoring.ts</code> into the calculator source and the annex source, then copies them to <code>frontend/public/</code> and the WordPress copy.</td><td>The Table and the Calculator cannot compute differently. <code>--check</code> is a preflight gate, and <code>assets.test.ts</code> asserts the three-way identity.</td></tr>
+        <tr><td><b>Same numbers as the SQL engine</b></td><td><code>frontend/tests/scoring.test.ts</code>. Its expectations are derived from <code>fn_score_by_engine</code> and the seventeen Part C orders in pgTAP.</td><td>The two implementations, SQL and TypeScript, agree on the tested cases.</td></tr>
+        <tr><td><b>Same parameters</b></td><td><code>fn_public_scoring_params</code> returns one row per tournament type for a season. pgTAP <code>SS26.CALC.05</code> asserts that 2026/2027 reports the joined engine for PPW.</td><td>An admin edit before the lock reaches the scorer and both pages.</td></tr>
+        <tr><td><b>Same freeze</b></td><td>ADR-097: the configuration locks on the season's first scored result. ADR-102 §2 says "the database lock is the only lock".</td><td>Once a season scores, its parameters stop moving for all three.</td></tr>
+        <tr><td><b>Pages refuse a stranger</b></td><td>The calculator at L776–777 throws if the PPW row names another engine, and shows a message instead of numbers.</td><td>A page never silently computes with the wrong engine.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="gaps">
+    <p class="kicker">02 · What is missing</p>
+    <h2>Four gaps between "tied by a name" and "kept and changed as a group"</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">G1</span> Nothing declares the group</p>
+      <p>Which SQL function, which TypeScript function, which golden values, which pages and which seasons belong to an engine is spread across five ADRs and the handbook. No file states it and no check reads it. Adding an engine means remembering every place.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">G2</span> A released engine can be edited in place</p>
+      <p>"Released engines are immutable" is written in ADR-097, ADR-104 and the handbook, but no check enforces it. A later migration could <code>CREATE OR REPLACE fn_score_spws_evf_joined_v1_2026_2027</code> and update <code>scoring.test.ts</code> in the same commit. Every gate would stay green, and a rescore of a locked season would no longer reproduce its stored results.</p>
+      <p>The place-and-medal engine was released on 28 Sep and deleted on 30 Sep (ADR-104). That was legitimate, because nothing had been scored with it. Today nothing tells that case apart from deleting an engine that has.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G3</span> Season rollover is not checked</p>
+      <p>The calculator follows the active season (<code>SEASON_CODE = null</code>). When 2027/2028 becomes active by date (ADR-031) with an engine the pages do not implement, visitors see "silnik … nie jest silnikiem Załącznika nr 1". It fails closed, but the public discovers it first.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">G4</span> The annex's address carries no season</p>
+      <p>The annex source is <code>doc/tools/Tabela-punktacji-SPWS_2026-2027.html</code>, pinned with <code>SEASON_CODE = 'SPWS-2026-2027'</code> (L845), but it is published as <code>tabela-punktacji.html</code>. A 2027/2028 annex would have to overwrite it at the same URL. The rules of a season that is locked, and still counts in carry-over, would disappear from the public.</p>
+    </div>
+  </section>
+
+  <section id="proposal">
+    <p class="kicker">03 · The proposal</p>
+    <h2>One declared scoring family per engine, checked everywhere</h2>
+    <p>A <b>scoring family</b> is one engine code together with everything that must agree with it: its SQL strategy, its TypeScript implementation, its golden values, the pages that compute with it, and the seasons assigned to it. Each family is declared once, and the checks read that declaration.</p>
+
+    <h3>M1 · The manifest: <code>scoring/families.json</code></h3>
+    <pre class="trace">{ "engine": "SPWS_EVF_JOINED_V1_2026_2027",
+  "status": "released",                         draft → released → retired
+  "sql": { "strategy": "fn_score_spws_evf_joined_v1_2026_2027",
+           "fingerprint": "md5 of pg_get_functiondef" },
+  "ts":  { "symbol": "JOINED_ENGINE" },
+  "golden": { "file": "frontend/tests/golden/SPWS_EVF_JOINED_V1_2026_2027.json",
+              "sha256": "…" },
+  "seasons": ["SPWS-2026-2027"],
+  "annex": { "SPWS-2026-2027": "tabela-punktacji-2026-2027.html" } }</pre>
+    <p>The manifest holds no formula and no parameters. Parameters stay in the season configuration, edited in Admin and frozen by the lock, exactly as today.</p>
+
+    <h3>M2 · Released means frozen, mechanically</h3>
+    <ul>
+      <li><b>SQL fingerprint.</b> A pgTAP file generated from the manifest asserts <code>md5(pg_get_functiondef(strategy))</code> for every released family. A one-character edit to a released strategy turns CI red.</li>
+      <li><b>Golden values frozen.</b> <code>scoring.test.ts</code> splits its expectations into one file per engine. The manifest stores each file's hash, so editing a released family's expected values is caught.</li>
+      <li><b>Append-only.</b> A preflight and CI check compares the manifest with <code>origin/main</code>. A released entry may not change; it may only move to <code>retired</code>, and only with an <code>adr</code> reference. A formula change is therefore always a new engine code, as ADR-097 already requires.</li>
+    </ul>
+
+    <h3>M3 · The pages take their engine and season from the manifest</h3>
+    <ul>
+      <li><code>build-scoring-pages.mjs</code> writes each page's <code>ENGINE</code> and <code>SEASON_CODE</code> constants from the manifest instead of hand-written literals. The calculator accepts any released family that <code>scoring.ts</code> implements, not one fixed constant.</li>
+      <li>Each season gets its own annex: <code>tabela-punktacji-2026-2027.html</code>. <code>tabela-punktacji.html</code> stays, as a byte-identical copy of the current season's annex, so every existing link keeps working. ADR-102 §08 forbids moving a published path. The annex of a locked season stays published unchanged.</li>
+    </ul>
+
+    <h3>M4 · Rollover is checked before the public sees it</h3>
+    <ul>
+      <li><b>In CI (pgTAP).</b> Every active row of <code>tbl_scoring_engine</code> has a released family, and every released family has its row. An admin can only select engines from that table, so an admin can never assign an engine the pages lack.</li>
+      <li><b>In CI (pgTAP).</b> Every engine assigned to any season in the seed, as the season default or per tournament type, is a released family listing that season.</li>
+      <li><b>At release and daily (CERT and PROD).</b> A read-only check calls <code>fn_public_scoring_params</code> for the active season and for the next season if it exists. If either season has no family or no annex in the manifest, it sends a Telegram alert. This is the only live part, and it uses the anon key.</li>
+    </ul>
+  </section>
+
+  <section id="scenario">
+    <p class="kicker">04 · Walk-through</p>
+    <h2>The 2027/2028 season, step by step</h2>
+    <ol class="steps">
+      <li><b>June 2027: the board changes the formula.</b> A developer adds <code>fn_score_spws_evf_joined_v2_2027_2028</code> and its registry row. CI fails at once: the registry row has no family (M4). The developer adds the family as <code>draft</code>, together with its TypeScript implementation, golden values derived from pgTAP, and <code>tabela-punktacji-2027-2028.html</code>.</li>
+      <li><b>Release.</b> The family becomes <code>released</code>, and its fingerprint and golden hash are written. From now on it is frozen (M2).</li>
+      <li><b>On CERT, an admin creates 2027/2028</b> and assigns the new engine to PPW and MPW. The daily check finds the family and its annex: no alert. If the admin had chosen an engine without an annex, the alert would arrive the same day, not when the season starts.</li>
+      <li><b>1 September 2027: the season becomes active by date.</b> The calculator follows it and computes with V2. A release switches <code>tabela-punktacji.html</code> to the 2027/2028 annex; the daily check flags a release that has not happened yet. <code>tabela-punktacji-2026-2027.html</code> stays online unchanged.</li>
+      <li><b>Adjacent path: someone "fixes" V1 in place.</b> The edited strategy changes its fingerprint, so the generated pgTAP fails. Changing the fingerprint in the manifest fails the append-only check. The only way forward is a new engine code.</li>
+      <li><b>Adjacent path: an engine released but never used</b>, as place-and-medal was. It moves to <code>retired</code> with its ADR reference. Its entry stays in the manifest as the record of what was released.</li>
+    </ol>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">05 · Decide these</p>
+    <h2>Five decisions, each with my recommendation</h2>
+    <p><b>Accept all as recommended</b> is a valid answer.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Recommendation</th><th>Alternative</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td><td>Where does the declaration live?</td><td><b>A tracked manifest, <code>scoring/families.json</code></b>. The repo holds the TypeScript, the pages and the tests, and the database cannot see them.</td><td>Columns on <code>tbl_scoring_engine</code>. The database could then not check the pages, and the registry stops being metadata only (ADR-097).</td></tr>
+        <tr><td>F2</td><td>How is "released means frozen" enforced?</td><td><b>All three: SQL fingerprint, golden hash, append-only manifest</b>, so each layer is covered.</td><td>Fingerprint only. A golden-value edit would then pass.</td></tr>
+        <tr><td>F3</td><td>The annex address</td><td><b>One file per season, plus <code>tabela-punktacji.html</code> as the current season's copy</b>. Past rules stay public and existing links keep working.</td><td>One URL, overwritten each season. The rules of locked seasons disappear.</td></tr>
+        <tr><td>F4</td><td>Rollover check</td><td><b>CI plus a daily read-only live check with a Telegram alert</b>. Seasons are created on CERT and PROD, which CI never sees.</td><td>CI only. A season created by an admin is not checked until a visitor sees the message.</td></tr>
+        <tr><td>F5</td><td>The calculator copy on the WordPress site</td><td><b>Not in this plan.</b> It belongs to the WordPress brainstorm (rev 2, next), which decides whether the calculator is uploaded there at all.</td><td>Add a live comparison of the WordPress copy here.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">06 · Tests first, RED before GREEN</p>
+    <h2>Plan-test IDs</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td>SF.01</td><td>pytest</td><td>The manifest is well formed. Every family names an SQL strategy, a TypeScript symbol, a golden file and, for each season, an annex.</td></tr>
+        <tr><td>SF.02</td><td>pytest</td><td>Released entries equal those on <code>origin/main</code>. Released → retired needs an <code>adr</code>, and every other change is refused.</td></tr>
+        <tr><td>SF.03</td><td>pgTAP (generated)</td><td>For each released family, <code>md5(pg_get_functiondef(strategy))</code> equals the manifest fingerprint.</td></tr>
+        <tr><td>SF.04</td><td>pgTAP (generated)</td><td>Active <code>tbl_scoring_engine</code> rows and released families match one to one.</td></tr>
+        <tr><td>SF.05</td><td>pgTAP (generated)</td><td>Every engine assigned to a season in the seed, as default or per type, is a released family listing that season.</td></tr>
+        <tr><td>SF.06</td><td>Vitest</td><td><code>scoring.ts</code> implements every released family, so none returns "unknown engine".</td></tr>
+        <tr><td>SF.07</td><td>Vitest</td><td>Each family's golden file passes against <code>scoring.ts</code>, and its SHA-256 equals the manifest.</td></tr>
+        <tr><td>SF.08</td><td>Vitest</td><td>Each generated page's <code>ENGINE</code> and <code>SEASON_CODE</code> match the manifest.</td></tr>
+        <tr><td>SF.09</td><td>Vitest</td><td><code>tabela-punktacji-&lt;season&gt;.html</code> exists for every season in the manifest, and <code>tabela-punktacji.html</code> is byte-identical to the current season's.</td></tr>
+        <tr><td>SF.10</td><td>pytest (live, mocked in CI)</td><td>The live check alerts when the active or next season has no family or no annex, and stays silent otherwise.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">Mutation proof, as for the session-start protocol</p>
+      <p style="margin-bottom:0">Each of these edits must turn a test red: one character changed in the released SQL strategy (SF.03), one golden value changed (SF.07, SF.02), a released manifest field edited (SF.02), a registry row added without a family (SF.04), and a missing per-season annex (SF.09).</p>
+    </div>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">07 · ADR draft · Status: Proposed</p>
+    <h2>ADR-107: A scoring family is declared once and released as a frozen group</h2>
+    <p><b>Context.</b> The scoring engine (SQL), the Points Table (annex) and the Points Calculator compute one formula. ADR-102 gave them one module and one parameter source, and ADR-097 freezes a season's configuration on its first score. Their grouping is implicit: it rests on a shared engine code. Immutability of a released engine is stated, not enforced. Rollover to a new season is not checked, and the annex's published address carries no season.</p>
+    <p><b>Decision.</b></p>
+    <ol>
+      <li>A <em>scoring family</em> is declared in <code>scoring/families.json</code>: one engine code, its SQL strategy and fingerprint, its TypeScript symbol, its golden file and hash, its seasons and each season's annex.</li>
+      <li>A released family is frozen. Generated pgTAP checks the SQL fingerprint, Vitest checks the golden hash, and a preflight and CI check keeps the manifest append-only against <code>origin/main</code>. A family may only be retired, with an ADR reference. A formula change is a new engine code (restating ADR-097).</li>
+      <li>The published pages take their engine and season from the manifest. Each season has its own annex; <code>tabela-punktacji.html</code> stays the current season's copy.</li>
+      <li>Every active engine row has a released family. A daily read-only check on CERT and PROD alerts on Telegram when the active or next season lacks a family or an annex.</li>
+    </ol>
+    <p><b>Alternatives.</b> Registry columns as the declaration; fingerprint only; one overwritten annex URL; CI-only rollover checks. All are in §05, rejected for the reasons given there.</p>
+    <p><b>Consequences.</b> Adding an engine touches one more file, and CI names everything that is missing. No score, parameter or migration changes. One new preflight and CI gate, "scoring families match the manifest", is added to <code>scripts/preflight.sh</code> in the same change (planning rule 5a). One new scheduled check is added to the workflow catalog.</p>
+    <p><b>Amends.</b> ADR-102 (the pages read their engine and season from the manifest; the annex is per season), ADR-092 (the annex address), ADR-097 (immutability becomes a check). <b>Relates to.</b> ADR-104, ADR-031, ADR-085.</p>
+  </section>
+
+  <section id="build">
+    <p class="kicker">08 · Build order, done, documentation</p>
+    <h2>How it gets built, and when it is done</h2>
+    <ol class="steps">
+      <li>On your sign-off, write <code>doc/adr/107-…md</code> and the Appendix C registry row. Add the SF test IDs to the RTM before any code.</li>
+      <li>Write SF.01–SF.10 and run them: RED.</li>
+      <li>The manifest with the two existing families, <code>EVF_CLASSIC_V1_2025_2026</code> and <code>SPWS_EVF_JOINED_V1_2026_2027</code>, both <code>released</code>. The place-and-medal engine is recorded as <code>retired</code> (ADR-104).</li>
+      <li>Golden files split out of <code>scoring.test.ts</code> with no value changed. The pgTAP generator. The page generator reads the manifest. <code>tabela-punktacji-2026-2027.html</code> is added.</li>
+      <li>The live check script plus a scheduled workflow, with its Telegram alert.</li>
+      <li>GREEN, then the mutation proof (§06).</li>
+      <li><b>Done = <code>scripts/preflight.sh</code> exits 0</b>, plus <code>scripts/refresh-graph.sh</code> before the commit. No <code>.sql</code> migration is written. The generated pgTAP file is a test, checked by <code>postgrestools check</code> all the same. Integrated from <code>SPWSranklist-integration</code> and pushed with <code>integration/main:main</code>. After Release: open both annex URLs and the calculator on Pages, then run the live check once against CERT and PROD.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+      <ul style="margin-bottom:0">
+        <li><b>Impact:</b> architecture, product, operations, reference.</li>
+        <li><b>Canonical docs affected:</b> <code>doc/handbook/subsystems/scoring-and-ranking.html</code> (invariants and implementation map), <code>doc/handbook/product/product-surfaces.html</code> (per-season annex), <code>doc/handbook/reference/workflow-catalog.html</code> (the daily check), <code>doc/handbook/operations/environments-and-release.html</code> (the post-release check), <code>doc/handbook/reference/test-and-traceability.html</code> (the generated pgTAP layer).</li>
+        <li><b>ADR impact:</b> new ADR-107; amend ADR-102, ADR-092, ADR-097.</li>
+        <li><b>Operational impact:</b> workflow catalog, Telegram alert text.</li>
+        <li><b>Source-map / last-verified updated:</b> yes.</li>
+        <li><b>Validation:</b> <code>python scripts/check_docs.py --changed-from origin/main</code>.</li>
+        <li><b>Superseded prose archived rather than appended:</b> yes, for the "immutable by rule" sentences that become "checked by SF.02/SF.03".</li>
+      </ul>
+    </div>
+    <p><b>LOCAL parity.</b> Nothing changes on LOCAL except new tests. The live check runs only in the scheduled workflow against CERT and PROD.</p>
+  </section>
+
+  <p class="foot">SPWS · scoring family · plan · 3 October 2026 · facts from the RAG (ADR-092, ADR-097, ADR-102, ADR-103, ADR-104, handbook scoring-and-ranking and product-surfaces) and the graph (fn_score_by_engine, fn_score_spws_evf_joined_v1_2026_2027, fn_public_scoring_params, scoring.ts, build-scoring-pages.mjs), with literals confirmed at the cited lines.</p>
+</div>
