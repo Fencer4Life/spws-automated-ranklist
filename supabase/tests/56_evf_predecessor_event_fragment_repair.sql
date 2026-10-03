@@ -76,18 +76,23 @@ SELECT results_eq(
   $$ VALUES (6,10) $$, '56.10: Stockholm conserves 6 slots and 10 results'
 );
 
-SELECT results_eq(
-  $$ SELECT COUNT(DISTINCT t.id_tournament)::INT,COUNT(r.id_result)::INT
-       FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
-      WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW4ef-2024-2025') $$,
-  $$ VALUES (5,9) $$, '56.11: Guildford conserves 5 slots and 9 results'
+-- 56.11 and 56.12: the fragment repair's output, or the ADR-106 re-staging from
+-- the organiser (3 Oct 2026, doc/plans/evf-2024-2025-events-review-2026-10-02.html).
+-- Drop the first alternative when the seed is refreshed from PROD.
+SELECT ok(
+  (SELECT ROW(COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT)
+     FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
+    WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW4ef-2024-2025'))
+  IN (ROW(5,9), ROW(8,20)),
+  '56.11: Guildford conserves 5 slots and 9 results, or 8 and 20 after the ADR-106 re-staging'
 );
 
-SELECT results_eq(
-  $$ SELECT COUNT(DISTINCT t.id_tournament)::INT,COUNT(r.id_result)::INT
-       FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
-      WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW6efs-2024-2025') $$,
-  $$ VALUES (7,12) $$, '56.12: Terni 2025 conserves 7 slots and 12 results'
+SELECT ok(
+  (SELECT ROW(COUNT(DISTINCT t.id_tournament)::INT, COUNT(r.id_result)::INT)
+     FROM tbl_tournament t LEFT JOIN tbl_result r ON r.id_tournament=t.id_tournament
+    WHERE t.id_event=(SELECT id_event FROM tbl_event WHERE txt_code='PEW6efs-2024-2025'))
+  IN (ROW(7,12), ROW(7,15)),
+  '56.12: Terni 2025 conserves 7 slots and 12 results, or 7 and 15 after the ADR-106 re-staging'
 );
 
 -- Two known states (2 Oct 2026): the fragment repair's output, and the ADR-105
@@ -193,8 +198,8 @@ SELECT ok(
   (SELECT COUNT(*)::INT FROM tbl_result r JOIN tbl_tournament t ON t.id_tournament=r.id_tournament
     JOIN tbl_event e ON e.id_event=t.id_event WHERE e.txt_code IN (
       'PEW5efs-2023-2024','PEW8efs-2023-2024','PEW9ef-2023-2024',
-      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')) IN (157, 144, 152),
-  '56.26: all 157 reviewed predecessor results are conserved, 144 after the ADR-105 re-ingest of Jabłonna, or 152 after its ADR-106 re-staging'
+      'PEW4ef-2024-2025','PEW6efs-2024-2025','PEW7es-2024-2025')) IN (157, 144, 152, 166),
+  '56.26: all 157 reviewed predecessor results are conserved, 144 after the ADR-105 re-ingest of Jabłonna, 152 after its ADR-106 re-staging, or 166 after Guildford and Terni 2025 follow'
 );
 
 SELECT * FROM finish();

@@ -1,0 +1,33 @@
+# PEW2efs-2024-2025 — decisions of 2026-10-03 (doc/plans/evf-2024-2025-events-review-2026-10-02.html).
+# Fencers are named, not numbered: ids differ between LOCAL, CERT and PROD (P3.OV19).
+# PEW2efs-2024-2025 P1: A — KORONA-TRZEBSKI Przemysåaw → KORONA Przemysław 1976
+# PEW2efs-2024-2025 P2: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
+# PEW2efs-2024-2025 P3: B — KARATHANASIS Athanasios
+# PEW2efs-2024-2025 R1: A — KARMAN Iren → KARMAN Irene 1970
+# PEW2efs-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976
+identity:
+- scraped_name: KORONA-TRZEBSKI Przemysåaw
+  fencer:
+    surname: KORONA
+    first_name: Przemysław
+    birth_year: 1976
+- scraped_name: KORONA-TRZEBSKI Przemyslaw
+  fencer:
+    surname: KORONA
+    first_name: Przemysław
+    birth_year: 1976
+- scraped_name: KARMAN Iren
+  fencer:
+    surname: KARMAN
+    first_name: Irene
+    birth_year: 1970
+- scraped_name: LEAHEY John
+  fencer:
+    surname: LEAHEY
+    first_name: John
+    birth_year: 1976
+match_method:
+- scraped_name: KARATHANASIS Athanasios
+  force_method: EXCLUDED
+  note: 'PEW2efs-2024-2025 P3: B, not this candidate and not on our roster (ADR-106
+    §1)'

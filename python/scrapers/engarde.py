@@ -66,15 +66,26 @@ def parse_engarde_category(slug: str, titre: str) -> list[str]:
     - Slug "em-3-4" → ["V3", "V4"]  (combined)
     - Slug "shv2" → ["V2"]
     - Title "EPEE FEMALE - 2" → ["V2"]
+    - Title "Foil Men Cat 3+4" (slug "fmv3") → ["V3", "V4"]  (combined; title outranks slug)
     """
     # 1. Try V-notation from title: "V1", "V2", "V1-V2", etc.
     v_from_title = re.findall(r"V([0-4])", titre)
     if v_from_title:
         return [f"V{d}" for d in v_from_title]
 
+    # 1b. Two categories in the title outrank the slug's one (ENG.EVT.06):
+    # "Foil Men Cat 3+4" under slug "fmv3", "EPEE FEMALE 3 -4" under "ef_3-4".
+    pair = re.search(r"(?<![\d.])([0-4])\s*[+/&-]\s*([0-4])(?![\d.])", titre)
+    if pair:
+        return [f"V{pair.group(1)}", f"V{pair.group(2)}"]
+    # "Cat 3" in the title.
+    cat = re.search(r"\bcat\.?\s*([0-4])(?!\d)", titre, re.IGNORECASE)
+    if cat:
+        return [f"V{cat.group(1)}"]
+
     # 2. Try slug patterns
-    # "ef-3-4" or "em-1-2" — combined via dash-digit
-    slug_combined = re.findall(r"-([0-4])(?!\d)", slug)
+    # "ef-3-4", "em-1-2" or "ef_3-4" — combined via dash- or underscore-digit
+    slug_combined = re.findall(r"[-_]([0-4])(?!\d)", slug)
     if len(slug_combined) >= 2:
         return [f"V{d}" for d in slug_combined]
     if len(slug_combined) == 1:

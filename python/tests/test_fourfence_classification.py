@@ -80,6 +80,23 @@ def test_FOURFENCE_BRONZE_01_the_second_bronze_is_third_and_in_N():
     assert sorted(p for p, _ in epee.values())[:5] == [1, 2, 3, 3, 5]
 
 
+def test_FOURFENCE_BRONZE_02_a_tableau_without_clickable_names_still_names_the_bronze():
+    """EVF Circuit Terni 2025, V1 men's foil: GINZERY Tomas lost his
+    semi-final and is listed with no place. Terni's last-four page prints each
+    name as cell text, with no clickable span; he is still 3rd, beside
+    BALESTRIERI Ugo, and in N (14, as EVF has it)."""
+    from python.scrapers.fourfence import parse_html, semifinal_losers
+
+    tab4 = _page("terni_fm6_tab4.html")
+    assert {name for _seed, name in semifinal_losers(tab4)} == {"GINZERY", "BALESTRIERI"}
+    foil = parse_html(_page("terni_fm6_clafinale.html"), tab4_html=tab4)
+    rows = _by_name(foil)
+    assert rows["GINZERY Tomas"][0] == 3
+    assert rows["BALESTRIERI Ugo"][0] == 3
+    assert foil.raw_pool_size == 14
+    assert len(foil.results) == 14
+
+
 def test_FOURFENCE_CLOSE_01_a_fencer_who_left_is_not_in_N_and_places_close_up():
     """V2 men's foil lists 23 fencers: 21 placed, the second bronze, and
     MULLER Ferenc, who left during the direct elimination (number 21 skipped).

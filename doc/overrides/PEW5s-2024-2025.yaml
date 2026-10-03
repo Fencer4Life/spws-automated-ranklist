@@ -1,0 +1,9 @@
+# PEW5s-2024-2025 — decisions of 2026-10-03 (doc/plans/evf-2024-2025-events-review-2026-10-02.html).
+# Fencers are named, not numbered: ids differ between LOCAL, CERT and PROD (P3.OV19).
+# PEW5s-2024-2025 R1: A — GINZERY Thomas → GINZERY Tomas 1984
+identity:
+- scraped_name: GINZERY Thomas
+  fencer:
+    surname: GINZERY
+    first_name: Tomas
+    birth_year: 1984

@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EVF 2024/25 Events Review</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">LOCAL · ADR-105 §5 · ADR-106 · per-event sign-off</p>
+  <h1>Six 2024/25 EVF circuit events, staged from their organisers</h1>
+  <p class="dek">Madrid 2024, Guildford 2025, Fâches 2025, Terni 2025, Stockholm 2025 and Jabłonna 2025’s foil, each staged on LOCAL under ADR-106 from its organiser’s results, after the record corrections you signed off (N A, W B, J B). All six are signed off and committed on LOCAL (status below). Budapest 2024 is not here: its source was not found. For each event: what the rule adds, what it removes and why, place or N changes, and the PENDING rows with a recommendation each.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>6 of 6 events staged</span>
+    <span class="pill"><span class="dot"></span>8 PENDING rows</span>
+    <span class="pill"><span class="dot"></span>84 of 93 stored rows equal EVF’s place and N; the 9 others explained</span>
+    <span class="pill warn"><span class="dot"></span>3 committed on LOCAL · 3 waiting</span>
+  </div>
+  <hr class="rule">
+  <section id="status"><p class="kicker">Status · 3 October</p><h2>All six signed off and committed on LOCAL</h2>
+    <div class="note good"><p class="lede"><span class="tick">6</span> Committed on LOCAL, every row as recommended</p>
+    <ul>
+      <li>Madrid 2024: 31 results · Guildford 2025: 20 · Terni 2025: 15 · Fâches 2025: 5 · Stockholm 2025: 13 · Jabłonna 2025’s foil: 22. Each stored result equals its draft; every tournament is typed PEW (TT.CODE.06 0).</li>
+      <li><b>L A</b> (your “accept all”, 3 Oct): LEAHEY John is linked by an identity entry in each event’s override file and stored in V2, as printed: Madrid 21st, Guildford 19th, Terni 27th, and Stockholm 6th. Stockholm’s row (R1 below, recommendation A) surfaced after Stockholm was first committed; it was re-committed with him, the other twelve rows unchanged.</li>
+      <li><b>Terni</b> includes GINZERY Tomas (V1 men’s foil) and CHIAROMONTE Francesco (V2 men’s sabre), both 3rd: 4fence prints the second bronze without a place, and Terni’s last-four tableau prints names as plain text, which our reader now reads (FOURFENCE.BRONZE.02; Napoli’s 30 brackets read exactly as before).</li>
+      <li>LOCAL after the six: 218 season nationalities, 45 not Polish, 0 conflicts.</li>
+    </ul></div>
+    <div class="note"><p class="lede">Next</p>
+    <p>Release (scripts/preflight.sh exit 0 first), then CERT and PROD as the signed-off plan sets out: the record corrections and source links by scoped updates, then each event through the runner, one at a time, checked against LOCAL. LEAHEY’s roster birth year (1976; EVF has 1969) stays a separate master-data correction, on your go; it would also move his V1 result at the 2023/24 European Championships.</p></div>
+</section>
+  <section id="decide"><p class="kicker">Decide this first</p><h2>What I need from you</h2>
+    <p>Sign off each event by name. Each P row (PENDING, printed POL) and each R row (rejected, but the surname is an SPWS starter's), listed under its event, is either <b>A</b> linked to the candidate (an identity entry in the event's override file, the fencer named) or <b>B</b> EXCLUDED. The recommendation is in the row and applies unless you say otherwise.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> How to answer</p>
+      <p><b>Shortest:</b> “accept all”: the six events signed off, every row as recommended.</p>
+      <p>Each signed-off event is then re-staged with its override file where it has one, checked (no PENDING left, the decided rows as chosen, nothing else changed) and committed on LOCAL; then released and run on CERT and PROD, one at a time, machine-checked against LOCAL.</p>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">✓</span> Checked against EVF’s published results</p>
+      <p>Of the 93 rows the six events store (drafts for the three held, committed rows for the three done; rechecked 3 Oct with Terni’s two added results), 84 have EVF’s row of the same weapon, gender, category, place and surname, with the same N: all of Guildford, Fâches, Stockholm and Jabłonna’s foil. The 9 others are in Madrid 2024 (N one higher than EVF’s in two foil brackets; the source places a fencer EVF leaves out) and Terni 2025 (EVF keeps fencers the classification leaves unplaced, so its N is higher and two places sit one lower). Both follow your N rule; the event notes give each case.</p>
+    </div>
+    <p>Rows <b>added</b> are roster fencers with a PPW or MPW result who entered the event for any federation. Rows <b>removed</b> are stored today but are not an exact identity of an SPWS starter; the reason is given per row.</p>
+  </section>
+  <section id="summary"><p class="kicker">All events</p><h2>Summary</h2>
+  <div class="tablewrap"><table><thead><tr><th>Event</th><th>Stored now</th><th>Under the rule</th><th>Added</th><th>Removed</th><th>Changed</th><th>PENDING</th><th>Rejected</th><th>Flags</th></tr></thead><tbody><tr><td><a href="#PEW2efs-2024-2025">PEW2efs-2024-2025</a> EVF Circuit – Madrid (ESP)</td><td>21</td><td>27</td><td>8</td><td>2</td><td>3</td><td>3</td><td>324</td><td></td></tr><tr><td><a href="#PEW4ef-2024-2025">PEW4ef-2024-2025</a> EVF Circuit – Guildford (GBR)</td><td>9</td><td>16</td><td>9</td><td>2</td><td>7</td><td>2</td><td>266</td><td></td></tr><tr><td><a href="#PEW5s-2024-2025">PEW5s-2024-2025</a> EVF Circuit – Fâches-Thumesnil (FRA)</td><td>4</td><td>5</td><td>1</td><td>0</td><td>4</td><td>0</td><td>252</td><td></td></tr><tr><td><a href="#PEW6efs-2024-2025">PEW6efs-2024-2025</a> EVF Circuit – Terni (ITA)</td><td>12</td><td>11</td><td>2</td><td>3</td><td>9</td><td>3</td><td>580</td><td></td></tr><tr><td><a href="#PEW13e-2024-2025">PEW13e-2024-2025</a> EVF Circuit – Stockholm (SWE)</td><td>4</td><td>12</td><td>8</td><td>0</td><td>0</td><td>0</td><td>156</td><td></td></tr><tr><td><a href="#PEW8f-2024-2025">PEW8f-2024-2025</a> European Veterans Circuit – Jabłonna (POL)</td><td>20</td><td>22</td><td>2</td><td>0</td><td>20</td><td>0</td><td>54</td><td></td></tr><tr><td><b>Total, events staged</b></td><td><b>70</b></td><td><b>93</b></td><td><b>30</b></td><td><b>7</b></td><td><b>43</b></td><td><b>8</b></td><td><b>1632</b></td><td></td></tr></tbody></table></div>
+  </section>
+  <section id="conflicts"><p class="kicker">Nationality per season</p><h2>Two federations in one season</h2><p>None: no fencer entered for two federations within one season in these events.</p></section>
+  <section id="PEW2efs-2024-2025"><p class="kicker">2024-11-16 · Madrid</p>
+<h2>PEW2efs-2024-2025 — EVF Circuit – Madrid (ESP)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>cc403076-0948-4441-a5c1-05105b181ec6</code></p>
+<p>Stored now <b>21</b> · under the rule <b>27</b> · added <b>8</b> · removed <b>2</b> · place or N changed <b>3</b> · PENDING <b>3</b> · rejected <b>324</b></p>
+<div class="note accent"><p>Staged from the organiser, Engarde (aeve_esgrima/evf_madrid_2024). Six combined finals (V1–V2 or V3–V4) are skipped: a bracket without one category is not stored (ADR-105). In V1 and V2 men&#x27;s foil our N is one more than EVF&#x27;s (14 and 23 against 13 and 22): the source classification places one fencer EVF&#x27;s list leaves out; the places agree.</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>8 of 31</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 14</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V2 Epee F</td><td>9 of 30</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Epee F</td><td>16 of 30</td><td>PRAHA-TSAREHRADSKA Nadiia</td><td>UKR</td><td>PRAHA-TSAREHRADSKA Nadiia (1970, #201)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Sabre M</td><td>3 of 17</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+<tr><td>V3 Epee M</td><td>31 of 32</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V4 Epee M</td><td>5 of 9</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+<tr><td>V4 Foil M</td><td>2 of 5</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>7 of 31</td><td></td><td>KORONA Przemysław (1976, #56)</td><td>42.23</td><td>PENDING now (below)</td></tr>
+<tr><td>V1 Foil M</td><td>10 of 13</td><td></td><td>KORONA Przemysław (1976, #56)</td><td>6.01</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V1 Foil M</td><td>PRZYSTAJKO Daniel</td><td>3 of 13</td><td>3 of 14</td></tr>
+<tr><td>V2 Foil M</td><td>KOŃCZYŁO Tomasz</td><td>5 of 22</td><td>5 of 23</td></tr>
+<tr><td>V2 Foil M</td><td>BAZAK Jacek</td><td>19 of 22</td><td>19 of 23</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW2efs-2024-2025 P1</b></td><td>V1 Epee M</td><td>7 of 31</td><td>KORONA-TRZEBSKI Przemysåaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname; the organiser&#x27;s page prints ł as å</td></tr>
+<tr><td><b>PEW2efs-2024-2025 P2</b></td><td>V1 Foil M</td><td>10 of 14</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+<tr><td><b>PEW2efs-2024-2025 P3</b></td><td>V3 Epee M</td><td>32 of 32</td><td>KARATHANASIS Athanasios · POL</td><td>HAJDAS Martyna (1990, #354)</td><td>6 (MPW-2023-2024, MPW-2024-2025…)</td><td>B EXCLUDED: the candidate is someone else and this fencer is not on our roster; an international source never creates a fencer</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW2efs-2024-2025 R1</b></td><td>V2 Epee F</td><td>17</td><td>KARMAN Iren · HUN</td><td>KARMAN Irene (1970, #117)</td><td>2 (GP8-2023-2024, PPW1-2025-2026)</td><td>A link: Irene and Iren are one name in two forms</td></tr>
+<tr><td><b>PEW2efs-2024-2025 R2</b></td><td>V2 Epee M</td><td>21</td><td>LEAHEY John · GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td><td>A link: the exact name of an SPWS starter; only the category fails. Our roster&#x27;s birth year, 1976, puts him in V1 for 2024/25; EVF&#x27;s date of birth, 1969, puts him in V2, where he fenced. The roster&#x27;s year looks wrong: correcting it is a separate master-data change, on your go</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW2efs-2024-2025”; its rows take the recommendation unless you say otherwise.</p></section><section id="PEW4ef-2024-2025"><p class="kicker">2025-01-04 · Guildford</p>
+<h2>PEW4ef-2024-2025 — EVF Circuit – Guildford (GBR)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>77c3abb8-50e6-41dd-acbf-9aaaf0f7eb51</code></p>
+<p>Stored now <b>9</b> · under the rule <b>16</b> · added <b>9</b> · removed <b>2</b> · place or N changed <b>7</b> · PENDING <b>2</b> · rejected <b>266</b></p>
+<div class="note accent"><p>Staged from the organiser, the FTL schedule of the BVF 6 Weapon International 2025, named EVF Circuit Guildford by your confirmation (N A). Combined pools (women&#x27;s foil 1–2 and 3–4, men&#x27;s foil 3–4) and a women&#x27;s tableau listed for all categories are refused; no SPWS starter fenced in them. The sabre brackets are outside the event&#x27;s weapons and no SPWS starter fenced sabre.</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>20 of 20</td><td>MURRAY Claire</td><td>IRL</td><td>MURRAY Claire (1985, #55)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V1 Epee M</td><td>6 of 22</td><td>BOBUSIA Dariusz</td><td>POL</td><td>BOBUSIA Dariusz (1984, #322)</td><td>1 (MPW-2025-2026)</td></tr>
+<tr><td>V1 Epee M</td><td>22 of 22</td><td>KONCZYNSKI Adam</td><td>IRL</td><td>KOŃCZYŃSKI Adam (1984, #63)</td><td>2 (MPW-2023-2024, PPW1-2024-2025)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 17</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V3 Epee F</td><td>20 of 21</td><td>MCGINNITY Marie</td><td>IRL</td><td>MCGINNITY Marie (1960, #364)</td><td>1 (PPW1-2024-2025)</td></tr>
+<tr><td>V3 Epee M</td><td>14 of 55</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>48 of 55</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+<tr><td>V4 Epee M</td><td>10 of 21</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+<tr><td>V4 Foil M</td><td>5 of 9</td><td>ZYLKA Henryk</td><td>GER</td><td>ZYLKA Henryk (1955, #120)</td><td>1 (PPW1-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>1 of 3</td><td>139</td><td>KORONA Przemysław (1976, #56)</td><td>82.98</td><td>PENDING now (below)</td></tr>
+<tr><td>V1 Foil M</td><td>6 of 17</td><td></td><td>KORONA Przemysław (1976, #56)</td><td>39.01</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>KAMIŃSKA Gabriela</td><td>1 of 1</td><td>12 of 20</td></tr>
+<tr><td>V1 Epee M</td><td>BOBUSIA Jarosław</td><td>1 of 3</td><td>3 of 22</td></tr>
+<tr><td>V1 Epee M</td><td>KULKA Dawid</td><td>2 of 3</td><td>14 of 22</td></tr>
+<tr><td>V2 Epee M</td><td>ATANASSOW Aleksander</td><td>1 of 3</td><td>1 of 53</td></tr>
+<tr><td>V2 Epee M</td><td>JASZCZAK Piotr</td><td>2 of 3</td><td>22 of 53</td></tr>
+<tr><td>V2 Epee M</td><td>PARDUS Borys</td><td>3 of 3</td><td>39 of 53</td></tr>
+<tr><td>V3 Epee M</td><td>KRZEMIŃSKI Mariusz</td><td>1 of 1</td><td>5 of 55</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW4ef-2024-2025 P1</b></td><td>V1 Epee M</td><td>3 of 22</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+<tr><td><b>PEW4ef-2024-2025 P2</b></td><td>V1 Foil M</td><td>6 of 17</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW4ef-2024-2025 R1</b></td><td>V1 Epee M</td><td>9</td><td>KAZIK Tomas · SVK</td><td>KAZIK Martin (1984, #176)</td><td>1 (GP3-2023-2024)</td><td>B leave rejected: another person. Separately, our “KAZIK Martin” record looks corrupt (gender F, one men&#x27;s épée result stored as “122”)</td></tr>
+<tr><td><b>PEW4ef-2024-2025 R2</b></td><td>V2 Epee M</td><td>19</td><td>LEAHEY John · GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td><td>A link: the exact name of an SPWS starter; only the category fails. Our roster&#x27;s birth year, 1976, puts him in V1 for 2024/25; EVF&#x27;s date of birth, 1969, puts him in V2, where he fenced. The roster&#x27;s year looks wrong: correcting it is a separate master-data change, on your go</td></tr>
+<tr><td><b>PEW4ef-2024-2025 R3</b></td><td>V4 Epee M</td><td>21</td><td>LYNCH Patrick · IRL</td><td>LYNCH Pat (1930, #284)</td><td>1 (PPW1-2024-2025)</td><td>A link: Pat and Patrick are one name in two forms</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW4ef-2024-2025”; its rows take the recommendation unless you say otherwise.</p></section><section id="PEW5s-2024-2025"><p class="kicker">2025-01-18 · Faches-Thumesnil</p>
+<h2>PEW5s-2024-2025 — EVF Circuit – Fâches-Thumesnil (FRA)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>fc88a6ab-3006-4017-a209-d7ea97fb3f9d</code></p>
+<p>Stored now <b>4</b> · under the rule <b>5</b> · added <b>1</b> · removed <b>0</b> · place or N changed <b>4</b> · PENDING <b>0</b> · rejected <b>252</b></p>
+<div class="note accent"><p>Staged from the organiser, Engarde (faches2025). Foil is now one of the event&#x27;s weapons (W B): one SPWS starter fenced foil.</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Foil M</td><td>14 of 27</td><td>GINZERY Thomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V2 Sabre M</td><td>ZAWROTNIAK Przemysław</td><td>1 of 4</td><td>5 of 30</td></tr>
+<tr><td>V2 Sabre M</td><td>NOWICKI Robert</td><td>2 of 4</td><td>10 of 30</td></tr>
+<tr><td>V2 Sabre M</td><td>WIERZBICKI Jacek</td><td>3 of 4</td><td>18 of 30</td></tr>
+<tr><td>V2 Sabre M</td><td>MAZIK Aleksander</td><td>4 of 4</td><td>19 of 30</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW5s-2024-2025”.</p></section><section id="PEW6efs-2024-2025"><p class="kicker">2025-02-01 · Terni</p>
+<h2>PEW6efs-2024-2025 — EVF Circuit – Terni (ITA)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>26cc40a9-f92e-461a-a7e0-5370862a6362</code></p>
+<p>Stored now <b>12</b> · under the rule <b>11</b> · added <b>2</b> · removed <b>3</b> · place or N changed <b>9</b> · PENDING <b>3</b> · rejected <b>580</b></p>
+<div class="note accent"><p>Staged from the organiser, 4fence: round 4 of Italy&#x27;s national masters circuit, run with the EVF stop. EVF&#x27;s N is one or two higher in three brackets and places 6–7 of V1 men&#x27;s épée sit one lower at EVF: EVF keeps fencers the classification leaves unplaced; they are not in N and the places below close up (your N rule).</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Foil M</td><td>3 of 14</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V2 Sabre M</td><td>3 of 24</td><td>CHIAROMONTE Francesco</td><td>ITA</td><td>CHIAROMONTE Francesco (1971, #187)</td><td>1 (PPW4-2025-2026)</td></tr>
+</tbody></table></div>
+<h3>Removed — stored now, not stored under the rule</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Stored name</th><th>Fencer</th><th>Points now</th><th>Why</th></tr></thead><tbody>
+<tr><td>V1 Epee F</td><td>5 of 26</td><td></td><td>KAMIŃSKA Gabriela (1979, #81)</td><td>45.79</td><td>PENDING now (below)</td></tr>
+<tr><td>V1 Epee M</td><td>2 of 50</td><td></td><td>KORONA Przemysław (1976, #56)</td><td>113.42</td><td>PENDING now (below)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 1</td><td>139</td><td>KORONA Przemysław (1976, #56)</td><td>59.00</td><td>PENDING now (below)</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>GROMADA Roland</td><td>7 of 50</td><td>6 of 48</td></tr>
+<tr><td>V1 Epee M</td><td>GRIPAS Artiom</td><td>8 of 50</td><td>7 of 48</td></tr>
+<tr><td>V2 Epee M</td><td>ATANASSOW Aleksander</td><td>2 of 64</td><td>2 of 62</td></tr>
+<tr><td>V2 Epee M</td><td>PARDUS Borys</td><td>31 of 64</td><td>31 of 62</td></tr>
+<tr><td>V2 Sabre M</td><td>NOWICKI Robert</td><td>1 of 3</td><td>8 of 24</td></tr>
+<tr><td>V2 Sabre M</td><td>ZAWROTNIAK Przemysław</td><td>2 of 3</td><td>9 of 24</td></tr>
+<tr><td>V2 Sabre M</td><td>MAZIK Aleksander</td><td>3 of 3</td><td>12 of 24</td></tr>
+<tr><td>V3 Epee M</td><td>KRZEMIŃSKI Mariusz</td><td>6 of 71</td><td>6 of 70</td></tr>
+<tr><td>V3 Sabre M</td><td>ZABŁOCKI Michał</td><td>1 of 1</td><td>9 of 17</td></tr>
+</tbody></table></div>
+<h3>PENDING — your decision per row</h3><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>Candidate</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW6efs-2024-2025 P1</b></td><td>V1 Epee F</td><td>5 of 26</td><td>KAMINSKA Grabriela · POL</td><td>KAMIŃSKA Gabriela (1979, #81)</td><td>16 (GP1-2023-2024, GP3-2023-2024…)</td><td>A link: KAMIŃSKA Gabriela, an SPWS starter; the organiser&#x27;s page misprints her first name as Grabriela</td></tr>
+<tr><td><b>PEW6efs-2024-2025 P2</b></td><td>V1 Epee M</td><td>2 of 48</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+<tr><td><b>PEW6efs-2024-2025 P3</b></td><td>V1 Foil M</td><td>8 of 14</td><td>KORONA-TRZEBSKI Przemyslaw · POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td><td>A link: KORONA Przemysław, an SPWS starter, entered under his double surname</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW6efs-2024-2025 R1</b></td><td>V1 Epee M</td><td>17</td><td>KAZIK Tomas · SVK</td><td>KAZIK Martin (1984, #176)</td><td>1 (GP3-2023-2024)</td><td>B leave rejected: another person. Separately, our “KAZIK Martin” record looks corrupt (gender F, one men&#x27;s épée result stored as “122”)</td></tr>
+<tr><td><b>PEW6efs-2024-2025 R2</b></td><td>V2 Epee M</td><td>27</td><td>LEAHEY John · GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td><td>A link: the exact name of an SPWS starter; only the category fails. Our roster&#x27;s birth year, 1976, puts him in V1 for 2024/25; EVF&#x27;s date of birth, 1969, puts him in V2, where he fenced. The roster&#x27;s year looks wrong: correcting it is a separate master-data change, on your go</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW6efs-2024-2025”; its rows take the recommendation unless you say otherwise.</p></section><section id="PEW13e-2024-2025"><p class="kicker">2025-03-15 · Stockholm</p>
+<h2>PEW13e-2024-2025 — EVF Circuit – Stockholm (SWE)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>8257dd09-dcf4-48bd-988f-d54dbaed86ef</code></p>
+<p>Stored now <b>4</b> · under the rule <b>12</b> · added <b>8</b> · removed <b>0</b> · place or N changed <b>0</b> · PENDING <b>0</b> · rejected <b>156</b></p>
+<div class="note accent"><p>Staged from the organiser, Engarde (sthlm/sivo2025, Stockholm International Veteran Open 2025). Foil is now one of the event&#x27;s weapons (W B). The men&#x27;s foil final for categories 3 and 4 is combined and skipped.</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Epee M</td><td>3 of 20</td><td>KORONA Radoslaw</td><td>NED</td><td>KORONA Radosław (1981, #362)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V1 Foil M</td><td>1 of 5</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>3 of 5</td><td>KORONA-TRZEBSKI Przemyslaw</td><td>POL</td><td>KORONA Przemysław (1976, #56)</td><td>19 (GP1-2023-2024, GP2-2023-2024…)</td></tr>
+<tr><td>V2 Epee F</td><td>13 of 24</td><td>KUZMICHOVA Svitlana</td><td>UKR</td><td>KUZMICHOVA Svitlana (1971, #244)</td><td>1 (PPW3-2025-2026)</td></tr>
+<tr><td>V2 Foil M</td><td>1 of 7</td><td>BAZAK Jacek</td><td>POL</td><td>BAZAK Jacek (1974, #46)</td><td>14 (GP1-2023-2024, GP2-2023-2024…)</td></tr>
+<tr><td>V3 Epee M</td><td>20 of 36</td><td>SOMERS Jan</td><td>NED</td><td>SOMERS Jan (1964, #209)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>21 of 36</td><td>ARONOWITSCH Niklas</td><td>SWE</td><td>ARONOWITSCH Niklas (1964, #44)</td><td>1 (GP3-2023-2024)</td></tr>
+<tr><td>V3 Epee M</td><td>35 of 36</td><td>QUEVRAIN Michel</td><td>BEL</td><td>QUEVRAIN Michel (1964, #355)</td><td>1 (GP8-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Rejected, but the surname is an SPWS starter's — your decision per row</h3><p>Exact identity failed (another first name, usually a short or long form), and the source did not print POL. <b>A</b> link: an identity entry in the event's override file. <b>B</b> leave rejected.</p><div class="tablewrap"><table><thead><tr><th>Row</th><th>Bracket</th><th>Place</th><th>Source name</th><th>SPWS starter</th><th>SPWS results</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><b>PEW13e-2024-2025 R1</b></td><td>V2 Epee M</td><td>6</td><td>LEAHEY John · GBR</td><td>LEAHEY John (1976, #208)</td><td>1 (PPW3-2025-2026)</td><td>A link: the exact name of an SPWS starter; only the category fails. Our roster&#x27;s birth year, 1976, puts him in V1 for 2024/25; EVF&#x27;s date of birth, 1969, puts him in V2, where he fenced. The roster&#x27;s year looks wrong: correcting it is a separate master-data change, on your go</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW13e-2024-2025”; its rows take the recommendation unless you say otherwise.</p></section><section id="PEW8f-2024-2025"><p class="kicker">2025-03-29 · Jabłonna</p>
+<h2>PEW8f-2024-2025 — European Veterans Circuit – Jabłonna (POL)</h2>
+<p class="mono" style="font-size:15px;color:var(--faint)">staged run <code>40cef887-a1bb-4025-a92e-70c6ef0080ef</code></p>
+<p>Stored now <b>20</b> · under the rule <b>22</b> · added <b>2</b> · removed <b>0</b> · place or N changed <b>20</b> · PENDING <b>0</b> · rejected <b>54</b></p>
+<div class="note accent"><p>Staged from Jabłonna 2025&#x27;s FTL schedule, foil brackets only (J B): the épée and sabre brackets are PEW7es-2024-2025&#x27;s. Dates corrected to 29–30 March 2025.</p></div>
+<h3>Added — stored by identity, not stored now</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Place</th><th>Source name</th><th>Entered for</th><th>Fencer</th><th>SPWS results</th></tr></thead><tbody>
+<tr><td>V1 Foil M</td><td>2 of 16</td><td>GINZERY Tomas</td><td>SVK</td><td>GINZERY Tomas (1984, #19)</td><td>1 (GP4-2023-2024)</td></tr>
+<tr><td>V1 Foil M</td><td>15 of 16</td><td>SOKOL Vratislav</td><td>CZE</td><td>SOKOL Vratislav (1976, #66)</td><td>1 (GP3-2023-2024)</td></tr>
+</tbody></table></div>
+<h3>Place or N changed</h3><div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Fencer</th><th>Now</th><th>Under the rule</th></tr></thead><tbody>
+<tr><td>V1 Foil F</td><td>LIPKOWSKA Dominika</td><td>3 of 4</td><td>3 of 8</td></tr>
+<tr><td>V1 Foil F</td><td>SAMECKA-NACZYŃSKA Martyna</td><td>1 of 4</td><td>8 of 8</td></tr>
+<tr><td>V1 Foil M</td><td>PRZYSTAJKO Daniel</td><td>1 of 4</td><td>1 of 16</td></tr>
+<tr><td>V1 Foil M</td><td>SERAFIN Błażej</td><td>2 of 4</td><td>6 of 16</td></tr>
+<tr><td>V1 Foil M</td><td>KORONA Przemysław</td><td>3 of 4</td><td>13 of 16</td></tr>
+<tr><td>V1 Foil M</td><td>MALINOWSKI Piotr</td><td>4 of 4</td><td>15 of 16</td></tr>
+<tr><td>V2 Foil F</td><td>JABŁOŃSKA Ewa</td><td>1 of 2</td><td>7 of 10</td></tr>
+<tr><td>V2 Foil F</td><td>WASILCZUK Beata</td><td>2 of 2</td><td>10 of 10</td></tr>
+<tr><td>V2 Foil M</td><td>KOŃCZYŁO Tomasz</td><td>1 of 6</td><td>1 of 15</td></tr>
+<tr><td>V2 Foil M</td><td>BAZAK Jacek</td><td>2 of 6</td><td>3 of 15</td></tr>
+<tr><td>V2 Foil M</td><td>SZMIDT Grzegorz</td><td>3 of 6</td><td>7 of 15</td></tr>
+<tr><td>V2 Foil M</td><td>HAŚKO Sergiusz</td><td>4 of 6</td><td>10 of 15</td></tr>
+<tr><td>V2 Foil M</td><td>GWIAZDA Paweł</td><td>5 of 6</td><td>11 of 15</td></tr>
+<tr><td>V2 Foil M</td><td>ŻUKOWSKI Wojciech</td><td>6 of 6</td><td>12 of 15</td></tr>
+<tr><td>V3 Foil M</td><td>DRAPELLA Maciej</td><td>1 of 3</td><td>3 of 14</td></tr>
+<tr><td>V3 Foil M</td><td>NIKALAICHUK Aliaksandr</td><td>2 of 3</td><td>7 of 14</td></tr>
+<tr><td>V3 Foil M</td><td>MAŁASIŃSKI Adam</td><td>3 of 3</td><td>12 of 14</td></tr>
+<tr><td>V4 Foil M</td><td>JUSZKIEWICZ Piotr</td><td>1 of 3</td><td>3 of 5</td></tr>
+<tr><td>V4 Foil M</td><td>ZYLKA Henryk</td><td>1 of 3</td><td>3 of 5</td></tr>
+<tr><td>V4 Foil M</td><td>KIERSZNICKI Ryszard</td><td>2 of 3</td><td>5 of 5</td></tr>
+</tbody></table></div>
+<p class="mono" style="font-size:15px">Sign-off: reply “sign off PEW8f-2024-2025”.</p></section>
+  <p class="foot">review · six 2024/25 EVF circuit events · 2026-10-02 · source: LOCAL drafts, staging summaries, EVF results API</p>
+</div>
+</body>
+</html>
