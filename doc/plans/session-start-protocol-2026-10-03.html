@@ -1,0 +1,330 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session start protocol</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+  /* additions for this page */
+  p code,li code,td code{overflow-wrap:anywhere}
+  .toc{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px 22px;margin:28px 0 0;font-size:17px}
+  .toc ol{margin:6px 0 0;max-width:none}
+  .toc li{margin:4px 0}
+  .reply{font-family:var(--mono);font-size:16px;font-weight:700;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:2px 9px;white-space:nowrap}
+  pre.trace{white-space:pre-wrap}
+  @media (max-width:700px){.wrap{padding:36px 16px 80px}body{font-size:18px}}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Session start protocol · graph · RAG · parallel worktrees · cleanup · plan · 3 October 2026</p>
+  <h1>Every session starts in its own fresh worktree, with a current graph and RAG</h1>
+  <p class="dek">One hook runs at the start of every session. It gives a new session <b>its own worktree on a new branch</b> cut from <code>origin/main</code>. It <b>rebuilds the code graph</b> and the <b>documentation RAG</b> from that checkout, and it <b>removes Claude's finished worktrees</b> under strict rules. The graph and RAG rebuild has already been run once by hand. Everything else waits for your sign-off.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 3 Oct · D2 = 30 days, the rest as recommended</span>
+    <span class="pill"><span class="dot"></span>Built 3 Oct · 22 tests · preflight 0</span>
+    <span class="pill"><span class="dot"></span>graph + RAG rebuilt today</span>
+    <span class="pill"><span class="dot"></span>Q1 decided 3 Oct: A, integrated to main</span>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <strong>Read in this order</strong>
+    <ol>
+      <li><a href="#status">Status and the integration decision</a></li>
+      <li><a href="#done">Already done today</a></li>
+      <li><a href="#protocol">The protocol: what the hook does, in order</a></li>
+      <li><a href="#isolation">Parallel sessions: one worktree each</a></li>
+      <li><a href="#cleanup">Cleanup: what gets removed, and what never does</a></li>
+      <li><a href="#today">Dry run on today's 13 worktrees</a></li>
+      <li><a href="#rag">The RAG is shared, so a stale checkout must not rebuild it</a></li>
+      <li><a href="#decide">Decide these</a></li>
+      <li><a href="#build">What gets built, tests first</a></li>
+      <li><a href="#rollout">Rollout and documentation gate</a></li>
+    </ol>
+  </nav>
+
+  <hr class="rule">
+
+  <section id="status">
+    <p class="kicker">00 · Status, 3 Oct</p>
+    <h2>Built, tested, run for real and integrated to main</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Unit tests</td><td><b>22 pass</b>: SS.01–17 for the protocol, GR.01–05 for the graph refresh. Each safety rule was also broken on purpose (the untracked-file rule, the Claude-only and Codex guards, the merged check, the keep-set, the 30-day threshold), and each break made a test fail.</td></tr>
+        <tr><td>Real run, <code>resume</code></td><td>21 s. Graph and RAG rebuilt in place, no worktree made.</td></tr>
+        <tr><td>Real run, <code>startup</code></td><td>About 24 s. Made <code>SPWSranklist-claude-session-…</code> on its own branch, seeded and refreshed it, and told Claude to enter it. That run found two defects the unit tests could not see: the RAG needs <code>tools/docs-search/.env</code>, and a worker's own copy of the refresh script lacked <code>--full-code</code>. Both are fixed.</td></tr>
+        <tr><td>Cleanup on today's 13 worktrees</td><td>0 removed. Two of Claude's are listed for you, because they hold uncommitted files: <code>claude/season-scoring-contracts</code> and the joined-engine worktree <code>fervent-antonelli-be346d</code>. One is waiting out its 30 days (ppw1, 5 days idle). The 6 Codex worktrees were not touched. One registry entry whose folder is gone was pruned.</td></tr>
+        <tr><td>Graph and RAG now</td><td>12,960 nodes, and no file on disk lost nodes. The RAG holds 4,094 chunks and finds this page and the new handbook section.</td></tr>
+        <tr id="preflight-row"><td><code>scripts/preflight.sh</code></td><td><b>Exit 0, all 15 gates pass.</b> The first run failed two database tests, 02 test 2.0 and 67.4. The cause was not this change: the checkout was 3 commits behind <code>origin/main</code>, and main's <code>011bef2a</code> had already refreshed the seed from PROD and rewritten both tests. Test 2.0 now reads the season config instead of fixed values, and 67.4 now allows the two EVF date moves, Athens <code>PEW13es</code> and Salzburg <code>PEW15ef</code>. After merging <code>origin/main</code> locally, preflight passed. LOCAL was not reset and no data was touched.</td></tr>
+        <tr><td>Committed</td><td>On <code>claude/session-start-protocol</code>, cut from <code>origin/main</code> so that it carries only these files, then integrated from <code>SPWSranklist-integration</code> and pushed with <code>integration/main:main</code>. Every worktree cut from main now carries the hooks.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">Q1 · May I commit and integrate it? <b>Decided 3 Oct: A.</b></p>
+      <p><b>Recommendation: yes, A.</b> The change touches scripts, configuration and documentation only, with no SQL and no frontend.</p>
+      <ul style="margin-bottom:0">
+        <li><b>A (recommended).</b> I commit the protocol files on <code>claude/session-start-protocol</code>, staging explicit paths only. I integrate from <code>SPWSranklist-integration</code>, re-run preflight there, push <code>integration/main:main</code>, and watch CI and Release. A push to main redeploys CERT and PROD with no schema or page change. From then on, every worktree cut from main carries the hooks.</li>
+        <li><b>B.</b> I commit on the branch, but do not integrate yet. The protocol then works only for sessions started from this primary checkout.</li>
+        <li><b>C.</b> Nothing yet: you want to change something first.</li>
+      </ul>
+    </div>
+    <p>The two plan pages, <code>wordpress-ranking-points-table-brainstorm-2026-10-02.html</code> and this one, went in the same commit, so the shared RAG keeps them when another checkout rebuilds it (§06).</p>
+  </section>
+
+  <section id="done">
+    <p class="kicker">01 · Done today, by hand</p>
+    <h2>The graph and the RAG are current again</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>This checkout (<code>claude/docs-search-rag</code>)</td><td><b>182 commits behind</b> <code>origin/main</code>. No ADR-104, no joined engine.</td><td>Merged with <code>origin/main</code>, conflict-free, local only. The six untracked plan files byte-identical to main were removed first.</td></tr>
+        <tr><td>Code graph</td><td><code>graph.json</code> dated 27 Sep. <code>scoreBracket</code> and <code>JOINED_ENGINE</code> missing.</td><td>12,845 nodes. <code>scoring.ts</code> has <code>scoreBracket()</code>, <code>joinedAlternatives()</code> and the joined engine.</td></tr>
+        <tr><td>Graph refresh mode</td><td>Incremental only. After the catch-up, <code>Sidebar</code>, <code>CalendarView</code> and <code>RanklistTable</code> collapsed to 1 node each (the known import-stub defect).</td><td>New <code>--full-code</code> mode re-extracts all 766 code files, zero tokens. <code>CalendarView</code> 1 → 16. Tests GR.01–03 written RED first, now green.</td></tr>
+        <tr><td>RAG (<code>spws_docs</code>)</td><td>3,017 chunks, built from an older tree.</td><td>4,069 chunks from 271 files.</td></tr>
+        <tr><td>Memory</td><td>The rule existed but was skipped in "brainstorm" work.</td><td>New: <em>RAG and graph for every investigation</em>, and <em>scoring engine + Table + Calculator are inseparable (ADR-102)</em>.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The graph refresh takes about <b>9 s</b> and the RAG rebuild about <b>9 s</b>. Doing both at every session start costs about 20 seconds.</p>
+  </section>
+
+  <section id="protocol">
+    <p class="kicker">02 · The protocol</p>
+    <h2>What <code>scripts/session_start.py</code> does, in order</h2>
+    <p>A <code>SessionStart</code> hook in <code>.claude/settings.json</code> runs it on <b>startup</b>, <b>/clear</b> and <b>resume</b>. A <code>SessionEnd</code> hook runs a small companion that records the session as ended. The hook never blocks a session: it always exits 0 and reports its failures as text.</p>
+    <ol class="steps">
+      <li><b>Isolate.</b> A session that starts or <code>/clear</code>s in a <em>shared</em> checkout (the primary checkout or the integration checkout) gets a new worktree on a new branch from <code>origin/main</code>. A session that resumes, or starts inside a worker worktree, stays where it is. See §03.</li>
+      <li><b>Baseline.</b> <code>git fetch origin</code>, bounded to 20 s so an offline start does not hang. Report the branch, commits ahead of and behind <code>origin/main</code>, and uncommitted files. A worker worktree that has no commits of its own, is clean and is behind is fast-forwarded, which is safe. Anything else that is behind gets a loud <b>STALE</b> line.</li>
+      <li><b>Clean up.</b> Remove Claude's own finished worktrees by the rules in §04. List the ones that need your decision.</li>
+      <li><b>Graph.</b> A full-code refresh in the working checkout, run with the protocol's own copy of <code>graphify_refresh.py</code>. A new worktree is first seeded with only the four portable graph files (<code>graph.json</code>, <code>manifest.json</code>, <code>.graphify_labels.json</code>, <code>GRAPH_REPORT.md</code>), never <code>.graphify_root</code> or <code>.graphify_python</code>, which the handbook forbids copying. Nodes of files the tree lacks are pruned, and any file still on disk that lost nodes is named in the report.</li>
+      <li><b>RAG.</b> <code>tools/docs-search/ingest.py</code> runs only if the checkout is <b>not behind</b> <code>origin/main</code>. A lock allows one ingest at a time. See §06.</li>
+      <li><b>Report.</b> One line for you, such as <code>SPWS session: claude/session-20261003-0912 · graph 12,845 nodes · RAG 4,069 chunks · 1 worktree removed</code>. A full block for Claude. Its first instruction is <b>"call EnterWorktree(path) first"</b> when a worktree was made, followed by the research rule: docs through the RAG, code through the graph.</li>
+    </ol>
+  </section>
+
+  <section id="isolation">
+    <p class="kicker">03 · Parallel sessions</p>
+    <h2>A new branch is not enough. Each session needs its own worktree.</h2>
+    <p>Two sessions in one folder share one set of files. If one session switches branch, the other session's files change under it. Parallel work needs <b>one folder per session</b>. Your handbook already says so: "Run Claude and Codex in the same folder" is listed under <em>What nobody should do</em> (<code>doc/handbook/operations/claude-codex-collaboration.html</code>).</p>
+    <div class="note accent">
+      <p class="lede">Reuse what exists: <code>scripts/start-agent-worktree.sh</code></p>
+      <p>The hook calls the existing script from the registered integration checkout (<code>/Users/aleks/coding/SPWSranklist-integration</code>):</p>
+      <pre class="trace">bash scripts/start-agent-worktree.sh claude session-20261003-0912
+  → branch  claude/session-20261003-0912      (from the latest origin/main)
+  → folder  /Users/aleks/coding/SPWSranklist-claude-session-20261003-0912</pre>
+      <p style="margin-bottom:0">The script already refuses duplicates, a dirty integration checkout, or an integration checkout that is not on <code>main</code>/<code>integration/main</code>. If it refuses, the session stays where it started and the report says why. When the task becomes clear, the session renames its branch to say what it is: <code>git branch -m claude/&lt;task&gt;</code>.</p>
+    </div>
+    <ul>
+      <li><b>Moving the session.</b> A hook cannot change a session's folder. The report tells Claude to call <code>EnterWorktree</code> with the new path as its first action. That tool accepts any worktree listed by <code>git worktree list</code>. CLAUDE.md gains one line saying so, because the tool may only be used when project instructions call for it.</li>
+      <li><b>Ready to run.</b> The new worktree gets <code>.venv</code> as a symlink to the primary checkout's environment, which is already the precedent in <code>SPWSranklist-claude-season-scoring-contracts</code>. It also gets <code>frontend/node_modules</code> symlinked the same way. Both names go into <code>.git/info/exclude</code> without a trailing slash, so the symlinks never show up as untracked files and never block cleanup.</li>
+      <li><b>When it does not fire.</b> On resume the session keeps its folder. Sessions the desktop app already placed in a worktree, and sessions opened in an existing worker folder, stay where they are.</li>
+    </ul>
+  </section>
+
+  <section id="cleanup">
+    <p class="kicker">04 · Cleanup</p>
+    <h2>Remove only what can lose nothing. Report the rest.</h2>
+    <p>A worktree is removed automatically only when <b>all five</b> conditions hold:</p>
+    <ol>
+      <li><b>It is Claude's.</b> Its branch is <code>claude/*</code>. Codex worktrees, the integration checkout, the primary checkout and the current session's own worktree are <b>never</b> touched.</li>
+      <li><b>All its commits are on main.</b> <code>git merge-base --is-ancestor &lt;branch&gt; origin/main</code>, which also covers a session that never committed. A squash-merged branch fails this test, so it is kept and listed. The cost is only a reminder.</li>
+      <li><b>It is clean.</b> <code>git status --porcelain</code> shows nothing, <b>untracked files included</b>. This is what protects untracked plans, such as the joined-scoring spec in <code>fervent-antonelli-be346d</code>.</li>
+      <li><b>No session is using it.</b> Either the <code>SessionEnd</code> hook recorded its session as ended, or nothing has touched it for <b>30 days</b> (no index or HEAD activity). The 30-day fallback covers worktrees made before this protocol existed.</li>
+      <li><b>Git agrees.</b> Removal is <code>git worktree remove &lt;path&gt;</code> <b>without <code>--force</code></b>. Git itself refuses a dirty tree, which is a second lock on condition 3.</li>
+    </ol>
+    <p>Then the local branch is deleted. Condition 2 has already proven its commits are on main. Remote <code>claude/*</code> branches are left alone (decision D4). <code>git worktree prune</code> drops registry entries whose folder is already gone.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Never, under any condition</p>
+      <p style="margin-bottom:0">No <code>--force</code>, no <code>git clean</code>, no <code>reset</code> and no <code>stash</code> on another worktree. Nothing with uncommitted or untracked files is removed, and nothing that holds a commit missing from main. These are the handbook's own "can destroy unfamiliar work" rules.</p>
+    </div>
+  </section>
+
+  <section id="today">
+    <p class="kicker">05 · Dry run</p>
+    <h2>What the rules would do with today's 13 worktrees</h2>
+    <p>Measured read-only just now. "Idle" is days since the worktree's index was last touched.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Worktree / branch</th><th>State</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td><code>SPWSranklist</code> · claude/docs-search-rag</td><td>3 uncommitted, 2 ahead, idle 0 d</td><td><span class="chip never">primary: never</span></td></tr>
+        <tr><td><code>SPWSranklist-integration</code> · integration/main</td><td>clean, idle 0 d</td><td><span class="chip never">integration: never</span></td></tr>
+        <tr><td><code>SPWSranklist-claude-ppw1-seed-and-birth-year</code></td><td>clean, merged, idle 5 d</td><td><span class="chip plain">kept until 30 days idle, then removed</span></td></tr>
+        <tr><td><code>SPWSranklist-claude-season-scoring-contracts</code></td><td><b>4 uncommitted</b>, merged, idle 12 d</td><td><span class="chip warn">kept, listed for you</span></td></tr>
+        <tr><td><code>.claude/worktrees/fervent-antonelli-be346d</code> · claude/joined-engine-2026-2027</td><td><b>7 uncommitted</b> (untracked spec), idle 0 d</td><td><span class="chip warn">kept, listed for you</span></td></tr>
+        <tr><td>7 × <code>codex/*</code> worktrees (3 of them clean, merged, idle 55 d)</td><td>owned by Codex</td><td><span class="chip never">reported, never touched</span></td></tr>
+        <tr><td><code>/private/tmp/…season-scoring-review</code> · codex/season-scoring-design</td><td>folder gone, 6 unmerged commits</td><td><span class="chip fill">registry entry pruned, branch kept</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>So on day one, nothing is removed. One registry entry is pruned, and two of Claude's worktrees are listed for you with their uncommitted files. The rules let cleanup start safely without removing anything at first.</p>
+  </section>
+
+  <section id="rag">
+    <p class="kicker">06 · The RAG</p>
+    <h2>One shared index, so only an up-to-date checkout rebuilds it</h2>
+    <p>Every checkout feeds the same Meilisearch index, and <code>ingest.py</code> is authoritative in both directions: whatever the run does not see, it deletes. An ingest from a checkout that is behind <code>origin/main</code> would remove newer ADRs and handbook pages for <b>every</b> session. So the hook rebuilds only when the checkout is <b>not behind</b> main. Otherwise it leaves the index alone and says so.</p>
+    <div class="note warn">
+      <p class="lede">Known limit: untracked documents live in one checkout only</p>
+      <p style="margin-bottom:0">A plan that exists only as an untracked file in one worktree is in the index until another checkout rebuilds it. Today that is the joined-scoring spec in <code>fervent-antonelli-be346d</code>. The protocol does not fix this. Committing plans does. Teaching <code>ingest.py</code> to also collect untracked <code>doc/</code> files from every registered worktree is possible, but it is a separate change. Tell me if you want it.</p>
+    </div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">07 · Decide these</p>
+    <h2>Five decisions, each with my recommendation</h2>
+    <p><b>Decided 3 Oct 2026:</b> D2 = 30 days; D1, D3, D4 and D5 as recommended.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Recommendation</th><th>Alternative</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td>Where do session worktrees live?</td><td><b>Sibling folders through <code>start-agent-worktree.sh</code></b>, the handbook's documented model</td><td><code>.claude/worktrees/</code>, the desktop app's style; hidden inside the primary checkout</td></tr>
+        <tr><td>D2</td><td>How long idle before a clean, merged worktree with no end record is removed?</td><td><s>7 days</s> → <b>30 days</b> (your decision)</td><td>3 or 14 days</td></tr>
+        <tr><td>D3</td><td>Codex worktrees</td><td><b>Report only, never touch</b>: Codex owns them</td><td>Apply the same rules to <code>codex/*</code></td></tr>
+        <tr><td>D4</td><td>Branches of removed worktrees</td><td><b>Delete the local branch only</b></td><td>Also delete the remote <code>claude/*</code> branch</td></tr>
+        <tr><td>D5</td><td>Does <code>/clear</code> start a fresh worktree?</td><td><b>Yes when it happens in a shared checkout</b>, because <code>/clear</code> means a new task</td><td>Only a real startup creates one</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="build">
+    <p class="kicker">08 · Build, tests first</p>
+    <h2>What gets written</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>What</th></tr></thead>
+      <tbody>
+        <tr><td><code>scripts/graphify_refresh.py</code></td><td><code>--full-code</code>. <span class="chip never">done</span></td></tr>
+        <tr><td><code>python/tests/test_graphify_refresh.py</code></td><td>GR.01–05: file selection, absent-source pruning, the per-file loss audit. <span class="chip never">done</span></td></tr>
+        <tr><td><code>scripts/session_start.py</code></td><td>The protocol in §02, standard library only. <span class="chip never">built</span></td></tr>
+        <tr><td><code>session_start.py --end</code></td><td><span class="chip never">built</span> Records <code>&lt;session_id&gt;.ended</code> under the shared git directory (<code>spws-sessions/</code>), outside every worktree, so it never makes one dirty.</td></tr>
+        <tr><td><code>python/tests/test_session_start.py</code></td><td><span class="chip never">done · SS.01–17</span> Builds a real temporary repo: a bare origin, an integration checkout and worktrees. Written RED first. Pins every safety rule: a dirty worktree is kept, an unmerged one is kept, <code>codex/*</code>, primary, integration and current are kept, no <code>--force</code>, merged + clean + ended is removed. Also pins that the RAG is skipped when the checkout is behind, and that a resume creates no worktree.</td></tr>
+        <tr><td><code>.claude/settings.json</code></td><td><span class="chip never">done</span> <code>SessionStart</code> (startup|clear|resume, timeout 300 s) and <code>SessionEnd</code>, merged into the existing file.</td></tr>
+        <tr><td><code>.claude/skills/research-gate/SKILL.md</code></td><td>The skill you asked for. Your interruption cut its first write. It now also says: if the session-start report is missing or STALE, run the protocol before researching.</td></tr>
+        <tr><td><code>CLAUDE.md</code> + <code>doc/claude/session-start.md</code></td><td>One routing line, plus the procedure: enter the worktree the report names, then follow the research rule.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="rollout">
+    <p class="kicker">09 · Rollout</p>
+    <h2>It works here at once, and everywhere once it is on main</h2>
+    <ol class="steps">
+      <li>Build and test in this checkout. The hook is then live for every new session started from <code>/Users/aleks/coding/SPWSranklist</code>.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>Documentation coherence gate: <code>doc/handbook/operations/claude-codex-collaboration.html</code> gains the automatic session worktree and the cleanup rules, in the present tense. The handbook validator and <code>render_docs --check</code> pass, the RAG is re-indexed and the graph refreshed. No ADR, because no decision in <code>doc/adr/</code> changes.</li>
+      <li><b>On your go:</b> commit on a <code>claude/*</code> branch, integrate from the integration checkout, then push <code>integration/main:main</code>. The worktrees cut from main then carry the hook. The change touches scripts and configuration only, no frontend.</li>
+    </ol>
+  </section>
+
+  <p class="foot">SPWS · session start protocol · plan · 3 October 2026 · facts from the RAG (handbook claude-codex-collaboration), the graph (start-agent-worktree.sh, integrate-agent-branch.sh, install-agent-worktree-guards.sh) and a read-only survey of git worktree list.</p>
+</div>

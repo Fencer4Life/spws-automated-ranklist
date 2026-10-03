@@ -1,0 +1,457 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WordPress UI for Ranking and Points table</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+
+  /* ---- additions for this page: screen mockups and the decision blocks ---- */
+  p code,li code{overflow-wrap:anywhere}
+  .toc{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:16px 22px;margin:28px 0 0;font-size:17px}
+  .toc ol{margin:6px 0 0;max-width:none}
+  .toc li{margin:4px 0}
+
+  .mockset{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;margin:18px 0 8px}
+  .mockcol{display:flex;flex-direction:column;gap:6px;width:min-content;max-width:100%;min-width:0}
+  .mockcap{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  .screen{position:relative;background:#ffffff;color:#173f70;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px rgba(16,34,64,.12);font-family:var(--sans)}
+  .screen.desk{width:500px;max-width:100%;height:250px}
+  .screen.phone{width:220px;height:390px;border-radius:26px;border-width:6px;border-color:#1f2633}
+  .wpnav{background:#c4161c;color:#fff;font-size:12px;font-weight:700;display:flex;gap:14px;align-items:center;padding:9px 12px;white-space:nowrap;overflow:hidden}
+  .wpnav .burger{font-size:15px}
+  .ebar{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #e3e8ef;background:#fff;overflow:hidden}
+  .ebar img{height:15px;width:auto;display:block}
+  .phone .ebar img{height:12px}
+  .ebar .t{font-size:19px;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#173f70}
+  .phone .ebar .t{font-size:15px}
+  .ebar .t .caret{font-size:.7em;color:#5a6b85;margin-left:3px}
+  .ebar .tabs{display:flex;gap:12px;font-size:12.5px;white-space:nowrap;min-width:0;overflow:hidden}
+  .ebar .tabs span{color:#3a5a8a;border-bottom:2px solid transparent;padding-bottom:1px}
+  .ebar .tabs span.on{color:#173f70;font-weight:800;border-bottom-color:#173f70}
+  .flags{display:inline-flex;gap:3px;padding:2px;border:1px solid #d5dbe3;border-radius:999px;background:#f6f8fb;flex:none}
+  .flag{width:13px;height:13px;border-radius:50%;display:block;border:1px solid #c9d1dc}
+  .flag.pl{background:linear-gradient(#ffffff 50%,#dc143c 50%)}
+  .flag.gb{background:
+      linear-gradient(90deg,transparent 42%,#c8102e 42%,#c8102e 58%,transparent 58%),
+      linear-gradient(transparent 42%,#c8102e 42%,#c8102e 58%,transparent 58%),
+      #012169}
+  .fake{padding:10px 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+  .chips i{display:block;height:15px;width:44px;border-radius:8px;background:#e3e8ef}
+  .chips i.on{background:#173f70}
+  .rows i{display:block;height:9px;background:#eef1f5;margin:8px 0;border-radius:3px}
+  .rows i:nth-child(odd){background:#e6ebf2}
+  .pill-float{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);font-size:10.5px;background:#fff;border:1px solid #c9d1dc;border-radius:999px;padding:4px 10px;color:#173f70;box-shadow:0 3px 8px rgba(16,34,64,.18);white-space:nowrap}
+  .dd{position:absolute;left:30px;top:38px;background:#fff;border:1px solid #c9d1dc;border-radius:10px;box-shadow:0 10px 24px rgba(16,34,64,.22);font-size:13px;min-width:150px;padding:4px 0;z-index:3}
+  .dd div{padding:7px 12px;color:#173f70;white-space:nowrap}
+  .dd div.on{font-weight:800}
+  .dd div.on::before{content:"✓ ";}
+  .dd hr{border:0;border-top:1px solid #e3e8ef;margin:3px 0}
+  .dd .home{color:#3a5a8a;font-size:12px}
+  .annex{padding:10px 12px;font-size:11px;color:#173f70}
+  .annex b{display:block;font-family:var(--serif);font-size:14px;margin-bottom:6px}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:6px}
+  .grid i{display:block;height:11px;background:#eef1f5}
+  .grid i.h{background:#173f70}
+  .grid i.c{background:#dbe7f5}
+
+  .option{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:18px 22px 8px;margin:22px 0}
+  .option.rec{border-color:var(--good);border-width:2px}
+  .option h3{margin-top:0;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+  .badge{font-family:var(--mono);font-size:12.5px;font-weight:800;letter-spacing:.06em;padding:3px 10px;border-radius:6px;text-transform:uppercase}
+  .badge.rec{color:var(--good);background:var(--good-soft)}
+  .badge.no{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .pc{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px;font-size:17px}
+  .pc ul{margin:4px 0 12px}
+  .pc .h{font-family:var(--mono);font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .pc .h.plus{color:var(--good)} .pc .h.minus{color:var(--danger)}
+  .reply{font-family:var(--mono);font-size:16px;font-weight:700;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:2px 9px;white-space:nowrap}
+  @media (max-width:700px){
+    .wrap{padding:36px 16px 80px}
+    body{font-size:18px}
+    .pc{grid-template-columns:1fr}
+    .screen.desk{height:220px}
+  }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">PROD on WordPress · Ranking + Points table · Brainstorm and advice · 2 October 2026</p>
+  <h1>One responsive version, one page per surface, full-screen</h1>
+  <p class="dek">You asked whether we need <b>two versions</b>, one tied to the WordPress menu for computers and one with the hamburger for phones. <b>My advice is no.</b> Build one version that adapts by screen width. Give each surface its own full-screen page on weteraniszermierki.pl, and keep the hamburger and the admin sign-in in the GitHub Pages app, where they already work.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Brainstorm, nothing built</span>
+    <span class="pill warn"><span class="dot"></span>1 decision first, then 3 with recommendations</span>
+    <span class="pill"><span class="dot"></span>follows ADR-090, the calendar's pattern</span>
+  </div>
+
+  <nav class="toc" aria-label="Contents">
+    <strong>Read in this order</strong>
+    <ol>
+      <li><a href="#answer">Your question: two versions?</a></li>
+      <li><a href="#shape">The shape I recommend</a></li>
+      <li><a href="#fullscreen">What "full-screen" can and cannot mean</a></li>
+      <li><a href="#decide-first">Decide this first: moving between the pages</a></li>
+      <li><a href="#decide-rest">Three more decisions, each with my recommendation</a></li>
+      <li><a href="#findings">What I found in the code that has to change</a></li>
+      <li><a href="#gates">Things I have not verified, and gates outside the code</a></li>
+      <li><a href="#golive">How it would go live</a></li>
+      <li><a href="#paper">ADRs and documentation this touches</a></li>
+      <li><a href="#out">Not in this plan</a></li>
+    </ol>
+  </nav>
+
+  <hr class="rule">
+
+  <section id="answer">
+    <p class="kicker">01 · Your question</p>
+    <h2>Two versions? No. One version that adapts to the screen.</h2>
+    <p>The split you describe already exists, and the WordPress theme does it for us. Its menu is a standard Bootstrap navigation bar (<code>navbar-expand-lg</code>). On a computer it shows as the horizontal red menu. Below 992 px it collapses into its own <strong>"Menu"</strong> hamburger. I read this from the live site's HTML today.</p>
+    <p>Our pages hide that theme menu so they can be full-screen. Inside the page we show <strong>one slim bar</strong>, and CSS changes how it is laid out by width. It is the same code at the same address, with a different arrangement on a phone than on a computer. That is how the calendar at <code>/znajdz-zawody/</code> has worked since September.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Why two versions would cost more than they give</p>
+      <ul style="margin-bottom:0">
+        <li><b>Device guessing goes wrong.</b> Tablets, rotated phones and narrow desktop windows land on the wrong version.</li>
+        <li><b>Shared links break.</b> A fencer sends the ranking link from a phone and the board member opens the phone version on a computer, or the other way round.</li>
+        <li><b>Everything is tested twice,</b> and every fix has to be made twice.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">☰</span> The hamburger does not go away</p>
+      <p style="margin-bottom:0">It stays in the <b>GitHub Pages app</b>, which is the admin app. Admins sign in there today with <code>?admin=1</code>, and the admin section appears in the hamburger drawer. ADR-090 §3 already decided that administration stays there and that the WordPress pages never offer the sign-in. The public never needed the hamburger. It only existed so one app could switch views, and on WordPress each view is its own page. So the hamburger does not need to come to WordPress at all.</p>
+    </div>
+  </section>
+
+  <section id="shape">
+    <p class="kicker">02 · The shape</p>
+    <h2>Three public pages on WordPress, one admin app on GitHub Pages</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Address</th><th>What it shows</th><th>For</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>weteraniszermierki.pl/klasyfikacja/</code></td><td>Ranking, live from PROD (see decision D3 for the address)</td><td>everyone</td><td><span class="chip fill">new</span></td></tr>
+        <tr><td><code>weteraniszermierki.pl/znajdz-zawody/</code></td><td>Calendar with registration</td><td>everyone</td><td><span class="chip never">live since Sep</span></td></tr>
+        <tr><td><code>weteraniszermierki.pl/tabela-punktacji/</code></td><td>Points table (Załącznik nr 1)</td><td>everyone</td><td><span class="chip fill">new</span></td></tr>
+        <tr><td><code>fencer4life.github.io/spws-automated-ranklist/?admin=1</code></td><td>Admin app: hamburger, admin views, CT/PD switch</td><td>admins</td><td><span class="chip plain">unchanged</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Every public page gets the same treatment the calendar has:</p>
+    <ul>
+      <li><b>Theme hidden.</b> The same <code>&lt;style&gt;</code> block as <code>/znajdz-zawody/</code> removes the site header, the menu, the page picture, the theme's page title and the footer. It has been proven on two live pages, so nothing new needs to be invented.</li>
+      <li><b>One slim bar on top.</b> It holds the SPWS mark, which links back to weteraniszermierki.pl as you suggested, the page name in the active language, and the PL/EN toggle. Decision D1 below is about adding a page switcher to this bar.</li>
+      <li><b>No CT/PD switch.</b> The page is given only the PROD connection, so the switch never renders. The app already behaves this way when it holds a single environment, and that is how the calendar works today.</li>
+      <li><b>No hamburger and no admin sign-in.</b> <code>?admin=1</code> is ignored on WordPress pages.</li>
+    </ul>
+  </section>
+
+  <section id="fullscreen">
+    <p class="kicker">03 · "Full-screen always"</p>
+    <h2>What full-screen can and cannot mean on a web page</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Achievable, and already proven: the page gets the whole browser window</p>
+      <p style="margin-bottom:0">No site header, menu, page picture, title or footer. Our content starts at the top edge. This is what the calendar and the FTL export page do today.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">✗</span> Not achievable: the browser's own full-screen mode, which hides the address bar</p>
+      <p style="margin-bottom:0">On an iPhone, Safari lets only video go full-screen, not a web page. On a computer, full-screen needs a click on every visit and Esc ends it. ADR-090 §5 records that a full-screen button was built for the calendar and then removed, because it added nothing to a page that already fills the window.</p>
+    </div>
+    <p><strong>The phone trick that does give the most room:</strong> the ranking and the points table should <b>scroll as normal pages</b>. Phone browsers then shrink their address bar while you scroll, which is the most screen a web page can get on a phone. The calendar is the exception. Its drum is built from fixed geometry, so it keeps a fixed full-height box, and it stays that way.</p>
+  </section>
+
+  <section id="decide-first">
+    <p class="kicker">04 · Decide this first</p>
+    <h2>D1 · With the theme menu hidden, how does a reader move between Ranking, Calendar and Points table?</h2>
+    <p>This decision shapes everything else, so it comes first. When the WordPress menu is hidden, the page needs another way out. The pictures show the bar on a computer and on a phone. The grey shapes stand in for the ranking.</p>
+
+    <div class="option">
+      <h3>A · Mark only, the way the calendar works today <span class="badge no">simplest</span></h3>
+      <div class="mockset">
+        <div class="mockcol"><span class="mockcap">computer</span>
+          <div class="screen desk">
+            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            <span class="pill-float">ⓘ Reguły rankingu na sezon 2026/2027</span>
+          </div></div>
+        <div class="mockcol"><span class="mockcap">phone</span>
+          <div class="screen phone">
+            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            <span class="pill-float">ⓘ Reguły rankingu na sezon…</span>
+          </div></div>
+      </div>
+      <div class="pc">
+        <div><span class="h plus">For</span><ul><li>Nothing new to build or test.</li><li>Identical to the live calendar page.</li></ul></div>
+        <div><span class="h minus">Against</span><ul><li>Going from the Ranking to the Points table takes three steps: mark, home page, menu.</li><li>Nothing on the page tells a visitor that the other two pages exist.</li></ul></div>
+      </div>
+    </div>
+
+    <div class="option rec">
+      <h3>B · Mark plus a small page switcher in the same bar <span class="badge rec">recommended</span></h3>
+      <div class="mockset">
+        <div class="mockcol"><span class="mockcap">computer: the pages as tabs</span>
+          <div class="screen desk">
+            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="tabs"><span class="on">Ranking</span><span>Znajdź zawody</span><span>Tabela punktacji</span></span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            <span class="pill-float">ⓘ Reguły rankingu na sezon 2026/2027</span>
+          </div></div>
+        <div class="mockcol"><span class="mockcap">phone: the title opens a short list</span>
+          <div class="screen phone">
+            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking<span class="caret">▼</span></span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+            <div class="dd"><div class="on">Ranking</div><div>Znajdź zawody</div><div>Tabela punktacji</div><hr><div class="home">⌂ weteraniszermierki.pl</div></div>
+            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+            <span class="pill-float">ⓘ Reguły rankingu na sezon…</span>
+          </div></div>
+      </div>
+      <div class="pc">
+        <div><span class="h plus">For</span><ul><li>One tap between the three SPWS pages, on any device, and the mark still leads home as you suggested.</li><li>It adds no height. On a computer the tabs sit in the bar's empty middle. On a phone the title itself is the button.</li><li>It is a single component, the same on all three pages, including the calendar.</li></ul></div>
+        <div><span class="h minus">Against</span><ul><li>A small new component, with tests.</li><li>Phone width is tight. ADR-090 measured only 6.7 px to spare for the English calendar title at 375 px, so the ▼ has to win that width back, probably by setting the title 1 px smaller. This gets measured during the build, not assumed.</li><li>Publishing order matters (see <a href="#golive">§08</a>): no page may link to a page that is not published yet.</li></ul></div>
+      </div>
+      <p style="font-size:17px">The switcher lists only our three pages and links to their WordPress addresses, so every page keeps its own address for bookmarks and sharing. It does not copy the whole WordPress menu: that menu is one tap away through the mark, and a copy would drift as the site's menu changes.</p>
+    </div>
+
+    <div class="option">
+      <h3>C · Keep the WordPress menu bar visible, hide everything else <span class="badge no">not full-screen</span></h3>
+      <div class="mockset">
+        <div class="mockcol"><span class="mockcap">computer</span>
+          <div class="screen desk">
+            <div class="wpnav"><span>Aktualności</span><span>O nas</span><span>Członkostwo</span><span>Kalendarz</span><span>Klasyfikacja ▾</span><span>LINKI ▾</span><span>Kontakt</span></div>
+            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          </div></div>
+        <div class="mockcol"><span class="mockcap">phone</span>
+          <div class="screen phone">
+            <div class="wpnav"><span class="burger">☰</span><span>Menu</span></div>
+            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          </div></div>
+      </div>
+      <div class="pc">
+        <div><span class="h plus">For</span><ul><li>Visitors get the whole site menu, which is the "tied to the WordPress menu" idea.</li><li>We build nothing; the theme's own hamburger covers phones.</li></ul></div>
+        <div><span class="h minus">Against</span><ul><li>It works against "full-screen always": two bars instead of one, so on a phone the ranking starts about 50 px lower.</li><li>The red bar does not scroll away, and on a phone it sits next to our own bar.</li><li>It is one more theme selector we depend on, and theme updates are outside our control.</li></ul></div>
+      </div>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> My recommendation: B</p>
+      <p style="margin-bottom:0">It keeps the full-screen page you want, answers the "computer menu or phone hamburger" question with one component that is tabs on a computer and a short list on a phone, and leaves the mark as the way home. Reply <span class="reply">D1 B</span>, or name A or C.</p>
+    </div>
+  </section>
+
+  <section id="decide-rest">
+    <p class="kicker">05 · Then these three</p>
+    <h2>Three more decisions, each with a recommendation</h2>
+    <p>You can take all four recommendations in one reply: <span class="reply">accept all</span>. Or reply with the ones you want to change.</p>
+
+    <h3>D2 · How does the Points table get onto WordPress?</h3>
+    <p>The Points table is not part of the app. It is a standalone 106 KB document, <code>tabela-punktacji.html</code>, with its own styles, its own PL/EN switch, a print layout, CSV export, and a script that reads the scoring parameters from the database. The ranking and calendar mechanism, a custom element in the shared bundle, does not cover it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>How</th><th>Trade-off</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>P1</b> Full-window frame</td><td>The WordPress page holds the theme-hiding block and one <code>&lt;iframe&gt;</code> that fills the window. It shows the annex already published by every release. The annex gains a WordPress mode that reads PROD only, shows the same bar (mark, title, switcher), and makes its links leave the frame.</td><td>The document stays exactly as it was reviewed, and every release updates the WordPress page with no hand edits. ADR-090 rejected a frame for the calendar because of height and phone-width problems, but those problems disappear when the frame <em>is</em> the whole window. Printing from the WordPress page prints the frame poorly; the direct link prints well.</td><td><span class="chip never">recommended</span></td></tr>
+        <tr><td><b>P2</b> Rebuild it inside the app</td><td>Port the annex into Svelte as a third view of the same bundle.</td><td>It would be the most consistent, but it means rewriting a regulation annex that has just been reviewed, and keeping two copies of it in step from then on.</td><td><span class="chip plain">no</span></td></tr>
+        <tr><td><b>P3</b> Link straight to GitHub</td><td>The menu item points at the github.io page.</td><td>Readers leave the association's domain, and the menu item is still manual work in wp-admin.</td><td><span class="chip plain">no</span></td></tr>
+        <tr><td><b>P4</b> Paste it into the page</td><td>Copy the 106 KB body into the WordPress page.</td><td>WordPress's <code>wpautop</code> inserts <code>&lt;p&gt;</code> tags into blocks on output (ADR-090 §7 observed this inside <code>&lt;style&gt;</code>). Inside a script that breaks the code. The theme's Bootstrap styles would also leak into the document, and every release would need a hand edit.</td><td><span class="chip over">no</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Recommendation: <span class="reply">D2 P1</span>.</p>
+
+    <h3>D3 · Where does the Ranking live?</h3>
+    <p>Today <code>/klasyfikacja/</code> holds the age-category table and <b>30 links to SharePoint spreadsheets</b>, one for each sub-ranking (3 weapons × 2 genders × 5 categories). The live ranking replaces exactly that, with one page and filters.</p>
+    <ul>
+      <li><b>R1 · Replace the body of <code>/klasyfikacja/</code></b> <span class="chip never">recommended</span>. The address, old bookmarks, search results and the existing "Klasyfikacja → Klasyfikacja polska" menu item all keep working, and nobody has to touch wp-admin. The old body is kept as a reference copy in <code>doc/wordpress/</code>, so it can be restored with one XML-RPC call. Before the swap, the ranking is checked on an unlinked page.</li>
+      <li><b>R2 · New page plus a new menu item, old page left alone.</b> This is ADR-090 §8's original position. You would create the menu item in wp-admin, because XML-RPC cannot (proven on 5 Sep). Old and new would run side by side.</li>
+    </ul>
+    <p>The Points table needs <b>one menu item</b> either way, under Klasyfikacja. You create it in wp-admin, which takes about two minutes, and I write down the exact clicks. Recommendation: <span class="reply">D3 R1</span>.</p>
+
+    <h3>D4 · What does the public see at the github.io address afterwards?</h3>
+    <p>The GitHub Pages app opens on <b>CERT</b>, the test database, because it holds both environments. Once WordPress is the official address, someone with an old bookmark sees test data and has no way of knowing it.</p>
+    <ul>
+      <li><b>G1 · A one-line notice for anyone not signed in</b> <span class="chip never">recommended</span>. It reads: "Test environment. The official ranking is at weteraniszermierki.pl/klasyfikacja", with a link. The app is otherwise unchanged, and admins never see the notice.</li>
+      <li><b>G2 · Leave it as it is.</b></li>
+      <li><b>G3 · Send everyone who is not an admin to WordPress automatically.</b> This is the most drastic option. It also hides the CERT preview that you and testers use without signing in.</li>
+    </ul>
+    <p>Recommendation: <span class="reply">D4 G1</span>.</p>
+  </section>
+
+  <section id="findings">
+    <p class="kicker">06 · Measured in the code today</p>
+    <h2>What has to change. All of it is small, but two items matter.</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">1</span> <code>&lt;spws-ranklist&gt;</code> still mounts the full app, admin sign-in included</p>
+      <p style="margin-bottom:0"><code>frontend/src/ce/RanklistElement.svelte</code> passes neither <code>chrome</code> nor <code>view</code> nor <code>asset-base</code>, so it gets the defaults: header, hamburger, drawer, and <code>?admin=1</code> honoured. Embedded as it is, it would put the admin sign-in on the association's site, against ADR-090 §3. The fix is the interface the calendar already has (<code>chrome="none"</code>, <code>view="ranklist"</code>, <code>asset-base</code>), with a test that fails first.</p>
+    </div>
+    <div class="note danger">
+      <p class="lede"><span class="tick">2</span> The Points table picks CERT whenever both environments are configured</p>
+      <p style="margin-bottom:0">Its loader reads <code>supabaseCertUrl || supabaseProdUrl</code>. This is the same "CERT wins silently" pattern as the 17 August registration defect and the calendar defect that ADR-090 §2 fixed in the app. The WordPress mode must read PROD and nothing else, and a test must pin that.</p>
+    </div>
+    <ul>
+      <li><b>The bar's title is fixed to "Znajdź zawody"</b> (<code>embed_page_title</code> in <code>App.svelte</code>). It has to follow the page: Ranking, Znajdź zawody, Tabela punktacji.</li>
+      <li><b>The ranking element needs its own height rule.</b> It should be a block with natural height, so the page scrolls (§03). It must not use the calendar's fixed <code>100dvh</code> box.</li>
+      <li><b>The "Reguły rankingu" pill is <code>position: fixed</code>.</b> If any theme wrapper has a CSS transform, the pill pins to that wrapper instead of the screen. This gets checked on the real WordPress page at phone and computer width before the page goes public.</li>
+      <li><b>The annex has no SPWS mark and no route home.</b> In WordPress mode it gets the same bar, and its links open in the top window, not inside the frame.</li>
+      <li><b>If D1 is B:</b> one switcher component, two locale keys per language, and tests that pin the link list and the mark's target, the way <code>CalendarEmbed.test.ts</code> pins the calendar's.</li>
+    </ul>
+  </section>
+
+  <section id="gates">
+    <p class="kicker">07 · Honest gaps</p>
+    <h2>Things I have not verified, and gates outside the code</h2>
+    <ul>
+      <li><b>SPWS Board approval of the ranking on the site.</b> ADR-090 left this open, with a decision expected in the week of 8 September. I am assuming it has been given, because you are asking for the ranking. Please confirm in your reply.</li>
+      <li><b>The Points table refuses to render unless the 2026/27 engine is the joined engine.</b> Its script checks the engine code returned by <code>fn_public_scoring_params</code>. I have not checked whether PROD's 2026/27 configuration carries that engine yet. I will check it read-only at build time. If it does not, the Points table page waits for ADR-104 steps 11–12, and the Ranking goes first on its own.</li>
+      <li><b>The annex is <code>noindex</code> "until adoption"</b> (ADR-102). Publishing it on the association's site is the point of adoption. Is it adopted? If so, the noindex comes off on the WordPress copy only.</li>
+      <li><b>Draft pages cannot be viewed without a wp-admin login,</b> as noted in the 5 September plan. That is why each page is checked on an unlinked published page first (§08).</li>
+    </ul>
+  </section>
+
+  <section id="golive">
+    <p class="kicker">08 · Order of work, once decided</p>
+    <h2>How it would go live</h2>
+    <p>One rule decides the order: <b>no live page may link to a page that is not published yet,</b> and no page goes live before the code it needs has been released. The switcher therefore shows only the pages that its WordPress page lists in an attribute. Releasing the new code changes nothing on the live calendar until its page body is updated, which is the last step.</p>
+    <ol class="steps">
+      <li><b>Implementation plan</b> written as HTML with tests first (RED→GREEN), including the documentation coherence gate and the ADR-090 amendment draft for your sign-off.</li>
+      <li><b>Build and release.</b> The bundle keeps its stable address (<code>assets/main.ce.js</code>), and <code>scripts/preflight.sh</code> exits 0 before the push.</li>
+      <li><b>Ranking</b> on an unlinked page, checked at 375 px and at computer width. Then <b>you approve it by name</b>, and it is swapped into <code>/klasyfikacja/</code> (R1).</li>
+      <li><b>Points table</b> page, checked the same way. You approve it, and <b>you add the menu item</b> in wp-admin.</li>
+      <li><b>Calendar</b> page body gains the switcher attribute last, once the other two pages are live.</li>
+      <li>A final check of all three pages on a phone and a computer, followed by a report.</li>
+    </ol>
+  </section>
+
+  <section id="paper">
+    <p class="kicker">09 · Paper trail</p>
+    <h2>ADRs and documentation this touches</h2>
+    <ul>
+      <li><b>ADR-090 amendment</b> (no new ADR, because ADR-090 says the ranking follows its pattern). It covers three things. The switcher replaces §1's "a single embed has no second view". A full-window frame is allowed for a standalone static document, which narrows the §Alternatives rejection of frames. And <code>/klasyfikacja/</code> is modified, if R1 is chosen, which reverses §8's "not modified" sentence with your approval on record.</li>
+      <li><b>ADR-092</b> gets a note that its stated WordPress destination is now reached, and how.</li>
+      <li><b>Handbook:</b> <code>subsystems/frontend-and-automation.html</code> and <code>operations/environments-and-release.html</code>. Reference copies of each published page body go in <code>doc/wordpress/</code>, with the anon key redacted as on the existing copy.</li>
+    </ul>
+  </section>
+
+  <section id="out">
+    <p class="kicker">10 · Boundaries</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li><b>The top-level "Kalendarz" menu item</b> still points at the hand-typed <code>/kalendarz-2/</code>, while the live calendar sits under LINKI. Pointing it at <code>/znajdz-zawody/</code> is a separate decision for you, and it takes one minute in wp-admin.</li>
+      <li><b>The points calculator</b> (ADR-085). The annex now contains a single-result calculator, so a separate WordPress page for the calculator looks redundant. I suggest leaving it out.</li>
+      <li><b>Moving admin off GitHub Pages.</b> It is not needed for this, and ADR-090 §3 keeps it there.</li>
+      <li><b>Shareable filter links</b>, for example a link that opens directly on women's épée V2. These could be added later. Nobody has asked for them.</li>
+      <li><b>Spotted in passing:</b> the live "Członkostwo" menu item has the address <code>http://czonkostwo</code>. It opens a dropdown on a computer, so nobody notices, but the address is broken. It can be fixed in wp-admin.</li>
+    </ul>
+  </section>
+
+  <p class="foot">SPWS Automated Ranklist · WordPress UI brainstorm · 2 October 2026 · facts read on this date from the live site's HTML (menu, <code>/klasyfikacja/</code>, <code>/znajdz-zawody/</code>), <code>origin/main</code> (<code>RanklistElement.svelte</code>, <code>App.svelte</code>, <code>tabela-punktacji.html</code>) and ADR-090 / ADR-092. Nothing was built, published or changed.</p>
+</div>
