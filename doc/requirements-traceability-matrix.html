@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="2def7671171ef1c7fa6a6f08e412371c232cb8d7a18c17c609f156cfbd65594e">
+<meta name="doc-source-sha256" content="0160fd56eea44c9e1bec850e261837967da32d3f45fd744594dfae9fe2a7f0f9">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -623,7 +623,7 @@
 <td>FR-86</td>
 <td>CERT → PROD promotion: whole active-season event reconciliation plus event/results promotion; stable identities and environment-local FKs are resolved rather than copied; <code>id_evf_calendar_event</code> is carried on create/fill and the active-season mismatch/delete guards remain fail-closed.</td>
 <td>ADR-026, ADR-028, ADR-081, ADR-108</td>
-<td>pgTAP 51.*, 53.13, 97 (ALIGN.01–28), 98 (REG.01–08), 99 (SEED.01–08), 100 (RUN.01–13), 102 (GATE.DB.01–16); pytest <code>test_promote.py</code>, <code>test_promotion_identity.py</code> (PROMO.ID.01–16), <code>test_promotion_refresh.py</code> (PROMO.REFRESH.01–23), <code>test_seed_export.py</code> (PROMO.SEED.01–05), <code>test_ingest_run.py</code> (PROMO.RUN.01–12), <code>test_promotion_gate.py</code> (PROMO.GATE.01–22), <code>test_promotion_plan.py</code> (PROMO.PLAN.01–13)</td>
+<td>pgTAP 51.*, 53.13, 97 (ALIGN.01–28), 98 (REG.01–08), 99 (SEED.01–08), 100 (RUN.01–13), 102 (GATE.DB.01–16), 103 (APPLY.01–11); pytest <code>test_promote.py</code>, <code>test_promotion_identity.py</code> (PROMO.ID.01–16), <code>test_promotion_refresh.py</code> (PROMO.REFRESH.01–23), <code>test_seed_export.py</code> (PROMO.SEED.01–05), <code>test_ingest_run.py</code> (PROMO.RUN.01–12), <code>test_promotion_gate.py</code> (PROMO.GATE.01–22), <code>test_promotion_plan.py</code> (PROMO.PLAN.01–13)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -2043,5 +2043,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>2def7671171ef1c7fa6a6f08e412371c232cb8d7a18c17c609f156cfbd65594e</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>0160fd56eea44c9e1bec850e261837967da32d3f45fd744594dfae9fe2a7f0f9</code></footer>
 </div></body></html>
