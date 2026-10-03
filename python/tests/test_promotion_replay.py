@@ -619,6 +619,14 @@ class TestWiring:
         assert replay_step["env"]["SUPABASE_URL"] == "${{ secrets.SUPABASE_PROD_URL }}"
         assert "SUPABASE_PROD_DB_URL" not in (ROOT / ".github/workflows/promote.yml").read_text()
         assert jobs["seed"]["continue-on-error"] is True
+
+        # The resolve job imports the same module (and its notifier), so it installs the same packages.
+        def installs(job: str) -> str:
+            return next(
+                s["run"] for s in jobs[job]["steps"] if s.get("name") == "Install dependencies"
+            )
+
+        assert installs("resolve") == installs("promote")
         assert "rebase" in " ".join(s.get("run") or "" for s in jobs["seed"]["steps"])
 
         ingest = wf("ingest-event.yml")
