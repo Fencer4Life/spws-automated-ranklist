@@ -125,19 +125,39 @@
   <h1>Seven results whose category contradicts the fencer's birth year</h1>
   <p class="dek">The category check lists seven results on PROD, and the same seven on CERT. All are international, and all were stored legally, with the category their source printed. <b>They have two unrelated causes.</b> Three come from a one-year difference in how the World Championships count age. Four come from a birth year on our roster that two sources contradict. Nothing has been changed. Two decisions are below.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>2 decisions waiting</span>
-    <span class="pill"><span class="dot"></span>Nothing written</span>
+    <span class="pill"><span class="dot"></span>V1 A and V2 A decided 3 Oct</span>
+    <span class="pill"><span class="dot"></span>LEAHEY 1969 on PROD, CERT, LOCAL</span>
+    <span class="pill warn"><span class="dot"></span>Check change: in release</span>
     <span class="pill">vw_vcat_violation · ADR-047, ADR-056, ADR-106</span>
   </div>
 
   <hr class="rule">
 
   <section>
-    <p class="kicker">Decide this first</p>
-    <h2>Two decisions</h2>
+    <p class="kicker">Decided 3 Oct</p>
+    <h2>Two decisions, both A</h2>
 
-    <div class="note warn">
-      <p class="lede"><span class="tick">? V1</span> LEAHEY John (#167): which birth year</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> What has been done</p>
+      <ul>
+        <li><b>V1 A.</b> #167 LEAHEY John changed from 1976 to 1969, confirmed. On PROD it was one guarded update, read first and returned by the update.
+          <ul>
+            <li>CERT and LOCAL took the same update. CERT now holds the six PPW1 entrants PROD does not have, so a refresh would stop on them until promote; the update keeps CERT equal to PROD meanwhile.</li>
+            <li>PROD's check then listed 4: the three World Championships rows, and his 2023/24 European Championships row, which is now the one result 1969 does not fit.</li>
+          </ul></li>
+        <li><b>V2 A.</b> Migration <code>20261003000012_vcat_violation_calendar_year.sql</code>, written test first:
+          <ul>
+            <li>pgTAP 24.5–24.8. 24.5 and 24.8 failed on the old view, and all 8 pass on the new one;</li>
+            <li>ADR-047 and ADR-106 amended, Appendix C updated, pgTAP total 1279;</li>
+            <li>the handbook page on identity and recompute describes the guard and the check;</li>
+            <li>after the release, PROD and CERT are to list one row: the European Championships result.</li>
+          </ul></li>
+        <li><b>Still open:</b> the European Championships 2023/24 source check (step 2 below). The event is stored with no address and a placeholder date, so its results have to be found first.</li>
+      </ul>
+    </div>
+
+    <div class="note plain">
+      <p class="lede"><span class="tick">✓ V1 A</span> LEAHEY John (#167): which birth year</p>
       <p>Our roster has <b>1976</b>, marked confirmed, from the original import and never changed since. Two independent sources say <b>1969</b>: EVF's date of birth for him, recorded in the 2 Oct re-staging review, and his own registration for PEW5efs-2026-2027, which declares 1969. That registration has no fencer link, so it never reached the Birth-year review tab.</p>
       <ul>
         <li><b>A (recommended): 1969, confirmed, set on PROD.</b> It fits 12 of his 13 results. The four 2024/25 rows stop being flagged. One row then becomes flagged: his V1 result at the 2023/24 European Championships, a seed-imported row with no source address and a placeholder date. It needs checking against that championship's results before anyone changes it. The refresh carries the year to CERT. No published ranking moves (section 4).</li>
@@ -145,8 +165,8 @@
       </ul>
     </div>
 
-    <div class="note warn">
-      <p class="lede"><span class="tick">? V2</span> The three World Championships results: what the check should say about them</p>
+    <div class="note plain">
+      <p class="lede"><span class="tick">✓ V2 A</span> The three World Championships results: what the check should say about them</p>
       <p>KORONA Przemysław and KROCHMALSKI Jakub, both born 1976, fenced V1 at the World Championships of 12–16 November 2025. SPWS counts them as V2 for 2025/26. Both facts are right. The Championships count age in the calendar year of the event (49 in 2025), while SPWS counts it in the season's end year (50 in 2026). ADR-106 already accepts this shift when it identifies international results. The check was never taught it.</p>
       <ul>
         <li><b>A (recommended): keep the results and the ranking as they are, and teach the check the same shift.</b> A result that carries its source's label passes when that label equals the category for the calendar year in which the event started. These three pass. LEAHEY's 2024/25 rows would still fail under 1976 (48 and 49 are V1 in either year), so the change hides nothing that is wrong. This needs a migration for the view, pgTAP, and an amendment to ADR-047 and ADR-106. It would be one small release.</li>
