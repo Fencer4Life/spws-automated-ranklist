@@ -16,7 +16,7 @@ Two phases (one plugin, all name→fencer logic in one place):
             midpoint. Asymmetric safety — create-over-uncertain-link; duplicates
             are swept by DEDUP_SWEEP (ADR-071, M5).
 
-Reuses the existing helpers verbatim (`_find_exact_fencer`, `_row_authoritative_vcat`,
+Reuses the existing helpers verbatim (`_lookup_exact_fencer`, `_row_authoritative_vcat`,
 `vcat_for_age`, `find_best_match`, `estimate_birth_year`, `db.insert_fencer`,
 `db.update_fencer_birth_year`) — no new domain logic, only a new orchestration.
 effects: master_data — emits the change that drives self-healing recompute (ADR-072).
@@ -38,11 +38,13 @@ from python.pipeline.stages import (
     _admit_international_rows,
     _admitted_match,
     _bracket_mixed_gender,
-    _find_exact_fencer,
     _is_domestic,
     _is_international_intake,
+    _lookup_exact_fencer,
     _row_authoritative_vcat,
     reconcile_fencer_birth_year,
+    record_undecided,
+    undecided_match,
 )
 from python.pipeline.types import StageMatchResult
 
@@ -103,6 +105,7 @@ class ResolveFencers(BasePlugin):
         # bracket must not move anyone's BY (ADR-056 amend, Guard 2).
         override_at: dict[int, Any] = {}
         exact_at: dict[int, int] = {}
+        undecided_at: dict[int, Any] = {}
         matched_ids: list[int] = []
         for idx, (vcat, r) in enumerate(rows):
             ovr = pctx.overrides.identity_for(r.fencer_name)
@@ -111,22 +114,31 @@ class ResolveFencers(BasePlugin):
                 if ovr.id_fencer is not None:
                     matched_ids.append(ovr.id_fencer)
                 continue
-            exact_id = _find_exact_fencer(
-                r.fencer_name, getattr(r, "fencer_country", None), fencer_db
+            # Namesakes are told apart by birth year; a two-category gap is a
+            # data error (NAMESAKE.01–09). An undecided row never reaches the
+            # fuzzy phase, which would create a fencer for it.
+            lookup = _lookup_exact_fencer(
+                r.fencer_name, getattr(r, "fencer_country", None), fencer_db, vcat, season_end
             )
-            if exact_id is not None:
-                exact_at[idx] = exact_id
-                matched_ids.append(exact_id)
+            if lookup.id_fencer is not None:
+                exact_at[idx] = lookup.id_fencer
+                matched_ids.append(lookup.id_fencer)
+            elif lookup.undecided:
+                undecided_at[idx] = lookup
             else:
                 remaining.append((vcat, r))
 
         bracket_mixed = _bracket_mixed_gender(matched_ids, fencer_db, parsed_gender)
 
+        source = getattr(pctx.parsed.source_kind, "value", str(pctx.parsed.source_kind))
         for idx, (vcat, r) in enumerate(rows):
             if idx in override_at:
                 matches.append(
                     self._from_override(r, override_at[idx], fencer_db, season_end, vcat)
                 )
+            elif idx in undecided_at:
+                record_undecided(pctx, r.fencer_name, undecided_at[idx], vcat, season_end, source)
+                matches.append(undecided_match(r, undecided_at[idx], vcat, season_end))
             elif idx in exact_at:
                 gby = self._reconcile_by(
                     ctx, db, fencer_db, exact_at[idx], vcat, season_end, touched, r, bracket_mixed
