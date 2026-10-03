@@ -6,7 +6,7 @@ Adds **`ingest <prefix> <url> [cert|prod]`** to the Telegram bot: re-ingest one 
 CERT (or PROD), populate `url_results`, and get the staging report(s) back in the chat. Then review and
 `promote`. The bare `ingest` (no args) keeps its old "process emailed staging files" behaviour.
 
-**The full, ready-to-paste script is in the repo:** [`doc/gas/Code.gs`](../../gas/Code.gs). It is the *entire* GAS
+**The full, ready-to-paste script is in the repo:** [`scripts/gas_email_ingestion.js`](../../../scripts/gas_email_ingestion.js) (formerly `doc/gas/Code.gs`). It is the *entire* GAS
 project with the change already applied — you replace your whole `Code.gs` with it. **No new Script
 Properties** are needed (it reuses `GITHUB_PAT`, `GITHUB_REPO`, `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF`,
 `SUPABASE_PROD_REF` that your existing commands already use), and `ingest-event.yml` is already on `main`.
@@ -46,7 +46,7 @@ keep it to **one** `ingest` per message.
 ## 3. Replace the whole `Code.gs`
 
 1. In the editor, open the file that holds `checkTelegramCommands` (usually **`Code.gs`**).
-2. Open [`doc/gas/Code.gs`](../../gas/Code.gs) from this repo → **Select All (Ctrl-A) → Copy**.
+2. Open [`scripts/gas_email_ingestion.js`](../../../scripts/gas_email_ingestion.js) (formerly `doc/gas/Code.gs`) from this repo → **Select All (Ctrl-A) → Copy**.
 3. Back in the Apps Script editor: click in the code, **Select All (Ctrl-A) → Paste** (overwrite everything).
 4. **Save** (Ctrl-S, or the 💾 icon).
 

@@ -1,6 +1,6 @@
 # ADR-023: Email Ingestion via Google Apps Script + Supabase Storage
 
-**Status:** Accepted
+**Status:** Superseded (2026-10-03: the e-mail intake is retired; results reach CERT from the organiser's results URL, ADR-050 and ADR-108)
 **Date:** 2026-04-05 (Go-to-PROD)
 
 ## Context
@@ -76,3 +76,9 @@ Email (.zip) → Gmail → GAS (polls every 5 min)
 - Storage costs are negligible (~40 MB per 100 seasons vs. 1 GB limit)
 - Archive `.zip` files enable re-import without digging through email
 - `PROCESSED` Gmail label prevents double-processing of the same email
+
+## Amendment 2026-10-03 — the e-mail intake is retired
+
+The e-mail intake had been unused since 11 April 2026 and had drifted from the system around it. `ingest.yml` ran `ingest_cli --from-storage --season-end-year 2026`: the deprecated direct write, with no draft review, no recorded run and a hard-coded season. Results now reach CERT from the organiser's results URL as a recorded run (`ingest <EVENT-CODE> <url>`, ADR-050, ADR-108), and reach PROD only through promote.
+
+Removed: the GAS e-mail check (`checkEmailForResults`) and its storage helpers; the Telegram commands `ingest` (no arguments), `staging`, `cleanup`, `pause` and `resume`; and `.github/workflows/ingest.yml`. The bot no longer reads `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`. Kept: the `xml-inbox` bucket and its files, and the deprecated `ingest_cli --from-storage` code, which nothing starts. FR-75–FR-77 are withdrawn. `scripts/gas_email_ingestion.js` is no longer a reference copy: the live Apps Script project runs it unchanged.

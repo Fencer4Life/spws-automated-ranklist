@@ -734,3 +734,7 @@ protects it.
 **Sending e-mail remains unavailable project-wide.** Any future feature that
 depends on outbound mail — delivery, notification or confirmation — is blocked by
 the same obstacle and must not be planned as though the capability exists.
+
+## Amendment (2026-10-03) — the Telegram `send` command is removed
+
+The bot no longer offers `send <EVENT_CODE> participants`. §5's delivery was withdrawn on 2026-09-25, so the command could only start a workflow that has never run. The bot's source is `scripts/gas_email_ingestion.js`; the `doc/gas/Code.gs` copy named in §5's trigger table is gone. `ftl-seed.yml` and its admin-UI trigger are unchanged.

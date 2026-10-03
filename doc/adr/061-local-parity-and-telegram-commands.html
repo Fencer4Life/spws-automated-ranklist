@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="061-local-parity-and-telegram-commands.md">
-<meta name="adr-source-sha256" content="0ea5d10df3d6ab5bf346e0293b369f3a44f16879946552198e4b9f66ad6f9fc1">
+<meta name="adr-source-sha256" content="83144847d163ce5a9547af81f39fa9d18e5b6c7b2a8a7504c95946e85f966f34">
 <title>ADR-061 · LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 061</p><h1>LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>061-local-parity-and-telegram-commands.md</code></dd></div><div><dt>Length</dt><dd class="">93 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed (Telegram command surface withdrawn 2026-10-03, never deployed)</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>061-local-parity-and-telegram-commands.md</code></dd></div><div><dt>Length</dt><dd class="">97 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (Telegram command surface withdrawn 2026-10-03, never deployed)
 <strong>Date:</strong> 2026-05-03
 <strong>Amends:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-041 (Edge function dispatch), ADR-050 (Unified Ingestion Pipeline).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#local-workflow-guarantee-unchanged-from-today">LOCAL workflow guarantee (unchanged from today)</a></li><li class="depth-3"><a href="#cert-command-surface-telegram-driven">CERT command surface — Telegram-driven</a></li><li class="depth-3"><a href="#dispatch-workflow-allowlist-extension">dispatch-workflow allowlist extension</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-build-local-parity-via-vite-shell-spawn-middleware">A. Build LOCAL parity via vite shell-spawn middleware</a></li><li class="depth-3"><a href="#b-lift-local-to-use-storage-too">B. Lift LOCAL to use Storage too</a></li><li class="depth-3"><a href="#c-skip-telegram-commands-require-admin-ui-for-all-cert-operations">C. Skip Telegram commands; require admin-UI for all CERT operations</a></li><li class="depth-3"><a href="#d-hardcode-workflow-names-in-gas-no-edge-fn-dispatch">D. Hardcode workflow names in GAS (no edge fn dispatch)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#local-workflow-guarantee-unchanged-from-today">LOCAL workflow guarantee (unchanged from today)</a></li><li class="depth-3"><a href="#cert-command-surface-telegram-driven">CERT command surface — Telegram-driven</a></li><li class="depth-3"><a href="#dispatch-workflow-allowlist-extension">dispatch-workflow allowlist extension</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-3"><a href="#a-build-local-parity-via-vite-shell-spawn-middleware">A. Build LOCAL parity via vite shell-spawn middleware</a></li><li class="depth-3"><a href="#b-lift-local-to-use-storage-too">B. Lift LOCAL to use Storage too</a></li><li class="depth-3"><a href="#c-skip-telegram-commands-require-admin-ui-for-all-cert-operations">C. Skip Telegram commands; require admin-UI for all CERT operations</a></li><li class="depth-3"><a href="#d-hardcode-workflow-names-in-gas-no-edge-fn-dispatch">D. Hardcode workflow names in GAS (no edge fn dispatch)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#status-deliverables-proposed-not-yet-shipped">Status — deliverables (proposed, not yet shipped)</a></li><li class="depth-2"><a href="#amendment-2026-10-03-the-telegram-command-surface-is-withdrawn">Amendment 2026-10-03 — the Telegram command surface is withdrawn</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Two requirements collided during Phase 5.5 planning:</p>
 <ol>
@@ -114,8 +114,11 @@
 <li><code>doc/archive/legacy-2026-07/cicd-operations-manual.md</code> updates: command cheat-sheet, runbook for fresh CERT/PROD setup, disaster recovery section</li>
 <li>CERT smoke test C16: end-to-end Telegram command verification</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-the-telegram-command-surface-is-withdrawn">Amendment 2026-10-03 — the Telegram command surface is withdrawn</h2>
+<p>The four commands (<code>regen</code>, <code>stage</code>, <code>parity</code>, <code>verdict</code>) and their help text never reached the deployed bot. They were added to <code>scripts/gas_email_ingestion.js</code> while the live Apps Script project ran another copy, and the two copies drifted apart. <code>parity</code> could not have worked, because <code>evf-parity-sweep.yml</code> declares no <code>event_code</code> or <code>target</code> input. <code>stage</code> would write CERT outside a recorded run, which ADR-108 rules out for a domestic event. <code>ingest-event.yml</code> already sends the staging report to Telegram. The commands are withdrawn, and FR-108 with them. <code>regen-report.yml</code> and <code>phase5-event-runner.yml</code> remain, started from the Actions page and the admin UI. The LOCAL-parity half of this ADR is unaffected.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="060-evf-parity-delta-md.html">← ADR-060: EVF parity sweep emits delta-only .md (no full.md overwrite)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="062-spws-bracket-name-filter.html">→ ADR-062: Skip non-SPWS bracket names at FTL event-schedule discovery</a></nav>
-<footer class="foot">Generated from <code>061-local-parity-and-telegram-commands.md</code> · source SHA-256 <code>0ea5d10df3d6ab5bf346e0293b369f3a44f16879946552198e4b9f66ad6f9fc1</code></footer>
+<footer class="foot">Generated from <code>061-local-parity-and-telegram-commands.md</code> · source SHA-256 <code>83144847d163ce5a9547af81f39fa9d18e5b6c7b2a8a7504c95946e85f966f34</code></footer>
 </div></body></html>
