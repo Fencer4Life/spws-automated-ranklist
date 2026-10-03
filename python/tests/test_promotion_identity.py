@@ -277,7 +277,9 @@ class TestReport:
 
     def test_an_empty_list_reads_as_empty_not_as_nothing(self):
         """PROMO.ID.16 — "[]" and "—" say what is there; a blank looks cut off."""
-        cert = idn.normalise_roster([{**_fencer("NOWAK", "Jan", 1975), "json_name_aliases": ["NOWAK J."]}])
+        cert = idn.normalise_roster(
+            [{**_fencer("NOWAK", "Jan", 1975), "json_name_aliases": ["NOWAK J."]}]
+        )
         prod = idn.normalise_roster([{**_fencer("NOWAK", "Jan", 1975), "json_name_aliases": []}])
         assert idn.diff(cert, prod).lines("CERT", "PROD") == [
             "nowak jan (1975) · json_name_aliases: CERT NOWAK J., PROD []"
