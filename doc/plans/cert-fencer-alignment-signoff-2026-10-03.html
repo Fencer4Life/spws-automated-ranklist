@@ -121,10 +121,10 @@
 <div class="wrap">
   <p class="eyebrow">ADR-108 · build step 4 · sign-off before anything is written on CERT · 3 Oct 2026</p>
   <h1>CERT gets PROD's fencer ids: what the first refresh will change</h1>
-  <p class="dek">The refresh is built and tested, and it ran end to end on LOCAL. This page shows exactly what it will do on CERT, read from CERT and PROD today, and the order in which it runs. <b>You signed off S1 and P7 on 3 Oct.</b> One new question, P8, has to be answered before the first promote, but not before the CERT run.</p>
+  <p class="dek">The refresh is built and tested, and it ran end to end on LOCAL. This page shows exactly what it will do on CERT, read from CERT and PROD today, and the order in which it runs. <b>You signed off S1, P7 and P8 on 3 Oct.</b> The two birth years they settle are set on PROD.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>S1 and P7 signed off 3 Oct</span>
-    <span class="pill warn"><span class="dot"></span>P8 open: needed before promote</span>
+    <span class="pill"><span class="dot"></span>S1, P7 and P8 signed off 3 Oct</span>
+    <span class="pill"><span class="dot"></span>Carried out 3 Oct: CERT refreshed, PPW1 on CERT</span>
     <span class="pill"><span class="dot"></span>LOCAL rehearsal passed</span>
     <span class="pill">Plan: promote-verified-replay-2026-10-03.html</span>
   </div>
@@ -132,18 +132,25 @@
 
   <section>
     <p class="kicker">Decide this first</p>
-    <h2>One open decision, two made</h2>
+    <h2>Three decisions, all made</h2>
 
-    <div class="note warn">
-      <p class="lede"><span class="tick">? P8</span> BUJKO Paulina (#30): a declared year against a confirmed one, with nothing to choose between them</p>
-      <p>Found in the P7 rehearsal on LOCAL. On PROD, fencer #30 has birth year <b>1979, confirmed</b>. Her PPW1 registration (20 Aug) declares <b>1982</b> and has no fencer link, so it never became a proposal in the Birth-year review tab. The 25 Sep proposals went through that tab.</p>
-      <p>Both years fit everything she has fenced: V1 sabre in 2023/24 and V1 now. Only the declaration chooses. The ingestion's declared-years rule (D5) takes it because it fits the V1 bracket, so the CERT ingestion will write 1982, confirmed, and promote would carry it to PROD. On the registration path, the same change waits for an administrator (migration <code>20260912000003</code>).</p>
-      <p>A second fencer matched the same rule, and his results settle it: STANISŁAWSKI Albert (#282), confirmed 1991, declared 1987. His V0 results in 2025/26 need 1987 or later, and his V1 entry needs 1987 or earlier. <b>1987 is the only year that fits</b>, and the bracket rule alone would set it too. No decision is needed for him.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P8</span> BUJKO Paulina (#30): her declared 1982. Decided 3 Oct</p>
+      <p>Your answer: <i>update her birth year as declared.</i></p>
       <ul>
-        <li><b>A (recommended):</b> you decide her year by name now, the way the 25 Sep proposals were decided. It is set on PROD. If you keep 1979, she joins the PPW1 override file like #124. As a general rule, a declaration never overwrites a confirmed year unless the fencer's results leave no other year, as with #282. Any other case becomes a blocking identity issue in the CERT gate (build step 7).</li>
-        <li><b>B:</b> the declaration wins whenever it fits the bracket (D5 as released), so 1982.</li>
+        <li><b>Set on PROD, 3 Oct:</b> #30 from 1979 to <b>1982, confirmed</b>, in one guarded update. The refresh copies it to CERT. The ingestion then finds the declared and stored years equal, so it writes nothing for her.</li>
+        <li><b>On PROD in the same session:</b> #124 KIEROŃSKI Tomasz from 1990 (an estimate) to 1986, confirmed, for P7.</li>
+        <li><b>Checked afterwards:</b> the category check reports no result for either of them in a category their year forbids.</li>
+        <li><b>Seven PROD events are queued for recompute</b> (PROD drains every 15 minutes). Nobody changes category, so no score changes. The events:
+          <ul>
+            <li>2023/24: GP4, GP7, GP8 and MPW. These are #124's men's sabre V0 results, and MPW also holds #30's only result, women's sabre V1;</li>
+            <li>2024/25: MPW, PPW2 and PPW4, #124's men's sabre V0.</li>
+          </ul>
+          The queue keeps one row per event, so #30's change added none: MPW-2023-2024 was already queued for #124.</li>
       </ul>
-      <p>CERT can be ingested first: the next refresh resets CERT's master data from PROD, and the CERT ingestion is re-run after the answer if it changes anything.</p>
+      <p><b>What was asked.</b> This was found in the P7 rehearsal. Her PPW1 registration (20 Aug) declares 1982 and has no fencer link, so it never reached the Birth-year review tab, where the 25 Sep proposals were decided. Both 1979 and 1982 fit everything she has fenced: V1 sabre in 2023/24, and V1 now.</p>
+      <p><b>The second fencer the rule matched needs nothing.</b> STANISŁAWSKI Albert (#282), confirmed 1991, declared 1987. His V0 results in 2025/26 and his V1 entry leave only 1987, so the ingestion sets that year, and the bracket rule alone would set it too.</p>
+      <p>The general rule, a declaration against a confirmed year, comes back with the CERT gate (build step 7), together with P7's.</p>
     </div>
 
     <div class="note good">
@@ -182,6 +189,31 @@
       </ol>
     </div>
 
+  </section>
+
+  <section>
+    <p class="kicker">Carried out · 3 Oct</p>
+    <h2>S1, step by step, with what each step showed</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Release</td><td><code>scripts/preflight.sh</code> exit 0, all 15 gates. Main <code>163573f6</code>; CI 37116014523 and Release 37116093911 green, deploy to CERT and to PROD included. Both functions exist on CERT and PROD, executable by <code>service_role</code> only.</td></tr>
+        <tr><td>PROD writes</td><td>#124 from 1990 (an estimate) to 1986, confirmed (P7). #30 from 1979 to 1982, confirmed (P8). Each was one guarded row, read first and returned by the update.</td></tr>
+        <tr><td>CERT dry run</td><td>Nothing persisted. 367 paired, 348 renumbered, 19 already at PROD's id, none created or deleted. 13 values: the eleven listed below plus #124 and #30.</td></tr>
+        <tr><td>CERT apply</td><td>The restore point was saved first. 348 renumbered and 13 values taken. CERT's 8 test registrations were replaced by PROD's 90. The roster re-read equals PROD's in every column.</td></tr>
+        <tr><td>Drain</td><td>CERT's own workflow drained the queue: 27 events, run 37116463686, queue empty. There is no CERT key on this machine, so the drain runs there.</td></tr>
+        <tr><td>Results comparison</td><td>All <b>2,878</b> finished-season results on CERT equal PROD's, row for row: same tournament, fencer id, place, score and match method. 2026/27 holds no results on either side.</td></tr>
+        <tr><td>PPW1 ingested on CERT</td><td>Run 37116799922. 14 FTL tournaments became 25 PPW brackets with no faults: <b>102 results for 84 fencers</b>, all scored. These figures match the LOCAL rehearsal.
+          <ul>
+            <li>Six new entrants at ids 368–373, straight after PROD's 367, each with the declared year, confirmed.</li>
+            <li>The event is IN_PROGRESS, with the FTL schedule URL stored. The 2026/27 season is locked on <code>SPWS_EVF_JOINED_V1_2026_2027</code>.</li>
+            <li>One birth year changed: STANISŁAWSKI Albert (#282), 1991 to 1987, the only year his results allow. #124 stayed at 1986 (the override), and #30 already matched.</li>
+            <li>His five events were re-scored by the drain (run 37116961518). After it, the 2,878 finished-season results still equal PROD's.</li>
+            <li>The staging report went to Telegram. It sits in CERT's private <code>staging-reports</code> bucket as <code>PPW1-2026-2027/full.md</code>.</li>
+          </ul></td></tr>
+        <tr><td>Category check</td><td>7 results sit in a category their fencer's year forbids, the same 7 on CERT and PROD. All are older international results: PEW 2024/25 (LEAHEY John) and IMSW 2025/26 (KORONA Przemysław, KROCHMALSKI Jakub). Nothing from the refresh or PPW1. Not touched here.</td></tr>
+      </tbody>
+    </table></div>
   </section>
 
   <section>
