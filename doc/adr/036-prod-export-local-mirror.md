@@ -252,6 +252,16 @@ On 3 October 2026, LOCAL held 373 fencers with ids up to 971, against PROD's 367
 
 The 2026-09-12 rule applies to the first id-keeping seed: the full suite passes on it before the `seed_prod_latest.sql` pointer moves.
 
+**Implemented 2026-10-03.**
+
+- **The load.** The seed's fencer section is one call, `SELECT fn_seed_load_fencers(<PROD's roster>::jsonb, <PROD's id sequence>)` (migration `20261003000013`).
+  - It pairs every fencer already present with exactly one roster row, by name and birth year, and refuses by name a fencer the roster lacks (`SEED_FENCER_NOT_IN_ROSTER`) or one that two rows describe (`SEED_FENCER_AMBIGUOUS`).
+  - It then calls `fn_align_fencers_to`. Its post-check that the roster equals the one given is the bootstrap's check against PROD.
+- **Results.** Every result carries PROD's `id_fencer`. `fencer_lookup` and its tests are removed.
+- **The mirror check.** `python -m python.pipeline.promotion.refresh --target local --mode verify` compares LOCAL with live PROD, id for id, and `scripts/mirror-prod-local.sh` stops on any difference. Its registrations now carry PROD's ids.
+- **First id-keeping seed.** `seed_prod_2026-10-03.sql`, re-exported the same day. LOCAL rebuilt from it equals PROD id for id, roster and all 2,878 finished-season results, with no refresh.
+- **Tests.** pgTAP SEED.01–08; pytest PROMO.SEED.01–05.
+
 ### 2. CERT is refreshed from PROD before every CERT ingestion
 
 ADR-108 §2 adds a sanctioned PROD → CERT flow for **master data only**. It covers:

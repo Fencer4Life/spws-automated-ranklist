@@ -94,7 +94,7 @@ BEGIN
 
   -- Five fencers, created here rather than looked up by surname: a lookup
   -- silently binds the first row when two fencers share a name (the defect
-  -- fixed in export_seed.py::fencer_lookup()).
+  -- the seed's own name lookup once had).
   FOR i IN 1..5 LOOP
     INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
     VALUES ('SS26-GOLD-' || i, 'Test', 1970) RETURNING id_fencer INTO v_id;
