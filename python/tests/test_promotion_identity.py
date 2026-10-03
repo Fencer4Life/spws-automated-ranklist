@@ -1,4 +1,4 @@
-"""PROMO.ID.01–15 — comparing two environments by who people are, never by id.
+"""PROMO.ID.01–16 — comparing two environments by who people are, never by id.
 
 ADR-108 compares CERT with PROD at several points: the refresh's dry run, the
 input check before promote, the explanation when a fingerprint differs, and the
@@ -274,3 +274,11 @@ class TestReport:
         lines = idn.diff(a, b).lines(left="CERT", right="PROD")
         assert lines == ["T1 · nowak jan (1975) · int_place: CERT 1, PROD 2"]
         assert all("37" not in line and "38" not in line for line in lines)
+
+    def test_an_empty_list_reads_as_empty_not_as_nothing(self):
+        """PROMO.ID.16 — "[]" and "—" say what is there; a blank looks cut off."""
+        cert = idn.normalise_roster([{**_fencer("NOWAK", "Jan", 1975), "json_name_aliases": ["NOWAK J."]}])
+        prod = idn.normalise_roster([{**_fencer("NOWAK", "Jan", 1975), "json_name_aliases": []}])
+        assert idn.diff(cert, prod).lines("CERT", "PROD") == [
+            "nowak jan (1975) · json_name_aliases: CERT NOWAK J., PROD []"
+        ]

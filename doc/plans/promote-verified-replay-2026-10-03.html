@@ -528,6 +528,18 @@
           <li><b>Rehearsed on LOCAL first</b>: its ids differ from PROD&rsquo;s just as CERT&rsquo;s do.</li>
           <li>Then the CERT dry run comes to you, and only after your sign-off the CERT apply.</li>
           <li>Released alone; then run for PPW1 and ingest CERT (P5 A).</li>
+          <li><b>Status, 3 Oct:</b>
+            <ul>
+              <li><b>Built:</b> <code>fn_align_fencers_to</code> (pgTAP ALIGN.01–28, including a restore through the inverse pairing), <code>fn_replace_event_registrations</code> (REG.01–08), and <code>promotion/refresh.py</code> (PROMO.REFRESH.01–23).</li>
+              <li><b>Rehearsed on LOCAL:</b> 366 renumbered, 2,878 finished-season results identical to PROD by id.</li>
+              <li><b>CERT plan read:</b> 367 paired, 348 to renumber, 11 values.</li>
+              <li><b>Waiting for:</b> sign-off S1 and decision P7 on <code>doc/plans/cert-fencer-alignment-signoff-2026-10-03.html</code>.</li>
+            </ul></li>
+          <li><b>Recorded decisions:</b> <code>doc/overrides/fencer-alignment.yaml</code> takes <code>pair</code> entries only; no current fencer needs one.
+            <ul>
+              <li>A target-only fencer that is still referenced (test data) is removed first with the existing exact-code rollback.</li>
+              <li>A merge is made with the existing merge tools before a refresh.</li>
+            </ul></li>
         </ul></li>
       <li><b>Seed keeps PROD&rsquo;s ids (P1c)</b>: <code>export_seed.py</code> writes <code>id_fencer</code> and id references; the seed load aligns migration-created fencers through <code>fn_align_fencers_to</code>; the bootstrap and <code>mirror-prod-local.sh</code> fail on any roster difference with PROD. Then a seed refresh under ADR-036: the full suite must pass on the new seed before the pointer moves. Tests: <code>PROMO.SEED.*</code> and pgTAP.</li>
       <li><b>Run record</b>: the <code>tbl_ingest_run</code> migration (service_role only, ADR-083) and its writer in <code>ingest_cli</code>. pgTAP and <code>PROMO.RUN.*</code>.</li>
