@@ -44,7 +44,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install httpx pyyaml
+        # The same packages as the promote job: replay.py imports the pipeline's
+        # notifier, which imports the scrapers (beautifulsoup4).
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
 
       - name: Validate input
         run: |

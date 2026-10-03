@@ -122,19 +122,60 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">ADR-108 · build step 13 · Decide this first</p>
-  <h1>Promote rehearsal: what it needs from you</h1>
-  <p class="dek">Build steps 10, 11 and 12 are built and merged in the integration checkout (<code>a95c435a</code>, not pushed). Promote now replays the verified CERT run on PROD. The rehearsal runs that whole path with CERT as the source and LOCAL standing in for PROD. Before it can run, CERT must hold a <b>recorded</b> run of PPW1 2026/27, and today it does not.</p>
+  <p class="eyebrow">ADR-108 · build step 13 · Decide this next</p>
+  <h1>Promote rehearsal: passed. The real promote is next</h1>
+  <p class="dek">Steps 10&ndash;12 are released on CERT and PROD (main <code>0c35d799</code>). CERT holds a recorded, gated run of PPW1 2026/27, and promote replayed it on LOCAL, a copy of PROD, ending on exactly CERT&rsquo;s result. What remains is the real promote to PROD, which is your decision.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Steps 10&ndash;12 built, preflight exit 0</span>
-    <span class="pill warn"><span class="dot"></span>needs your push and PROD approval</span>
-    <span class="pill warn"><span class="dot"></span>needs a go for 4 CERT writes</span>
+    <span class="pill"><span class="dot"></span>Released, verified on CERT and PROD</span>
+    <span class="pill"><span class="dot"></span>CERT run 1 FINISHED, gate passed</span>
+    <span class="pill"><span class="dot"></span>Rehearsal: LOCAL equals CERT</span>
+    <span class="pill warn"><span class="dot"></span>real promote waits for you</span>
   </div>
-
   <hr class="rule">
 
   <section>
-    <p class="kicker">Decide this first</p>
+    <p class="kicker">Decide this next</p>
+    <h2>Promote PPW1 2026/27 to PROD now?</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b> (recommended)</td><td>I run <code>promote.yml</code> with <code>dry_run</code> ticked: everything on PROD up to and including the apply&rsquo;s dry run, which writes nothing. If it ends on the CERT run&rsquo;s fingerprint, I run it again without <code>dry_run</code>, then check PROD against CERT and report.</td></tr>
+        <tr><td><b>B</b></td><td>The real promote straight away (<code>promote PPW1-2026-2027</code> on Telegram, or <code>promote.yml</code>).</td></tr>
+        <tr><td><b>C</b></td><td>Wait.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: A.</b> The dry run is the first time promote talks to PROD&rsquo;s own API with the service-role key from GitHub, and it costs a minute. A registration on PROD after 18:48 UTC would change the inputs; the gate would then refuse, and the fix is to refresh CERT again, re-ingest it and promote (steps 4&ndash;6).</p>
+  </section>
+
+  <section>
+    <p class="kicker">Done · 3 Oct 2026, 18:44&ndash;18:54 UTC</p>
+    <h2>What each step showed</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Release</td><td>Pushed <code>0c35d799</code>; CI and Release green, PROD approved by you. On CERT and PROD: the carry stop in all 4 ranking functions, <code>fn_complete_event</code> takes only an exact code, <code>fn_promote_event_apply</code> in place; <code>promote.yml</code>, <code>ingest-event.yml</code> and <code>event-close.yml</code> active.</td></tr>
+        <tr><td>2 · Secret</td><td>Not needed: decision B, the apply goes through <code>SUPABASE_PROD_URL</code> with the service-role key. GAS file pasted.</td></tr>
+        <tr><td>3 · CERT rollback</td><td><code>fn_rollback_event</code>: 25 tournaments and 102 results deleted, PPW1 PLANNED. Nothing else referred to the 6 CERT-only fencers; CERT&rsquo;s queue held nothing pending.</td></tr>
+        <tr><td>4 · CERT refresh</td><td>Plan, then apply with a restore point: 367 paired at the ids they had, 0 renumbered, 0 values changed, 6 deleted (#368&ndash;373), PROD&rsquo;s 90 PPW1 registrations copied, sequence 367. CERT&rsquo;s roster equals PROD&rsquo;s, id for id. Nothing queued, so no drain.</td></tr>
+        <tr><td>5 · CERT ingest</td><td><code>ingest-event.yml</code> run 37145638514 at commit <code>d950fbcc</code>: CERT run 1 FINISHED. 14 listings read and committed (3 pools-only eliminations skipped, none unfinished), last day 27 Sep. 25 tournaments, 102 results. The 6 new fencers again at #368&ndash;373; no birth year moved, no alias added. The lifecycle rule set COMPLETED (everything final, end date passed). Result fingerprint <code>1819ebc0&hellip;</code>, the same as before the rollback.</td></tr>
+        <tr><td>6 · Gate</td><td>Passed, recorded on the run. Seven information findings only: each new name resembles an existing fencer; PERKOWSKI Maciej and SĘKOWSKI Maciej are told apart by their confirmed birth years.</td></tr>
+        <tr><td>7 · LOCAL from PROD</td><td><code>mirror-prod-local.sh</code>: 367 fencers, roster equal to PROD&rsquo;s id for id. Its registrations did not equal PROD&rsquo;s (the input part differed although both hold 90), so the first rehearsal stopped at the gate with <code>input.registrations</code> and wrote nothing. The refresh&rsquo;s own copy (<code>refresh --target local --mode apply</code>) made LOCAL&rsquo;s inputs equal PROD&rsquo;s and the CERT run&rsquo;s in every part but the lock (CERT locked by its scores, PROD not: allowed).</td></tr>
+        <tr><td>8 · Rehearsal</td><td><code>replay --prod-target local</code> from <code>d950fbcc</code>, 21 s in all: gate passed; plan 57 writes, status COMPLETED, no prior result; dry run ended on <code>1819ebc0ceb2</code>; apply wrote 57 in one call of LOCAL&rsquo;s API (the same 8 s limit as PROD&rsquo;s); nothing to drain; no difference from CERT. Checked afterwards, LOCAL against CERT: the same fingerprint, 25 tournaments, 102 results all scored, COMPLETED, the same 6 fencers at #368&ndash;373, sequence 373, season locked. Step 9&rsquo;s acceptance had 58 writes; the one fewer is STANISŁAWSKI&rsquo;s birth year, which PROD already holds.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Found on the way: the LOCAL mirror loads registrations differently</p>
+      <p><code>mirror-prod-local.sh</code> step 5 loads PROD&rsquo;s registrations in a way whose fingerprint part differs from PROD&rsquo;s, so a LOCAL rehearsal needs the refresh&rsquo;s copy after the mirror. Offered as a separate task.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Answered 3 Oct: A</p>
+    <h2>The earlier question, kept for the record</h2>
+  </section>
+
+  <section>
+    <p class="kicker">Decided 3 Oct: A</p>
     <h2>May I run the CERT steps myself once main is released?</h2>
     <p>Steps 3 to 6 below write CERT only. Nothing in them touches PROD.</p>
     <div class="tablewrap"><table>
