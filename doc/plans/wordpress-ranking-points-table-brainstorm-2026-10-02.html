@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WordPress UI for Ranking and Points table</title>
+<title>WordPress UI, rev 2: drawer, hosts, admin, calculator</title>
 <style>
   :root{
     --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
@@ -186,272 +186,402 @@
     .pc{grid-template-columns:1fr}
     .screen.desk{height:220px}
   }
+
+  /* ---- rev 2 additions: drawer, ribbon, admin marker, calculator mock ---- */
+  .ebar .burger{font-size:15px;color:#173f70;flex:none;line-height:1}
+  .phone .ebar .burger{font-size:13px}
+  .dup{outline:2px solid #c4161c;outline-offset:2px;border-radius:3px}
+  .ribbon{background:#f5c518;color:#3a2d00;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.05em;text-align:center;padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .phone .ribbon{font-size:8.5px}
+  .scrim{position:absolute;inset:0;background:rgba(15,25,40,.38);z-index:2}
+  .drawer{position:absolute;left:0;top:0;bottom:0;width:64%;background:#fff;z-index:3;box-shadow:6px 0 18px rgba(16,34,64,.25);padding:10px 0;font-size:12.5px;color:#173f70}
+  .desk .drawer{width:38%}
+  .drawer .dhome{display:flex;align-items:center;gap:6px;padding:4px 12px 10px;border-bottom:1px solid #e3e8ef;font-size:10.5px;color:#3a5a8a}
+  .drawer .dhome img{height:13px;width:auto}
+  .drawer .di{padding:7px 12px}
+  .drawer .di.on{font-weight:800;background:#eaf2fb;border-left:3px solid #2f6fd6;padding-left:9px}
+  .drawer .dsec{margin-top:6px;border-top:1px solid #e3e8ef;padding:8px 12px 2px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c8797}
+  .drawer .dlogin{margin:8px 12px 0;border:1px solid #c9d1dc;border-radius:7px;padding:5px 8px;text-align:center;font-size:11px;color:#173f70}
+  .envtag{font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.06em;padding:2px 6px;border-radius:5px;flex:none}
+  .envtag.prod{background:#c4161c;color:#fff}
+  .envtag.cert{background:#f5c518;color:#3a2d00}
+  .envsw{display:flex;justify-content:center;margin:6px 0}
+  .envsw span{font-family:var(--mono);font-size:9px;font-weight:800;border:1px solid #c9d1dc;padding:2px 6px;color:#173f70}
+  .envsw span.on{background:#2f6fd6;color:#fff;border-color:#2f6fd6}
+  .hero{margin:8px;border-radius:9px;background:linear-gradient(120deg,#123865,#2a63a6);color:#fff;padding:12px 14px}
+  .hero img{height:11px;width:auto;display:block;margin-bottom:6px;filter:saturate(1.2)}
+  .hero b{display:block;font-size:19px;line-height:1.1;letter-spacing:-.01em}
+  .phone .hero b{font-size:15px}
+  .hero span{display:block;font-size:10px;opacity:.9;margin-top:6px;line-height:1.35}
+  .txtsw{display:flex;justify-content:flex-end;padding:6px 8px 0}
+  .txtsw span{font-family:var(--mono);font-size:9px;font-weight:800;border:1px solid #c9d1dc;padding:2px 7px;color:#173f70;background:#fff}
+  .txtsw span.on{background:#153f73;color:#fff;border-color:#153f73}
+  .cbody{padding:8px 10px}
+  .crow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .cf{display:flex;flex-direction:column;gap:2px}
+  .cf small{font-size:7.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#5d6a7c}
+  .cf i{display:block;height:17px;min-width:44px;border:1px solid #c9d1dc;border-radius:5px;background:#fff;font-style:normal;font-size:10px;padding:2px 6px;color:#173f70}
+  .seg2{display:inline-flex;border:1px solid #c9d1dc;border-radius:6px;overflow:hidden;background:#eef1f5}
+  .seg2 span{font-size:9.5px;padding:3px 8px;color:#3a5a8a}
+  .seg2 span.on{background:#2f6fd6;color:#fff;font-weight:800}
+  .cres{margin-top:8px;border-left:4px solid #2f6fd6;background:#eaf2fb;border-radius:6px;padding:7px 10px;color:#173f70;display:flex;align-items:baseline;gap:6px}
+  .cres b{font-size:24px;line-height:1}
+  .phone .cres b{font-size:20px}
+  .cres span{font-size:10px}
+  .cres.old{border-left-color:#b42332;background:#fbecef}
+  .ctab{margin-top:8px;border:1px solid #e3e8ef;border-radius:6px;overflow:hidden}
+  .ctab div{display:grid;grid-template-columns:1fr 1fr 1fr;font-size:9px;padding:3px 8px;border-top:1px solid #eef1f5;color:#173f70}
+  .ctab div:first-child{background:#f3f5f8;font-weight:800;color:#5d6a7c;border-top:0;text-transform:uppercase;letter-spacing:.06em;font-size:8px}
+  .cdet{margin-top:6px;font-size:10px;color:#173f70;border-top:1px solid #e3e8ef;padding-top:5px}
+  .cdet span{display:block;padding:2px 0}
+  .bigq{font-weight:800}
+  .mapgrid td:first-child{white-space:nowrap}
+  /* validation fixes, 3 Oct: one-line drawer rows, flags in the phone drawer, roomier mocks */
+  .drawer{width:74%}
+  .desk .drawer{width:40%}
+  .drawer .dhome{white-space:nowrap;font-size:9.5px;overflow:hidden;text-overflow:ellipsis}
+  .drawer .di{white-space:nowrap;padding:6px 12px}
+  .drawer .di.on{padding-left:9px}
+  .phone .drawer{font-size:11.5px}
+  .drawer .dflags{display:flex;align-items:center;gap:6px;padding:6px 12px 8px;border-bottom:1px solid #e3e8ef;font-size:9.5px;color:#5d6a7c}
+  .screen.desk.tall{height:290px}
+  .screen.phone.wide{width:250px}
+  .phone.wide .ebar .t{font-size:12.5px}
+  .measured{font-size:16px;color:var(--muted)}
 </style>
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · Ranking + Points table · Brainstorm and advice · 2 October 2026</p>
-  <h1>One responsive version, one page per surface, full-screen</h1>
-  <p class="dek">You asked whether we need <b>two versions</b>, one tied to the WordPress menu for computers and one with the hamburger for phones. <b>My advice is no.</b> Build one version that adapts by screen width. Give each surface its own full-screen page on weteraniszermierki.pl, and keep the hamburger and the admin sign-in in the GitHub Pages app, where they already work.</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Ranking, Calendar, Calculator, Points table · Brainstorm rev 2 · 3 October 2026</p>
+  <h1>One drawer everywhere, and each environment on its own host</h1>
+  <p class="dek">Rev 2 answers your four points. <b>Navigation</b> is the hamburger drawer we already have, on every page, with the SPWS mark as the way home. <b>PROD</b> lives on WordPress and <b>CERT</b> lives on GitHub Pages under a yellow <b>TEST ENVIRONMENT</b> ribbon, with no CT/PD switch anywhere. <b>PROD admin</b> is an unlisted bookmark, linked from no menu. The <b>calculator</b> takes the ranklist's look: an app bar, a question as its title, and the calculator first. Every assumption was then checked against the live sites (§08). Two results changed the advice: where the admin bookmark lives, and where the language flags sit on phones.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Brainstorm, nothing built</span>
-    <span class="pill warn"><span class="dot"></span>1 decision first, then 3 with recommendations</span>
-    <span class="pill"><span class="dot"></span>follows ADR-090, the calendar's pattern</span>
+    <span class="pill"><span class="dot"></span>Brainstorm rev 2, nothing built</span>
+    <span class="pill"><span class="dot"></span>validated 3 Oct on the live sites</span>
+    <span class="pill warn"><span class="dot"></span>6 decisions, each with a recommendation</span>
+    <span class="pill"><span class="dot"></span>replaces rev 1 of 2 Oct</span>
   </div>
 
   <nav class="toc" aria-label="Contents">
     <strong>Read in this order</strong>
     <ol>
-      <li><a href="#answer">Your question: two versions?</a></li>
-      <li><a href="#shape">The shape I recommend</a></li>
-      <li><a href="#fullscreen">What "full-screen" can and cannot mean</a></li>
-      <li><a href="#decide-first">Decide this first: moving between the pages</a></li>
-      <li><a href="#decide-rest">Three more decisions, each with my recommendation</a></li>
-      <li><a href="#findings">What I found in the code that has to change</a></li>
-      <li><a href="#gates">Things I have not verified, and gates outside the code</a></li>
-      <li><a href="#golive">How it would go live</a></li>
-      <li><a href="#paper">ADRs and documentation this touches</a></li>
-      <li><a href="#out">Not in this plan</a></li>
+      <li><a href="#changed">What changed from rev 1, and why</a></li>
+      <li><a href="#nav">Point 1 · Navigation: the drawer, not tabs, not a logo menu, not a modal</a></li>
+      <li><a href="#admin">Point 2 · Admin: a bookmark, in no menu</a></li>
+      <li><a href="#split">Point 3 · PROD on WordPress, CERT on Pages, the yellow ribbon</a></li>
+      <li><a href="#calc">Point 4 · The calculator in the ranklist's look</a></li>
+      <li><a href="#map">Where every page lives afterwards</a></li>
+      <li><a href="#decide">Six decisions</a></li>
+      <li><a href="#code">What the code needs, measured today</a></li>
+      <li><a href="#paper">ADRs, documentation, order of work</a></li>
     </ol>
   </nav>
 
   <hr class="rule">
 
-  <section id="answer">
-    <p class="kicker">01 · Your question</p>
-    <h2>Two versions? No. One version that adapts to the screen.</h2>
-    <p>The split you describe already exists, and the WordPress theme does it for us. Its menu is a standard Bootstrap navigation bar (<code>navbar-expand-lg</code>). On a computer it shows as the horizontal red menu. Below 992 px it collapses into its own <strong>"Menu"</strong> hamburger. I read this from the live site's HTML today.</p>
-    <p>Our pages hide that theme menu so they can be full-screen. Inside the page we show <strong>one slim bar</strong>, and CSS changes how it is laid out by width. It is the same code at the same address, with a different arrangement on a phone than on a computer. That is how the calendar at <code>/znajdz-zawody/</code> has worked since September.</p>
+  <section id="changed">
+    <p class="kicker">01 · Rev 1 → rev 2</p>
+    <h2>What changed, and where rev 1 was wrong</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Topic</th><th>Rev 1 said</th><th>Rev 2</th></tr></thead>
+      <tbody>
+        <tr><td>Moving between pages</td><td>Tabs in the bar beside the title, so "Ranking" appeared twice. On a phone, a dropdown under the title.</td><td>The <b>existing hamburger drawer</b> on every page. §02 explains why.</td></tr>
+        <tr><td>Admin</td><td>Stays only in the github.io app, behind the CT/PD switch.</td><td>PROD admin as an <b>unlisted, <code>noindex</code> file on the Pages host</b>, kept as a bookmark. CERT admin on github.io. §03 shows why not a WordPress page.</td></tr>
+        <tr><td>CT/PD switch</td><td>Kept in the github.io app, with a "test environment" notice for visitors who are not signed in.</td><td><b>Gone everywhere.</b> github.io is CERT only, under a yellow ribbon. WordPress is PROD only.</td></tr>
+        <tr><td>Calculator</td><td>Called "redundant" and left out. <span class="chip over">wrong</span></td><td>It stays. ADR-102 keeps it, and the engine, the annex and the calculator are one family (scoring-family plan, signed off today). Rev 2 gives it the ranklist's look.</td></tr>
+        <tr><td>Which database the static pages read</td><td>"The Points table picks CERT whenever both are configured." <span class="chip over">wrong</span></td><td><code>release.yml</code> L159–162 gives the calculator and the annex the <b>PROD</b> connection only. After the split, the github.io copies read CERT and the WordPress copies read PROD.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="nav">
+    <p class="kicker">02 · Point 1 · Navigation</p>
+    <h2>The drawer, not tabs, not a logo menu, not a modal</h2>
+    <p>The duplicate came from rev 1's option B. The bar showed the page title "Ranking", and the tab strip beside it showed "Ranking" again as the active tab. A title plus tabs only works when the title names the site, not the page. Our bar names the page, so the tabs repeated it.</p>
+    <div class="mockset">
+      <div class="mockcol"><span class="mockcap">rev 1 B · the duplicate, outlined</span>
+        <div class="screen desk" style="height:120px">
+          <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t"><span class="dup">Ranking</span></span><span class="tabs"><span class="on dup">Ranking</span><span>Znajdź zawody</span><span>Tabela punktacji</span></span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+          <div class="fake"><div class="rows"><i></i><i></i><i></i></div></div>
+        </div></div>
+    </div>
+
+    <h3>Three ways to reach the other pages, compared</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Way</th><th>For</th><th>Against</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>Menu on logo click</b></td><td>No extra icon.</td><td>You asked for the logo to <b>lead home</b> to weteraniszermierki.pl. One mark cannot both open a menu and go home. A logo that opens a menu is also not discoverable: nobody expects it, so the other pages stay hidden.</td><td><span class="chip plain">no</span></td></tr>
+        <tr><td><b>A modal</b> (a centred window over a dimmed page)</td><td>Very visible.</td><td>A modal is for a task or a decision that must be finished before going on, like the season-rules window. As navigation it covers the whole page, needs a close button, and then still needs a button to open it, which is the hamburger again. <b>I do not recommend a modal.</b> Rev 1 did not propose one either: its phone variant was a short dropdown under the title.</td><td><span class="chip plain">no</span></td></tr>
+        <tr><td><b>Hamburger + side drawer</b>, as today</td><td><b>Already built and tested</b> (<code>Sidebar.svelte</code>). It already has the SPWS mark at the top linking to weteraniszermierki.pl, the four public entries (Ranking, Kalendarz, Kalkulator punktów, Tabela punktacji), and the admin section after sign-in. It is the same on a phone and a computer. It slides in from the edge, keeps the page visible beside it, and closes with a tap outside. People who use the github.io app already know it.</td><td>One more tap than visible tabs on a computer. The bar has room for tabs, but that room is what produced the duplicate.</td><td><span class="chip never">recommended</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="mockset">
+      <div class="mockcol"><span class="mockcap">computer · bar</span>
+        <div class="screen desk">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+          <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <span class="pill-float">ⓘ Reguły rankingu na sezon 2026/2027</span>
+        </div></div>
+      <div class="mockcol"><span class="mockcap">phone · drawer open, flags inside</span>
+        <div class="screen phone">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span></div>
+          <div class="fake"><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="scrim"></div>
+          <div class="drawer">
+            <div class="dhome"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"> ⌂ weteraniszermierki.pl</div>
+            <div class="dflags"><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span> język</div>
+            <div class="di on">Ranking</div><div class="di">Kalendarz</div><div class="di">Kalkulator punktów</div><div class="di">Tabela punktacji</div>
+          </div>
+        </div></div>
+    </div>
+    <p>On WordPress each drawer entry is a link to that page's WordPress address, so every page keeps its own address for bookmarks and sharing. Inside the github.io app the entries switch views, as they do today. The mark stays the way home in two places: in the bar, and at the top of the drawer.</p>
+    <div class="note accent">
+      <p class="lede"><span class="tick">▸</span> Measured: on phones the flags move into the drawer</p>
+      <p>On a 360 px phone the bar is already full. In the live github.io app, „Znajdź zawody" pushes the flags onto a second row today, and „Ile punktów za wynik?" does the same at 375 px. On the live WordPress calendar, adding a ☰ to the bar would clip "Find competitions" by 25 px and „Tabela punktacji" by 11 px.</p>
+      <p style="margin-bottom:0">With the flags moved into the drawer on phones, which frees 82 px in the WordPress bar, <b>every page title fits on one line at 360 px</b>, „Ile punktów za wynik?" included. On a computer the flags stay in the bar. Switching language on a phone costs one extra tap; most visitors read Polish.</p>
+    </div>
+  </section>
+
+  <section id="admin">
+    <p class="kicker">03 · Point 2 · Admin</p>
+    <h2>A bookmark for two or three people, in no menu</h2>
+    <p>Once the environments are separated (§04), PROD needs its own admin page. Some admin work exists only on PROD, by design:</p>
+    <ul>
+      <li>the registration switch <code>bool_use_spws_registration</code>, which PROD owns in both directions (handbook <em>Event status lifecycle</em>);</li>
+      <li>registrations and their identity proposals, because <code>register.html</code> writes to PROD only (ADR-079, amendment of 17 Aug);</li>
+      <li>corrections made on PROD to fees, links and the payment account, which the daily sync then leaves alone (ADR-086).</li>
+    </ul>
+    <p>Today these are reached by switching the github.io app to PD. Rev 2 gives them a page of their own:</p>
+    <div class="mockset">
+      <div class="mockcol"><span class="mockcap">the bookmark · computer, signed in</span>
+        <div class="screen desk tall">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Wydarzenia</span><span class="envtag prod">PROD</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+          <div class="fake"><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="scrim"></div>
+          <div class="drawer">
+            <div class="dhome"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"> ⌂ weteraniszermierki.pl</div>
+            <div class="di">Ranking</div><div class="di">Kalendarz</div>
+            <div class="dsec">Administracja · PROD</div>
+            <div class="di">Sezony</div><div class="di on">Wydarzenia</div><div class="di">Szermierze</div>
+          </div>
+        </div></div>
+      <div class="mockcol"><span class="mockcap">the bookmark · phone, before sign-in</span>
+        <div class="screen phone">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span></div>
+          <div class="fake"><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="scrim"></div>
+          <div class="drawer">
+            <div class="dhome"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"> ⌂ weteraniszermierki.pl</div>
+            <div class="dflags"><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span> język</div>
+            <div class="di on">Ranking</div><div class="di">Kalendarz</div><div class="di">Kalkulator punktów</div><div class="di">Tabela punktacji</div>
+            <div class="dlogin">Zaloguj</div>
+          </div>
+        </div></div>
+    </div>
+    <ul>
+      <li><b>Where: an unlisted file on the Pages host, not a WordPress page.</b> The bookmark is <code>fencer4life.github.io/spws-automated-ranklist/&lt;name nobody guesses&gt;.html</code>. It is a PROD build, linked from nowhere, with <code>noindex</code> in its own <code>&lt;head&gt;</code>. Rev 2's first draft put it on WordPress, and checking the live site overturned that, for two reasons:
+        <ul>
+          <li><b>WordPress would publish it.</b> The site's built-in sitemap, <code>wp-sitemap.xml</code>, lists every published page. Today that includes the token-gated <code>/pliki-zasilajace-xml-ftl/</code>. The site has no SEO plugin, so one page cannot be marked <code>noindex</code>. An "unlisted" WordPress page would sit in the sitemap for anyone to find.</li>
+          <li><b>The registration links would break.</b> When an admin ticks "use SPWS registration", <code>EventManager.svelte</code> L703–708 builds the fencers' link as <code>new URL('register.html', <i>this page</i>)</code>. On a WordPress page that points to a <code>register.html</code> that does not exist there. On the Pages host it keeps pointing at the real PROD form, with no code change.</li>
+        </ul>
+      </li>
+      <li><b>It also keeps ADR-090 §3 as it is</b>: administration stays off the association's site.</li>
+      <li><b>What it shows.</b> The same full-screen app as the public pages, plus a <b>Zaloguj</b> entry at the foot of the drawer. After sign-in (password and TOTP, ADR-016), the admin section appears in the drawer as it does today, and a red <span class="envtag prod">PROD</span> tag sits in the bar so nobody forgets which database they are changing.</li>
+      <li><b>What protects it.</b> Sign-in and the server-side grants (ADR-083), not the hidden address. The address only keeps the sign-in off the public pages. PROD's dispatch function already answers any origin (<code>access-control-allow-origin: *</code>, probed today), so the admin buttons work from this file.</li>
+      <li><b>"Keep it showing", as I read it.</b> The admin UI stays fully available: hamburger, drawer, sign-in and the admin section, just not advertised. If you meant a visible link somewhere on the public pages as well, decision W2 has that variant.</li>
+      <li><b>CERT admin</b> stays where it is: the github.io app with <code>?admin=1</code>, now CERT only.</li>
+    </ul>
+  </section>
+
+  <section id="split">
+    <p class="kicker">04 · Point 3 · Separate them permanently</p>
+    <h2>PROD on WordPress, CERT on GitHub Pages, and a yellow ribbon</h2>
+    <p>Agreed, and it is the plan you set at the start. The switch was only ever compensation for serving both environments from one host. Every page on github.io gets the ribbon. WordPress pages have no ribbon and no switch.</p>
+    <div class="mockset">
+      <div class="mockcol"><span class="mockcap">today · github.io</span>
+        <div class="screen desk">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+          <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="envsw"><span class="on">CT</span><span>PD</span></div>
+        </div></div>
+      <div class="mockcol"><span class="mockcap">rev 2 · github.io = CERT</span>
+        <div class="screen desk">
+          <div class="ribbon">ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl</div>
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+          <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        </div></div>
+      <div class="mockcol"><span class="mockcap">rev 2 · phone, github.io</span>
+        <div class="screen phone">
+          <div class="ribbon">ŚRODOWISKO TESTOWE · TEST</div>
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span></div>
+          <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        </div></div>
+    </div>
+    <p>The ribbon's link points visitors to the official site. It stays on screen and does not scroll away: on github.io, being told it is a test copy matters more than 20 px.</p>
+
     <div class="note warn">
-      <p class="lede"><span class="tick">!</span> Why two versions would cost more than they give</p>
+      <p class="lede"><span class="tick">!</span> Three things the split must not break</p>
       <ul style="margin-bottom:0">
-        <li><b>Device guessing goes wrong.</b> Tablets, rotated phones and narrow desktop windows land on the wrong version.</li>
-        <li><b>Shared links break.</b> A fencer sends the ranking link from a phone and the board member opens the phone version on a computer, or the other way round.</li>
-        <li><b>Everything is tested twice,</b> and every fix has to be made twice.</li>
+        <li><b>"Promote to PROD" still needs to read PROD.</b> The CERT app decides each season's button by reading PROD (<code>refreshPromotionState</code>, <code>App.svelte</code> L1455, through <code>fetchProdSeasonCodes</code>). Today that read and the switch share one flag, <code>dualEnv</code>. The split keeps the read-only PROD connection for this one purpose and removes the switch.</li>
+        <li><b>Dispatched jobs name their target from the page, not a switch.</b> <code>EventManager.svelte</code> L567–587 sends <code>target: activeEnv</code>. On github.io it becomes always <code>cert</code>, and on the PROD bookmark always <code>prod</code>.</li>
+        <li><b><code>register.html</code> stays PROD and gets no ribbon.</b> It is the public PROD form that fencers reach through each event's registration link, and <code>release.yml</code> L146 gives it PROD only. It is a PROD form that happens to be served from the Pages host, not part of CERT.</li>
       </ul>
     </div>
-    <div class="note accent">
-      <p class="lede"><span class="tick">☰</span> The hamburger does not go away</p>
-      <p style="margin-bottom:0">It stays in the <b>GitHub Pages app</b>, which is the admin app. Admins sign in there today with <code>?admin=1</code>, and the admin section appears in the hamburger drawer. ADR-090 §3 already decided that administration stays there and that the WordPress pages never offer the sign-in. The public never needed the hamburger. It only existed so one app could switch views, and on WordPress each view is its own page. So the hamburger does not need to come to WordPress at all.</p>
-    </div>
-  </section>
-
-  <section id="shape">
-    <p class="kicker">02 · The shape</p>
-    <h2>Three public pages on WordPress, one admin app on GitHub Pages</h2>
-    <div class="tablewrap"><table>
-      <thead><tr><th>Address</th><th>What it shows</th><th>For</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td><code>weteraniszermierki.pl/klasyfikacja/</code></td><td>Ranking, live from PROD (see decision D3 for the address)</td><td>everyone</td><td><span class="chip fill">new</span></td></tr>
-        <tr><td><code>weteraniszermierki.pl/znajdz-zawody/</code></td><td>Calendar with registration</td><td>everyone</td><td><span class="chip never">live since Sep</span></td></tr>
-        <tr><td><code>weteraniszermierki.pl/tabela-punktacji/</code></td><td>Points table (Załącznik nr 1)</td><td>everyone</td><td><span class="chip fill">new</span></td></tr>
-        <tr><td><code>fencer4life.github.io/spws-automated-ranklist/?admin=1</code></td><td>Admin app: hamburger, admin views, CT/PD switch</td><td>admins</td><td><span class="chip plain">unchanged</span></td></tr>
-      </tbody>
-    </table></div>
-    <p>Every public page gets the same treatment the calendar has:</p>
+    <p><b>GitHub Pages stays the file host.</b> What a visitor <em>sees</em> as a site at github.io is CERT, under the ribbon. Four kinds of PROD files are served from the same host. None of them is a page a visitor browses to, and none carries the ribbon:</p>
     <ul>
-      <li><b>Theme hidden.</b> The same <code>&lt;style&gt;</code> block as <code>/znajdz-zawody/</code> removes the site header, the menu, the page picture, the theme's page title and the footer. It has been proven on two live pages, so nothing new needs to be invented.</li>
-      <li><b>One slim bar on top.</b> It holds the SPWS mark, which links back to weteraniszermierki.pl as you suggested, the page name in the active language, and the PL/EN toggle. Decision D1 below is about adding a page switcher to this bar.</li>
-      <li><b>No CT/PD switch.</b> The page is given only the PROD connection, so the switch never renders. The app already behaves this way when it holds a single environment, and that is how the calendar works today.</li>
-      <li><b>No hamburger and no admin sign-in.</b> <code>?admin=1</code> is ignored on WordPress pages.</li>
+      <li><code>assets/main.ce.js</code>, which the live WordPress calendar already loads;</li>
+      <li>the PROD builds of the calculator and the annex, which WordPress frames (W5);</li>
+      <li><code>register.html</code>;</li>
+      <li>the unlinked PROD admin bookmark (§03).</li>
     </ul>
   </section>
 
-  <section id="fullscreen">
-    <p class="kicker">03 · "Full-screen always"</p>
-    <h2>What full-screen can and cannot mean on a web page</h2>
-    <div class="note good">
-      <p class="lede"><span class="tick">✓</span> Achievable, and already proven: the page gets the whole browser window</p>
-      <p style="margin-bottom:0">No site header, menu, page picture, title or footer. Our content starts at the top edge. This is what the calendar and the FTL export page do today.</p>
+  <section id="calc">
+    <p class="kicker">05 · Point 4 · The calculator</p>
+    <h2>Same look as the ranklist: an app bar, a question for a title, the calculator first</h2>
+    <p>Today the calculator opens with a large blue gradient banner, a 56 px title, a subtitle and a text-style PL/EN switch. On a 1280 × 800 screen, the calculator itself starts below the fold, after "W skrócie". Nothing about it says it belongs to the ranklist.</p>
+    <div class="mockset">
+      <div class="mockcol"><span class="mockcap">today</span>
+        <div class="screen desk">
+          <div class="txtsw"><span class="on">PL</span><span>EN</span></div>
+          <div class="hero"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><b>Kalkulator punktów za wynik</b><span>Ile punktów do rankingu daje zajęte miejsce — według Załącznika nr 1, w sezonie, który właśnie trwa.</span></div>
+          <div class="cbody"><b style="font-size:13px;color:#173f70">W skrócie</b><div class="rows"><i></i><i></i></div></div>
+        </div></div>
+      <div class="mockcol"><span class="mockcap">rev 2 · computer</span>
+        <div class="screen desk">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ile punktów za wynik?</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
+          <div class="cbody">
+            <div class="crow">
+              <div class="cf"><small>Zawodników (N)</small><i>10</i></div>
+              <div class="cf"><small>Miejsce</small><i>2</i></div>
+              <div class="cf"><small>Stawka</small><span class="seg2"><span class="on">Jedna kategoria</span><span>Łączona</span></span></div>
+              <div class="cf"><small>Ranga</small><span class="seg2"><span class="on">PPW</span><span>MPW</span><span>PEW</span></span></div>
+            </div>
+            <div class="cres"><b>78,2</b><span>pkt · EVF, stawka jednej kategorii</span></div>
+            <div class="ctab"><div><span>Miejsce</span><span>EVF</span><span>Z premią</span></div><div><span>1</span><span>…</span><span>…</span></div></div>
+          </div>
+          <span class="pill-float">ⓘ Zasady: Załącznik nr 1</span>
+        </div></div>
+      <div class="mockcol"><span class="mockcap">rev 2 · phone (fit measured at 360 px)</span>
+        <div class="screen phone wide">
+          <div class="ebar"><span class="burger">☰</span><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ile punktów za wynik?</span></div>
+          <div class="cbody">
+            <div class="crow"><div class="cf"><small>Zawodników (N)</small><i>10</i></div><div class="cf"><small>Miejsce</small><i>2</i></div></div>
+            <div class="crow" style="margin-top:6px"><div class="cf"><small>Stawka</small><span class="seg2"><span class="on">Jedna</span><span>Łączona</span></span></div></div>
+            <div class="crow" style="margin-top:6px"><div class="cf"><small>Ranga</small><span class="seg2"><span class="on">PPW</span><span>MPW</span><span>PEW</span></span></div></div>
+            <div class="cres"><b>78,2</b><span>pkt</span></div>
+            <div class="cdet"><span>▸ Premia w stawce łączonej</span><span>▸ Stawka łączona krok po kroku</span><span>▸ W skrócie</span></div>
+          </div>
+          <span class="pill-float">ⓘ Zasady: Załącznik nr 1</span>
+        </div></div>
     </div>
-    <div class="note warn">
-      <p class="lede"><span class="tick">✗</span> Not achievable: the browser's own full-screen mode, which hides the address bar</p>
-      <p style="margin-bottom:0">On an iPhone, Safari lets only video go full-screen, not a web page. On a computer, full-screen needs a click on every visit and Esc ends it. ADR-090 §5 records that a full-screen button was built for the calendar and then removed, because it added nothing to a page that already fills the window.</p>
-    </div>
-    <p><strong>The phone trick that does give the most room:</strong> the ranking and the points table should <b>scroll as normal pages</b>. Phone browsers then shrink their address bar while you scroll, which is the most screen a web page can get on a phone. The calendar is the exception. Its drum is built from fixed geometry, so it keeps a fixed full-height box, and it stays that way.</p>
-  </section>
-
-  <section id="decide-first">
-    <p class="kicker">04 · Decide this first</p>
-    <h2>D1 · With the theme menu hidden, how does a reader move between Ranking, Calendar and Points table?</h2>
-    <p>This decision shapes everything else, so it comes first. When the WordPress menu is hidden, the page needs another way out. The pictures show the bar on a computer and on a phone. The grey shapes stand in for the ranking.</p>
-
-    <div class="option">
-      <h3>A · Mark only, the way the calendar works today <span class="badge no">simplest</span></h3>
-      <div class="mockset">
-        <div class="mockcol"><span class="mockcap">computer</span>
-          <div class="screen desk">
-            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
-            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-            <span class="pill-float">ⓘ Reguły rankingu na sezon 2026/2027</span>
-          </div></div>
-        <div class="mockcol"><span class="mockcap">phone</span>
-          <div class="screen phone">
-            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
-            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-            <span class="pill-float">ⓘ Reguły rankingu na sezon…</span>
-          </div></div>
-      </div>
-      <div class="pc">
-        <div><span class="h plus">For</span><ul><li>Nothing new to build or test.</li><li>Identical to the live calendar page.</li></ul></div>
-        <div><span class="h minus">Against</span><ul><li>Going from the Ranking to the Points table takes three steps: mark, home page, menu.</li><li>Nothing on the page tells a visitor that the other two pages exist.</li></ul></div>
-      </div>
-    </div>
-
-    <div class="option rec">
-      <h3>B · Mark plus a small page switcher in the same bar <span class="badge rec">recommended</span></h3>
-      <div class="mockset">
-        <div class="mockcol"><span class="mockcap">computer: the pages as tabs</span>
-          <div class="screen desk">
-            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="tabs"><span class="on">Ranking</span><span>Znajdź zawody</span><span>Tabela punktacji</span></span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
-            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-            <span class="pill-float">ⓘ Reguły rankingu na sezon 2026/2027</span>
-          </div></div>
-        <div class="mockcol"><span class="mockcap">phone: the title opens a short list</span>
-          <div class="screen phone">
-            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking<span class="caret">▼</span></span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
-            <div class="dd"><div class="on">Ranking</div><div>Znajdź zawody</div><div>Tabela punktacji</div><hr><div class="home">⌂ weteraniszermierki.pl</div></div>
-            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-            <span class="pill-float">ⓘ Reguły rankingu na sezon…</span>
-          </div></div>
-      </div>
-      <div class="pc">
-        <div><span class="h plus">For</span><ul><li>One tap between the three SPWS pages, on any device, and the mark still leads home as you suggested.</li><li>It adds no height. On a computer the tabs sit in the bar's empty middle. On a phone the title itself is the button.</li><li>It is a single component, the same on all three pages, including the calendar.</li></ul></div>
-        <div><span class="h minus">Against</span><ul><li>A small new component, with tests.</li><li>Phone width is tight. ADR-090 measured only 6.7 px to spare for the English calendar title at 375 px, so the ▼ has to win that width back, probably by setting the title 1 px smaller. This gets measured during the build, not assumed.</li><li>Publishing order matters (see <a href="#golive">§08</a>): no page may link to a page that is not published yet.</li></ul></div>
-      </div>
-      <p style="font-size:17px">The switcher lists only our three pages and links to their WordPress addresses, so every page keeps its own address for bookmarks and sharing. It does not copy the whole WordPress menu: that menu is one tap away through the mark, and a copy would drift as the site's menu changes.</p>
-    </div>
-
-    <div class="option">
-      <h3>C · Keep the WordPress menu bar visible, hide everything else <span class="badge no">not full-screen</span></h3>
-      <div class="mockset">
-        <div class="mockcol"><span class="mockcap">computer</span>
-          <div class="screen desk">
-            <div class="wpnav"><span>Aktualności</span><span>O nas</span><span>Członkostwo</span><span>Kalendarz</span><span>Klasyfikacja ▾</span><span>LINKI ▾</span><span>Kontakt</span></div>
-            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
-            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-          </div></div>
-        <div class="mockcol"><span class="mockcap">phone</span>
-          <div class="screen phone">
-            <div class="wpnav"><span class="burger">☰</span><span>Menu</span></div>
-            <div class="ebar"><img src="../../frontend/public/SPWS-logo.png" alt="SPWS"><span class="t">Ranking</span><span class="flags"><i class="flag gb"></i><i class="flag pl"></i></span></div>
-            <div class="fake"><div class="chips"><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><div class="rows"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
-          </div></div>
-      </div>
-      <div class="pc">
-        <div><span class="h plus">For</span><ul><li>Visitors get the whole site menu, which is the "tied to the WordPress menu" idea.</li><li>We build nothing; the theme's own hamburger covers phones.</li></ul></div>
-        <div><span class="h minus">Against</span><ul><li>It works against "full-screen always": two bars instead of one, so on a phone the ranking starts about 50 px lower.</li><li>The red bar does not scroll away, and on a phone it sits next to our own bar.</li><li>It is one more theme selector we depend on, and theme updates are outside our control.</li></ul></div>
-      </div>
-    </div>
-
-    <div class="note good">
-      <p class="lede"><span class="tick">→</span> My recommendation: B</p>
-      <p style="margin-bottom:0">It keeps the full-screen page you want, answers the "computer menu or phone hamburger" question with one component that is tabs on a computer and a short list on a phone, and leaves the mark as the way home. Reply <span class="reply">D1 B</span>, or name A or C.</p>
-    </div>
-  </section>
-
-  <section id="decide-rest">
-    <p class="kicker">05 · Then these three</p>
-    <h2>Three more decisions, each with a recommendation</h2>
-    <p>You can take all four recommendations in one reply: <span class="reply">accept all</span>. Or reply with the ones you want to change.</p>
-
-    <h3>D2 · How does the Points table get onto WordPress?</h3>
-    <p>The Points table is not part of the app. It is a standalone 106 KB document, <code>tabela-punktacji.html</code>, with its own styles, its own PL/EN switch, a print layout, CSV export, and a script that reads the scoring parameters from the database. The ranking and calendar mechanism, a custom element in the shared bundle, does not cover it.</p>
-    <div class="tablewrap"><table>
-      <thead><tr><th>Option</th><th>How</th><th>Trade-off</th><th></th></tr></thead>
-      <tbody>
-        <tr><td><b>P1</b> Full-window frame</td><td>The WordPress page holds the theme-hiding block and one <code>&lt;iframe&gt;</code> that fills the window. It shows the annex already published by every release. The annex gains a WordPress mode that reads PROD only, shows the same bar (mark, title, switcher), and makes its links leave the frame.</td><td>The document stays exactly as it was reviewed, and every release updates the WordPress page with no hand edits. ADR-090 rejected a frame for the calendar because of height and phone-width problems, but those problems disappear when the frame <em>is</em> the whole window. Printing from the WordPress page prints the frame poorly; the direct link prints well.</td><td><span class="chip never">recommended</span></td></tr>
-        <tr><td><b>P2</b> Rebuild it inside the app</td><td>Port the annex into Svelte as a third view of the same bundle.</td><td>It would be the most consistent, but it means rewriting a regulation annex that has just been reviewed, and keeping two copies of it in step from then on.</td><td><span class="chip plain">no</span></td></tr>
-        <tr><td><b>P3</b> Link straight to GitHub</td><td>The menu item points at the github.io page.</td><td>Readers leave the association's domain, and the menu item is still manual work in wp-admin.</td><td><span class="chip plain">no</span></td></tr>
-        <tr><td><b>P4</b> Paste it into the page</td><td>Copy the 106 KB body into the WordPress page.</td><td>WordPress's <code>wpautop</code> inserts <code>&lt;p&gt;</code> tags into blocks on output (ADR-090 §7 observed this inside <code>&lt;style&gt;</code>). Inside a script that breaks the code. The theme's Bootstrap styles would also leak into the document, and every release would need a hand edit.</td><td><span class="chip over">no</span></td></tr>
-      </tbody>
-    </table></div>
-    <p>Recommendation: <span class="reply">D2 P1</span>.</p>
-
-    <h3>D3 · Where does the Ranking live?</h3>
-    <p>Today <code>/klasyfikacja/</code> holds the age-category table and <b>30 links to SharePoint spreadsheets</b>, one for each sub-ranking (3 weapons × 2 genders × 5 categories). The live ranking replaces exactly that, with one page and filters.</p>
-    <ul>
-      <li><b>R1 · Replace the body of <code>/klasyfikacja/</code></b> <span class="chip never">recommended</span>. The address, old bookmarks, search results and the existing "Klasyfikacja → Klasyfikacja polska" menu item all keep working, and nobody has to touch wp-admin. The old body is kept as a reference copy in <code>doc/wordpress/</code>, so it can be restored with one XML-RPC call. Before the swap, the ranking is checked on an unlinked page.</li>
-      <li><b>R2 · New page plus a new menu item, old page left alone.</b> This is ADR-090 §8's original position. You would create the menu item in wp-admin, because XML-RPC cannot (proven on 5 Sep). Old and new would run side by side.</li>
-    </ul>
-    <p>The Points table needs <b>one menu item</b> either way, under Klasyfikacja. You create it in wp-admin, which takes about two minutes, and I write down the exact clicks. Recommendation: <span class="reply">D3 R1</span>.</p>
-
-    <h3>D4 · What does the public see at the github.io address afterwards?</h3>
-    <p>The GitHub Pages app opens on <b>CERT</b>, the test database, because it holds both environments. Once WordPress is the official address, someone with an old bookmark sees test data and has no way of knowing it.</p>
-    <ul>
-      <li><b>G1 · A one-line notice for anyone not signed in</b> <span class="chip never">recommended</span>. It reads: "Test environment. The official ranking is at weteraniszermierki.pl/klasyfikacja", with a link. The app is otherwise unchanged, and admins never see the notice.</li>
-      <li><b>G2 · Leave it as it is.</b></li>
-      <li><b>G3 · Send everyone who is not an admin to WordPress automatically.</b> This is the most drastic option. It also hides the CERT preview that you and testers use without signing in.</li>
-    </ul>
-    <p>Recommendation: <span class="reply">D4 G1</span>.</p>
-  </section>
-
-  <section id="findings">
-    <p class="kicker">06 · Measured in the code today</p>
-    <h2>What has to change. All of it is small, but two items matter.</h2>
-    <div class="note danger">
-      <p class="lede"><span class="tick">1</span> <code>&lt;spws-ranklist&gt;</code> still mounts the full app, admin sign-in included</p>
-      <p style="margin-bottom:0"><code>frontend/src/ce/RanklistElement.svelte</code> passes neither <code>chrome</code> nor <code>view</code> nor <code>asset-base</code>, so it gets the defaults: header, hamburger, drawer, and <code>?admin=1</code> honoured. Embedded as it is, it would put the admin sign-in on the association's site, against ADR-090 §3. The fix is the interface the calendar already has (<code>chrome="none"</code>, <code>view="ranklist"</code>, <code>asset-base</code>), with a test that fails first.</p>
-    </div>
-    <div class="note danger">
-      <p class="lede"><span class="tick">2</span> The Points table picks CERT whenever both environments are configured</p>
-      <p style="margin-bottom:0">Its loader reads <code>supabaseCertUrl || supabaseProdUrl</code>. This is the same "CERT wins silently" pattern as the 17 August registration defect and the calendar defect that ADR-090 §2 fixed in the app. The WordPress mode must read PROD and nothing else, and a test must pin that.</p>
-    </div>
-    <ul>
-      <li><b>The bar's title is fixed to "Znajdź zawody"</b> (<code>embed_page_title</code> in <code>App.svelte</code>). It has to follow the page: Ranking, Znajdź zawody, Tabela punktacji.</li>
-      <li><b>The ranking element needs its own height rule.</b> It should be a block with natural height, so the page scrolls (§03). It must not use the calendar's fixed <code>100dvh</code> box.</li>
-      <li><b>The "Reguły rankingu" pill is <code>position: fixed</code>.</b> If any theme wrapper has a CSS transform, the pill pins to that wrapper instead of the screen. This gets checked on the real WordPress page at phone and computer width before the page goes public.</li>
-      <li><b>The annex has no SPWS mark and no route home.</b> In WordPress mode it gets the same bar, and its links open in the top window, not inside the frame.</li>
-      <li><b>If D1 is B:</b> one switcher component, two locale keys per language, and tests that pin the link list and the mark's target, the way <code>CalendarEmbed.test.ts</code> pins the calendar's.</li>
-    </ul>
-  </section>
-
-  <section id="gates">
-    <p class="kicker">07 · Honest gaps</p>
-    <h2>Things I have not verified, and gates outside the code</h2>
-    <ul>
-      <li><b>SPWS Board approval of the ranking on the site.</b> ADR-090 left this open, with a decision expected in the week of 8 September. I am assuming it has been given, because you are asking for the ranking. Please confirm in your reply.</li>
-      <li><b>The Points table refuses to render unless the 2026/27 engine is the joined engine.</b> Its script checks the engine code returned by <code>fn_public_scoring_params</code>. I have not checked whether PROD's 2026/27 configuration carries that engine yet. I will check it read-only at build time. If it does not, the Points table page waits for ADR-104 steps 11–12, and the Ranking goes first on its own.</li>
-      <li><b>The annex is <code>noindex</code> "until adoption"</b> (ADR-102). Publishing it on the association's site is the point of adoption. Is it adopted? If so, the noindex comes off on the WordPress copy only.</li>
-      <li><b>Draft pages cannot be viewed without a wp-admin login,</b> as noted in the 5 September plan. That is why each page is checked on an unlinked published page first (§08).</li>
-    </ul>
-  </section>
-
-  <section id="golive">
-    <p class="kicker">08 · Order of work, once decided</p>
-    <h2>How it would go live</h2>
-    <p>One rule decides the order: <b>no live page may link to a page that is not published yet,</b> and no page goes live before the code it needs has been released. The switcher therefore shows only the pages that its WordPress page lists in an attribute. Releasing the new code changes nothing on the live calendar until its page body is updated, which is the last step.</p>
+    <p style="font-size:16px;color:var(--muted)">The numbers in the mock are placeholders. The real ones come from the shared scoring module, as today.</p>
     <ol class="steps">
-      <li><b>Implementation plan</b> written as HTML with tests first (RED→GREEN), including the documentation coherence gate and the ADR-090 amendment draft for your sign-off.</li>
-      <li><b>Build and release.</b> The bundle keeps its stable address (<code>assets/main.ce.js</code>), and <code>scripts/preflight.sh</code> exits 0 before the push.</li>
-      <li><b>Ranking</b> on an unlinked page, checked at 375 px and at computer width. Then <b>you approve it by name</b>, and it is swapped into <code>/klasyfikacja/</code> (R1).</li>
-      <li><b>Points table</b> page, checked the same way. You approve it, and <b>you add the menu item</b> in wp-admin.</li>
-      <li><b>Calendar</b> page body gains the switcher attribute last, once the other two pages are live.</li>
-      <li>A final check of all three pages on a phone and a computer, followed by a report.</li>
+      <li><b>The ranklist's bar</b> replaces the banner: ☰, the SPWS mark (home), the title, and the round flag pill instead of the text PL/EN switch. On a phone the flags sit in the drawer, as on every page (§02). On WordPress it opens the same drawer as the other pages.</li>
+      <li><b>The title is the question: „Ile punktów za wynik?"</b> The English is <b>"How many points?"</b>, because the full "How many points for a result?" is clipped by 36 px at 360 px even with the flags moved into the drawer. The subtitle under the switches goes. It was the question without its "?", so the title now carries it.</li>
+      <li><b>The calculator comes first,</b> straight under the bar. Its inputs use the ranklist's filter style: small uppercase labels and rounded fields. "Stawka łączona" becomes the same blue segmented control as Ranking/PPW, and so does the rank coefficient.</li>
+      <li><b>The result panel turns soft blue</b> instead of pink with a red edge. In the ranklist, red appears only in the logo, and here a red result looked like an error.</li>
+      <li><b>The premium table uses the ranklist's table style:</b> a grey header row and plain rows.</li>
+      <li><b>The rest folds away:</b> the premium table on a phone, the step-by-step simulator, and "W skrócie" become collapsible sections below. The full rules leave this page; the floating pill at the bottom, the same pill the ranklist uses for its season rules, opens the annex.</li>
+      <li><b>The annex takes the same bar and colours,</b> so all four pages look like one product. Its content and order stay as reviewed. Only its bar, controls and colours change.</li>
     </ol>
+    <div class="note accent">
+      <p class="lede">The maths does not move (ADR-102, scoring family)</p>
+      <p style="margin-bottom:0">Only markup and CSS change. Both pages keep computing through the one generated module, <code>scoring.ts</code> → <code>build-scoring-pages.mjs</code>. The shared bar and styles are generated into both pages the same way, between markers, so the look cannot drift either. Nothing is ported, pasted or rewritten.</p>
+    </div>
+  </section>
+
+  <section id="map">
+    <p class="kicker">06 · The map</p>
+    <h2>Where every page lives afterwards</h2>
+    <div class="tablewrap"><table class="mapgrid">
+      <thead><tr><th>Address</th><th>Shows</th><th>Database</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>weteraniszermierki.pl/klasyfikacja/</code></td><td>Ranking (embed)</td><td>PROD</td><td><span class="chip fill">new body</span></td></tr>
+        <tr><td><code>weteraniszermierki.pl/znajdz-zawody/</code></td><td>Calendar and registration (embed)</td><td>PROD</td><td><span class="chip never">live; gains the drawer</span></td></tr>
+        <tr><td><code>weteraniszermierki.pl/kalkulator-punktow/</code></td><td>Calculator (full-window frame, W5)</td><td>PROD</td><td><span class="chip fill">new</span></td></tr>
+        <tr><td><code>weteraniszermierki.pl/tabela-punktacji/</code></td><td>Załącznik nr 1 (full-window frame, W5)</td><td>PROD</td><td><span class="chip fill">new</span></td></tr>
+        <tr><td><code>…github.io/spws-automated-ranklist/</code></td><td>App + CERT admin (<code>?admin=1</code>), yellow ribbon</td><td>CERT (reads PROD only for promotion state)</td><td><span class="chip warn">switch removed</span></td></tr>
+        <tr><td><code>…github.io/…/kalkulator-punktow.html</code>, <code>tabela-punktacji.html</code></td><td>The CERT copies, with the ribbon</td><td>CERT</td><td><span class="chip warn">today PROD</span></td></tr>
+        <tr><td><code>…github.io/…/&lt;unlisted&gt;.html</code></td><td>PROD admin, bookmark only, <code>noindex</code>, red PROD tag</td><td>PROD</td><td><span class="chip fill">new</span></td></tr>
+        <tr><td><code>…github.io/…/register.html</code></td><td>The registration form fencers reach by link</td><td>PROD</td><td><span class="chip never">unchanged, no ribbon</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">07 · Decide these</p>
+    <h2>Six decisions, each with my recommendation</h2>
+    <p><span class="reply">accept all</span> takes every recommendation. Otherwise, name the ones you want to change.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Recommendation</th><th>Alternatives</th></tr></thead>
+      <tbody>
+        <tr><td>W1</td><td>How does a reader move between pages?</td><td><b>The existing hamburger drawer on every page</b>, with the mark as the way home. On phones the language flags move into the drawer, so every title fits at 360 px (§02, measured).</td><td>Menu on logo click; tabs in the bar (rev 1 B); keep the flags in the phone bar and shorten titles instead.</td></tr>
+        <tr><td>W2</td><td>Where is PROD admin?</td><td><b>An unlinked, <code>noindex</code> PROD file on the Pages host, kept as a bookmark</b>, with the sign-in in its drawer and a red PROD tag (§03). It stays out of any sitemap, and the registration links keep working.</td><td>(a) A WordPress page protected by WordPress's own page password. WordPress's sitemap should skip password-protected pages, which I would confirm on a test page first. It means a second password, and the registration-link code would need an absolute base. (b) As recommended, plus a small "Panel" link at the foot of every public drawer.</td></tr>
+        <tr><td>W3</td><td>The environments</td><td><b>Separate permanently.</b> No CT/PD switch. Ribbon on github.io. CERT keeps a read-only PROD connection for promotion state only (§04).</td><td>Keep the switch for admins.</td></tr>
+        <tr><td>W4</td><td>The calculator's title</td><td><b>„Ile punktów za wynik?"</b> / "How many points?", with the subtitle removed and the revamp in §05.</td><td>„Kalkulator punktów za wynik?", which is the current title with "?" added. It does not read as a question.</td></tr>
+        <tr><td>W5</td><td>How do the calculator and the annex get onto WordPress?</td><td><b>A full-window frame of their PROD builds, published by every release to the Pages file host</b>. No hand upload, and every release updates WordPress. Checked today: Pages sends no <code>X-Frame-Options</code> and no CSP, so WordPress may frame it.</td><td>Upload the WordPress copy by hand, which needs a DirectAdmin/FTP login we do not hold. Or port them into the Svelte app, which ADR-102 forbids without a new ADR.</td></tr>
+        <tr><td>W6</td><td>Where does the Ranking live?</td><td><b>Replace the body of <code>/klasyfikacja/</code></b>, carried over from rev 1 (R1). Its 33 SharePoint links (counted today) are kept in <code>doc/wordpress/</code> for a one-call restore.</td><td>A new page plus a new menu item (R2).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="code">
+    <p class="kicker">08 · Measured in the code today</p>
+    <h2>What has to change</h2>
+    <ul>
+      <li><b><code>RanklistElement.svelte</code> has none of the calendar's options</b> (<code>chrome</code>, <code>view</code>, <code>asset-base</code>), so as an embed it would mount the whole app with its defaults. It gets the calendar's interface, plus a drawer whose entries are WordPress links.</li>
+      <li><b><code>dualEnv</code> does two jobs</b> (<code>App.svelte</code> L503): it shows the switch (L114, and <code>CalendarView.svelte</code> L67) and it enables the PROD read for promotion state (L1456, L1480). It splits into "show switch", which is removed, and "can read PROD", which stays. <code>env-toggle.test.ts</code> retires with the switch.</li>
+      <li><b><code>release.yml</code></b> gives <code>index.html</code> both connections (L121–123) and the static pages PROD only (L159–162). It changes to CERT for every github.io page, and PROD for the WordPress builds and the embed bundle's pages.</li>
+      <li><b>The bar's title is fixed to „Znajdź zawody"</b> (<code>embed_page_title</code>). It follows the page instead.</li>
+      <li><b>The calculator source</b>: <code>.document-head</code> (banner), <code>.lead</code> (subtitle), <code>.lang-switch</code> (text switch), <code>.result</code> (red accent, L120). These are replaced through the shared generated partial.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Validated on 3 Oct, read-only, on the live sites</p>
+      <div class="tablewrap" style="margin-bottom:0"><table>
+        <thead><tr><th>Assumption</th><th>Result</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Mockups render</td><td>No broken image, no horizontal overflow. Three layout faults (wrapped drawer rows, a cut-off drawer, a clipped ribbon) were fixed.</td><td>none</td></tr>
+          <tr><td>Titles fit the phone bar</td><td>No. „Znajdź zawody" already pushes the flags to a second row at 360 px in the app. Adding a ☰ to the WordPress bar clips three titles.</td><td><b>W1</b>: flags into the phone drawer, after which all titles fit</td></tr>
+          <tr><td>An unlisted WordPress page stays unlisted</td><td>No. <code>wp-sitemap.xml</code> lists every published page, and there is no SEO plugin for <code>noindex</code>.</td><td><b>W2</b> moved to the Pages host</td></tr>
+          <tr><td>Registration links work from any admin page</td><td>No. They are derived from the admin page's own address (<code>EventManager.svelte</code> L705).</td><td><b>W2</b> moved to the Pages host</td></tr>
+          <tr><td>PROD dispatch accepts other origins</td><td>Yes. <code>OPTIONS</code> answers <code>access-control-allow-origin: *</code>. <code>ALLOWED_ORIGIN</code> is not set on PROD.</td><td>none</td></tr>
+          <tr><td>WordPress may frame the Pages files</td><td>Yes. No <code>X-Frame-Options</code>, no CSP.</td><td>W5 holds</td></tr>
+          <tr><td>The annex will render on PROD</td><td>Yes. PROD's 2026/27 season assigns <code>SPWS_EVF_JOINED_V1_2026_2027</code> to PPW and MPW (<code>fn_public_scoring_params</code>).</td><td>the Points table need not wait</td></tr>
+          <tr><td><code>/klasyfikacja/</code> link count</td><td>33 SharePoint links, not 30.</td><td>W6 text</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="note">
+      <p class="lede">Spotted in passing, outside this plan</p>
+      <ul style="margin-bottom:0">
+        <li><b>Every public PROD page load returns a 401</b> from <code>rpc/fn_refresh_active_season</code>. It showed in the console of the live <code>/znajdz-zawody/</code> today. The page still works, but the call fails each time. This is worth a separate fix.</li>
+        <li>The token-gated <code>/pliki-zasilajace-xml-ftl/</code> page is listed in the public sitemap. That is harmless, because the token guards the content.</li>
+        <li>The live "Członkostwo" menu item points at <code>http://czonkostwo</code>. It can be fixed in wp-admin in a minute.</li>
+        <li>The top-level "Kalendarz" menu item still points at the hand-typed <code>/kalendarz-2/</code>, not at <code>/znajdz-zawody/</code>.</li>
+      </ul>
+    </div>
   </section>
 
   <section id="paper">
-    <p class="kicker">09 · Paper trail</p>
-    <h2>ADRs and documentation this touches</h2>
+    <p class="kicker">09 · Paper trail and order</p>
+    <h2>ADRs, documentation, and the order of work</h2>
     <ul>
-      <li><b>ADR-090 amendment</b> (no new ADR, because ADR-090 says the ranking follows its pattern). It covers three things. The switcher replaces §1's "a single embed has no second view". A full-window frame is allowed for a standalone static document, which narrows the §Alternatives rejection of frames. And <code>/klasyfikacja/</code> is modified, if R1 is chosen, which reverses §8's "not modified" sentence with your approval on record.</li>
-      <li><b>ADR-092</b> gets a note that its stated WordPress destination is now reached, and how.</li>
-      <li><b>Handbook:</b> <code>subsystems/frontend-and-automation.html</code> and <code>operations/environments-and-release.html</code>. Reference copies of each published page body go in <code>doc/wordpress/</code>, with the anon key redacted as on the existing copy.</li>
+      <li><b>New ADR-108, "The environments split by host".</b> PROD on WordPress, CERT on GitHub Pages, the switch removed, the ribbon, the read-only PROD connection kept for promotion state, and dispatch targets fixed per page. It also covers the PROD files the Pages host keeps serving: the embed bundle, the framed builds, <code>register.html</code> and the admin bookmark.</li>
+      <li><b>ADR-090 amendment.</b> The drawer on WordPress pages, with the flags in the drawer on phones. Full-window frames for the static pages. <code>/klasyfikacja/</code> modified (W6). §3 (admin stays off the association's site) is unchanged.</li>
+      <li><b>ADR-015</b> (the drawer), <b>ADR-092 and ADR-102</b> (the static pages' look and WordPress destination; the maths untouched), and <b>ADR-085</b> (the calculator stays).</li>
+      <li><b>Handbook:</b> <code>subsystems/frontend-and-automation.html</code>, <code>product/product-surfaces.html</code>, <code>operations/environments-and-release.html</code>, <code>reference/workflow-catalog.html</code>. Reference copies of each WordPress page body go in <code>doc/wordpress/</code>, with the anon key redacted.</li>
     </ul>
+    <ol class="steps">
+      <li>On your decisions, an implementation plan as HTML: tests first, the documentation coherence gate, and the ADR-108 and ADR-090 drafts for sign-off.</li>
+      <li>Build and release. The bundle keeps <code>assets/main.ce.js</code>, and <code>scripts/preflight.sh</code> exits 0 before the push.</li>
+      <li>The PROD admin bookmark first, checked by you while the CT/PD switch still exists as a fallback.</li>
+      <li>The Ranking, the calculator and the annex, each on an unlisted page, checked at 375 px and at computer width. You approve each by name, and then it goes live.</li>
+      <li>The calendar page gains the drawer, and the github.io release removes the switch and adds the ribbon. This comes last, so nothing is lost while the rest is checked.</li>
+      <li>A final check of every page on a phone and a computer, followed by a report.</li>
+    </ol>
   </section>
 
-  <section id="out">
-    <p class="kicker">10 · Boundaries</p>
-    <h2>Not in this plan</h2>
-    <ul>
-      <li><b>The top-level "Kalendarz" menu item</b> still points at the hand-typed <code>/kalendarz-2/</code>, while the live calendar sits under LINKI. Pointing it at <code>/znajdz-zawody/</code> is a separate decision for you, and it takes one minute in wp-admin.</li>
-      <li><b>The points calculator</b> (ADR-085). The annex now contains a single-result calculator, so a separate WordPress page for the calculator looks redundant. I suggest leaving it out.</li>
-      <li><b>Moving admin off GitHub Pages.</b> It is not needed for this, and ADR-090 §3 keeps it there.</li>
-      <li><b>Shareable filter links</b>, for example a link that opens directly on women's épée V2. These could be added later. Nobody has asked for them.</li>
-      <li><b>Spotted in passing:</b> the live "Członkostwo" menu item has the address <code>http://czonkostwo</code>. It opens a dropdown on a computer, so nobody notices, but the address is broken. It can be fixed in wp-admin.</li>
-    </ul>
-  </section>
-
-  <p class="foot">SPWS Automated Ranklist · WordPress UI brainstorm · 2 October 2026 · facts read on this date from the live site's HTML (menu, <code>/klasyfikacja/</code>, <code>/znajdz-zawody/</code>), <code>origin/main</code> (<code>RanklistElement.svelte</code>, <code>App.svelte</code>, <code>tabela-punktacji.html</code>) and ADR-090 / ADR-092. Nothing was built, published or changed.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI brainstorm rev 2 · 3 October 2026 · facts from the RAG (ADR-077 §7, ADR-079, ADR-086, ADR-090, ADR-102, handbook event-status-lifecycle and frontend-and-automation), the graph (dualEnv, Sidebar.svelte), literals in App.svelte, EventManager.svelte, CalendarView.svelte, RanklistElement.svelte, release.yml, dispatch-workflow/index.ts and the calculator source, and screenshots of the live github.io ranklist and calculator. Validated the same day, read-only: bar measurements at 360 and 375 px on the live app and the live WordPress calendar, <code>wp-sitemap.xml</code>, the Pages response headers, a CORS preflight to PROD's dispatch function, and PROD's <code>fn_public_scoring_params</code>. Nothing was built, published or changed.</p>
 </div>
