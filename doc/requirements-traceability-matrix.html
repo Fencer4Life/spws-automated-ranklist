@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a655a26032df156c7a4fddd0933544560380352a611a0b92659f6d8e4b737d25">
+<meta name="doc-source-sha256" content="e39b1e1d8e9c11200b31b6cc7a6c9d65af8d76aa66b94c6a72fe271f16032761">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -320,10 +320,10 @@
 </tr>
 <tr>
 <td>FR-42</td>
-<td>CERT/PROD environment toggle with runtime switching. <strong>To be superseded by FR-151</strong> (<a href="adr/109-environments-split-by-host.html">ADR-109</a>, signed off 2026-10-03): github.io becomes CERT only and the switch is removed; this row is retired in the change that removes it.</td>
+<td><s>CERT/PROD environment toggle with runtime switching</s> — <strong>retired 2026-10-04</strong> (<a href="adr/109-environments-split-by-host.html">ADR-109</a>): each host serves one environment — github.io CERT under the TEST ribbon, the WordPress pages PROD — so no surface switches. Replaced by FR-151.</td>
 <td>§2.2</td>
-<td>8.02; 8.01, 8.03 and 8.04 replaced on 2026-10-04 by WP.ENV.01, which asserts the switch's removal (RED until plan step 5)</td>
-<td>Covered (M8)</td>
+<td>8.02 (one pair, no switch) stays; 8.01, 8.03 and 8.04 were replaced by WP.ENV.01, and the calendar's CV.11/CV.11b now assert its footer without a switch</td>
+<td><strong>Superseded 2026-10-04 by FR-151</strong> (ADR-109; LOCAL)</td>
 </tr>
 <tr>
 <td>FR-43</td>
@@ -2122,17 +2122,17 @@
 </tr>
 <tr>
 <td>WP.ENV.01</td>
-<td>With both pairs (github.io): no CT/PD switch, the TEST ribbon shown, the active environment CERT, and the promotion state still read from PROD.</td>
+<td>With both pairs (github.io): no CT/PD switch on the ranking or the calendar, the TEST ribbon shown (as signed off: „ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl”, on a phone „ŚRODOWISKO TESTOWE · TEST”, a link to weteraniszermierki.pl), the active environment CERT, and the promotion state still read from PROD.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/env-toggle.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.ENV.02</td>
 <td>With only the PROD pair (WordPress): no ribbon, and dispatches target PROD.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/env-toggle.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.REL.01</td>
@@ -2203,5 +2203,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a655a26032df156c7a4fddd0933544560380352a611a0b92659f6d8e4b737d25</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>e39b1e1d8e9c11200b31b6cc7a6c9d65af8d76aa66b94c6a72fe271f16032761</code></footer>
 </div></body></html>
