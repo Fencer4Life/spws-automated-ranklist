@@ -177,6 +177,30 @@ class DbConnector:
             .execute()
         )
 
+    def open_ingest_run(self, params: dict) -> int:
+        """Open a tbl_ingest_run row before the run writes (ADR-108 §4). The
+        database records the input fingerprint and the roster; returns the id."""
+        return int(self._sb.rpc("fn_ingest_run_open", params).execute().data)
+
+    def finish_ingest_run(self, run_id: int, listings: dict) -> dict:
+        """Close the run FINISHED with its listings; returns the master-data
+        changes the database computed since it opened."""
+        return (
+            self._sb.rpc("fn_ingest_run_finish", {"p_id": run_id, "p_listings": listings})
+            .execute()
+            .data
+        )
+
+    def fail_ingest_run(self, run_id: int, error: str, listings: dict) -> dict:
+        """Close the run FAILED with its error, its listings so far and what it changed."""
+        return (
+            self._sb.rpc(
+                "fn_ingest_run_fail", {"p_id": run_id, "p_error": error, "p_listings": listings}
+            )
+            .execute()
+            .data
+        )
+
     def find_event_by_id(self, id_event: int) -> dict | None:
         """Look up an event by id_event (ADR-072 — RECOMPUTE_DOMESTIC resolves the
         enqueued event to derive its season_end_year). Returns
