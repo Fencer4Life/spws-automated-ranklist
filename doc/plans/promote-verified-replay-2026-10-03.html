@@ -230,6 +230,18 @@
       </ul>
       <p>A is built before the lifecycle step (build step 10), because that step is what makes IN_PROGRESS last on PROD.</p>
     </div>
+
+    <div class="note warn">
+      <p class="lede">G1 · How the gate compares the season lock — decide before build step 7</p>
+      <p><b>What I found building the run record.</b> Step 0 says the season&rsquo;s &ldquo;lock state&rdquo; must be equal on CERT and PROD. But the season&rsquo;s first scored result is what locks it (<code>fn_ensure_active_scoring_revision</code>). PPW1 is 2026/27&rsquo;s first event, so CERT&rsquo;s PPW1 run locked CERT&rsquo;s season, and PROD&rsquo;s stays unlocked until promote applies. Measured read-only on 3 Oct: locked on CERT, unlocked on PROD. Every scoring setting and engine is equal.</p>
+      <p>Compared literally, the lock would refuse every first event of a season that is re-ingested on CERT, which is PPW1 today. The run record keeps the lock as a part of its own, so nothing built so far depends on this answer.</p>
+      <ul>
+        <li><b>A (recommended):</b> compare the scoring settings and engines value by value. Refuse on the lock only when PROD is locked and CERT is not, because that means PROD scored results CERT never had. CERT locked with PROD unlocked is the expected state for a season&rsquo;s first event: PROD&rsquo;s apply locks it with the same settings.</li>
+        <li><b>B:</b> keep &ldquo;lock state equal&rdquo; literally. PPW1 could then not be promoted without unlocking CERT&rsquo;s season by hand before a re-run.</li>
+        <li><b>C:</b> ignore the lock. This loses the one case A catches.</li>
+      </ul>
+      <p><b>Already settled within the plan&rsquo;s wording:</b> the EVF toggles and the default ranking mode are display switches, not scoring settings, so the season part leaves them out. Today the EVF toggle is off on PROD and on on CERT. If you want them compared, say so and I&rsquo;ll add them back.</p>
+    </div>
   </section>
 
   <section>
@@ -560,8 +572,21 @@
             <li><code>refresh --mode verify</code> is the mirror's id-for-id check (PROMO.SEED.01–05).</li>
             <li><code>seed_prod_2026-10-03.sql</code> was re-exported with PROD's ids. LOCAL rebuilt from it equals PROD, roster and all 2,878 finished-season results, with no refresh.</li>
           </ul></li>
-      <li><b>Run record</b>: the <code>tbl_ingest_run</code> migration (service_role only, ADR-083) and its writer in <code>ingest_cli</code>. pgTAP and <code>PROMO.RUN.*</code>.</li>
-      <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>.</li>
+      <li><b>Run record</b>: the <code>tbl_ingest_run</code> migration (service_role only, ADR-083) and its writer in <code>ingest_cli</code>. pgTAP and <code>PROMO.RUN.*</code>.
+          <ul>
+            <li><b>Status, 3 Oct: built.</b> Migration <code>20261003000014</code> (pgTAP RUN.01–13, 30 assertions); <code>promotion/run_record.py</code>; <code>ingest_cli --record-run</code>, which <code>ingest-event.yml</code> passes for target <code>cert</code> (PROMO.RUN.01–09).</li>
+            <li>The row opens before the first write, with the input fingerprint and the roster. It closes <code>FINISHED</code> with every listing&rsquo;s hash, keep-rule verdict and outcome, or <code>FAILED</code> with the error. The database records the master-data changes. The input fingerprint has six parts: schema, roster, registrations, season, <b>lock</b> and event (G1 says why the lock is separate).</li>
+            <li><b>Two real recorded PPW1 runs on LOCAL, from FTL:</b> 14 listings, all committed with no fault.
+              <ul>
+                <li>The first run created 6 fencers and moved 1 birth year: STANISŁAWSKI Albert #282, from a confirmed 1991 to an estimated 1987, by the existing ADR-056 reconcile.</li>
+                <li>The second run changed nothing. It hashed the schedule and all 14 listings exactly as the first did. Of the input fingerprint, only the roster and lock parts moved between the two runs.</li>
+              </ul></li>
+            <li><code>fn_schema_fingerprint</code> equals <code>scripts/schema-fingerprint.sh</code> on LOCAL.</li>
+            <li><b>Read-only on CERT and PROD today:</b> the event and registrations parts are equal (90 entries each). The roster differs because of CERT&rsquo;s PPW1 run. The season differs by the lock only, once the EVF display switch is set aside (G1).</li>
+            <li>The result fingerprint and the gate outcome stay empty until build steps 9 and 7.</li>
+            <li>For step 7: the gate&rsquo;s estimated-year check will hold PPW1 until the 6 new fencers&rsquo; years and #282&rsquo;s year are confirmed on PROD.</li>
+          </ul></li>
+      <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>. <b>Needs G1 decided first.</b></li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>
       <li><b><code>fn_event_result_fingerprint</code> and <code>fn_promote_event_apply</code></b> (with <code>p_dry_run</code>, its row locks and the in-transaction input check): pgTAP <code>PROMO.APPLY.*</code>. It must prove atomicity, rollback of the lock and the queue on a fingerprint mismatch, that a dry run persists nothing, the URL write, the status pairs, and idempotence.</li>
       <li><b>Carry-over stop (P6 A):</b> a migration for the four FK ranking functions and pgTAP written RED first. The first test reproduces the double count while IN_PROGRESS.</li>
