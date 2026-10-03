@@ -210,6 +210,20 @@ const EMBED_PAGES: [string, string, string][] = [
   ['tabela-punktacji', '../public/embed/tabela-punktacji.html', tablePublished],
 ]
 
+// WP.ENV.01, the static half (ADR-109 §1, W3): the github.io copies of the
+// calculator and the annex become CERT copies (release.yml, WP.REL.01) and
+// carry the same TEST ribbon as the app — as signed off, leading to the real
+// site. Their embed/ copies, which are PROD, carry none (WP.DOC.03).
+describe('WP.ENV.01 — the github.io calculator and annex carry the TEST ribbon', () => {
+  for (const [name, html] of PAGES) {
+    it(`${name}: the ribbon, linking to the site, in both lengths`, () => {
+      expect(html).toContain('<a class="env-ribbon" href="https://weteraniszermierki.pl">')
+      expect(html).toContain('ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → ')
+      expect(html).toContain('<span class="env-ribbon-short">ŚRODOWISKO TESTOWE · TEST</span>')
+    })
+  }
+})
+
 describe('WP.DOC.03 — the embed/ copies framed on WordPress', () => {
   for (const [name, path, root] of EMBED_PAGES) {
     it(`${name}: exists, without a banner, a language bar or a ribbon of its own`, () => {

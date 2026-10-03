@@ -38,7 +38,7 @@
 // =============================================================================
 
 import { build } from 'esbuild'
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -53,8 +53,21 @@ const BEGIN = '/* === SPWS-SCORING-MODULE:BEGIN'
 // throws SyntaxError at load — invisible to every unit test, fatal in the browser.
 const END = '/* === SPWS-SCORING-MODULE:END === */'
 
-// Each published artefact: the doc/tools/ source that carries the markers, and
-// every destination that must stay byte-identical to it.
+// Each published artefact: the doc/tools/ source that carries the markers,
+// every destination that must stay byte-identical to it, and its embed copy.
+//
+// THE EMBED COPIES (ADR-090 amendment 2026-10-03, FR-150)
+// -----------------------------------------------------------------------------
+// <spws-document> frames frontend/public/embed/<page>.html on the association's
+// WordPress pages, under the SPWS bar, and release.yml fills it with the PROD
+// pair. It is the same page with three things removed and one added: the blocks
+// between SPWS-EMBED:OMIT markers go (the TEST ribbon and its style, the page's
+// own language bar and its banner — the SPWS bar does those jobs there), and a
+// script that reports the page's height to the frame is added before </body>.
+// In markup the markers are HTML comments; inside <style> they are CSS comments,
+// because an HTML comment is not a comment there. The scoring module block is
+// untouched, so the maths is the same bytes (ADR-102), and --check guards these
+// copies like every other.
 const ARTEFACTS = [
   {
     source: 'doc/tools/kalkulator-punktow-za-wynik-spws.v2.html',
@@ -62,12 +75,67 @@ const ARTEFACTS = [
       'frontend/public/kalkulator-punktow.html',
       'doc/tools/WP-kalkulator-punktow-za-wynik-spws.html',
     ],
+    embed: 'frontend/public/embed/kalkulator-punktow.html',
   },
   {
     source: 'doc/tools/Tabela-punktacji-SPWS_2026-2027.html',
     copies: ['frontend/public/tabela-punktacji.html'],
+    embed: 'frontend/public/embed/tabela-punktacji.html',
   },
 ]
+
+const OMIT_BLOCK =
+  /[ \t]*(?:<!-- SPWS-EMBED:OMIT:BEGIN -->[\s\S]*?<!-- SPWS-EMBED:OMIT:END -->|\/\* SPWS-EMBED:OMIT:BEGIN \*\/[\s\S]*?\/\* SPWS-EMBED:OMIT:END \*\/)\n?/g
+
+// The frame cannot see into the page, so the page says how tall it is, and
+// again whenever that changes (fonts, the season's parameters arriving, a
+// folded tool opening). The element believes only the asset base's origin;
+// the height is not sensitive, so any parent may hear it.
+const HEIGHT_REPORT = `  <!-- SPWS-EMBED: the height report for the framing <spws-document>
+       (ADR-090 amendment 2026-10-03, FR-150). Added by the generator. -->
+  <script>
+    (function () {
+      if (window.parent === window) return;
+      var last = 0;
+      function report() {
+        var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+        if (h > 0 && h !== last) {
+          last = h;
+          window.parent.postMessage({ type: 'spws-doc-height', height: h }, '*');
+        }
+      }
+      if ('ResizeObserver' in window) {
+        var ro = new ResizeObserver(report);
+        ro.observe(document.documentElement);
+        ro.observe(document.body);
+      }
+      window.addEventListener('load', report);
+      report();
+    })();
+  </script>
+`
+
+function toEmbed(html, source, embedPath) {
+  const omitted = html.match(OMIT_BLOCK) ?? []
+  // The ribbon's style, the ribbon, and the language bar with the banner:
+  // fewer means a marker was lost.
+  if (omitted.length < 3) {
+    throw new Error(`${source}: expected at least 3 SPWS-EMBED:OMIT blocks, found ${omitted.length}.`)
+  }
+  let out = html.replace(OMIT_BLOCK, '')
+  if (out.includes('SPWS-EMBED:OMIT')) {
+    throw new Error(`${source}: an unpaired SPWS-EMBED:OMIT marker.`)
+  }
+  if (out.split('<body>').length !== 2 || out.split('</body>').length !== 2) {
+    throw new Error(`${source}: expected exactly one <body> and one </body>.`)
+  }
+  const banner =
+    `<!-- ${embedPath}: GENERATED from ${source} by frontend/scripts/build-scoring-pages.mjs.\n` +
+    '     DO NOT EDIT. The copy <spws-document> frames on WordPress: no ribbon, no\n' +
+    '     language bar, no banner, and a height report. -->\n'
+  out = out.replace('<body>\n', `<body>\n${banner}`)
+  return out.replace('</body>', `${HEIGHT_REPORT}</body>`)
+}
 
 /** Bundle scoring.ts to a plain browser script exposing globalThis.SPWSScoring. */
 async function bundleModule() {
@@ -121,7 +189,9 @@ async function main() {
       stale.push(artefact.source)
       if (!check) await writeFile(sourcePath, next, 'utf8')
     }
-    for (const copy of artefact.copies) {
+    const expected = artefact.copies.map((copy) => [copy, next])
+    expected.push([artefact.embed, toEmbed(next, artefact.source, artefact.embed)])
+    for (const [copy, content] of expected) {
       const copyPath = resolve(ROOT, copy)
       let existing = null
       try {
@@ -129,9 +199,12 @@ async function main() {
       } catch {
         /* a missing copy is stale by definition */
       }
-      if (existing !== next) {
+      if (existing !== content) {
         stale.push(copy)
-        if (!check) await writeFile(copyPath, next, 'utf8')
+        if (!check) {
+          await mkdir(dirname(copyPath), { recursive: true })
+          await writeFile(copyPath, content, 'utf8')
+        }
       }
     }
   }

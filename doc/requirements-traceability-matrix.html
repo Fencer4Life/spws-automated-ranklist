@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="e39b1e1d8e9c11200b31b6cc7a6c9d65af8d76aa66b94c6a72fe271f16032761">
+<meta name="doc-source-sha256" content="69e140508e32f38ef8931ebdbadf571d489727a1ee117d56dbe61627b14cf4c2">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2076,7 +2076,7 @@
 <td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the short title unwrapped and no sideways scroll; the long title shows from 430 px up. Against the custom-element build WordPress loads.</td>
 <td>Playwright</td>
 <td><code>frontend/e2e/site-chrome.spec.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03); the ranking and calendar pages GREEN 2026-10-04 (LOCAL), the two document pages land with <code>&lt;spws-document&gt;</code> (plan step 6)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.NAV.01</td>
@@ -2122,9 +2122,9 @@
 </tr>
 <tr>
 <td>WP.ENV.01</td>
-<td>With both pairs (github.io): no CT/PD switch on the ranking or the calendar, the TEST ribbon shown (as signed off: „ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl”, on a phone „ŚRODOWISKO TESTOWE · TEST”, a link to weteraniszermierki.pl), the active environment CERT, and the promotion state still read from PROD.</td>
+<td>With both pairs (github.io): no CT/PD switch on the ranking or the calendar, the TEST ribbon shown (as signed off: „ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl”, on a phone „ŚRODOWISKO TESTOWE · TEST”, a link to weteraniszermierki.pl), the active environment CERT, and the promotion state still read from PROD. The github.io calculator and annex carry the same ribbon (their static half).</td>
 <td>Vitest</td>
-<td><code>frontend/tests/env-toggle.test.ts</code></td>
+<td><code>frontend/tests/env-toggle.test.ts</code>, <code>frontend/tests/assets.test.ts</code></td>
 <td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
@@ -2139,28 +2139,28 @@
 <td><code>release.yml</code> injects CERT into the root calculator and annex, PROD into their <code>embed/</code> copies, and PROD only into <code>register.html</code>; the guard step exists.</td>
 <td>pytest</td>
 <td><code>python/tests/test_release_env_injection.py</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.DOC.01</td>
 <td><code>&lt;spws-document doc=&quot;…&quot;&gt;</code> renders the bar, the drawer and a frame of <code>{asset-base}embed/{doc}.html?lang=…</code>.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/DocumentElement.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.DOC.02</td>
 <td>The frame's height follows the reported height; a report from any other origin is ignored.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/DocumentElement.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.DOC.03</td>
 <td>The <code>embed/</code> copies have no banner of their own, report their height, and hold the same generated scoring module (<code>build-scoring-pages.mjs --check</code>).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/assets.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.CALC.01</td>
@@ -2203,5 +2203,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>e39b1e1d8e9c11200b31b6cc7a6c9d65af8d76aa66b94c6a72fe271f16032761</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>69e140508e32f38ef8931ebdbadf571d489727a1ee117d56dbe61627b14cf4c2</code></footer>
 </div></body></html>

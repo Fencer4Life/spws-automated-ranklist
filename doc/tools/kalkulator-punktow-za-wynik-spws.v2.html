@@ -228,6 +228,26 @@
     }
     .brand img { display: block; height: 30px; width: auto; margin-bottom: 14px; }
     .rules-link { font-weight: 700; }
+    /* SPWS-EMBED:OMIT:BEGIN */
+    /* ---- Wstęga TEST (ADR-109, W3) ----------------------------------------
+       Kopia na github.io działa na CERT — ma to być widać przez cały czas.
+       Ta sama żółta wstęga co w aplikacji, prowadzi na stronę stowarzyszenia.
+       Generator usuwa ją z kopii embed/ (PROD, w ramce na WordPressie). */
+    .env-ribbon {
+      position: sticky; top: 0; z-index: 60; display: block;
+      padding: 5px 12px; background: #f5c518; color: #1f2328;
+      font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.06em; text-align: center; text-decoration: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .env-ribbon:hover .env-ribbon-site { text-decoration: underline; }
+    .env-ribbon-short { display: none; }
+    @media (max-width: 429.98px) {
+      .env-ribbon-long { display: none; }
+      .env-ribbon-short { display: inline; }
+    }
+    @media print { .env-ribbon { display: none; } }
+    /* SPWS-EMBED:OMIT:END */
   </style>
 </head>
 <body>
@@ -241,12 +261,19 @@
      data-supabase-cert-key="sb_publishable_local_anon_placeholder"
      data-supabase-prod-url=""
      data-supabase-prod-key=""></div>
+  <!-- SPWS-EMBED:OMIT:BEGIN -->
+  <!-- Wstęga TEST: ta kopia działa na CERT (ADR-109). Kopie embed/ jej nie mają. -->
+  <a class="env-ribbon" href="https://weteraniszermierki.pl"><span class="env-ribbon-long">ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → <span class="env-ribbon-site">weteraniszermierki.pl</span></span><span class="env-ribbon-short">ŚRODOWISKO TESTOWE · TEST</span></a>
+  <!-- SPWS-EMBED:OMIT:END -->
   <!-- Radiobuttony MUSZĄ stać tutaj: bezpośrednio w BODY, przed MAIN.
        Patrz komentarz przy .lang-switch w arkuszu stylów. -->
   <input class="lang-radio" type="radio" name="lang" id="langPl" checked>
   <input class="lang-radio" type="radio" name="lang" id="langEn">
 
   <main class="wrap">
+    <!-- SPWS-EMBED:OMIT:BEGIN -->
+    <!-- Własny pasek języka i nagłówek dokumentu. W ramce na WordPressie
+         zastępuje je pasek SPWS, więc generator usuwa je z kopii embed/. -->
     <nav class="lang-switch" aria-label="język / language">
       <label for="langPl" lang="pl">PL</label><label for="langEn" lang="en">EN</label>
     </nav>
@@ -256,6 +283,7 @@
       <h1><span class="copy-pl" lang="pl">Kalkulator punktów za wynik</span><span class="copy-en" lang="en">Result points calculator</span></h1>
       <p class="lead"><span class="copy-pl" lang="pl">Ile punktów do rankingu daje zajęte miejsce — według Załącznika nr 1, w sezonie, który właśnie trwa.</span><span class="copy-en" lang="en">How many ranking points a finishing place is worth — under Annex 1, in the current season.</span></p>
     </header>
+    <!-- SPWS-EMBED:OMIT:END -->
 
     <noscript>
   <div class="warn" style="margin:0 0 16px">

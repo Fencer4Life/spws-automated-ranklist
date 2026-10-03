@@ -150,13 +150,24 @@ jobs:
           # fetch their season's scoring parameters from fn_public_scoring_params,
           # so they need the same credentials. They are plain files under public/,
           # which Vite copies verbatim, so the attributes live on a hidden
-          # #spws-env div rather than on a custom element. PROD ONLY, for the same
-          # reason register.html is: both pages resolve (cert || prod), so a
-          # populated CERT pair would silently win on a page a fencer opens from
-          # the association's site. The committed values are LOCAL placeholders;
-          # the "no localhost in dist" guard below fails the build if this step
-          # is ever skipped.
+          # #spws-env div rather than on a custom element. Each copy gets exactly
+          # ONE pair: both pages resolve (cert || prod), so a populated CERT pair
+          # would silently win. The committed values are LOCAL placeholders; the
+          # "no localhost in dist" guard below fails the build if this step is
+          # ever skipped.
+          #
+          # ADR-109 (FR-151): github.io is CERT. The root copies, at the
+          # addresses old bookmarks hold, are CERT copies under the TEST ribbon.
           for page in public/kalkulator-punktow.html public/tabela-punktacji.html; do
+            sed -i 's|data-supabase-cert-url="[^"]*"|data-supabase-cert-url="${{ secrets.SUPABASE_CERT_URL }}"|' "$page"
+            sed -i 's|data-supabase-cert-key="[^"]*"|data-supabase-cert-key="${{ secrets.SUPABASE_CERT_ANON_KEY }}"|' "$page"
+            sed -i 's|data-supabase-prod-url="[^"]*"|data-supabase-prod-url=""|' "$page"
+            sed -i 's|data-supabase-prod-key="[^"]*"|data-supabase-prod-key=""|' "$page"
+          done
+          # ADR-090 amendment 2026-10-03 (FR-150): the embed/ copies are what
+          # <spws-document> frames on weteraniszermierki.pl — PROD only. The
+          # guard after the build fails the release if one carries the CERT pair.
+          for page in public/embed/kalkulator-punktow.html public/embed/tabela-punktacji.html; do
             sed -i 's|data-supabase-cert-url="[^"]*"|data-supabase-cert-url=""|' "$page"
             sed -i 's|data-supabase-cert-key="[^"]*"|data-supabase-cert-key=""|' "$page"
             sed -i 's|data-supabase-prod-url="[^"]*"|data-supabase-prod-url="${{ secrets.SUPABASE_PROD_URL }}"|' "$page"
@@ -180,6 +191,23 @@ jobs:
           ! grep -r 'service_role' frontend/dist/
           ! grep -r '127.0.0.1' frontend/dist/
           ! grep -r 'supabase-demo' frontend/dist/
+
+      # ADR-090 amendment 2026-10-03 / ADR-109 — the WordPress pages frame
+      # frontend/dist/embed/*.html, and they must be PROD and only PROD: a CERT
+      # pair there would win (cert || prod) on the association's live site.
+      - name: Verify the WordPress embed copies are PROD-only
+        run: |
+          for name in kalkulator-punktow tabela-punktacji; do
+            page="frontend/dist/embed/${name}.html"
+            test -f "$page" \
+              || { echo "::error::${page} is missing — the WordPress page /${name}/ frames it."; exit 1; }
+            if grep -qE 'data-supabase-cert-(url|key)="[^"]+"' "$page"; then
+              echo "::error::${page} carries a CERT pair — the embed copies must be PROD-only."
+              exit 1
+            fi
+            grep -qE 'data-supabase-prod-url="https://[^"]+"' "$page" \
+              || { echo "::error::${page} has no PROD URL — the injection step did not reach it."; exit 1; }
+          done
 
       # PROD deployment step 1 — the WordPress page at
       # weteraniszermierki.pl/znajdz-zawody/ hard-codes this exact URL:
