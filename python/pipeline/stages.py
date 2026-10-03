@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any
 
 from python.matcher.fuzzy_match import find_best_match, normalize_name, parse_scraped_name
@@ -188,22 +189,21 @@ def _row_authoritative_vcat(ctx: PipelineContext, r: Any) -> str | None:
     return None
 
 
-def _find_exact_fencer(
+def _exact_candidates(
     scraped_name: str,
     nationality: str | None,
     fencer_db: list[dict],
-) -> int | None:
-    """HIGH-PRECISION existence check — exact, NOT fuzzy.
+) -> list[dict]:
+    """Every roster fencer the scraped name names exactly, in roster order.
 
-    A fencer is the same person iff the normalized (surname, first_name) match
-    exactly, OR the scraped full name equals one of their stored aliases. When
-    both nationalities are known and differ (folded), they are treated as
-    DIFFERENT people (a foreign newcomer who collides on an exact Polish name
-    must still be created separately). Diacritics are folded so BARAŃSKI ==
-    BARANSKI; this is the same normalization the fuzzy matcher uses, but here
-    we require an EXACT post-fold equality, never a distance score.
-
-    Returns the matching id_fencer, or None.
+    A fencer is named iff the normalized (surname, first_name) match exactly,
+    OR the scraped full name equals one of their stored aliases. When both
+    nationalities are known and differ (folded), the name match does not count
+    (a foreign newcomer who collides on an exact Polish name is someone else);
+    an alias is a confirmed equivalence, so nationality is not re-litigated for
+    it. Diacritics are folded so BARAŃSKI == BARANSKI; this is the same
+    normalization the fuzzy matcher uses, but here we require an EXACT post-fold
+    equality, never a distance score.
     """
     s_sur, s_fst = parse_scraped_name(scraped_name)
     s_sur_n = normalize_name(s_sur, use_diacritic_folding=True)
@@ -211,20 +211,171 @@ def _find_exact_fencer(
     s_full_n = normalize_name(scraped_name, use_diacritic_folding=True)
     scraped_nat = _norm_nat(nationality)
 
+    found: list[dict] = []
+    seen: set[int] = set()
     for f in fencer_db:
         f_nat = _norm_nat(f.get("txt_nationality"))
         nat_conflict = scraped_nat is not None and f_nat is not None and scraped_nat != f_nat
-        # Exact (surname, first_name) match.
         f_sur_n = normalize_name(f.get("txt_surname") or "", use_diacritic_folding=True)
         f_fst_n = normalize_name(f.get("txt_first_name") or "", use_diacritic_folding=True)
-        if f_sur_n == s_sur_n and f_fst_n == s_fst_n and not nat_conflict:
-            return f["id_fencer"]
-        # Exact alias match (aliases are confirmed equivalences → nationality
-        # is not re-litigated here).
-        for alias in f.get("json_name_aliases") or []:
-            if normalize_name(alias, use_diacritic_folding=True) == s_full_n:
-                return f["id_fencer"]
-    return None
+        named = f_sur_n == s_sur_n and f_fst_n == s_fst_n and not nat_conflict
+        if not named:
+            named = any(
+                normalize_name(alias, use_diacritic_folding=True) == s_full_n
+                for alias in f.get("json_name_aliases") or []
+            )
+        if named and f["id_fencer"] not in seen:
+            seen.add(f["id_fencer"])
+            found.append(f)
+    return found
+
+
+@dataclass(frozen=True)
+class ExactLookup:
+    """The exact-name step's answer for one row (NAMESAKE.01–09).
+
+    `id_fencer` is the one fencer the row is; None with no `reason` means
+    nobody on the roster has the name (a new person). `reason` is set when the
+    row is undecided and must wait for a person:
+      - "namesakes_undecided": several fencers have the name and the birth year
+        does not single one out;
+      - "category_gap": the only fencer with the name has a birth year two or
+        more categories from the row's, which is a data error (decision D1 A,
+        3 Oct 2026), never a correction to make.
+    `namesakes` lists the fencers concerned.
+    """
+
+    id_fencer: int | None = None
+    reason: str | None = None
+    namesakes: tuple[dict, ...] = ()
+
+    @property
+    def undecided(self) -> bool:
+        return self.reason is not None
+
+
+def _category_gap(birth_year: int | None, vcat: str | None, season_end: int | None) -> int:
+    """How many categories a stored birth year sits from `vcat` (0 when unknown)."""
+    if birth_year is None or vcat not in _VCAT_ORDER or season_end is None:
+        return 0
+    stored = vcat_for_age(season_end - birth_year)
+    if stored not in _VCAT_ORDER:
+        return 0
+    return abs(_VCAT_ORDER.index(vcat) - _VCAT_ORDER.index(stored))
+
+
+def _lookup_exact_fencer(
+    scraped_name: str,
+    nationality: str | None,
+    fencer_db: list[dict],
+    vcat: str | None,
+    season_end: int | None,
+) -> ExactLookup:
+    """HIGH-PRECISION identity — exact name, then the birth year.
+
+    Several namesakes are told apart by birth year, as the fuzzy matcher's
+    `find_best_match` already does: the row is the one whose birth year fits the
+    row's category. A namesake with no birth year could fit, so he keeps the row
+    undecided too. Software never picks between namesakes otherwise, and never
+    the first one read: PROD holds KRAWCZYK Paweł 1954 and 1989 and MŁYNEK Janusz
+    1951 and 1984, and on 1 Oct 2026 the first-read rule filed both V4 results
+    under the young ones and rewrote their birth years.
+
+    One fencer with the name is that fencer while his birth year sits at most
+    one category from the row's (ADR-056 then moves it). Two or more categories
+    is a data error: the row is undecided and nothing is written.
+    """
+    candidates = _exact_candidates(scraped_name, nationality, fencer_db)
+    if not candidates:
+        return ExactLookup()
+    if len(candidates) > 1:
+        if vcat is None or season_end is None:
+            return ExactLookup(reason="namesakes_undecided", namesakes=tuple(candidates))
+        possible = [
+            f
+            for f in candidates
+            if f.get("int_birth_year") is None
+            or birth_year_to_vcat(f["int_birth_year"], season_end) == vcat
+        ]
+        if len(possible) != 1 or possible[0].get("int_birth_year") is None:
+            return ExactLookup(reason="namesakes_undecided", namesakes=tuple(candidates))
+        return ExactLookup(id_fencer=possible[0]["id_fencer"])
+    (only,) = candidates
+    if _category_gap(only.get("int_birth_year"), vcat, season_end) >= 2:
+        return ExactLookup(reason="category_gap", namesakes=(only,))
+    return ExactLookup(id_fencer=only["id_fencer"])
+
+
+def _find_exact_fencer(
+    scraped_name: str,
+    nationality: str | None,
+    fencer_db: list[dict],
+    vcat: str | None = None,
+    season_end: int | None = None,
+) -> int | None:
+    """The one fencer `_lookup_exact_fencer` decides, or None (new or undecided)."""
+    return _lookup_exact_fencer(scraped_name, nationality, fencer_db, vcat, season_end).id_fencer
+
+
+def _namesake_brief(f: dict) -> dict:
+    return {
+        "id_fencer": f["id_fencer"],
+        "name": f"{f.get('txt_surname') or ''} {f.get('txt_first_name') or ''}".strip(),
+        "birth_year": f.get("int_birth_year"),
+    }
+
+
+def undecided_note(lookup: ExactLookup, vcat: str | None, season_end: int | None) -> str:
+    """One line for the report and the refusal: why this row waits."""
+    years = ", ".join(str(f.get("int_birth_year") or "no birth year") for f in lookup.namesakes)
+    if lookup.reason == "category_gap":
+        (only,) = lookup.namesakes
+        by = only.get("int_birth_year")
+        stored = vcat_for_age(season_end - by) if by is not None and season_end else None
+        return (
+            f"the roster's only fencer of this name is born {by} ({stored}), the bracket is "
+            f"{vcat}: two or more categories apart, a data error to correct"
+        )
+    return f"namesakes born {years}; the birth year does not decide which one fenced {vcat}"
+
+
+def undecided_match(
+    r: Any, lookup: ExactLookup, vcat: str | None, season_end: int | None
+) -> StageMatchResult:
+    """The PENDING row an undecided lookup becomes: no fencer, the namesakes as
+    alternatives. Commit refuses a domestic listing that holds one."""
+    return StageMatchResult(
+        scraped_name=r.fencer_name,
+        place=r.place,
+        id_fencer=None,
+        confidence=100.0,
+        method="PENDING",
+        alternatives=[_namesake_brief(f) for f in lookup.namesakes],
+        notes=undecided_note(lookup, vcat, season_end),
+    )
+
+
+def record_undecided(
+    pctx: PipelineContext,
+    scraped_name: str,
+    lookup: ExactLookup,
+    vcat: str | None,
+    season_end: int | None,
+    source: str | None,
+) -> None:
+    """Report an undecided row; nothing is created or written for it."""
+    pctx.reconcile_conflicts.append(
+        {
+            "id_fencer": None,
+            "scraped_name": scraped_name,
+            "first_vcat": None,
+            "second_vcat": vcat,
+            "source": source,
+            "reason": lookup.reason,
+            "namesakes": [_namesake_brief(f) for f in lookup.namesakes],
+            "note": undecided_note(lookup, vcat, season_end),
+        }
+    )
 
 
 def _bracket_mixed_gender(
@@ -555,7 +706,13 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
         for r in ctx.parsed.results
         if not getattr(r, "bool_excluded", False)
         and (
-            eid := _find_exact_fencer(r.fencer_name, getattr(r, "fencer_country", None), fencer_db)
+            eid := _find_exact_fencer(
+                r.fencer_name,
+                getattr(r, "fencer_country", None),
+                fencer_db,
+                _row_authoritative_vcat(ctx, r),
+                season_end,
+            )
         )
         is not None
     ]
@@ -567,7 +724,13 @@ def s0_reconcile_roster(ctx: PipelineContext, db: Any) -> None:
 
         vcat = _row_authoritative_vcat(ctx, r)
         nat = getattr(r, "fencer_country", None)
-        existing_id = _find_exact_fencer(r.fencer_name, nat, fencer_db)
+        lookup = _lookup_exact_fencer(r.fencer_name, nat, fencer_db, vcat, season_end)
+        if lookup.undecided:
+            # Namesakes the birth year does not tell apart, or a two-category
+            # gap: neither created nor moved. The matcher holds the row PENDING.
+            record_undecided(ctx, r.fencer_name, lookup, vcat, season_end, source)
+            continue
+        existing_id = lookup.id_fencer
 
         if existing_id is None:
             # ---- Job 1: create the new participant ----
@@ -995,6 +1158,21 @@ def s6_resolve_identity(ctx: PipelineContext, db: Any) -> None:
                 )
             )
             continue
+
+        # Path 3a: a domestic row the exact step cannot decide waits — namesakes
+        # the birth year does not tell apart, or a two-category gap. The matcher
+        # below would accept an estimated year it cannot verify.
+        if domestic:
+            lookup = _lookup_exact_fencer(
+                r.fencer_name,
+                getattr(r, "fencer_country", None),
+                fencer_db,
+                cat,
+                ctx.season_end_year,
+            )
+            if lookup.undecided:
+                matches.append(undecided_match(r, lookup, cat, ctx.season_end_year))
+                continue
 
         # Path 3: standard matcher
         best = find_best_match(

@@ -257,18 +257,19 @@ class TestReconcile:
     def test_estimated_conflict_reestimated_keep_flag(self):
         """10.4.1 — estimated BY younger than the bracket band (PROMOTION) →
         re-estimate to the new band's YOUNGEST edge (just crossed the boundary),
-        keep estimated=TRUE."""
-        # Stored BY 1991 → age 35 → V0. Bracket says V2 → promotion V0→V2.
+        keep estimated=TRUE. One category: two or more is a data error
+        (NAMESAKE.09, D1 A 2026-10-03)."""
+        # Stored BY 1991 → age 35 → V0. Bracket says V1 → promotion V0→V1.
         db = FakeDB([_fencer(1, "DABROWSKI", "Marek", by=1991, estimated=True, nationality="PL")])
-        ctx = _ctx([_result("DABROWSKI Marek", country="POL")], category_hint="V2")
+        ctx = _ctx([_result("DABROWSKI Marek", country="POL")], category_hint="V1")
         stages.s0_reconcile_roster(ctx, db)
         assert len(db.updated) == 1
-        assert db.updated[0]["int_birth_year"] == 1976  # V2 youngest edge (age 50)
+        assert db.updated[0]["int_birth_year"] == 1986  # V1 youngest edge (age 40)
         assert db.updated[0]["estimated"] is True
         assert len(ctx.reconciled_fencers) == 1
         assert ctx.reconciled_fencers[0]["was_confirmed"] is False
         assert ctx.reconciled_fencers[0]["old_birth_year"] == 1991
-        assert ctx.reconciled_fencers[0]["new_birth_year"] == 1976
+        assert ctx.reconciled_fencers[0]["new_birth_year"] == 1986
         assert ctx.reconciled_fencers[0]["anchor"] == "lower edge"
 
     def test_confirmed_conflict_downgraded_and_flagged(self):
@@ -276,9 +277,9 @@ class TestReconcile:
         overwrite to the new band's youngest edge AND flip to estimated
         (downgrade); surfaced via was_confirmed=True."""
         db = FakeDB([_fencer(1, "ZIELINSKI", "Tomasz", by=1991, estimated=False, nationality="PL")])
-        ctx = _ctx([_result("ZIELINSKI Tomasz", country="POL")], category_hint="V3")
+        ctx = _ctx([_result("ZIELINSKI Tomasz", country="POL")], category_hint="V1")
         stages.s0_reconcile_roster(ctx, db)
-        assert db.updated[0]["int_birth_year"] == 1966  # V3 youngest edge (age 60)
+        assert db.updated[0]["int_birth_year"] == 1986  # V1 youngest edge (age 40)
         assert db.updated[0]["estimated"] is True  # downgraded
         assert ctx.reconciled_fencers[0]["was_confirmed"] is True
         assert ctx.reconciled_fencers[0]["anchor"] == "lower edge"
@@ -286,9 +287,9 @@ class TestReconcile:
     def test_demotion_confirmed_is_noop(self):
         """10.4.2b (ADR-056 amend) — CONFIRMED BY OLDER than the bracket band
         (demotion) → never auto-demote; logged conflict, BY untouched (admin-only)."""
-        # Stored 1966 → age 60 → V3. Bracket V1 → demotion V3→V1.
+        # Stored 1966 → age 60 → V3. Bracket V2 → demotion V3→V2.
         db = FakeDB([_fencer(1, "STARY", "Jan", by=1966, estimated=False, nationality="PL")])
-        ctx = _ctx([_result("STARY Jan", country="POL")], category_hint="V1")
+        ctx = _ctx([_result("STARY Jan", country="POL")], category_hint="V2")
         stages.s0_reconcile_roster(ctx, db)
         assert db.updated == []
         assert ctx.reconciled_fencers == []
@@ -300,11 +301,11 @@ class TestReconcile:
     def test_demotion_estimated_uses_midpoint(self):
         """10.4.2c — ESTIMATED BY OLDER than the bracket band may still demote to the
         band midpoint (the bracket is now the only age signal)."""
-        # Stored 1966 → age 60 → V3. Bracket V1 → demotion V3→V1.
+        # Stored 1966 → age 60 → V3. Bracket V2 → demotion V3→V2.
         db = FakeDB([_fencer(1, "STARY", "Jan", by=1966, estimated=True, nationality="PL")])
-        ctx = _ctx([_result("STARY Jan", country="POL")], category_hint="V1")
+        ctx = _ctx([_result("STARY Jan", country="POL")], category_hint="V2")
         stages.s0_reconcile_roster(ctx, db)
-        assert db.updated[0]["int_birth_year"] == 1981  # V1 midpoint (age 45)
+        assert db.updated[0]["int_birth_year"] == 1971  # V2 midpoint (age 55)
         assert ctx.reconciled_fencers[0]["anchor"] == "band midpoint"
 
     def test_no_conflict_no_write(self):
@@ -383,10 +384,10 @@ class TestIdempotenceAndConflicts:
     def test_reconcile_idempotent(self):
         """10.6.2 — once BY = band midpoint, a re-run finds no conflict."""
         db = FakeDB([_fencer(1, "REPEAT", "Guy", by=1991, estimated=True, nationality="PL")])
-        ctx1 = _ctx([_result("REPEAT Guy", country="POL")], category_hint="V2")
+        ctx1 = _ctx([_result("REPEAT Guy", country="POL")], category_hint="V1")
         stages.s0_reconcile_roster(ctx1, db)
         assert len(db.updated) == 1
-        ctx2 = _ctx([_result("REPEAT Guy", country="POL")], category_hint="V2")
+        ctx2 = _ctx([_result("REPEAT Guy", country="POL")], category_hint="V1")
         stages.s0_reconcile_roster(ctx2, db)
         assert len(db.updated) == 1  # no second write
 
@@ -397,8 +398,8 @@ class TestIdempotenceAndConflicts:
         # Same matched fencer referenced by two rows with different markers.
         ctx = _ctx(
             [
-                _result("TWICE Bob", place=1, country="POL", marker="2"),
-                _result("TWICE Bob", place=2, country="POL", marker="3"),
+                _result("TWICE Bob", place=1, country="POL", marker="1"),
+                _result("TWICE Bob", place=2, country="POL", marker="2"),
             ],
             category_hint=None,
         )
@@ -590,7 +591,7 @@ class TestDeclaredBirthYear:
             fencers=[_fencer(1, "NOWAK", "Ewa", by=1971, estimated=False)],  # V2
             registrations=[],
         )
-        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V0")  # younger bracket
+        ctx = _ctx([_result("NOWAK Ewa")], category_hint="V1")  # one category younger
         stages.s0_reconcile_roster(ctx, db)
         assert db.updated == []
         assert "confirmed_no_demote" in [c["reason"] for c in ctx.reconcile_conflicts]

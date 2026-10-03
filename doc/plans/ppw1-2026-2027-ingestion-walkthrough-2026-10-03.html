@@ -1,0 +1,216 @@
+<meta charset="utf-8">
+<title>PPW1 2026/27 ingestion</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">PPW1-2026-2027 · Opole, 26–27 Sep · ingestion walkthrough</p>
+  <h1>What happens when you start PPW1, and what I watch</h1>
+  <p class="dek">Domestic ingestion <b>commits and scores in one run, with no sign-off</b>. The first scored result <b>locks the 2026/27 scoring settings</b>. So the four decisions below come before you press anything.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Waiting for D1–D4</span>
+    <span class="pill">state read 3 Oct, read-only</span>
+    <span class="pill danger"><span class="dot"></span>2 blockers found</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Four decisions</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">D1</span> Where it runs first</p>
+      <p>The documented path is: ingest on CERT, then <code>promote PPW1</code> copies it to PROD. <b>Don't use it for this event.</b> <code>promote.py</code> sends CERT's <code>id_fencer</code> numbers to PROD, and the ids differ between the two (CHUDY Tomasz is 37 on CERT and 38 on PROD). It doesn't carry the joined-bracket data the new engine needs either. CERT's roster also differs from PROD's: PROD holds 90 PPW1 registrations, with the birth years the fencers declared, and CERT holds 8.</p>
+      <p><b>A (recommended):</b> I run a trial on LOCAL, which has been a copy of PROD, registrations included, since this morning, and show you the report. Then you run <code>ingest PPW1-2026-2027 &lt;url&gt; prod</code>. CERT gets its own run afterwards, with <code>cert</code>.<br><b>B:</b> CERT, then promote. That attaches results to the wrong PROD fencers.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">D2</span> Two pairs of namesakes on PROD and CERT</p>
+      <p><b>KRAWCZYK Paweł</b>: one is born 1954, has 1 result and is registered for PPW1; the other is born 1989, with 0 results. <b>MŁYNEK Janusz</b>: one is born 1951, with 19 results; the other is born 1984, with 0 results. Both rows without results were created on 14 July. The ingest's first step looks up an exact name and takes the first namesake it reads, without checking the birth year. In the 1 Oct trial on LOCAL it picked the <b>wrong one both times</b>: it filed the V4 results under the 1989 KRAWCZYK and the 1984 MŁYNEK, and overwrote both confirmed birth years with 1957. In the 2026/27 V4 ranking, each man would then appear twice.</p>
+      <p><b>A:</b> the 1989 and 1984 rows are not real people. On your go, I delete both rows on PROD and on CERT before the ingest, showing you the SELECT first.<br><b>B:</b> they are real people. Then the ingest waits while I add a test-first guard: the first step never picks between namesakes, and uses the PPW1 registration link (on PROD, KRAWCZYK's registration points at the 1954 one). I release it, which takes about 25 minutes of CI and Release, and the ingest follows.<br>Recommendation: <b>A</b> if you know they aren't real; otherwise <b>B</b>.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">D3</span> Are the 2026/27 scoring settings final?</p>
+      <p>The first scored PPW1 result creates the season's scoring revision and locks every setting: multipliers, points base, podium, ranking buckets. After that, only the privileged revise procedure can change them. Today both CERT and PROD are unlocked, PPW and MPW are on <code>SPWS_EVF_JOINED_V1_2026_2027</code>, and the season has 0 scored results. <b>A (recommended):</b> they are final. Before you start, I compare the PROD values with the values you expect and list them for you. <b>B:</b> change them first in Konfiguracja punktacji.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">D4</span> The results URL</p>
+      <p>The 1 Oct trial read <code>fencingtimelive.com/tournaments/eventSchedule/89BEBF880D6C4CFB96BB052F4FE3333D</code>. Paste yours into chat. If it is a different address, I compare the two before the trial.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Where we start</p>
+    <h2>State today (read-only queries)</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Item</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>PPW1-2026-2027</td><td>id 85, PLANNED, no URL, 0 tournaments</td><td>id 85, PLANNED, no URL, 0 tournaments</td></tr>
+        <tr><td>Season 2026/27</td><td>active, unlocked, 0 results</td><td>active, unlocked, 0 results</td></tr>
+        <tr><td>PPW / MPW engine</td><td colspan="2">SPWS_EVF_JOINED_V1_2026_2027 (others EVF classic)</td></tr>
+        <tr><td>PPW1 registrations</td><td>8</td><td>90 (13 without a roster fencer yet)</td></tr>
+        <tr><td>Previous edition link</td><td colspan="2">set (PPW1-2025-2026), so carry-over works</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Step by step</p>
+    <h2>What happens after <code>ingest PPW1-2026-2027 &lt;url&gt; prod</code></h2>
+    <ol class="steps">
+      <li><b>Telegram → GAS → GitHub.</b> GAS checks the code and the URL, then dispatches <code>ingest-event.yml</code> with target prod. <em>I watch:</em> the run starting and finishing (<code>gh run watch</code>).</li>
+      <li><b>The workflow</b> runs <code>ingest_cli --flow ingest_domestic --from-url --replace</code> against PROD. <em>I watch:</em> the log and the exit status.</li>
+      <li><b>Rounds.</b> The URL is saved on the event and the FTL schedule is read. The 3 pools-only rounds ("eliminacje grupowe") are dropped, one listing per category is kept, and the list goes to <code>json_ingest_sources</code>. <em>I check:</em> 14 listings kept and 3 dropped, as in the trial.</li>
+      <li><b>Roster first.</b> New entrants are created, with the birth year from their PPW1 registration when it fits the bracket, otherwise the middle of the band, marked estimated. A known fencer whose year doesn't fit the bracket is moved up into it, even if the year was confirmed (ADR-056). <em>I check:</em> every new fencer and every moved birth year against the registrations, and the two namesake pairs.</li>
+      <li><b>Matching.</b> Each name is linked to one roster fencer or created, and aliases are added (the trial added LEAHEY John and WHITLEY Gary). <em>I check:</em> no near-duplicate of an existing fencer is created, and no fencer is linked twice.</li>
+      <li><b>Filing, joined engine.</b> Each fencer goes into their own category's tournament, keeps their place in the joined listing, and every sibling tournament stores the joined N. A listing with a repeated place, or with a fencer who has no category, is refused before anything is written. <em>I check:</em> for each listing, N and places against FTL.</li>
+      <li><b>Scoring and lock.</b> Each tournament is scored. The first score locks the 2026/27 settings and stamps the results with the new revision. <em>I check:</em> the lock time is set, there is one revision, every result is stamped, and sample scores agree with the points table.</li>
+      <li><b>Joining check.</b> Per weapon and gender, the organiser's grouping is compared with § 2 of the scoring table. If they differ, a Telegram message ends "Scored as fenced", and nothing waits for anyone. <em>I check:</em> <code>tbl_joining_check</code>.</li>
+      <li><b>Report.</b> The full report and the diff go to Storage and to Telegram. Everything is already committed at this point; domestic results have no sign-off (ADR-075). <em>I read:</em> the report from Storage, every "detected gap" in it.</li>
+      <li><b>Status.</b> The event becomes IN_PROGRESS. Marking it COMPLETED is your admin action.</li>
+      <li><b>Recompute.</b> Moved birth years queue events for recomputing, and PROD drains the queue every 15 minutes. <em>I check:</em> it drains without errors.</li>
+      <li><b>Public pages.</b> The 2026/27 ranking lists only fencers with a PPW or MPW start, so PPW1 brings the rankings to life, with 2025/26 carried over. <em>I check:</em> each category's ranking against the drilldown for a few fencers.</li>
+      <li><b>CERT.</b> Run the same command with <code>cert</code>. I compare CERT with PROD by name.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Expected numbers</p>
+    <h2>From the 1 Oct trial on LOCAL</h2>
+    <p>14 listings were read and 3 pools-only rounds dropped, leaving 25 tournaments with 186 results. 6 fencers were created (ZANEUSKAYA Hanna, MARSZAŁEK Anna, KANIECKI Rafał, TYLSKI Łukasz, PERKOWSKI Maciej and KOSZMIDER Marek), and 7 birth years were moved. PROD's registrations should improve the years for the new fencers, and PROD already has the declared years for PĘCZEK Sandra, WALCZEWSKI Konrad and CHUDY Tomasz. So a different count is expected and is not a fault. I explain every difference.</p>
+  </section>
+
+  <section>
+    <p class="kicker">When I stop you</p>
+    <h2>Stop conditions</h2>
+    <ul>
+      <li>The workflow fails, or a listing is refused (the report names the places). We fix it, then run the ingest again; <code>--replace</code> makes that safe.</li>
+      <li>A namesake is touched, or a near-duplicate fencer is created.</li>
+      <li>Any N or place differs from FTL.</li>
+      <li>The lock is set with settings you didn't intend.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">What I can't see</p>
+      <p>The Telegram connection is down in this session, so I follow the run on GitHub, in the database and through the report in Storage. If a Telegram message says something unusual, paste it here.</p>
+    </div>
+  </section>
+
+  <p class="foot">Sources: handbook ingestion and operator-runbooks pages, ingest-event.yml, promote.py, stages.py (s0_reconcile_roster, _find_exact_fencer), doc/staging/PPW1-2026-2027.20261001-044227Z.md, read-only queries on CERT and PROD, 3 Oct 2026.</p>
+</div>

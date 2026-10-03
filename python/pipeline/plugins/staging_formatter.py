@@ -256,6 +256,18 @@ def _render_reconciled(m) -> str:
                 f"| {r.get('new_birth_year')} | estimated | {reason} |"
             )
     for c in m["conflicts"]:
+        if c.get("reason") in ("namesakes_undecided", "category_gap"):
+            # NAMESAKE.10: an identity the birth year could not decide waits for
+            # a person; say why and who is on the roster.
+            roster = ", ".join(
+                f"#{n.get('id_fencer')} born {n.get('birth_year') or '?'}"
+                for n in c.get("namesakes") or []
+            )
+            lines.append(
+                f"- ⛔ waits: {c.get('scraped_name')} ({c.get('second_vcat') or 'no category'}): "
+                f"{c.get('note')} — roster: {roster}"
+            )
+            continue
         lines.append(
             f"- ⚠ conflict: {c.get('scraped_name')} (#{c.get('id_fencer')}) "
             f"{c.get('first_vcat')} vs {c.get('second_vcat')}"

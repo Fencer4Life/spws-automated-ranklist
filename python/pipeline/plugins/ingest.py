@@ -413,6 +413,13 @@ class Commit(BasePlugin):
             )
         else:
             field = BracketField.from_places(r.place for r in parsed.results)
+        # NAMESAKE.07: a domestic row the identity step could not decide —
+        # namesakes the birth year does not tell apart, or a two-category gap —
+        # waits for a person. The listing is refused before any write, never
+        # written without him.
+        if module.name != SOURCE_FIELD_PLACE:
+            self._refuse_domestic_pending(ctx, pctx, final_vcats, commit_cats, weapon, gender)
+
         # ADR-104 §§3-4: every categorised fencer, written or not, gives the
         # order; a listed place with no category, or a repeated place in a
         # joined listing, is refused here, before any write.
@@ -583,6 +590,51 @@ class Commit(BasePlugin):
             },
         )
         self.report(ctx, "COMMIT", **ctx.get("committed"))
+
+    @staticmethod
+    def _refuse_domestic_pending(ctx, pctx, final_vcats, commit_cats, weapon, gender) -> None:
+        """Raise when this listing holds a PENDING row it would write (NAMESAKE.07).
+
+        A row counts when its category is one this listing owns, or when it has
+        no category at all (the order could not be written without it either).
+        The message names each fencer, why he waits and his namesakes, and how
+        to resolve it, so the operator never needs the log to act.
+        """
+        vcat_of = {id(m): v for v, members in (final_vcats or {}).items() for m in members}
+        matches = ctx.get("matches")
+        if matches is None:
+            matches = list(pctx.matches) if pctx and pctx.matches else []
+        held = [
+            m
+            for m in matches
+            if getattr(m, "method", None) == "PENDING"
+            and (
+                vcat_of.get(id(m)) is None
+                or commit_cats is None
+                or vcat_of.get(id(m)) in commit_cats
+            )
+        ]
+        if not held:
+            return
+        code = (pctx.event or {}).get("txt_code") if pctx else None
+        lines = []
+        for m in held:
+            namesakes = ", ".join(
+                f"{a.get('name') or 'id ' + str(a.get('id_fencer'))} "
+                f"(id {a.get('id_fencer')}, born {a.get('birth_year') or '?'})"
+                for a in getattr(m, "alternatives", None) or []
+            )
+            note = getattr(m, "notes", None) or "unresolved identity"
+            lines.append(
+                f"{m.scraped_name} (place {m.place}): {note}"
+                + (f" — roster: {namesakes}" if namesakes else "")
+            )
+        raise ValueError(
+            f"{weapon} {gender} listing not written: "
+            + "; ".join(lines)
+            + ". Correct the roster birth year, or add an identity entry with the fencer's "
+            f"birth year to doc/overrides/{code or '<event code>'}.yaml, then run the ingest again."
+        )
 
     @staticmethod
     def _module(db, event, ttype) -> JoinedBracketModule:
