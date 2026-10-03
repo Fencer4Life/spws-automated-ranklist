@@ -1,0 +1,303 @@
+<meta charset="utf-8">
+<title>Category check: seven results</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Category check · CERT and PROD · read-only investigation · 3 Oct 2026</p>
+  <h1>Seven results whose category contradicts the fencer's birth year</h1>
+  <p class="dek">The category check lists seven results on PROD, and the same seven on CERT. All are international, and all were stored legally, with the category their source printed. <b>They have two unrelated causes.</b> Three come from a one-year difference in how the World Championships count age. Four come from a birth year on our roster that two sources contradict. Nothing has been changed. Two decisions are below.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>V1 A and V2 A decided 3 Oct</span>
+    <span class="pill"><span class="dot"></span>LEAHEY 1969 on PROD, CERT, LOCAL</span>
+    <span class="pill warn"><span class="dot"></span>Check change: in release</span>
+    <span class="pill">vw_vcat_violation · ADR-047, ADR-056, ADR-106</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decided 3 Oct</p>
+    <h2>Two decisions, both A</h2>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> What has been done</p>
+      <ul>
+        <li><b>V1 A.</b> #167 LEAHEY John changed from 1976 to 1969, confirmed. On PROD it was one guarded update, read first and returned by the update.
+          <ul>
+            <li>CERT and LOCAL took the same update. CERT now holds the six PPW1 entrants PROD does not have, so a refresh would stop on them until promote; the update keeps CERT equal to PROD meanwhile.</li>
+            <li>PROD's check then listed 4: the three World Championships rows, and his 2023/24 European Championships row, which is now the one result 1969 does not fit.</li>
+          </ul></li>
+        <li><b>V2 A.</b> Migration <code>20261003000012_vcat_violation_calendar_year.sql</code>, written test first:
+          <ul>
+            <li>pgTAP 24.5–24.8. 24.5 and 24.8 failed on the old view, and all 8 pass on the new one;</li>
+            <li>ADR-047 and ADR-106 amended, Appendix C updated, pgTAP total 1279;</li>
+            <li>the handbook page on identity and recompute describes the guard and the check;</li>
+            <li>after the release, PROD and CERT are to list one row: the European Championships result.</li>
+          </ul></li>
+        <li><b>Still open, by an earlier decision:</b> the European Championships 2023/24 source check (step 2 below).
+          <ul>
+            <li>IMEW-2023-2024 is one of the 2023/24 events with no organiser source: 16 brackets and 52 results, every bracket with a wrong N, and no results address.</li>
+            <li>For such events you signed off R1 A on 2 Oct (<code>international-data-repair-batch-1-2026-10-01.html</code>): they stay as stored and listed until a source turns up. EVF results were rejected as their repair source (R1 B).</li>
+            <li>So LEAHEY's row stays listed until the organiser's results page for those championships is found. With that address, the event can be repaired like the others.</li>
+          </ul></li>
+      </ul>
+    </div>
+
+    <div class="note plain">
+      <p class="lede"><span class="tick">✓ V1 A</span> LEAHEY John (#167): which birth year</p>
+      <p>Our roster has <b>1976</b>, marked confirmed, from the original import and never changed since. Two independent sources say <b>1969</b>: EVF's date of birth for him, recorded in the 2 Oct re-staging review, and his own registration for PEW5efs-2026-2027, which declares 1969. That registration has no fencer link, so it never reached the Birth-year review tab.</p>
+      <ul>
+        <li><b>A (recommended): 1969, confirmed, set on PROD.</b> It fits 12 of his 13 results. The four 2024/25 rows stop being flagged. One row then becomes flagged: his V1 result at the 2023/24 European Championships, a seed-imported row with no source address and a placeholder date. It needs checking against that championship's results before anyone changes it. The refresh carries the year to CERT. No published ranking moves (section 4).</li>
+        <li><b>B: keep 1976.</b> It fits 9 of 13 results and contradicts both sources. The four 2024/25 rows stay flagged.</li>
+      </ul>
+    </div>
+
+    <div class="note plain">
+      <p class="lede"><span class="tick">✓ V2 A</span> The three World Championships results: what the check should say about them</p>
+      <p>KORONA Przemysław and KROCHMALSKI Jakub, both born 1976, fenced V1 at the World Championships of 12–16 November 2025. SPWS counts them as V2 for 2025/26. Both facts are right. The Championships count age in the calendar year of the event (49 in 2025), while SPWS counts it in the season's end year (50 in 2026). ADR-106 already accepts this shift when it identifies international results. The check was never taught it.</p>
+      <ul>
+        <li><b>A (recommended): keep the results and the ranking as they are, and teach the check the same shift.</b> A result that carries its source's label passes when that label equals the category for the calendar year in which the event started. These three pass. LEAHEY's 2024/25 rows would still fail under 1976 (48 and 49 are V1 in either year), so the change hides nothing that is wrong. This needs a migration for the view, pgTAP, and an amendment to ADR-047 and ADR-106. It would be one small release.</li>
+        <li><b>B: leave the check as it is.</b> The three stay listed permanently, as known.</li>
+        <li><b>C: a new ranking rule, under which a result earned in another category's bracket does not count.</b> KROCHMALSKI would drop from 5th to 6th in the live 2026/27 rolling V2 men's sabre ranking. Not recommended: the result is his, from the bracket the Championships required him to fence in.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">1 · The seven</p>
+    <h2>What the check lists, on PROD and on CERT alike</h2>
+    <p>The SPWS category is computed from the roster birth year and the season's end year, as the ranking computes it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fencer</th><th>Event</th><th>Bracket fenced</th><th>Place</th><th>Score</th><th>SPWS category</th></tr></thead>
+      <tbody>
+        <tr><td>KORONA Przemysław #139<br>1976, confirmed</td><td>IMSW 2025/26, World Championships, 12–16 Nov 2025</td><td>V1 men's épée</td><td>37 of 59</td><td>7.93</td><td>V2 (50 in 2026)</td></tr>
+        <tr><td>KORONA Przemysław #139</td><td>IMSW 2025/26</td><td>V1 men's foil</td><td>31 of 44</td><td>18.64</td><td>V2</td></tr>
+        <tr><td>KROCHMALSKI Jakub #156<br>1976, confirmed</td><td>IMSW 2025/26</td><td>V1 men's sabre</td><td>19 of 40</td><td>25.07</td><td>V2</td></tr>
+        <tr><td>LEAHEY John #167<br>1976, confirmed</td><td>PEW2efs-2024-2025, EVF Circuit Madrid, 16–17 Nov 2024</td><td>V2 men's épée</td><td>21 of 55</td><td>22.77</td><td>V1 (49 in 2025)</td></tr>
+        <tr><td>LEAHEY John #167</td><td>PEW4ef-2024-2025, Guildford, 4–5 Jan 2025</td><td>V2 men's épée</td><td>19 of 53</td><td>23.66</td><td>V1</td></tr>
+        <tr><td>LEAHEY John #167</td><td>PEW6efs-2024-2025, Terni, 1–2 Feb 2025</td><td>V2 men's épée</td><td>27 of 62</td><td>20.87</td><td>V1</td></tr>
+        <tr><td>LEAHEY John #167</td><td>PEW13ef-2024-2025, Stockholm, 15–16 Mar 2025</td><td>V2 men's épée</td><td>6 of 31</td><td>44.43</td><td>V1</td></tr>
+      </tbody>
+    </table></div>
+    <p>Every row carries its source's own category label (<code>enum_source_age_category</code>), the same as the bracket it sits in. The three World Championships rows were stored on 2 Oct, and LEAHEY's four on 3 Oct, both by the ADR-105/106 re-ingestion.</p>
+  </section>
+
+  <section>
+    <p class="kicker">2 · Why they were stored, and why they are still listed</p>
+    <h2>The check and the guard disagree since May</h2>
+    <ul>
+      <li><b>The guard on every result insert</b> is <code>trg_assert_result_vcat</code>. Since the ADR-056 revision (migration <code>20260503000009</code>), it skips the comparison when a result carries its source's label. The reason is written in the migration: the organiser's bracket is the source of truth for a past tournament. All seven carry a label, so all seven were accepted.</li>
+      <li><b>The check</b> is the view <code>vw_vcat_violation</code> (ADR-047, migration <code>20260430000001</code>). It was written four days before that revision and never changed. It still compares the bracket with the birth-year category and ignores the label, so it lists every labelled result the guard deliberately let through.</li>
+    </ul>
+    <p>So "violation" overstates it. The view marks a disagreement. What the disagreement means differs between the two groups below.</p>
+  </section>
+
+  <section>
+    <p class="kicker">3 · Group A · KORONA, KROCHMALSKI · three results</p>
+    <h2>A one-year shift at the World Championships</h2>
+    <ul>
+      <li><b>KORONA Przemysław (#139):</b> 89 results. 87 fit 1976 under the SPWS rule:
+        <ul>
+          <li>V1 throughout 2023/24 (32) and 2024/25 (27);</li>
+          <li>V2 throughout 2025/26 (28), including EVF circuit events on 20 Sep and 1 Nov 2025.</li>
+        </ul>
+        The exceptions are his two World Championships results, V1 on 12–16 Nov 2025.</li>
+      <li><b>KROCHMALSKI Jakub (#156):</b> 18 results, with the same pattern. V1 in 2023/24 (7) and 2024/25 (5), V2 in 2025/26 (5), and one exception: the World Championships, V1.</li>
+    </ul>
+    <p>Born 1976, both turned 49 in 2025 and 50 in 2026. The World Championships placed them by the event's calendar year (V1). SPWS places them by the season's end year (V2). Their birth years are right. Nothing in the stored data is wrong.</p>
+    <p><b>ADR-106 §1 already allows for this.</b> When it identifies an international row, "the year before the season's end year is accepted". The check was not given the same allowance.</p>
+    <p><b>The ADR-106 wording needs a correction.</b> It attributes the calendar-year rule to EVF. These two fencers' EVF circuit results in autumn 2025 follow the season rule (V2 on 20 Sep and 1 Nov). Only the World Championships follow the calendar year. The wording should be corrected when ADR-106 is amended.</p>
+  </section>
+
+  <section>
+    <p class="kicker">4 · What the seven do to rankings</p>
+    <h2>One of them decides a place in a live ranking</h2>
+    <p>The ranking files every result under the fencer's category for that season, from the birth year, and never under the bracket's label (<code>fn_ranking_full</code>'s two matching functions, migration <code>20260919000008</code>, lines 341–344, 363 and 483). A result is scored from the bracket in which it was fenced.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Season</th><th>Published as</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>2023/24, 2024/25, 2025/26</td><td>PPW only (ADR-099)</td><td>None. The public ranklist counts PPW and MPW for these seasons. All seven are PEW or MSW, and the app never calls the older <code>fn_ranking_kadra</code>.</td></tr>
+        <tr><td>2026/27, rolling ranking with 2025/26 carried over</td><td>Full</td><td>The three World Championships results are carried and filed under V2, the fencers' 2026/27 category. Checked against PROD today:
+          <ul>
+            <li>KORONA, épée: international total 564.01, his best five (143.16 + 138.87 + 98.96 + 96.99 + 86.03). The 7.93 is not among them. Rank 1.</li>
+            <li>KORONA, foil: 200.56, his best five. The 18.64 is sixth, so it does not count. Rank 1.</li>
+            <li><b>KROCHMALSKI, sabre: 83.21 = 58.14 + 25.07</b>, so the World Championships result counts. Rank 5, total 302.53. Without it, 277.46 would put him 6th, behind ZAWROTNIAK Przemysław (286.25).</li>
+          </ul></td></tr>
+      </tbody>
+    </table></div>
+    <p>LEAHEY's birth year changes no published ranking, whichever is chosen:</p>
+    <ul>
+      <li>2023/24 and 2024/25 publish PPW only, and he has no PPW or MPW result in either season;</li>
+      <li>in 2025/26 and 2026/27 he is V2 under 1976 and under 1969.</li>
+    </ul>
+    <p>The year starts to matter in 2028/29. Under 1969 he turns 60 and moves to V3. Under 1976 he would stay V2 until 2035/36.</p>
+  </section>
+
+  <section>
+    <p class="kicker">5 · Group B · LEAHEY · four results</p>
+    <h2>A roster birth year that two sources contradict</h2>
+    <p>Each candidate year, tested against all 13 of his results:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Results</th><th>Bracket</th><th>Under 1976</th><th>Under 1969</th></tr></thead>
+      <tbody>
+        <tr><td>European Championships 2023/24, épée, 3rd of 9</td><td>V1</td><td>48 in 2024: V1 <span class="chip never">fits</span></td><td>55: V2 <span class="chip over">does not fit</span></td></tr>
+        <tr><td>Four EVF circuit events 2024/25 (the flagged four)</td><td>V2</td><td>49 in 2025: V1 <span class="chip over">does not fit</span></td><td>56: V2 <span class="chip never">fits</span></td></tr>
+        <tr><td>Eight results in 2025/26: seven EVF circuit, and PPW3</td><td>V2</td><td>50 in 2026: V2 <span class="chip never">fits</span></td><td>57: V2 <span class="chip never">fits</span></td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>The one row 1969 does not fit is the weakest evidence we hold.</b> IMEW-2023-2024 has no results address, its date is a placeholder (1 Jan 2023) and its field is 9. The row arrived with the July 2026 seed import, not from a scraped source.</li>
+      <li><b>1976 has no source.</b> His fencer row has no audit history: the year came with the original import and was never changed. "Confirmed" here records that it was imported as a value, not that anyone confirmed it.</li>
+      <li><b>The 2 Oct review stated the same conclusion.</b> It linked his four 2024/25 rows by identity entries in each event's override file, on your "accept all", and stored them in V2 as printed. It recorded that our 1976 "looks wrong" and left the correction as a separate master-data change, on your go. That go was never asked for separately. This page asks for it (V1).</li>
+      <li><b>A 1975 would fit all 13 rows.</b> No source states it, so it is not offered: it would be a guess.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">6 · What each answer sets in motion</p>
+    <h2>Steps, on your answers</h2>
+    <ol class="steps">
+      <li><b>V1 A:</b> one guarded update on PROD, #167 from 1976 to 1969, confirmed, read first and returned by the update. The refresh copies it to CERT before the next CERT ingestion. His events are queued for recompute; no published score changes.</li>
+      <li><b>V1 A, follow-up:</b> look up LEAHEY in the 2023/24 European Championships results. If the source shows him in V2, his stored V1 row is corrected through the normal path. The event IMEW-2023-2024 also lacks its dates and addresses, so it is a candidate for the same check.</li>
+      <li><b>V2 A:</b> a migration redefines <code>vw_vcat_violation</code>. A labelled result passes when the label equals the category for the calendar year in which its event started; everything else is checked as today. pgTAP covers the three cases: the World Championships rows pass, LEAHEY's 2024/25 rows fail under 1976, and an unlabelled row is checked by the season rule. ADR-047 and ADR-106 are amended, including the EVF wording in section 3. <code>scripts/preflight.sh</code> exits 0, then release.</li>
+      <li>Afterwards the check lists: under V1 A and V2 A, one row (the 2023/24 European Championships, until checked); under V1 A alone, four; under V2 A alone, four.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">7 · Relation to the promote work</p>
+    <h2>Independent of PPW1 and the refresh</h2>
+    <ul>
+      <li>The seven are identical on CERT and PROD, because the refresh made CERT's fencer data equal to PROD's.</li>
+      <li>None of them is a PPW1 result, and none of the three fencers changed during the refresh or the PPW1 ingestion.</li>
+      <li>Any correction made on PROD reaches CERT through the next refresh.</li>
+    </ul>
+  </section>
+
+  <div class="foot">Sources, all read-only on 3 Oct 2026:
+    <ul>
+      <li>PROD and CERT: <code>vw_vcat_violation</code>, <code>tbl_result</code>, <code>tbl_tournament</code>, <code>tbl_event</code>, <code>tbl_audit_log</code> and <code>tbl_registration</code>;</li>
+      <li>the live rankings: <code>fn_ranking_full</code> and <code>fn_fencer_scores_rolling</code>, 2026/27 rolling;</li>
+      <li>migrations <code>20260430000001</code>, <code>20260503000009</code> and <code>20260919000008</code>;</li>
+      <li>ADR-047, ADR-056, ADR-099 and ADR-106;</li>
+      <li><code>doc/plans/evf-2024-2025-events-review-2026-10-02.html</code> and the override files of the four LEAHEY events.</li>
+    </ul></div>
+</div>
