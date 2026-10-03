@@ -211,6 +211,7 @@
             <li>His five events were re-scored by the drain (run 37116961518). After it, the 2,878 finished-season results still equal PROD's.</li>
             <li>The staging report went to Telegram. It sits in CERT's private <code>staging-reports</code> bucket as <code>PPW1-2026-2027/full.md</code>.</li>
           </ul></td></tr>
+        <tr><td><span class="chip warn">open</span> PROD's queue</td><td>The seven PROD events queued by the two birth-year writes are still waiting. <code>recompute-drain-prod.yml</code> is scheduled every 15 minutes, but GitHub has not started it since 05:47 UTC. Nobody changes category, so the recompute changes no score. <b>Recommended:</b> I dispatch it once, with debounce 0, on your yes. It is a PROD write, the same one the schedule makes. Otherwise it waits for the schedule.</td></tr>
         <tr><td>Category check</td><td>7 results sit in a category their fencer's year forbids, the same 7 on CERT and PROD. All are older international results: PEW 2024/25 (LEAHEY John) and IMSW 2025/26 (KORONA Przemysław, KROCHMALSKI Jakub). Nothing from the refresh or PPW1. Not touched here.</td></tr>
       </tbody>
     </table></div>
