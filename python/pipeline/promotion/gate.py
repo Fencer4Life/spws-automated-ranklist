@@ -29,12 +29,6 @@ from typing import Any, Protocol
 
 from python.pipeline.name_classify import classify_alias_pair
 
-# G2, the general rule for a declaration against a confirmed birth year. A
-# (recommended): it overwrites a confirmed year only when the fencer's results
-# leave no other year; any other overwrite blocks. B: the declaration wins
-# whenever it fits the bracket (D5 as released) and the gate only reports it.
-DECLARATION_RULE = "A"
-
 # The input-fingerprint parts compared value by value, in reporting order. The
 # lock has its own rule (G1 A).
 INPUT_PARTS = ("schema", "roster", "registrations", "season", "event")
@@ -109,7 +103,6 @@ def evaluate(
     *,
     main_commit: str,
     roster: Sequence[Mapping[str, Any]],
-    declaration_rule: str = DECLARATION_RULE,
 ) -> GateResult:
     """Every finding for one run; pure, so each check is tested on its own."""
     if run is None:
@@ -129,7 +122,7 @@ def evaluate(
     master = run.get("jsonb_master_data") or {}
 
     _preconditions(out, run, listings, rounds, master, checks, prod, main_commit)
-    _identity(out, rounds, master, checks, roster, declaration_rule)
+    _identity(out, rounds, master, checks, roster)
     _scoring(out, checks)
     _joined(out, rounds, checks)
     for j in checks.get("joining") or []:
@@ -263,7 +256,7 @@ def _preconditions(out, run, listings, rounds, master, checks, prod, main_commit
             )
 
 
-def _identity(out, rounds, master, checks, roster, declaration_rule) -> None:
+def _identity(out, rounds, master, checks, roster) -> None:
     fitting = checks.get("fitting_years") or {}
     for r in rounds:
         ident = r.get("identity") or {}
@@ -291,7 +284,7 @@ def _identity(out, rounds, master, checks, roster, declaration_rule) -> None:
                     )
                 )
         for m in ident.get("reconciled") or []:
-            _reconciled(out, m, fitting, declaration_rule)
+            _reconciled(out, m, fitting)
         for c in ident.get("created") or []:
             near = c.get("near_miss") or {}
             if near.get("name"):
@@ -328,7 +321,9 @@ def _identity(out, rounds, master, checks, roster, declaration_rule) -> None:
     _duplicates(out, master, roster)
 
 
-def _reconciled(out, m, fitting, declaration_rule) -> None:
+def _reconciled(out, m, fitting) -> None:
+    """G2 A (decided 3 Oct): a declaration overwrites a confirmed year only when
+    the fencer's results leave no other year; any other overwrite blocks."""
     move = f"{_who(m)} moved from {m.get('old_birth_year')} to {m.get('new_birth_year')}"
     if not m.get("was_confirmed"):
         if m.get("anchor") == DECLARED:
@@ -349,18 +344,12 @@ def _reconciled(out, m, fitting, declaration_rule) -> None:
         )
         return
     years = fitting.get(str(m.get("id_fencer"))) or []
-    if declaration_rule == "B":
-        out.append(
-            Finding(
-                "info.declaration_over_confirmed", INFORMATION, f"{move}, as declared (rule B)."
-            )
-        )
-    elif list(years) == [m.get("new_birth_year")]:
+    if list(years) == [m.get("new_birth_year")]:
         out.append(
             Finding(
                 "info.declaration_forced",
                 INFORMATION,
-                f"{move}, as declared: his results allow no other year.",
+                f"{move}, as declared: their results allow no other year.",
             )
         )
     else:
@@ -370,7 +359,7 @@ def _reconciled(out, m, fitting, declaration_rule) -> None:
                 "identity.declaration_over_confirmed",
                 IDENTITY,
                 _reingest(
-                    f"{move}: a declaration overwrote a confirmed year, and his results allow {span}. "
+                    f"{move}: a declaration overwrote a confirmed year, and their results allow {span}. "
                     "Decide the year by name on PROD"
                 ),
             )
@@ -546,7 +535,6 @@ def run_gate(
     *,
     main_commit: str,
     environment: str,
-    declaration_rule: str = DECLARATION_RULE,
 ) -> GateResult:
     """Run the gate on the latest recorded run of the event and record its outcome."""
     if not getattr(prod, "read_only", False):
@@ -585,7 +573,6 @@ def run_gate(
         ProdState(parts=fingerprint.get("parts") or {}, taken_ids=frozenset(taken or [])),
         main_commit=main_commit,
         roster=roster,
-        declaration_rule=declaration_rule,
     )
     if run and not target.read_only:
         target.fetch_json(
