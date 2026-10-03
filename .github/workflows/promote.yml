@@ -3,8 +3,8 @@ name: Promote Event to PROD
 # ADR-108 §6: promote replays the latest verified CERT run of one event on PROD.
 # It copies nothing from CERT. `resolve` finds the run and its commit (read only);
 # `promote` checks that commit out, re-runs the gate, plans the ingestion against
-# PROD, compares it with the CERT run and applies it in one transaction over a
-# direct database connection (fn_promote_event_apply: a dry run, then the apply);
+# PROD, compares it with the CERT run and applies it in one transaction through
+# PROD's service-role API (fn_promote_event_apply: a dry run, then the apply);
 # after the commit it reports, drains PROD's recompute queue and compares the
 # drained events with CERT. `seed` exports PROD's seed as its own job.
 #
@@ -104,9 +104,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        # The plan runs the domestic ingestion (scrapers, matcher, rulebook), and
-        # the apply needs a direct database connection.
-        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml psycopg2-binary
+        # The plan runs the domestic ingestion (scrapers, matcher, rulebook); the
+        # apply is one call of PROD's service-role API (ADR-108 §6, decision B).
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml
 
       - name: Replay the CERT run on PROD
         id: replay
@@ -115,7 +115,6 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
-          SUPABASE_PROD_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
