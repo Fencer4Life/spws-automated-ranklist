@@ -21,14 +21,14 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-10-03T15:09:44Z",
-      "sha": "818ab909c68706a9dab20323caa7ef9b8fb6b298",
-      "schema_fingerprint": "fd16241146d47eb33596b3df255427e8"
+      "at": "2026-10-03T16:07:20Z",
+      "sha": "deba4191a4291c02a9881c74a7c9c70b11200efa",
+      "schema_fingerprint": "4cbdac676ef5018d3e76f253886413bf"
     },
     "prod": {
-      "at": "2026-10-03T15:10:28Z",
-      "sha": "818ab909c68706a9dab20323caa7ef9b8fb6b298",
-      "schema_fingerprint": "fd16241146d47eb33596b3df255427e8"
+      "at": "2026-10-03T16:08:14Z",
+      "sha": "deba4191a4291c02a9881c74a7c9c70b11200efa",
+      "schema_fingerprint": "4cbdac676ef5018d3e76f253886413bf"
     }
   }
 }
