@@ -386,3 +386,45 @@ Tests: `python/tests/test_s0_reconcile_roster.py` 10.9.1–10.9.9 — the declar
 taken for a new fencer and for a matched one, the midpoint retained with no
 registration, namesakes refused, `declared_vs_bracket` refused, diacritics folded,
 Guard 1 still blocking a bracket-only demotion, and both halves of refusal 3.
+
+## Amendment (2026-10-03) — namesakes are told apart by birth year; a two-category gap is a data error
+
+The exact-name step that runs before the fuzzy matcher — `ResolveFencers` phase A on the
+`ingest-event.yml` path, and Stage 0 on the Phase 5 runner path — returned the **first**
+roster fencer whose name matched and never looked at the birth year. The matcher behind it
+(`find_best_match`) already told namesakes apart by birth year, but a row the exact step had
+linked never reached it. PROD holds two live same-name pairs, KRAWCZYK Paweł (1954, 1989)
+and MŁYNEK Janusz (1951, 1984). The PPW1-2026-2027 trial on LOCAL (1 October) filed the V4
+épée result under KRAWCZYK 1989 and the V4 sabre win under MŁYNEK 1984, and this ADR's
+promotion rule then rewrote both confirmed birth years to 1957.
+
+### The rule
+
+One lookup, `stages._lookup_exact_fencer`, serves every path. It collects every exact name or
+alias match (the nationality rule unchanged) and takes the row's category and the season's
+end year.
+
+1. **Several namesakes.** The row is the one whose birth year fits the row's category. A
+   namesake with no birth year could fit, so he keeps the row undecided too. When none or
+   several fit, or the row has no category, the row is **undecided** — never the first one
+   read.
+2. **One fencer of the name.** He is the row while his birth year sits **at most one
+   category** from the row's; the promotion and demotion rules above then apply. **Two or
+   more categories apart is a data error** (decision D1 A, 3 October 2026): the row is
+   undecided, his birth year is not moved and no fencer is created. This bounds every rule
+   above: no bracket moves a stored birth year by two or more categories.
+
+An undecided row is PENDING, with the namesakes and their birth years as alternatives, and is
+reported (`namesakes_undecided` or `category_gap`). `Commit` refuses a domestic listing that
+holds a PENDING row it would write, before any write, and names the fencer, why he waits and
+the roster's namesakes. It is resolved by correcting the roster birth year, or by an identity
+entry with the fencer's birth year in `doc/overrides/<event code>.yaml`, and the ingest runs
+again (`--replace`).
+
+### Consequences
+
+`_find_exact_fencer` is now a thin wrapper over the lookup. S6 holds an undecided domestic row
+PENDING even when the stored year is estimated, which the matcher alone would accept. Seven
+Stage-0 tests (10.4.1, 10.4.2, 10.4.2b, 10.4.2c, 10.6.2, 10.6.3, 10.9.7) moved from two- or
+three-category jumps to one-category moves; their rules are unchanged, and the jumps they used
+are now NAMESAKE.09. Tests: `python/tests/test_namesake_birth_year.py` NAMESAKE.01–10.
