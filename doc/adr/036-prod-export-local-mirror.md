@@ -1,6 +1,6 @@
 # ADR-036: PROD Export & Local Mirror (Single Monolithic Dump)
 
-**Status:** Implemented (amended 2026-07-14 and 2026-09-12; see the amendments)
+**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
 
@@ -237,6 +237,29 @@ inputs, and must be run through the full suite before the `seed_prod_latest.sql`
 pointer is moved.** `scripts/mirror-prod-local.sh` rebuilds LOCAL as a faithful PROD
 copy for exactly this check, and deliberately restores that pointer on any exit so a
 local experiment cannot silently become a CI change.
+
+## Amendment (2026-10-03) — the seed carries PROD's fencer ids; CERT starts from PROD's master data
+
+[ADR-108](108-promote-replays-verified-cert-ingestion.md) §3 makes fencer ids identical on LOCAL, CERT and PROD. The rule is the administrator's: the fencer id is the same everywhere, and nothing is guessed.
+
+On 3 October 2026, LOCAL held 373 fencers with ids up to 971, against PROD's 367 with ids 1–367. That is because *Schema-driven export* above skips `id_*` columns, and results find their fencer through a name lookup.
+
+### 1. Export and load keep the id
+
+- **Export.** `export_seed.py` exports `tbl_fencer.id_fencer`, and writes every fencer reference (`tbl_result`, `tbl_match_candidate`) with the id itself. The name lookup, and with it the birth-year qualifier of the 2026-07-14 amendment §1, is retired for fencers.
+- **Load.** It inserts fencers at PROD's ids. The fencers that data migrations create on a fresh bootstrap (2026-09-12 amendment §2) already exist under other ids. The load renumbers them with `fn_align_fencers_to`, the routine the CERT refresh uses, and then sets the id sequence past the highest id.
+- **Check.** `scripts/mirror-prod-local.sh` and the CI bootstrap compare LOCAL's roster with PROD's, id for id (names, birth year, confirmed flag, gender), and fail on any difference.
+
+The 2026-09-12 rule applies to the first id-keeping seed: the full suite passes on it before the `seed_prod_latest.sql` pointer moves.
+
+### 2. CERT is refreshed from PROD before every CERT ingestion
+
+ADR-108 §2 adds a sanctioned PROD → CERT flow for **master data only**. It covers:
+
+- the whole roster, with identical ids;
+- PROD's registrations for the event being ingested, without e-mail hash, edit token or consent stamp.
+
+It reads PROD over a read-only connection and never writes it. Results still flow PROD → LOCAL only, and CERT's results come from CERT's own ingestion.
 
 ## Related ADRs
 

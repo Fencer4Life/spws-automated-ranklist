@@ -124,8 +124,8 @@
   <p class="dek">Today's <code>promote.py</code> copies CERT's rows to PROD and gets the fencers wrong. The new promote checks that CERT and PROD started from the same inputs and that CERT holds no open issues. It then <b>runs the same ingestion on PROD</b>, writes the result <b>in one transaction that rolls itself back</b> if it differs from CERT, and moves the event through its lifecycle.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>P1 decided: refresh CERT from PROD</span><span class="pill"><span class="dot"></span>P1b decided: identical ids, name and birth year</span><span class="pill"><span class="dot"></span>P2 decided: identity · scoring · joined bracket</span><span class="pill"><span class="dot"></span>P4 decided: end date passed</span><span class="pill"><span class="dot"></span>P1c decided: LOCAL too</span><span class="pill"><span class="dot"></span>All decided: P2a, P3, P4b, P5 as recommended</span><span class="pill"><span class="dot"></span>Signed off 3 Oct 2026; in implementation on claude/promote-verified-replay</span>
-    <span class="pill warn"><span class="dot"></span>P6 open: carry-over while IN_PROGRESS (found in build step 1)</span>
-    <span class="pill">ADR-107 (draft)</span>
+    <span class="pill"><span class="dot"></span>P6 decided: A, carry stops on results</span>
+    <span class="pill">ADR-108 (107 was taken earlier the same day by the scoring-family plan)</span>
     <span class="pill danger"><span class="dot"></span>PPW1 on PROD waits for this</span>
   </div>
   <hr class="rule">
@@ -214,7 +214,7 @@
     </div>
 
     <div class="note warn">
-      <p class="lede"><span class="tick">? P6</span> While an event is IN_PROGRESS, last season's edition still counts next to it. When should it stop? (open, found 3 Oct in build step 1)</p>
+      <p class="lede"><span class="tick">✓ P6</span> While an event is IN_PROGRESS, last season's edition still counts next to it. When should it stop? <b>A, decided 3 Oct</b> (found in build step 1)</p>
       <p><b>What happens today.</b> Season 2026/27 uses the FK carry-over engine on LOCAL, CERT and PROD (<code>tbl_season.enum_carryover_engine = EVENT_FK_MATCHING</code>, read on all three). Its view <code>vw_eligible_event</code> does two things:</p>
       <ul>
         <li>it counts the new event as soon as it leaves PLANNED, so IN_PROGRESS already counts;</li>
@@ -395,7 +395,7 @@
         <tr><td>A new fencer created on PROD by an admin takes the id the CERT run gave a new entrant</td><td>Precondition: the ids are still free on PROD. The apply re-checks it inside the transaction.</td></tr>
         <tr><td>main moves between the CERT run and promote (another session releases)</td><td><span class="chip fill">added</span> Promote checks out the exact commit the CERT run recorded, not main. The run record also keeps the schema fingerprint, and promote refuses if PROD&rsquo;s schema differs: for example during a release, when deploy-cert has run and deploy-prod waits for approval.</td></tr>
         <tr><td>The organiser corrects FTL between the runs</td><td>Source hashes differ, so promote refuses before writing.</td></tr>
-        <tr><td>A registration purge removes declared years before promote</td><td>No purge exists today: the code comments call registrations ephemeral, but nothing deletes them. <span class="chip fill">added</span> ADR-107 states that any future purge runs only after the event is COMPLETED on PROD, and CERT&rsquo;s copy follows PROD&rsquo;s purge.</td></tr>
+        <tr><td>A registration purge removes declared years before promote</td><td>No purge exists today: the code comments call registrations ephemeral, but nothing deletes them. <span class="chip fill">added</span> ADR-108 states that any future purge runs only after the event is COMPLETED on PROD, and CERT&rsquo;s copy follows PROD&rsquo;s purge.</td></tr>
         <tr><td>A registrant&rsquo;s name differs from the FTL name (typo, diacritics), so the declared year isn&rsquo;t found and the fencer stays on an estimate, which blocks</td><td>Blocking is right, and the fix is on PROD in the Birth-year review tab. <span class="chip fill">added</span> The declared-year lookup also tries the registration&rsquo;s FTL name (<code>txt_ftl_name</code>) before giving up.</td></tr>
       </tbody>
     </table></div>
@@ -501,7 +501,19 @@
     <p class="kicker">Build order</p>
     <h2>Test first, in this order</h2>
     <ol class="steps">
-      <li><b>ADR-107</b>, drafted here and signed off with this plan. It supersedes ADR-026's per-event mode; the calendar mode stays. It amends ADR-077 and the lifecycle page (the results axis), ADR-086 (promote's status rule), ADR-075 (PROD's domestic results come only through promote) and ADR-036 (unchanged seed export, recorded).</li>
+      <li><b>ADR-108</b> (<b>written 3 Oct</b>, <code>doc/adr/108-promote-replays-verified-cert-ingestion.md</code>). It supersedes ADR-026's per-event mode; the calendar mode stays. It amends:
+        <ul>
+          <li>ADR-025: <code>ingest … prod</code> is refused for a domestic event, and exact codes are required;</li>
+          <li>ADR-036: the seed carries PROD&rsquo;s fencer ids, and CERT is refreshed from PROD;</li>
+          <li>ADR-042 and ADR-018: the carry stops on results (P6);</li>
+          <li>ADR-072: the CERT drain moves into <code>cert-write</code>;</li>
+          <li>ADR-077: the lifecycle and the replay.</li>
+        </ul>
+        The corpus audit corrected two entries in the first draft of this list:
+        <ul>
+          <li>ADR-075 is the staging-report channel and is unchanged (it stays informational); the <code>ingest … prod</code> target is ADR-025&rsquo;s.</li>
+          <li>ADR-086 is related, not amended: <code>url_event</code> keeps its fill-blank tier.</li>
+        </ul></li>
       <li><b>Investigations, before code</b> (<b>done 3 Oct</b>, results above): FTL&rsquo;s finished-event signal; the inventory of status consumers; the inventory of soft fencer-id references; CERT-only data that tests rely on.</li>
       <li><b>Identity comparison</b> (<code>python/pipeline/promotion/identity.py</code>): normalise a result set or an input set by surname, first name and birth year, never by id, and diff two of them. Tests <code>PROMO.ID.*</code>.</li>
       <li><b>Refresh with identical ids</b>:
@@ -516,7 +528,7 @@
       <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>.</li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>
       <li><b><code>fn_event_result_fingerprint</code> and <code>fn_promote_event_apply</code></b> (with <code>p_dry_run</code>, its row locks and the in-transaction input check): pgTAP <code>PROMO.APPLY.*</code>. It must prove atomicity, rollback of the lock and the queue on a fingerprint mismatch, that a dry run persists nothing, the URL write, the status pairs, and idempotence.</li>
-      <li><b>Carry-over stop (P6, once you decide):</b> under A, a migration for the four FK ranking functions and pgTAP written RED first. The first test reproduces the double count while IN_PROGRESS.</li>
+      <li><b>Carry-over stop (P6 A):</b> a migration for the four FK ranking functions and pgTAP written RED first. The first test reproduces the double count while IN_PROGRESS.</li>
       <li><b>Lifecycle rule</b> (<code>promotion/lifecycle.py</code>), the calendar card&rsquo;s results links for IN_PROGRESS, and, under P4b A, the daily close workflow (<code>event-close.yml</code>, in <code>prod-write</code>; added to the workflow catalog). Tests <code>PROMO.LIFE.*</code>, including "everything in on the last day stays IN_PROGRESS" and "a listing published after the CERT run blocks the close".</li>
       <li><b>Wiring:</b> the <code>promote.py --mode event</code> rewrite; <code>promote.yml</code> takes an exact code; the GAS <code>promote</code> command and the <code>/help</code> text; <code>ingest-event.yml</code> refuses target prod for a domestic event and joins <code>prod-write</code> when it writes PROD.</li>
       <li><b>Rehearsal:</b> <code>promote --prod-target local</code> runs the whole path with CERT as source and LOCAL standing in for PROD. LOCAL is a PROD copy with registrations, and its fencer ids differ from CERT's, just like PROD's. This is the "promote path tested" you asked for, before the first real PROD run.</li>
@@ -527,7 +539,7 @@
     <p class="kicker">Documentation coherence gate</p>
     <h2>Pages that change</h2>
     <ul>
-      <li><b>ADR-107</b>, new; amendments in ADR-026, 036 (the seed carries PROD&rsquo;s fencer ids; CERT refreshed from PROD), 075, 077 and 086; specification Appendix C entries.</li>
+      <li><b>ADR-108</b>, new; amendment notes in ADR-018, 025, 026, 036, 042, 072 and 077; specification Appendix C entries for all of them.</li>
       <li><b>Handbook:</b>
         <ul>
           <li><code>reference/event-status-lifecycle.html</code>, the "What promote_event changes" section;</li>

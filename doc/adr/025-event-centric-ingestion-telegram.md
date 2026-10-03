@@ -1,6 +1,6 @@
 # ADR-025: Event-Centric Ingestion + Telegram Admin Interface
 
-**Status:** Accepted  
+**Status:** Accepted (amended 2026-10-03 by ADR-108: domestic results reach PROD only through promote; exact codes)
 **Date:** 2026-04-05  
 **Supersession narrowed (ADR-077, 2026-06-28):** ADR-050 supersedes this ADR only on the *ingestion
 mechanism*. The **event-status lifecycle** and the **Telegram admin surface** described here remain
@@ -123,3 +123,11 @@ Same permission model as `fn_rollback_event` (REVOKE anon, GRANT authenticated).
 ### Amendment 2026-06-19 — `ingest <prefix> <url> [cert|prod]` command (N15)
 
 **New Lifecycle command** (brings the total to **18**): `ingest <prefix> <url> [cert|prod]`. The admin supplies the FTL eventSchedule URL; GAS resolves the active-season event by prefix and dispatches the **`ingest-event.yml`** GitHub Actions workflow with `{event_code, season_end_year, target (default cert), url_event:<url>}` — the **same GAS `getUpdates`→`workflow_dispatch`+PAT path** the `promote` command already uses (no webhook, no new infra — reuses ADR-041/ADR-023). The workflow sets `tbl_event.url_event` (admin-managed write), re-ingests from the URL under the NEW pipeline (keep-rule + N14 `url_results`), and **sends the staging report(s) (full `.md` + `.diff.md`) back to Telegram** via ADR-059's `send_staging_report`/`send_document` (`ingest_cli --send-telegram --md-target storage`). Closes the loop: `ingest <prefix> <url>` → review the staging docs on the phone → `promote <prefix>` → PROD. The GAS snippet is delivered as [archive/legacy-2026-07/telegram-ingest-command-gas.md](../archive/legacy-2026-07/telegram-ingest-command-gas.md) (the GAS project is external, so it is a manual paste). Repo side: `ingest-event.yml` gains an optional `url_event` input; `ingest_event_from_url` gains `url_event_override` / `send_telegram` / `md_target`; `db_connector.set_event_url_event`. Tests N15.1–N15.4 (`test_ingest_telegram_staging.py`).
+
+### Amendment 2026-10-03 — domestic results reach PROD only through promote; exact codes (ADR-108)
+
+[ADR-108](108-promote-replays-verified-cert-ingestion.md) changes three commands:
+
+- **`ingest`** keeps both targets for international events. For a domestic event, `ingest-event.yml` refuses `target: prod`: domestic results reach PROD only through promote, which replays a verified CERT run there.
+- **`promote`** takes the exact event code. A prefix is answered with the matching exact codes and nothing runs.
+- **`complete`** takes the exact event code too, instead of `_resolve_event_prefix` (`LIKE prefix%` … `LIMIT 1`, which lets `PEW1` match `PEW11`). It remains a manual close and does not check the end date. Automatic completion follows ADR-108 §7.
