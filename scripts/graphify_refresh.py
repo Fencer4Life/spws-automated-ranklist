@@ -33,6 +33,7 @@ import argparse
 import subprocess
 import sys
 from collections import Counter
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 GRAPH_JSON = "graphify-out/graph.json"
@@ -44,6 +45,46 @@ HTML_NODE_LIMIT = 5000
 DOC_CATEGORIES = ("document", "paper", "image", "video")
 
 
+def code_files_to_extract(*, full_code: bool, changed: list[str], every: list[str]) -> list[str]:
+    """Return the code files this run re-extracts.
+
+    Incremental runs take the changed set only. That is cheap but unsafe after a
+    large catch-up: extract() emits an import STUB carrying the imported file's
+    path, and build_merge treats the stub as that file's whole node set, so
+    untouched files collapse to one node. `--full-code` extracts every code file,
+    so a stub is never a file's only claim. Changed files the full scan did not
+    list are kept, once, after it.
+    """
+    if not full_code:
+        return list(changed)
+    seen = set(every)
+    return list(every) + [f for f in changed if f not in seen]
+
+
+def absent_sources(sources: Iterable[str | None], *, exists: Callable[[str], bool]) -> set[str]:
+    """Source files the graph names that this tree does not have.
+
+    A worktree's graph is seeded from another checkout, which can hold files this
+    tree lacks (untracked plans, unmerged code). A full-code pass prunes their
+    nodes, so the graph describes exactly this tree.
+    """
+    return {s for s in sources if s and not exists(s)}
+
+
+def shrunk_files(
+    old: dict[str, int], new: dict[str, int], *, exists: Callable[[str], bool]
+) -> list[tuple[str, int, int]]:
+    """Files still on disk that hold fewer nodes than before, worst loss first.
+
+    The full-code pass may legitimately shrink the graph (pruned files, code that
+    was deleted), so it writes despite the shrink guard. This is what makes that
+    safe to read: any file that lost nodes is named instead of hidden in a net
+    figure — the 2026-09-05 lesson.
+    """
+    lost = [(f, n, new.get(f, 0)) for f, n in old.items() if exists(f) and new.get(f, 0) < n]
+    return sorted(lost, key=lambda t: t[2] - t[1])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument(
@@ -52,6 +93,13 @@ def main() -> int:
         help="skip refresh when only whitespace changed vs HEAD",
     )
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument(
+        "--full-code",
+        action="store_true",
+        help="Re-extract EVERY code file (sequentially), not just the changed ones. "
+        "Zero tokens. Use at session start and after any large catch-up: the "
+        "incremental path lets import stubs collapse untouched files.",
+    )
     ap.add_argument(
         "--force",
         action="store_true",
@@ -82,8 +130,9 @@ def main() -> int:
     changed_docs = [f for cat in DOC_CATEGORIES for f in new_files.get(cat, [])]
     deleted = list(r.get("deleted_files", []))
 
-    # (4) no-op
-    if r.get("new_total", 0) == 0 and not deleted:
+    # (4) no-op — never for --full-code, whose point is to repair what an
+    # earlier incremental run may have collapsed even when nothing changed since.
+    if r.get("new_total", 0) == 0 and not deleted and not args.full_code:
         say("refresh-graph: graph already current — nothing to update.")
         return 0
 
@@ -135,14 +184,34 @@ def main() -> int:
 
     before = len(json.loads(Path(GRAPH_JSON).read_text())["nodes"])
 
+    every_code: list[str] = []
+    if args.full_code:
+        from graphify.detect import detect
+
+        every_code = list(detect(Path("."))["files"].get("code", []))
+        old_sources = (
+            n.get("source_file") for n in json.loads(Path(GRAPH_JSON).read_text())["nodes"]
+        )
+        absent = absent_sources(old_sources, exists=lambda p: Path(p).exists())
+        if absent:
+            deleted = sorted(set(deleted) | absent)
+            say(
+                f"refresh-graph: pruning {len(absent)} file(s) the graph names but this tree lacks…"
+            )
+        say(f"refresh-graph: --full-code — re-extracting all {len(every_code)} code files…")
+
     files: list[Path] = []
-    for f in changed_code:
+    for f in code_files_to_extract(
+        full_code=args.full_code, changed=changed_code, every=every_code
+    ):
         p = Path(f)
         files.extend(collect_files(p) if p.is_dir() else [p])
 
     exts: list[dict] = []
     if files:
-        exts.append(extract(files, cache_root=Path(".")))
+        # Sequential for the full pass: the process pool has killed workers
+        # mid-run and silently dropped hundreds of nodes (2026-09-20).
+        exts.append(extract(files, cache_root=Path("."), parallel=not args.full_code))
 
     # Svelte components need a second, local pass. graphify hands the WHOLE
     # .svelte file to a JavaScript tree-sitter parser; the markup is not valid
@@ -233,7 +302,13 @@ def main() -> int:
     surprises = surprising_connections(G, communities)
     questions = suggest_questions(G, communities, labels)
 
-    wrote = to_json(G, communities, GRAPH_JSON, community_labels=labels, force=args.force)
+    # A full-code pass re-extracts every file and prunes the absent ones, so a smaller
+    # graph is expected rather than suspicious; shrunk_files() below names any file
+    # that lost nodes, which is the audit the shrink guard stands in for.
+    old_counts = Counter(n.get("source_file") for n in old_graph["nodes"] if n.get("source_file"))
+    wrote = to_json(
+        G, communities, GRAPH_JSON, community_labels=labels, force=args.force or args.full_code
+    )
     if not wrote:
         print(
             "refresh-graph: refused to shrink graph.json (existing has more nodes).",
@@ -278,6 +353,14 @@ def main() -> int:
             "graph.json + report updated. Run a full /graphify . to regenerate viz."
         )
 
+    if args.full_code:
+        new_counts = Counter(
+            d.get("source_file") for _, d in G.nodes(data=True) if d.get("source_file")
+        )
+        lost = shrunk_files(dict(old_counts), dict(new_counts), exists=lambda p: Path(p).exists())
+        if lost:  # printed even with --quiet: this is the audit, not chatter
+            top = ", ".join(f"{f} {o}→{n}" for f, o, n in lost[:5])
+            print(f"refresh-graph: {len(lost)} file(s) still on disk lost nodes: {top}")
     say(f"refresh-graph: graph updated (nodes {before} → {after}). Safe to commit.")
     return 0
 
