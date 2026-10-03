@@ -368,21 +368,30 @@ def _run_parsed_through_flow(
     return ctx
 
 
-def _send_staging_via_telegram(notifier, event_code, post_ctx, *, n_tournaments=None):
+def _send_staging_via_telegram(
+    notifier,
+    event_code,
+    post_ctx,
+    *,
+    n_tournaments=None,
+    reason="cert-reingest",
+    hint: str | None = "",
+):
     """N15 — send the rendered staging report(s) to Telegram (reuses ADR-059
     send_staging_report / send_document). `post_ctx` is the POST_COMMIT Context the
     StagingFormatter stashed `_rendered_md` / `_rendered_diff` on. Best-effort: a
-    Telegram hiccup never fails the (already-committed) ingest."""
+    Telegram hiccup never fails the (already-committed) ingest. The CERT ingestion
+    hints at `promote <exact code>` (ADR-108 §6); promote's own PROD report passes
+    its reason and no hint."""
     if notifier is None or post_ctx is None:
         return
     md = post_ctx.get("_rendered_md")
     diff = post_ctx.get("_rendered_diff")
     try:
         if md:
-            extras = {
-                "reason": "cert-reingest",
-                "promote_hint": f"reply `promote {event_code.split('-')[0]}` to push to PROD",
-            }
+            extras: dict = {"reason": reason}
+            if hint is not None:
+                extras["promote_hint"] = hint or f"reply `promote {event_code}` to push to PROD"
             if n_tournaments is not None:
                 extras["tournament_count"] = n_tournaments
             notifier.send_staging_report(
@@ -580,6 +589,7 @@ def ingest_event_from_url(
     url_event_override: str | None = None,
     send_telegram: bool = False,
     md_target: str = "local",
+    record_run: str | None = None,
 ) -> list:
     """NEW pipeline ingest of a whole SPWS FTL event from its `url_event`
     (eventSchedule) — the URL entry the engine previously lacked (§3.2 gap).
@@ -592,18 +602,11 @@ def ingest_event_from_url(
 
     `replace=True` wipes the event's existing results+tournaments first (a clean
     re-ingest). No notifier is built unless one is passed (avoids Telegram).
+
+    `record_run` ('local' or 'cert') records the run in tbl_ingest_run for
+    promote (ADR-108 §4): opened before the first write, closed FINISHED with
+    every listing's hash and outcome, or FAILED with the error.
     """
-    from datetime import date as _date
-
-    from python.pipeline.ir import ParsedTournament, SourceKind
-    from python.pipeline.overrides import load_for_event
-    from python.scrapers import ftl
-    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
-    from python.tools.scrape_ftl_event_urls import (
-        parse_event_schedule,
-        parse_tournament_name,
-    )
-
     if db is None:
         db = create_db_connector()
 
@@ -622,6 +625,89 @@ def ingest_event_from_url(
             "(python -m python.tools.phase5_runner, or phase5-event-runner.yml), which keeps "
             "the whole source bracket as N and each fencer's own place (ADR-105)."
         )
+    url_event = url_event_override or event.get("url_event") or event.get("url_results")
+    if not url_event:
+        raise ValueError(f"Event {event_code!r} has no url_event populated.")
+
+    # ADR-108 §4: the run record opens before anything is written, so its input
+    # fingerprint and roster are the ones this run started from.
+    run = None
+    if record_run:
+        from python.pipeline.promotion.run_record import RunRecord
+
+        run = RunRecord.open(
+            db,
+            event_code=event_code,
+            environment=record_run,
+            season_end_year=season_end_year,
+            url_event=url_event,
+        )
+    from python.pipeline.promotion import lifecycle
+    from python.pipeline.promotion.run_record import ListingLog
+
+    # ADR-108 §7: every run keeps the listings it read, recorded or not, so the
+    # lifecycle rule can set the event's status at the end.
+    log = run if run is not None else ListingLog()
+    try:
+        contexts = _ingest_event_rounds(
+            event,
+            event_code,
+            season_end_year,
+            url_event,
+            url_event_override,
+            db=db,
+            notifier=notifier,
+            replace=replace,
+            send_telegram=send_telegram,
+            md_target=md_target,
+            run=log,
+        )
+    except BaseException as e:
+        if run is not None:
+            from python.pipeline.core.contract import ListingRefused
+
+            kind = e.kind if isinstance(e, ListingRefused) else None
+            run.fail(f"{type(e).__name__}: {e}", kind=kind, message=str(e))
+        raise
+    if run is not None:
+        run.finish()
+    if hasattr(db, "set_event_status"):
+        current = db.find_event_by_code(event_code)
+        if current is not None:
+            lifecycle.apply(db, current, log.listings(), lifecycle.warsaw_today())
+    return contexts
+
+
+def _ingest_event_rounds(
+    event,
+    event_code,
+    season_end_year,
+    url_event,
+    url_event_override,
+    *,
+    db,
+    notifier,
+    replace,
+    send_telegram,
+    md_target,
+    run,
+    post_run=True,
+) -> list:
+    """`ingest_event_from_url` from its first write on. `run` is the open run
+    record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
+    every listing. Plan mode passes `post_run=False`: the staging report, the
+    joining check and Telegram run after promote's apply commits (ADR-108 §6)."""
+    from datetime import date as _date
+
+    from python.pipeline.ir import ParsedTournament, SourceKind
+    from python.pipeline.overrides import load_for_event
+    from python.scrapers import ftl
+    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
+    from python.tools.scrape_ftl_event_urls import (
+        parse_event_schedule,
+        parse_tournament_name,
+    )
+
     # N15: the Telegram `ingest <prefix> <url>` command supplies the FTL URL. It is an
     # admin-managed write to tbl_event.url_event (operator-entered, never auto-scraped),
     # then we ingest from it.
@@ -629,9 +715,6 @@ def ingest_event_from_url(
         if hasattr(db, "set_event_url_event"):
             db.set_event_url_event(event["id_event"], url_event_override)
         event["url_event"] = url_event_override
-    url_event = url_event_override or event.get("url_event") or event.get("url_results")
-    if not url_event:
-        raise ValueError(f"Event {event_code!r} has no url_event populated.")
 
     overrides = load_for_event(event_code)  # identity/alias overrides
     src_overrides = event.get(
@@ -645,9 +728,17 @@ def ingest_event_from_url(
         sched = client.get(normalize_ftl_url(url_event))
         sched.raise_for_status()
         kept, skipped = parse_event_schedule(sched.text, with_skips=True)
+        # ADR-108 §7: a listing whose schedule row does not say Finished is
+        # skipped and listed; it keeps the event IN_PROGRESS.
+        from python.pipeline.promotion.lifecycle import split_final
+
+        kept, not_final = split_final(kept)
+        skipped = [*skipped, *not_final]
         print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
         for s in skipped:
             print(f"  schedule-skip {s['name']!r}: {s['reason']}")
+        if run is not None:
+            run.add_schedule(kept, skipped)
 
         if replace:
             nr, nt = _wipe_event_live(db, event["id_event"])
@@ -659,6 +750,8 @@ def ingest_event_from_url(
             pn = parse_tournament_name(b["name"])
             if pn is None:
                 print(f"  SKIP {b['name']!r}: unparseable name")
+                if run is not None:
+                    run.add_unparseable(b["name"], b["uuid"])
                 continue
             combined = isinstance(pn, list)
             weapon, gender = (pn[0][0], pn[0][1]) if combined else (pn[0], pn[1])
@@ -691,6 +784,8 @@ def ingest_event_from_url(
             d = dec[r["uuid"]]
             if d["status"] != "committed":
                 print(f"  {d['status'].upper()} {r['name']!r}: {d['reason']}")
+                if run is not None:
+                    run.add_round(r, d)
                 continue
             combined = len(r["cats"]) != 1
             parsed = ParsedTournament(
@@ -707,17 +802,20 @@ def ingest_event_from_url(
                 tournament_name=r["name"],
             )
             label = f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]"
-            contexts.append(
-                _run_parsed_through_flow(
-                    parsed,
-                    event_code,
-                    season_end_year,
-                    overrides,
-                    db,
-                    label=label,
-                    commit_cats=set(d["commit_cats"]),
-                )
+            if run is not None:
+                run.begin(r)
+            ctx = _run_parsed_through_flow(
+                parsed,
+                event_code,
+                season_end_year,
+                overrides,
+                db,
+                label=label,
+                commit_cats=set(d["commit_cats"]),
             )
+            contexts.append(ctx)
+            if run is not None:
+                run.add_round(r, d, ctx)
 
     # 4) persist the discovered rounds + status for the event accordion (N13.4)
     sources = _ingest_source_records(decisions, skipped)
@@ -727,6 +825,8 @@ def ingest_event_from_url(
         except Exception as e:  # never fail an ingest on the display-data write
             print(f"  (ingest-sources persist skipped: {e})")
 
+    if not post_run:
+        return contexts
     post = _fire_staging_report(
         event,
         contexts,
@@ -990,6 +1090,13 @@ def main() -> None:
         "(full + diff) to Telegram (ADR-059 reuse).",
     )
     parser.add_argument(
+        "--record-run",
+        choices=["local", "cert"],
+        default=None,
+        help="With --flow --from-url: record the run in tbl_ingest_run for promote "
+        "(ADR-108 §4). ingest-event.yml passes cert when its target is cert.",
+    )
+    parser.add_argument(
         "--md-target",
         choices=["local", "storage", "both"],
         default="local",
@@ -1018,6 +1125,10 @@ def main() -> None:
     if not is_draft_cmd and args.season_end_year is None:
         parser.error(
             "--season-end-year is required unless using a --*-draft / --list-drafts / --resume-run-id flag"
+        )
+    if args.record_run and not (args.flow and args.from_url):
+        parser.error(
+            "--record-run records a URL ingestion: it needs --flow ingest_domestic --from-url"
         )
 
     if is_draft_cmd:
@@ -1052,6 +1163,7 @@ def main() -> None:
                     url_event_override=args.url_event,
                     send_telegram=args.send_telegram,
                     md_target=args.md_target,
+                    record_run=args.record_run,
                 )
             else:
                 if not args.path:

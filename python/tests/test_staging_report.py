@@ -403,7 +403,14 @@ class TestEventScopedFire:
             patch(
                 "python.tools.scrape_ftl_event_urls.parse_event_schedule",
                 return_value=(
-                    [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}],
+                    [
+                        {
+                            "uuid": "U1",
+                            "name": "Szpada Mężczyzn kat. 2",
+                            "finished": True,
+                            "day": None,
+                        }
+                    ],
                     [{"weapon": "FOIL", "name": "Floret kat. Veteran", "reason": "pool-only"}],
                 ),
             ),

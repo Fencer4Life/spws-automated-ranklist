@@ -123,9 +123,9 @@
   <h1>What happens when you start PPW1, and what I watch</h1>
   <p class="dek">Domestic ingestion <b>commits and scores in one run, with no sign-off</b>. The first scored result <b>locks the 2026/27 scoring settings</b>. So the four decisions below come before you press anything.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>Waiting for D1–D4</span>
+    <span class="pill warn"><span class="dot"></span>Waiting for D1, D3, D4</span><span class="pill"><span class="dot"></span>D5 fixed, releasing</span><span class="pill"><span class="dot"></span>D2 fixed: main 28a43369</span>
     <span class="pill">state read 3 Oct, read-only</span>
-    <span class="pill danger"><span class="dot"></span>2 blockers found</span>
+
   </div>
   <hr class="rule">
 
@@ -139,12 +139,15 @@
       <p><b>A (recommended):</b> I run a trial on LOCAL, which has been a copy of PROD, registrations included, since this morning, and show you the report. Then you run <code>ingest PPW1-2026-2027 &lt;url&gt; prod</code>. CERT gets its own run afterwards, with <code>cert</code>.<br><b>B:</b> CERT, then promote. That attaches results to the wrong PROD fencers.</p>
     </div>
 
-    <div class="note danger">
-      <p class="lede"><span class="tick">D2</span> Two pairs of namesakes on PROD and CERT</p>
-      <p><b>KRAWCZYK Paweł</b>: one is born 1954, has 1 result and is registered for PPW1; the other is born 1989, with 0 results. <b>MŁYNEK Janusz</b>: one is born 1951, with 19 results; the other is born 1984, with 0 results. Both rows without results were created on 14 July. The ingest's first step looks up an exact name and takes the first namesake it reads, without checking the birth year. In the 1 Oct trial on LOCAL it picked the <b>wrong one both times</b>: it filed the V4 results under the 1989 KRAWCZYK and the 1984 MŁYNEK, and overwrote both confirmed birth years with 1957. In the 2026/27 V4 ranking, each man would then appear twice.</p>
-      <p><b>A:</b> the 1989 and 1984 rows are not real people. On your go, I delete both rows on PROD and on CERT before the ingest, showing you the SELECT first.<br><b>B:</b> they are real people. Then the ingest waits while I add a test-first guard: the first step never picks between namesakes, and uses the PPW1 registration link (on PROD, KRAWCZYK's registration points at the 1954 one). I release it, which takes about 25 minutes of CI and Release, and the ingest follows.<br>Recommendation: <b>A</b> if you know they aren't real; otherwise <b>B</b>.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ D2</span> Namesakes: fixed and pushed to main (3 Oct)</p>
+      <p>You said they are real people and that the birth year must decide. Main <code>28a43369</code> does that on every domestic path, and a gap of two or more categories is refused as a data error (<a href="namesake-birth-year-fix-2026-10-03.html">fix plan</a>). Re-run on LOCAL, the trial gives KRAWCZYK Paweł born 1954 the V4 épée 2nd place and MŁYNEK Janusz born 1951 the V4 sabre win. The 1989 and 1984 men are untouched.</p>
     </div>
 
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ D5</span> Decided A: the PPW1 path now uses the declared birth years</p>
+      <p>Built test first (<code>DECL.RF.01–07</code>). Trial on LOCAL with PROD&rsquo;s 90 PPW1 registrations: the 6 new entrants are created with the years they declared, confirmed (ZANEUSKAYA Hanna 1994, MARSZAŁEK Anna 1994, KANIECKI Rafał 1987, TYLSKI Łukasz 1982, PERKOWSKI Maciej 1984, KOSZMIDER Marek 1973). Three moves follow the declarations, confirmed: BUJKO Paulina 1979 → 1982, STANISŁAWSKI Albert 1991 → 1987, KIEROŃSKI Tomasz 1990 → 1985. The namesakes stay correct.</p>
+    </div>
     <div class="note warn">
       <p class="lede"><span class="tick">D3</span> Are the 2026/27 scoring settings final?</p>
       <p>The first scored PPW1 result creates the season's scoring revision and locks every setting: multipliers, points base, podium, ranking buckets. After that, only the privileged revise procedure can change them. Today both CERT and PROD are unlocked, PPW and MPW are on <code>SPWS_EVF_JOINED_V1_2026_2027</code>, and the season has 0 scored results. <b>A (recommended):</b> they are final. Before you start, I compare the PROD values with the values you expect and list them for you. <b>B:</b> change them first in Konfiguracja punktacji.</p>

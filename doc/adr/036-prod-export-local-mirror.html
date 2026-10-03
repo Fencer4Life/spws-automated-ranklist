@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="036-prod-export-local-mirror.md">
-<meta name="adr-source-sha256" content="df63afa81f0d9d5c61c1cf63cda03b6026c7f734d016916163a7e9d6aee76d4d">
+<meta name="adr-source-sha256" content="bbc45faed0ec0476f6f751fd923cebbe44b9451177c52311ce6513832fdd9e6e">
 <title>ADR-036 · PROD Export &amp; Local Mirror (Single Monolithic Dump)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 036</p><h1>PROD Export &amp; Local Mirror (Single Monolithic Dump)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (amended 2026-07-14 and 2026-09-12; see the amendments)</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">249 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Implemented (amended 2026-07-14 and 2026-09-12; see the amendments)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">282 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)
 <strong>Date:</strong> 2026-04-12<br />
 <strong>Source:</strong> ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema-driven-export-future-proof">Schema-driven export (future-proof)</a></li><li class="depth-3"><a href="#tables-exported-in-fk-safe-order">Tables exported (in FK-safe order)</a></li><li class="depth-3"><a href="#what-s-not-exported-by-design">What&#x27;s NOT exported (by design)</a></li><li class="depth-3"><a href="#output">Output</a></li><li class="depth-2"><a href="#scripts">Scripts</a></li><li class="depth-2"><a href="#operations-manual">Operations Manual</a></li><li class="depth-3"><a href="#quick-one-command-mirror">Quick: One-command mirror</a></li><li class="depth-3"><a href="#step-by-step">Step-by-step</a></li><li class="depth-4"><a href="#prerequisites">Prerequisites</a></li><li class="depth-4"><a href="#step-1-export-prod">Step 1: Export PROD</a></li><li class="depth-4"><a href="#step-2-reset-local-db">Step 2: Reset local DB</a></li><li class="depth-4"><a href="#step-3-verify">Step 3: Verify</a></li><li class="depth-4"><a href="#step-4-run-all-test-suites">Step 4: Run all test suites</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#full-operations-guide">Full Operations Guide</a></li><li class="depth-2"><a href="#amendment-2026-07-14-name-lookup-reconstruction-fresh-bootstrap-migration-ordering">Amendment (2026-07-14) — name-lookup reconstruction &amp; fresh-bootstrap migration ordering</a></li><li class="depth-3"><a href="#1-name-based-fk-reconstruction-must-disambiguate-duplicate-names">1. Name-based FK reconstruction must disambiguate duplicate names</a></li><li class="depth-3"><a href="#2-data-migrations-that-reference-seeded-rows-must-no-op-safely-on-a-fresh-bootstrap">2. Data migrations that reference seeded rows must no-op safely on a fresh bootstrap</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-seed-must-be-idempotent-against-the-migrations-that-precede-it">Amendment (2026-09-12) — the seed must be idempotent against the migrations that precede it</a></li><li class="depth-3"><a href="#1-the-seed-could-not-load-at-all">1. The seed could not load at all</a></li><li class="depth-3"><a href="#2-local-was-never-a-copy-of-prod-and-was-wrong-where-it-mattered-most">2. LOCAL was never a copy of PROD, and was wrong where it mattered most</a></li><li class="depth-3"><a href="#3-the-suite-was-calibrated-to-a-seed-snapshot">3. The suite was calibrated to a seed snapshot</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#schema-driven-export-future-proof">Schema-driven export (future-proof)</a></li><li class="depth-3"><a href="#tables-exported-in-fk-safe-order">Tables exported (in FK-safe order)</a></li><li class="depth-3"><a href="#what-s-not-exported-by-design">What&#x27;s NOT exported (by design)</a></li><li class="depth-3"><a href="#output">Output</a></li><li class="depth-2"><a href="#scripts">Scripts</a></li><li class="depth-2"><a href="#operations-manual">Operations Manual</a></li><li class="depth-3"><a href="#quick-one-command-mirror">Quick: One-command mirror</a></li><li class="depth-3"><a href="#step-by-step">Step-by-step</a></li><li class="depth-4"><a href="#prerequisites">Prerequisites</a></li><li class="depth-4"><a href="#step-1-export-prod">Step 1: Export PROD</a></li><li class="depth-4"><a href="#step-2-reset-local-db">Step 2: Reset local DB</a></li><li class="depth-4"><a href="#step-3-verify">Step 3: Verify</a></li><li class="depth-4"><a href="#step-4-run-all-test-suites">Step 4: Run all test suites</a></li><li class="depth-3"><a href="#troubleshooting">Troubleshooting</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#full-operations-guide">Full Operations Guide</a></li><li class="depth-2"><a href="#amendment-2026-07-14-name-lookup-reconstruction-fresh-bootstrap-migration-ordering">Amendment (2026-07-14) — name-lookup reconstruction &amp; fresh-bootstrap migration ordering</a></li><li class="depth-3"><a href="#1-name-based-fk-reconstruction-must-disambiguate-duplicate-names">1. Name-based FK reconstruction must disambiguate duplicate names</a></li><li class="depth-3"><a href="#2-data-migrations-that-reference-seeded-rows-must-no-op-safely-on-a-fresh-bootstrap">2. Data migrations that reference seeded rows must no-op safely on a fresh bootstrap</a></li><li class="depth-2"><a href="#amendment-2026-09-12-the-seed-must-be-idempotent-against-the-migrations-that-precede-it">Amendment (2026-09-12) — the seed must be idempotent against the migrations that precede it</a></li><li class="depth-3"><a href="#1-the-seed-could-not-load-at-all">1. The seed could not load at all</a></li><li class="depth-3"><a href="#2-local-was-never-a-copy-of-prod-and-was-wrong-where-it-mattered-most">2. LOCAL was never a copy of PROD, and was wrong where it mattered most</a></li><li class="depth-3"><a href="#3-the-suite-was-calibrated-to-a-seed-snapshot">3. The suite was calibrated to a seed snapshot</a></li><li class="depth-2"><a href="#amendment-2026-10-03-the-seed-carries-prod-s-fencer-ids-cert-starts-from-prod-s-master-data">Amendment (2026-10-03) — the seed carries PROD&#x27;s fencer ids; CERT starts from PROD&#x27;s master data</a></li><li class="depth-3"><a href="#1-export-and-load-keep-the-id">1. Export and load keep the id</a></li><li class="depth-3"><a href="#2-cert-is-refreshed-from-prod-before-every-cert-ingestion">2. CERT is refreshed from PROD before every CERT ingestion</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>After the CERT/PROD data integrity audit (2026-04-12), we needed local DB to be an exact mirror of PROD. The original multi-file approach (per-category SQL files loaded via config.toml glob) was fragile — directory naming mismatches, duplicate INSERTs across files, and complex ordering dependencies.</p>
 </section>
@@ -311,6 +311,37 @@ pointer is moved.</strong> <code>scripts/mirror-prod-local.sh</code> rebuilds LO
 copy for exactly this check, and deliberately restores that pointer on any exit so a
 local experiment cannot silently become a CI change.</p>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-the-seed-carries-prod-s-fencer-ids-cert-starts-from-prod-s-master-data">Amendment (2026-10-03) — the seed carries PROD's fencer ids; CERT starts from PROD's master data</h2>
+<p><a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §3 makes fencer ids identical on LOCAL, CERT and PROD. The rule is the administrator's: the fencer id is the same everywhere, and nothing is guessed.</p>
+<p>On 3 October 2026, LOCAL held 373 fencers with ids up to 971, against PROD's 367 with ids 1–367. That is because <em>Schema-driven export</em> above skips <code>id_*</code> columns, and results find their fencer through a name lookup.</p>
+<h3 id="1-export-and-load-keep-the-id">1. Export and load keep the id</h3>
+<ul>
+<li><strong>Export.</strong> <code>export_seed.py</code> exports <code>tbl_fencer.id_fencer</code>, and writes every fencer reference (<code>tbl_result</code>, <code>tbl_match_candidate</code>) with the id itself. The name lookup, and with it the birth-year qualifier of the 2026-07-14 amendment §1, is retired for fencers.</li>
+<li><strong>Load.</strong> It inserts fencers at PROD's ids. The fencers that data migrations create on a fresh bootstrap (2026-09-12 amendment §2) already exist under other ids. The load renumbers them with <code>fn_align_fencers_to</code>, the routine the CERT refresh uses, and then sets the id sequence past the highest id.</li>
+<li><strong>Check.</strong> <code>scripts/mirror-prod-local.sh</code> and the CI bootstrap compare LOCAL's roster with PROD's, id for id (names, birth year, confirmed flag, gender), and fail on any difference.</li>
+</ul>
+<p>The 2026-09-12 rule applies to the first id-keeping seed: the full suite passes on it before the <code>seed_prod_latest.sql</code> pointer moves.</p>
+<p><strong>Implemented 2026-10-03.</strong></p>
+<ul>
+<li><strong>The load.</strong> The seed's fencer section is one call, <code>SELECT fn_seed_load_fencers(&lt;PROD's roster&gt;::jsonb, &lt;PROD's id sequence&gt;)</code> (migration <code>20261003000013</code>).
+<ul>
+<li>It pairs every fencer already present with exactly one roster row, by name and birth year, and refuses by name a fencer the roster lacks (<code>SEED_FENCER_NOT_IN_ROSTER</code>) or one that two rows describe (<code>SEED_FENCER_AMBIGUOUS</code>).</li>
+<li>It then calls <code>fn_align_fencers_to</code>. Its post-check that the roster equals the one given is the bootstrap's check against PROD.</li>
+</ul>
+</li>
+<li><strong>Results.</strong> Every result carries PROD's <code>id_fencer</code>. <code>fencer_lookup</code> and its tests are removed.</li>
+<li><strong>The mirror check.</strong> <code>python -m python.pipeline.promotion.refresh --target local --mode verify</code> compares LOCAL with live PROD, id for id, and <code>scripts/mirror-prod-local.sh</code> stops on any difference. Its registrations now carry PROD's ids.</li>
+<li><strong>First id-keeping seed.</strong> <code>seed_prod_2026-10-03.sql</code>, re-exported the same day. LOCAL rebuilt from it equals PROD id for id, roster and all 2,878 finished-season results, with no refresh.</li>
+<li><strong>Tests.</strong> pgTAP SEED.01–08; pytest PROMO.SEED.01–05.</li>
+</ul>
+<h3 id="2-cert-is-refreshed-from-prod-before-every-cert-ingestion">2. CERT is refreshed from PROD before every CERT ingestion</h3>
+<p>ADR-108 §2 adds a sanctioned PROD → CERT flow for <strong>master data only</strong>. It covers:</p>
+<ul>
+<li>the whole roster, with identical ids;</li>
+<li>PROD's registrations for the event being ingested, without e-mail hash, edit token or consent stamp.</li>
+</ul>
+<p>It reads PROD over a read-only connection and never writes it. Results still flow PROD → LOCAL only, and CERT's results come from CERT's own ingestion.</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="related-adrs">Related ADRs</h2>
 <ul>
 <li><strong>ADR-027</strong> (Full-Season Seed Export) — superseded by this ADR for local mirroring</li>
@@ -324,5 +355,5 @@ skip-true-no-ops precedent to fresh-bootstrap absence</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="035-fencers-view-tabs.html">← ADR-035: Fencers View with Tabs</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="037-derived-display-status-awaiting-results.html">→ ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a></nav>
-<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>df63afa81f0d9d5c61c1cf63cda03b6026c7f734d016916163a7e9d6aee76d4d</code></footer>
+<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>bbc45faed0ec0476f6f751fd923cebbe44b9451177c52311ce6513832fdd9e6e</code></footer>
 </div></body></html>

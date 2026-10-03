@@ -21,11 +21,9 @@ def test_ftl_seed_workflow_is_allowlisted_and_gated():
     assert "FTL deadline sweep failed" in workflow
 
 
-def test_telegram_sources_dispatch_the_same_contract_and_document_help():
-    """FTLDEL-OPS-01: canonical and deployable GAS copies expose one command shape."""
-    for relative in ("scripts/gas_email_ingestion.js", "doc/gas/Code.gs"):
-        source = (ROOT / relative).read_text()
-        assert "case 'send':" in source
-        assert "send &lt;EVENT-CODE&gt; participants" in source
-        assert "'ftl-seed.yml'" in source
-        assert "{ event_code: sendEvent, target: 'prod' }" in source
+def test_telegram_bot_does_not_offer_the_withdrawn_delivery():
+    """FTLDEL-OPS-01: the bot no longer starts ftl-seed.yml (ADR-080 §5 withdrawn 2026-09-25)."""
+    source = (ROOT / "scripts/gas_email_ingestion.js").read_text()
+    assert "case 'send':" not in source
+    assert "send &lt;EVENT-CODE&gt; participants" not in source
+    assert "'ftl-seed.yml'" not in source

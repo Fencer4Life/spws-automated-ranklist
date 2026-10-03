@@ -1,6 +1,6 @@
 # ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season
 
-**Status:** Accepted (2026-10-02: every decision made by the user in chat: the admission rule, identity as SURNAME, first name and age category, decision B, the nationality model N with the season lock, P A and O1 A). Implemented on LOCAL 2026-10-02 (migration `20261003000001_identity_intake_season_nationality.sql`); O2–O4 remain open.
+**Status:** Accepted (2026-10-02: every decision made by the user in chat: the admission rule, identity as SURNAME, first name and age category, decision B, the nationality model N with the season lock, P A and O1 A). Implemented on LOCAL 2026-10-02 (migration `20261003000001_identity_intake_season_nationality.sql`); O2–O4 remain open. Amended 2026-10-03: the stated reason for accepting the year before the season's end year is corrected (see Amendment).
 **Date:** 2026-10-02
 **Supersedes:** [ADR-038](038-evf-intake-polish-only.md) — the country gate before matching (Decision, points 2 and 4) and its rejection of alternative 1. Its other consequences stand: an international event never auto-creates a fencer, and a foreign row never reaches the identity queue.
 **Amends:** [ADR-105](105-international-results-keep-source-bracket.md) §1.1 and §5.1 (only POL rows reach the matcher → the three-step admission below; N and the place are unchanged)
@@ -76,3 +76,14 @@ O1 (the override file's nationality section) and P (how a PENDING row is resolve
 - **O2 · An admin correction of a recorded nationality.** The season lock binds the fencer, not our data: a season nationality fixed from a wrong source needs a way to be corrected. Recommendation: an admin may correct it with a stated reason, recorded as an admin entry and audited.
 - **O3 · What the season nationality decides beyond the record.** Recommendation: shown on the fencer's view; eligibility for Poland's team in a season (chosen nationality POL) belongs to the national-team selection work.
 - **O4 · Retiring `tbl_fencer.txt_nationality`.** Recommendation: once the re-staging has filled the season table, Stage 0's dedup reads the latest season nationality, and the column's PL default goes.
+
+## Amendment (2026-10-03) — why the year before the season's end year is accepted
+
+**Decided by the user on 2026-10-03**, with [ADR-047](047-vcat-invariant-trigger-and-splitter-consolidation.md)'s amendment of the same day (V2 A on `doc/plans/category-check-seven-results-2026-10-03.html`).
+
+§1 accepts, for identity, a birth year that fits the bracket's category in the year before the season's end year, "because EVF categories go by calendar year and an autumn event falls in it". The rule stands; its stated reason was too broad. The stored results show two practices:
+
+- **The EVF circuit followed the season's end year in autumn 2025.** KORONA Przemysław and KROCHMALSKI Jakub, born 1976, fenced V2 at the EVF circuit events of 20 September and 1 November 2025, and at every other 2025/26 event.
+- **The World Championships followed the event's calendar year.** At the championships of 12–16 November 2025, the same two fencers were in V1, at 49 in 2025.
+
+The accepted year therefore covers events that count age by their own calendar year, as the World Championships did. The category check now accepts the same year for a result carrying its source's label (ADR-047 amendment), so the identity rule and the check agree.

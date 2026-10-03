@@ -1,6 +1,6 @@
 # ADR-061: LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface
 
-**Status:** Proposed
+**Status:** Proposed (Telegram command surface withdrawn 2026-10-03, never deployed)
 **Date:** 2026-05-03
 **Amends:** ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-041 (Edge function dispatch), ADR-050 (Unified Ingestion Pipeline).
 
@@ -91,3 +91,7 @@ Rejected: GAS already uses the existing `triggerGitHubWorkflow` helper which cal
 - `scripts/gas_email_ingestion.js` — 4 new command cases + `downloadFromSupabaseStorage` helper + extended `/help` text
 - `doc/archive/legacy-2026-07/cicd-operations-manual.md` updates: command cheat-sheet, runbook for fresh CERT/PROD setup, disaster recovery section
 - CERT smoke test C16: end-to-end Telegram command verification
+
+## Amendment 2026-10-03 — the Telegram command surface is withdrawn
+
+The four commands (`regen`, `stage`, `parity`, `verdict`) and their help text never reached the deployed bot. They were added to `scripts/gas_email_ingestion.js` while the live Apps Script project ran another copy, and the two copies drifted apart. `parity` could not have worked, because `evf-parity-sweep.yml` declares no `event_code` or `target` input. `stage` would write CERT outside a recorded run, which ADR-108 rules out for a domestic event. `ingest-event.yml` already sends the staging report to Telegram. The commands are withdrawn, and FR-108 with them. `regen-report.yml` and `phase5-event-runner.yml` remain, started from the Actions page and the admin UI. The LOCAL-parity half of this ADR is unaffected.

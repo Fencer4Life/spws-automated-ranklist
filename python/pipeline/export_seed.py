@@ -19,8 +19,9 @@ from datetime import date
 
 import httpx
 
-# tbl_result columns the export leaves out: the auto-id, the FKs it re-resolves
-# by sub-SELECT, and every scoring-engine output, which the post-seed
+# tbl_result columns the export leaves out of the generic data columns: the
+# auto-id, the two FKs it writes itself (id_fencer as PROD's id, id_tournament
+# by sub-SELECT), and every scoring-engine output, which the post-seed
 # fn_calc_tournament_scores run recomputes (exporting them would only let the
 # dump drift from the recomputed values).
 RESULT_SKIP_COLUMNS = frozenset(
@@ -49,6 +50,18 @@ RESULT_SKIP_COLUMNS = frozenset(
         "int_category_steps",
     }
 )
+
+# PROD's roster and fencer-id sequence, which the seed hands to
+# fn_seed_load_fencers (ADR-036 §1). The same rows as
+# promotion.refresh.ROSTER_SQL, sent as text: the LOCAL exporter's transport
+# rewrites list-valued cells into PostgreSQL array literals, which would mangle
+# a JSON array. Not imported from refresh, whose yaml dependency the promote
+# workflow's export job does not install.
+ROSTER_SQL = (
+    "SELECT coalesce(jsonb_agg(to_jsonb(f) ORDER BY f.id_fencer), '[]'::jsonb)::text AS j "
+    "FROM tbl_fencer f"
+)
+SEQUENCE_SQL = "SELECT last_value AS j FROM tbl_fencer_id_fencer_seq"
 
 
 # ---------------------------------------------------------------------------
@@ -158,27 +171,13 @@ def select_expr(cols: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 # Export
 # ---------------------------------------------------------------------------
-def fencer_lookup(surname: str, first_name: str, birth_year: int | None) -> str:
-    """FK sub-SELECT resolving a fencer by SURNAME + Name + BIRTH YEAR.
-
-    Name alone is not an identity. PROD holds two same-name pairs that are
-    different people -- KRAWCZYK Paweł (1954 / 1989) and MŁYNEK Janusz
-    (1951 / 1984) -- so a bare `txt_surname = … AND txt_first_name = … LIMIT 1`
-    resolves arbitrarily. The seed then binds a result to the wrong person and
-    fn_assert_result_vcat (ADR-047) aborts the load on every fresh bootstrap.
-
-    A NULL birth year must compare with IS NULL: `int_birth_year = NULL` is
-    never true and would resolve to no row at all, turning a soft ambiguity
-    into a hard FK failure for the fencers who have no year on record.
-
-    Governed by the ADR-036 amendment (2026-07-14).
-    """
-    by = f"int_birth_year = {birth_year}" if birth_year is not None else "int_birth_year IS NULL"
-    return (
-        f"(SELECT id_fencer FROM tbl_fencer "
-        f"WHERE txt_surname = '{esc(surname)}' AND txt_first_name = '{esc(first_name)}' "
-        f"AND {by} LIMIT 1)"
-    )
+def dollar_quote(text: str) -> str:
+    """A dollar-quoted literal whose tag the text does not contain."""
+    tag, n = "$roster$", 0
+    while tag in text:
+        n += 1
+        tag = f"$roster{n}$"
+    return f"{tag}{text}{tag}"
 
 
 def export_monolithic(ref: str, token: str) -> str:
@@ -376,62 +375,26 @@ def export_monolithic(ref: str, token: str) -> str:
             )
     lines.append("")
 
-    # --- tbl_fencer ---
-    print("  tbl_fencer...", file=sys.stderr)
-    cols = discover_cols(ref, token, "tbl_fencer")
-    col_names = [c["name"] for c in cols]
-    rows = q(f"SELECT {select_expr(cols)} FROM tbl_fencer ORDER BY txt_surname, txt_first_name")
-    lines.append(f"-- tbl_fencer ({len(rows)} rows)")
-    # Skip anyone a migration already created, on the identity triple. Same
-    # reasoning as tbl_organizer above and the same NOT EXISTS shape tbl_result
-    # already uses below, but this one is not hypothetical: on a fresh bootstrap
-    # the three data migrations that add fencers by hand (20260714000003's 15
-    # reconciled rows, plus KOSZYK and CISZEWSKA/SZUMIELEWICZ) all run BEFORE
-    # this seed, against an EMPTY table. Their own WHERE NOT EXISTS guards
-    # therefore pass, they insert, and the seed then inserted the same people a
-    # second time — 385 rows where PROD has 367, and 17 same-name pairs where
-    # PROD has 2. Those phantom pairs are not inert: they are exactly the input
-    # that makes identity resolution ambiguous, so every local test of
-    # duplicate-name behaviour was being run against data PROD does not have.
+    # --- tbl_fencer: PROD's roster at PROD's ids (ADR-036 §1, ADR-108) ---
     #
-    # IS NOT DISTINCT FROM, not =, because nine fencers have no birth year and
-    # `int_birth_year = NULL` is never true — those rows would duplicate on
-    # every reset.
-    type_map = {
-        "text": "TEXT",
-        "smallint": "SMALLINT",
-        "integer": "INTEGER",
-        "bigint": "BIGINT",
-        "boolean": "BOOLEAN",
-        "numeric": "NUMERIC",
-        "jsonb": "JSONB",
-        "ARRAY": "TEXT[]",
-    }
-    vals_list = []
-    for i, r in enumerate(rows):
-        cells = []
-        for c in cols:
-            v = sql_val(r.get(c["name"]), c["type"])
-            # Postgres infers a VALUES column's type from the FIRST row, so a
-            # leading NULL would leave it "unknown" and abort. Cast row one.
-            if i == 0:
-                cells.append(f"CAST({v} AS {type_map.get(c['type'], 'TEXT')})")
-            else:
-                cells.append(v)
-        vals_list.append(f"  ({', '.join(cells)})")
-    select_cells = [
-        f"v.{c['name']}::{c['udt']}" if c["type"] == "USER-DEFINED" else f"v.{c['name']}"
-        for c in cols
-    ]
-    lines.append(f"INSERT INTO tbl_fencer ({', '.join(col_names)})")
-    lines.append(f"SELECT {', '.join(select_cells)} FROM (VALUES")
-    lines.append(",\n".join(vals_list))
-    lines.append(f") AS v({', '.join(col_names)})")
-    lines.append("WHERE NOT EXISTS (")
-    lines.append("  SELECT 1 FROM tbl_fencer f")
-    lines.append("   WHERE upper(btrim(f.txt_surname))    = upper(btrim(v.txt_surname))")
-    lines.append("     AND upper(btrim(f.txt_first_name)) = upper(btrim(v.txt_first_name))")
-    lines.append("     AND f.int_birth_year IS NOT DISTINCT FROM v.int_birth_year);")
+    # The fencer id is the same on LOCAL, CERT and PROD. On a fresh bootstrap the
+    # three data migrations that add fencers by hand (20260714000003's 15
+    # reconciled rows, plus KOSZYK and CISZEWSKA/SZUMIELEWICZ) run BEFORE this
+    # seed, against an empty table, so they hold whatever ids the sequence gave
+    # them. fn_seed_load_fencers pairs each of them with its roster row by name
+    # and birth year, moves them to PROD's ids, creates everyone else at PROD's
+    # id, sets the sequence, and refuses unless the roster then equals this one:
+    # the bootstrap's check against PROD. Inserting fresh rows instead once left
+    # 385 fencers where PROD has 367, and the old name lookup gave every reset
+    # new ids.
+    print("  tbl_fencer...", file=sys.stderr)
+    roster = json.loads(q(ROSTER_SQL)[0]["j"])
+    sequence = int(q(SEQUENCE_SQL)[0]["j"])
+    lines.append(f"-- tbl_fencer ({len(roster)} rows, PROD's ids, through fn_seed_load_fencers)")
+    lines.append(
+        "SELECT fn_seed_load_fencers("
+        f"{dollar_quote(json.dumps(roster, ensure_ascii=False))}::jsonb, {sequence});"
+    )
     lines.append("")
 
     # --- tbl_event (per season) ---
@@ -519,12 +482,10 @@ def export_monolithic(ref: str, token: str) -> str:
         for c in r_cols_data
     )
     all_results = q(f"""
-    SELECT t.txt_code AS tourn_code, r.int_place, r.num_final_score,
-           f.txt_surname, f.txt_first_name, f.int_birth_year,
+    SELECT t.txt_code AS tourn_code, r.id_fencer, r.int_place, r.num_final_score,
            {r_data_select}
     FROM tbl_result r
     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
-    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
     ORDER BY t.txt_code, r.int_place
     """)
 
@@ -563,22 +524,22 @@ def export_monolithic(ref: str, token: str) -> str:
         )
         total_tournaments += 1
 
-        # Results for this tournament
-        # Build INSERT column list: 2 FK sub-SELECTs + every discovered
-        # data column (incl. enum_source_age_category for ADR-056 trigger).
+        # Results for this tournament: the fencer by PROD's id (the roster above
+        # put every fencer there), the tournament by sub-SELECT, then every
+        # discovered data column (incl. enum_source_age_category for ADR-056).
         r_insert_cols = ["id_fencer", "id_tournament"] + [c["name"] for c in r_cols_data]
         for r in results_by_tourn.get(t_code, []):
-            fencer_sub = fencer_lookup(r["txt_surname"], r["txt_first_name"], r["int_birth_year"])
+            fencer_id = int(r["id_fencer"])
             tournament_sub = (
                 f"(SELECT id_tournament FROM tbl_tournament WHERE txt_code = '{esc(t_code)}')"
             )
             data_vals = [sql_val(r.get(c["name"]), c["type"]) for c in r_cols_data]
-            select_cols = ", ".join([fencer_sub, tournament_sub] + data_vals)
+            select_cols = ", ".join([str(fencer_id), tournament_sub] + data_vals)
             lines.append(
                 f"INSERT INTO tbl_result ({', '.join(r_insert_cols)}) "
                 f"SELECT {select_cols} "
                 f"WHERE NOT EXISTS (SELECT 1 FROM tbl_result "
-                f"WHERE id_fencer = {fencer_sub} "
+                f"WHERE id_fencer = {fencer_id} "
                 f"AND id_tournament = {tournament_sub});"
             )
             total_results += 1

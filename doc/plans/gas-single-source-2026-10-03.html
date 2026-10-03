@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telegram bot cleanup</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Telegram bot · Apps Script · Plan, revision 2</p>
+  <h1>One bot script, and a <code>help</code> that tells the truth</h1>
+  <p class="dek">You asked whether <code>help</code> will be up to date and tell you what works and how. <b>Under revision 1, no:</b> that revision only moved the file and kept today&rsquo;s help, which is wrong in places. <b>Revision 2 rewrites <code>help</code> from a command-by-command audit</b> and adds a test that fails if the help and the commands drift apart. It ends with one paste and a short check from your phone.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Approved 3 Oct: as recommended (A, A, A); built</span>
+    <span class="pill"><span class="dot"></span>one paste at the end</span>
+    <span class="pill">no database change</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · First, one message from you</p>
+    <h2>Does the bot still reach the database?</h2>
+    <p>Twelve commands read or write the database through the Supabase Management API, with a token stored in the Apps Script project as <code>SUPABASE_ACCESS_TOKEN</code>. The commit of 19 June records that this token had gone stale and broke <code>status</code> and <code>season</code>. I cannot see the Apps Script project, so this one only you can check:</p>
+    <div class="note accent">
+      <p class="lede">Send this in Telegram and tell me the reply</p>
+      <p><code>status PPW1-2026-2027</code></p>
+      <ul style="margin-bottom:0">
+        <li><b>A status with counts</b> (COMPLETED, 25 tournaments, 102 results): the token works.</li>
+        <li><b><code>Error: {"message":"Unauthorized"}</code></b>: the token is stale. These twelve commands then answer with that error: <code>status</code>, <code>complete</code>, <code>rollback</code>, <code>results</code>, <code>pending</code>, <code>missing</code>, <code>season</code>, <code>ranking</code>, <code>evf-status</code>, <code>status-prod</code>, <code>results-prod</code> and <code>evf-status-prod</code>. The fix is yours, in two minutes: create a token at supabase.com &rarr; Account &rarr; Access Tokens, then in the Apps Script project open Project Settings &rarr; Script Properties and replace <code>SUPABASE_ACCESS_TOKEN</code>. I never see it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · The audit</p>
+    <h2>Every command in the live bot, checked</h2>
+    <p>I checked each command against its handler, the SQL functions it calls on CERT and PROD (all ten exist, with the parameters the bot sends), the workflow it starts (inputs, defaults, the database it writes) and that workflow&rsquo;s recent runs. <b>CERT</b> is the test database; <b>PROD</b> is the public site.</p>
+    <p>Legend: <span class="chip never">ok</span> works, and today&rsquo;s help is right &middot; <span class="chip fill">text</span> works, but the help line is incomplete or wrong &middot; <span class="chip over">remove</span> cannot do what help says &middot; <span class="chip warn">D3</span> decided below &middot; &#9919; needs the token from &sect;01.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Command</th><th>What it really does, and where</th><th>Today&rsquo;s help</th><th></th></tr></thead>
+      <tbody>
+        <tr><td colspan="4"><b>Lifecycle</b></td></tr>
+        <tr><td><code>status &lt;event&gt;</code></td><td>Status and counts of one event, on CERT. A prefix is accepted.</td><td>&ldquo;Event status, tournament + result counts&rdquo;: does not say CERT</td><td><span class="chip fill">text</span> &#9919;</td></tr>
+        <tr><td><code>complete &lt;exact code&gt;</code></td><td>Sets IN_PROGRESS &rarr; COMPLETED <b>on CERT only</b>, then starts a seed export from PROD. PROD is closed by the daily close (<code>event-close.yml</code>, CERT then PROD, after the end date).</td><td>Does not say that only CERT changes</td><td><span class="chip fill">text</span> &#9919;</td></tr>
+        <tr><td><code>rollback &lt;event&gt;</code></td><td>Deletes the event&rsquo;s tournaments and results <b>on CERT</b> and resets it to PLANNED (a prefix in the active season), then starts a seed export from PROD.</td><td>&ldquo;Delete all ingested data&rdquo;: does not say CERT</td><td><span class="chip fill">text</span> &#9919;</td></tr>
+        <tr><td><code>promote &lt;exact code&gt;</code></td><td>Starts <code>promote.yml</code>, which replays the verified CERT run on PROD (ADR-108).</td><td>Right</td><td><span class="chip never">ok</span></td></tr>
+        <tr><td colspan="4"><b>Review</b></td></tr>
+        <tr><td><code>results</code>, <code>pending</code>, <code>missing &lt;event&gt;</code></td><td>Top 3 per tournament; fencers whose identity is unresolved; categories without results. All on CERT.</td><td>Do not say CERT</td><td><span class="chip fill">text</span> &#9919;</td></tr>
+        <tr><td colspan="4"><b>Season</b></td></tr>
+        <tr><td><code>season</code></td><td>Every event of the active season with its counts, plus totals, on CERT.</td><td>Does not say CERT</td><td><span class="chip fill">text</span> &#9919;</td></tr>
+        <tr><td><code>ranking V2 M EPEE</code></td><td>Top 5 by <b>PPW/MPW points only</b>, on CERT. This is not the 2026/27 ranking (SPWS + EVF+) that the public site shows.</td><td>&ldquo;Top 5 fencers in a category&rdquo;: misleading for 2026/27</td><td><span class="chip fill">text</span> &#9919;</td></tr>
+        <tr><td colspan="4"><b>Pipeline</b></td></tr>
+        <tr><td><code>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</code></td><td>Starts <code>ingest-event.yml</code> on CERT as a recorded run, and the report comes back to Telegram. PROD is refused and pointed to <code>promote</code>.</td><td>Right</td><td><span class="chip never">ok</span></td></tr>
+        <tr><td><code>ingest</code> (no arguments)</td><td>Starts <code>ingest.yml</code>: the deprecated direct write from CERT storage, with the <b>season hard-coded to 2025/26</b>, no draft review and no recorded run, so promote cannot carry what it writes. Last ran 11 April.</td><td>&ldquo;Trigger ingestion from emailed staging files&rdquo;</td><td><span class="chip warn">D3</span></td></tr>
+        <tr><td><code>send &lt;EVENT-CODE&gt; participants</code></td><td>Starts <code>ftl-seed.yml</code>. E-mail delivery to the organiser was withdrawn on 25 Sep (ADR-080 amendment), and the workflow has never been dispatched.</td><td>Says it e-mails the organiser</td><td><span class="chip over">remove</span></td></tr>
+        <tr><td><code>export-seed</code></td><td>Starts <code>export-seed.yml</code>, which exports the seed <b>from PROD</b>.</td><td>&ldquo;Regenerate seed files from CERT&rdquo;: wrong</td><td><span class="chip fill">text</span></td></tr>
+        <tr><td colspan="4"><b>EVF</b></td></tr>
+        <tr><td><code>evf-cal-import</code></td><td><code>evf-sync.yml</code>, calendar mode: scrapes the EVF calendar into CERT, then promotes the calendar to PROD. It also runs on its own every day.</td><td>Does not say where, or that it runs daily</td><td><span class="chip fill">text</span></td></tr>
+        <tr><td><code>evf-results-import &lt;event&gt;</code></td><td><code>evf-sync.yml</code>, results mode, for one event, on CERT.</td><td>Does not say CERT</td><td><span class="chip fill">text</span></td></tr>
+        <tr><td><code>evf-status</code></td><td>Past PEW, MEW and MSW events with no results, on CERT. PSW is not counted.</td><td>Right</td><td><span class="chip never">ok</span> &#9919;</td></tr>
+        <tr><td colspan="4"><b>PROD, read only</b></td></tr>
+        <tr><td><code>status-prod</code>, <code>results-prod &lt;event&gt;</code>, <code>evf-status-prod</code></td><td>The same reads, on PROD.</td><td>Right</td><td><span class="chip never">ok</span> &#9919;</td></tr>
+        <tr><td colspan="4"><b>URLs and scraping</b></td></tr>
+        <tr><td><code>populate-urls</code>, <code>populate-urls-prod &lt;event&gt;</code></td><td>Find an event&rsquo;s tournament result URLs, on CERT or on PROD.</td><td>Right</td><td><span class="chip never">ok</span></td></tr>
+        <tr><td><code>t-scrape &lt;tournament_code&gt;</code></td><td>Scrapes one tournament into CERT. For a domestic tournament this writes outside a recorded run, so the event&rsquo;s next promote reports a difference.</td><td>Does not say CERT, or that it is for international tournaments</td><td><span class="chip fill">text</span></td></tr>
+        <tr><td colspan="4"><b>E-mail intake</b></td></tr>
+        <tr><td><code>staging</code>, <code>cleanup</code>, <code>pause</code>, <code>resume</code></td><td>List or delete the e-mailed files in CERT storage; stop or start the 5-minute e-mail check. <code>pause</code> lifts itself on any day with an event &#9919;.</td><td><code>pause</code> does not mention the automatic resume</td><td><span class="chip warn">D3</span></td></tr>
+        <tr><td colspan="4"><b>Only in the unused copy</b></td></tr>
+        <tr><td><code>stage</code>, <code>regen</code>, <code>parity</code>, <code>verdict</code></td><td>Never deployed; <code>parity</code> cannot work. See revision 1&rsquo;s findings, kept under D2.</td><td>Not in the live help</td><td><span class="chip warn">D2</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The e-mail intake</p>
+      <p style="margin-bottom:0">Every 5 minutes, unless paused, the bot uploads any unread e-mail with an XML or ZIP attachment to CERT storage and starts <code>ingest.yml</code>. That writes results straight into CERT under season 2025/26 and bypasses review. Nothing has used it since April; results now come from the organiser&rsquo;s URL.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Decide this first</p>
+    <h2>Three decisions</h2>
+
+    <h3>D1 · Which file becomes the only source? (unchanged)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>For</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; <code>scripts/gas_email_ingestion.js</code></b>, filled with what runs today; <code>doc/gas/Code.gs</code> deleted <span class="chip never">recommended</span></td><td>Code lives with the scripts; the graph reads <code>.js</code> but not <code>.gs</code>; the handbook, the planning rule and ADR-023 and ADR-061 already name this path.</td><td>Its name differs from the editor&rsquo;s <code>Code.gs</code>.</td></tr>
+        <tr><td><b>B &middot; <code>doc/gas/Code.gs</code></b>; the <code>.js</code> copy deleted</td><td>Same name as in the editor.</td><td>Code under <code>doc/</code>; the graph loses the bot; four pages and the planning rule must point at the new path.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D2 · <code>stage</code>, <code>regen</code>, <code>parity</code>, <code>verdict</code>, which were never deployed (unchanged)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>For</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; Retire them</b>: withdraw FR-108 and amend ADR-061 and ADR-059 <span class="chip never">recommended</span></td><td>Never deployed. <code>parity</code> cannot work, and <code>stage</code> would write CERT outside a recorded run. The domestic report already comes to Telegram.</td><td>No phone shortcut to re-send a stored report.</td></tr>
+        <tr><td><b>B &middot; Keep <code>regen</code> and <code>verdict</code></b>; retire the other two</td><td>A phone shortcut for reports.</td><td>FR-108 narrowed; a CERT smoke test.</td></tr>
+        <tr><td><b>C &middot; Keep all four</b> and fix <code>parity</code>&rsquo;s workflow</td><td>ADR-061 as written.</td><td>A workflow change, four smoke tests, and a second CERT write path to fit into ADR-108.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D3 &middot; The e-mail intake: bare <code>ingest</code>, <code>staging</code>, <code>cleanup</code>, <code>pause</code>, <code>resume</code> and the 5-minute e-mail check</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>For</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; Retire it.</b> Remove the e-mail check and those five commands from the bot; delete <code>ingest.yml</code>, which nothing else starts; amend ADR-023. <span class="chip never">recommended</span></td><td>Results reach CERT from the organiser&rsquo;s URL as a recorded run, which promote can carry. The e-mail path writes CERT directly, under the wrong season, unreviewed and unrecorded. Unused since April.</td><td>An organiser who only e-mails an XML file needs it uploaded by hand. While pasting, you delete the e-mail check&rsquo;s trigger (one click).</td></tr>
+        <tr><td><b>B &middot; Rebuild it</b>: e-mail &rarr; staged drafts for a named event, with the season taken from the event and a recorded run</td><td>Keeps e-mail as an intake.</td><td>A design of its own (an e-mail carries no event code), plus an ADR and tests.</td></tr>
+        <tr><td><b>C &middot; Keep it</b>, with help saying &ldquo;2025/26 only&rdquo;</td><td>No work now.</td><td>The path stays armed: any XML e-mail writes unreviewed results into CERT. Not recommended.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note accent">
+      <p class="lede">Reply with the result of <code>status PPW1-2026-2027</code>, and D1&ndash;D3 or &ldquo;as recommended&rdquo;</p>
+      <p style="margin-bottom:0">With A, A and A, the bot keeps 21 commands (counting <code>help</code>). Each one says what it does and where, with an example.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · How <code>help</code> stays true</p>
+    <h2>A test that fails when help and commands drift apart</h2>
+    <ul>
+      <li><b>GAS.HELP.01</b>: every command the bot handles has exactly one help entry, and every help entry is a command the bot handles.</li>
+      <li><b>GAS.HELP.02</b>: every workflow the bot starts exists and declares every input the bot sends. This is the check that would have caught <code>parity</code>.</li>
+      <li><b>GAS.HELP.03</b>: every help line for a command that touches data names CERT or PROD.</li>
+      <li>The new help opens with one line, &ldquo;CERT = test database, PROD = public site&rdquo;, and every entry gives the exact syntax with a real example, such as <code>promote PPW1-2026-2027</code>.</li>
+      <li><code>doc/handbook/operations/operator-runbooks.html</code> gets the same command list as a table, so the handbook and the bot agree.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Build, tests first (under A, A and A)</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li><b>RED.</b> <code>python/tests/test_gas_bot.py</code>: GAS.SRC.01&ndash;03 (one source; the live behaviour kept; the retired commands gone) and GAS.HELP.01&ndash;03. FTLDEL-OPS-01 and PROMO.REPLAY.24 change to read the one file. Run them and see them fail.</li>
+      <li><b>Move, unchanged.</b> <code>Code.gs</code>&rsquo;s bytes go into <code>scripts/gas_email_ingestion.js</code> and <code>doc/gas/</code> is deleted, checked by sha256 against what you pasted. This is its own commit, so the rewrite that follows is a readable diff.</li>
+      <li><b>GREEN.</b> Rewrite the help from &sect;02. Remove <code>send</code> and the D3 commands, and correct the reply texts (&ldquo;Seed export triggered&rdquo; becomes &ldquo;from PROD&rdquo;). The header lists every Script Property the bot reads; it omits <code>SUPABASE_ACCESS_TOKEN</code> and <code>SUPABASE_PROJECT_REF</code> today.</li>
+      <li><b>Docs, the coherence gate.</b> Operator runbooks: &ldquo;Telegram commands&rdquo; and &ldquo;Change the Telegram bot&rdquo;. Frontend and automation: the live project runs this file. Workflow catalog: <code>ingest.yml</code> removed. ADR-023 (D3), ADR-061 and ADR-059 (D2) and ADR-080 (<code>send</code> leaves the bot; the path) amended, with Spec Appendix C rows. RTM: FR-108 and the e-mail intake requirement withdrawn; GAS.SRC and GAS.HELP traced.</li>
+      <li><b>Gates.</b> <code>render_adrs.py</code>, <code>check_docs.py</code>, the docs index, <code>refresh-graph.sh</code>, then <code>scripts/preflight.sh</code> exit 0. Commit, integrate, and push on your word.</li>
+      <li><b>Paste and check.</b> I give you the exact clicks: the project &rarr; <code>Code.gs</code> &rarr; replace everything with the file &rarr; save &rarr; Triggers &rarr; delete the <code>checkEmailForResults</code> trigger. Then send <code>help</code>, <code>status PPW1-2026-2027</code>, <code>status-prod PPW1-2026-2027</code>, <code>season</code> and <code>ranking V2 M EPEE</code>, and tell me any reply that is not what help says. I fix it.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Boundaries</p>
+    <h2>Seen, kept out of this change</h2>
+    <ul>
+      <li><b><code>t-scrape</code> accepts a domestic tournament.</b> Help will warn about it. A refusal in <code>python/tools/scrape_tournament.py</code> is a code change of its own.</li>
+      <li><b><code>ranking</code> stays PPW/MPW.</b> A Telegram view of the 2026/27 ranking (SPWS + EVF+) would be a new request.</li>
+      <li><b><code>evf-status</code> does not count PSW.</b> That is a SQL fix (<code>fn_season_overview</code>), separate from this change.</li>
+      <li><b>The deprecated <code>ingest_cli --from-storage</code> code</b> stays until a separate cleanup; under D3 A nothing starts it.</li>
+      <li><b><code>complete</code> and <code>rollback</code> still start a PROD seed export.</b> That is harmless, and the reply now says so.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan, revision 2 · 3 October 2026 · SPWS Ranklist · the Telegram bot: one source, a true help · branch <code>claude/gas-single-source</code></p>
+</div>
+</body>
+</html>
