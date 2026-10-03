@@ -29,6 +29,7 @@ from typing import Any
 
 from python.matcher.fuzzy_match import find_best_match
 from python.matcher.pipeline import estimate_birth_year
+from python.pipeline.age_split import birth_year_to_vcat
 from python.pipeline.core.contract import Context, PluginKind, Services
 from python.pipeline.international_admission import fold_federation
 from python.pipeline.overrides import resolve_fencer_keys
@@ -38,10 +39,12 @@ from python.pipeline.stages import (
     _admit_international_rows,
     _admitted_match,
     _bracket_mixed_gender,
+    _declared_for,
     _is_domestic,
     _is_international_intake,
     _lookup_exact_fencer,
     _row_authoritative_vcat,
+    declared_birth_years,
     reconcile_fencer_birth_year,
     record_undecided,
     undecided_match,
@@ -97,6 +100,10 @@ class ResolveFencers(BasePlugin):
         matches: list[StageMatchResult] = []
         touched: dict[int, str] = {}
         remaining: list[tuple[str | None, Any]] = []
+        # The birth years declared at registration for this event, the rule
+        # Stage 0 already follows (ADR-056 amendment 2026-09-25; DECL.RF.01–05).
+        # Empty for an event without registrations, so nothing changes there.
+        declared = declared_birth_years(pctx, db)
         alias_writebacks: list[dict] = []  # G4: scraped→canonical pairs recorded as aliases
 
         # ---- PHASE A — exact match, then BY reconcile ----
@@ -141,7 +148,16 @@ class ResolveFencers(BasePlugin):
                 matches.append(undecided_match(r, undecided_at[idx], vcat, season_end))
             elif idx in exact_at:
                 gby = self._reconcile_by(
-                    ctx, db, fencer_db, exact_at[idx], vcat, season_end, touched, r, bracket_mixed
+                    ctx,
+                    db,
+                    fencer_db,
+                    exact_at[idx],
+                    vcat,
+                    season_end,
+                    touched,
+                    r,
+                    bracket_mixed,
+                    declared_birth_year=_declared_for(declared, r.fencer_name),
                 )
                 matches.append(
                     StageMatchResult(
@@ -243,7 +259,15 @@ class ResolveFencers(BasePlugin):
                     )
             elif domestic:
                 new_id, gby = self._create(
-                    db, fencer_db, r, vcat, season_end, parsed_gender, ctx, best=best
+                    db,
+                    fencer_db,
+                    r,
+                    vcat,
+                    season_end,
+                    parsed_gender,
+                    ctx,
+                    best=best,
+                    declared_by=_declared_for(declared, r.fencer_name),
                 )
                 matches.append(
                     StageMatchResult(
@@ -370,9 +394,20 @@ class ResolveFencers(BasePlugin):
     # reuse of the Stage-0 reconcile / create primitives
     # ------------------------------------------------------------------ #
     def _reconcile_by(
-        self, ctx, db, fencer_db, existing_id, vcat, season_end, touched, r, bracket_mixed=False
+        self,
+        ctx,
+        db,
+        fencer_db,
+        existing_id,
+        vcat,
+        season_end,
+        touched,
+        r,
+        bracket_mixed=False,
+        declared_birth_year=None,
     ) -> int | None:
-        # Delegates to the single shared reconcile policy (not forked from s0).
+        # Delegates to the single shared reconcile policy (not forked from s0),
+        # with the year the fencer declared for this event (DECL.RF.04).
         return reconcile_fencer_birth_year(
             ctx.get("_legacy"),
             db,
@@ -383,21 +418,44 @@ class ResolveFencers(BasePlugin):
             touched,
             r.fencer_name,
             bracket_is_mixed_gender=bracket_mixed,
+            declared_birth_year=declared_birth_year,
         )
 
     def _create(
-        self, db, fencer_db, r, vcat, season_end, gender, ctx, best=None
+        self, db, fencer_db, r, vcat, season_end, gender, ctx, best=None, declared_by=None
     ) -> tuple[int, int | None]:
         from python.matcher.fuzzy_match import parse_scraped_name
 
         surname, first_name = parse_scraped_name(r.fencer_name)
         nat = getattr(r, "fencer_country", None)
-        by = estimate_birth_year(vcat, season_end) if vcat else None
+        # The year the fencer declared for this event, confirmed, when it fits
+        # the bracket they fenced; otherwise the band midpoint, estimated, and
+        # the disagreement is reported — the Stage 0 rule (DECL.RF.01–02).
+        if declared_by is not None and (
+            vcat is None or birth_year_to_vcat(declared_by, season_end) == vcat
+        ):
+            by, estimated = declared_by, False
+        else:
+            if declared_by is not None:
+                source_kind = ctx.get("_legacy").parsed.source_kind
+                ctx.get("_legacy").reconcile_conflicts.append(
+                    {
+                        "id_fencer": None,
+                        "scraped_name": r.fencer_name,
+                        "first_vcat": birth_year_to_vcat(declared_by, season_end),
+                        "second_vcat": vcat,
+                        "source": getattr(source_kind, "value", str(source_kind)),
+                        "reason": "declared_vs_bracket",
+                        "declared_birth_year": declared_by,
+                    }
+                )
+            by = estimate_birth_year(vcat, season_end) if vcat else None
+            estimated = by is not None
         payload = {
             "txt_surname": surname,
             "txt_first_name": first_name,
             "int_birth_year": by,
-            "bool_birth_year_estimated": by is not None,
+            "bool_birth_year_estimated": estimated,
             "txt_nationality": nat or "PL",
         }
         if gender:
@@ -409,7 +467,7 @@ class ResolveFencers(BasePlugin):
                 "txt_surname": surname,
                 "txt_first_name": first_name,
                 "int_birth_year": by,
-                "bool_birth_year_estimated": by is not None,
+                "bool_birth_year_estimated": estimated,
                 "txt_nationality": nat or "PL",
                 "enum_gender": gender,
                 "json_name_aliases": [],
@@ -433,7 +491,7 @@ class ResolveFencers(BasePlugin):
                 "nationality": nat or "PL",
                 "vcat": vcat,
                 "birth_year": by,
-                "estimated": by is not None,
+                "estimated": estimated,
                 "near_miss": near_miss,
             }
         )
