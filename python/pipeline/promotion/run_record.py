@@ -81,6 +81,31 @@ def override_sha256(event_code: str, overrides_dir: Path | None = None) -> str |
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _identity(ctx: Any) -> dict:
+    """What the identity step reported for the listing (its IDENTITY fragment):
+    fencers created with their nearest existing name, birth years reconciled,
+    conflicts, and the rows left PENDING. The gate reads it (ADR-108 §5)."""
+    payload: dict = {}
+    for fragment in getattr(ctx, "report", None) or []:
+        if getattr(fragment, "section", None) == "IDENTITY":
+            payload = dict(fragment.payload or {})
+    clean = json.loads(json.dumps(payload, ensure_ascii=False, default=str))
+    return {
+        "created": clean.get("created") or [],
+        "reconciled": clean.get("reconciled") or [],
+        "conflicts": clean.get("conflicts") or [],
+        "pending": [
+            {
+                "scraped_name": m.get("scraped_name"),
+                "place": m.get("place"),
+                "notes": m.get("notes"),
+            }
+            for m in clean.get("matches") or []
+            if m.get("method") == "PENDING"
+        ],
+    }
+
+
 def _outcome(ctx: Any) -> dict:
     """What the listing's commit did: categories and N, or skipped, and its faults.
     Tournament ids differ between environments, so they are not recorded."""
@@ -103,6 +128,8 @@ class RunRecord:
         self.run_id = run_id
         self.schedule: dict | None = None
         self.rounds: list[dict] = []
+        self.current: str | None = None
+        self.refusal: dict | None = None
 
     @classmethod
     def open(
@@ -137,9 +164,14 @@ class RunRecord:
     def add_unparseable(self, name: str, uuid: str) -> None:
         self.rounds.append({"name": name, "uuid": uuid, "status": "unparseable"})
 
+    def begin(self, rec: Mapping) -> None:
+        """The listing about to be committed, so a refusal can name it."""
+        self.current = rec["name"]
+
     def add_round(self, rec: Mapping, decision: Mapping, ctx: Any = None) -> None:
-        """One listing the run read: its hash, the keep-rule's verdict, and, when it
-        was committed, what the commit did."""
+        """One listing the run read: its hash and its rows as parsed, the
+        keep-rule's verdict, and, when it was committed, what the commit did and
+        what the identity step reported."""
         entry = {
             "name": rec["name"],
             "uuid": rec["uuid"],
@@ -153,13 +185,19 @@ class RunRecord:
             "status": decision["status"],
             "reason": decision.get("reason", ""),
             "committed_categories": list(decision.get("commit_cats") or []),
+            "rows": [[r.place, r.fencer_name] for r in rec["_base"].results],
         }
         if ctx is not None:
             entry["outcome"] = _outcome(ctx)
+            entry["identity"] = _identity(ctx)
         self.rounds.append(entry)
+        self.current = None
 
     def listings(self) -> dict:
-        return {"schedule": self.schedule, "rounds": self.rounds}
+        out: dict = {"schedule": self.schedule, "rounds": self.rounds}
+        if self.refusal:
+            out["refusal"] = self.refusal
+        return out
 
     def finish(self) -> dict:
         changes = self.db.finish_ingest_run(self.run_id, self.listings()) or {}
@@ -167,8 +205,11 @@ class RunRecord:
         print(f"run record {self.run_id} finished: {len(self.rounds)} listing(s); {counts}")
         return changes
 
-    def fail(self, error: str) -> None:
-        """Close the row FAILED. Never masks the ingestion's own error."""
+    def fail(self, error: str, *, kind: str | None = None, message: str | None = None) -> None:
+        """Close the row FAILED. A refused listing (ListingRefused) is named with
+        its kind, for the gate. Never masks the ingestion's own error."""
+        if kind:
+            self.refusal = {"listing": self.current, "kind": kind, "message": message or error}
         try:
             self.db.fail_ingest_run(self.run_id, error, self.listings())
             print(f"run record {self.run_id} failed: {error}")

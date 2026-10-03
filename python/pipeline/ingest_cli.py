@@ -649,7 +649,10 @@ def ingest_event_from_url(
         )
     except BaseException as e:
         if run is not None:
-            run.fail(f"{type(e).__name__}: {e}")
+            from python.pipeline.core.contract import ListingRefused
+
+            kind = e.kind if isinstance(e, ListingRefused) else None
+            run.fail(f"{type(e).__name__}: {e}", kind=kind, message=str(e))
         raise
     if run is not None:
         run.finish()
@@ -771,6 +774,8 @@ def _ingest_event_rounds(
                 tournament_name=r["name"],
             )
             label = f"{r['name']} [{r['weapon']}/{r['gender']}, owns {d['commit_cats']}]"
+            if run is not None:
+                run.begin(r)
             ctx = _run_parsed_through_flow(
                 parsed,
                 event_code,

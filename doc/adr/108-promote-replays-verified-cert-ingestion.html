@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="356d1630e0481edc6b2419f91bd3b35520ffe8aaac8277f5080260468793a733">
+<meta name="adr-source-sha256" content="1543727839567e164a816a7a47b10834dcb60cd8306132c8311d7ed083e0ec2f">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">260 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">283 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
@@ -201,12 +201,36 @@
 <ul>
 <li>the run finished and every kept listing committed;</li>
 <li>CERT's queue drained for every event the run touched;</li>
-<li>PROD's input fingerprint still equals the one recorded;</li>
+<li>PROD's input fingerprint still equals the one recorded. Every part is compared except the season lock, which refuses only when PROD is locked and CERT was not: the season's first scored result locks it, so CERT locked with PROD unlocked is the expected state for a season's first event (G1 A, 2026-10-03);</li>
 <li>the schemas are equal;</li>
 <li>every fencer the run created has an id that is still free on PROD.</li>
 </ul>
 <p><strong>Information only:</strong> a loose name similarity; a one-category move that follows a declaration; and the ADR-104 §7 joining check, because the results are correct as fenced.</p>
 <p>ADR-074 is unchanged: CERT commits automatically. The gate blocks only the PROD write.</p>
+<p><strong>Implemented 2026-10-03 (build step 7).</strong> <code>python/pipeline/promotion/gate.py</code> (<code>evaluate</code>, <code>run_gate</code>, a CLI); migration <code>20261003000016_promote_gate.sql</code>.</p>
+<ul>
+<li><code>fn_promote_gate_checks(event, fencer ids)</code> reads the target's committed state:
+<ul>
+<li>estimated birth years;</li>
+<li>PENDING match candidates;</li>
+<li>results without a score or a component;</li>
+<li>the active revision and its stamp;</li>
+<li>the SS26.PARITY preview for every scored result;</li>
+<li>TT.CODE.06;</li>
+<li>sibling N and order, and order digits;</li>
+<li>the queue for the event and for every event where a fencer the run touched has a result;</li>
+<li>the birth years each named fencer's results allow (<code>fn_fencer_fitting_birth_years</code>);</li>
+<li>the joining check;</li>
+<li>the stored tournaments.</li>
+</ul>
+</li>
+<li>An order whose length is not N cannot be stored (<code>chk_tournament_joined_order</code>), so the gate does not look for one.</li>
+<li>The run record carries what the gate reads from the run. Each listing keeps its source rows and its identity report: fencers created with their nearest existing name, reconciled years with their anchor, conflicts, and PENDING rows. A refused listing ends the run with a <code>ListingRefused</code> naming its kind, <code>identity</code> or <code>joined_bracket</code>. It is still a <code>ValueError</code>.</li>
+<li>The gate reads PROD through a read-only transport only. It writes nothing but its outcome, on the run row (<code>fn_ingest_run_gate</code>).</li>
+<li><strong>The duplicate check applies the birth year.</strong> A new fencer the typo rule calls an existing one blocks unless two different confirmed birth years tell them apart, which is then information. On PPW1, PERKOWSKI Maciej (declared 1984) and SĘKOWSKI Maciej (#263, 1981) are such a pair.</li>
+<li><strong>G2 is open.</strong> A declaration that overwrites a confirmed year is checked by rule A, the recommendation (<code>DECLARATION_RULE</code>): it blocks unless the fencer's results allow only that year. Rule B reports it only.</li>
+<li>On LOCAL, after a refresh from PROD and a recorded PPW1 run, the gate against PROD found no identity, scoring or joined-bracket issue. The only findings were the schema and registrations parts, both waiting on PROD's deploy of the same migrations.</li>
+</ul>
 <h3 id="6-promote-on-prod">6 · Promote on PROD</h3>
 <ol>
 <li><strong>Trigger.</strong> <code>promote &lt;exact code&gt;</code> from Telegram, or <code>gh workflow run promote.yml -f event_code=…</code>, dispatches <code>promote.yml</code> in <code>prod-write</code>. The event is found by its exact code; a prefix is answered with the matching exact codes.</li>
@@ -294,7 +318,12 @@
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ol>
-<li><strong>How §5 compares the season lock (build step 7).</strong> The season's first scored result locks it (<code>fn_ensure_active_scoring_revision</code>). So the ingestion of a season's first event changes the lock on CERT, and any later CERT re-run of that event starts locked while PROD is not. On 3 October 2026 the 2026/27 season was locked on CERT and unlocked on PROD. Compared literally, &quot;lock state equal&quot; refuses every re-ingested first event of a season. The run record therefore keeps the lock as a part of its own. <strong>Recommendation:</strong> compare the scoring settings and engines value by value, and refuse on the lock only when PROD is locked and CERT is not. That case means PROD scored results CERT never had.</li>
+<li>
+<p><strong>Decided 2026-10-03 (G1 A), recorded in §5.</strong> How §5 compares the season lock. The season's first scored result locks it (<code>fn_ensure_active_scoring_revision</code>). So the ingestion of a season's first event changes the lock on CERT, and any later CERT re-run of that event starts locked while PROD is not. On 3 October 2026 the 2026/27 season was locked on CERT and unlocked on PROD. Compared literally, &quot;lock state equal&quot; refuses every re-ingested first event of a season. The run record therefore keeps the lock as a part of its own. <strong>Recommendation:</strong> compare the scoring settings and engines value by value, and refuse on the lock only when PROD is locked and CERT is not. That case means PROD scored results CERT never had.</p>
+</li>
+<li>
+<p><strong>G2, a declaration against a confirmed birth year (open).</strong> D5 moves a confirmed year to a declared one whenever the declaration fits the bracket. <strong>Recommendation A:</strong> that overwrite stands only when the fencer's results allow no other year; any other case blocks promote as an identity issue, and the year is decided by name. B: the declaration wins and the gate reports it. The gate is built with A.</p>
+</li>
 </ol>
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
@@ -341,5 +370,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>356d1630e0481edc6b2419f91bd3b35520ffe8aaac8277f5080260468793a733</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>1543727839567e164a816a7a47b10834dcb60cd8306132c8311d7ed083e0ec2f</code></footer>
 </div></body></html>

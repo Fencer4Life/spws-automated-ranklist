@@ -300,3 +300,97 @@ class TestWiring:
         )
         with pytest.raises(SystemExit):
             ingest_cli.main()
+
+
+class TestWhatTheGateReads:
+    """PROMO.RUN.10–12 — build step 7 reads each listing's source rows and
+    identity details, and why a refused listing ended the run."""
+
+    def test_a_committed_listing_carries_its_rows_and_identity(self):
+        """PROMO.RUN.10"""
+        from python.pipeline.core.contract import ReportFragment
+
+        identity = {
+            "matches": [
+                {"scraped_name": "KOWALSKI Jan", "place": 1, "method": "AUTO_MATCH", "notes": None},
+                {
+                    "scraped_name": "NOWAK Ewa",
+                    "place": 2,
+                    "method": "PENDING",
+                    "notes": "namesakes",
+                },
+            ],
+            "created": [
+                {"scraped_name": "NOWY Adam", "near_miss": {"name": "NOWAK Adam", "confidence": 72}}
+            ],
+            "reconciled": [
+                {
+                    "id_fencer": 7,
+                    "old_birth_year": 1990,
+                    "new_birth_year": 1987,
+                    "was_confirmed": True,
+                    "anchor": "lower edge",
+                }
+            ],
+            "conflicts": [
+                {"id_fencer": 8, "reason": "declared_vs_bracket", "declared_birth_year": 1990}
+            ],
+            "alias_writebacks": [],
+        }
+
+        def with_identity(*a, **k):
+            ctx = _committed_ctx()
+            ctx.report = [ReportFragment("ResolveFencers", None, "IDENTITY", identity)]
+            return ctx
+
+        db = _db()
+        _ingest(db, record_run="cert", run_flow=with_identity)
+        (round_,) = db.finish_ingest_run.call_args.args[1]["rounds"]
+        assert round_["rows"] == [[1, "KOWALSKI Jan"]]
+        assert round_["identity"] == {
+            "created": identity["created"],
+            "reconciled": identity["reconciled"],
+            "conflicts": identity["conflicts"],
+            "pending": [{"scraped_name": "NOWAK Ewa", "place": 2, "notes": "namesakes"}],
+        }
+
+    def test_a_refused_listing_is_named_with_its_kind(self):
+        """PROMO.RUN.11"""
+        from python.pipeline.core.contract import ListingRefused
+
+        def refused(*a, **k):
+            raise ListingRefused("identity", "SABRE M listing not written: X (place 3): namesakes")
+
+        db = _db()
+        with pytest.raises(ValueError):
+            _ingest(db, record_run="cert", run_flow=refused)
+        listings = db.fail_ingest_run.call_args.args[2]
+        assert listings["refusal"] == {
+            "listing": "Szpada Mężczyzn kat. 2",
+            "kind": "identity",
+            "message": "SABRE M listing not written: X (place 3): namesakes",
+        }
+
+    def test_the_refusals_carry_their_kind_and_stay_value_errors(self):
+        """PROMO.RUN.12"""
+        from types import SimpleNamespace
+
+        from python.pipeline.core.contract import ListingRefused
+        from python.pipeline.joined_brackets import listing_order
+        from python.pipeline.plugins.ingest import Commit
+
+        with pytest.raises(ListingRefused) as repeated:
+            listing_order([(1, "V1"), (1, "V0")], [1, 1])
+        assert repeated.value.kind == "joined_bracket" and isinstance(repeated.value, ValueError)
+        with pytest.raises(ListingRefused) as missing:
+            listing_order([(1, "V1")], [1, 2])
+        assert missing.value.kind == "joined_bracket"
+
+        held = SimpleNamespace(
+            method="PENDING", scraped_name="NOWAK Ewa", place=2, notes="namesakes", alternatives=[]
+        )
+        ctx = MagicMock()
+        ctx.get = lambda key, default=None: [held] if key == "matches" else default
+        with pytest.raises(ListingRefused) as pending:
+            Commit._refuse_domestic_pending(ctx, None, {"V1": [held]}, {"V1"}, "SABRE", "M")
+        assert pending.value.kind == "identity"
