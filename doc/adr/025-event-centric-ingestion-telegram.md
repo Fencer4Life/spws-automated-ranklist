@@ -1,6 +1,6 @@
 # ADR-025: Event-Centric Ingestion + Telegram Admin Interface
 
-**Status:** Accepted (amended 2026-10-03 by ADR-108: domestic results reach PROD only through promote; exact codes)
+**Status:** Accepted (amended 2026-10-03 by ADR-108: domestic results reach PROD only through promote; exact codes. Amended 2026-10-03: one bot source, the e-mail intake retired, `help` is the command list)
 **Date:** 2026-04-05  
 **Supersession narrowed (ADR-077, 2026-06-28):** ADR-050 supersedes this ADR only on the *ingestion
 mechanism*. The **event-status lifecycle** and the **Telegram admin surface** described here remain
@@ -133,3 +133,10 @@ Same permission model as `fn_rollback_event` (REVOKE anon, GRANT authenticated).
 - **`complete`** takes the exact event code too, instead of `_resolve_event_prefix` (`LIKE prefix%` … `LIMIT 1`, which lets `PEW1` match `PEW11`). It remains a manual close and does not check the end date. Automatic completion follows ADR-108 §7.
 
 Implemented 2026-10-03: `complete` in build step 11; `promote`, `ingest-event.yml`'s refusal of `target: prod` and the GAS `ingest` command's refusal of `prod` in build step 12 (ADR-108 §6).
+
+### Amendment 2026-10-03 (b) — one bot source; the e-mail intake retired; `help` is the command list
+
+- The live Apps Script project runs `scripts/gas_email_ingestion.js` unchanged. The second copy, `doc/gas/Code.gs`, was the one actually deployed while the `.js` drifted; it is gone, and its content became the `.js`.
+- The e-mail intake is retired ([ADR-023](023-email-ingestion-gas-storage.md) amendment): the e-mail check and the `ingest` (no arguments), `staging`, `cleanup`, `pause` and `resume` commands are removed, along with `ingest.yml`. `send <EVENT-CODE> participants` is removed too ([ADR-080](080-clean-roster-ftl-seeding.md) §5, withdrawn 2026-09-25).
+- The `delete <prefix>` command of the 2026-04-21 amendment never reached the bot. `fn_delete_event` exists; the bot does not offer it.
+- The bot's `help` is the command list: 21 commands, each naming CERT or PROD, also listed in the handbook's operator runbooks. `python/tests/test_gas_bot.py` (GAS.SRC.01–03, GAS.HELP.01–04) fails when help and the handled commands disagree, when a dispatched workflow does not declare an input the bot sends, or when help no longer fits one Telegram message.

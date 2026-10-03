@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="92a1651e7c970257e13f37327ac8242551376bf7023f16928e984f207d909c58">
+<meta name="doc-source-sha256" content="ab3ac09a3d6c7bbc178330368ac2047ad76bbde8bec90fefdfd02486076518cb">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -544,24 +544,24 @@
 </tr>
 <tr>
 <td>FR-75</td>
-<td>Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging</td>
+<td><s>Google Apps Script extracts email .zip attachments from Gmail → uploads to Supabase Storage staging</s> — <strong>withdrawn 2026-10-03</strong> (ADR-023 amendment: the e-mail intake is retired)</td>
 <td>ADR-023</td>
 <td>Manual E2E ✓</td>
-<td>Covered</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-76</td>
-<td>GitHub Actions <code>ingest.yml</code> downloads from Storage staging → processes → archives</td>
+<td><s>GitHub Actions <code>ingest.yml</code> downloads from Storage staging → processes → archives</s> — <strong>withdrawn 2026-10-03</strong> (ADR-023 amendment: the e-mail intake is retired)</td>
 <td>ADR-023</td>
 <td>Manual E2E ✓</td>
-<td>Covered</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-77</td>
-<td>Processed .zip archived to <code>archive/{season}/{event}.zip</code>; staging cleaned; previous event compressed</td>
+<td><s>Processed .zip archived to <code>archive/{season}/{event}.zip</code>; staging cleaned; previous event compressed</s> — <strong>withdrawn 2026-10-03</strong> (ADR-023 amendment: the e-mail intake is retired)</td>
 <td>ADR-023</td>
 <td>9.169–9.172, 9.191–9.192</td>
-<td>Covered</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-78</td>
@@ -586,9 +586,9 @@
 </tr>
 <tr>
 <td>FR-81</td>
-<td>Telegram command interface: 20+ admin commands for lifecycle, review, storage, season, PROD, URLs, emergency</td>
+<td>Telegram command interface: 21 admin commands for lifecycle, review, season, ingestion, EVF, PROD reads and seed; the bot's <code>help</code> is the command list and every entry names CERT or PROD</td>
 <td>ADR-025</td>
-<td>10.16–10.22</td>
+<td>10.16–10.22; GAS.SRC.01–03, GAS.HELP.01–04 (<code>test_gas_bot.py</code>)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -684,7 +684,7 @@
 </tr>
 <tr>
 <td>FR-95</td>
-<td>Event deletion admin tool: <code>fn_delete_event(prefix)</code> RPC (+ Telegram <code>delete &lt;prefix&gt;</code> command) performs rollback + removal of <code>tbl_event</code> row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than <code>rollback</code> (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses <code>_resolve_event_prefix</code> + <code>fn_delete_tournament_cascade</code> helpers. Admin-only (REVOKE anon, GRANT authenticated).</td>
+<td>Event deletion admin tool: <code>fn_delete_event(prefix)</code> RPC (the Telegram <code>delete &lt;prefix&gt;</code> command of the 2026-04-21 amendment was never added to the bot) performs rollback + removal of <code>tbl_event</code> row in a single transaction. Used when an event was created in error (wrong-ingest, erroneous scrape, dedup-bug phantom). Stricter than <code>rollback</code> (which keeps the event row for re-ingest). Prefix-matches in the active season, reuses <code>_resolve_event_prefix</code> + <code>fn_delete_tournament_cascade</code> helpers. Admin-only (REVOKE anon, GRANT authenticated).</td>
 <td>UC22(e), UC27, ADR-025 (amendment 2026-04-21)</td>
 <td>10.29–10.32</td>
 <td>Covered</td>
@@ -775,10 +775,10 @@
 </tr>
 <tr>
 <td>FR-108</td>
-<td>Telegram operator commands (extends ADR-025): <code>/regen &lt;event_code&gt;</code>, <code>/stage &lt;event_code&gt;</code>, <code>/parity &lt;event_code&gt;</code>, <code>/verdict &lt;event_code&gt;</code> — all dispatched from GAS <code>checkTelegramCommands</code> to GitHub workflows or Storage downloads. <code>/help</code> text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired).</td>
+<td><s>Telegram operator commands (extends ADR-025): <code>/regen &lt;event_code&gt;</code>, <code>/stage &lt;event_code&gt;</code>, <code>/parity &lt;event_code&gt;</code>, <code>/verdict &lt;event_code&gt;</code> — all dispatched from GAS <code>checkTelegramCommands</code> to GitHub workflows or Storage downloads. <code>/help</code> text rewritten to enumerate commands + describe auto-delivered documents (filename pattern, when fired).</s> — <strong>withdrawn 2026-10-03</strong> (ADR-061 amendment: never deployed; <code>parity</code> could not work)</td>
 <td>ADR-061</td>
-<td>C16 (CERT smoke — manual)</td>
-<td>Pending (GAS extension + smoke)</td>
+<td>—</td>
+<td>Withdrawn</td>
 </tr>
 <tr>
 <td>FR-109</td>
@@ -939,7 +939,7 @@
 <td><strong>Organizer FTL seed delivery — WITHDRAWN, never in service:</strong> authenticated admin UI and allowlisted Telegram command dispatch <code>ftl-seed.yml</code> for an explicit CERT/PROD event; Python generates a fresh, non-empty mix-all ZIP in memory, sends it as the SPWS Gmail over verified <code>SMTP_SSL</code>/465, and stamps <code>ts_ftl_sent</code> only after SMTP acceptance through service-role-only <code>fn_mark_ftl_sent</code>. Manual dispatch is an explicit re-send. The daily PROD deadline sweep is at-least-once, selects only unstamped live events after cutoff, skips empty bundles, serializes with <code>prod-write</code>, and remains disabled until <code>ENABLE_FTL_DEADLINE_SEND=true</code> after the CERT pilot.</td>
 <td>ADR-080 §5, spec §5.2</td>
 <td><code>FTLDEL-PY-01</code>–<code>FTLDEL-PY-07</code> (<code>test_ftl_feed_seed_send.py</code>, exporter/orchestration compatibility); <code>FTLDEL-DB-01</code>–<code>FTLDEL-DB-03</code> (pgTAP 49.28–49.33, 8.25); <code>FTLDEL-UI-01</code>–<code>FTLDEL-UI-02</code> (<code>EventManager.test.ts</code>); <code>FTLDEL-OPS-01</code> (<code>test_ftl_seed_workflow_contract.py</code>)</td>
-<td><strong>WITHDRAWN 2026-09-25 — never commissioned.</strong> Code exists and its tests pass, but the requirement was never satisfied in service: outbound e-mail needs a registered sending identity the association does not hold. <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events carry <code>ts_ftl_sent</code> on either CERT or PROD. Superseded by FR-132's download page as the organizer handoff. See ADR-080 amendment 2026-09-25. The listed tests are retained but exercise an unused path.</td>
+<td><strong>WITHDRAWN 2026-09-25 — never commissioned.</strong> Code exists and its tests pass, but the requirement was never satisfied in service: outbound e-mail needs a registered sending identity the association does not hold. <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events carry <code>ts_ftl_sent</code> on either CERT or PROD. Superseded by FR-132's download page as the organizer handoff. See ADR-080 amendment 2026-09-25. The listed tests are retained but exercise an unused path. The bot's <code>send</code> command was removed on 2026-10-03; <code>FTLDEL-OPS-01</code> now checks that it is gone.</td>
 </tr>
 <tr>
 <td>FR-132</td>
@@ -2050,5 +2050,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>92a1651e7c970257e13f37327ac8242551376bf7023f16928e984f207d909c58</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ab3ac09a3d6c7bbc178330368ac2047ad76bbde8bec90fefdfd02486076518cb</code></footer>
 </div></body></html>

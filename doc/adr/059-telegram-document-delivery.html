@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="059-telegram-document-delivery.md">
-<meta name="adr-source-sha256" content="1b794571b6dcf8ba9b60cb5f6296032dd9295caf64d7fbef473f5aba1dc55e52">
+<meta name="adr-source-sha256" content="348875722a1687011197a3ef10c6ea3852afdceee8948fb7eef915b762403002">
 <title>ADR-059 · Telegram sendDocument as primary verdict read surface</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 059</p><h1>Telegram <code>sendDocument</code> as primary verdict read surface</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>059-telegram-document-delivery.md</code></dd></div><div><dt>Length</dt><dd class="">98 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Proposed (the GAS commands in its deliverables were withdrawn 2026-10-03, never deployed)</dd></div><div><dt>Date</dt><dd class="">2026-05-03</dd></div><div><dt>Source</dt><dd class=""><code>059-telegram-document-delivery.md</code></dd></div><div><dt>Length</dt><dd class="">100 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (the GAS commands in its deliverables were withdrawn 2026-10-03, never deployed)
 <strong>Date:</strong> 2026-05-03
 <strong>Amends:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-058 (staging-reports bucket).</p>
 </div>
@@ -131,8 +131,9 @@
 <li>Wired into <code>ingest_cli.py</code>, <code>phase5_runner.py</code>, <code>phase5_report.py</code>, <code>evf_parity_sweep.py</code></li>
 <li>GAS <code>/help</code> text update + 4 new operator commands (<code>/regen</code>, <code>/stage</code>, <code>/parity</code>, <code>/verdict</code>) per ADR-061</li>
 </ul>
+<p><strong>Amendment 2026-10-03.</strong> The GAS line of the deliverables is withdrawn together with <a href="061-local-parity-and-telegram-commands.html">ADR-061</a>'s commands, which never reached the bot. Telegram document delivery from Python (<code>send_document</code>, <code>send_staging_report</code>) is unaffected.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="058-staging-reports-storage-bucket.html">← ADR-058: staging-reports Supabase Storage bucket for verdict .md</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="060-evf-parity-delta-md.html">→ ADR-060: EVF parity sweep emits delta-only .md (no full.md overwrite)</a></nav>
-<footer class="foot">Generated from <code>059-telegram-document-delivery.md</code> · source SHA-256 <code>1b794571b6dcf8ba9b60cb5f6296032dd9295caf64d7fbef473f5aba1dc55e52</code></footer>
+<footer class="foot">Generated from <code>059-telegram-document-delivery.md</code> · source SHA-256 <code>348875722a1687011197a3ef10c6ea3852afdceee8948fb7eef915b762403002</code></footer>
 </div></body></html>

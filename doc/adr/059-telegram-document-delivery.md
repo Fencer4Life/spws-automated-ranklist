@@ -1,6 +1,6 @@
 # ADR-059: Telegram `sendDocument` as primary verdict read surface
 
-**Status:** Proposed
+**Status:** Proposed (the GAS commands in its deliverables were withdrawn 2026-10-03, never deployed)
 **Date:** 2026-05-03
 **Amends:** ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-058 (staging-reports bucket).
 
@@ -96,3 +96,5 @@ Rejected: 4096-character limit per message; `.md` files exceed this.
 - `python/tests/test_telegram_send_document.py` — multipart shape, null-safety, caption rendering
 - Wired into `ingest_cli.py`, `phase5_runner.py`, `phase5_report.py`, `evf_parity_sweep.py`
 - GAS `/help` text update + 4 new operator commands (`/regen`, `/stage`, `/parity`, `/verdict`) per ADR-061
+
+**Amendment 2026-10-03.** The GAS line of the deliverables is withdrawn together with [ADR-061](061-local-parity-and-telegram-commands.md)'s commands, which never reached the bot. Telegram document delivery from Python (`send_document`, `send_staging_report`) is unaffected.
