@@ -29,8 +29,8 @@
 --   V3 = ages 60–69  → seeded at age 65
 -- The categories therefore hold for any active season, and no seed row is
 -- read. Do not reintroduce lookups by surname here — they are also ambiguous
--- when PROD holds two fencers sharing a surname (see export_seed.py's
--- fencer_lookup(), fixed for the same reason in f5b9764).
+-- when PROD holds two fencers sharing a surname (the seed's own name lookup
+-- had the same defect, f5b9764; the seed now carries PROD's fencer ids).
 -- =============================================================================
 
 BEGIN;

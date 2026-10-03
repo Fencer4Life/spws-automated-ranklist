@@ -640,10 +640,7 @@ def run_refresh(
         else:
             raise RefreshError(f"the recompute queue was not empty after {MAX_DRAIN_ROUNDS} drains")
 
-    after = idn.diff(
-        idn.normalise(target.roster(), lambda r: int(r["id_fencer"]), COMPARED_FIELDS),
-        idn.normalise(prod_rows, lambda r: int(r["id_fencer"]), COMPARED_FIELDS),
-    )
+    after = roster_diff(target.roster(), prod_rows)
     if not after.equal:
         raise RefreshError(
             "after the refresh the roster differs from PROD's:\n"
@@ -652,6 +649,27 @@ def run_refresh(
     return RefreshOutcome(
         "applied", plan, report, align_summary=summary, registrations=registrations
     )
+
+
+def roster_diff(target_rows: list[dict], prod_rows: list[dict]) -> idn.IdentityDiff:
+    """Two rosters compared id for id on every compared field."""
+    return idn.diff(
+        idn.normalise(target_rows, lambda r: int(r["id_fencer"]), COMPARED_FIELDS),
+        idn.normalise(prod_rows, lambda r: int(r["id_fencer"]), COMPARED_FIELDS),
+    )
+
+
+class HasRoster(Protocol):
+    def roster(self) -> list[dict]: ...
+
+
+def run_verify(prod: HasRoster, target: HasRoster) -> idn.IdentityDiff:
+    """ADR-036 §1: a database's roster against PROD's, id for id.
+
+    scripts/mirror-prod-local.sh runs it after LOCAL is rebuilt from the seed.
+    The same two people at swapped ids are a difference.
+    """
+    return roster_diff(target.roster(), prod.roster())
 
 
 def run_restore(target: TargetDb, point: Mapping[str, Any]) -> dict[str, Any]:
@@ -673,10 +691,7 @@ def run_restore(target: TargetDb, point: Mapping[str, Any]) -> dict[str, Any]:
     }
     target.align(payload, dry_run=True)
     summary = target.align(payload, dry_run=False)
-    after = idn.diff(
-        idn.normalise(target.roster(), lambda r: int(r["id_fencer"]), COMPARED_FIELDS),
-        idn.normalise(point["target_roster"], lambda r: int(r["id_fencer"]), COMPARED_FIELDS),
-    )
+    after = roster_diff(target.roster(), point["target_roster"])
     if not after.equal:
         raise RefreshError(
             "after the restore the roster differs from the restore point:\n"
@@ -700,7 +715,9 @@ def main(argv: list[str] | None = None) -> int:
         description="Refresh LOCAL or CERT master data from PROD (ADR-108)."
     )
     parser.add_argument("--target", required=True, choices=TARGETS)
-    parser.add_argument("--mode", default="plan", choices=("plan", "dry-run", "apply", "restore"))
+    parser.add_argument(
+        "--mode", default="plan", choices=("plan", "dry-run", "apply", "restore", "verify")
+    )
     parser.add_argument(
         "--event", help="exact event code whose registrations are copied (apply only)"
     )
@@ -725,13 +742,22 @@ def main(argv: list[str] | None = None) -> int:
         print("SUPABASE_ACCESS_TOKEN is required to read PROD", file=sys.stderr)
         return 1
     prod = ProdReader(ManagementTransport(PROD_REF, token, read_only=True))
-    # A plan only reads, so on CERT it runs read-only as well.
+    # A plan and a verify only read, so on CERT they run read-only as well.
     transport: Transport = (
         LocalTransport()
         if args.target == "local"
-        else ManagementTransport(CERT_REF, token, read_only=args.mode == "plan")
+        else ManagementTransport(CERT_REF, token, read_only=args.mode in ("plan", "verify"))
     )
     target = TargetDb(args.target, transport)
+    if args.mode == "verify":
+        diff = run_verify(prod, target)
+        if diff.equal:
+            print(f"{args.target} roster equals PROD's, id for id")
+            return 0
+        print(f"VERIFY FAILED: the {args.target} roster differs from PROD's:", file=sys.stderr)
+        for line in diff.lines(args.target, "PROD"):
+            print(line, file=sys.stderr)
+        return 1
     drain = None
     if args.mode in ("apply", "restore"):
         try:
