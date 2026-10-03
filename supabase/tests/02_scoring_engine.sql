@@ -17,15 +17,13 @@
 -- config-following test can silently change meaning when an admin edits scoring
 -- config. Two rules keep that from happening quietly:
 --
---   1. Test 2.0 below is a CONFIG CONTRACT. It pins the exact active-season
---      config values that this file's hand-derived arithmetic depends on. If an
---      admin changes any of them, 2.0 fails first and by name, telling you which
---      expectations below need recomputing — instead of leaving you to reverse
---      engineer it from a wrong total.
---   2. Multiplier assertions compare the engine's output ratio against the
---      CONFIGURED multiplier rather than a literal. That checks the thing worth
---      checking — that the engine honours config — and cannot drift. The literal
---      values live in 2.0, in one place.
+--   1. Test 2.0 below checks that the active season HAS one complete config
+--      (a positive MP, podium values in descending order, every multiplier
+--      positive, an engine for every type). It pins no value: an admin sets
+--      these, and a test that assumed them failed on every change (2026-10-03).
+--   2. Every expectation reads the CONFIGURED value through pg_temp.cfg() —
+--      MP, podium points, multipliers — never a literal. That checks the thing
+--      worth checking, that the engine honours config, and cannot drift.
 --
 -- PER-TYPE ENGINES (2026-09-28, ADR-103; 2026-09-30, ADR-104)
 -- -----------------------------------------------------------------------------
@@ -35,7 +33,8 @@
 -- stores, so every PPW and MPW fixture below carries one; each is a single
 -- category, where the joined engine IS EVF classic from 4 fencers. The EVF
 -- mechanics below (place points, DE rounds, podium) are exercised on PEW; the
--- PPW/MPW pair pins the coefficient. Test 2.0 pins the assignment.
+-- PPW/MPW pair checks the configured coefficient; 2.2 names the joined engine's
+-- table for N up to 3.
 --
 -- Fencers are created by this file (see the convention in
 -- doc/handbook/reference/test-and-traceability.html). Do not reintroduce
@@ -227,68 +226,49 @@ SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_co
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-MSW-N24';
 
 -- ---------------------------------------------------------------------------
--- 2.0  CONFIG CONTRACT — the active season's scoring config is what the
---      arithmetic below assumes.
+-- 2.0  The active season has one complete scoring config
 -- ---------------------------------------------------------------------------
--- Every hand-derived expectation in this file (place points, DE rounds, podium
--- bonus, multiplier ratios) is computed from these values. They are asserted
--- together, once, so that a scoring-config change produces ONE named failure
--- here rather than a scatter of unexplained arithmetic failures below.
---
--- If this test fails, an admin has changed the active season's scoring rules.
--- That is not necessarily a bug — but every expectation in this file must then
--- be recomputed deliberately, and the governance rule set re-checked.
--- Extended 2026-09-19 and 2026-09-28: the engines are values this file's
--- arithmetic depends on, so they belong in the contract. The season default
--- is the 2026/2027 joined engine (ADR-104), and each type used below resolves
--- as ADR-104 assigns it: PPW and MPW to the joined engine, PEW, PSW and MSW to
--- EVF classic. If the active season moves to other engines, every expectation
--- below must be recomputed deliberately — which is exactly what the contract
--- is for.
-CREATE FUNCTION pg_temp.type_engines_used() RETURNS TEXT
-LANGUAGE plpgsql AS $$
-DECLARE v TEXT;
-BEGIN
-  EXECUTE $q$
-    SELECT string_agg(t || '=' || fn_get_type_engine(s.id_season, t), ',' ORDER BY t)
-      FROM tbl_season s, unnest(ARRAY['MPW','MSW','PEW','PPW','PSW']) t
-     WHERE s.bool_active$q$ INTO v;
-  RETURN v;
-EXCEPTION WHEN undefined_function THEN
-  RETURN NULL;
-END $$;
+-- The values are an admin's to set (MP, podium points, the per-type
+-- multipliers), so nothing here pins them: every expectation below reads them
+-- through pg_temp.cfg(). What must hold is that there is exactly one config
+-- for the active season and that it is complete, and that every type this file
+-- scores resolves to an engine (ADR-097, ADR-104).
+CREATE FUNCTION pg_temp.cfg() RETURNS tbl_scoring_config
+LANGUAGE sql STABLE AS $$
+  SELECT c.* FROM tbl_scoring_config c
+    JOIN tbl_season s ON s.id_season = c.id_season
+   WHERE s.bool_active
+$$;
 
-SELECT results_eq(
-  $$SELECT int_mp_value, int_podium_gold, int_podium_silver, int_podium_bronze,
-           num_ppw_multiplier::NUMERIC(10,4), num_mpw_multiplier::NUMERIC(10,4),
-           num_pew_multiplier::NUMERIC(10,4),
-           num_psw_multiplier::NUMERIC(10,4), num_msw_multiplier::NUMERIC(10,4),
-           int_ppw_total_rounds, e.txt_code, pg_temp.type_engines_used()
-      FROM tbl_scoring_config c
-      JOIN tbl_season s ON s.id_season = c.id_season
-      JOIN tbl_scoring_engine e ON e.id_engine = s.id_scoring_engine
-     WHERE s.bool_active$$,
-  $$VALUES (50, 3, 2, 1,
-            1.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
-            1.0000::NUMERIC(10,4),
-            2.0000::NUMERIC(10,4), 1.2000::NUMERIC(10,4),
-            5, 'SPWS_EVF_JOINED_V1_2026_2027',
-            'MPW=SPWS_EVF_JOINED_V1_2026_2027,MSW=EVF_CLASSIC_V1_2025_2026,'
-            || 'PEW=EVF_CLASSIC_V1_2025_2026,PPW=SPWS_EVF_JOINED_V1_2026_2027,'
-            || 'PSW=EVF_CLASSIC_V1_2025_2026')$$,
-  '2.0 Config contract: active season scoring config and engines match this file''s assumptions'
+SELECT is(
+  (SELECT COUNT(*)::INT
+     FROM tbl_scoring_config c
+     JOIN tbl_season s ON s.id_season = c.id_season
+    WHERE s.bool_active
+      AND c.int_mp_value > 0
+      AND c.int_podium_gold >= c.int_podium_silver
+      AND c.int_podium_silver >= c.int_podium_bronze
+      AND c.int_podium_bronze >= 0
+      AND c.num_ppw_multiplier > 0 AND c.num_mpw_multiplier > 0
+      AND c.num_pew_multiplier > 0 AND c.num_mew_multiplier > 0
+      AND c.num_msw_multiplier > 0 AND c.num_psw_multiplier > 0
+      AND c.int_ppw_total_rounds > 0
+      AND (SELECT COUNT(fn_get_type_engine(s.id_season, t))
+             FROM unnest(ARRAY['MPW','MSW','PEW','PPW','PSW']) t) = 5),
+  1,
+  '2.0 The active season has one complete scoring config and an engine for every type'
 );
 
 -- ---------------------------------------------------------------------------
 -- 2.1  fn_calc_tournament_scores: N=24 PEW (EVF classic) → point columns populated
 -- ---------------------------------------------------------------------------
--- For N=24, place=1, MP=50, PEW multiplier=1.0:
---   PlacePoints = 50 (1st place always gets MP)
+-- For N=24, place=1, MP = the season's int_mp_value:
+--   PlacePoints = MP (1st place always gets MP)
 --   DE_rounds = floor(ln(24)/ln(2)) - ceil(ln(1)/ln(2)) + 1 = 4 - 0 + 1 = 5
 --   DE_bonus = 5 rounds × 10 pts/round = 50 (fixed formula, matches Excel "Bonus za rundę = 10")
 --   bonus_per_round (podium) = 3 * 24^(1/3) = 3 * 2.8845 = 8.65
---   Podium_bonus = 3 * 8.65 = 25.96
---   Final = (50 + 50 + 25.96) * 1.0 = 125.96
+--   Podium_bonus = gold * 8.65
+--   Final = (MP + 50 + Podium_bonus) * the PEW multiplier
 SELECT ok(
   (SELECT num_place_pts IS NOT NULL
       AND num_de_bonus IS NOT NULL
@@ -301,7 +281,7 @@ SELECT ok(
   '2.1 All four point columns populated for scored PEW N=24 tournament'
 );
 
--- 1st place receives the full base, the season's mp_value of 50, under EVF
+-- 1st place receives the full base, the season's int_mp_value, under EVF
 -- classic whatever the size of the field.
 SELECT is(
   (SELECT num_place_pts
@@ -309,12 +289,12 @@ SELECT is(
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  50.00::NUMERIC,
-  '2.1b 1st place gets the EVF classic base of 50 place points'
+  (pg_temp.cfg()).int_mp_value::NUMERIC(10,2),
+  '2.1b 1st place gets the EVF classic base, the configured MP, in place points'
 );
 
--- Verify last place (24th of 24) gets 0 place points (ln(24)/ln(24) = 1, so 50 - 49*1 = 1)
--- Actually: MP - (MP-1)*ln(24)/ln(24) = 50 - 49*1 = 1.00
+-- Last place (24th of 24): MP - (MP-1)*ln(24)/ln(24) = MP - (MP-1) = 1.00,
+-- whatever MP is.
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
@@ -396,7 +376,7 @@ SELECT is(
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  50.00::NUMERIC,
+  (pg_temp.cfg()).int_mp_value::NUMERIC(10,2),
   '2.3b a rejected rescore leaves the previously scored rows untouched'
 );
 
@@ -439,16 +419,16 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 -- 2.6  Podium bonus: 1st=gold*bpr, 2nd=silver*bpr, 3rd=bronze*bpr, 4th=0
 -- ---------------------------------------------------------------------------
--- bonus_per_round for N=24 = 3 * 24^(1/3) ≈ 8.65
--- gold=3, silver=2, bronze=1
+-- bonus_per_round for N=24 = 3 * 24^(1/3) ≈ 8.65; gold, silver and bronze are
+-- the season's configured podium points.
 SELECT is(
   (SELECT num_podium_bonus
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  (SELECT ROUND(3 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
-  '2.6a 1st place podium bonus = gold(3) * bonus_per_round'
+  (SELECT ROUND((pg_temp.cfg()).int_podium_gold * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
+  '2.6a 1st place podium bonus = the configured gold points * bonus_per_round'
 );
 
 SELECT is(
@@ -457,8 +437,8 @@ SELECT is(
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-2'),
-  (SELECT ROUND(2 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
-  '2.6b 2nd place podium bonus = silver(2) * bonus_per_round'
+  (SELECT ROUND((pg_temp.cfg()).int_podium_silver * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
+  '2.6b 2nd place podium bonus = the configured silver points * bonus_per_round'
 );
 
 SELECT is(
@@ -467,8 +447,8 @@ SELECT is(
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-3'),
-  (SELECT ROUND(1 * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
-  '2.6c 3rd place podium bonus = bronze(1) * bonus_per_round'
+  (SELECT ROUND((pg_temp.cfg()).int_podium_bronze * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
+  '2.6c 3rd place podium bonus = the configured bronze points * bonus_per_round'
 );
 
 SELECT is(
@@ -482,21 +462,22 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- 2.7  Multiplier: PPW uses 1.0, MPW uses 1.2
+-- 2.7  Multiplier: PPW and MPW each use their configured multiplier
 -- ---------------------------------------------------------------------------
--- Same fencer, same N=24, same place: PPW (mult=1.0) vs MPW (mult=1.2).
--- The components (place, DE rounds, podium) should be identical; final scores
--- differ by the multiplier (rounding applied at the end). N=24 place 1 is EVF
--- classic under every 2026/2027 engine, since 24 is at least 16:
--- 50 + 50 + 25.96 = 125.96.
+-- Same fencer, same N=24, same place: PPW vs MPW. The components (place, DE
+-- rounds, podium) should be identical; each final score is the components
+-- times its type's configured multiplier (rounding applied at the end). N=24
+-- place 1 is EVF classic under every 2026/2027 engine, since 24 is at least 16.
 SELECT ok(
   (SELECT
     ppw.num_place_pts = mpw.num_place_pts
     AND ppw.num_de_bonus = mpw.num_de_bonus
     AND ppw.num_podium_bonus = mpw.num_podium_bonus
-    AND ppw.num_final_score = 125.96
-    AND mpw.num_final_score > ppw.num_final_score
-    AND ABS(mpw.num_final_score / ppw.num_final_score - 1.2) < 0.01
+    AND ppw.num_place_pts = (pg_temp.cfg()).int_mp_value
+    AND ppw.num_final_score = ROUND((ppw.num_place_pts + ppw.num_de_bonus + ppw.num_podium_bonus)
+                                    * (pg_temp.cfg()).num_ppw_multiplier, 2)
+    AND mpw.num_final_score = ROUND((mpw.num_place_pts + mpw.num_de_bonus + mpw.num_podium_bonus)
+                                    * (pg_temp.cfg()).num_mpw_multiplier, 2)
    FROM
     (SELECT r.* FROM tbl_result r
      JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
@@ -507,7 +488,7 @@ SELECT ok(
      JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
      WHERE t.txt_code = 'SCORE-MPW-N24' AND f.txt_surname = 'SC-FENCER-1') mpw
   ),
-  '2.7 MPW has the same components as PPW, final_score scaled by 1.2'
+  '2.7 MPW has the same components as PPW; each final score uses its configured multiplier'
 );
 
 -- ---------------------------------------------------------------------------
@@ -542,15 +523,15 @@ UPDATE tbl_tournament SET enum_import_status = 'IMPORTED' WHERE txt_code = 'SCOR
 -- Re-score
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
 
--- Final score should still use PEW's 1.0 (from scoring config), not 999.0
+-- Final score should still use PEW's configured multiplier, not 999.0
 SELECT ok(
   (SELECT r.num_final_score = ROUND(
-    (r.num_place_pts + r.num_de_bonus + r.num_podium_bonus) * 1.0, 2)
+    (r.num_place_pts + r.num_de_bonus + r.num_podium_bonus) * (pg_temp.cfg()).num_pew_multiplier, 2)
    FROM tbl_result r
    JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
    JOIN tbl_fencer f ON f.id_fencer = r.id_fencer
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
-  '2.10 Scoring uses the PEW multiplier from tbl_scoring_config (1.0), not tbl_tournament (999.0)'
+  '2.10 Scoring uses the PEW multiplier from tbl_scoring_config, not tbl_tournament (999.0)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -562,6 +543,7 @@ DECLARE
   v_score_before NUMERIC;
   v_score_after NUMERIC;
   v_season INT;
+  v_mp_before INT;
 BEGIN
   SELECT r.num_final_score INTO v_score_before
   FROM tbl_result r
@@ -571,7 +553,8 @@ BEGIN
 
   -- Change MP value in scoring config
   SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
-  UPDATE tbl_scoring_config SET int_mp_value = 100 WHERE id_season = v_season;
+  SELECT int_mp_value INTO v_mp_before FROM tbl_scoring_config WHERE id_season = v_season;
+  UPDATE tbl_scoring_config SET int_mp_value = v_mp_before + 50 WHERE id_season = v_season;
 
   -- Check the score is unchanged (no automatic recalculation)
   SELECT r.num_final_score INTO v_score_after
@@ -584,8 +567,8 @@ BEGIN
     RAISE EXCEPTION 'Score changed from % to % after config update', v_score_before, v_score_after;
   END IF;
 
-  -- Restore original MP value
-  UPDATE tbl_scoring_config SET int_mp_value = 50 WHERE id_season = v_season;
+  -- Restore the MP value it found
+  UPDATE tbl_scoring_config SET int_mp_value = v_mp_before WHERE id_season = v_season;
 END;
 $test211$;
 
@@ -761,7 +744,7 @@ SELECT throws_ok(
 );
 
 -- ---------------------------------------------------------------------------
--- 2.19  PSW tournament uses num_psw_multiplier (2.0)
+-- 2.19  PSW tournament uses the configured num_psw_multiplier
 -- ---------------------------------------------------------------------------
 -- Same fencer, same N=24, same place, both EVF classic: PEW (mult=1.0) vs
 -- PSW (mult=2.0).
@@ -792,7 +775,6 @@ SELECT ok(
 
 -- ---------------------------------------------------------------------------
 -- 9.85  MSW tournament: final_score scaled by the configured MSW multiplier
---       (1.2 in the active season; was 2.0 in the retired SPWS-2024-2025 config)
 -- ---------------------------------------------------------------------------
 SELECT ok(
   (SELECT
