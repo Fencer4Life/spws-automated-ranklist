@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="036-prod-export-local-mirror.md">
-<meta name="adr-source-sha256" content="9a54b801f5e4498c24d7d0d930de36a9c088cab080304e9928245e684b403258">
+<meta name="adr-source-sha256" content="bbc45faed0ec0476f6f751fd923cebbe44b9451177c52311ce6513832fdd9e6e">
 <title>ADR-036 · PROD Export &amp; Local Mirror (Single Monolithic Dump)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 036</p><h1>PROD Export &amp; Local Mirror (Single Monolithic Dump)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">272 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)</dd></div><div><dt>Date</dt><dd class="">2026-04-12</dd></div><div><dt>Source</dt><dd class=""><code>036-prod-export-local-mirror.md</code></dd></div><div><dt>Length</dt><dd class="">282 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)
 <strong>Date:</strong> 2026-04-12<br />
 <strong>Source:</strong> ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)</p>
@@ -321,6 +321,19 @@ local experiment cannot silently become a CI change.</p>
 <li><strong>Check.</strong> <code>scripts/mirror-prod-local.sh</code> and the CI bootstrap compare LOCAL's roster with PROD's, id for id (names, birth year, confirmed flag, gender), and fail on any difference.</li>
 </ul>
 <p>The 2026-09-12 rule applies to the first id-keeping seed: the full suite passes on it before the <code>seed_prod_latest.sql</code> pointer moves.</p>
+<p><strong>Implemented 2026-10-03.</strong></p>
+<ul>
+<li><strong>The load.</strong> The seed's fencer section is one call, <code>SELECT fn_seed_load_fencers(&lt;PROD's roster&gt;::jsonb, &lt;PROD's id sequence&gt;)</code> (migration <code>20261003000013</code>).
+<ul>
+<li>It pairs every fencer already present with exactly one roster row, by name and birth year, and refuses by name a fencer the roster lacks (<code>SEED_FENCER_NOT_IN_ROSTER</code>) or one that two rows describe (<code>SEED_FENCER_AMBIGUOUS</code>).</li>
+<li>It then calls <code>fn_align_fencers_to</code>. Its post-check that the roster equals the one given is the bootstrap's check against PROD.</li>
+</ul>
+</li>
+<li><strong>Results.</strong> Every result carries PROD's <code>id_fencer</code>. <code>fencer_lookup</code> and its tests are removed.</li>
+<li><strong>The mirror check.</strong> <code>python -m python.pipeline.promotion.refresh --target local --mode verify</code> compares LOCAL with live PROD, id for id, and <code>scripts/mirror-prod-local.sh</code> stops on any difference. Its registrations now carry PROD's ids.</li>
+<li><strong>First id-keeping seed.</strong> <code>seed_prod_2026-10-03.sql</code>, re-exported the same day. LOCAL rebuilt from it equals PROD id for id, roster and all 2,878 finished-season results, with no refresh.</li>
+<li><strong>Tests.</strong> pgTAP SEED.01–08; pytest PROMO.SEED.01–05.</li>
+</ul>
 <h3 id="2-cert-is-refreshed-from-prod-before-every-cert-ingestion">2. CERT is refreshed from PROD before every CERT ingestion</h3>
 <p>ADR-108 §2 adds a sanctioned PROD → CERT flow for <strong>master data only</strong>. It covers:</p>
 <ul>
@@ -342,5 +355,5 @@ skip-true-no-ops precedent to fresh-bootstrap absence</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="035-fencers-view-tabs.html">← ADR-035: Fencers View with Tabs</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="037-derived-display-status-awaiting-results.html">→ ADR-037: Derived Display Status — &quot;Awaiting Results&quot;</a></nav>
-<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>9a54b801f5e4498c24d7d0d930de36a9c088cab080304e9928245e684b403258</code></footer>
+<footer class="foot">Generated from <code>036-prod-export-local-mirror.md</code> · source SHA-256 <code>bbc45faed0ec0476f6f751fd923cebbe44b9451177c52311ce6513832fdd9e6e</code></footer>
 </div></body></html>
