@@ -1,10 +1,28 @@
 # ADR-079: Event Self-Registration & Identity Resolution
 
-**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d). **Amended 2026-09-13:** open item 2 (club) resolved by migration `20260913000001` — `tbl_registration.txt_club` now round-trips through both write RPCs and the token-gated FTL export; `CONSENT_VERSION` bumped to `v1.1`.
+**Status:** Proposed (Phase 1 DB schema + Phase 2 public registration UI **implemented** 2026-07-05 — spec §5.2, RTM FR-120–FR-130; Phases 4/5 (magic-link email) still not started, blocked on Resend/eu.org, but **no longer blocking registration** — see the 2026-08-17 amendment). **Amended 2026-07-05 (§7):** registration URL auto-fill + in-app modal presentation. **Amended 2026-08-17:** unmatched fencers register with `id_fencer` NULL; `register.html` is PROD-only; open item 1 (unmatched dedupe) resolved same day by migration `20260817000001`. **Amended 2026-09-02:** the payment account moves out of the frontend bundle into the database — an organizer default overridable per event, a vetted IBAN, and a registration toggle that is refused without an account. Open item 7 records the deferred half: no admin screen sets an organizer's default, so only SPWS has one. **Amended 2026-08-28:** declared names are stored whitespace-normalised; the matched and unmatched branches absorb each other's twin; and a fencer may correct a submitted declaration through a new public edit path, `fn_update_registration`, authorised by a short-lived handle. Open items 2 (club) and 3 (post-deadline) remain open, joined by a rate limit for §4 defence (d). **Amended 2026-09-13:** open item 2 (club) resolved by migration `20260913000001` — `tbl_registration.txt_club` now round-trips through both write RPCs and the token-gated FTL export; `CONSENT_VERSION` bumped to `v1.1`. **Amended 2026-10-03:** a linked registration carries its fencer's roster name.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-078, ADR-080
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §7 (decouples the entry-list gate from the registration cutoff).
 **Current behavior:** [Registration lifecycle](../handbook/reference/registration-lifecycle.html) — the handbook walkthrough of this decision as built, following one registration from the administrator enabling it to the row being purged after ingestion, with the failure at each stage and the screens as they appear. Read that for *what the system does*; read this ADR for *why it does it*.
+
+## Amendment (2026-10-03 — a linked registration carries its fencer's roster name)
+
+**Context.** "STANISLAWSKI ALBERT" registered for PPW1-2026-2027 on 20 Sep 2026. He is #282 STANISŁAWSKI Albert. The public entry list (`vw_registration_entry_list`) and the FTL export read the registration's own name. So linked entrants appeared without their Polish letters, in the case they typed, or with the name fields swapped ("MACIEJ SPLAWA - NEYMAN"). Ten linked PPW1 registrations differed from the roster that day.
+
+Registrations made before the lookup started folding names (migration `20260925000001`, `fn_fold_name`) were never looked up again. Seven of them stayed unlinked although a folded name reaches their fencer. Among them were BUJKO Paulina and STANISŁAWSKI Albert, whose declared years therefore never reached the Birth-year review. They were linked on PROD on 3 Oct, one guarded statement, with the form's rule: MADDEN Gerard's declaration against a confirmed year became a PENDING proposal. KIEROŃSKI Tomasz got no proposal, by decision P7.
+
+**Decision.** Once `id_fencer` is set, the registration's surname and first name are the fencer's roster name, whatever path links or edits it:
+
+- `fn_create_registration` with a fencer;
+- `fn_confirm_registration_identity`;
+- `fn_update_registration`, which still changes everything else;
+- an admin write;
+- `fn_replace_event_registrations` on the CERT refresh.
+
+A fencer renamed on the roster renames his linked registrations. An unlinked registration keeps the name as typed, and unlinking keeps the last name. Two `SECURITY DEFINER` triggers enforce it: `trg_registration_roster_name` on `tbl_registration` and `trg_fencer_name_to_registrations` on `tbl_fencer`. Migration `20261003000015` adds them and aligns the registrations already linked.
+
+**Consequences.** The entry list and the export show the roster's spelling, diacritics included. The roster stays the authority on a name: a wrong roster name is corrected on the fencer, and it reaches every linked registration. pgTAP `101_registration_roster_name.sql` (REGNAME.01–09).
 
 ## Amendment (2026-09-02 — whose account the fencer pays into)
 
