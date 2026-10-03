@@ -537,6 +537,44 @@ class TestTeamBracketsAndDuplicateCodes:
         assert [e["uuid"] for e in kept] == ["C69C", "D3C6"]
         assert skipped == []
 
+    @pytest.mark.parametrize(
+        ("name", "categories"),
+        [
+            ("Women's Foil Cat 3 and 4", ["V3", "V4"]),
+            ("Men's Foil Cat 3 and 4", ["V3", "V4"]),
+            ("Men's Epee Cat 3/4", ["V3", "V4"]),
+            ("Men's Sabre Category 3 & 4", ["V3", "V4"]),
+            ("Women's Foil Category 1 and 2 Combined", ["V1", "V2"]),
+            ("Women's Foil Cat 1-3", ["V1", "V2", "V3"]),
+            ("Floret Kobiet kat. 3-4", ["V3", "V4"]),
+        ],
+    )
+    def test_a_combined_bracket_is_never_read_as_one_category(self, name, categories):
+        """INTL.SCHED.05 the BVF 6 Weapon International 2025 (EVF Circuit
+        Guildford) names combined pools "Women's Foil Cat 3 and 4"; read as V3
+        it took the code of "Women's Foil Cat 3" and staging stopped on two
+        brackets for one code. "Cat", "&" and "/" read like "Category" and
+        "and": the bracket has no single category (ADR-105)."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        parsed = parse_tournament_name(name)
+        assert isinstance(parsed, list), parsed
+        assert [c for _w, _g, c in parsed] == categories
+
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            ("Women's Foil Cat 3", ("FOIL", "F", "V3")),
+            ("Men's Foil Category 2", ("FOIL", "M", "V2")),
+            ("Szpada mężczyzn kat. 2", ("EPEE", "M", "V2")),
+        ],
+    )
+    def test_a_single_category_bracket_is_unchanged(self, name, expected):
+        """INTL.SCHED.05 one category still reads as one category."""
+        from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+        assert parse_tournament_name(name) == expected
+
     def _sb(self, drafts, results_per_draft):
         """A Supabase client mock whose table mocks are cached per name, so a
         test can assert what was (not) updated or deleted."""
