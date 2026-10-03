@@ -8,8 +8,8 @@
 <meta name="doc-type" content="reference">
 <meta name="doc-owner" content="Events and registration">
 <meta name="last-verified" content="2026-08-28">
-<meta name="source-globs" content="supabase/migrations/**event_status*; supabase/migrations/**prod_mirror*; supabase/migrations/**first_published*; python/pipeline/promote.py; frontend/src/lib/calendarMonths.ts; frontend/src/lib/eventStatus.ts; frontend/src/components/EventCard.svelte">
-<meta name="review-triggers" content="The event status enum, fn_validate_event_transition, the CERT→PROD mirror's status handling, promote_event's status advance, the calendar's visibility filter, or the moved-date pill">
+<meta name="source-globs" content="supabase/migrations/**event_status*; supabase/migrations/**prod_mirror*; supabase/migrations/**first_published*; python/pipeline/promote.py; python/pipeline/promotion/replay.py; python/pipeline/promotion/lifecycle.py; frontend/src/lib/calendarMonths.ts; frontend/src/lib/eventStatus.ts; frontend/src/components/EventCard.svelte">
+<meta name="review-triggers" content="The event status enum, fn_validate_event_transition, the CERT→PROD mirror's status handling, promote's status in fn_promote_event_apply, the calendar's visibility filter, or the moved-date pill">
 <title>Event status lifecycle · SPWS Handbook</title>
 <link rel="stylesheet" href="../assets/handbook.css">
 </head>
@@ -39,9 +39,9 @@
 <tbody>
 <tr><td><code>CREATED</code></td><td>A childless, usually date-less skeleton created when a season is provisioned. Only for events nobody discovers for us — PPW and MPW (SPWS) and MSW (FIE, but unscraped). There is deliberately <b>no</b> skeleton for the EVF circuit: PEW, IMEW and DMEW arrive from the calendar scrape, and a skeleton for them duplicated instead of matching (ADR-091).</td><td><code>fn_init_season</code>; the CERT→PROD mirror on first promotion</td><td><b>Hidden</b></td></tr>
 <tr><td><code>PLANNED</code></td><td>A dated event with no results yet. The default working state.</td><td>admin; the calendar scrape; CERT→PROD automation</td><td>Shown — <em>Awaiting results</em> once its end date passes</td></tr>
-<tr><td><code>IN_PROGRESS</code></td><td>At least one tournament ingested.</td><td>results ingestion; <code>promote_event</code> on PROD</td><td>Shown</td></tr>
-<tr><td><code>SCORED</code></td><td>Results ingested and engine-scored, before sign-off.</td><td>the scoring pipeline</td><td>Shown</td></tr>
-<tr><td><code>COMPLETED</code></td><td>Admin-confirmed final, and promotable.</td><td>admin <code>complete</code>; <code>promote_event</code> on PROD</td><td>Shown</td></tr>
+<tr><td><code>IN_PROGRESS</code></td><td>At least one tournament ingested, and the event not yet complete: a listing is not final (its schedule row does not say Finished), or the end date has not passed.</td><td>results ingestion; the lifecycle rule (<code>promotion/lifecycle.py</code>) at the end of every domestic ingestion; promote&rsquo;s apply on PROD</td><td>Shown, with its results links</td></tr>
+<tr><td><code>SCORED</code></td><td>Reserved. The transition validator admits it (IN_PROGRESS → SCORED → COMPLETED) and <code>vw_eligible_event</code> treats it like COMPLETED, but no code sets an event to SCORED; only a tournament&rsquo;s import status becomes SCORED.</td><td>nothing today</td><td>Shown</td></tr>
+<tr><td><code>COMPLETED</code></td><td>Every listing final and read, none dated after the end date, and today in Warsaw later than the end date (<a href="../../adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7).</td><td>the lifecycle rule (ingestion, promote&rsquo;s apply); the daily close (<code>event-close.yml</code>, CERT then PROD); admin <code>complete &lt;exact code&gt;</code>, which does not check the end date</td><td>Shown</td></tr>
 <tr><td><code>CANCELLED</code></td><td>The event will not take place.</td><td>admin; the calendar scrape; CERT→PROD automation</td><td>Shown for seven days after its original end date, then dropped</td></tr>
 <tr><td><code>SCHEDULED</code></td><td><b>Retired.</b> Intended to mean “EVF-confirmed, firmer than PLANNED”.</td><td>nothing — never implemented</td><td>unreachable</td></tr>
 <tr><td><code>CHANGED</code></td><td><b>Retired.</b> Intended to flag a re-scraped date or venue change.</td><td>nothing — never implemented</td><td>unreachable</td></tr>
@@ -87,7 +87,7 @@
 <tr><td><code>CANCELLED</code></td><td><code>CREATED</code></td></tr>
 </tbody>
 </table></div>
-<p>Note that <code>PLANNED → COMPLETED</code> is <b>not</b> permitted directly. That is why <code>promote_event</code> steps an event through <code>IN_PROGRESS</code>, and why any automation that sets status must only attempt pairs from this table.</p>
+<p>Note that <code>PLANNED → COMPLETED</code> is <b>not</b> permitted directly. That is why promote&rsquo;s apply steps an event through <code>IN_PROGRESS</code>, and why any automation that sets status must only attempt pairs from this table.</p>
 <p>A second guard applies to EVF events specifically: <code>fn_guard_evf_event_weapons_known</code> refuses to advance an event whose code carries no weapon letters out of <code>PLANNED</code>, because tournaments and results must not attach to an event whose weapons were never established. Cancellation is exempt — cancelling an unannounced event is legitimate.</p>
 </section>
 
@@ -102,7 +102,7 @@
 <tr><td><code>CREATED</code></td><td><code>CANCELLED</code></td><td>yes</td><td>cancelled before it was ever dated</td></tr>
 <tr><td><code>PLANNED</code></td><td><code>CANCELLED</code></td><td>yes</td><td>the only automated change once <code>PLANNED</code></td></tr>
 <tr><td><code>PLANNED</code></td><td><code>CREATED</code></td><td><b>no</b></td><td>backwards — automation must never hide a live event</td></tr>
-<tr><td colspan="2">anything into <code>IN_PROGRESS</code> / <code>SCORED</code> / <code>COMPLETED</code></td><td><b>no</b></td><td>the results axis belongs to <code>promote_event</code></td></tr>
+<tr><td colspan="2">anything into <code>IN_PROGRESS</code> / <code>SCORED</code> / <code>COMPLETED</code></td><td><b>no</b></td><td>the results axis belongs to the ingestion and promote&rsquo;s apply</td></tr>
 </tbody>
 </table></div>
 <p>Implemented in <code>fn_mirror_events_to_prod</code>'s UPDATE branch. Every permitted source is a planning state, so a row that has reached <code>IN_PROGRESS</code> or beyond is never touched and cannot be regressed by CERT. All three pairs are drawn from the validator's own table, so a status can never abort a promote.</p>
@@ -127,16 +127,16 @@
 
 <section id="results-automation">
 <p class="kicker">Automation · results</p>
-<h2>What <code>promote_event</code> changes</h2>
-<p>When an approved event's results are promoted, <code>promote_event</code> advances the PROD row <code>PLANNED → IN_PROGRESS → COMPLETED</code>, stepping through the intermediate state because the validator refuses the direct jump.</p>
-<p>It owns that axis precisely because it is the thing moving the results. Status and data arrive together, so PROD never claims an event is finished while holding none of it. The calendar promotion deliberately does not touch these states.</p>
+<h2>What promote changes</h2>
+<p>Promote replays the verified CERT run on PROD (<a href="../../adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §6). Inside the same transaction as the results, <code>fn_promote_event_apply</code> sets the status the lifecycle rule gives: <code>IN_PROGRESS</code> while a listing is not final or the end date has not passed, <code>COMPLETED</code> once everything is final and read and the end date has passed. A <code>PLANNED</code> row steps through <code>IN_PROGRESS</code>, because the validator refuses the direct jump; a <code>COMPLETED</code> row corrected by a newer CERT run steps back to <code>IN_PROGRESS</code> for the writes. An unchanged status is not written.</p>
+<p>Promote owns that axis because it is the thing moving the results. Status and data arrive together, so PROD never claims an event is finished while holding none of it. The calendar promotion deliberately does not touch these states. The daily close (<code>event-close.yml</code>) completes an event whose last promote ran before its end date had passed.</p>
 </section>
 
 <section id="manual">
 <p class="kicker">Everything else</p>
 <h2>Manual changes</h2>
 <p>Any transition not listed as automated above is made by an administrator, through the event editor in the admin UI. The dropdown offers only destinations the validator accepts from the event's current status, so an offered option always saves.</p>
-<p><code>COMPLETED</code> in particular is an <b>admin decision</b>, not an automatic consequence of holding results. Nothing currently detects an event that has ended, holds results and was never finalised — as of 28 August 2026 two such events had been sitting at <code>IN_PROGRESS</code> for nine and three months.</p>
+<p>For a domestic event <code>COMPLETED</code> follows the lifecycle rule (<a href="../../adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7): the ingestion, promote and the daily close set it once every listing is final and read and the end date has passed. The Telegram <code>complete &lt;exact code&gt;</code> command remains a manual close, which does not check the end date.</p>
 </section>
 
 <section id="moved-pill">

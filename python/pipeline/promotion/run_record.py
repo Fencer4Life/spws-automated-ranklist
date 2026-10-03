@@ -131,10 +131,14 @@ class ListingLog:
         self.refusal: dict | None = None
 
     def add_schedule(self, kept: Sequence[Mapping], skipped: Sequence[Mapping]) -> None:
+        from python.pipeline.promotion.lifecycle import NOT_FINAL, last_day
+
         self.schedule = {
             "sha256": schedule_sha256(kept, skipped),
             "kept": len(kept),
             "skipped": [{"name": s.get("name"), "reason": s.get("reason")} for s in skipped],
+            # ADR-108 §7: the latest day an individual listing is scheduled on.
+            "last_day": last_day([*kept, *(s for s in skipped if s.get("reason") == NOT_FINAL)]),
         }
 
     def add_unparseable(self, name: str, uuid: str) -> None:

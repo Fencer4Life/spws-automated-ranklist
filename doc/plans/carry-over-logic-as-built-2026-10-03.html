@@ -1,0 +1,392 @@
+<meta charset="utf-8">
+<meta name="keywords" content="ROLLING SCORING, rolling score, carry-over, ranking kroczący, przenoszenie wyników, id_prior_event, vw_eligible_event">
+<title>ROLLING SCORING — przenoszenie wyników</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">ROLLING SCORING · ranking kroczący · przenoszenie wyników · stan obecny · 3 października 2026</p>
+  <h1>Przenoszenie wyników — stan obecny</h1>
+  <p class="dek">Opis z indeksu dokumentacji, grafu kodu i źródeł. <b>O tym, czy nowa edycja zastępuje starą, decyduje powiązanie z poprzednikiem, nie rodzaj zawodów.</b> Wynik powiązany znika z rankingu, gdy tylko wyniki nowej edycji trafią na PROD. Wynik bez powiązania liczy się przez 366 dni.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Tag: ROLLING SCORING · rolling score · carry-over · ranking kroczący</span>
+    <span class="pill"><span class="dot"></span>Tylko analiza, nic nie zmieniono</span>
+    <span class="pill">LOCAL odczytany 3.10 (seed = PROD z 3.10)</span>
+    <span class="pill warn"><span class="dot"></span>Krok 10: zakres A zdecydowany · ADR-018 przepisany</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · W skrócie</p>
+    <h2>Co przechodzi z poprzedniego sezonu i do kiedy</h2>
+    <div class="note accent">
+      <p class="lede">Sezon 2026/2027 (jedyny dziś sezon z rankingiem kroczącym)</p>
+      <ul>
+        <li>Wynik z zawodów sezonu 2025/26, które się odbyły, przechodzi do rankingu 2026/27.</li>
+        <li><strong>Powiązany wynik jest zastępowany od razu.</strong> Gdy zawody 2026/27 są powiązane z nim jako następna edycja (pole „Poprzednik (carry-over)”), stary wynik znika, gdy tylko wyniki nowej edycji trafią na PROD. Promote zapisuje wyniki i w tym samym przebiegu ustawia status COMPLETED (<code>python/pipeline/promote.py:290-298</code>). Tak to zaprojektowano: ADR-037 ujmuje to tak, że nowe zawody zastępują przeniesiony wynik dopiero wtedy, gdy mają rzeczywiste wyniki.</li>
+        <li><strong>Wynik bez powiązania liczy się 366 dni</strong> od ostatniego dnia zawodów (<code>int_carryover_days</code>; gałąź 3, od 2 października).</li>
+        <li><strong>Limit 366 dni dotyczy też wyników powiązanych.</strong> Jeśli nowa edycja nie ma jeszcze wyników na PROD, stary wynik i tak wygasa po 366 dniach. Tak jest dziś z PPW1 (§08).</li>
+        <li>Zasada jest jedna dla każdego rodzaju zawodów: PPW, MPW, PEW, MEW, MSW, PSW. PPS i MPS nie są przenoszone w trybie Ranking.</li>
+        <li>Na CERT i LOCAL ingestion zostawia zawody w statusie IN_PROGRESS, więc tam obie edycje liczą się do czasu zamknięcia zawodów.</li>
+      </ul>
+    </div>
+    <p>Starszy silnik (sezony 2023/24–2025/26) nie ma limitu czasu. Wynik przechodzi tam do chwili, gdy bieżący sezon ma wynik na tej samej pozycji kodu, w tej samej broni i płci. Żaden zakończony sezon nie jest pokazywany jako kroczący, więc ten silnik nie wpływa dziś na żaden ranking na ekranie (§09).</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Źródła</p>
+    <h2>Skąd to wiadomo</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Rodzaj</th><th>Co</th></tr></thead>
+      <tbody>
+        <tr><td>Indeks dokumentacji</td><td>ADR-018 (ranking kroczący, poprawki z 26.06 i 3.10), ADR-021 (rodzaje z zasad sezonu), ADR-037 (zastąpienie dopiero po wynikach), ADR-042 (silnik FK, poprawki z 7.08, 2.10, 3.10), ADR-044 (domyślnie 366 dni), ADR-045 i ADR-077 §3 (szkielety sezonu powiązane z poprzednikami), ADR-098 (bez przenoszenia PPS/MPS), ADR-103 §6 (wejście do rankingu), ADR-108; plan <code>promote-verified-replay</code> („It always sets COMPLETED”); podręcznik: <code>competition-and-ranking</code>, <code>scoring-and-ranking</code>, <code>event-status-lifecycle</code>, <code>operator-runbooks</code></td></tr>
+        <tr><td>Graf kodu</td><td><code>vw_eligible_event</code> (migracje 20260425000007 i 20261002000007 L26), cztery funkcje <code>*_event_fk_matching</code>, <code>fn_fencer_scores_rolling_event_code_matching</code>, <code>fn_init_season</code>, <code>fn_age_category</code></td></tr>
+        <tr><td>Źródła</td><td>Numery wierszy w każdej sekcji</td></tr>
+        <tr><td>Dane</td><td>LOCAL, 3 października 2026; jego seed odświeżono tego dnia z PROD. Bezpośredni odczyt PROD odmówiono w tej sesji. Wartości PROD dla 2026/27 (EVENT_FK_MATCHING, 366 dni) odczytano wcześniej tego dnia.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Silnik w każdym sezonie</p>
+    <h2>Każdy sezon ma swój silnik przenoszenia</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Sezon</th><th>Daty</th><th>Silnik</th><th>Okno</th><th>Kroczący na ekranie?</th></tr></thead>
+      <tbody>
+        <tr><td>2023/24</td><td>1.01.2023 – 15.07.2024</td><td><code>EVENT_CODE_MATCHING</code></td><td>366 (silnik go nie czyta)</td><td>nie, zakończony</td></tr>
+        <tr><td>2024/25</td><td>15.08.2024 – 15.07.2025</td><td><code>EVENT_CODE_MATCHING</code></td><td>366 (nie czyta)</td><td>nie, zakończony</td></tr>
+        <tr><td>2025/26</td><td>1.08.2025 – 11.07.2026</td><td><code>EVENT_CODE_MATCHING</code></td><td>366 (nie czyta)</td><td>nie, zakończony</td></tr>
+        <tr><td><strong>2026/27</strong></td><td>13.07.2026 – 15.07.2027</td><td><code>EVENT_FK_MATCHING</code></td><td><strong>366 dni</strong></td><td><strong>tak, aktywny</strong></td></tr>
+      </tbody>
+    </table></div>
+    <p>Interfejs prosi o ranking kroczący, gdy sezon jest aktywny albo jego data końca jest dziś lub później (<code>frontend/src/lib/rolling.ts:16-24</code>, użyte w <code>App.svelte:538</code>). ADR-044 ustala 366 jako wartość domyślną kreatora sezonu („~1 rok”). To ustawienie sezonu, nie kod.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Reguła 2026/27</p>
+    <h2><code>vw_eligible_event</code>: trzy gałęzie</h2>
+    <p>Źródło: <code>supabase/migrations/20261002000007_carryover_without_successor.sql:26-69</code>. Widok działa na zawodach, nie na turniejach, więc nie odróżnia PPW od PEW.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Gałąź</th><th>Co liczy</th><th>Kiedy przestaje</th><th>Wiersze</th></tr></thead>
+      <tbody>
+        <tr><td>1 · bieżący sezon</td><td>Zawody 2026/27 w każdym statusie poza CREATED, PLANNED, SCHEDULED, CHANGED i CANCELLED. IN_PROGRESS ustawia się przy zapisie pierwszego wyniku.</td><td>nigdy (to bieżący sezon)</td><td><code>27-34</code></td></tr>
+        <tr><td>2 · z powiązaniem</td><td>Zawody 2025/26, które się odbyły, wskazane przez zawody 2026/27 jako poprzednik (<code>id_prior_event</code>)</td><td>nowa edycja ma status <strong>SCORED lub COMPLETED</strong> (na PROD: w chwili promote), <em>albo</em> mija <strong>data końca + 366 dni</strong>. Odwołana nowa edycja (CANCELLED) nie przerywa przeniesienia.</td><td><code>36-48</code></td></tr>
+        <tr><td>3 · bez powiązania</td><td>Zawody sezonu poprzedniego, które się odbyły, bez powiązanych zawodów w 2026/27 (ADR-042, 2.10)</td><td>data końca + 366 dni albo pojawienie się powiązanych zawodów (wtedy przejmuje gałąź 2)</td><td><code>50-69</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>Tylko jeden sezon wstecz: gałąź 2 wymaga powiązania z bieżącego sezonu, gałąź 3 czyta tylko sezon bezpośrednio poprzedni. Okno obejmuje ostatni dzień: wynik liczy się jeszcze w dniu „data końca + 366 dni”.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Powiązanie z poprzednikiem</p>
+    <h2>Co robi powiązanie ustawione w panelu administratora</h2>
+    <p>Formularz zawodów w panelu ma pole „Poprzednik (carry-over)” (<code>frontend/src/components/EventManager.svelte:177-193</code>). Lista pokazuje tylko zawody sezonu bezpośrednio poprzedniego (<code>:884-896</code>). Zapis wywołuje <code>fn_update_event</code>. „— (brak)” wysyła <code>-1</code> i usuwa powiązanie (<code>EventManager.svelte:1047</code>, <code>20260913000002_no_bracket_stubs.sql:211-213</code>, poprawka ADR-044 z 27.06). W jednym sezonie tylko jedne zawody mogą wskazać danego poprzednika (<code>idx_event_prior_unique</code>, <code>20260425000005_fk_carryover_schema.sql:26</code>).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>2026/27, silnik FK</th><th>Z powiązaniem (gałąź 2)</th><th>Bez powiązania (gałąź 3, od 2.10)</th></tr></thead>
+      <tbody>
+        <tr><td>Wyniki nowej edycji trafiają na PROD</td><td><strong>stary wynik znika od razu</strong>, we wszystkich broniach (promote ustawia COMPLETED)</td><td>stary wynik liczy się dalej, obok nowego, do końca okna</td></tr>
+        <tr><td>Nowa edycja nie ma jeszcze wyników</td><td>liczy się do końca okna 366 dni</td><td>liczy się do końca okna 366 dni</td></tr>
+        <tr><td>Nowa edycja odwołana (CANCELLED)</td><td>liczy się do końca okna</td><td>nie dotyczy</td></tr>
+        <tr><td>Przed 2 października 2026</td><td>jak dziś</td><td>nie był przenoszony wcale</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">Powiązanie znaczy „nowa edycja zastępuje tę”</p>
+      <p>W obecnym kodzie powiązanie jest jedynym sposobem, żeby nowa edycja zastąpiła stary wynik przed upływem 366 dni. Bez powiązania stary wynik jest ograniczony tylko czasem. Powiązanie nie wydłuża limitu 366 dni.</p>
+    </div>
+    <h3>Czego jeszcze dotyka powiązanie</h3>
+    <ul>
+      <li>Żadna strona publiczna go nie pokazuje. <code>vw_calendar</code> udostępnia je tylko po to, żeby formularz panelu znów pokazał zapisaną wartość (<code>20260627000001_vw_calendar_prior_event.sql</code>).</li>
+      <li>Starszy silnik <code>EVENT_CODE_MATCHING</code> go nie czyta.</li>
+      <li>Na PROD trafia przez lustro zawodów CERT→PROD, dopasowane po kodzie zawodów (<code>20260828000009</code>, poprawka ADR-081 z 29.08).</li>
+      <li>Kontrola wejścia w nowym promote obejmuje kod poprzednika (<code>20261003000014_ingest_run.sql:143</code>), więc CERT i PROD muszą mieć to samo powiązanie, zanim promote ruszy.</li>
+    </ul>
+    <h3>Dlaczego PPW1 2025/26 jest powiązane z PPW1 2026/27</h3>
+    <ul>
+      <li><strong>Nikt nie powiązał go ręcznie.</strong> Kreator sezonu (<code>fn_init_season</code>) utworzył PPW1-2026-2027 jako pusty szkielet (CREATED) na podstawie PPW1-2025-2026 i ustawił powiązanie w tym samym INSERT. Tak samo robi z każdym PPWn, z MPW i z MSW (<code>20260906000001_no_evf_season_skeletons.sql:114-125, 136-146, 152-162</code>). Sezon 2026/27 założono 28 czerwca 2026 (nagłówek tej migracji).</li>
+      <li><strong>Tak to zaprojektowano.</strong> ADR-077 §3: każdy szkielet jest powiązany ze swoim odpowiednikiem z poprzedniego sezonu. ADR-045: pełny łańcuch powiązań powstaje z założenia. To odpowiednik reguły ADR-018 „PP1 bieżące zastępuje PP1 poprzednie”.</li>
+      <li><strong>Zawody EVF wiąże synchronizacja kalendarza</strong> po mieście z poprzedniego sezonu (ADR-043, ADR-028 rev 6, runbook operatora) albo administrator, gdy cykl zmienia miejsce. Monachium 2025 → Monachium 2026 dopasowano po mieście. PEW6efs-2025-2026 (Jabłonna, 28.03.2026) → PEW5efs-2026-2027 (Łomianki, 12.12.2026) to ten sam cykl w nowym miejscu i terminie. IMSW-2025-2026 (Manama) → MSW-2026-2027 (Tbilisi) to szkielet MSW z kreatora.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Funkcje, które czyta interfejs</p>
+    <h2>Cztery funkcje czytają widok razem</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Funkcja</th><th>Interfejs</th><th>Wynik przeniesiony liczy się, gdy</th><th>Źródło</th></tr></thead>
+      <tbody>
+        <tr><td><code>fn_ranking_full_event_fk_matching</code></td><td>tryb Ranking (<code>App.svelte:763</code>)</td><td><code>p_rolling</code>; rodzaj w koszyku; <strong>PPS i MPS nigdy</strong> (SS26.RANK.12)</td><td><code>20260928000001_spws_place_medal_engine.sql:1290, 1296, 1306</code></td></tr>
+        <tr><td><code>fn_ranking_ppw_event_fk_matching</code></td><td>tryb PPW (<code>App.svelte:746</code>)</td><td><code>p_rolling</code>; rodzaj w zasadach krajowych</td><td><code>20260425000008_fn_event_fk_matching_engines.sql:160, 166</code></td></tr>
+        <tr><td><code>fn_fencer_scores_rolling_event_fk_matching</code></td><td>karta zawodnika (<code>App.svelte:818</code>)</td><td>zawsze pokazany jako przeniesiony; rodzaj w dowolnej części zasad</td><td><code>20260930000001_remove_place_medal_engine.sql:599-611</code></td></tr>
+        <tr><td><code>fn_ranking_kadra_event_fk_matching</code></td><td>interfejs jej nie wywołuje (wzorzec testów pgTAP)</td><td><code>p_rolling</code>; rodzaj w zasadach międzynarodowych</td><td><code>20260425000008…:362, 368</code></td></tr>
+      </tbody>
+    </table></div>
+    <h3>Trzy fakty wspólne dla każdego wyniku przeniesionego</h3>
+    <ul>
+      <li><strong>Kategoria</strong> wynika z roku urodzenia i późniejszego roku <em>bieżącego</em> sezonu (<code>v_season_end_yr</code>, <code>20260930000001…:571, 609</code>). Przykład: osoba urodzona w 1977 r. jest w V1 w sezonie 2025/26 i w V2 w 2026/27, a jej wyniki z 2025/26 liczą się w rankingu V2.</li>
+      <li><strong>Punkty</strong> to zapisany <code>num_final_score</code>, przyznany według zasad sezonu, w którym wynik powstał (ADR-018). Nic nie jest przeliczane na nowo.</li>
+      <li><strong>Wejście</strong> do trybu Ranking wymaga wyniku PPW lub MPW w 2026/27 albo, w rankingu kroczącym, <em>gdziekolwiek</em> w 2025/26, w dowolnej broni (<code>20260928000001…:1312-1324</code>, ADR-103 §6). Ta kontrola czyta cały poprzedni sezon, nie okno 366 dni.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Według rodzaju zawodów</p>
+    <h2>Ta sama zasada dla każdego rodzaju</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Rodzaj</th><th>Koszyk (zasady 2026/27)</th><th>Przenoszony?</th><th>Kto go wiąże</th><th>Kończy się przy wcześniejszym z</th></tr></thead>
+      <tbody>
+        <tr><td>PPW</td><td>SPWS · 2 najlepsze</td><td>tak</td><td>kreator sezonu</td><td>wyniki nowej edycji na PROD · 366 dni</td></tr>
+        <tr><td>MPW</td><td>SPWS · zawsze</td><td>tak</td><td>kreator sezonu</td><td>wyniki nowej edycji na PROD · 366 dni</td></tr>
+        <tr><td>MSW</td><td>EVF+ · 5 najlepszych</td><td>tak</td><td>kreator sezonu</td><td>nowa edycja SCORED/COMPLETED · 366 dni</td></tr>
+        <tr><td>PEW, MEW, PSW</td><td>EVF+ · 5 najlepszych</td><td>tak</td><td>synchronizacja kalendarza EVF lub administrator</td><td>nowa edycja SCORED/COMPLETED · 366 dni; bez powiązania tylko 366 dni</td></tr>
+        <tr><td>PPS, MPS</td><td>EVF+ · 5 najlepszych</td><td>widoczny na karcie zawodnika; nigdy liczony w trybie Ranking</td><td>—</td><td>nie dotyczy</td></tr>
+      </tbody>
+    </table></div>
+    <p>Żaden wiersz widoku ani czterech funkcji nie porównuje PPW lub MPW z innymi rodzajami, gdy rozstrzyga, kiedy kończy się przeniesienie. Różnica bierze się z tego, kto ustawia powiązanie.</p>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Dane z dzisiaj</p>
+    <h2>Co przechodzi do 2026/27 w dniu 3 października 2026</h2>
+    <p>Z <code>vw_eligible_event</code> na LOCAL (seed = PROD z 3.10). <span class="chip warn">nakładanie</span> oznacza, że nowa edycja ma termin w oknie, więc to jej wyniki zakończą przeniesienie.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Zawody 2025/26</th><th>Koniec</th><th>Koniec okna</th><th>Nowa edycja (status, termin)</th><th>Co kończy pierwsze</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PPW1</strong></td><td>28.09.2025</td><td><strong>29.09.2026</strong></td><td>PPW1-2026-2027 (PLANNED, 26–27.09.2026)</td><td><span class="chip over">już nie przechodzi</span></td></tr>
+        <tr><td>PPW2</td><td>26.10.2025</td><td>27.10.2026</td><td>PPW2-2026-2027 (CREATED, bez terminu)</td><td>okno, chyba że wyniki PPW2 trafią na PROD wcześniej</td></tr>
+        <tr><td>PEW2efs</td><td>2.11.2025</td><td>3.11.2026</td><td>PEW2efs (PLANNED, 31.10.2026)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>IMSW</td><td>16.11.2025</td><td>17.11.2026</td><td>MSW (PLANNED, 9.10.2026)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PEW3fs</td><td>7.12.2025</td><td>8.12.2026</td><td>PEW4fs (PLANNED, 28.11.2026)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PPW3</td><td>14.12.2025</td><td>15.12.2026</td><td>PPW3 (CREATED, bez terminu)</td><td>okno, chyba że wyniki PPW3 trafią na PROD wcześniej</td></tr>
+        <tr><td>PEW62efs</td><td>11.01.2026</td><td>12.01.2027</td><td>PEW6efs (PLANNED, 9.01.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PEW31fs</td><td>8.02.2026</td><td>9.02.2027</td><td>PEW9fs (PLANNED, 6.02.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PPW4</td><td>22.02.2026</td><td>23.02.2027</td><td>PPW4 (CREATED, bez terminu)</td><td>okno, chyba że wyniki PPW4 trafią na PROD wcześniej</td></tr>
+        <tr><td>PEW4efs</td><td>7.03.2026</td><td>8.03.2027</td><td>PEW11efs (PLANNED, 6.03.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PEW5ef</td><td>14.03.2026</td><td>15.03.2027</td><td>PEW12ef (CANCELLED, 13.03.2027)</td><td>okno (odwołana edycja nie przerywa)</td></tr>
+        <tr><td>PEW6efs</td><td>29.03.2026</td><td>30.03.2027</td><td>PEW5efs (PLANNED, 12.12.2026)</td><td><span class="chip warn">nakładanie</span> · kończy się ok. 3,5 miesiąca przed oknem</td></tr>
+        <tr><td>PEW61s</td><td>11.04.2026</td><td>12.04.2027</td><td>PEW14s (PLANNED, 10.04.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PPW5</td><td>11.04.2026</td><td>12.04.2027</td><td>PPW5 (CREATED, bez terminu)</td><td>okno, chyba że wyniki PPW5 trafią na PROD wcześniej</td></tr>
+        <tr><td>PEW7ef</td><td>19.04.2026</td><td>20.04.2027</td><td>PEW15ef (PLANNED, 10.04.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PEW8es</td><td>3.05.2026</td><td>4.05.2027</td><td>PEW13es (PLANNED, 27.03.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>PEW9efs</td><td>31.05.2026</td><td>1.06.2027</td><td>PEW17efs (PLANNED, 29.05.2027)</td><td><span class="chip warn">nakładanie</span></td></tr>
+        <tr><td>MPW</td><td>21.06.2026</td><td>22.06.2027</td><td>MPW (CREATED, bez terminu)</td><td>okno, chyba że wyniki MPW trafią na PROD wcześniej</td></tr>
+        <tr><td>PEW10efs (Criterium)</td><td>6.07.2026</td><td>7.07.2027</td><td>brak (gałąź 3)</td><td>okno</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede">PPW1: okno skończyło przeniesienie, zanim nowa edycja trafiła na PROD</p>
+      <p>PPW1-2025-2026 liczyło się do 29.09.2026. PPW1-2026-2027 rozegrano 26–27 września, ale na PROD nadal ma status PLANNED i nie ma wyników. Od 30 września do promote PPW1 2026/27 nikt nie ma więc w rankingu 2026/27 wyniku z PPW1. Wynik w PPW1 2025/26 miało 78 osób (85 wyników). Z PPW2 będzie tak samo, jeśli wyniki PPW2 2026/27 trafią na PROD po 27 października.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Starszy silnik</p>
+    <h2><code>EVENT_CODE_MATCHING</code> (2023/24–2025/26): pozycja kodu, bez limitu czasu</h2>
+    <ul>
+      <li>Wynik poprzedniego sezonu przechodzi, jeśli jego rodzaj jest w zasadach sezonu (ADR-021), a bieżący sezon <strong>nie ma wyniku</strong> na tej samej pozycji kodu (<code>PPW1</code>, <code>MPW</code>, <code>PEW3</code>…) w tej samej broni i płci (poprawka ADR-018 z 26.06.2026).</li>
+      <li>Nigdzie nie ma filtra daty: <code>20260930000003_spws_evf_joined_engine.sql:938-942</code> (poprzedni sezon), <code>:954-963</code> (pozycje z wynikiem), <code>:1012-1024</code> (wyniki przeniesione).</li>
+      <li>Tu również każdy rodzaj jest traktowany tak samo. Pozycje z kodów-slugów EVF kolidowały ze sobą, dlatego ADR-042 wprowadził silnik FK.</li>
+      <li>Wszystkie trzy sezony na tym silniku są zakończone i pokazywane bez przenoszenia, więc ta logika nie wpływa dziś na żaden ranking na ekranie.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Opis z rozmowy a stan obecny</p>
+    <h2>Gdzie się zgadzają, a gdzie nie</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Opis z rozmowy</th><th>Dokumentacja</th><th>Kod, 2026/27</th></tr></thead>
+      <tbody>
+        <tr><td>Powiązany wynik jest nadpisywany od razu po ingestion nowej edycji</td><td>ADR-018, ADR-037, ADR-042 (zastąpienie przez powiązanie)</td><td><strong>Zgadza się na PROD:</strong> promote ustawia COMPLETED w tym samym przebiegu, w którym zapisuje wyniki. Na CERT i LOCAL ingestion zostawia IN_PROGRESS i obie edycje liczą się do zamknięcia.</td></tr>
+        <tr><td>PPW i MPW są kroczące</td><td>Kreator sezonu wiąże PPWn i MPW z poprzednikami (ADR-045, ADR-077 §3)</td><td>Zgadza się, z jednym wyjątkiem: powiązany wynik i tak wygasa po 366 dniach, nawet gdy nowa edycja nie ma jeszcze wyników (PPW1 dziś).</td></tr>
+        <tr><td>Pozostałe wyniki wygasają po ok. 13 miesiącach</td><td>Żaden dokument nie mówi o 13 miesiącach. ADR-044: 366 dni („~1 rok”) dla każdego rodzaju.</td><td>366 dni. Zawody EVF są jednak powiązane przez synchronizację kalendarza, więc są też zastępowane przez nową edycję (PEW6efs: ok. 3,5 miesiąca przed oknem).</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">11 · Trzy rzeczy przed decyzją</p>
+    <h2>Co zmienia nowy promote i co jest w dokumentacji</h2>
+    <div class="note danger">
+      <p class="lede">Nowy promote (ADR-108 §7) usunąłby natychmiastowe zastąpienie</p>
+      <p>Nowy promote zostawia zawody w IN_PROGRESS do dnia po dacie końca i dopiero wtedy ustawia COMPLETED. Gałąź 2 przestaje przenosić stary wynik dopiero przy SCORED lub COMPLETED. Bez zmiany w kroku 10 obie edycje liczyłyby się przez cały czas trwania IN_PROGRESS. Krok 10 jest po to, żeby zastąpienie zostało natychmiastowe.</p>
+    </div>
+    <h3>Co robi niezatwierdzona zmiana z kroku 10 (tylko LOCAL)</h3>
+    <ul>
+      <li><code>supabase/migrations/20261003000018_carry_stop_results.sql</code> dodaje <code>fn_carry_stopped_by_results</code> i po jednym warunku w każdej z czterech funkcji. Powiązany wynik przestaje się liczyć, gdy nowa edycja się liczy (statusy gałęzi 1) i ma wynik w tej samej broni i płci, czyli od razu po ingestion, niezależnie od statusu.</li>
+      <li><strong>Stan plików, 3.10:</strong> na dysku i na LOCAL jest wersja zawężona do PPW i MPW (piąty parametr <code>p_type</code>, zmiana z 18:21). Tej zawężonej wersji nie zatwierdziłeś. Wcześniej mówiłem, że nie została uruchomiona. To była nieprawda. Wersja dla wszystkich powiązanych zawodów przeszła pełny pgTAP (1385).</li>
+      <li>Okno 366 dni i stop na SCORED/COMPLETED zostają. <code>supabase/tests/104_carry_stop_results.sql</code> (CARRY.RS.01–11) to sprawdza. Dziś RS.03 i RS.05 sprawdzają wersję zawężoną.</li>
+      <li>Broń rozgrywana w późniejszym dniu zachowuje stary wynik do czasu swoich wyników. Dziś promote ustawia COMPLETED dla całych zawodów naraz.</li>
+    </ul>
+    <h3>Dokumentacja</h3>
+    <ul>
+      <li><strong>ADR-018 przepisany 3.10</strong> (<code>doc/adr/018-rolling-score.md</code>, niezacommitowany) jako jedyny aktualny opis rankingu kroczącego. Ta strona i ADR mówią to samo: §1–§5 to stan obecny, §7 to krok 10, a otwarte punkty 1 i 2 to pytania z §12.</li>
+      <li>ADR-108 §8 podawał „whatever the current edition's status is”. Wdrożenie wymaga, żeby nowa edycja się liczyła (CARRY.RS.11). Poprawione 3.10 razem z decyzją A.</li>
+      <li>Strona podręcznika <code>event-status-lifecycle</code> podaje, że status zawodów SCORED ustawia „the scoring pipeline”. Żaden kod nie ustawia SCORED dla zawodów. SCORED dostaje tylko status importu turnieju (<code>enum_import_status</code>). Do poprawienia.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">12 · Do decyzji</p>
+    <h2>Jaki zakres ma krok 10?</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Zdecydowano 3.10: A — każde powiązane zawody</p>
+      <p>Zawężenie do PPW i MPW cofnięte. Test 104 najpierw czerwony na wersji zawężonej (RS.03, RS.05), potem zielony 11 z 11. Pełny pgTAP na LOCAL: 105 plików, 1385 asercji, PASS.</p>
+    </div>
+    <div class="op">
+      <span class="op-tag c">A · wybrane 3.10</span><span class="set">krok 10 dla każdych powiązanych zawodów (P6 A, jak zdecydowano)</span>
+      <ul>
+        <li>Powiązany wynik znika, gdy tylko nowa edycja ma wynik w tej broni i płci. Dotyczy to każdych powiązanych zawodów, tak jak dziś. Wymaga cofnięcia zawężenia z 18:21.</li>
+        <li>Zachowuje obecne działanie („nadpisany od razu po ingestion”), gdy nowy promote zostawia zawody w IN_PROGRESS. Okno 366 dni się nie zmienia.</li>
+        <li>ADR-018 (przepisany) i ADR-108 §8 to opisują.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">B</span><span class="set">podział według rodzaju</span>
+      <ul>
+        <li>PPW i MPW są kroczące bez limitu 366 dni. Pozostałe rodzaje są ograniczone tylko czasem, a powiązanie ich nie zastępuje.</li>
+        <li>Odchodzi od zasady, że powiązanie znaczy „zastępuje”, dla zawodów EVF. Zmienia też widok, nie tylko funkcje.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag d">C</span><span class="set">stop na wynikach tylko dla PPW i MPW</span>
+      <ul>
+        <li>To jest dziś na dysku i na LOCAL, bez Twojej zgody. Pozostałe powiązane rodzaje zostają przy stopie na SCORED/COMPLETED, więc przy nowym promote powiązane wyniki EVF liczyłyby się podwójnie w czasie IN_PROGRESS.</li>
+      </ul>
+    </div>
+    <div class="note accent">
+      <p class="lede">Dlaczego A</p>
+      <p>Potwierdzasz, że natychmiastowe zastąpienie powiązanego wyniku jest celowe, a kod na PROD tak dziś działa. A zachowuje to po zmianie promote, bez zmiany niczego innego. W poprzedniej wersji tej strony rekomendowałem podział według rodzaju. Wycofuję tę rekomendację, bo pomijała natychmiastowe zastąpienie na PROD.</p>
+    </div>
+    <p><strong>Następne pytanie, nie teraz:</strong> czy limit 366 dni ma kończyć powiązany wynik PPW lub MPW, zanim nowa edycja trafi na PROD (PPW1 dziś, PPW2 po 27 października)?</p>
+  </section>
+
+  <section>
+    <p class="kicker">13 · Co dalej</p>
+    <h2>Po odpowiedzi</h2>
+    <ol class="steps">
+      <li>Przy A: zdanie w poprawkach ADR-018 i ADR-042, ADR-108 §8, podręcznik (<code>competition-and-ranking</code>, <code>scoring-and-ranking</code>, poprawka SCORED w <code>event-status-lifecycle</code>), specyfikacja i RTM. Przy B lub C najpierw migracja 18 i test 104 (test najpierw czerwony), potem pełny pgTAP.</li>
+      <li><code>scripts/preflight.sh</code> kończy się kodem 0, potem integracja i push. Ty zatwierdzasz wdrożenie na PROD, a rankingi są sprawdzane przez to, co czyta interfejs.</li>
+    </ol>
+    <p>Do tego czasu nic nie zmienia się na CERT ani PROD. Tekst do regulaminu (zadanie poboczne) opisuje stan obecny.</p>
+  </section>
+
+  <p class="foot">Przenoszenie wyników — stan obecny · 3.10.2026 · gałąź claude/promote-verified-replay · analiza tylko do odczytu; dane z LOCAL, seed odświeżony z PROD 3.10.2026.</p>
+</div>

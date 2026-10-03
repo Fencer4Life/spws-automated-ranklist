@@ -141,7 +141,7 @@ def _ingest(db, *, record_run, run_flow=_committed_ctx, env=None):
         patch(
             "python.tools.scrape_ftl_event_urls.parse_event_schedule",
             return_value=(
-                [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}],
+                [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
                 [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}],
             ),
         ),
@@ -184,7 +184,7 @@ class TestRecordedRun:
         run_id, listings = db.finish_ingest_run.call_args.args
         assert run_id == 41
         assert listings["schedule"]["sha256"] == rr.schedule_sha256(
-            [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2"}],
+            [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
             [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}],
         )
         (round_,) = listings["rounds"]
@@ -277,9 +277,8 @@ class TestWiring:
         wf = yaml.safe_load((ROOT / ".github/workflows/ingest-event.yml").read_text())
         (job,) = wf["jobs"].values()
         run = next(s["run"] for s in job["steps"] if "ingest_cli" in s.get("run", ""))
-        assert re.search(
-            r'if \[\[ "\$TARGET_ENV" == "cert" \]\]; then\s+ARGS\+=\(--record-run cert\)', run
-        )
+        # ADR-108 §9: the only target is cert (prod is refused), so every run is recorded.
+        assert "--record-run cert)" in run
 
     def test_the_cli_refuses_a_record_without_a_url_ingestion(self, monkeypatch):
         """PROMO.RUN.08"""

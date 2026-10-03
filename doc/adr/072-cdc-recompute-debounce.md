@@ -204,3 +204,5 @@ Migration `20261001000003_recompute_keeps_provenance.sql` makes the RPC keep wha
 - So `recompute-drain.yml` leaves its own `cert-recompute` group and joins **`cert-write`** with the refresh and `ingest-event.yml` target `cert`. This is the reasoning this ADR's PROD amendment applied to `prod-write`: one shared group per environment's writers.
 - PROD's drain stays in `prod-write`, which the daily close (`event-close.yml`) also joins.
 - Promote waits for the PROD drain after its apply and compares the affected events with CERT's.
+
+Implemented 2026-10-03 (ADR-108 build step 12): `recompute-drain.yml` and `ingest-event.yml` are in `cert-write`. Because promote holds `prod-write`, it drains PROD's queue itself with the same worker after its apply rather than wait for the drain workflow queued behind it.
