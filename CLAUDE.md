@@ -10,6 +10,10 @@ SPWS Automated Ranklist System — automated ranking for the Polish Veterans Fen
 **Normative requirements:** [doc/governance/index.html](doc/governance/index.html) — specification, RTM and formal rules.
 **Decision rationale:** [doc/adr/index.html](doc/adr/index.html). Historical narratives are cataloged under [doc/archive/legacy-2026-07/](doc/archive/legacy-2026-07/) and must not be used to infer current behavior.
 
+## Session start — before anything else
+
+The `SessionStart` hook (`scripts/session_start.py`) prints a block starting `SPWS session-start protocol`. When it says `FIRST ACTION … call EnterWorktree with path=…`, do that as the session's first tool call. Every session works in its own worker worktree, never in the primary or the integration checkout. Then follow the research rule: docs → `mcp__spws-docs__search`, code → `graphify` (skill `research-gate`). Procedure: [doc/claude/session-start.md](doc/claude/session-start.md).
+
 ## Modules
 
 - The files under `doc/claude/` are agent procedures and routing aids, not a second architecture reference. Current-system facts belong only in the handbook.
