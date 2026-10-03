@@ -190,6 +190,15 @@ ADR-074 is unchanged: CERT commits automatically. The gate blocks only the PROD 
 
 The apply runs over a direct database connection with its own `statement_timeout`, not through the Management API.
 
+**Plan mode implemented 2026-10-03 (build step 8).** `python/pipeline/promotion/plan.py`:
+
+- The `RecordingConnector` gives the domestic driver (`_ingest_event_rounds`, INGEST_DOMESTIC per listing) the connector's surface. Reads go to PROD; every write is recorded as an operation: `insert_fencer`, `update_fencer_birth_year`, `find_or_create_tournament`, `ingest_results`, `set_event_url_event`, `set_event_ingest_sources`.
+- A read of the run's own writes is answered from the record: the roster with created fencers and moved birth years, the batch reads, the event's URL and sources. A tournament PROD has keeps its id; a new one gets a negative placeholder the apply replaces.
+- A new fencer takes the CERT run's id for the same surname and first name. `PlanRefused` stops the plan, with nothing written, for a fencer the CERT run did not create, a CERT id PROD already uses, a different non-blank PROD URL (ADR-086's fill-blank tier), an international event, or a write a domestic ingestion never makes (merge, clear, participant count, joining check).
+- `plan_event` runs the driver with `post_run=False`: the staging report, the joining check and Telegram run after the apply. The plan carries every listing's hash (`ListingLog`) for the source check.
+- `apply_plan` is the reference apply through the ordinary connector. It is not atomic and runs in tests and on LOCAL only; `fn_promote_event_apply` (build step 9) applies the same operations in one transaction.
+- Acceptance, 2026-10-03, on LOCAL refreshed from PROD (`promotion/plan_check.py`, one event per reset): **PPW1 2026/27 planned and applied equals its live run** (25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move). Past scored events of a closed season are never re-ingested, so they are not acceptance input.
+
 ### 7 · Event lifecycle: COMPLETED once everything is final and the end date has passed
 
 | State of the event | Status on CERT and PROD |
@@ -257,7 +266,7 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 
 **Tests, written RED first:**
 
-- `PROMO.ID.*`, `PROMO.REFRESH.*`, `PROMO.SEED.*`, `PROMO.RUN.*`, `PROMO.GATE.*`, `PROMO.PLAN.*` (including "plan, then apply, equals a live run" on every 2025/26 PPW event on LOCAL), `PROMO.APPLY.*` (atomicity, lock and queue rollback, dry run persists nothing, URL rule, status pairs, idempotence) and `PROMO.LIFE.*`;
+- `PROMO.ID.*`, `PROMO.REFRESH.*`, `PROMO.SEED.*`, `PROMO.RUN.*`, `PROMO.GATE.*`, `PROMO.PLAN.*` (including "plan, then apply, equals a live run" on PPW1 2026/27 on LOCAL; past scored events of a closed season are never re-ingested), `PROMO.APPLY.*` (atomicity, lock and queue rollback, dry run persists nothing, URL rule, status pairs, idempotence) and `PROMO.LIFE.*`;
 - pgTAP for the renumbering and for the carry stop, whose first test reproduces the double count. The existing `94_carryover_without_successor.sql` (CARRY.NS.01–07) must stay green.
 
 **Operations:**

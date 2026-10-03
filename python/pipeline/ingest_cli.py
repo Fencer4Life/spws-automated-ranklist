@@ -672,9 +672,12 @@ def _ingest_event_rounds(
     send_telegram,
     md_target,
     run,
+    post_run=True,
 ) -> list:
     """`ingest_event_from_url` from its first write on. `run` is the open run
-    record (ADR-108 §4), or None; it receives the schedule and every listing."""
+    record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
+    every listing. Plan mode passes `post_run=False`: the staging report, the
+    joining check and Telegram run after promote's apply commits (ADR-108 §6)."""
     from datetime import date as _date
 
     from python.pipeline.ir import ParsedTournament, SourceKind
@@ -797,6 +800,8 @@ def _ingest_event_rounds(
         except Exception as e:  # never fail an ingest on the display-data write
             print(f"  (ingest-sources persist skipped: {e})")
 
+    if not post_run:
+        return contexts
     post = _fire_staging_report(
         event,
         contexts,

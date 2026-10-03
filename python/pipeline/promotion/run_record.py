@@ -119,40 +119,16 @@ def _outcome(ctx: Any) -> dict:
     }
 
 
-class RunRecord:
-    """One open run. The ingestion adds the schedule and each listing as it reads
-    them; `finish` or `fail` closes the row with them."""
+class ListingLog:
+    """The schedule and every listing a run read, with their hashes. The
+    ingestion adds them as it reads them. Plan mode keeps one without a
+    database (ADR-108 §6); RunRecord stores it on the run row."""
 
-    def __init__(self, db: Any, run_id: int):
-        self.db = db
-        self.run_id = run_id
+    def __init__(self) -> None:
         self.schedule: dict | None = None
         self.rounds: list[dict] = []
         self.current: str | None = None
         self.refusal: dict | None = None
-
-    @classmethod
-    def open(
-        cls, db: Any, *, event_code: str, environment: str, season_end_year: int, url_event: str
-    ) -> RunRecord:
-        if environment not in ENVIRONMENTS:
-            raise ValueError(
-                f"A run is recorded on {' or '.join(ENVIRONMENTS)}, not {environment!r} (ADR-108 §4)."
-            )
-        commit = git_commit()
-        run_id = db.open_ingest_run(
-            {
-                "p_event_code": event_code,
-                "p_environment": environment,
-                "p_git_commit": commit,
-                "p_season_end_year": season_end_year,
-                "p_url_event": url_event,
-                "p_run_url": run_url(),
-                "p_override_sha256": override_sha256(event_code),
-            }
-        )
-        print(f"run record {run_id} opened on {environment} (commit {commit[:12]})")
-        return cls(db, run_id)
 
     def add_schedule(self, kept: Sequence[Mapping], skipped: Sequence[Mapping]) -> None:
         self.schedule = {
@@ -198,6 +174,38 @@ class RunRecord:
         if self.refusal:
             out["refusal"] = self.refusal
         return out
+
+
+class RunRecord(ListingLog):
+    """One open run. `finish` or `fail` closes the row with its listings."""
+
+    def __init__(self, db: Any, run_id: int):
+        super().__init__()
+        self.db = db
+        self.run_id = run_id
+
+    @classmethod
+    def open(
+        cls, db: Any, *, event_code: str, environment: str, season_end_year: int, url_event: str
+    ) -> RunRecord:
+        if environment not in ENVIRONMENTS:
+            raise ValueError(
+                f"A run is recorded on {' or '.join(ENVIRONMENTS)}, not {environment!r} (ADR-108 §4)."
+            )
+        commit = git_commit()
+        run_id = db.open_ingest_run(
+            {
+                "p_event_code": event_code,
+                "p_environment": environment,
+                "p_git_commit": commit,
+                "p_season_end_year": season_end_year,
+                "p_url_event": url_event,
+                "p_run_url": run_url(),
+                "p_override_sha256": override_sha256(event_code),
+            }
+        )
+        print(f"run record {run_id} opened on {environment} (commit {commit[:12]})")
+        return cls(db, run_id)
 
     def finish(self) -> dict:
         changes = self.db.finish_ingest_run(self.run_id, self.listings()) or {}
