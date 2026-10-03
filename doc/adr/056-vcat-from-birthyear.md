@@ -428,3 +428,20 @@ PENDING even when the stored year is estimated, which the matcher alone would ac
 Stage-0 tests (10.4.1, 10.4.2, 10.4.2b, 10.4.2c, 10.6.2, 10.6.3, 10.9.7) moved from two- or
 three-category jumps to one-category moves; their rules are unchanged, and the jumps they used
 are now NAMESAKE.09. Tests: `python/tests/test_namesake_birth_year.py` NAMESAKE.01–10.
+
+## Amendment (2026-10-03, D5) — the PPW path reads the declared birth year too
+
+The 2026-09-25 amendment said both ingestion pipelines share the declared-year policy. They
+did not: `ResolveFencers`, the identity step of `INGEST_DOMESTIC` and so of `ingest-event.yml`,
+never read `tbl_registration`. On PPW1-2026-2027 that meant 13 PROD entrants were about to be
+created at a band midpoint although each had declared a year, and confirmed years moved by a
+bracket regardless of what the fencer declared. Decision D5 A (3 October 2026) closes it.
+
+`ResolveFencers` loads the event's declared years once (`stages.declared_birth_years`, the same
+map Stage 0 uses, which drops a name registered under two different years). A new fencer takes
+the declared year, **confirmed**, when it fits the bracket; otherwise the band midpoint,
+estimated, and a `declared_vs_bracket` conflict. A matched fencer's move goes through
+`reconcile_fencer_birth_year` with the declaration, so the four refusals of the 2026-09-25
+amendment apply unchanged. The staging report shows a declared move as confirmed, "declared at
+registration", never as a downgrade. Tests: `python/tests/test_resolve_fencers_declared.py`
+DECL.RF.01–07.

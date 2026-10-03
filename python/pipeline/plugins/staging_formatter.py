@@ -242,6 +242,14 @@ def _render_reconciled(m) -> str:
         lines += ["| Fencer | BY | BY status | status reason |", "|---|---:|---|---|"]
         for r in rec:
             anchor = r.get("anchor", "band midpoint")
+            if anchor == "declared at registration":
+                # DECL.RF.07: the fencer's own year, written confirmed.
+                lines.append(
+                    f"| {r.get('scraped_name', '?')} (#{r.get('id_fencer')}) "
+                    f"| {r.get('new_birth_year')} | confirmed | declared at registration "
+                    f"(old BY {r.get('old_birth_year')}), fits {r.get('vcat')} |"
+                )
+                continue
             reason = (
                 f"conflicted with V-cat {r.get('vcat')} (old BY {r.get('old_birth_year')}) "
                 f"→ reconciled to {r.get('vcat')} {anchor}"
@@ -268,10 +276,18 @@ def _render_reconciled(m) -> str:
                 f"{c.get('note')} — roster: {roster}"
             )
             continue
-        lines.append(
-            f"- ⚠ conflict: {c.get('scraped_name')} (#{c.get('id_fencer')}) "
-            f"{c.get('first_vcat')} vs {c.get('second_vcat')}"
-        )
+        who = c.get("scraped_name")
+        if c.get("id_fencer") is not None:
+            who = f"{who} (#{c.get('id_fencer')})"
+        if c.get("reason") == "declared_vs_bracket":
+            # DECL.RF.06: the entry list and the results disagree; neither year is taken.
+            lines.append(
+                f"- ⚠ conflict: {who} declared {c.get('declared_birth_year')} "
+                f"({c.get('first_vcat')}) at registration but fenced {c.get('second_vcat')}; "
+                "neither year taken"
+            )
+            continue
+        lines.append(f"- ⚠ conflict: {who} {c.get('first_vcat')} vs {c.get('second_vcat')}")
     return "\n".join(lines)
 
 
