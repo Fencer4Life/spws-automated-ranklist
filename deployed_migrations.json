@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-03T13:01:16Z",
-    "last_sha": "e800cd7b8110516279bef789441e341c65e5b370",
+    "last_updated": "2026-10-03T15:09:44Z",
+    "last_sha": "818ab909c68706a9dab20323caa7ef9b8fb6b298",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -208,13 +208,14 @@
       "20261003000012_vcat_violation_calendar_year.sql",
       "20261003000013_seed_load_fencers.sql",
       "20261003000014_ingest_run.sql",
-      "20261003000015_registration_roster_name.sql"
+      "20261003000015_registration_roster_name.sql",
+      "20261003000016_promote_gate.sql"
     ],
-    "schema_fingerprint": "24c6b0ee539237d5be9cb543e7d27542"
+    "schema_fingerprint": "fd16241146d47eb33596b3df255427e8"
   },
   "prod": {
-    "last_updated": "2026-10-03T14:59:47Z",
-    "last_sha": "e800cd7b8110516279bef789441e341c65e5b370",
+    "last_updated": "2026-10-03T15:10:28Z",
+    "last_sha": "818ab909c68706a9dab20323caa7ef9b8fb6b298",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -421,8 +422,9 @@
       "20261003000012_vcat_violation_calendar_year.sql",
       "20261003000013_seed_load_fencers.sql",
       "20261003000014_ingest_run.sql",
-      "20261003000015_registration_roster_name.sql"
+      "20261003000015_registration_roster_name.sql",
+      "20261003000016_promote_gate.sql"
     ],
-    "schema_fingerprint": "24c6b0ee539237d5be9cb543e7d27542"
+    "schema_fingerprint": "fd16241146d47eb33596b3df255427e8"
   }
 }
