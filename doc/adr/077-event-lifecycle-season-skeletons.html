@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="077-event-lifecycle-season-skeletons.md">
-<meta name="adr-source-sha256" content="cbbaa592001e8fb742d9eb44507d396a5e6ba2f4b068917ec8ccb76f89086a0f">
+<meta name="adr-source-sha256" content="bd612a8b9dab10dd06be5e4dd2e56aaea6e15035a689985c799966292716e90b">
 <title>ADR-077 · Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 077</p><h1>Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">301 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted · <strong>Date:</strong> 2026-06-28</p>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-07-11, 2026-08-28 and 2026-10-03; the last by ADR-108: results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule) ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">321 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-07-11, 2026-08-28 and 2026-10-03; the last by ADR-108: results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule) · <strong>Date:</strong> 2026-06-28</p>
 <p><strong>Relates to:</strong> <strong>narrows</strong> ADR-050's supersession of <strong>ADR-025</strong> to its <em>ingestion mechanism</em> only
 (the event-status lifecycle + Telegram admin surface live on <strong>here</strong>); <strong>ADR-044</strong> (wizard introduced
 <code>CREATED</code>), <strong>ADR-054</strong> (<code>CREATED</code>/<code>SCORED</code> enum values + validator extension), <strong>ADR-028</strong> (date-aware
@@ -22,7 +22,7 @@ display &quot;Awaiting results&quot;), <strong>ADR-039</strong> (EVF-sync status
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-canonical-event-lifecycle-8-states-validator-backed">1 · The canonical event lifecycle (8 states, validator-backed)</a></li><li class="depth-3"><a href="#2-two-axes-not-one-evf-published-is-provenance-not-lifecycle">2 · Two axes, not one — `EVF_PUBLISHED` is provenance, not lifecycle</a></li><li class="depth-3"><a href="#3-season-skeleton-provisioning-multi-event">3 · Season-skeleton provisioning (multi-event)</a></li><li class="depth-3"><a href="#4-url-primary-ingestion-doctrine">4 · URL-primary ingestion doctrine</a></li><li class="depth-3"><a href="#5-environment-data-flow-cert-prod-calendar-promotion">5 · Environment data-flow &amp; CERT→PROD calendar promotion</a></li><li class="depth-3"><a href="#6-coherence-fixes-this-adr-mandates">6 · Coherence fixes this ADR mandates</a></li><li class="depth-3"><a href="#7-admin-ui-surface-cert-prod-season-skeleton-promotion">7 · Admin-UI surface — CERT→PROD season-skeleton promotion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-planning-lifecycle-crosses-to-prod-two-states-retired">Amendment (2026-08-28) — the planning lifecycle crosses to PROD; two states retired</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-canonical-event-lifecycle-8-states-validator-backed">1 · The canonical event lifecycle (8 states, validator-backed)</a></li><li class="depth-3"><a href="#2-two-axes-not-one-evf-published-is-provenance-not-lifecycle">2 · Two axes, not one — `EVF_PUBLISHED` is provenance, not lifecycle</a></li><li class="depth-3"><a href="#3-season-skeleton-provisioning-multi-event">3 · Season-skeleton provisioning (multi-event)</a></li><li class="depth-3"><a href="#4-url-primary-ingestion-doctrine">4 · URL-primary ingestion doctrine</a></li><li class="depth-3"><a href="#5-environment-data-flow-cert-prod-calendar-promotion">5 · Environment data-flow &amp; CERT→PROD calendar promotion</a></li><li class="depth-3"><a href="#6-coherence-fixes-this-adr-mandates">6 · Coherence fixes this ADR mandates</a></li><li class="depth-3"><a href="#7-admin-ui-surface-cert-prod-season-skeleton-promotion">7 · Admin-UI surface — CERT→PROD season-skeleton promotion</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-07-11-adr-081">Amendment (2026-07-11, ADR-081)</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-planning-lifecycle-crosses-to-prod-two-states-retired">Amendment (2026-08-28) — the planning lifecycle crosses to PROD; two states retired</a></li><li class="depth-2"><a href="#amendment-2026-10-03-results-are-replayed-in-progress-lasts-completed-is-set-by-rule-adr-108">Amendment (2026-10-03) — results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule (ADR-108)</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Three drifts forced this ADR:</p>
 <ol>
@@ -554,8 +554,26 @@ its coverage migrated to <code>51_prod_event_reconcile.sql</code> 51.1c. See ADR
 <p>What <code>CHANGED</code> was meant to flag — EVF moving a date — becomes a <strong>pill on the event card</strong>, anchored to a new <code>dt_start_first_published</code> and shown only while the event is <code>PLANNED</code> and still ahead. A status was the wrong home twice over: it competed with the results lifecycle for the same column, and a <em>second</em> move produced no transition and so no signal at all.</p>
 <p>Tests: <code>65_prod_mirror_planning_status.sql</code> (both directions of the boundary), <code>66_event_status_deprecations.sql</code> (the retired states are unreachable; an unweaponed EVF event can still be cancelled), <code>67_event_first_published_date.sql</code> (the anchor holds the first date across repeated moves). Tests 1.20, 1.23 and 9.86–9.89 in <code>01_database_foundation.sql</code> pinned the retired transitions and are rewritten to the surviving spine.</p>
 <p><strong>Operational reference:</strong> <a href="../handbook/reference/event-status-lifecycle.html">Event status lifecycle</a> — what each status means, what the calendar shows, both automations side by side, the pill, and the troubleshooting path for an event missing from PROD.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-results-are-replayed-in-progress-lasts-completed-is-set-by-rule-adr-108">Amendment (2026-10-03) — results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule (ADR-108)</h2>
+<p><a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> changes two sections of this ADR.</p>
+<p><strong>§1, the status table:</strong></p>
+<ul>
+<li><strong>IN_PROGRESS is no longer transient.</strong> It holds while any scheduled individual listing is not yet final, or while the end date has not passed.</li>
+<li><strong>COMPLETED</strong> is no longer &quot;admin-confirmed final; promotable&quot;. It is set by one rule on CERT and on PROD: every scheduled individual listing is final (its schedule row says Finished) and committed, <strong>and</strong> today in Warsaw is later than the end date. Organisers sometimes add tournaments the next day, which is why the end date matters.</li>
+<li><strong>Who sets it.</strong> Promote sets the status inside its apply transaction, and the daily close (<code>event-close.yml</code>) completes an event once its end date has passed.</li>
+<li>The Telegram <code>complete</code> command stays as a manual close and takes an exact code. SCORED is not set by automation.</li>
+<li>The validator is unchanged. IN_PROGRESS → COMPLETED and COMPLETED → IN_PROGRESS, which a correction needs, are both allowed.</li>
+</ul>
+<p><strong>§5, environment data-flow:</strong></p>
+<ul>
+<li><strong>CERT stays the sole allocator of new ids, now for fencers too.</strong> After a one-time alignment, fencer ids are identical on all three environments. A fencer the CERT ingestion creates keeps that id on PROD.</li>
+<li><strong>Results are replayed on PROD, not copied.</strong> The &quot;verbatim row copy with explicit ids&quot; applies to season and event skeletons only.</li>
+<li><strong>The 2026-06-28 note.</strong> It judged a full re-alignment of legacy ids &quot;not needed for correctness&quot;. That stays true for event ids, which are still matched by code. Fencer ids are re-aligned, because they are what a replay compares.</li>
+</ul>
+<p>The 2026-08-28 boundary stands: the calendar mirror never writes the results half of the status, and only promote and the daily close do.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="076-pool-round-discard-and-listing-keep-rule.html">← ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="078-gdpr-data-handling.html">→ ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a></nav>
-<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>cbbaa592001e8fb742d9eb44507d396a5e6ba2f4b068917ec8ccb76f89086a0f</code></footer>
+<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>bd612a8b9dab10dd06be5e4dd2e56aaea6e15035a689985c799966292716e90b</code></footer>
 </div></body></html>

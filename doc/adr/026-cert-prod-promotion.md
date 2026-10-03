@@ -1,6 +1,6 @@
 # ADR-026: CERT → PROD Event Promotion via Python Script
 
-**Status:** Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see "Calendar Promote Mode" below)
+**Status:** Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see "Calendar Promote Mode" below). The per-event mode is superseded by [ADR-108](108-promote-replays-verified-cert-ingestion.md) (2026-10-03); the calendar mode stands.
 **Date:** 2026-04-05
 **Relates to:** ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import)
 **Companion implementation plan:** [doc/archive/evf_calendar_promote_plan.md](../archive/evf_calendar_promote_plan.md)
@@ -107,3 +107,18 @@ Worst-case concurrent race converges to the same state as a serial execution.
 - **Admin edits on PROD are protected.** `fn_refresh_evf_event_urls` only fills NULL/empty columns.
 - **pgTAP:** coverage unchanged — 12.1–12.13 already verify both RPCs; same RPCs run on PROD via the Management API.
 - **New pytest coverage:** prom.5–prom.7 in `python/tests/test_promote.py` (mocked httpx, no live calls).
+
+---
+
+## Amendment (2026-10-03) — the per-event mode is superseded by ADR-108
+
+The per-event mode above copied CERT's rows to PROD. It sent CERT's fencer ids, which differed from PROD's for 344 of 367 fencers on 3 October 2026. It created no fencers, dropped the joined-bracket order, continued after a failed tournament without rolling anything back, and always set COMPLETED.
+
+[ADR-108](108-promote-replays-verified-cert-ingestion.md) replaces it. Promote copies nothing:
+
+- It checks that CERT and PROD started from the same inputs, and that CERT's committed result has no open issue.
+- It runs the same ingestion on PROD and applies the result in one transaction that rolls back on any difference from CERT.
+- The event status follows a single lifecycle rule.
+- The seed export becomes a separate job.
+
+The calendar mode, its concurrency group and its idempotency backstop are unchanged.

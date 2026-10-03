@@ -1,0 +1,10 @@
+# PPW1-2026-2027 — decision P7 of 2026-10-03 (doc/plans/cert-fencer-alignment-signoff-2026-10-03.html).
+# Fencers are named, not numbered (P3.OV19).
+# P7: KIEROŃSKI Tomasz declared 1985 at registration, but his V0 results in 2024/25
+# need 1986 or later and his V1 entry here needs 1987 or earlier. His birth year is
+# kept at 1986, confirmed, set on PROD and carried to CERT by the refresh. Linking him
+# here skips the birth-year reconcile, so the declaration cannot overwrite 1986.
+# Naming the year makes the run halt, rather than guess, while the roster lacks 1986.
+identity:
+- scraped_name: KIEROŃSKI Tomasz
+  fencer: {surname: KIEROŃSKI, first_name: Tomasz, birth_year: 1986}
