@@ -177,6 +177,16 @@ class DbConnector:
             .execute()
         )
 
+    def set_event_status(self, id_event: int, status: str) -> None:
+        """The lifecycle rule's status (ADR-108 §7). The transition validator
+        on tbl_event checks the pair; `lifecycle.steps` never asks for one it refuses."""
+        (
+            self._sb.table("tbl_event")
+            .update({"enum_status": status})
+            .eq("id_event", id_event)
+            .execute()
+        )
+
     def open_ingest_run(self, params: dict) -> int:
         """Open a tbl_ingest_run row before the run writes (ADR-108 §4). The
         database records the input fingerprint and the roster; returns the id."""

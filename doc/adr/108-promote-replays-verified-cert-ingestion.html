@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="033664da6b1a7a46e73599b8ce0f6ba515edd2daa8a25bb5d098441aa77b918e">
+<meta name="adr-source-sha256" content="df66369a89b08f7d27056de08202fd6c45d22849cf798cc17911fac33bfcd564">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">305 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">315 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
@@ -319,6 +319,16 @@
 </li>
 <li><strong>The manual close.</strong> The Telegram <code>complete</code> command stays as a manual close, takes an exact code, and does not check the end date.</li>
 </ul>
+<p><strong>Implemented 2026-10-03 (build step 11).</strong></p>
+<ul>
+<li><strong>Finished.</strong> <code>parse_event_schedule</code> gives every listing <code>finished</code> (its schedule row says Finished; a listing shown on two days needs both rows) and <code>day</code> (the date heading above it). The domestic ingestion moves a listing that is not final to the schedule's skips, with the reason &quot;not final&quot;; the run record, promote's source check and the admin accordion all show it, and the run record keeps the latest listing day.</li>
+<li><strong>The rule.</strong> <code>python/pipeline/promotion/lifecycle.py</code>: COMPLETED when every listing is final and read, none is dated after the end date, and today in Warsaw is later than the end date; otherwise IN_PROGRESS. A run that committed nothing leaves the status alone (ADR-037). Writes go through the validator's pairs: PLANNED steps through IN_PROGRESS, and an unchanged status is not written.</li>
+<li><strong>Who applies it.</strong> Every domestic ingestion through <code>ingest_event_from_url</code> (CERT and LOCAL) ends by applying it. <code>plan_event</code> carries it as the plan's status, which promote passes to <code>fn_promote_event_apply</code> and <code>apply_plan</code> sets.</li>
+<li><strong>The daily close.</strong> <code>python/pipeline/promotion/close.py</code>, run by <code>.github/workflows/event-close.yml</code> at 04:00 UTC in <code>prod-write</code>: each domestic event of the active season IN_PROGRESS on CERT or PROD with its end date passed is completed on CERT and then PROD when every listing is final and none is dated after the end date, the schedule hashes as the latest finished CERT run read it, that run read every listing, and both environments hold its result fingerprint. Otherwise it writes nothing and sends one Telegram message per event saying what to do. An environment already COMPLETED is not written again; a failure raises and the workflow alerts. A manual run is a dry run unless unticked.</li>
+<li><strong>The manual close.</strong> <code>fn_complete_event</code> takes an exact code and refuses a prefix or an unknown code, listing the active season's codes that start with it (migration <code>20261003000019</code>; the parameter keeps the name <code>p_prefix</code> for the deployed GAS).</li>
+<li><strong>The calendar card</strong> shows results links for an IN_PROGRESS event as well as a COMPLETED one.</li>
+<li><strong>Tests.</strong> pytest <code>test_promotion_lifecycle.py</code> (PROMO.LIFE.01–17); pgTAP <code>105_complete_event_exact_code.sql</code> (COMPLETE.01–06); Vitest EC.65.</li>
+</ul>
 <h3 id="8-a-carry-stops-on-results-per-weapon-and-gender-decision-p6-a">8 · A carry stops on results, per weapon and gender (decision P6 A)</h3>
 <p>The <code>EVENT_FK_MATCHING</code> ranking functions stop carrying the previous edition for a weapon and gender as soon as the linked current edition has a scored result for that weapon and gender and itself counts (any status <code>vw_eligible_event</code> counts: IN_PROGRESS, SCORED or COMPLETED). A COMPLETED or SCORED current edition stops every carry from its previous edition, as today. The stop applies to every linked event, whatever its type (decided 3 October 2026): the link means the new edition replaces the old one (<a href="018-rolling-score.html">ADR-018</a> §3, §7). Implemented in <code>supabase/migrations/20261003000018_carry_stop_results.sql</code>; tests <code>supabase/tests/104_carry_stop_results.sql</code>, CARRY.RS.01–11.</p>
 <p>This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes the divergence that ADR-018 recorded. There is no double count while an event is IN_PROGRESS, and no empty slot for a weapon fenced on a later day. The view alone cannot see weapons, so the change covers the four FK functions, which read the view together.</p>
@@ -395,5 +405,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>033664da6b1a7a46e73599b8ce0f6ba515edd2daa8a25bb5d098441aa77b918e</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>df66369a89b08f7d27056de08202fd6c45d22849cf798cc17911fac33bfcd564</code></footer>
 </div></body></html>

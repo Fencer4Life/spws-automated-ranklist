@@ -164,7 +164,7 @@ def _sql_apply(db: Any, plan: Any, state: dict, code: str) -> dict:
         "p_expected_fingerprint": expected,
         "p_expected_inputs": state["inputs"][code],
         "p_prior_fingerprint": None,
-        "p_status": "IN_PROGRESS",
+        "p_status": plan.status,  # ADR-108 §7, the lifecycle rule's status
         "p_dry_run": True,
     }
     try:
@@ -211,7 +211,7 @@ def plan(state_path: Path, apply: str = "python") -> int:
             result = _sql_apply(db, p, state, code)
             print(f"plan {code}: {counts}; applied {result}")
         else:
-            refs = apply_plan(p.ops, db)
+            refs = apply_plan(p.ops, db, status=p.status, event_code=code)
             print(f"plan {code}: {counts}; {sum(1 for r in refs if r < 0)} new tournament(s)")
     applied = json.loads(json.dumps(snapshot(db, state["events"]), default=str))
     diffs = _diff(state["snapshot"], applied)
