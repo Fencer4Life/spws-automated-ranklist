@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="009-cert-prod-runtime-toggle.md">
-<meta name="adr-source-sha256" content="4c71444bb6bca8a7d54f7d02a938908560fc69915a76f3c13f5e2dab97a5c406">
+<meta name="adr-source-sha256" content="e3437fc7476c64902750cf79943202321688e85826fc5cc286ed1c6fe22ea089">
 <title>ADR-009 · CERT/PROD Runtime Toggle (Single GitHub Pages Site)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 009</p><h1>CERT/PROD Runtime Toggle (Single GitHub Pages Site)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-15 (M6) <strong>Superseded in part by:</strong> <a href="108-environments-split-by-host.html">ADR-108</a> — the runtime CERT/PROD toggle. The single GitHub Pages site and the build-time credential injection stand.</dd></div><div><dt>Source</dt><dd class=""><code>009-cert-prod-runtime-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">35 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2025-03-15 (M6) <strong>Superseded in part by:</strong> <a href="109-environments-split-by-host.html">ADR-109</a> — the runtime CERT/PROD toggle. The single GitHub Pages site and the build-time credential injection stand.</dd></div><div><dt>Source</dt><dd class=""><code>009-cert-prod-runtime-toggle.md</code></dd></div><div><dt>Length</dt><dd class="">35 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted
 <strong>Date:</strong> 2025-03-15 (M6)
-<strong>Superseded in part by:</strong> <a href="108-environments-split-by-host.html">ADR-108</a> — the runtime CERT/PROD toggle. The single GitHub Pages site and the build-time credential injection stand.</p>
+<strong>Superseded in part by:</strong> <a href="109-environments-split-by-host.html">ADR-109</a> — the runtime CERT/PROD toggle. The single GitHub Pages site and the build-time credential injection stand.</p>
 </div>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#superseded-in-part-2026-10-03-the-runtime-toggle">Superseded in part (2026-10-03 — the runtime toggle)</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
   <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="superseded-in-part-2026-10-03-the-runtime-toggle">Superseded in part (2026-10-03 — the runtime toggle)</h2>
-<p><a href="108-environments-split-by-host.html">ADR-108</a> splits the environments by host. github.io is CERT, under a yellow TEST ribbon and with no switch. weteraniszermierki.pl is PROD (ADR-090).</p>
+<p><a href="109-environments-split-by-host.html">ADR-109</a> splits the environments by host. github.io is CERT, under a yellow TEST ribbon and with no switch. weteraniszermierki.pl is PROD (ADR-090).</p>
 <ul>
 <li><strong>What goes:</strong> the toggle described below.</li>
 <li><strong>What stands:</strong> one Pages site, the <code>sed</code> injection of credentials at build time, and the security consequences. <code>index.html</code> keeps the PROD pair only for the read-only promotion state.</li>
@@ -51,5 +51,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="008-psw-msw-international-pool.html">← ADR-008: PSW and MSW in International Ranking Pool</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="010-age-category-by-birth-year.html">→ ADR-010: Age Category by Birth Year (Cross-Category Carryover)</a></nav>
-<footer class="foot">Generated from <code>009-cert-prod-runtime-toggle.md</code> · source SHA-256 <code>4c71444bb6bca8a7d54f7d02a938908560fc69915a76f3c13f5e2dab97a5c406</code></footer>
+<footer class="foot">Generated from <code>009-cert-prod-runtime-toggle.md</code> · source SHA-256 <code>e3437fc7476c64902750cf79943202321688e85826fc5cc286ed1c6fe22ea089</code></footer>
 </div></body></html>
