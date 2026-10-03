@@ -610,7 +610,7 @@
           <ul>
             <li><b>Status, 3 Oct: built.</b> <code>promotion/plan.py</code>: the recording connector, <code>plan_event</code> and the reference <code>apply_plan</code>; <code>promotion/plan_check.py</code> for LOCAL. PROMO.PLAN.01&ndash;13 (18 tests; 13 is the LOCAL check&rsquo;s exit 3 for an event whose live run failed), two of them running the real ingestion live and as plan-then-apply on an in-memory database, one per engine.</li>
             <li><b>PPW1 2026/27: plan, then apply, equals the live run on LOCAL.</b> 25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move.</li>
-            <li>Past scored events of a closed season are never re-ingested, so 2025/26 events are not acceptance input.</li>
+            <li>Past scored events of a closed season are never re-ingested, so 2025/26 events are not acceptance input. Why: in the next season the year categories are computed from has shifted (the season&rsquo;s later year), and an ingestion run in the active season on a previous season&rsquo;s event would have to be aware of that change.</li>
           </ul></li>
       <li><b><code>fn_event_result_fingerprint</code> and <code>fn_promote_event_apply</code></b> (with <code>p_dry_run</code>, its row locks and the in-transaction input check): pgTAP <code>PROMO.APPLY.*</code>. It must prove atomicity, rollback of the lock and the queue on a fingerprint mismatch, that a dry run persists nothing, the URL write, the status pairs, and idempotence.</li>
       <li><b>Carry-over stop (P6 A):</b> a migration for the four FK ranking functions and pgTAP written RED first. The first test reproduces the double count while IN_PROGRESS.</li>
