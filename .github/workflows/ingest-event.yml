@@ -8,7 +8,13 @@ name: Ingest event (NEW pipeline, from URL)
 #
 # Triggered by:
 #   * Admin UI "Re-ingest event" button → dispatch-workflow edge fn (allowlisted)
-#   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=<env>
+#   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=cert
+#
+# ADR-108 §9: this path ingests domestic events only (an international event is
+# refused by ingest_cli, ADR-105), and a domestic event reaches PROD only through
+# promote, so target prod is refused. The run is recorded in tbl_ingest_run for
+# promote. It shares `cert-write` with the CERT recompute drain and the refresh,
+# so CERT's result never mixes two states.
 #
 # Security: all user-controlled inputs validated before shell interpolation.
 
@@ -22,7 +28,7 @@ on:
         description: 'Season end year, e.g. 2026'
         required: true
       target:
-        description: 'Target env: cert | prod'
+        description: 'Target env: cert (prod is refused: promote replays the CERT run on PROD)'
         default: 'cert'
       url_event:
         description: 'Optional FTL eventSchedule URL — set as tbl_event.url_event (admin-managed) before ingest. Blank = use the stored url_event.'
@@ -38,6 +44,9 @@ jobs:
   ingest-event:
     name: Re-ingest event (from URL)
     runs-on: ubuntu-latest
+    concurrency:
+      group: cert-write
+      cancel-in-progress: false
     env:
       EVENT_CODE: ${{ inputs.event_code }}
       SEASON_END_YEAR: ${{ inputs.season_end_year }}
@@ -63,8 +72,12 @@ jobs:
             echo "::error::invalid season_end_year (must be 4 digits)"
             exit 1
           fi
-          if [[ "$TARGET_ENV" != "cert" && "$TARGET_ENV" != "prod" ]]; then
-            echo "::error::target must be cert or prod"
+          if [[ "$TARGET_ENV" == "prod" ]]; then
+            echo "::error::target prod is refused: a domestic event reaches PROD only through promote (promote <exact code>), which replays the verified CERT run (ADR-108)"
+            exit 1
+          fi
+          if [[ "$TARGET_ENV" != "cert" ]]; then
+            echo "::error::target must be cert"
             exit 1
           fi
           URL_RE='^https?://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+$'
@@ -75,28 +88,22 @@ jobs:
 
       - name: Re-ingest event from URL (keep-rule + source overrides)
         env:
-          SUPABASE_URL: ${{ inputs.target == 'prod'
-            && secrets.SUPABASE_PROD_URL
-            || secrets.SUPABASE_CERT_URL }}
-          SUPABASE_KEY: ${{ inputs.target == 'prod'
-            && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY
-            || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          # ADR-108 §4: the CERT run is recorded in tbl_ingest_run; promote replays it.
           ARGS=(--flow ingest_domestic
                 --event-code "$EVENT_CODE"
                 --season-end-year "$SEASON_END_YEAR"
                 --from-url --replace
-                --send-telegram --md-target storage)
+                --send-telegram --md-target storage
+                --record-run cert)
           if [[ -n "$URL_EVENT" ]]; then
             ARGS+=(--url-event "$URL_EVENT")
-          fi
-          # ADR-108 §4: a CERT run is recorded in tbl_ingest_run; promote replays it.
-          if [[ "$TARGET_ENV" == "cert" ]]; then
-            ARGS+=(--record-run cert)
           fi
           python -m python.pipeline.ingest_cli "${ARGS[@]}"
 

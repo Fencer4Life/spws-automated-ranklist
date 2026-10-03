@@ -1,31 +1,141 @@
 name: Promote Event to PROD
 
+# ADR-108 §6: promote replays the latest verified CERT run of one event on PROD.
+# It copies nothing from CERT. `resolve` finds the run and its commit (read only);
+# `promote` checks that commit out, re-runs the gate, plans the ingestion against
+# PROD, compares it with the CERT run and applies it in one transaction over a
+# direct database connection (fn_promote_event_apply: a dry run, then the apply);
+# after the commit it reports, drains PROD's recompute queue and compares the
+# drained events with CERT. `seed` exports PROD's seed as its own job.
+#
+# Triggered by the Telegram `promote <exact code>` command (GAS) or:
+#   gh workflow run promote.yml -f event_code=PPW1-2026-2027 [-f dry_run=true]
+
 on:
   workflow_dispatch:
     inputs:
       event_code:
-        description: 'Event code prefix (e.g. PPW4)'
+        description: 'Exact event code (e.g. PPW1-2026-2027); a prefix is answered with the matching codes'
         required: true
+      dry_run:
+        description: 'Plan, compare and dry-apply only; write nothing'
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
-
-# Serialise PROD writes with the evf-sync calendar-promote job.
-# cancel-in-progress: false so partial writes never abort mid-flight.
-concurrency:
-  group: prod-write
-  cancel-in-progress: false
-  # queue: max on EVERY member of prod-write. cancel-in-progress: false is not
-  # enough on its own -- GitHub queues only ONE pending run per group and
-  # CANCELS the pending one when a new one arrives. A member without this can
-  # silently kill a sibling's pending promote, and cancelled is not failed, so
-  # nothing alerts. Rationale in full: pzsz-sync.yml.
-  queue: max
+  contents: read
 
 jobs:
-  promote:
-    name: CERT → PROD Promotion
+  resolve:
+    name: The CERT run and its commit
     runs-on: ubuntu-latest
+    env:
+      EVENT_CODE: ${{ inputs.event_code }}
+    outputs:
+      commit: ${{ steps.run.outputs.commit }}
+      event: ${{ steps.run.outputs.event }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx pyyaml
+
+      - name: Validate input
+        run: |
+          if ! [[ "$EVENT_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::invalid event_code (must match [A-Za-z0-9_-]+)"
+            exit 1
+          fi
+
+      - name: Find the latest CERT run
+        id: run
+        run: python -m python.pipeline.promotion.replay --resolve --event "$EVENT_CODE"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: The run's commit is on main and can replay
+        env:
+          COMMIT: ${{ steps.run.outputs.commit }}
+        run: |
+          if ! git merge-base --is-ancestor "$COMMIT" origin/main; then
+            echo "::error::the CERT run used $COMMIT, which is not on main; re-ingest CERT"
+            exit 1
+          fi
+          if ! git cat-file -e "$COMMIT:python/pipeline/promotion/replay.py"; then
+            echo "::error::the CERT run used $COMMIT, older than promote's replay; re-ingest CERT"
+            exit 1
+          fi
+
+  promote:
+    name: Replay on PROD
+    needs: resolve
+    runs-on: ubuntu-latest
+    # Serialise with every other PROD writer (the PROD drain, the daily close, the
+    # calendar and season promotions). cancel-in-progress: false so a run is never
+    # cut off mid-flight.
+    concurrency:
+      group: prod-write
+      cancel-in-progress: false
+      # queue: max on EVERY member of prod-write. cancel-in-progress: false is not
+      # enough on its own -- GitHub queues only ONE pending run per group and
+      # CANCELS the pending one when a new one arrives. A member without this can
+      # silently kill a sibling's pending promote, and cancelled is not failed, so
+      # nothing alerts. Rationale in full: pzsz-sync.yml.
+      queue: max
+    outputs:
+      applied: ${{ steps.replay.outputs.applied }}
+    env:
+      EVENT_CODE: ${{ needs.resolve.outputs.event }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve.outputs.commit }}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        # The plan runs the domestic ingestion (scrapers, matcher, rulebook), and
+        # the apply needs a direct database connection.
+        run: pip install supabase httpx rapidfuzz beautifulsoup4 pyyaml psycopg2-binary
+
+      - name: Replay the CERT run on PROD
+        id: replay
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_PROD_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_PROD_SERVICE_ROLE_KEY }}
+          SUPABASE_PROD_DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+          FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
+          FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          ARGS=(--event "$EVENT_CODE")
+          if [[ "$DRY_RUN" == "true" ]]; then
+            ARGS+=(--dry-run)
+          fi
+          python -m python.pipeline.promotion.replay "${ARGS[@]}"
+
+  seed:
+    name: Export PROD seed (ADR-036)
+    needs: [resolve, promote]
+    # The promote has committed; a failed export alerts but does not mark it failed.
+    if: always() && needs.promote.outputs.applied == 'true'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
 
@@ -36,37 +146,59 @@ jobs:
       - name: Install dependencies
         run: pip install httpx
 
-      - name: Promote event
-        run: python -m python.pipeline.promote --event "${{ github.event.inputs.event_code }}"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
-          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
-      - name: Export PROD seed (ADR-036)
-        if: success()
+      - name: Export PROD seed
         run: python -m python.pipeline.export_seed --ref "${{ secrets.SUPABASE_PROD_REF }}"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Commit seed file
-        if: success()
+      - name: Commit seed file (rebase and retry)
+        env:
+          EVENT_CODE: ${{ needs.resolve.outputs.event }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
           if git diff --cached --quiet; then
             echo "No seed changes to commit"
-          else
-            git commit -m "chore: auto-export seed from PROD after promote ${{ github.event.inputs.event_code }} [skip ci]"
-            git push
+            exit 0
           fi
+          git commit -m "chore: auto-export seed from PROD after promote ${EVENT_CODE} [skip ci]"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "push attempt $attempt failed; retrying"
+            sleep $((attempt * 10))
+          done
+          exit 1
 
       - name: Notify failure
         if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EVENT_CODE: ${{ needs.resolve.outputs.event }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Promotion FAILED for ${{ github.event.inputs.event_code }}. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MSG="Seed export after promote ${EVENT_CODE} FAILED (the promote itself committed). Check: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
+
+  notify:
+    name: Notify failure
+    needs: [resolve, promote]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EVENT_CODE: ${{ inputs.event_code }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          MSG="Promote of ${EVENT_CODE} FAILED or was refused. Check: ${RUN_URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" > /dev/null
