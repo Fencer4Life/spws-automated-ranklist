@@ -554,7 +554,12 @@
               <li>A merge is made with the existing merge tools before a refresh.</li>
             </ul></li>
         </ul></li>
-      <li><b>Seed keeps PROD&rsquo;s ids (P1c)</b>: <code>export_seed.py</code> writes <code>id_fencer</code> and id references; the seed load aligns migration-created fencers through <code>fn_align_fencers_to</code>; the bootstrap and <code>mirror-prod-local.sh</code> fail on any roster difference with PROD. Then a seed refresh under ADR-036: the full suite must pass on the new seed before the pointer moves. Tests: <code>PROMO.SEED.*</code> and pgTAP.</li>
+      <li><b>Seed keeps PROD&rsquo;s ids (P1c)</b>: <code>export_seed.py</code> writes <code>id_fencer</code> and id references; the seed load aligns migration-created fencers through <code>fn_align_fencers_to</code>; the bootstrap and <code>mirror-prod-local.sh</code> fail on any roster difference with PROD. Then a seed refresh under ADR-036: the full suite must pass on the new seed before the pointer moves. Tests: <code>PROMO.SEED.*</code> and pgTAP.
+          <ul>
+            <li><b>Status, 3 Oct: built.</b> The seed's fencer section is one call of <code>fn_seed_load_fencers</code> (migration <code>20261003000013</code>, pgTAP SEED.01–08). It pairs the fencers migrations created by name and birth year, refuses by name, then aligns through <code>fn_align_fencers_to</code>. Results carry the id, and <code>fencer_lookup</code> is retired.</li>
+            <li><code>refresh --mode verify</code> is the mirror's id-for-id check (PROMO.SEED.01–05).</li>
+            <li><code>seed_prod_2026-10-03.sql</code> was re-exported with PROD's ids. LOCAL rebuilt from it equals PROD, roster and all 2,878 finished-season results, with no refresh.</li>
+          </ul></li>
       <li><b>Run record</b>: the <code>tbl_ingest_run</code> migration (service_role only, ADR-083) and its writer in <code>ingest_cli</code>. pgTAP and <code>PROMO.RUN.*</code>.</li>
       <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>.</li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>

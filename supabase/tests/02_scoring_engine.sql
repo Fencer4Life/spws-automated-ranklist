@@ -39,7 +39,7 @@
 -- Fencers are created by this file (see the convention in
 -- doc/handbook/reference/test-and-traceability.html). Do not reintroduce
 -- lookups by surname: SELECT ... INTO silently binds the first row when two
--- fencers share a surname, the defect fixed in export_seed.py::fencer_lookup().
+-- fencers share a surname, the defect the seed's own name lookup once had.
 -- Scoring itself is placement- and participant-driven — fn_calc_tournament_scores
 -- reads no birth year and no season dates — so these fixtures need no particular
 -- age, unlike 03_views_api.
