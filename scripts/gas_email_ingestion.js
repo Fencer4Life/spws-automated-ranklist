@@ -143,30 +143,38 @@ function handleCommand(props, command, arg) {
         + 'Pending: <b>' + (statusData.pending_count || 0) + '</b>';
 
     case 'complete':
+      // ADR-108 §7: an exact event code; a prefix is refused with the matching codes.
       callRpc(supabaseUrl, supabaseKey, 'fn_complete_event', { p_prefix: arg });
-      // ADR-036: seed export moved to /promote (PROD is source of truth)
+      // Trigger seed export from CERT (ADR-027)
+      var githubPatC = props.getProperty('GITHUB_PAT');
+      var githubRepoC = props.getProperty('GITHUB_REPO');
+      try { triggerGitHubWorkflow(githubPatC, githubRepoC, 'export-seed.yml', { reason: 'complete' }); } catch(e) {}
       return '<b>Event Completed</b>\n'
         + '<pre>' + arg + '</pre>\n'
         + 'Status changed to <b>COMPLETED</b>\n'
-        + '<i>Use /promote to push to PROD + update seeds</i>';
+        + '<i>Seed export triggered</i>';
 
     case 'rollback':
       var result = callRpc(supabaseUrl, supabaseKey, 'fn_rollback_event', { p_prefix: arg });
-      // ADR-036: seed export moved to /promote (PROD is source of truth)
+      // Trigger seed export from CERT (ADR-027)
+      var githubPatR = props.getProperty('GITHUB_PAT');
+      var githubRepoR = props.getProperty('GITHUB_REPO');
+      try { triggerGitHubWorkflow(githubPatR, githubRepoR, 'export-seed.yml', { reason: 'rollback' }); } catch(e) {}
       return '<b>Event Rolled Back</b>\n'
         + '<pre>' + arg + '</pre>\n'
         + 'Tournaments deleted: <b>' + result.tournaments_deleted + '</b>\n'
         + 'Results deleted: <b>' + result.results_deleted + '</b>\n'
-        + 'Status reset to <b>PLANNED</b>';
+        + 'Status reset to <b>PLANNED</b>\n'
+        + '<i>Seed export triggered</i>';
 
     case 'promote':
+      // ADR-108 §6: an exact event code; promote.yml answers a prefix with the matching codes.
       var githubPat = props.getProperty('GITHUB_PAT');
       var githubRepo = props.getProperty('GITHUB_REPO');
       triggerGitHubWorkflow(githubPat, githubRepo, 'promote.yml', { event_code: arg });
-      // ADR-036: seed export triggered by promote.yml after PROD is updated
       return '<b>Promotion Triggered</b>\n'
         + '<pre>' + arg + '</pre>\n'
-        + '<i>CERT → PROD + seed export.\nWatch for completion notification.</i>';
+        + '<i>The verified CERT run will be replayed on PROD.\nWatch for the result notification.</i>';
 
     // --- Data review ---
     case 'results':
@@ -246,11 +254,44 @@ function handleCommand(props, command, arg) {
       });
       return rankLines.join('\n');
 
-    // --- Seed ---
+    // --- Pipeline ---
     case 'ingest':
-      var githubPatI = props.getProperty('GITHUB_PAT');
-      var githubRepoI = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatI, githubRepoI, 'ingest.yml', { source: 'telegram' });
+      // Overloaded (N15):
+      //   ingest <code> <url> → re-ingest ONE event on CERT from its FTL URL via
+      //       ingest-event.yml (keep-rule + url_results); staging report (full + diff)
+      //       is sent back to this chat when the run finishes. ADR-108: PROD is
+      //       refused; promote <exact code> replays the verified CERT run there.
+      //   ingest            (no args)        → legacy: process already-staged email XMLs.
+      var iParts = arg ? arg.split(/\s+/) : [];
+      if (iParts.length >= 2 && /^https?:\/\//.test(iParts[1])) {
+        var iEvent = iParts[0];                                   // full event code, e.g. PPW5-2025-2026
+        var iUrl = iParts[1];
+        var iTarget = (iParts[2] || 'cert').toLowerCase();
+        var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
+        if (!iYm) {
+          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n'
+               + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
+        }
+        if (iTarget === 'prod') {
+          return '<b>Not on PROD</b>\n<i>A domestic event reaches PROD only through promote, which replays the verified CERT run. '
+               + 'Ingest on CERT, then send</i> <pre>promote ' + iEvent + '</pre>';
+        }
+        if (iTarget !== 'cert') {
+          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n<i>the target is cert</i>';
+        }
+        // Dispatch straight to the workflow (like `promote`) — no Management API call,
+        // so it does not depend on SUPABASE_ACCESS_TOKEN. ingest_cli matches the exact code.
+        triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
+          'ingest-event.yml', { event_code: iEvent, season_end_year: iYm[2], target: iTarget, url_event: iUrl });
+        return '<b>Event Re-ingest Triggered</b>\n'
+          + '<pre>' + iEvent + '</pre>\n'
+          + 'Target: <b>' + iTarget + '</b>\n'
+          + '<i>Re-ingesting from URL (keep-rule + url_results).\n'
+          + 'Staging report (full + diff) will arrive here when done (~1 min).</i>';
+      }
+      // Legacy bare `ingest` — process emailed staging files (ingest.yml).
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
+        'ingest.yml', { source: 'telegram' });
       return '<b>Ingestion Triggered</b>\n<i>Processing staging files. Watch for completion notification.</i>';
 
     case 'send':
@@ -359,72 +400,6 @@ function handleCommand(props, command, arg) {
       triggerGitHubWorkflow(githubPatTS, githubRepoTS, 'scrape-tournament.yml', { tournament_code: arg });
       return '<b>Scrape Tournament</b>\n<pre>' + arg + '</pre>\n<i>Scraping results from URL and ingesting...</i>';
 
-    // ─── Phase 5.5 (ADR-061) — verdict .md operator commands ─────────────
-    case 'stage':
-      // Trigger phase5-event-runner.yml — runs Phase-5 pipeline against the
-      // event's URL (must already be on tbl_event.url_results). Produces
-      // drafts + uploads full.md to Storage + Telegram-sends the document.
-      var stageCode = String(arg).toUpperCase();
-      if (!stageCode) return '<i>Usage:</i> <pre>stage EVENT-A-2024-2025</pre>';
-      if (!/^[A-Z0-9_-]+$/.test(stageCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
-      triggerGitHubWorkflow(
-        props.getProperty('GITHUB_PAT'),
-        props.getProperty('GITHUB_REPO'),
-        'phase5-event-runner.yml',
-        { event_code: stageCode, target: 'cert' }
-      );
-      return '📥 <b>Stage Event</b>\n<pre>' + stageCode + '</pre>\n<i>Workflow phase5-event-runner.yml dispatched. Watch for the staging full.md document.</i>';
-
-    case 'regen':
-      // Trigger regen-report.yml — re-renders full.md from current DB state,
-      // uploads + Telegram-sends. Useful when operator wants a fresh verdict
-      // without doing an alias mutation (or after manual SQL changes).
-      var regenCode = String(arg).toUpperCase();
-      if (!regenCode) return '<i>Usage:</i> <pre>regen EVENT-A-2024-2025</pre>';
-      if (!/^[A-Z0-9_-]+$/.test(regenCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
-      triggerGitHubWorkflow(
-        props.getProperty('GITHUB_PAT'),
-        props.getProperty('GITHUB_REPO'),
-        'regen-report.yml',
-        { event_code: regenCode, target: 'cert' }
-      );
-      return '🔄 <b>Regen Verdict</b>\n<pre>' + regenCode + '</pre>\n<i>Workflow regen-report.yml dispatched. Watch for the regenerated full.md document.</i>';
-
-    case 'parity':
-      // Trigger one-off EVF parity check for a single event. Sends delta .md
-      // if drift detected; silent if no-drift (per ADR-060).
-      var parityCode = String(arg).toUpperCase();
-      if (!parityCode) return '<i>Usage:</i> <pre>parity EVENT-A-2024-2025</pre>';
-      if (!/^[A-Z0-9_-]+$/.test(parityCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
-      triggerGitHubWorkflow(
-        props.getProperty('GITHUB_PAT'),
-        props.getProperty('GITHUB_REPO'),
-        'evf-parity-sweep.yml',
-        { event_code: parityCode, target: 'cert' }
-      );
-      return '📊 <b>EVF Parity</b>\n<pre>' + parityCode + '</pre>\n<i>Workflow evf-parity-sweep.yml dispatched. If drift detected, a delta .md will arrive.</i>';
-
-    case 'verdict':
-      // Fetch staging-reports/{event_code}/full.md from Storage and re-send
-      // as Telegram document. Useful if operator deleted the original message
-      // or wants to re-import to Obsidian.
-      var verdictCode = String(arg).toUpperCase();
-      if (!verdictCode) return '<i>Usage:</i> <pre>verdict EVENT-A-2024-2025</pre>';
-      if (!/^[A-Z0-9_-]+$/.test(verdictCode)) return '<i>Invalid event_code (must match [A-Z0-9_-]+)</i>';
-      try {
-        var sbUrl = props.getProperty('SUPABASE_URL');
-        var sbKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
-        var mdBytes = downloadFromSupabaseStorage(sbUrl, sbKey, 'staging-reports', verdictCode + '/full.md');
-        if (!mdBytes) {
-          return '⚠ <code>staging-reports/' + verdictCode + '/full.md</code> not found.\n<i>Try</i> <code>regen ' + verdictCode + '</code> <i>to (re)create it.</i>';
-        }
-        sendTelegramDocument(props, mdBytes, verdictCode + '-full.md',
-          '📄 <b>' + verdictCode + '</b> · full · <i>re-fetched via /verdict</i>');
-        return '📄 Sent <code>' + verdictCode + '/full.md</code> as document.';
-      } catch (e) {
-        return '❌ verdict fetch failed: ' + e.message;
-      }
-
     // --- Emergency ---
     case 'pause':
       props.setProperty('PAUSED', 'true');
@@ -444,14 +419,14 @@ function handleCommand(props, command, arg) {
         '<pre>status &lt;event&gt;</pre>',
         'Event status, tournament + result counts',
         '',
-        '<pre>complete &lt;event&gt;</pre>',
-        'Mark event COMPLETED on CERT',
+        '<pre>complete &lt;exact code&gt;</pre>',
+        'Manual close: IN_PROGRESS → COMPLETED (e.g. PPW1-2026-2027); the daily close does this after the end date',
         '',
         '<pre>rollback &lt;event&gt;</pre>',
         'Delete all ingested data, reset to PLANNED',
         '',
-        '<pre>promote &lt;event&gt;</pre>',
-        'CERT → PROD + seed export to git',
+        '<pre>promote &lt;exact code&gt;</pre>',
+        'Replay the verified CERT run on PROD (e.g. PPW1-2026-2027); a prefix is answered with the matching codes',
         '',
         '<b><u>Review</u></b>',
         '',
@@ -482,8 +457,11 @@ function handleCommand(props, command, arg) {
         '',
         '<b><u>Pipeline</u></b>',
         '',
+        '<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>',
+        'Re-ingest one event on CERT from its FTL URL → staging report (full + diff) to Telegram. Full code, e.g. PPW5-2025-2026; PROD gets it through promote',
+        '',
         '<pre>ingest</pre>',
-        'Trigger ingestion from staging files',
+        '(no args) Trigger ingestion from emailed staging files',
         '',
         '<pre>send &lt;EVENT-CODE&gt; participants</pre>',
         'Generate the current FTL roster bundle and send it to the saved organizer email (PROD)',
@@ -523,25 +501,6 @@ function handleCommand(props, command, arg) {
         '',
         '<pre>t-scrape &lt;tournament_code&gt;</pre>',
         'Scrape results from tournament URL and ingest',
-        '',
-        '<b><u>Phase 5.5 — Verdict .md (ADR-058+059+061)</u></b>',
-        '',
-        '<pre>stage &lt;event&gt;</pre>',
-        'Run Phase-5 pipeline on event URL → drafts + full.md to Storage + Telegram',
-        '',
-        '<pre>regen &lt;event&gt;</pre>',
-        'Re-render full.md from current DB state, upload + Telegram (no re-ingest)',
-        '',
-        '<pre>parity &lt;event&gt;</pre>',
-        'Run EVF parity check for one event; sends delta .md if drift detected',
-        '',
-        '<pre>verdict &lt;event&gt;</pre>',
-        'Re-fetch staging-reports/&lt;event&gt;/full.md and send as Telegram document',
-        '',
-        '<i>Auto-delivered documents</i>:',
-        '  <code>&lt;event&gt;-full.md</code> after first ingest + post-triage regen',
-        '  <code>&lt;event&gt;-delta-&lt;ts&gt;.md</code> after EVF parity sweeps with drift',
-        '<i>Tap → Open with → Obsidian to archive in your vault.</i>',
         '',
         '<b><u>Emergency</u></b>',
         '',
@@ -620,55 +579,6 @@ function uploadToSupabaseStorage(url, key, path, bytes, contentType) {
   });
   if (response.getResponseCode() >= 400) {
     throw new Error('Storage upload failed: ' + response.getContentText());
-  }
-}
-
-// Phase 5.5 (ADR-061): generic Storage download helper for the /verdict
-// command. Downloads bucket/path and returns the raw bytes (Blob in GAS),
-// or null on 404. Mirrors the upload helper above; takes any bucket name.
-function downloadFromSupabaseStorage(url, key, bucket, path) {
-  var endpoint = url + '/storage/v1/object/' + bucket + '/' + path;
-  var response = UrlFetchApp.fetch(endpoint, {
-    method: 'get',
-    headers: {
-      'Authorization': 'Bearer ' + key,
-      'apikey': key,
-    },
-    muteHttpExceptions: true,
-  });
-  var code = response.getResponseCode();
-  if (code === 404 || code === 400) {
-    return null; // not found
-  }
-  if (code >= 400) {
-    throw new Error('Storage download failed (' + code + '): ' + response.getContentText());
-  }
-  return response.getBlob();
-}
-
-// Phase 5.5 (ADR-059): send a document attachment via Telegram Bot API.
-// Bytes is a Blob; filename and caption are strings. Mirrors the Python
-// TelegramNotifier.send_document. parse_mode HTML so bold/code render.
-function sendTelegramDocument(props, bytesBlob, filename, caption) {
-  var token = props.getProperty('TELEGRAM_BOT_TOKEN');
-  var chatId = props.getProperty('TELEGRAM_CHAT_ID');
-  if (!token || !chatId) return; // null-safe per ADR-061
-
-  var url = 'https://api.telegram.org/bot' + token + '/sendDocument';
-  // GAS multipart upload — payload is an object; UrlFetchApp builds the form.
-  var blob = bytesBlob.setName(filename).setContentType('text/markdown');
-  var resp = UrlFetchApp.fetch(url, {
-    method: 'post',
-    payload: {
-      chat_id: chatId,
-      caption: caption,
-      parse_mode: 'HTML',
-      document: blob,
-    },
-    muteHttpExceptions: true,
-  });
-  if (resp.getResponseCode() >= 400) {
-    throw new Error('Telegram sendDocument failed: ' + resp.getContentText());
   }
 }
 
