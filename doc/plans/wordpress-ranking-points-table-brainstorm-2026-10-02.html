@@ -301,13 +301,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 13 · 4 October 2026</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 14 · 4 October 2026</p>
   <h1>WordPress UI: the plan, and a PROD manual for the next administrator</h1>
-  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 5 are done: the paperwork, every test written and seen RED, the bar and the drawer, PROD admin on WordPress, and the environment split on github.io. The next move is step 6, the framed documents, on your word.</p>
+  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 5 are done: the paperwork, every test written and seen RED, the bar and the drawer, PROD admin on WordPress, the environment split on github.io, and the framed documents. The next move is step 7, the calculator, on your word.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>ADRs signed off and on disk</span>
-    <span class="pill"><span class="dot"></span>Steps 1–5 done</span>
-    <span class="pill warn"><span class="dot"></span>Next: step 6 (the framed documents), on your word</span>
+    <span class="pill"><span class="dot"></span>Steps 1–6 done</span>
+    <span class="pill warn"><span class="dot"></span>Next: step 7 (the calculator), on your word</span>
     <span class="pill"><span class="dot"></span>Q7 = C (deferred) · Q8 = A</span>
     <span class="pill"><span class="dot"></span>Part I: 13 steps, tests first</span>
     <span class="pill"><span class="dot"></span>Part II: PROD manual, facts read live on 3 Oct</span>
@@ -535,13 +535,21 @@
         </ul></li>
       <li><span class="chip fill">done 4 Oct</span> <b>PROD admin on WordPress.</b> The <code>admin-entry</code> attribute and the gate at <code>App.svelte</code> L457–460; registration links from the asset base (<code>EventManager.svelte</code> L703–708). Turns GREEN: WP.ADM.*. <b>Done 4 Oct.</b> <code>?admin=1</code> opens the sign-in on github.io as before, and on the association's site only where the element carries <code>admin-entry</code>; the calendar and the documents ignore it. A browser test was added to WP.ADM.01: the WordPress body writes <code>admin-entry</code> as a bare attribute, and only the built element shows that it reads as true. It does. Registration links are built from the asset base: on github.io they are unchanged, on <code>/ranking/</code> they point at the PROD <code>register.html</code> on the file host. WP.ADM.01–03 pass. Vitest: 10 failures left, all for steps 5–6; 1,145 pass. One type error is left, for step 6.</li>
       <li><span class="chip fill">done 4 Oct</span> <b>The environment split on github.io (W3).</b> No CT/PD switch, and the TEST ribbon whenever the surface runs on the CERT pair. The PROD read for promotion state stays (<code>refreshPromotionState</code>, <code>App.svelte</code> L1455). Dispatches target the host's own environment. Turns GREEN: WP.ENV.*. <b>Done 4 Oct.</b> The switch is gone from the ranking and from the calendar's footer. The environment is fixed by the credentials the host gives: CERT whenever the page holds the CERT pair, PROD otherwise. Dispatches therefore reach the host's own Edge Function. The ribbon is the one in the signed-off mock: „ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl”, on a phone „ŚRODOWISKO TESTOWE · TEST”. It links to the site and stays at the top while the page scrolls. My step 2 test had pinned its text to just „TEST”, so it now checks the mock's text instead. The calendar's tests CV.11 and CV.11b asserted its switch; they now assert its footer without one. FR-42 is retired and replaced by FR-151. WP.ENV.01–02 pass. Vitest: 7 failures left, all for step 6; 1,149 pass. 19 browser tests pass.</li>
-      <li><b>The framed documents.</b>
+      <li><span class="chip fill">done 4 Oct</span> <b>The framed documents.</b>
         <ul>
           <li>A new <code>frontend/src/ce/DocumentElement.svelte</code> (<code>&lt;spws-document&gt;</code>).</li>
           <li>The generator writes the <code>embed/</code> copies, with no banner and with the height report.</li>
           <li><code>release.yml</code> injects CERT into the root copies and PROD into the <code>embed/</code> copies. A build guard fails if an <code>embed/</code> copy carries CERT credentials.</li>
         </ul>
-        Turns GREEN: WP.DOC.*, WP.REL.*.</li>
+        Turns GREEN: WP.DOC.*, WP.REL.*.
+        <b>Done 4 Oct.</b> <code>&lt;spws-document&gt;</code> draws the same bar and drawer as the other pages and frames <code>{asset-base}embed/{doc}.html?lang=…</code>; it frames only the two known documents. The generator writes the <code>embed/</code> copies by removing the marked blocks from the same source: the ribbon and its style, the page's own PL/EN bar, and its banner. It then adds the height report; the scoring module block is untouched, and <code>--check</code> guards the new copies too. The github.io copies now carry the TEST ribbon, and <code>release.yml</code> makes them CERT. The <code>embed/</code> copies are PROD only, and a new step after the build stops the release if one of them carries the CERT pair. In a real browser the frame settles at the document's exact height and stays there (calculator 4,155 px on a phone and 2,316 px on a computer; points table 14,790 px), with no ribbon or banner inside and no sideways scroll. Vitest: all 1,165 pass, with no type errors left. Playwright: 26 of 31 pass; the 5 left are WP.CALC.01, step 7.
+        <br><b>Decided while building; overrule any of them:</b>
+        <ul>
+          <li><b>On the two document pages the bar lines up with the document's own column,</b> not the ranking's 960 px one, so its edges meet the cards' edges (measured: both 14–1266 px at 1280, 8–382 px on a phone).</li>
+          <li><b>The drawer's shadow only shows while it is open.</b> Closed, it leaked a thin grey strip along the left edge of every page, github.io included.</li>
+          <li><b>Switching PL/EN in the bar reloads the framed document in the other language,</b> so the calculator's typed values reset. Keeping them would need the bar to message the document instead; say if you want that.</li>
+          <li><b>Until step 8 deletes it, the WordPress upload copy carries the ribbon too,</b> because it is a byte copy of the source. Nothing uses it any more.</li>
+        </ul></li>
       <li><b>The calculator (W4).</b> Markup and CSS only, in the calculator source; the generator carries the change into its copies. Turns GREEN: WP.CALC.*.</li>
       <li><b>Retire the WordPress upload copy.</b> The generator stops writing <code>doc/tools/WP-kalkulator-punktow-za-wynik-spws.html</code>; the file is deleted and <code>assets.test.ts</code> is updated.</li>
       <li><b>The publishing script fills the key.</b>
@@ -1220,5 +1228,5 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
     </ul>
   </section>
 
-  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 13 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 14 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
 </div>

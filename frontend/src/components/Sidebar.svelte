@@ -175,15 +175,17 @@
     width: 260px;
     height: 100%;
     background: #fff;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
     z-index: 100;
     transition: left 0.25s ease;
     display: flex;
     flex-direction: column;
     padding: 0;
   }
+  /* The shadow only while open: on the closed drawer, parked at -260 px, its
+     blur leaked a grey strip along the page's left edge. */
   .sidebar.open {
     left: 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   }
   .sidebar-brand {
     padding: 20px 20px 12px;
