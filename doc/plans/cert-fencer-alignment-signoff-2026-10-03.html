@@ -1,0 +1,262 @@
+<meta charset="utf-8">
+<title>CERT fencer alignment</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">ADR-108 · build step 4 · sign-off before anything is written on CERT · 3 Oct 2026</p>
+  <h1>CERT gets PROD's fencer ids: what the first refresh will change</h1>
+  <p class="dek">The refresh is built and tested, and it ran end to end on LOCAL. This page shows exactly what it will do on CERT, read from CERT and PROD today, and the order in which it runs. <b>Nothing has been written on CERT.</b> Two things need your answer: the CERT run itself, and a fencer whose declared birth year contradicts his earlier results.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Waiting for your sign-off</span>
+    <span class="pill"><span class="dot"></span>LOCAL rehearsal passed</span>
+    <span class="pill">Plan: promote-verified-replay-2026-10-03.html</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Two decisions</h2>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">? S1</span> Run the first refresh on CERT, as listed below</p>
+      <p><b>Recommended: yes.</b> Every CERT fencer pairs with exactly one PROD fencer, and nothing is guessed:</p>
+      <ul>
+        <li>all 367 pair: 363 by name, and the 2 namesake pairs (4 fencers) by their equal confirmed birth years;</li>
+        <li>none is left unpaired, none is created, none is deleted.</li>
+      </ul>
+      <p>348 fencers move to PROD's id and 19 already have it. Eleven fencers take PROD's values; they are listed below.</p>
+      <p>Your "yes" covers these steps in this order. Each one stops on any difference.</p>
+      <ol class="steps">
+        <li><b>Release the two new database functions.</b> CI runs, then Release. CERT deploys by itself. <b>PROD's deploy waits for your approval on GitHub</b>, as always. On PROD the functions exist but nothing calls them: the refresh refuses PROD as a target, and reads PROD only inside read-only transactions. Release 37102806037 (the declared-years fix) is still waiting for that approval; approving the newer release covers both.</li>
+        <li><b>CERT database dry run.</b> The real function runs on CERT and then rolls itself back, so nothing persists. I report its counts to you.</li>
+        <li><b>CERT apply.</b> A restore point is saved first. Then, in order:
+          <ul>
+            <li>the alignment;</li>
+            <li>PROD's PPW1 registrations (90 today) replace CERT's 8 test entries;</li>
+            <li>CERT's recompute queue drains to empty;</li>
+            <li>the roster is re-read and must equal PROD's.</li>
+          </ul></li>
+        <li><b>Full results comparison.</b> Every finished-season result on CERT against PROD, by fencer id, with the report to you. Every difference is resolved before the first promote.</li>
+        <li><b>Ingest PPW1 on CERT</b> (decision P5 A). The staging report comes to you.</li>
+      </ol>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">? P7</span> Fencer #124: his declared birth year contradicts three of his earlier results</p>
+      <p>Found in the LOCAL rehearsal. On PROD, fencer #124 has birth year 1990, still an estimate. At PPW1 registration he declared <b>1985</b>, and his registration has no fencer link. The ingestion uses declared years (D5), so CERT will record 1985 as confirmed, and promote will then carry it to PROD.</p>
+      <p>His results tell a narrower story:</p>
+      <ul>
+        <li>he fenced V0 sabre at PPW2, PPW4 and MPW in 2024/25, which needs a birth year of 1986 or later;</li>
+        <li>he fenced V1 at PPW1 2026/27, which needs 1987 or earlier.</li>
+      </ul>
+      <p>Only 1986 or 1987 fits everything. Under 1985, his three 2024/25 results sit in a category his own year forbids.</p>
+      <ul>
+        <li><b>A (recommended):</b> a declared year that contradicts the fencer's results in earlier seasons is a <b>blocking identity issue</b> in the CERT gate. You confirm the true year on PROD in the Birth-year review tab; CERT is refreshed and re-ingested; promote proceeds. Nothing is guessed, and PROD never receives a year its own results contradict.</li>
+        <li><b>B:</b> the declared year wins, and the recompute re-files his 2024/25 results into V1.</li>
+        <li><b>C:</b> information only. The contradiction reaches PROD as it stands.</li>
+      </ul>
+      <p>A changes the gate (build step 7), not the refresh. The refresh copies his PROD record exactly as it is.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">What changes on CERT</p>
+    <h2>The first refresh, read from CERT and PROD today</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Measure</th><th>CERT now</th><th>After the refresh</th></tr></thead>
+      <tbody>
+        <tr><td>Fencers</td><td>367, ids 1–368</td><td>367, ids 1–367, each at PROD's id</td></tr>
+        <tr><td>Fencers whose id changes</td><td colspan="2">348; 19 keep theirs</td></tr>
+        <tr><td>Created, deleted, unpaired</td><td colspan="2">0, 0, 0</td></tr>
+        <tr><td>Results the category check would refuse during the move</td><td colspan="2">0 (checked on CERT: 0 of the 2,280 that rely on the birth year)</td></tr>
+        <tr><td>PPW1 registrations</td><td>8 test entries</td><td>PROD's entries, 90 today, without e-mail hash, edit token or consent stamp</td></tr>
+        <tr><td>Fencer id sequence</td><td>368</td><td>PROD's (367 today), so CERT's next new fencer takes 368, as PROD's would</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>The eleven fencers who take PROD's values</h3>
+    <p>By PROD id:</p>
+    <ul>
+      <li><b>Ten are birth years</b> corrected on PROD, at registration or in review. Each differs by four years or less, so none crosses two categories.</li>
+      <li><b>The eleventh is an alias.</b></li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>PROD id</th><th>Field</th><th>CERT</th><th>PROD (copied to CERT)</th></tr></thead>
+      <tbody>
+        <tr><td>38</td><td>birth year</td><td>1980</td><td>1977</td></tr>
+        <tr><td>59</td><td>birth year</td><td>1981</td><td>1978</td></tr>
+        <tr><td>82</td><td>birth year</td><td>1991</td><td>1988</td></tr>
+        <tr><td>223</td><td>birth year</td><td>1991</td><td>1987</td></tr>
+        <tr><td>254</td><td>birth year</td><td>1990</td><td>1989</td></tr>
+        <tr><td>276</td><td>birth year</td><td>1991</td><td>1988</td></tr>
+        <tr><td>280</td><td>birth year</td><td>1980</td><td>1979</td></tr>
+        <tr><td>283</td><td>birth year</td><td>1980</td><td>1982</td></tr>
+        <tr><td>293</td><td>birth year, and its flag</td><td>1991, estimate</td><td>1992, confirmed</td></tr>
+        <tr><td>314</td><td>birth year</td><td>1990</td><td>1987</td></tr>
+        <tr><td>260</td><td>user-confirmed aliases</td><td>one alias (a dirty FTL spelling with a "(1)" marker)</td><td>none, so CERT drops it</td></tr>
+      </tbody>
+    </table></div>
+    <p>A moved birth year queues the fencer's CERT events for recompute, the same path a correction on PROD takes. The refresh drains that queue before any ingestion starts.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Evidence</p>
+    <h2>The LOCAL rehearsal, step by step</h2>
+    <p>LOCAL's ids were further from PROD's than CERT's are (373 fencers, highest id 971), which made it a hard rehearsal.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>What happened</th></tr></thead>
+      <tbody>
+        <tr><td>Plan</td><td>Stopped before writing. Six fencers existed only on LOCAL and were still referenced: the new entrants that this morning's LOCAL PPW1 trial had created. <span class="chip never">as designed</span></td></tr>
+        <tr><td>Trial rolled back</td><td>LOCAL's PPW1 results were removed (102 results, 25 tournaments). The six became unreferenced, and the plan was ready: 367 paired, 366 to renumber, 6 to delete.</td></tr>
+        <tr><td>Database dry run</td><td>Stopped before writing. LOCAL fencer 293 (PROD #124) had three results that his LOCAL birth year contradicted, left by the same trial. LOCAL took PROD's value (1990, estimate), as the alignment would have. <span class="chip never">as designed</span> This is how P7 was found.</td></tr>
+        <tr><td>Database dry run again</td><td>4 seconds, nothing persisted: roster, highest id and sequence unchanged.</td></tr>
+        <tr><td>Apply</td><td>7 seconds:
+          <ul>
+            <li>366 renumbered, 6 deleted, 2 values changed;</li>
+            <li>90 PPW1 registrations copied;</li>
+            <li>11 queued recomputes drained;</li>
+            <li>the roster re-read equal to PROD's.</li>
+          </ul></td></tr>
+        <tr><td>Independent checks</td><td>A new plan finds nothing to do: all 367 sit at PROD's ids. All 2,878 finished-season results match PROD row for row, with the same place, score and match method under the same fencer id.</td></tr>
+        <tr><td>PPW1 ingested again</td><td>102 results for 84 fencers, all matched. The six new entrants were created at ids 368–373, straight after PROD's 367.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Safety</p>
+    <h2>What protects CERT and PROD</h2>
+    <ul>
+      <li><b>PROD is read-only, and the database enforces it.</b> Every PROD query runs inside <code>BEGIN TRANSACTION READ ONLY</code>. Probed on PROD today: the read works, and even a temporary table is refused.</li>
+      <li><b>PROD cannot be a target.</b> The tool writes LOCAL or CERT only, and the recompute drain refuses any database URL but the target's.</li>
+      <li><b>One transaction that checks itself.</b> Before it returns, the roster must equal PROD's in every column, and every person must hold exactly the rows they held before, in every referencing table. Otherwise it raises, and nothing persists.</li>
+      <li><b>A restore point.</b> Before the apply, CERT's roster and the pairing are saved to a file that is never overwritten. <code>--mode restore</code> runs the inverse pairing through the same function. pgTAP ALIGN.28 proves it restores every id, value and result.</li>
+      <li><b>Tests:</b>
+        <ul>
+          <li>pgTAP ALIGN.01–28: swaps and cycles of ids, every reference, aliases moving between people, refusals that change nothing, the dry run, the audit history, the restore;</li>
+          <li>pgTAP REG.01–08;</li>
+          <li>pytest PROMO.REFRESH.01–23 and PROMO.ID.01–16;</li>
+          <li>full pytest: 1,642 passed.</li>
+        </ul></li>
+      <li><b>Four pgTAP files fail on today's LOCAL</b> (19, 74, 80, 85). This morning's trial scored PPW1 and locked the 2026/27 season there, and these tests expect a fresh season, as CI has. Before the release, LOCAL is rebuilt from the seed and aligned again, and <code>scripts/preflight.sh</code> must exit 0.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Sources: read-only queries on CERT and PROD, 3 Oct 2026, through <code>python -m python.pipeline.promotion.refresh --target cert --mode plan</code>; the LOCAL rehearsal the same day. Code: <code>supabase/migrations/20261003000010_align_fencers_to.sql</code>, <code>20261003000011_replace_event_registrations.sql</code>, <code>python/pipeline/promotion/refresh.py</code>.</p>
+</div>

@@ -246,5 +246,5 @@ def _show(value: Any) -> str:
     if isinstance(value, Decimal):
         return format(value, "f")
     if isinstance(value, tuple):
-        return ",".join(_show(v) for v in value)
+        return ",".join(_show(v) for v in value) if value else "[]"
     return str(value)
