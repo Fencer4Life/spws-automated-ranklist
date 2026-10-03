@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="2333e64daf06f5ea2ba0daeadddbe8206921e6481139f404e76b23b8c5286614">
+<meta name="adr-source-sha256" content="6931d2033feaa4da39e33fb1a7ed3c9ecf096e0521596621ac62eec47351b854">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">292 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">305 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
@@ -261,7 +261,23 @@
 <li>A new fencer takes the CERT run's id for the same surname and first name. <code>PlanRefused</code> stops the plan, with nothing written, for a fencer the CERT run did not create, a CERT id PROD already uses, a different non-blank PROD URL (ADR-086's fill-blank tier), an international event, or a write a domestic ingestion never makes (merge, clear, participant count, joining check).</li>
 <li><code>plan_event</code> runs the driver with <code>post_run=False</code>: the staging report, the joining check and Telegram run after the apply. The plan carries every listing's hash (<code>ListingLog</code>) for the source check.</li>
 <li><code>apply_plan</code> is the reference apply through the ordinary connector. It is not atomic and runs in tests and on LOCAL only; <code>fn_promote_event_apply</code> (build step 9) applies the same operations in one transaction.</li>
-<li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>promotion/plan_check.py</code>, one event per reset): <strong>PPW1 2026/27 planned and applied equals its live run</strong> (25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move). Past scored events of a closed season are never re-ingested, so they are not acceptance input.</li>
+<li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>promotion/plan_check.py</code>, one event per reset): <strong>PPW1 2026/27 planned and applied equals its live run</strong> (25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move). Past scored events of a closed season are never re-ingested, so they are not acceptance input: in the next season the year categories are computed from has shifted (the season's later year), and an ingestion run in the active season on a previous season's event would have to be aware of that change.</li>
+</ul>
+<p><strong>Apply implemented 2026-10-03 (build step 9).</strong> Migration <code>20261003000017_promote_apply.sql</code>:</p>
+<ul>
+<li><code>fn_event_result_document(event)</code> is what an ingestion left for an event: the event's URL, every tournament, every result with its score, and the participants' roster rows, by codes and fencer ids, without generated ids or timestamps. <code>fn_event_result_fingerprint(event)</code> is its SHA-256. <code>fn_ingest_run_close</code> records it on a FINISHED run.</li>
+<li><code>fn_promote_event_apply(event, plan, expected fingerprint, expected inputs, prior fingerprint, status, dry run)</code>:
+<ul>
+<li>skips the writes when PROD already holds the expected fingerprint;</li>
+<li>otherwise requires PROD to hold no result for the event (no prior named) or exactly the prior fingerprint;</li>
+<li>locks the event row and the participants' rows, then compares the input parts with the CERT run's (the lock refuses only when PROD is locked and CERT was not);</li>
+<li>steps a COMPLETED event to IN_PROGRESS, applies the operations in order (a CERT id PROD uses, a tournament that moved, a different non-blank URL or an unknown operation refuses), and compares the result fingerprint;</li>
+<li>sets the requested status, IN_PROGRESS or COMPLETED, through the transition validator, never writing an unchanged status;</li>
+<li>on a dry run raises <code>PROMOTE_DRY_RUN_OK &lt;fingerprint&gt;</code>; after a real apply with new fencers moves the fencer sequence past their ids.</li>
+</ul>
+</li>
+<li>Every refusal is an exception, so nothing the apply wrote survives it. pgTAP APPLY.01–11 (<code>103_promote_apply.sql</code>).</li>
+<li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>plan_check plan --apply sql</code>): <strong>PPW1 2026/27 planned, dry-run and applied through <code>fn_promote_event_apply</code> equals its live run</strong>, fingerprint for fingerprint and row for row (58 writes; 25 tournaments, 102 results, 373 fencers).</li>
 </ul>
 <h3 id="7-event-lifecycle-completed-once-everything-is-final-and-the-end-date-has-passed">7 · Event lifecycle: COMPLETED once everything is final and the end date has passed</h3>
 <div class="tablewrap"><table>
@@ -379,5 +395,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>2333e64daf06f5ea2ba0daeadddbe8206921e6481139f404e76b23b8c5286614</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>6931d2033feaa4da39e33fb1a7ed3c9ecf096e0521596621ac62eec47351b854</code></footer>
 </div></body></html>
