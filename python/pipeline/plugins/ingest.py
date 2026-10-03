@@ -11,7 +11,7 @@ switches the split to read governed BY.
 
 from __future__ import annotations
 
-from python.pipeline.core.contract import Context, PluginKind, Services
+from python.pipeline.core.contract import Context, ListingRefused, PluginKind, Services
 from python.pipeline.ir import SourceKind
 from python.pipeline.joined_brackets import (
     PER_CATEGORY_RENUMBER,
@@ -629,11 +629,12 @@ class Commit(BasePlugin):
                 f"{m.scraped_name} (place {m.place}): {note}"
                 + (f" — roster: {namesakes}" if namesakes else "")
             )
-        raise ValueError(
+        raise ListingRefused(
+            "identity",
             f"{weapon} {gender} listing not written: "
             + "; ".join(lines)
             + ". Correct the roster birth year, or add an identity entry with the fencer's "
-            f"birth year to doc/overrides/{code or '<event code>'}.yaml, then run the ingest again."
+            f"birth year to doc/overrides/{code or '<event code>'}.yaml, then run the ingest again.",
         )
 
     @staticmethod
