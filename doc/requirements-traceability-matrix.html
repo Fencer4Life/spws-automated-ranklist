@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="c4a7ed47cdbb89858ee74209236968145d88f22d92d9efb12362ef7b7f7487aa">
+<meta name="doc-source-sha256" content="4e325673bda26976be718d9b95c5db64f77fb738aac455f34c16f037ea08cda0">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -322,7 +322,7 @@
 <td>FR-42</td>
 <td>CERT/PROD environment toggle with runtime switching. <strong>To be superseded by FR-151</strong> (<a href="adr/109-environments-split-by-host.html">ADR-109</a>, signed off 2026-10-03): github.io becomes CERT only and the switch is removed; this row is retired in the change that removes it.</td>
 <td>§2.2</td>
-<td>8.01–8.04</td>
+<td>8.02; 8.01, 8.03 and 8.04 replaced on 2026-10-04 by WP.ENV.01, which asserts the switch's removal (RED until plan step 5)</td>
 <td>Covered (M8)</td>
 </tr>
 <tr>
@@ -2045,7 +2045,7 @@
 </table></div>
 </section>
 <section class="section-card detail"><h2 id="wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</h2>
-<p>Acceptance IDs for the <a href="adr/090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> amendment of 2026-10-03, <a href="adr/109-environments-split-by-host.html">ADR-109</a> and <a href="plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html">doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html</a> §05. FR-148–FR-151. Registered before any code (plan step 1); each is observed RED for its stated reason before its implementation lands.</p>
+<p>Acceptance IDs for the <a href="adr/090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> amendment of 2026-10-03, <a href="adr/109-environments-split-by-host.html">ADR-109</a> and <a href="plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html">doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html</a> §05. FR-148–FR-151. Registered before any code (plan step 1); each is observed RED for its stated reason before its implementation lands. Three are guards that pass before the change by design — WP.NAV.03, WP.ENV.02 and WP.COMP.01 — and were proven by mutation instead (2026-10-04): each turns red when the rule it keeps is broken on purpose.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -2066,14 +2066,14 @@
 </tr>
 <tr>
 <td>WP.BAR.02</td>
-<td>Below 430 px the title is the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table); at 430 px and above it is the long one.</td>
+<td>The bar carries the long title and the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table) in the active language; below 430 px the short one shows. jsdom evaluates no media query, so the switch itself is measured by WP.BAR.03.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/SiteChrome.test.ts</code></td>
 <td><strong>Planned</strong> (2026-10-03)</td>
 </tr>
 <tr>
 <td>WP.BAR.03</td>
-<td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, against the custom-element build WordPress loads.</td>
+<td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the short title unwrapped and no sideways scroll; the long title shows from 430 px up. Against the custom-element build WordPress loads.</td>
 <td>Playwright</td>
 <td><code>frontend/e2e/site-chrome.spec.ts</code></td>
 <td><strong>Planned</strong> (2026-10-03)</td>
@@ -2203,5 +2203,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c4a7ed47cdbb89858ee74209236968145d88f22d92d9efb12362ef7b7f7487aa</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>4e325673bda26976be718d9b95c5db64f77fb738aac455f34c16f037ea08cda0</code></footer>
 </div></body></html>

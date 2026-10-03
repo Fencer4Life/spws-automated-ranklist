@@ -19,6 +19,7 @@ import exportSource from '../src/lib/export.ts?raw'
 import editorSource from '../src/components/ScoringConfigEditor.svelte?raw'
 import plLocale from '../src/lib/locales/pl.json?raw'
 import enLocale from '../src/lib/locales/en.json?raw'
+import generatorSource from '../scripts/build-scoring-pages.mjs?raw'
 
 describe('static tool assets (ADR-085)', () => {
   // 8.88 — the menu entry must point at a file that actually ships, and that
@@ -188,4 +189,57 @@ describe('JB27.CLEAN.06 — the place-and-medal engine is gone from the frontend
       expect(text.match(RETIRED)?.[0] ?? null).toBeNull()
     })
   }
+})
+
+// WP.DOC.03 (ADR-090 amendment 2026-10-03, FR-150) — the embed/ copies that
+// <spws-document> frames on the association's WordPress pages. They are PROD
+// copies of the calculator and the annex (release.yml fills them with the PROD
+// pair, WP.REL.01) and sit under the SPWS bar, so they carry no banner, no
+// language bar and no ribbon of their own; they report their height so the
+// frame can grow to it; and their maths is the same generated module as the
+// root copies (ADR-102), written by the same generator. Plan:
+// doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html §03, §05.
+//
+// Read through import.meta.glob rather than a static import, so that the
+// absence of the copies fails these tests and not the whole file.
+const EMBED = import.meta.glob('../public/embed/*.html', {
+  query: '?raw', import: 'default', eager: true,
+}) as Record<string, string>
+const EMBED_PAGES: [string, string, string][] = [
+  ['kalkulator-punktow', '../public/embed/kalkulator-punktow.html', published],
+  ['tabela-punktacji', '../public/embed/tabela-punktacji.html', tablePublished],
+]
+
+describe('WP.DOC.03 — the embed/ copies framed on WordPress', () => {
+  for (const [name, path, root] of EMBED_PAGES) {
+    it(`${name}: exists, without a banner, a language bar or a ribbon of its own`, () => {
+      const html = EMBED[path] ?? ''
+      expect(html.length, `${path} is missing`).toBeGreaterThan(1000)
+      expect(html).not.toContain('class="document-head"')
+      expect(html).not.toContain('class="lang-switch"')
+      expect(html).not.toContain('env-ribbon')
+      // Still a PROD copy the release fills, and still bilingual through ?lang=.
+      expect(html).toContain('id="spws-env"')
+      expect(html).toContain('class="copy-pl"')
+      expect(html).toContain('class="copy-en"')
+    })
+
+    it(`${name}: reports its height to the framing element`, () => {
+      const html = EMBED[path] ?? ''
+      expect(html).toContain("'spws-doc-height'")
+      expect(html).toMatch(/parent\.postMessage\(/)
+    })
+
+    it(`${name}: carries the same generated scoring module as the root copy`, () => {
+      const html = EMBED[path] ?? ''
+      const block = html.match(MODULE_BLOCK)?.[0] ?? ''
+      expect(block.length).toBeGreaterThan(1000)
+      expect(block).toBe(root.match(MODULE_BLOCK)?.[0])
+    })
+  }
+
+  it('the generator writes both copies, so --check guards them', () => {
+    expect(generatorSource).toContain("'frontend/public/embed/kalkulator-punktow.html'")
+    expect(generatorSource).toContain("'frontend/public/embed/tabela-punktacji.html'")
+  })
 })

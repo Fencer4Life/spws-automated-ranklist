@@ -51,7 +51,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-39 | EN/PL internationalisation with reactive toggle | §11 | DrilldownModal.test.ts (test K) | Covered |
 | FR-40 | Import status transitions (PLANNED → IMPORTED → SCORED) | UC1(b), UC5(c) | 2.9, 9.91–9.92 | Covered (M9, T9.9) |
 | FR-41 | Domestic-participation requirement: fencers with 0 domestic points excluded from ranking views | §8.5(7) | 5.24–5.25 | Covered |
-| FR-42 | CERT/PROD environment toggle with runtime switching. **To be superseded by FR-151** ([ADR-109](adr/109-environments-split-by-host.md), signed off 2026-10-03): github.io becomes CERT only and the switch is removed; this row is retired in the change that removes it. | §2.2 | 8.01–8.04 | Covered (M8) |
+| FR-42 | CERT/PROD environment toggle with runtime switching. **To be superseded by FR-151** ([ADR-109](adr/109-environments-split-by-host.md), signed off 2026-10-03): github.io becomes CERT only and the switch is removed; this row is retired in the change that removes it. | §2.2 | 8.02; 8.01, 8.03 and 8.04 replaced on 2026-10-04 by WP.ENV.01, which asserts the switch's removal (RED until plan step 5) | Covered (M8) |
 | FR-43 | Calendar view: chronological event list with season filter | UC21(a,b) | 8.11–8.19, 8.38–8.43, 8.47 | Covered (M8) |
 | FR-44 | Calendar view: past/future/all toggle (scope filter conditional on `bool_show_evf_toggle`, ADR-017) | UC21(c) | 8.44–8.45, 8.79–8.80 | Modified (M8, scope filter hidden by default) |
 | FR-45 | Calendar view: mobile-friendly layout | UC21(e) | 8.46 | Covered (M8) |
@@ -372,13 +372,13 @@ Acceptance IDs for [ADR-106](adr/106-international-intake-by-identity-nationalit
 
 ## WordPress site navigation and the environment split (WP.*)
 
-Acceptance IDs for the [ADR-090](adr/090-prod-surface-as-wordpress-menu-item.md) amendment of 2026-10-03, [ADR-109](adr/109-environments-split-by-host.md) and [doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html](plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html) §05. FR-148–FR-151. Registered before any code (plan step 1); each is observed RED for its stated reason before its implementation lands.
+Acceptance IDs for the [ADR-090](adr/090-prod-surface-as-wordpress-menu-item.md) amendment of 2026-10-03, [ADR-109](adr/109-environments-split-by-host.md) and [doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html](plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html) §05. FR-148–FR-151. Registered before any code (plan step 1); each is observed RED for its stated reason before its implementation lands. Three are guards that pass before the change by design — WP.NAV.03, WP.ENV.02 and WP.COMP.01 — and were proven by mutation instead (2026-10-04): each turns red when the rule it keeps is broken on purpose.
 
 | Acceptance IDs | Contract | Layer | File | Status |
 |----------------|----------|-------|------|--------|
 | WP.BAR.01 | `chrome="site"` renders ☰, the logo linking to `href-home`, the title and the PL/EN switch, and no CT/PD switch. | Vitest | `frontend/tests/SiteChrome.test.ts` | **Planned** (2026-10-03) |
-| WP.BAR.02 | Below 430 px the title is the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table); at 430 px and above it is the long one. | Vitest | `frontend/tests/SiteChrome.test.ts` | **Planned** (2026-10-03) |
-| WP.BAR.03 | At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, against the custom-element build WordPress loads. | Playwright | `frontend/e2e/site-chrome.spec.ts` | **Planned** (2026-10-03) |
+| WP.BAR.02 | The bar carries the long title and the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table) in the active language; below 430 px the short one shows. jsdom evaluates no media query, so the switch itself is measured by WP.BAR.03. | Vitest | `frontend/tests/SiteChrome.test.ts` | **Planned** (2026-10-03) |
+| WP.BAR.03 | At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the short title unwrapped and no sideways scroll; the long title shows from 430 px up. Against the custom-element build WordPress loads. | Playwright | `frontend/e2e/site-chrome.spec.ts` | **Planned** (2026-10-03) |
 | WP.NAV.01 | On `site`, the drawer entries are same-tab links to the four `href-*` values; the current page is marked; none opens a new tab. | Vitest | `frontend/tests/Sidebar.test.ts` | **Planned** (2026-10-03) |
 | WP.NAV.02 | The drawer opens only on ☰, and closes on a choice, a tap outside and Esc, in every mode. | Vitest | `frontend/tests/Sidebar.test.ts` | **Planned** (2026-10-03) |
 | WP.NAV.03 | No mode shows a sign-in entry in the drawer, signed in or not. | Vitest | `frontend/tests/Sidebar.test.ts` | **Planned** (2026-10-03) |
