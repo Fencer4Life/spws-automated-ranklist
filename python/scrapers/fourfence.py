@@ -89,21 +89,34 @@ def _classification_rows(html: str) -> list[dict]:
 def semifinal_losers(tab4_html: str) -> list[tuple[int | None, str]]:
     """(pool seed, folded surname) of both semi-final losers on a last-four
     tableau. A bout is two rows (seed, name, club code, score); the first four
-    scored rows are the two semi-finals, and the lower score lost."""
+    scored rows are the two semi-finals, and the lower score lost. The name is
+    a clickable span holding the surname (Napoli 2026), or cell text
+    "SURNAME Firstname" whose capitalised words are the surname (Terni 2025,
+    FOURFENCE.BRONZE.02)."""
     soup = BeautifulSoup(tab4_html, "html.parser")
     entries: list[tuple[int | None, str, int]] = []
-    for span in soup.find_all("span", onclick=True):
-        tr = span.find_parent("tr")
-        cells = tr.find_all("td", recursive=False) if tr else []
+    for tr in soup.find_all("tr"):
+        cells = tr.find_all("td", recursive=False)
         if len(cells) != 4:
             continue
-        seed = _clean_text(cells[0].get_text(strip=True))
         score = _clean_text(cells[3].get_text(strip=True))
         if not score.isdigit():
             continue
-        entries.append(
-            (int(seed) if seed.isdigit() else None, _fold(span.get_text(strip=True)), int(score))
-        )
+        span = cells[1].find("span", onclick=True)
+        if span is not None:
+            surname = _clean_text(span.get_text(strip=True))
+        else:
+            words = _clean_text(cells[1].get_text(" ", strip=True)).split()
+            caps: list[str] = []
+            for w in words:
+                if w != w.upper() or not any(ch.isalpha() for ch in w):
+                    break
+                caps.append(w)
+            surname = " ".join(caps)
+        if not surname:
+            continue
+        seed = _clean_text(cells[0].get_text(strip=True))
+        entries.append((int(seed) if seed.isdigit() else None, _fold(surname), int(score)))
         if len(entries) == 4:
             break
     losers = []

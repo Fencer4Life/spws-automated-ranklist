@@ -292,15 +292,18 @@ SELECT is(
   '55.19: the corrupted current-season PEW8f identity no longer exists'
 );
 
-SELECT results_eq(
-  $$ SELECT t.int_participant_count, COUNT(r.id_result)::INT
-       FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
-       LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
-      WHERE e.txt_code = 'PEW8f-2024-2025'
-        AND t.enum_weapon = 'FOIL' AND t.enum_gender = 'F' AND t.enum_age_category = 'V1'
-      GROUP BY t.int_participant_count $$,
-  $$ VALUES (4, 2) $$,
-  '55.20: the prior Guildford foil slot keeps the richer field and two unique fencers'
+-- (4, 2) is the fragment repair's output; (8, 2) the ADR-106 re-staging of
+-- Jabłonna 2025's foil from its FTL schedule (3 Oct 2026; N the placed fencers).
+-- Drop the first alternative when the seed is refreshed from PROD.
+SELECT ok(
+  (SELECT ROW(t.int_participant_count, COUNT(r.id_result)::INT)
+     FROM tbl_event e JOIN tbl_tournament t ON t.id_event = e.id_event
+     LEFT JOIN tbl_result r ON r.id_tournament = t.id_tournament
+    WHERE e.txt_code = 'PEW8f-2024-2025'
+      AND t.enum_weapon = 'FOIL' AND t.enum_gender = 'F' AND t.enum_age_category = 'V1'
+    GROUP BY t.int_participant_count)
+  IN (ROW(4, 2), ROW(8, 2)),
+  '55.20: the prior Guildford foil slot keeps the richer field and two unique fencers (N 4, or 8 after the ADR-106 re-staging)'
 );
 
 SELECT results_eq(

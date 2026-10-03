@@ -1,0 +1,23 @@
+# PEW6efs-2024-2025 — decisions of 2026-10-03 (doc/plans/evf-2024-2025-events-review-2026-10-02.html).
+# Fencers are named, not numbered: ids differ between LOCAL, CERT and PROD (P3.OV19).
+# PEW6efs-2024-2025 P1: A — KAMINSKA Grabriela → KAMIŃSKA Gabriela 1979
+# PEW6efs-2024-2025 P2: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
+# PEW6efs-2024-2025 P3: A — KORONA-TRZEBSKI Przemyslaw → KORONA Przemysław 1976
+# PEW6efs-2024-2025 R1: B — KAZIK Tomas
+# PEW6efs-2024-2025 R2: A — LEAHEY John → LEAHEY John 1976
+identity:
+- scraped_name: KAMINSKA Grabriela
+  fencer:
+    surname: KAMIŃSKA
+    first_name: Gabriela
+    birth_year: 1979
+- scraped_name: KORONA-TRZEBSKI Przemyslaw
+  fencer:
+    surname: KORONA
+    first_name: Przemysław
+    birth_year: 1976
+- scraped_name: LEAHEY John
+  fencer:
+    surname: LEAHEY
+    first_name: John
+    birth_year: 1976

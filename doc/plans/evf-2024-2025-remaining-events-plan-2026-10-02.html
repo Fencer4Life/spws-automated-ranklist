@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Four EVF Events Plan</title>
+<title>EVF 2024/25 Remaining Events</title>
 <style>
   :root{
     --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
@@ -119,16 +119,16 @@
   .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
 </style>
 
+
 <div class="wrap">
 
   <p class="eyebrow">International results · ADR-105 §5 · ADR-106 · Implementation Plan</p>
-  <h1>Four EVF circuit events from their organisers’ pages</h1>
-  <p class="dek">Munich 2024, Munich 2025 and Chania 2026 publish on <b>Ophardt</b> (fencingworldwide); Salzburg 2026 on <b>d’Artagnan</b>. The runner reads single brackets from both but cannot open an event page into its brackets, and three of the four events point at the wrong page. This plan teaches the runner both event pages, points the four events at their organisers on LOCAL, CERT and PROD, and takes them through the same per-event review and machine-checked rollout as the 14 events already done.</p>
+  <h1>The eight 2024/25 EVF events never repaired</h1>
+  <p class="dek">Every 2025/26 international event is repaired on LOCAL, CERT and PROD. Eight 2024/25 records still hold the old EVF import: no source link, no printed federation, and N equal to the number of Poles stored. This plan finds each one’s organiser source, corrects the records that block a source, and takes the events through the same per-event review and machine-checked rollout. The seed refresh follows it.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Signed off 2 Oct · S, C A (“accept all”)</span>
-    <span class="pill"><span class="dot"></span>Done · 4 events on LOCAL, CERT and PROD (caa5701a)</span>
-    <span class="pill"><span class="dot"></span>4 events · 40 SPWS-starter results at EVF</span>
-    <span class="pill"><span class="dot"></span>no migration</span>
+    <span class="pill"><span class="dot"></span>Signed off 2 Oct · N A, W B, J B, X A (“accept all”)</span>
+    <span class="pill"><span class="dot"></span>8 events · 141 SPWS-starter results at EVF</span>
+    <span class="pill"><span class="dot"></span>no migration, no new reader</span>
   </div>
 
   <hr class="rule">
@@ -137,89 +137,100 @@
     <p class="kicker">Decide this first</p>
     <h2>What I need from you</h2>
     <div class="note accent">
-      <p class="lede"><span class="tick">S</span> Sign off this plan</p>
-      <p>The source is not a question: ADR-105 §5 says the source is the organiser’s results and EVF results are a secondary source, used only when nothing else exists. All four events have an organiser source, so EVF’s results API is used only as a cross-check after staging.</p>
-      <p>Each event is still reviewed and signed off by name before it is committed, as for the 14.</p>
+      <p class="lede"><span class="tick">N</span> Guildford 2025’s source names itself differently</p>
+      <p>The FTL schedule <code>9CC8D1BC…</code> is titled “BVF 6 Weapon International 2025”, 4–5 January 2025, épée, foil and sabre. Its dates and weapons pass the check; its title does not say Guildford, so the tool needs a person to confirm the name (it never accepts a confirmed date). EVF’s calendar lists EVF Circuit – Guildford (GBR) on 4 January 2025, run by British Veterans Fencing.</p>
+      <ul><li><b>A</b> confirm: the BVF 6 Weapon International 2025 is EVF Circuit Guildford 2025.</li><li><b>B</b> do not confirm; Guildford 2025 stays unrepaired.</li></ul>
+      <p><b>Recommendation: A.</b></p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">W</span> Two records list fewer weapons than the event had</p>
+      <p>The runner skips a bracket whose weapon the event does not list. Fâches 2025 (<code>PEW5s</code>, sabre only) also had foil, with 1 SPWS starter; Stockholm 2025 (<code>PEW13e</code>, épée only) also had foil, with 3.</p>
+      <ul>
+        <li><b>A</b> add the missing weapon to the event and rename its code (<code>PEW5fs</code>, <code>PEW13ef</code>). No tool renames an event that has results; the code is in tournament codes, override files and both cloud copies.</li>
+        <li><b>B</b> add the missing weapon and keep the code: the letters then understate the weapons, nothing else changes.</li>
+        <li><b>C</b> leave both records as they are: those 4 foil results stay out.</li>
+      </ul>
+      <p><b>Recommendation: B.</b> The code is a label; scoring and the rankings do not read its letters.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">J</span> Jabłonna 2025’s foil is a separate record</p>
+      <p>EVF counts Warsaw-Legionowo (Jabłonna) 2025 as one event in three weapons. Our épée and sabre are <code>PEW7es-2024-2025</code> (repaired), the foil is <code>PEW8f-2024-2025</code>, dated 30 March to 12 April, with N of 2–6 (22 results).</p>
+      <ul>
+        <li><b>A</b> fold the foil into one event: rename <code>PEW7es</code> to <code>PEW7efs</code>, re-stage all three weapons from its FTL schedule, delete <code>PEW8f</code>.</li>
+        <li><b>B</b> keep <code>PEW8f</code> as the foil event: correct its dates to 29–30 March, give it the same FTL schedule (the runner takes the foil brackets only) and re-stage it.</li>
+      </ul>
+      <p><b>Recommendation: B.</b> The rankings are per weapon, so two records for one weekend score exactly as one; B renames nothing that is already released and verified.</p>
     </div>
     <div class="note">
-      <p class="lede"><span class="tick">C</span> Chania 2025 is not in our calendar</p>
-      <p>EVF circuit Chania, 3–4 May 2025 (fencingworldwide <code>30661-2024</code>, EVF event 77), has no event row. No SPWS starter fenced there; its one printed-POL row is KARATHANASIS Athanasios, who is not a starter.</p>
-      <ul>
-        <li><b>A</b> leave it out: under ADR-106 it would store nothing, unless that one row is linked.</li>
-        <li><b>B</b> add the event to 2024/25 and stage it with the other four.</li>
-      </ul>
-      <p><b>Recommendation: A.</b> KARATHANASIS also appears in Chania 2026 as printed POL, so his row comes up for decision there in any case.</p>
+      <p class="lede"><span class="tick">X</span> <code>PEW15f-2024-2025</code> is not an EVF event</p>
+      <p>Two foil results on 15 May 2025 (KORONA 3rd of 5 in V1, BAZAK 1st of 7 in V2), no source, and no EVF circuit event that day. If you know what this tournament was, say so and it gets a source like the others.</p>
+      <ul><li><b>A</b> leave it untouched in this pass.</li><li><b>B</b> delete it and its two results.</li></ul>
+      <p><b>Recommendation: A</b>, until its source is known; deleting results is not reversible.</p>
     </div>
     <div class="note good">
       <p class="lede"><span class="tick">→</span> How to answer</p>
-      <p>“accept all” takes S and C as recommended. Otherwise name what you want the other way.</p>
+      <p>“accept all” takes N, W, J and X as recommended. Otherwise name what you want the other way.</p>
     </div>
   </section>
 
   <section id="found">
     <p class="kicker">What I found · read-only</p>
-    <h2>Where each event stands, on every environment</h2>
+    <h2>Each event, its EVF stop and its source</h2>
     <div class="tablewrap"><table>
-      <thead><tr><th>Event</th><th>Link stored today (LOCAL = CERT = PROD)</th><th>Organiser source</th><th>Competitions</th><th>SPWS starters at EVF</th><th>Stored now</th></tr></thead>
+      <thead><tr><th>Record</th><th>EVF stop</th><th>Organiser source</th><th>SPWS starters at EVF</th><th>Stored now</th></tr></thead>
       <tbody>
-        <tr><td><b>Munich 2024</b><br><code>PEW3fs-2024-2025</code><br>7–8 Dec 2024</td><td>An FTL schedule of a different tournament: it has épée brackets, Munich had foil and sabre only.</td><td>fencingworldwide <code>30657-2024</code> “EVF Circuit Memoriam Max Geuter”</td><td>16, one per weapon, gender and category</td><td>12</td><td>10</td></tr>
-        <tr><td><b>Munich 2025</b><br><code>PEW3fs-2025-2026</code><br>6–7 Dec 2025</td><td>The EVF event page, not a results source (8 of its brackets carry a fencingworldwide link).</td><td>fencingworldwide <code>32812-2025</code> “EVF Circuit Memoriam Max Geuter”</td><td>16</td><td>7</td><td>7</td></tr>
-        <tr><td><b>Salzburg 2026</b><br><code>PEW7ef-2025-2026</code><br>18–19 Apr 2026</td><td>The right d’Artagnan index, but the runner reads it as one empty bracket.</td><td>the same index</td><td>22 listed; combined rounds are left out by the existing parser</td><td>16</td><td>7, printed POL only</td></tr>
-        <tr><td><b>Chania 2026</b><br><code>PEW8es-2025-2026</code><br>2–3 May 2026</td><td>EVF’s address <code>evf-circuit-athens-gre</code>, which EVF reused for Athens 2027.</td><td>fencingworldwide <code>32819-2025</code> “EVF Circuit Chania Crete”</td><td>16</td><td>5, plus 2 printed POL</td><td>0</td></tr>
+        <tr><td><code>PEW1efs-2024-2025</code></td><td>Budapest, 21–22 Sep 2024</td><td>to find (2025 was Engarde <code>hunfencing</code>; the 2024 page is not at the same address)</td><td>40</td><td>28, with V0 brackets EVF does not have</td></tr>
+        <tr><td><code>PEW2efs-2024-2025</code></td><td>Madrid, 16–17 Nov 2024</td><td>Engarde <code>aeve_esgrima/evf_madrid_2024</code>: passes the check</td><td>29</td><td>21</td></tr>
+        <tr><td><code>PEW4ef-2024-2025</code></td><td>Guildford, 4–5 Jan 2025</td><td>FTL “BVF 6 Weapon International 2025”: dates and weapons pass; name needs N</td><td>18 (none in sabre)</td><td>9</td></tr>
+        <tr><td><code>PEW5s-2024-2025</code></td><td>Fâches-Thumesnil, 18 Jan 2025</td><td>Engarde <code>faches2025</code> “Circuit Européen 2025 Faches-Thumesnil”: dates and weapons pass; the record has no city to compare</td><td>5 (1 in foil)</td><td>4</td></tr>
+        <tr><td><code>PEW6efs-2024-2025</code></td><td>Terni, 1–2 Feb 2025</td><td>4fence: round 4 of Italy’s national masters circuit, run with the EVF stop; address to confirm</td><td>15</td><td>12</td></tr>
+        <tr><td><code>PEW13e-2024-2025</code></td><td>Stockholm, 15 Mar 2025</td><td>to find (<code>sthlm/vet2025</code> is empty)</td><td>12 (3 in foil)</td><td>4</td></tr>
+        <tr><td><code>PEW8f-2024-2025</code></td><td>Jabłonna, foil, 29–30 Mar 2025</td><td>FTL schedule of <code>PEW7es-2024-2025</code></td><td>22</td><td>22, N of 2–6</td></tr>
+        <tr><td><code>PEW15f-2024-2025</code></td><td>none</td><td>unknown</td><td>—</td><td>2</td></tr>
       </tbody>
     </table></div>
-    <p>“SPWS starters at EVF” counts rows in EVF’s published results whose surname and first name exactly equal a roster fencer with a PPW or MPW result; the staged drafts give the real figure, by the ADR-106 rule, category included.</p>
-    <div class="note warn">
-      <p class="lede"><span class="tick">!</span> Correction</p>
-      <p>My first report said Munich 2024 had combined brackets and two brackets on one code. Those brackets belong to the tournament behind the wrong FTL link; Munich 2024 itself has one bracket per category. The ADR-106 re-staging refused that link, so nothing was committed from it.</p>
-    </div>
-    <div class="note good">
-      <p class="lede"><span class="tick">✓</span> How far EVF’s results can be trusted as a check</p>
-      <p>For the 13 repaired events EVF covers, 401 of 413 committed results carry exactly EVF’s place, N and points. The 12 others follow from two of your rules: EVF counts fencers who did not start or did not finish in N, and EVF does not close up the places below a fencer who withdrew during the direct elimination. That is why EVF is the check, not the source.</p>
-    </div>
+    <p>Liège 2025 (sabre, 12 April 2025) has no event row and no SPWS starter at EVF: nothing to add. Chania 2025 was left out on 2 October (no SPWS starter).</p>
   </section>
 
   <section id="work">
-    <p class="kicker">Tests first · RED before GREEN</p>
-    <h2>The work</h2>
+    <p class="kicker">The work · no new code expected</p>
+    <h2>Steps</h2>
     <ol class="steps">
-      <li><b>Ophardt event page.</b> A parser for <code>/{lang}/{id}-{year}/tournament/</code> that lists each competition with its weapon, gender, category (O40 → V1, O50 → V2, O60 → V3, O70 → V4) and its <code>/results/</code> page. Tests OPH.EVT.01–04 on saved copies of the three tournament pages: all 16 competitions, the category mapping, a team or combined competition left out, an unknown age band refused rather than guessed.</li>
-      <li><b>d’Artagnan event page.</b> The runner sends a d’Artagnan <code>index.html</code> to the existing <code>parse_dartagnan_event_index</code> and reads each competition’s rankings page with that competition’s weapon, gender and category. Tests DART.EVT.01–02 on a saved Salzburg index: the single-category competitions, and the index never read as a bracket.</li>
-      <li><b>Runner routing.</b> <code>fetch_event_url_with_skips</code> expands both event pages the way it expands Engarde and 4fence, each bracket filed under its own source category (ADR-105). Tests INTL.EVT.01–02.</li>
-      <li><b>Event links on LOCAL.</b> Written by <code>set_event_source_urls</code>, which already reads Ophardt and d’Artagnan pages and writes only when date, name and weapons match the event.</li>
-      <li><b>Stage the four on LOCAL and review.</b> One review page, same layout as the 14: what the rule adds and removes, place and N changes, PENDING rows with a recommendation each, and the EVF cross-check (<code>compare_evf_points</code>) with every difference explained.</li>
-      <li><b>Your sign-off per event</b>, then the commit on LOCAL, and an override file for any linked or excluded row (fencers named, never numbered).</li>
-      <li><b>Release</b> through the integration checkout, <code>scripts/preflight.sh</code> exit 0 first.</li>
-      <li><b>CERT, then PROD.</b> The event links set with a scoped update that returns what changed; then each event through <code>phase5-event-runner.yml</code>, one at a time, machine-checked against LOCAL before and after its commit.</li>
-      <li><b>Seed refresh from PROD</b> once all international events of 2024/25 and 2025/26 are repaired (ADR-036: the full suite passes before the seed pointer moves). It also brings PROD’s two birth-year corrections, STOCKI and STAŃCZYK, to LOCAL and CERT.</li>
+      <li><b>Find the two missing sources</b> (Budapest 2024, Stockholm 2025) and confirm Terni’s 4fence address. If one is not found, that event stays out and is reported.</li>
+      <li><b>Correct the records on LOCAL</b>: EVF name, city and country where blank (needed for the name check); the weapon added for Fâches and Stockholm (W); <code>PEW8f</code>’s dates (J).</li>
+      <li><b>Event links</b> through <code>set_event_source_urls</code>, the Guildford name confirmed per N.</li>
+      <li><b>Stage on LOCAL and review</b>: one page in the same layout, with the EVF cross-check per event.</li>
+      <li><b>Your sign-off per event</b>, override files for linked or excluded rows, commit on LOCAL.</li>
+      <li><b>Release</b>, <code>scripts/preflight.sh</code> exit 0 first; pgTAP data tests that pin these events accept both states until the seed refresh.</li>
+      <li><b>CERT, then PROD</b>: the same record corrections and links by scoped updates that return what changed; each event through the runner, one at a time, machine-checked against LOCAL.</li>
+      <li><b>Seed refresh from PROD</b> (ADR-036: the full suite passes before the pointer moves), then drop the pgTAP seed alternatives.</li>
     </ol>
   </section>
 
   <section id="plan-gate">
     <p class="kicker">Required in every development plan</p>
     <h2>Documentation coherence gate</h2>
-    <div class="note good"><p class="lede">☑ Documentation coherence gate complete</p>
-<pre>Impact: architecture | operations
-Canonical docs affected: doc/handbook/subsystems/ingestion.html (the runner reads Ophardt and d'Artagnan event pages);
-  doc/handbook/operations/operator-runbooks.html (re-ingesting an event published on Ophardt or d'Artagnan);
-  doc/requirements-traceability-matrix.md + HTML twin (OPH.EVT.01-04, DART.EVT.01-02, INTL.EVT.01-02)
-ADR impact: none (implements ADR-105 §5: the organiser's results are the source)
-Operational impact: operator-runbooks.html; workflow-catalog.html unchanged (same phase5-event-runner.yml)
-Source-map / last-verified updated: yes
+    <div class="note"><p class="lede">☐ Documentation coherence gate complete</p>
+<pre>Impact: operations (data repair; no behaviour change)
+Canonical docs affected: none expected; if a reader change proves necessary,
+  doc/handbook/subsystems/ingestion.html and the RTM
+ADR impact: none (applies ADR-105 §5 and ADR-106)
+Operational impact: none beyond the existing runbook
+Source-map / last-verified updated: not applicable unless code changes
 Validation: python scripts/check_docs.py --changed-from origin/main [PASS]; scripts/preflight.sh exit 0
-Superseded prose archived rather than appended: yes</pre></div>
+Superseded prose archived rather than appended: not applicable</pre></div>
   </section>
 
   <section id="bounds">
     <p class="kicker">Boundaries</p>
     <h2>What this plan does not touch</h2>
     <ul>
-      <li><b>Roster corrections</b> (UIJTING “Henh” → Henk, KAZIK Martin’s gender): master data, separate, on your go.</li>
-      <li><b>The other 2024/25 EVF events</b> not yet repaired: a separate pass after these four.</li>
+      <li><b>Roster corrections</b> (UIJTING “Henh”, KAZIK Martin’s gender): master data, on your go.</li>
+      <li><b>2023/24 and earlier</b>: not in scope.</li>
     </ul>
   </section>
 
-  <p class="foot">plan · four EVF circuit events · organiser sources (Ophardt, d’Artagnan) · 2 October 2026</p>
+  <p class="foot">plan · eight 2024/25 EVF events · organiser sources · 2 October 2026</p>
 </div>
 </body>
 </html>

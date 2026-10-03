@@ -159,3 +159,33 @@ def test_ENG_EVT_05_a_fencer_without_a_place_does_not_count_in_N(status):
     assert len(parsed.results) == 32
     assert parsed.raw_pool_size == 32
     assert [r.place for r in parsed.results if r.fencer_country == "POL"] == [29]
+
+
+def test_ENG_EVT_06_a_combined_final_is_never_filed_under_one_category():
+    """A final for two categories is skipped, whatever its slug says.
+    Stockholm 2025 titles "Foil Men Cat 3+4" under slug ``fmv3``; Madrid 2024
+    titles "EPEE FEMALE 3 -4" under slug ``ef_3-4``. The title's two
+    categories outrank the slug's one (ADR-105: a bracket without one
+    category is not guessed)."""
+    from python.scrapers.engarde import parse_competition_list, parse_engarde_category
+
+    assert parse_engarde_category("fmv3", "Foil Men Cat 3+4 - Stockholm Internation.") == [
+        "V3",
+        "V4",
+    ]
+    assert parse_engarde_category("ef_3-4", "EPEE FEMALE 3 -4") == ["V3", "V4"]
+    assert parse_engarde_category("fm_3-4", "FOIL MALE  3-4") == ["V3", "V4"]
+    assert parse_engarde_category("fmv1", "Foil Men Cat 1 - Stockholm International.") == ["V1"]
+    assert parse_engarde_category("em_2", "EPEE MALE 2") == ["V2"]
+
+    for name, org, event, combined in (
+        ("competitions_sivo2025.xml", "sthlm", "sivo2025", {"fmv3"}),
+        ("competitions_madrid2024.xml", "aeve_esgrima", "evf_madrid_2024", {"ef_3-4", "fm_3-4"}),
+    ):
+        kept, skipped = parse_competition_list(
+            (FIXTURES / name).read_text(encoding="utf-8"), org=org, event=event
+        )
+        assert not combined & {c["slug"] for c in kept}, name
+        assert {s["slug"]: s["reason"] for s in skipped if s["slug"] in combined} == {
+            slug: "spans categories V3, V4" for slug in combined
+        }, name
