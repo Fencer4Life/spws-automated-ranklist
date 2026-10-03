@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="67f810a17b0733d4f477cbe3e1263076c28fb4ee4a4ab106972b8f65b0aa504b">
+<meta name="adr-source-sha256" content="2333e64daf06f5ea2ba0daeadddbe8206921e6481139f404e76b23b8c5286614">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">283 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">292 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
@@ -254,6 +254,15 @@
 <li><strong>Seed export</strong> is its own job after promote, with a rebase and retry. Its failure alerts but does not mark the promote failed.</li>
 </ol>
 <p>The apply runs over a direct database connection with its own <code>statement_timeout</code>, not through the Management API.</p>
+<p><strong>Plan mode implemented 2026-10-03 (build step 8).</strong> <code>python/pipeline/promotion/plan.py</code>:</p>
+<ul>
+<li>The <code>RecordingConnector</code> gives the domestic driver (<code>_ingest_event_rounds</code>, INGEST_DOMESTIC per listing) the connector's surface. Reads go to PROD; every write is recorded as an operation: <code>insert_fencer</code>, <code>update_fencer_birth_year</code>, <code>find_or_create_tournament</code>, <code>ingest_results</code>, <code>set_event_url_event</code>, <code>set_event_ingest_sources</code>.</li>
+<li>A read of the run's own writes is answered from the record: the roster with created fencers and moved birth years, the batch reads, the event's URL and sources. A tournament PROD has keeps its id; a new one gets a negative placeholder the apply replaces.</li>
+<li>A new fencer takes the CERT run's id for the same surname and first name. <code>PlanRefused</code> stops the plan, with nothing written, for a fencer the CERT run did not create, a CERT id PROD already uses, a different non-blank PROD URL (ADR-086's fill-blank tier), an international event, or a write a domestic ingestion never makes (merge, clear, participant count, joining check).</li>
+<li><code>plan_event</code> runs the driver with <code>post_run=False</code>: the staging report, the joining check and Telegram run after the apply. The plan carries every listing's hash (<code>ListingLog</code>) for the source check.</li>
+<li><code>apply_plan</code> is the reference apply through the ordinary connector. It is not atomic and runs in tests and on LOCAL only; <code>fn_promote_event_apply</code> (build step 9) applies the same operations in one transaction.</li>
+<li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>promotion/plan_check.py</code>, one event per reset): <strong>PPW1 2026/27 planned and applied equals its live run</strong> (25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move). Past scored events of a closed season are never re-ingested, so they are not acceptance input.</li>
+</ul>
 <h3 id="7-event-lifecycle-completed-once-everything-is-final-and-the-end-date-has-passed">7 · Event lifecycle: COMPLETED once everything is final and the end date has passed</h3>
 <div class="tablewrap"><table>
 <thead>
@@ -344,7 +353,7 @@
 <p><strong>Behaviour change on the calendar.</strong> <code>EventCard.svelte:330</code> shows result links only for COMPLETED. Because promote no longer sets COMPLETED at once, the card also shows them for IN_PROGRESS when a results URL exists. This keeps today's visible behaviour on the evening of an event.</p>
 <p><strong>Tests, written RED first:</strong></p>
 <ul>
-<li><code>PROMO.ID.*</code>, <code>PROMO.REFRESH.*</code>, <code>PROMO.SEED.*</code>, <code>PROMO.RUN.*</code>, <code>PROMO.GATE.*</code>, <code>PROMO.PLAN.*</code> (including &quot;plan, then apply, equals a live run&quot; on every 2025/26 PPW event on LOCAL), <code>PROMO.APPLY.*</code> (atomicity, lock and queue rollback, dry run persists nothing, URL rule, status pairs, idempotence) and <code>PROMO.LIFE.*</code>;</li>
+<li><code>PROMO.ID.*</code>, <code>PROMO.REFRESH.*</code>, <code>PROMO.SEED.*</code>, <code>PROMO.RUN.*</code>, <code>PROMO.GATE.*</code>, <code>PROMO.PLAN.*</code> (including &quot;plan, then apply, equals a live run&quot; on PPW1 2026/27 on LOCAL; past scored events of a closed season are never re-ingested), <code>PROMO.APPLY.*</code> (atomicity, lock and queue rollback, dry run persists nothing, URL rule, status pairs, idempotence) and <code>PROMO.LIFE.*</code>;</li>
 <li>pgTAP for the renumbering and for the carry stop, whose first test reproduces the double count. The existing <code>94_carryover_without_successor.sql</code> (CARRY.NS.01–07) must stay green.</li>
 </ul>
 <p><strong>Operations:</strong></p>
@@ -370,5 +379,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>67f810a17b0733d4f477cbe3e1263076c28fb4ee4a4ab106972b8f65b0aa504b</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>2333e64daf06f5ea2ba0daeadddbe8206921e6481139f404e76b23b8c5286614</code></footer>
 </div></body></html>
