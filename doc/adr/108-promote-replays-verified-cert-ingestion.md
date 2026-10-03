@@ -199,6 +199,19 @@ The apply runs over a direct database connection with its own `statement_timeout
 - `apply_plan` is the reference apply through the ordinary connector. It is not atomic and runs in tests and on LOCAL only; `fn_promote_event_apply` (build step 9) applies the same operations in one transaction.
 - Acceptance, 2026-10-03, on LOCAL refreshed from PROD (`promotion/plan_check.py`, one event per reset): **PPW1 2026/27 planned and applied equals its live run** (25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move). Past scored events of a closed season are never re-ingested, so they are not acceptance input: in the next season the year categories are computed from has shifted (the season's later year), and an ingestion run in the active season on a previous season's event would have to be aware of that change.
 
+**Apply implemented 2026-10-03 (build step 9).** Migration `20261003000017_promote_apply.sql`:
+
+- `fn_event_result_document(event)` is what an ingestion left for an event: the event's URL, every tournament, every result with its score, and the participants' roster rows, by codes and fencer ids, without generated ids or timestamps. `fn_event_result_fingerprint(event)` is its SHA-256. `fn_ingest_run_close` records it on a FINISHED run.
+- `fn_promote_event_apply(event, plan, expected fingerprint, expected inputs, prior fingerprint, status, dry run)`:
+  - skips the writes when PROD already holds the expected fingerprint;
+  - otherwise requires PROD to hold no result for the event (no prior named) or exactly the prior fingerprint;
+  - locks the event row and the participants' rows, then compares the input parts with the CERT run's (the lock refuses only when PROD is locked and CERT was not);
+  - steps a COMPLETED event to IN_PROGRESS, applies the operations in order (a CERT id PROD uses, a tournament that moved, a different non-blank URL or an unknown operation refuses), and compares the result fingerprint;
+  - sets the requested status, IN_PROGRESS or COMPLETED, through the transition validator, never writing an unchanged status;
+  - on a dry run raises `PROMOTE_DRY_RUN_OK <fingerprint>`; after a real apply with new fencers moves the fencer sequence past their ids.
+- Every refusal is an exception, so nothing the apply wrote survives it. pgTAP APPLY.01–11 (`103_promote_apply.sql`).
+- Acceptance, 2026-10-03, on LOCAL refreshed from PROD (`plan_check plan --apply sql`): **PPW1 2026/27 planned, dry-run and applied through `fn_promote_event_apply` equals its live run**, fingerprint for fingerprint and row for row (58 writes; 25 tournaments, 102 results, 373 fencers).
+
 ### 7 · Event lifecycle: COMPLETED once everything is final and the end date has passed
 
 | State of the event | Status on CERT and PROD |

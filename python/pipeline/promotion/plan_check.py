@@ -7,13 +7,15 @@ as promote starts each event from PROD's state:
 
     python -m python.pipeline.promotion.plan_check live --events PPW1-2026-2027 --out S.json
     ./scripts/reset-dev.sh
-    python -m python.pipeline.promotion.plan_check plan --state S.json
+    python -m python.pipeline.promotion.plan_check plan --state S.json [--apply sql]
 
 `live` ingests each event from its FTL URL as `ingest-event.yml` does, notes the
 fencers each one created, and saves what the events left in the database. `plan`
 plans each event on LOCAL through the recording connector, with the live run's
 created fencers, applies the plan with `apply_plan`, and compares the database
-with the saved state. Exit 0 means equal, 1 different. An event whose live run
+with the saved state. `--apply sql` applies through fn_promote_event_apply instead
+(build step 9): a dry run, then the apply, with the live run's result fingerprint
+and the inputs it started from. Exit 0 means equal, 1 different. An event whose live run
 fails has nothing to compare: `plan` reports the live error and what plan mode
 does with the event, and exits 3. It refuses any database but LOCAL.
 """
@@ -112,8 +114,11 @@ def live(event_codes: list[str], out: Path) -> int:
     db = _local_db()
     created: dict[str, list[dict]] = {}
     errors: dict[str, str] = {}
+    inputs: dict[str, dict] = {}
+    fingerprints: dict[str, str] = {}
     for code in event_codes:
         before = {f["id_fencer"] for f in db.fetch_fencer_db()}
+        inputs[code] = _rpc(db, "fn_event_input_fingerprint", {"p_event_code": code})["parts"]
         try:
             ingest_cli.ingest_event_from_url(code, _season_end(code), db=db, md_target="none")
         except Exception as e:  # recorded: an event that fails live has nothing to compare
@@ -128,11 +133,16 @@ def live(event_codes: list[str], out: Path) -> int:
             for f in sorted(db.fetch_fencer_db(), key=lambda f: f["id_fencer"])
             if f["id_fencer"] not in before
         ]
-        print(f"live {code}: created {len(created[code])} fencer(s)")
+        fingerprints[code] = _rpc(db, "fn_event_result_fingerprint", {"p_event_code": code})
+        print(
+            f"live {code}: created {len(created[code])} fencer(s); result {fingerprints[code][:12]}"
+        )
     state = {
         "events": event_codes,
         "created": created,
         "errors": errors,
+        "inputs": inputs,
+        "fingerprints": fingerprints,
         "snapshot": snapshot(db, event_codes),
     }
     out.write_text(json.dumps(state, ensure_ascii=False, default=str, indent=1))
@@ -140,7 +150,36 @@ def live(event_codes: list[str], out: Path) -> int:
     return 0
 
 
-def plan(state_path: Path) -> int:
+def _rpc(db: Any, fn: str, params: dict) -> Any:
+    return db._sb.rpc(fn, params).execute().data
+
+
+def _sql_apply(db: Any, plan: Any, state: dict, code: str) -> dict:
+    """fn_promote_event_apply as promote calls it: a dry run, which must raise
+    PROMOTE_DRY_RUN_OK with the live fingerprint, then the apply."""
+    expected = state["fingerprints"][code]
+    params = {
+        "p_event_code": code,
+        "p_plan": json.loads(json.dumps(plan.to_json(), default=str)),
+        "p_expected_fingerprint": expected,
+        "p_expected_inputs": state["inputs"][code],
+        "p_prior_fingerprint": None,
+        "p_status": "IN_PROGRESS",
+        "p_dry_run": True,
+    }
+    try:
+        _rpc(db, "fn_promote_event_apply", params)
+    except Exception as e:
+        message = getattr(e, "message", None) or str(e)
+        if not message.startswith(f"PROMOTE_DRY_RUN_OK {expected}"):
+            raise
+        print(f"  dry run: {message[:40]}")
+    else:
+        raise RuntimeError("the dry run returned instead of raising")
+    return _rpc(db, "fn_promote_event_apply", {**params, "p_dry_run": False})
+
+
+def plan(state_path: Path, apply: str = "python") -> int:
     from python.pipeline.promotion.plan import PlanRefused, apply_plan, plan_event
 
     db = _local_db()
@@ -165,11 +204,15 @@ def plan(state_path: Path) -> int:
         event = db.find_event_by_code(code)
         url = (event or {}).get("url_event") or ""
         p = plan_event(code, _season_end(code), db, url_event=url, created=state["created"][code])
-        refs = apply_plan(p.ops, db)
         counts: dict[str, int] = {}
         for op in p.ops:
             counts[op["op"]] = counts.get(op["op"], 0) + 1
-        print(f"plan {code}: {counts}; {sum(1 for r in refs if r < 0)} new tournament(s)")
+        if apply == "sql":
+            result = _sql_apply(db, p, state, code)
+            print(f"plan {code}: {counts}; applied {result}")
+        else:
+            refs = apply_plan(p.ops, db)
+            print(f"plan {code}: {counts}; {sum(1 for r in refs if r < 0)} new tournament(s)")
     applied = json.loads(json.dumps(snapshot(db, state["events"]), default=str))
     diffs = _diff(state["snapshot"], applied)
     if diffs:
@@ -194,10 +237,11 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--out", required=True, type=Path)
     b = sub.add_parser("plan")
     b.add_argument("--state", required=True, type=Path)
+    b.add_argument("--apply", choices=("python", "sql"), default="python")
     args = ap.parse_args(argv)
     if args.mode == "live":
         return live([c.strip() for c in args.events.split(",") if c.strip()], args.out)
-    return plan(args.state)
+    return plan(args.state, args.apply)
 
 
 if __name__ == "__main__":
