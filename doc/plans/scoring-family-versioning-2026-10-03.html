@@ -125,9 +125,9 @@
   <h1>The engine, the Points Table and the Calculator change together, per season</h1>
   <p class="dek">You asked whether the three are tied to the season by version, naming or anything else. <b>Partly.</b> One engine code that names its season ties them, and the season lock freezes all three at once. But <b>nothing declares them a group</b>, <b>nothing stops a released engine from being edited in place</b>, and <b>nothing checks at season rollover</b> that the pages know the new season. This plan adds that contract: one manifest, fingerprints of what was released, and checks in preflight, CI and release.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>Plan · awaiting your sign-off</span>
+    <span class="pill"><span class="dot"></span>Signed off 3 Oct · F1–F5 as recommended</span>
     <span class="pill"><span class="dot"></span>ADR-107 draft in §07</span>
-    <span class="pill warn"><span class="dot"></span>5 decisions, each with a recommendation</span>
+    <span class="pill warn"><span class="dot"></span>Not started · kept for a later session</span>
     <span class="pill"><span class="dot"></span>no score changes · no migration</span>
   </div>
 
@@ -241,7 +241,7 @@
   <section id="decide">
     <p class="kicker">05 · Decide these</p>
     <h2>Five decisions, each with my recommendation</h2>
-    <p><b>Accept all as recommended</b> is a valid answer.</p>
+    <p><b>Decided 3 Oct 2026: all five as recommended.</b> Implementation is deferred; other work comes first. A later session starts at §08 step 1.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Question</th><th>Recommendation</th><th>Alternative</th></tr></thead>
       <tbody>
@@ -279,7 +279,7 @@
   </section>
 
   <section id="adr">
-    <p class="kicker">07 · ADR draft · Status: Proposed</p>
+    <p class="kicker">07 · ADR draft · Status: Proposed, draft signed off 3 Oct · written to doc/adr/ at §08 step 1</p>
     <h2>ADR-107: A scoring family is declared once and released as a frozen group</h2>
     <p><b>Context.</b> The scoring engine (SQL), the Points Table (annex) and the Points Calculator compute one formula. ADR-102 gave them one module and one parameter source, and ADR-097 freezes a season's configuration on its first score. Their grouping is implicit: it rests on a shared engine code. Immutability of a released engine is stated, not enforced. Rollover to a new season is not checked, and the annex's published address carries no season.</p>
     <p><b>Decision.</b></p>
