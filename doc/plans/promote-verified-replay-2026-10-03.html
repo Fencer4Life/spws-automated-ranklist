@@ -155,7 +155,7 @@
         <li><b>only on CERT:</b> deleted when nothing refers to it; otherwise not paired.</li>
       </ul>
       <p>Anything not paired <b>stops the whole refresh before it writes</b>, and is listed for your decision. A typical case is a name corrected on PROD.</p>
-      <p>The first refresh is the big one. Today the ids differ for most fencers (CHUDY Tomasz is 37 on CERT and 38 on PROD), so CERT's rows are renumbered to PROD's ids and every reference follows. Step 0 below spells out how. After that, a refresh mostly confirms the ids are equal and copies PROD's values. Promote then writes each new fencer on PROD with the very id the CERT ingestion gave him.</p>
+      <p>The first refresh is the big one. Today the ids differ for most fencers (CHUDY Tomasz is 37 on CERT and 38 on PROD), so CERT's rows are renumbered to PROD's ids and every reference follows. Step 0 below spells out how. After that, a refresh mostly confirms the ids are equal and copies PROD's values. Promote then writes each new fencer on PROD with the very id the CERT ingestion gave that fencer.</p>
     </div>
 
     <div class="note good">
@@ -231,8 +231,8 @@
       <p>A is built before the lifecycle step (build step 10), because that step is what makes IN_PROGRESS last on PROD.</p>
     </div>
 
-    <div class="note warn">
-      <p class="lede">G1 · How the gate compares the season lock — decide before build step 7</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ G1 A</span> The gate compares scoring settings value by value; the lock refuses only when PROD is locked and CERT is not. Decided 3 Oct</p>
       <p><b>What I found building the run record.</b> Step 0 says the season&rsquo;s &ldquo;lock state&rdquo; must be equal on CERT and PROD. But the season&rsquo;s first scored result is what locks it (<code>fn_ensure_active_scoring_revision</code>). PPW1 is 2026/27&rsquo;s first event, so CERT&rsquo;s PPW1 run locked CERT&rsquo;s season, and PROD&rsquo;s stays unlocked until promote applies. Measured read-only on 3 Oct: locked on CERT, unlocked on PROD. Every scoring setting and engine is equal.</p>
       <p>Compared literally, the lock would refuse every first event of a season that is re-ingested on CERT, which is PPW1 today. The run record keeps the lock as a part of its own, so nothing built so far depends on this answer.</p>
       <ul>
@@ -241,6 +241,16 @@
         <li><b>C:</b> ignore the lock. This loses the one case A catches.</li>
       </ul>
       <p><b>Already settled within the plan&rsquo;s wording:</b> the EVF toggles and the default ranking mode are display switches, not scoring settings, so the season part leaves them out. Today the EVF toggle is off on PROD and on on CERT. If you want them compared, say so and I&rsquo;ll add them back.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ G2 A</span> A declaration overwrites a confirmed birth year only when the fencer&rsquo;s results leave no other year; any other overwrite blocks. Decided 3 Oct</p>
+      <p>Deferred from P7 and P8 to this step. The ingestion&rsquo;s declared-year rule (D5) moves a fencer&rsquo;s stored year to the year declared at registration whenever the declared year fits the bracket, <b>even when the stored year is confirmed</b>. The gate has one identity check that depends on this rule.</p>
+      <ul>
+        <li><b>A (chosen):</b> a declaration overwrites a confirmed year only when the fencer&rsquo;s results leave no other year. STANISŁAWSKI #282 is that case: the V0 results and the V1 entry allow only 1987, which is also the declared year. Any other overwrite blocks promote as an identity issue. You then decide the year by name, the way the 25 Sep proposals and BUJKO were decided, and CERT is re-ingested.</li>
+        <li><b>B, not chosen:</b> the declaration wins whenever it fits the bracket (D5 as released). The gate only reports the move.</li>
+      </ul>
+      <p>Why A: a confirmed year has already been checked by a person, and a typo in a form should not undo that silently. A blocks only when a person&rsquo;s answer is needed. BUJKO (1979 against a declared 1982, both fitting every result on that row) would have blocked until you decided, which is what happened by hand on 3 Oct.</p>
     </div>
   </section>
 
@@ -342,7 +352,7 @@
       <li><b>Re-check:</b> every gate check and precondition again. PROD's event must be PLANNED, or IN_PROGRESS holding exactly the previous promoted run (day 2 of a multi-day event).</li>
       <li><b>Source unchanged:</b> each listing is fetched and hashed. A hash different from CERT's run means the organiser edited the results in between. Promote refuses: re-ingest CERT first.</li>
       <li><b>URL:</b> CERT's event results URL goes into PROD's event-level field (<code>url_event</code>) inside the same apply transaction.</li>
-      <li><b>Plan on PROD:</b> the same <code>INGEST_DOMESTIC</code> flow runs against PROD with a recording connector. It reads PROD and records every write: fencers to create, birth years to move, aliases, tournaments, rows, joined orders. A new fencer takes the id the CERT run gave him, so ids stay identical; the apply refuses if that id is taken on PROD.</li>
+      <li><b>Plan on PROD:</b> the same <code>INGEST_DOMESTIC</code> flow runs against PROD with a recording connector. It reads PROD and records every write: fencers to create, birth years to move, aliases, tournaments, rows, joined orders. A new fencer takes the id the CERT run gave it, so ids stay identical; the apply refuses if that id is taken on PROD.</li>
       <li><b>Compare:</b> with identical ids, the plan must equal CERT's result fingerprint and CERT's master-data changes, id for id. Any difference refuses with a diff table, and nothing has been written.</li>
       <li><b>Apply:</b> one RPC, <code>fn_promote_event_apply(plan, expected_fingerprint)</code>, makes every write, scores and computes PROD's fingerprint, all in one transaction. A difference raises and everything rolls back. Then the joining check runs, and the post-commit report goes to Storage and Telegram.</li>
       <li><b>After:</b> the PROD drain processes the queued recomputes. Promote waits for the drain and compares the affected events with CERT's. A difference here cannot be rolled back automatically, so it is reported loudly. With identical inputs it should not occur.</li>
@@ -548,9 +558,9 @@
               <li><b>Signed off 3 Oct</b> on <code>doc/plans/cert-fencer-alignment-signoff-2026-10-03.html</code>:
                 <ul>
                   <li>S1, the CERT run;</li>
-                  <li>P7, fencer #124 kept at 1986. That means PROD #124 becomes 1986, confirmed, and <code>doc/overrides/PPW1-2026-2027.yaml</code> links his row so his declared 1985 cannot overwrite it. Proved on LOCAL.</li>
+                  <li>P7, fencer #124 kept at 1986. That means PROD #124 becomes 1986, confirmed, and <code>doc/overrides/PPW1-2026-2027.yaml</code> links that registration to #124 so the declared 1985 cannot overwrite it. Proved on LOCAL.</li>
                 </ul></li>
-              <li>P8, BUJKO Paulina (#30), takes her declared 1982. It is set on PROD. The general rule for declared years against results and confirmed years comes back with the gate (build step 7).</li>
+              <li>P8, BUJKO Paulina (#30), takes the declared 1982. It is set on PROD. The general rule for declared years against results and confirmed years comes back with the gate (build step 7).</li>
               <li><b>Carried out, 3 Oct:</b>
                 <ul>
                   <li>released as main <code>163573f6</code>;</li>
@@ -585,9 +595,17 @@
             <li><b>Read-only on CERT and PROD today:</b> the event and registrations parts are equal (90 entries each). The roster differs because of CERT&rsquo;s PPW1 run. The season differs by the lock only, once the EVF display switch is set aside (G1).</li>
             <li>The result fingerprint and the gate outcome stay empty until build steps 9 and 7.</li>
             <li><b>CERT&rsquo;s real PPW1 run, which had PROD&rsquo;s registrations, has no estimated year among the seven.</b> It created the 6 new fencers with their declared years, confirmed: ZANEUSKAYA 1994, MARSZAŁEK 1994, KANIECKI 1987, TYLSKI 1982, PERKOWSKI 1984, KOSZMIDER 1973. #282 is 1987 there.</li>
-            <li><b>#282 is set to 1987, confirmed, on PROD (3 Oct, your &ldquo;confirm all years&rdquo;).</b> It is the only year that fits all six of his results: V0 in 2024/25 and 2025/26, V1 in PPW1 2026/27. It is also his own declaration: his PPW1 registration (20 Sep, typed STANISLAWSKI ALBERT) declares 1987. The change moves PROD&rsquo;s roster part, so CERT is refreshed again before the first promote, as step 0 requires anyway.</li>
+            <li><b>#282 is set to 1987, confirmed, on PROD (3 Oct, your &ldquo;confirm all years&rdquo;).</b> It is the only year that fits all six of the fencer&rsquo;s results: V0 in 2024/25 and 2025/26, V1 in PPW1 2026/27. It is also the fencer&rsquo;s own declaration: the PPW1 registration (20 Sep, typed STANISLAWSKI ALBERT) declares 1987. The change moves PROD&rsquo;s roster part, so CERT is refreshed again before the first promote, as step 0 requires anyway.</li>
           </ul></li>
-      <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>. <b>Needs G1 decided first.</b></li>
+      <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>. G1 A and G2 A decided 3 Oct.
+          <ul>
+            <li><b>Status, 3 Oct: built.</b> <code>promotion/gate.py</code> with a CLI; migration <code>20261003000016</code>: <code>fn_promote_gate_checks</code>, <code>fn_fencer_fitting_birth_years</code>, <code>fn_ingest_run_gate</code>. pgTAP GATE.DB.01–16 (18 assertions); PROMO.GATE.01–22 and PROMO.RUN.10–12.</li>
+            <li>The run record now keeps each listing&rsquo;s source rows and identity report. A refused listing names its kind (<code>ListingRefused</code>: identity or joined bracket), so the gate reports the right kind of issue.</li>
+            <li><b>Your identity rule applied to the duplicate check:</b> a new fencer the typo rule calls an existing one blocks unless two different confirmed birth years tell them apart. On PPW1 the rule caught PERKOWSKI Maciej (declared 1984) against SĘKOWSKI Maciej (#263, confirmed 1981). The years tell them apart, so it is information.</li>
+            <li>&ldquo;An order whose length is not N&rdquo; needs no check: the database refuses to store one (<code>chk_tournament_joined_order</code>).</li>
+            <li><b>Run on real data, LOCAL against PROD, 3 Oct.</b> LOCAL was refreshed from PROD (one value: #282&rsquo;s 1987; 90 registrations), then PPW1 was ingested with a run record. The 6 new fencers took their declared years. The gate found no identity, scoring or joined-bracket issue. Six loose name similarities and the PERKOWSKI pair were reported as information. The only blocks were the schema and registrations parts, because PROD has not yet deployed the same migrations.</li>
+            <li><b>G2 A is the only rule.</b> The rule-B branch and its switch were removed after your answer; PROMO.GATE.16 checks that none is left.</li>
+          </ul></li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>
       <li><b><code>fn_event_result_fingerprint</code> and <code>fn_promote_event_apply</code></b> (with <code>p_dry_run</code>, its row locks and the in-transaction input check): pgTAP <code>PROMO.APPLY.*</code>. It must prove atomicity, rollback of the lock and the queue on a fingerprint mismatch, that a dry run persists nothing, the URL write, the status pairs, and idempotence.</li>
       <li><b>Carry-over stop (P6 A):</b> a migration for the four FK ranking functions and pgTAP written RED first. The first test reproduces the double count while IN_PROGRESS.</li>

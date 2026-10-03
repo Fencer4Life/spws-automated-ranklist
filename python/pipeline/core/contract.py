@@ -62,6 +62,20 @@ class Outcome(StrEnum):
     ABORTED = "ABORTED"  # an Abort broke the run at this plugin
 
 
+class ListingRefused(ValueError):
+    """A listing the ingestion will not write, refused before any write.
+
+    `kind` is the issue kind the CERT gate reports (ADR-108 §5): "identity" for
+    a row the identity step could not decide (NAMESAKE.07), "joined_bracket" for
+    a listing whose category order cannot be written (ADR-104 §§3-4). It is a
+    ValueError, as the refusal always was, so the run still stops on it.
+    """
+
+    def __init__(self, kind: str, message: str):
+        super().__init__(message)
+        self.kind = kind
+
+
 class Abort(Exception):
     """Genuine infra failure (e.g. DB down) — the ONLY thing that stops a run.
 
