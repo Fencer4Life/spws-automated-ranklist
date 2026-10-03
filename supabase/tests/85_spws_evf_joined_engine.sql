@@ -221,15 +221,21 @@ SELECT ok(
                      AND NOT a.attisdropped),
   'JB27.CLEAN.02d enum_score_method has no PLACE_MEDAL and typ_score_breakdown no field, below or medal component');
 
--- JB27.CLEAN.03a — history is intact: every scored result is EVF_CLASSIC with
--- real place, DE and podium components. Read before any fixture is scored.
+-- JB27.CLEAN.03a — history is intact: every scored result of a season on the
+-- classic engine is EVF_CLASSIC with real place, DE and podium components. Read
+-- before any fixture is scored. (SPWS-2026-2027, on the joined engine, holds
+-- real scored results since its first promote, 3 Oct 2026.)
 SELECT is(
   (SELECT (count(*) > 0 AND count(*) = count(*) FILTER (
              WHERE r.enum_score_method = 'EVF_CLASSIC'
                AND r.num_place_pts >= 0 AND r.num_de_bonus >= 0 AND r.num_podium_bonus >= 0
                AND r.num_final_score IS NOT NULL))::TEXT
      FROM tbl_result r
-    WHERE r.ts_points_calc IS NOT NULL),
+     JOIN tbl_tournament t ON t.id_tournament = r.id_tournament
+     JOIN tbl_event e ON e.id_event = t.id_event
+     JOIN tbl_season s ON s.id_season = e.id_season
+     JOIN tbl_scoring_engine g ON g.id_engine = s.id_scoring_engine
+    WHERE r.ts_points_calc IS NOT NULL AND g.txt_code LIKE 'EVF_CLASSIC%'),
   'true',
   'JB27.CLEAN.03a every scored result is EVF_CLASSIC with its place, DE and podium components and a final score');
 
@@ -487,7 +493,9 @@ SELECT is(
   'JB27.TYPE.02 every type of every earlier season stays on EVF classic');
 
 -- JB27.TYPE.04 — export and import round-trip the engine per type; a locked
--- season refuses a change of a type's engine (ADR-097).
+-- season refuses a change of a type's engine (ADR-097). SPWS-2026-2027 exports
+-- its engines; since its first promote (3 Oct 2026) it is locked, so the change
+-- lands on an unscored copy of its configuration.
 CREATE FUNCTION pg_temp.type_engines_round_trip() RETURNS TEXT
 LANGUAGE plpgsql AS $rt$
 DECLARE v_open INT; v_locked INT; v_cfg JSONB;
@@ -496,6 +504,10 @@ BEGIN
   SELECT id_season INTO v_locked FROM tbl_season WHERE txt_code = 'SPWS-2025-2026';
 
   v_cfg := fn_export_scoring_config(v_open);
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+       VALUES ('SPWS-2095-2096', DATE '2095-09-01', DATE '2096-06-30')
+    RETURNING id_season INTO v_open;
+  PERFORM fn_import_scoring_config(v_cfg || jsonb_build_object('id_season', v_open));
   IF (SELECT string_agg(key || '=' || value, ',' ORDER BY key)
         FROM jsonb_each_text(v_cfg -> 'type_engines')) IS DISTINCT FROM pg_temp.expected_2026_2027_engines() THEN
     RETURN 'export: ' || COALESCE((v_cfg -> 'type_engines')::TEXT, 'no type_engines');

@@ -44,14 +44,19 @@ DECLARE
   v_f INT;
   v_r INT;
 BEGIN
-  INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon,
-                              enum_gender, enum_age_category, dt_tournament,
-                              int_participant_count)
-       VALUES ((SELECT e.id_event FROM tbl_event e
-                  JOIN tbl_season s ON s.id_season = e.id_season
-                 WHERE s.txt_code = 'SPWS-2026-2027' AND e.txt_code = 'PPW1-2026-2027'),
-               'PPW1-V2-M-EPEE-2026-2027', 'PPW', 'EPEE', 'M', 'V2', '2026-09-26', 1)
-    RETURNING id_tournament INTO v_t;
+  -- The seed holds the real PPW1 2026/27 since its promote (3 Oct 2026); reuse
+  -- its tournament when present, and create it on a seed without it.
+  SELECT id_tournament INTO v_t FROM tbl_tournament WHERE txt_code = 'PPW1-V2-M-EPEE-2026-2027';
+  IF v_t IS NULL THEN
+    INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon,
+                                enum_gender, enum_age_category, dt_tournament,
+                                int_participant_count)
+         VALUES ((SELECT e.id_event FROM tbl_event e
+                    JOIN tbl_season s ON s.id_season = e.id_season
+                   WHERE s.txt_code = 'SPWS-2026-2027' AND e.txt_code = 'PPW1-2026-2027'),
+                 'PPW1-V2-M-EPEE-2026-2027', 'PPW', 'EPEE', 'M', 'V2', '2026-09-26', 1)
+      RETURNING id_tournament INTO v_t;
+  END IF;
   INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year)
        VALUES ('IMPORTED ' || p_tag, 'Fixture', 1970)
     RETURNING id_fencer INTO v_f;
@@ -146,6 +151,9 @@ DELETE FROM tbl_tournament WHERE id_event IN (
   SELECT id_event FROM tbl_event
    WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+-- Scored since its first promote (3 Oct 2026): the season has a scoring revision.
+UPDATE tbl_season SET id_active_scoring_revision = NULL WHERE txt_code = 'SPWS-2026-2027';
+DELETE FROM tbl_scoring_config_revision WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
@@ -342,6 +350,9 @@ DELETE FROM tbl_tournament WHERE id_event IN (
   SELECT id_event FROM tbl_event
    WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+-- Scored since its first promote (3 Oct 2026): the season has a scoring revision.
+UPDATE tbl_season SET id_active_scoring_revision = NULL WHERE txt_code = 'SPWS-2026-2027';
+DELETE FROM tbl_scoring_config_revision WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
@@ -476,6 +487,9 @@ DELETE FROM tbl_tournament WHERE id_event IN (
   SELECT id_event FROM tbl_event
    WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'));
 DELETE FROM tbl_event          WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+-- Scored since its first promote (3 Oct 2026): the season has a scoring revision.
+UPDATE tbl_season SET id_active_scoring_revision = NULL WHERE txt_code = 'SPWS-2026-2027';
+DELETE FROM tbl_scoring_config_revision WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_scoring_config WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
 DELETE FROM tbl_season         WHERE txt_code = 'SPWS-2026-2027';
 INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_european_event_type)
