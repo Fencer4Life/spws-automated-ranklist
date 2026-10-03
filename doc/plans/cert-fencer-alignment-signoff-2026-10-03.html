@@ -121,9 +121,10 @@
 <div class="wrap">
   <p class="eyebrow">ADR-108 · build step 4 · sign-off before anything is written on CERT · 3 Oct 2026</p>
   <h1>CERT gets PROD's fencer ids: what the first refresh will change</h1>
-  <p class="dek">The refresh is built and tested, and it ran end to end on LOCAL. This page shows exactly what it will do on CERT, read from CERT and PROD today, and the order in which it runs. <b>Nothing has been written on CERT.</b> Two things need your answer: the CERT run itself, and a fencer whose declared birth year contradicts his earlier results.</p>
+  <p class="dek">The refresh is built and tested, and it ran end to end on LOCAL. This page shows exactly what it will do on CERT, read from CERT and PROD today, and the order in which it runs. <b>You signed off S1 and P7 on 3 Oct.</b> One new question, P8, has to be answered before the first promote, but not before the CERT run.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>Waiting for your sign-off</span>
+    <span class="pill"><span class="dot"></span>S1 and P7 signed off 3 Oct</span>
+    <span class="pill warn"><span class="dot"></span>P8 open: needed before promote</span>
     <span class="pill"><span class="dot"></span>LOCAL rehearsal passed</span>
     <span class="pill">Plan: promote-verified-replay-2026-10-03.html</span>
   </div>
@@ -131,11 +132,34 @@
 
   <section>
     <p class="kicker">Decide this first</p>
-    <h2>Two decisions</h2>
+    <h2>One open decision, two made</h2>
 
     <div class="note warn">
-      <p class="lede"><span class="tick">? S1</span> Run the first refresh on CERT, as listed below</p>
-      <p><b>Recommended: yes.</b> Every CERT fencer pairs with exactly one PROD fencer, and nothing is guessed:</p>
+      <p class="lede"><span class="tick">? P8</span> BUJKO Paulina (#30): a declared year against a confirmed one, with nothing to choose between them</p>
+      <p>Found in the P7 rehearsal on LOCAL. On PROD, fencer #30 has birth year <b>1979, confirmed</b>. Her PPW1 registration (20 Aug) declares <b>1982</b> and has no fencer link, so it never became a proposal in the Birth-year review tab. The 25 Sep proposals went through that tab.</p>
+      <p>Both years fit everything she has fenced: V1 sabre in 2023/24 and V1 now. Only the declaration chooses. The ingestion's declared-years rule (D5) takes it because it fits the V1 bracket, so the CERT ingestion will write 1982, confirmed, and promote would carry it to PROD. On the registration path, the same change waits for an administrator (migration <code>20260912000003</code>).</p>
+      <p>A second fencer matched the same rule, and his results settle it: STANISŁAWSKI Albert (#282), confirmed 1991, declared 1987. His V0 results in 2025/26 need 1987 or later, and his V1 entry needs 1987 or earlier. <b>1987 is the only year that fits</b>, and the bracket rule alone would set it too. No decision is needed for him.</p>
+      <ul>
+        <li><b>A (recommended):</b> you decide her year by name now, the way the 25 Sep proposals were decided. It is set on PROD. If you keep 1979, she joins the PPW1 override file like #124. As a general rule, a declaration never overwrites a confirmed year unless the fencer's results leave no other year, as with #282. Any other case becomes a blocking identity issue in the CERT gate (build step 7).</li>
+        <li><b>B:</b> the declaration wins whenever it fits the bracket (D5 as released), so 1982.</li>
+      </ul>
+      <p>CERT can be ingested first: the next refresh resets CERT's master data from PROD, and the CERT ingestion is re-run after the answer if it changes anything.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P7</span> Fencer #124, KIEROŃSKI Tomasz: kept at 1986. Decided 3 Oct</p>
+      <p>Your answer: <i>keep his birth year at 1986 for now and let the ingestion go.</i> How that holds through the CERT ingestion and the later replay on PROD:</p>
+      <ul>
+        <li><b>PROD #124 becomes 1986, confirmed</b> (from 1990, an estimate). It is one guarded update, run just before the CERT refresh, which then copies it to CERT. 1986 fits every result: V0 in 2023/24 and 2024/25, and V1 now. His registration stays exactly as he typed it (1985).</li>
+        <li><b><code>doc/overrides/PPW1-2026-2027.yaml</code> links his row to him</b> by name and birth year 1986. A linked row skips the birth-year reconcile, so the declared 1985 cannot overwrite 1986, on CERT or in the PROD replay. While the roster does not hold 1986, the run halts; it does not guess.</li>
+        <li><b>Proved on LOCAL, 3 Oct.</b> LOCAL was rebuilt from the seed and aligned to PROD, and #124 was set to 1986, confirmed. PPW1 was then ingested. Afterwards #124 is still 1986, confirmed, with his V1 sabre result (place 7). The staging report has no birth-year change for him.</li>
+      </ul>
+      <p>The general rule, option A of this question, is <b>not decided</b>. It comes back with the CERT gate (build step 7), together with P8.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ S1</span> Run the first refresh on CERT, as listed below. Signed off 3 Oct</p>
+      <p>Every CERT fencer pairs with exactly one PROD fencer, and nothing is guessed:</p>
       <ul>
         <li>all 367 pair: 363 by name, and the 2 namesake pairs (4 fencers) by their equal confirmed birth years;</li>
         <li>none is left unpaired, none is created, none is deleted.</li>
@@ -144,6 +168,7 @@
       <p>Your "yes" covers these steps in this order. Each one stops on any difference.</p>
       <ol class="steps">
         <li><b>Release the two new database functions.</b> CI runs, then Release. CERT deploys by itself. <b>PROD's deploy waits for your approval on GitHub</b>, as always. On PROD the functions exist but nothing calls them: the refresh refuses PROD as a target, and reads PROD only inside read-only transactions. Release 37102806037 (the declared-years fix) is still waiting for that approval; approving the newer release covers both.</li>
+        <li><b>PROD #124 to 1986, confirmed</b> (P7). One guarded update with <code>RETURNING</code>, so the refresh copies it to CERT.</li>
         <li><b>CERT database dry run.</b> The real function runs on CERT and then rolls itself back, so nothing persists. I report its counts to you.</li>
         <li><b>CERT apply.</b> A restore point is saved first. Then, in order:
           <ul>
@@ -157,22 +182,6 @@
       </ol>
     </div>
 
-    <div class="note warn">
-      <p class="lede"><span class="tick">? P7</span> Fencer #124: his declared birth year contradicts three of his earlier results</p>
-      <p>Found in the LOCAL rehearsal. On PROD, fencer #124 has birth year 1990, still an estimate. At PPW1 registration he declared <b>1985</b>, and his registration has no fencer link. The ingestion uses declared years (D5), so CERT will record 1985 as confirmed, and promote will then carry it to PROD.</p>
-      <p>His results tell a narrower story:</p>
-      <ul>
-        <li>he fenced V0 sabre at PPW2, PPW4 and MPW in 2024/25, which needs a birth year of 1986 or later;</li>
-        <li>he fenced V1 at PPW1 2026/27, which needs 1987 or earlier.</li>
-      </ul>
-      <p>Only 1986 or 1987 fits everything. Under 1985, his three 2024/25 results sit in a category his own year forbids.</p>
-      <ul>
-        <li><b>A (recommended):</b> a declared year that contradicts the fencer's results in earlier seasons is a <b>blocking identity issue</b> in the CERT gate. You confirm the true year on PROD in the Birth-year review tab; CERT is refreshed and re-ingested; promote proceeds. Nothing is guessed, and PROD never receives a year its own results contradict.</li>
-        <li><b>B:</b> the declared year wins, and the recompute re-files his 2024/25 results into V1.</li>
-        <li><b>C:</b> information only. The contradiction reaches PROD as it stands.</li>
-      </ul>
-      <p>A changes the gate (build step 7), not the refresh. The refresh copies his PROD record exactly as it is.</p>
-    </div>
   </section>
 
   <section>
@@ -235,6 +244,7 @@
           </ul></td></tr>
         <tr><td>Independent checks</td><td>A new plan finds nothing to do: all 367 sit at PROD's ids. All 2,878 finished-season results match PROD row for row, with the same place, score and match method under the same fencer id.</td></tr>
         <tr><td>PPW1 ingested again</td><td>102 results for 84 fencers, all matched. The six new entrants were created at ids 368–373, straight after PROD's 367.</td></tr>
+        <tr><td>P7 rehearsal</td><td>LOCAL rebuilt from the seed and aligned again: 366 renumbered, 90 registrations copied. #124 set to 1986, confirmed; PPW1 ingested with the new override file, every bracket committed without a fault. #124 stays 1986, confirmed, with his V1 result. The same report showed P8.</td></tr>
       </tbody>
     </table></div>
   </section>
