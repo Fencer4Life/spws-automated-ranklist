@@ -608,7 +608,7 @@
           </ul></li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.
           <ul>
-            <li><b>Status, 3 Oct: built.</b> <code>promotion/plan.py</code>: the recording connector, <code>plan_event</code> and the reference <code>apply_plan</code>; <code>promotion/plan_check.py</code> for LOCAL. PROMO.PLAN.01&ndash;12 (17 tests), two of them running the real ingestion live and as plan-then-apply on an in-memory database, one per engine.</li>
+            <li><b>Status, 3 Oct: built.</b> <code>promotion/plan.py</code>: the recording connector, <code>plan_event</code> and the reference <code>apply_plan</code>; <code>promotion/plan_check.py</code> for LOCAL. PROMO.PLAN.01&ndash;13 (18 tests; 13 is the LOCAL check&rsquo;s exit 3 for an event whose live run failed), two of them running the real ingestion live and as plan-then-apply on an in-memory database, one per engine.</li>
             <li><b>PPW1 2026/27: plan, then apply, equals the live run on LOCAL.</b> 25 tournaments, 102 results, 373 fencers, the 6 new fencers with identical ids, one birth-year move.</li>
             <li>Past scored events of a closed season are never re-ingested, so 2025/26 events are not acceptance input.</li>
           </ul></li>

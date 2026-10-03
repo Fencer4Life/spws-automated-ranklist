@@ -1,4 +1,4 @@
-"""PROMO.PLAN.01–12 — plan mode: the recording connector (ADR-108 §6, build step 8).
+"""PROMO.PLAN.01–13 — plan mode: the recording connector (ADR-108 §6, build step 8).
 
 Promote runs the CERT run's ingestion again, against PROD, with a recording
 connector in place of the database connector. It reads PROD and records every
@@ -637,6 +637,32 @@ class TestPlanEvent:
         db.events[9] = _event(9, "PEW3-2025-2026", "2026-03-14", 1)
         with pytest.raises(pl.PlanRefused, match="international"):
             pl.plan_event("PEW3-2025-2026", 2026, _ReadOnly(db), url_event=SCHEDULE, created=[])
+
+    def test_the_local_check_reports_a_failed_live_run_and_exits_3(self, tmp_path, monkeypatch):
+        """PROMO.PLAN.13 — an event whose live run failed has nothing to compare:
+        whatever plan mode then raises is reported, and the exit is 3, never 1
+        ("different")."""
+        from python.pipeline.promotion import plan_check
+
+        state = tmp_path / "s.json"
+        state.write_text(
+            json.dumps(
+                {
+                    "events": ["PPW3-2025-2026"],
+                    "created": {"PPW3-2025-2026": []},
+                    "errors": {"PPW3-2025-2026": "APIError: refused"},
+                    "snapshot": {},
+                }
+            )
+        )
+        monkeypatch.setattr(plan_check, "_local_db", _classic_db)
+        for raised in (RuntimeError("same error"), pl.PlanRefused("identity", "diverged")):
+
+            def boom(*a, raised=raised, **k):
+                raise raised
+
+            monkeypatch.setattr(pl, "plan_event", boom)
+            assert plan_check.plan(state) == 3
 
     def test_the_plan_carries_every_listings_hash(self):
         """PROMO.PLAN.12 — promote compares them with the CERT run's."""
