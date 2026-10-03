@@ -195,3 +195,12 @@ Migration `20261001000003_recompute_keeps_provenance.sql` makes the RPC keep wha
 **What was lost.** No score, place or identity link: `id_fencer` was never touched. Lost are the scraped names and the record of manual confirmations. The admin Identity Manager shows numbers where names belong. The originals exist only in the sources, so they return only when an event is re-ingested. Alias write-back is unaffected, because it reads drafts at sign-off.
 
 **Tests.** pytest RECOMP.PROV.01–05 (`python/tests/test_recompute_provenance.py`). pgTAP RECOMP.PROV.RPC.01–05 (`supabase/tests/87_recompute_provenance.sql`). N9.6 (`python/tests/test_recompute_persist.py`) had pinned the old shape and is amended.
+
+## Amendment (2026-10-03) — the CERT drain joins `cert-write` (ADR-108)
+
+[ADR-108](108-promote-replays-verified-cert-ingestion.md) §9 adds two CERT writers that must not interleave with a recompute: the master-data refresh from PROD, and the CERT ingestion.
+
+- The refresh drains CERT's queue to empty before any ingestion starts. A recompute running during the ingestion would leave CERT's committed result mixing two states, and the promote gate compares exactly that result.
+- So `recompute-drain.yml` leaves its own `cert-recompute` group and joins **`cert-write`** with the refresh and `ingest-event.yml` target `cert`. This is the reasoning this ADR's PROD amendment applied to `prod-write`: one shared group per environment's writers.
+- PROD's drain stays in `prod-write`, which the daily close (`event-close.yml`) also joins.
+- Promote waits for the PROD drain after its apply and compares the affected events with CERT's.
