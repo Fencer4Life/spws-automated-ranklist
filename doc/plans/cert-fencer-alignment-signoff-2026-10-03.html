@@ -198,7 +198,7 @@
       <thead><tr><th>Step</th><th>Result</th></tr></thead>
       <tbody>
         <tr><td>Release</td><td><code>scripts/preflight.sh</code> exit 0, all 15 gates. Main <code>163573f6</code>; CI 37116014523 and Release 37116093911 green, deploy to CERT and to PROD included. Both functions exist on CERT and PROD, executable by <code>service_role</code> only.</td></tr>
-        <tr><td>PROD writes</td><td>#124 from 1990 (an estimate) to 1986, confirmed (P7). #30 from 1979 to 1982, confirmed (P8). Each was one guarded row, read first and returned by the update.</td></tr>
+        <tr><td>PROD writes</td><td>#124 from 1990 (an estimate) to 1986, confirmed (P7). #30 from 1979 to 1982, confirmed (P8). #282 STANISŁAWSKI Albert from 1991 to 1987, confirmed (your &ldquo;confirm all years&rdquo;, after the PPW1 runs). 1987 is the only year that fits all six of his results: V0 in 2024/25 and 2025/26, V1 in PPW1 2026/27. The 1991 had no registration and no audit history behind it. Each was one guarded row, read first and returned by the update. #282 then showed no category violation, and his five PROD results stay V0.</td></tr>
         <tr><td>CERT dry run</td><td>Nothing persisted. 367 paired, 348 renumbered, 19 already at PROD's id, none created or deleted. 13 values: the eleven listed below plus #124 and #30.</td></tr>
         <tr><td>CERT apply</td><td>The restore point was saved first. 348 renumbered and 13 values taken. CERT's 8 test registrations were replaced by PROD's 90. The roster re-read equals PROD's in every column.</td></tr>
         <tr><td>Drain</td><td>CERT's own workflow drained the queue: 27 events, run 37116463686, queue empty. There is no CERT key on this machine, so the drain runs there.</td></tr>
