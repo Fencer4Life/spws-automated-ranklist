@@ -225,6 +225,8 @@ The apply runs over a direct database connection with its own `statement_timeout
 - **§9.** `ingest-event.yml` refuses `target: prod` (every event it accepts is domestic: ADR-105 refuses an international one), always records the run, and joins `cert-write`; `recompute-drain.yml` leaves `cert-recompute` for `cert-write`.
 - **Tests.** pytest `test_promotion_replay.py` (PROMO.REPLAY.01–25, 27–28; 13 mutants caught) and `test_promote.py` (PROMO.REPLAY.26). On LOCAL the readers ran read-only, a write was refused by PostgreSQL, and the apply's dry run on PPW1 2026/27 through LOCAL's API raised `PROMOTE_DRY_RUN_OK` with the event's fingerprint in 0.04 s and left it PLANNED. On PROD, read only: `service_role` may execute `fn_promote_event_apply`, and the PROD drain's runs of 3 Oct used the same API and key.
 
+**First promote 2026-10-03 (build step 13).** PPW1 2026/27: CERT rolled back, refreshed from PROD and re-ingested as recorded run 1; the gate passed. A rehearsal with LOCAL standing in for PROD and a dry run on PROD came first; then `promote.yml` replayed the run on PROD at 19:49 UTC, 57 writes in one transaction, status COMPLETED. PROD equals CERT by result fingerprint, and the public calendar and ranking agree. Record: `doc/plans/promote-rehearsal-2026-10-03.html`.
+
 ### 7 · Event lifecycle: COMPLETED once everything is final and the end date has passed
 
 | State of the event | Status on CERT and PROD |
