@@ -1,4 +1,4 @@
-"""PROMO.REPLAY.01–26 — promote replays a verified CERT run on PROD (ADR-108 §6, build step 12).
+"""PROMO.REPLAY.01–28 — promote replays a verified CERT run on PROD (ADR-108 §6, build step 12).
 
 Promote copies nothing from CERT. It takes the exact event code, the latest CERT
 run of the event (whose commit must be the one checked out), re-runs the gate,
@@ -425,6 +425,41 @@ class TestApply:
         assert "PROMOTE_INPUT_CHANGED" in str(e) and "nothing was written" in str(e)
         assert after.order == []
 
+    def test_the_apis_time_limit_refuses_with_nothing_written(self):
+        """PROMO.REPLAY.27 — the API's statement or lock timeout cancels the call and
+        PostgreSQL rolls it back: promote refuses, says so, and names the way out."""
+        applier = FakeApplier(
+            real=replay.ApplyError("canceling statement due to statement timeout")
+        )
+        e, _ = _refused(applier=applier)
+        assert "nothing was written" in str(e)
+        assert any("time limit" in line for line in e.lines)
+
+    @pytest.mark.parametrize(("held", "applied"), [(FP, True), ("0" * 64, False)])
+    def test_a_call_without_an_answer_reads_prod_again(self, held, applied):
+        """PROMO.REPLAY.28 — when the apply's call ends without an answer, promote reads
+        PROD again: holding the run's result, the apply committed; otherwise it refuses and
+        says to run promote again, which is idempotent. It never claims nothing was written."""
+        states = iter(
+            [
+                {"status": "PLANNED", "fingerprint": "0" * 64, "has_results": False},
+                {"status": "IN_PROGRESS", "fingerprint": held, "has_results": True},
+            ]
+        )
+
+        class Prod(FakeSide):
+            def event_state(self, code):
+                return next(states)
+
+        applier = FakeApplier(real=replay.ApplyError("read timed out", uncertain=True))
+        if applied:
+            outcome, parts = _replay(prod=Prod("prod", run=None), applier=applier)
+            assert outcome.applied and parts["after"].order[0] == "report"
+        else:
+            e, parts = _refused(prod=Prod("prod", run=None), applier=applier)
+            assert "again" in str(e) and "nothing was written" not in str(e)
+            assert parts["after"].order == []
+
     def test_a_dry_run_promote_stops_after_the_dry_apply(self):
         """PROMO.REPLAY.18 — `--dry-run` plans, compares and dry-applies, and writes nothing."""
         outcome, parts = _replay(write=False)
@@ -466,48 +501,28 @@ class TestAfterCommit:
 
 
 class TestConnections:
-    def test_the_direct_apply_sets_its_timeout_and_rolls_back_on_error(self):
-        """PROMO.REPLAY.22 — the apply runs over a direct connection with its own
-        statement_timeout; a database error rolls back and becomes an ApplyError."""
+    def test_the_apply_goes_through_the_service_role_api(self):
+        """PROMO.REPLAY.22 — the apply is one call of fn_promote_event_apply through the
+        target's API with the service-role key (decision B, 3 Oct); a database error is
+        certain (PostgreSQL rolled it back), a call that ends without an answer is not."""
+        from postgrest.exceptions import APIError
 
-        class DbError(Exception):
-            def __init__(self, primary: str):
-                super().__init__(primary)
-                self.diag = type("D", (), {"message_primary": primary})()
+        class Call:
+            def __init__(self, outcome):
+                self.outcome = outcome
 
-        class Cursor:
-            def __init__(self, conn):
-                self.conn = conn
+            def execute(self):
+                if isinstance(self.outcome, Exception):
+                    raise self.outcome
+                return type("R", (), {"data": self.outcome})()
 
-            def __enter__(self):
-                return self
+        class Client:
+            def __init__(self, outcome):
+                self.outcome, self.calls = outcome, []
 
-            def __exit__(self, *a):
-                return False
-
-            def execute(self, sql, params=None):
-                self.conn.log.append((sql, params))
-                if "fn_promote_event_apply" in sql and self.conn.fail:
-                    raise DbError("PROMOTE_DRY_RUN_OK " + FP)
-
-            def fetchone(self):
-                return ({"writes": 3},)
-
-        class Conn:
-            def __init__(self, fail):
-                self.fail, self.log, self.done = fail, [], []
-
-            def cursor(self):
-                return Cursor(self)
-
-            def commit(self):
-                self.done.append("commit")
-
-            def rollback(self):
-                self.done.append("rollback")
-
-            def close(self):
-                self.done.append("close")
+            def rpc(self, fn, params):
+                self.calls.append((fn, params))
+                return Call(self.outcome)
 
         params = {
             "p_event_code": CODE,
@@ -518,59 +533,43 @@ class TestConnections:
             "p_status": "IN_PROGRESS",
             "p_dry_run": False,
         }
-        ok = Conn(fail=False)
-        applier = replay.DirectApplier("dsn", 900, connect=lambda dsn: ok, error_type=DbError)
-        assert applier.apply(params) == {"writes": 3}
-        assert ok.log[0][0] == "SET LOCAL statement_timeout = '900s'"
-        assert ok.done == ["commit", "close"]
-        bad = Conn(fail=True)
-        applier = replay.DirectApplier("dsn", 900, connect=lambda dsn: bad, error_type=DbError)
-        with pytest.raises(replay.ApplyError, match="PROMOTE_DRY_RUN_OK"):
+        ok = Client({"writes": 3})
+        assert replay.ApiApplier(type("Db", (), {"_sb": ok})()).apply(params) == {"writes": 3}
+        assert ok.calls == [("fn_promote_event_apply", params)]
+
+        refused = APIError(
+            {"message": "PROMOTE_DRY_RUN_OK " + FP, "code": "P0001", "details": '{"writes": 0}'}
+        )
+        applier = replay.ApiApplier(type("Db", (), {"_sb": Client(refused)})())
+        with pytest.raises(replay.ApplyError) as e:
             applier.apply({**params, "p_dry_run": True})
-        assert bad.done == ["rollback", "close"]
+        assert str(e.value) == "PROMOTE_DRY_RUN_OK " + FP
+        assert e.value.detail == '{"writes": 0}' and not e.value.uncertain
+
+        dropped = replay.ApiApplier(
+            type("Db", (), {"_sb": Client(TimeoutError("read timed out"))})()
+        )
+        with pytest.raises(replay.ApplyError) as e:
+            dropped.apply(params)
+        assert e.value.uncertain
 
     @pytest.mark.parametrize(
-        ("target", "url", "dsn", "ok"),
+        ("target", "url", "ok"),
         [
-            (
-                "local",
-                "http://127.0.0.1:54321",
-                "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-                True,
-            ),
-            (
-                "local",
-                f"https://{replay.CERT_REF}.supabase.co",
-                "postgresql://x@127.0.0.1:54322/p",
-                False,
-            ),
-            (
-                "prod",
-                f"https://{replay.PROD_REF}.supabase.co",
-                f"postgresql://postgres.{replay.PROD_REF}:pw@pooler:5432/postgres",
-                True,
-            ),
-            (
-                "prod",
-                f"https://{replay.CERT_REF}.supabase.co",
-                f"postgresql://postgres.{replay.PROD_REF}:pw@pooler/p",
-                False,
-            ),
-            (
-                "prod",
-                f"https://{replay.PROD_REF}.supabase.co",
-                f"postgresql://postgres.{replay.CERT_REF}:pw@pooler/p",
-                False,
-            ),
+            ("local", "http://127.0.0.1:54321", True),
+            ("local", f"https://{replay.CERT_REF}.supabase.co", False),
+            ("prod", f"https://{replay.PROD_REF}.supabase.co", True),
+            ("prod", f"https://{replay.CERT_REF}.supabase.co", False),
+            ("prod", "http://127.0.0.1:54321", False),
         ],
     )
-    def test_promote_writes_only_the_database_it_was_asked_to(self, target, url, dsn, ok):
-        """PROMO.REPLAY.23 — the API URL and the direct connection must both be the target's."""
+    def test_promote_writes_only_the_database_it_was_asked_to(self, target, url, ok):
+        """PROMO.REPLAY.23 — the API the apply calls must be the target's."""
         if ok:
-            replay.check_target(target, url, dsn)
+            replay.check_target(target, url)
         else:
             with pytest.raises(replay.PromoteRefused):
-                replay.check_target(target, url, dsn)
+                replay.check_target(target, url)
 
     def test_the_rehearsal_reads_local_in_a_read_only_session(self, monkeypatch):
         """PROMO.REPLAY.25 — LOCAL standing in for PROD is read in a read-only session, and the
@@ -616,6 +615,9 @@ class TestWiring:
         assert checkout["with"]["ref"] == "${{ needs.resolve.outputs.commit }}"
         runs = " ".join(s.get("run") or "" for s in jobs["promote"]["steps"])
         assert "python -m python.pipeline.promotion.replay" in runs
+        replay_step = next(s for s in jobs["promote"]["steps"] if s.get("id") == "replay")
+        assert replay_step["env"]["SUPABASE_URL"] == "${{ secrets.SUPABASE_PROD_URL }}"
+        assert "SUPABASE_PROD_DB_URL" not in (ROOT / ".github/workflows/promote.yml").read_text()
         assert jobs["seed"]["continue-on-error"] is True
         assert "rebase" in " ".join(s.get("run") or "" for s in jobs["seed"]["steps"])
 

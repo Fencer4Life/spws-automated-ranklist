@@ -11,16 +11,20 @@ Promote copies nothing from CERT. For one exact event code it:
 4. plans the same ingestion against PROD (`plan_event`, reads only) and compares
    the plan with the run: every listing's hash, the created fencers and the
    birth-year moves, id for id;
-5. applies the plan through `fn_promote_event_apply` over a direct database
-   connection with its own statement_timeout: a dry run, which must report the
-   run's result fingerprint, then the apply in one transaction;
+5. applies the plan through `fn_promote_event_apply`, one call of the target's
+   service-role API each (decision B, 3 Oct 2026): a dry run, which must report
+   the run's result fingerprint, then the apply in one transaction. The API's
+   time limit is the `authenticator` role's (8 s statement and lock timeouts on
+   LOCAL and PROD); a call cut off by it is rolled back and refused;
 6. after the commit sends the PROD staging report and the joining check, drains
    PROD's recompute queue to empty (promote holds `prod-write`, so it drains the
    queue itself rather than wait for the drain workflow queued behind it), and
    compares every drained event and the promoted one with CERT. A difference
    there cannot be rolled back, so it is reported loudly.
 
-Every refusal before step 5's apply writes nothing.
+Every refusal before step 5's apply writes nothing. A call that ends without an
+answer (the network, not the database) is not called a refusal: promote reads
+PROD again and says what it holds.
 
     python -m python.pipeline.promotion.replay --resolve --event PPW1-2026-2027
     python -m python.pipeline.promotion.replay --event PPW1-2026-2027 [--dry-run]
@@ -50,8 +54,8 @@ _SHA = re.compile(r"^[0-9a-f]{40}$")
 PROMOTABLE = ("PLANNED", "IN_PROGRESS", "COMPLETED")
 DRY_RUN_OK = "PROMOTE_DRY_RUN_OK "
 MAX_DRAIN_ROUNDS = 20
+TIME_LIMIT = re.compile(r"(statement|lock) timeout", re.I)
 LOCAL_HOSTS = ("127.0.0.1", "localhost")
-LOCAL_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
 
 class PromoteRefused(Exception):
@@ -63,11 +67,13 @@ class PromoteRefused(Exception):
 
 
 class ApplyError(Exception):
-    """fn_promote_event_apply raised; its transaction was rolled back."""
+    """fn_promote_event_apply raised, and PostgreSQL rolled its transaction back; or,
+    with `uncertain`, the call ended without an answer, so nobody knows yet."""
 
-    def __init__(self, message: str, detail: str | None = None):
+    def __init__(self, message: str, detail: str | None = None, *, uncertain: bool = False):
         super().__init__(message)
         self.detail = detail
+        self.uncertain = uncertain
 
 
 class Transport(Protocol):
@@ -233,30 +239,17 @@ def master_differences(
     return out
 
 
-def check_target(target: str, url: str, dsn: str) -> None:
-    """The API URL and the direct connection are both the target's database."""
-
-    def where(u: str) -> str:
-        p = urlparse(u or "")
-        return f"{p.username or ''}@{p.hostname or ''}"
-
-    api, db = urlparse(url or "").hostname or "", where(dsn)
+def check_target(target: str, url: str) -> None:
+    """The API the apply calls is the target's."""
+    api = urlparse(url or "").hostname or ""
     if target == "local":
-        ok = api in LOCAL_HOSTS and urlparse(dsn or "").hostname in LOCAL_HOSTS
+        ok = api in LOCAL_HOSTS
     elif target == "prod":
-        ok = (
-            api.startswith(f"{PROD_REF}.")
-            and CERT_REF not in api
-            and PROD_REF in db
-            and CERT_REF not in db
-        )
+        ok = api.startswith(f"{PROD_REF}.") and CERT_REF not in api
     else:
         ok = False
     if not ok:
-        raise PromoteRefused(
-            f"The databases are not {target}'s: SUPABASE_URL host {api or 'unset'}, "
-            f"direct connection {db or 'unset'}."
-        )
+        raise PromoteRefused(f"SUPABASE_URL is not {target}'s API (host {api or 'unset'}).")
 
 
 # --------------------------------------------------------------------- the run
@@ -377,7 +370,30 @@ def replay(
     try:
         result = applier.apply({**params, "p_dry_run": False}) or {}
     except ApplyError as e:
-        raise PromoteRefused(f"The apply of {code} refused, and nothing was written: {e}") from e
+        if e.uncertain:
+            held = (prod.event_state(code) or {}).get("fingerprint")
+            if held != fingerprint:
+                raise PromoteRefused(
+                    f"The apply of {code} ended without an answer ({e}). PROD's event now holds "
+                    f"{str(held)[:12]}, not the CERT run's {fingerprint[:12]}. Run promote again: "
+                    "it skips what PROD already holds and refuses anything else."
+                ) from e
+            log(f"the apply's call ended without an answer ({e}); PROD holds the CERT run's result")
+            result = {"skipped": False, "writes": 0}
+        else:
+            lines = (
+                [
+                    "The API's time limit cut the call off (the authenticator role's statement "
+                    "and lock timeouts) and PostgreSQL rolled it back. Retry when PROD is quiet; "
+                    "an event too large for the limit needs a direct database connection "
+                    "(ADR-108 §6, option A)."
+                ]
+                if TIME_LIMIT.search(str(e))
+                else []
+            )
+            raise PromoteRefused(
+                f"The apply of {code} refused, and nothing was written: {e}", lines
+            ) from e
     outcome.applied = True
     outcome.skipped = bool(result.get("skipped"))
     outcome.writes = int(result.get("writes") or 0)
@@ -496,55 +512,23 @@ class SqlSide:
         )
 
 
-class DirectApplier:
-    """fn_promote_event_apply over a direct PostgreSQL connection, one transaction
-    per call, with its own statement_timeout (not the Management API, not PostgREST)."""
+class ApiApplier:
+    """fn_promote_event_apply as one call of the target's service-role API (PostgREST).
+    The function is one transaction: a raise rolls everything back. A database error
+    is certain; a call that ends without an answer is `uncertain`."""
 
-    def __init__(
-        self,
-        dsn: str,
-        timeout_s: int,
-        *,
-        connect: Callable[[str], Any] | None = None,
-        error_type: type[BaseException] | None = None,
-    ):
-        if connect is None or error_type is None:
-            import psycopg2
-
-            connect = connect or psycopg2.connect
-            error_type = error_type or psycopg2.Error
-        self._dsn = dsn
-        self._timeout = int(timeout_s)
-        self._connect = connect
-        self._error = error_type
+    def __init__(self, db: Any):
+        self._sb = db._sb
 
     def apply(self, params: dict) -> dict:
-        conn = self._connect(self._dsn)
+        from postgrest.exceptions import APIError
+
         try:
-            with conn.cursor() as cur:
-                cur.execute(f"SET LOCAL statement_timeout = '{self._timeout}s'")
-                cur.execute(
-                    "SELECT fn_promote_event_apply(%s, %s::jsonb, %s, %s::jsonb, %s, %s, %s)",
-                    (
-                        params["p_event_code"],
-                        json.dumps(params["p_plan"], default=str),
-                        params["p_expected_fingerprint"],
-                        json.dumps(params["p_expected_inputs"], default=str),
-                        params["p_prior_fingerprint"],
-                        params["p_status"],
-                        params["p_dry_run"],
-                    ),
-                )
-                row = cur.fetchone()
-            conn.commit()
-            return row[0] if row else {}
-        except self._error as e:
-            conn.rollback()
-            diag = getattr(e, "diag", None)
-            message = getattr(diag, "message_primary", None) or str(e)
-            raise ApplyError(message, getattr(diag, "message_detail", None)) from e
-        finally:
-            conn.close()
+            return self._sb.rpc("fn_promote_event_apply", params).execute().data or {}
+        except APIError as e:
+            raise ApplyError(e.message or str(e), e.details) from e
+        except Exception as e:  # the network, not the database: nobody knows yet
+            raise ApplyError(f"{type(e).__name__}: {e}", uncertain=True) from e
 
 
 class ProdAfter:
@@ -607,7 +591,6 @@ def main(argv: Iterable[str] | None = None) -> int:
     ap.add_argument("--prod-target", choices=("prod", "local"), default="prod")
     ap.add_argument("--dry-run", action="store_true", help="plan, compare and dry-apply only")
     ap.add_argument("--resolve", action="store_true", help="print the latest CERT run's commit")
-    ap.add_argument("--statement-timeout", type=int, default=900, help="seconds (default 900)")
     args = ap.parse_args(list(argv) if argv is not None else None)
 
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
@@ -631,18 +614,12 @@ def main(argv: Iterable[str] | None = None) -> int:
             print(f"{code}: CERT run {run['id_ingest_run']} ({run['txt_status']}), commit {commit}")
             _output(commit=commit, event=code)
             return 0
-        if args.prod_target == "prod":
-            prod_transport: Transport = ManagementTransport(PROD_REF, token, read_only=True)
-            dsn = os.environ.get("SUPABASE_PROD_DB_URL", "")
-            if not dsn:
-                raise PromoteRefused(
-                    "SUPABASE_PROD_DB_URL is not set: the apply runs over a direct connection to "
-                    "PROD's database. Add it as a repository secret."
-                )
-        else:
-            prod_transport = LocalTransport(read_only=True)
-            dsn = os.environ.get("LOCAL_DB_URL", LOCAL_DB_URL)
-        check_target(args.prod_target, os.environ.get("SUPABASE_URL", ""), dsn)
+        prod_transport: Transport = (
+            ManagementTransport(PROD_REF, token, read_only=True)
+            if args.prod_target == "prod"
+            else LocalTransport(read_only=True)
+        )
+        check_target(args.prod_target, os.environ.get("SUPABASE_URL", ""))
         prod = SqlSide(args.prod_target, prod_transport)
         from python.pipeline.db_connector import create_db_connector
 
@@ -652,7 +629,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             cert=cert,
             prod=prod,
             prod_db=prod_db,
-            applier=DirectApplier(dsn, args.statement_timeout),
+            applier=ApiApplier(prod_db),
             commit=_head(),
             after=ProdAfter(
                 prod_db,
