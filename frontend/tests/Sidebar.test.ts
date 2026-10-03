@@ -304,6 +304,36 @@ describe('WP.NAV.01 — the drawer leads to the four public pages in the same ta
     expect(onclose).toHaveBeenCalled()
     expect(onnavigate).not.toHaveBeenCalled()
   })
+
+  // The entry for the page the visitor is already on does not reload it: the
+  // drawer closes and the page stays as it is.
+  it('the current page entry only closes the drawer', async () => {
+    const onclose = vi.fn()
+    const { container } = render(Sidebar, { props: { ...siteProps, onclose } })
+    const calendar = container.querySelectorAll('.nav-list .nav-item')[1] as HTMLAnchorElement
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    calendar.dispatchEvent(click)
+    expect(click.defaultPrevented).toBe(true)
+    expect(onclose).toHaveBeenCalled()
+  })
+
+  // Signed in, the admin works inside /ranking/ (the only page with admin-entry).
+  // Following the Ranking link would reload the page, and App resets the sign-in
+  // at mount, so the entry returns to the list in place and keeps the session.
+  it('signed in on /ranking/, Ranking returns to the list in place', async () => {
+    const onnavigate = vi.fn()
+    const onclose = vi.fn()
+    const { container } = render(Sidebar, {
+      props: { ...siteProps, currentView: 'admin_events' as const, isAdmin: true, onnavigate, onclose },
+    })
+    const ranking = container.querySelector('.nav-list .nav-item') as HTMLAnchorElement
+    expect(ranking.getAttribute('href')).toBe('/ranking/')
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    ranking.dispatchEvent(click)
+    expect(click.defaultPrevented).toBe(true)
+    expect(onnavigate).toHaveBeenCalledWith('ranklist')
+    expect(onclose).toHaveBeenCalled()
+  })
 })
 
 describe('WP.NAV.02 — the drawer closes on Esc, in every mode', () => {

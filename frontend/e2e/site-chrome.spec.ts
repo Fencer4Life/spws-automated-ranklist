@@ -27,10 +27,14 @@ const PAGES: SitePage[] = [
   { name: 'table', tag: 'spws-document', attrs: { doc: 'tabela-punktacji' }, short: { pl: 'Tabela', en: 'Table' } },
 ]
 
-/** Replace the harness body with one WordPress page body: a single element. */
+/** Replace the harness body with one WordPress page body: a single element.
+ *  The page bodies zero the theme's margins (`html, body { margin: 0 }`, ADR-090
+ *  §7), so the harness does too; the browser's default 8 px would not be there. */
 async function mountPage(page: Page, p: SitePage) {
   await page.goto('/index.ce.html')
   await page.evaluate(({ tag, attrs }) => {
+    document.documentElement.style.margin = '0'
+    document.body.style.margin = '0'
     document.body.replaceChildren()
     const el = document.createElement(tag)
     for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
@@ -46,13 +50,15 @@ async function barShape(page: Page, tag: string) {
     const mids = kids.map((k) => { const r = k.getBoundingClientRect(); return r.top + r.height / 2 })
     const title = Array.from(bar.querySelectorAll('.site-title-long, .site-title-short'))
       .find((t) => getComputedStyle(t).display !== 'none') as HTMLElement | undefined
+    const heading = bar.querySelector('.site-title') as HTMLElement | null
     return {
       children: kids.length,
       midSpread: Math.max(...mids) - Math.min(...mids),
       barOverflow: bar.scrollWidth - bar.clientWidth,
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       titleText: title?.textContent?.trim() ?? null,
-      titleLines: title ? title.getClientRects().length : 0,
+      // The title never wraps (nowrap); what can go wrong is an ellipsis.
+      titleClipped: heading ? heading.scrollWidth - heading.clientWidth : -1,
     }
   })
 }
@@ -74,7 +80,7 @@ test.describe('WP.BAR.03 — the bar is one row on phones, on all four pages, in
           expect(shape.barOverflow, `${lang}: nothing sticks out of the bar`).toBeLessThanOrEqual(0)
           expect(shape.pageOverflow, `${lang}: no sideways scroll`).toBeLessThanOrEqual(0)
           expect(shape.titleText, `${lang}: the short title`).toBe(p.short[lang])
-          expect(shape.titleLines, `${lang}: the title does not wrap`).toBe(1)
+          expect(shape.titleClipped, `${lang}: the title is whole, not clipped`).toBe(0)
         }
       })
     }
