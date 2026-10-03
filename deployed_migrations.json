@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-03T10:22:28Z",
-    "last_sha": "163573f629fed85163ae4882829a0b0339bbf26a",
+    "last_updated": "2026-10-03T11:11:36Z",
+    "last_sha": "d3ea9ff71491a4d01bf1a0b65176bec6e7ea93e0",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -204,7 +204,8 @@
       "20261002000007_carryover_without_successor.sql",
       "20261003000001_identity_intake_season_nationality.sql",
       "20261003000010_align_fencers_to.sql",
-      "20261003000011_replace_event_registrations.sql"
+      "20261003000011_replace_event_registrations.sql",
+      "20261003000012_vcat_violation_calendar_year.sql"
     ],
     "schema_fingerprint": "c8de021ab75cf947429bd6ffb2782a1d"
   },
