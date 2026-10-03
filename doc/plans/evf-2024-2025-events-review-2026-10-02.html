@@ -135,7 +135,7 @@
     <span class="pill warn"><span class="dot"></span>3 committed on LOCAL · 3 waiting</span>
   </div>
   <hr class="rule">
-  <section id="status"><p class="kicker">Status · 3 October</p><h2>All six on LOCAL; W2 A taken; release next</h2>
+  <section id="status"><p class="kicker">Status · 3 October</p><h2>Done: all six on LOCAL, CERT and PROD</h2>
     <div class="note good"><p class="lede"><span class="tick">6</span> Committed on LOCAL, every row as recommended</p>
     <ul>
       <li>Madrid 2024: 31 results · Guildford 2025: 20 · Terni 2025: 15 · Fâches 2025: 5 · Stockholm 2025: 13 · Jabłonna 2025’s foil: 22. Each stored result equals its draft; every tournament is typed PEW (TT.CODE.06 0). LOCAL: 218 season nationalities, 45 not Polish, 0 conflicts.</li>
@@ -146,8 +146,27 @@
     <p><code>PEW5s-2024-2025</code> is <code>PEW5fs-2024-2025</code> and <code>PEW13e-2024-2025</code> is <code>PEW13ef-2024-2025</code> on LOCAL, through the admin rename path’s own steps (<code>fn_rebuild_tournament_codes</code>, then the event code), so the weapon letters match the corrected weapons (ADR-046; pgTAP 71.5 passes). Their override files moved with them. Re-staged under the new codes, both give exactly the committed rows (5 and 13). Measured before the rename: across all 30 sub-rankings, the PPW and kadra rankings of 2024/25 and 2025/26 that the site shows do not change.</p>
     <p>The row ids on this page keep the old codes (<code>PEW5s-2024-2025 R1</code>, <code>PEW13e-2024-2025 R1</code>) as you signed them off.</p>
     <p>Earlier on this page, W B was recommended with two wrong statements: that nothing else changes, and that no tool renames an event with results. pgTAP 71.5 caught it before release.</p></div>
-    <div class="note"><p class="lede">Next</p>
-    <p>Release (scripts/preflight.sh exit 0 first), then CERT and PROD as the signed-off plan sets out: the same rename, the record corrections and source links by scoped updates, then each event through the runner, one at a time, checked against LOCAL.</p></div>
+    <div class="note good"><p class="lede"><span class="tick">✓</span> Released and on CERT</p>
+    <ul>
+      <li>Released to main as <code>8f74ec64</code> and <code>f3d768e6</code> (preflight exit 0 on each tree; CI green; Release green, the second with nothing to deploy).</li>
+      <li>CERT: the rename, the record corrections and the source links by scoped updates; then each event through the runner, drafts and committed scores checked against LOCAL: Madrid 31, Guildford 20, Fâches 5, Terni 15, Stockholm 13, Jabłonna’s foil 22, every score identical. CERT totals equal LOCAL’s: 218 season nationalities, 45 not Polish, 0 conflicts, TT.CODE.06 0.</li>
+      <li>Found on the way, outside this work: <code>PEW2efs-2026-2027</code> (Madrid, 31 October 2026) lists épée and sabre while its code lists all three weapons, on CERT and PROD; the EVF calendar sync wrote it. Not changed.</li>
+    </ul></div>
+    <div class="note good"><p class="lede"><span class="tick">✓</span> PROD (your “go PROD”, 3 Oct)</p>
+    <ul>
+      <li>The rename, the record corrections and the source links by scoped updates, each returning what it changed; then each event through the runner, checked against LOCAL: Madrid 31, Guildford 20, Fâches 5, Terni 15, Stockholm 13, Jabłonna’s foil 22, every score identical.</li>
+      <li>LOCAL, CERT and PROD now agree: 2024/25 holds 251 tournaments and 898 results on each; 218 season nationalities, 45 not Polish, 0 conflicts, TT.CODE.06 0.</li>
+      <li>Through what the site reads: the PPW and kadra rankings of 2024/25 and 2025/26, all 30 sub-rankings each, list the same fencers with the same scores and carry-over on all three environments.</li>
+    </ul></div>
+    <div class="note"><p class="lede">Findings, outside this work (nothing changed)</p>
+    <ul>
+      <li><b>Tied totals.</b> Fencers with equal totals receive different rank numbers, and their order differs between environments (14 rows on CERT, 10 on PROD, against LOCAL): the rankings break a tie on an internal id, which differs per environment. Whether tied totals should share a rank is a product rule, on your go.</li>
+      <li><b>Madrid 2026.</b> <code>PEW2efs-2026-2027</code> lists épée and sabre while its code lists all three weapons, on CERT and PROD (written by the EVF calendar sync).</li>
+      <li><b>LEAHEY John’s roster birth year</b> (1976; EVF has 1969): a master-data correction, on your go; it would also move his V1 result at the 2023/24 European Championships.</li>
+      <li><b>Budapest 2024</b>: no organiser source found; it stays as it was. <b>PEW9ef-2023-2024</b> (Stockholm 2024) holds combined brackets filed as V4 by the old reader; 2023/24 is outside this plan.</li>
+    </ul></div>
+    <div class="note good"><p class="lede"><span class="tick">S</span> Seed refreshed from PROD (3 Oct)</p>
+    <p><code>seed_prod_latest.sql</code> points at <code>seed_prod_2026-10-03.sql</code>. The full pgTAP suite passes on it, bootstrapped as CI does: 1,239 of 1,239. Three fixes it needed: pgTAP 2.0 and the expectations it guarded now read the active season's scoring config instead of pinning values; 67.4 lists the two events EVF actually moved; and <code>seed_post_backfill.sql</code> no longer re-runs the legacy splitter, which renamed Fâches 2026 and Chania 2026 on LOCAL and in CI while PROD keeps both weapons.</p></div>
 </section>
   <section id="decide"><p class="kicker">Decide this first</p><h2>What I need from you</h2>
     <p>Sign off each event by name. Each P row (PENDING, printed POL) and each R row (rejected, but the surname is an SPWS starter's), listed under its event, is either <b>A</b> linked to the candidate (an identity entry in the event's override file, the fencer named) or <b>B</b> EXCLUDED. The recommendation is in the row and applies unless you say otherwise.</p>
