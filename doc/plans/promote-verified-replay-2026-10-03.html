@@ -576,15 +576,16 @@
           <ul>
             <li><b>Status, 3 Oct: built.</b> Migration <code>20261003000014</code> (pgTAP RUN.01–13, 30 assertions); <code>promotion/run_record.py</code>; <code>ingest_cli --record-run</code>, which <code>ingest-event.yml</code> passes for target <code>cert</code> (PROMO.RUN.01–09).</li>
             <li>The row opens before the first write, with the input fingerprint and the roster. It closes <code>FINISHED</code> with every listing&rsquo;s hash, keep-rule verdict and outcome, or <code>FAILED</code> with the error. The database records the master-data changes. The input fingerprint has six parts: schema, roster, registrations, season, <b>lock</b> and event (G1 says why the lock is separate).</li>
-            <li><b>Two real recorded PPW1 runs on LOCAL, from FTL:</b> 14 listings, all committed with no fault.
+            <li><b>Two real recorded PPW1 runs on LOCAL, from FTL:</b> 14 listings, all committed with no fault. LOCAL&rsquo;s seed carries no registrations, and these trials skipped the refresh that copies them, so no declared year was available.
               <ul>
-                <li>The first run created 6 fencers and moved 1 birth year: STANISŁAWSKI Albert #282, from a confirmed 1991 to an estimated 1987, by the existing ADR-056 reconcile.</li>
+                <li>The first run created 6 fencers at band midpoints, marked estimated, and moved STANISŁAWSKI Albert #282 from 1991 to an estimated 1987.</li>
                 <li>The second run changed nothing. It hashed the schedule and all 14 listings exactly as the first did. Of the input fingerprint, only the roster and lock parts moved between the two runs.</li>
               </ul></li>
             <li><code>fn_schema_fingerprint</code> equals <code>scripts/schema-fingerprint.sh</code> on LOCAL.</li>
             <li><b>Read-only on CERT and PROD today:</b> the event and registrations parts are equal (90 entries each). The roster differs because of CERT&rsquo;s PPW1 run. The season differs by the lock only, once the EVF display switch is set aside (G1).</li>
             <li>The result fingerprint and the gate outcome stay empty until build steps 9 and 7.</li>
-            <li>For step 7: the gate&rsquo;s estimated-year check will hold PPW1 until the 6 new fencers&rsquo; years and #282&rsquo;s year are confirmed on PROD.</li>
+            <li><b>CERT&rsquo;s real PPW1 run, which had PROD&rsquo;s registrations, has no estimated year among the seven.</b> It created the 6 new fencers with their declared years, confirmed: ZANEUSKAYA 1994, MARSZAŁEK 1994, KANIECKI 1987, TYLSKI 1982, PERKOWSKI 1984, KOSZMIDER 1973. #282 is 1987 there.</li>
+            <li><b>#282 is set to 1987, confirmed, on PROD (3 Oct, your &ldquo;confirm all years&rdquo;).</b> It is the only year that fits all six of his results: V0 in 2024/25 and 2025/26, V1 in PPW1 2026/27. PROD&rsquo;s 1991 had no registration and no audit history behind it. The change moves PROD&rsquo;s roster part, so CERT is refreshed again before the first promote, as step 0 requires anyway.</li>
           </ul></li>
       <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>. <b>Needs G1 decided first.</b></li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>
