@@ -217,8 +217,8 @@
     "schema_fingerprint": "850b2e7faa79da9bd78d96488eec4986"
   },
   "prod": {
-    "last_updated": "2026-10-03T16:08:14Z",
-    "last_sha": "deba4191a4291c02a9881c74a7c9c70b11200efa",
+    "last_updated": "2026-10-03T18:42:30Z",
+    "last_sha": "0c35d7992cd84a61788d36899477e558efeef12f",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -427,8 +427,10 @@
       "20261003000014_ingest_run.sql",
       "20261003000015_registration_roster_name.sql",
       "20261003000016_promote_gate.sql",
-      "20261003000017_promote_apply.sql"
+      "20261003000017_promote_apply.sql",
+      "20261003000018_carry_stop_results.sql",
+      "20261003000019_complete_event_exact_code.sql"
     ],
-    "schema_fingerprint": "4cbdac676ef5018d3e76f253886413bf"
+    "schema_fingerprint": "850b2e7faa79da9bd78d96488eec4986"
   }
 }
