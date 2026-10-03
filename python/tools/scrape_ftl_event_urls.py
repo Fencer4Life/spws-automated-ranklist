@@ -302,15 +302,20 @@ def parse_tournament_name(
         # the URL path previously lost PPW5 V0/V4 sabre.
         gender = "M"
 
-    # Check for combined categories: "Category 3 and 4" or "1+2+3 + 4"
-    combined_match = re.search(r"(?:Category|kat\.?)\s+(\d)\s+and\s+(\d)", name, re.IGNORECASE)
+    # Check for combined categories: "Category 3 and 4", "Cat 3 and 4", "Cat 3/4",
+    # "Category 3 & 4" (INTL.SCHED.05: BVF names combined pools "Cat 3 and 4").
+    # A comma is not a separator here: domestic "kat. 3, 4" keeps its reading.
+    combined_match = re.search(
+        r"\b(?:Category|Cat|kat)\.?\s*(\d)\s*(?:and|&|\+|/)\s*(\d)", name, re.IGNORECASE
+    )
     if combined_match:
         cats = [f"V{combined_match.group(1)}", f"V{combined_match.group(2)}"]
         return [(weapon, gender, c) for c in cats]
 
-    # Polish DE-with-range: `kat.0-2`, `kat. 3-4`, `kat 1-3`. Inclusive range.
-    # Common SPWS form for Floret/Szabla DE that combines low-density V-cats.
-    range_match = re.search(r"\bkat\.?\s*(\d)\s*-\s*(\d)", name, re.IGNORECASE)
+    # DE-with-range: Polish `kat.0-2`, `kat. 3-4`, `kat 1-3`; English `Cat 1-3`.
+    # Inclusive range. Common SPWS form for Floret/Szabla DE that combines
+    # low-density V-cats.
+    range_match = re.search(r"\b(?:Category|Cat|kat)\.?\s*(\d)\s*-\s*(\d)", name, re.IGNORECASE)
     if range_match:
         a, b = int(range_match.group(1)), int(range_match.group(2))
         lo, hi = min(a, b), max(a, b)

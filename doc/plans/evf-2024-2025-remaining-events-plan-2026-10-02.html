@@ -1,0 +1,236 @@
+<meta charset="utf-8">
+<title>EVF 2024/25 Remaining Events</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+
+<div class="wrap">
+
+  <p class="eyebrow">International results · ADR-105 §5 · ADR-106 · Implementation Plan</p>
+  <h1>The eight 2024/25 EVF events never repaired</h1>
+  <p class="dek">Every 2025/26 international event is repaired on LOCAL, CERT and PROD. Eight 2024/25 records still hold the old EVF import: no source link, no printed federation, and N equal to the number of Poles stored. This plan finds each one’s organiser source, corrects the records that block a source, and takes the events through the same per-event review and machine-checked rollout. The seed refresh follows it.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 2 Oct · N A, W B, J B, X A (“accept all”)</span>
+    <span class="pill"><span class="dot"></span>8 events · 141 SPWS-starter results at EVF</span>
+    <span class="pill"><span class="dot"></span>no migration, no new reader</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">Decide this first</p>
+    <h2>What I need from you</h2>
+    <div class="note accent">
+      <p class="lede"><span class="tick">N</span> Guildford 2025’s source names itself differently</p>
+      <p>The FTL schedule <code>9CC8D1BC…</code> is titled “BVF 6 Weapon International 2025”, 4–5 January 2025, épée, foil and sabre. Its dates and weapons pass the check; its title does not say Guildford, so the tool needs a person to confirm the name (it never accepts a confirmed date). EVF’s calendar lists EVF Circuit – Guildford (GBR) on 4 January 2025, run by British Veterans Fencing.</p>
+      <ul><li><b>A</b> confirm: the BVF 6 Weapon International 2025 is EVF Circuit Guildford 2025.</li><li><b>B</b> do not confirm; Guildford 2025 stays unrepaired.</li></ul>
+      <p><b>Recommendation: A.</b></p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">W</span> Two records list fewer weapons than the event had</p>
+      <p>The runner skips a bracket whose weapon the event does not list. Fâches 2025 (<code>PEW5s</code>, sabre only) also had foil, with 1 SPWS starter; Stockholm 2025 (<code>PEW13e</code>, épée only) also had foil, with 3.</p>
+      <ul>
+        <li><b>A</b> add the missing weapon to the event and rename its code (<code>PEW5fs</code>, <code>PEW13ef</code>). No tool renames an event that has results; the code is in tournament codes, override files and both cloud copies.</li>
+        <li><b>B</b> add the missing weapon and keep the code: the letters then understate the weapons, nothing else changes.</li>
+        <li><b>C</b> leave both records as they are: those 4 foil results stay out.</li>
+      </ul>
+      <p><b>Recommendation: B.</b> The code is a label; scoring and the rankings do not read its letters.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">J</span> Jabłonna 2025’s foil is a separate record</p>
+      <p>EVF counts Warsaw-Legionowo (Jabłonna) 2025 as one event in three weapons. Our épée and sabre are <code>PEW7es-2024-2025</code> (repaired), the foil is <code>PEW8f-2024-2025</code>, dated 30 March to 12 April, with N of 2–6 (22 results).</p>
+      <ul>
+        <li><b>A</b> fold the foil into one event: rename <code>PEW7es</code> to <code>PEW7efs</code>, re-stage all three weapons from its FTL schedule, delete <code>PEW8f</code>.</li>
+        <li><b>B</b> keep <code>PEW8f</code> as the foil event: correct its dates to 29–30 March, give it the same FTL schedule (the runner takes the foil brackets only) and re-stage it.</li>
+      </ul>
+      <p><b>Recommendation: B.</b> The rankings are per weapon, so two records for one weekend score exactly as one; B renames nothing that is already released and verified.</p>
+    </div>
+    <div class="note">
+      <p class="lede"><span class="tick">X</span> <code>PEW15f-2024-2025</code> is not an EVF event</p>
+      <p>Two foil results on 15 May 2025 (KORONA 3rd of 5 in V1, BAZAK 1st of 7 in V2), no source, and no EVF circuit event that day. If you know what this tournament was, say so and it gets a source like the others.</p>
+      <ul><li><b>A</b> leave it untouched in this pass.</li><li><b>B</b> delete it and its two results.</li></ul>
+      <p><b>Recommendation: A</b>, until its source is known; deleting results is not reversible.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">→</span> How to answer</p>
+      <p>“accept all” takes N, W, J and X as recommended. Otherwise name what you want the other way.</p>
+    </div>
+  </section>
+
+  <section id="found">
+    <p class="kicker">What I found · read-only</p>
+    <h2>Each event, its EVF stop and its source</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Record</th><th>EVF stop</th><th>Organiser source</th><th>SPWS starters at EVF</th><th>Stored now</th></tr></thead>
+      <tbody>
+        <tr><td><code>PEW1efs-2024-2025</code></td><td>Budapest, 21–22 Sep 2024</td><td>to find (2025 was Engarde <code>hunfencing</code>; the 2024 page is not at the same address)</td><td>40</td><td>28, with V0 brackets EVF does not have</td></tr>
+        <tr><td><code>PEW2efs-2024-2025</code></td><td>Madrid, 16–17 Nov 2024</td><td>Engarde <code>aeve_esgrima/evf_madrid_2024</code>: passes the check</td><td>29</td><td>21</td></tr>
+        <tr><td><code>PEW4ef-2024-2025</code></td><td>Guildford, 4–5 Jan 2025</td><td>FTL “BVF 6 Weapon International 2025”: dates and weapons pass; name needs N</td><td>18 (none in sabre)</td><td>9</td></tr>
+        <tr><td><code>PEW5s-2024-2025</code></td><td>Fâches-Thumesnil, 18 Jan 2025</td><td>Engarde <code>faches2025</code> “Circuit Européen 2025 Faches-Thumesnil”: dates and weapons pass; the record has no city to compare</td><td>5 (1 in foil)</td><td>4</td></tr>
+        <tr><td><code>PEW6efs-2024-2025</code></td><td>Terni, 1–2 Feb 2025</td><td>4fence: round 4 of Italy’s national masters circuit, run with the EVF stop; address to confirm</td><td>15</td><td>12</td></tr>
+        <tr><td><code>PEW13e-2024-2025</code></td><td>Stockholm, 15 Mar 2025</td><td>to find (<code>sthlm/vet2025</code> is empty)</td><td>12 (3 in foil)</td><td>4</td></tr>
+        <tr><td><code>PEW8f-2024-2025</code></td><td>Jabłonna, foil, 29–30 Mar 2025</td><td>FTL schedule of <code>PEW7es-2024-2025</code></td><td>22</td><td>22, N of 2–6</td></tr>
+        <tr><td><code>PEW15f-2024-2025</code></td><td>none</td><td>unknown</td><td>—</td><td>2</td></tr>
+      </tbody>
+    </table></div>
+    <p>Liège 2025 (sabre, 12 April 2025) has no event row and no SPWS starter at EVF: nothing to add. Chania 2025 was left out on 2 October (no SPWS starter).</p>
+  </section>
+
+  <section id="work">
+    <p class="kicker">The work · no new code expected</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li><b>Find the two missing sources</b> (Budapest 2024, Stockholm 2025) and confirm Terni’s 4fence address. If one is not found, that event stays out and is reported.</li>
+      <li><b>Correct the records on LOCAL</b>: EVF name, city and country where blank (needed for the name check); the weapon added for Fâches and Stockholm (W); <code>PEW8f</code>’s dates (J).</li>
+      <li><b>Event links</b> through <code>set_event_source_urls</code>, the Guildford name confirmed per N.</li>
+      <li><b>Stage on LOCAL and review</b>: one page in the same layout, with the EVF cross-check per event.</li>
+      <li><b>Your sign-off per event</b>, override files for linked or excluded rows, commit on LOCAL.</li>
+      <li><b>Release</b>, <code>scripts/preflight.sh</code> exit 0 first; pgTAP data tests that pin these events accept both states until the seed refresh.</li>
+      <li><b>CERT, then PROD</b>: the same record corrections and links by scoped updates that return what changed; each event through the runner, one at a time, machine-checked against LOCAL.</li>
+      <li><b>Seed refresh from PROD</b> (ADR-036: the full suite passes before the pointer moves), then drop the pgTAP seed alternatives.</li>
+    </ol>
+  </section>
+
+  <section id="plan-gate">
+    <p class="kicker">Required in every development plan</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note"><p class="lede">☐ Documentation coherence gate complete</p>
+<pre>Impact: operations (data repair; no behaviour change)
+Canonical docs affected: none expected; if a reader change proves necessary,
+  doc/handbook/subsystems/ingestion.html and the RTM
+ADR impact: none (applies ADR-105 §5 and ADR-106)
+Operational impact: none beyond the existing runbook
+Source-map / last-verified updated: not applicable unless code changes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]; scripts/preflight.sh exit 0
+Superseded prose archived rather than appended: not applicable</pre></div>
+  </section>
+
+  <section id="bounds">
+    <p class="kicker">Boundaries</p>
+    <h2>What this plan does not touch</h2>
+    <ul>
+      <li><b>Roster corrections</b> (UIJTING “Henh”, KAZIK Martin’s gender): master data, on your go.</li>
+      <li><b>2023/24 and earlier</b>: not in scope.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · eight 2024/25 EVF events · organiser sources · 2 October 2026</p>
+</div>
+</body>
+</html>
