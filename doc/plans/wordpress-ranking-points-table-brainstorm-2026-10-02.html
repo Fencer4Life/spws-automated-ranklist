@@ -301,13 +301,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 9 · 3 October 2026</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 10 · 4 October 2026</p>
   <h1>WordPress UI: the plan, and a PROD manual for the next administrator</h1>
-  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Step 1 is done; the next move is step 2, the tests written RED, on your word.</p>
+  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 and 2 are done: the paperwork, and every test written and seen RED. The next move is step 3, the bar and the drawer, on your word.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>ADRs signed off and on disk</span>
-    <span class="pill"><span class="dot"></span>Step 1 done</span>
-    <span class="pill warn"><span class="dot"></span>Next: step 2 (tests RED), on your word</span>
+    <span class="pill"><span class="dot"></span>Steps 1–2 done</span>
+    <span class="pill warn"><span class="dot"></span>Next: step 3 (the bar and the drawer), on your word</span>
     <span class="pill"><span class="dot"></span>Q7 = C (deferred) · Q8 = A</span>
     <span class="pill"><span class="dot"></span>Part I: 13 steps, tests first</span>
     <span class="pill"><span class="dot"></span>Part II: PROD manual, facts read live on 3 Oct</span>
@@ -517,7 +517,7 @@
     <h2>Thirteen steps, tests first, nothing published without your word</h2>
     <ol class="steps">
       <li><span class="chip fill">done 3 Oct</span> <b>Paperwork first.</b> Write the RTM rows FR-148 to FR-151 and every plan-test ID (§05). Set <code>EXPECTED=150</code> in <code>scripts/check-spec-sync.sh</code>. The ADR files are already done: signed off and written on 3 Oct, with every mock saved as an image under <code>doc/adr/assets/</code> and a link back to this plan. <b>Done 3 Oct:</b> FR-148 – FR-151 and the 19 WP.* IDs are in the RTM as Planned, each naming its test file. FR-42 carries a note that FR-151 replaces it; the row is retired in the change that removes the switch. FR-59 and FR-130 are amended in place. <code>EXPECTED=150</code>, and spec sync passes.</li>
-      <li><b>Tests first, all RED.</b> Write every WP.* test in §05 and run it, confirming it fails for the stated reason. A test that passes before its code exists gets rewritten.</li>
+      <li><span class="chip fill">done 4 Oct</span> <b>Tests first, all RED.</b> Write every WP.* test in §05 and run it, confirming it fails for the stated reason. A test that passes before its code exists gets rewritten. <b>Done 4 Oct:</b> 16 RED for their stated reason and 3 guards proven by mutation; the result is at the end of §05.</li>
       <li><b>The bar and the drawer, <code>chrome="site"</code>.</b>
         <ul>
           <li><code>App.svelte</code>: the <code>site</code> mode, the <code>href-*</code> attributes and the short titles below 430 px.</li>
@@ -592,6 +592,33 @@
         <tr><td class="k">FR-150</td><td>The calculator and the annex appear on the association's site inside the SPWS bar, from PROD copies on the file host, and their maths comes only from the shared module.</td><td>WP.DOC.*, WP.CALC.01</td></tr>
         <tr><td class="k">FR-151</td><td>Each host serves one environment: github.io is CERT and carries the TEST ribbon, weteraniszermierki.pl is PROD; registration stays PROD.</td><td>WP.ENV.*, WP.REL.01, WP.PAGE.*</td></tr>
         <tr><td class="k">FR-42</td><td>The CERT/PROD switch: set to Retired, superseded by FR-151. FR-59 (the drawer) and FR-130 (registration) are amended in place.</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Step 2 result · 4 October</h3>
+    <p>Every WP.* test is written and was run. Sixteen fail for their stated reason. Three are guards: they keep a rule that already holds, so they pass before the change by design. Each guard was proven instead by breaking the rule on purpose: the guard turned red, and the file was restored byte for byte. Vitest: 24 failed, 1,129 passed; every failure is a WP.* test. Playwright: 18 of 18 failed. pytest: 21 failed, 5 passed; the passes are the parts that already hold: <code>index.html</code> keeps both pairs, <code>register.html</code> stays PROD-only, and the FTL page's reference copy. <code>npm run check</code> reports 11 type errors, all in the new tests: the props and the module that do not exist yet. Spec sync, coherence and <code>check_docs</code> pass.</p>
+    <p>Three earlier tests changed with it. The switch tests 8.01, 8.03 and 8.04 asserted the switch that ADR-109 removes, so WP.ENV.01 replaces them; 8.02 stays, and the RTM row FR-42 says so. The CalendarEmbed test that expected the switch on github.io now expects the ribbon. The RTM text of WP.BAR.02 and WP.BAR.03 now says where the 430 px switch is measured: in the browser, because jsdom evaluates no media query.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>File</th><th>Before the code</th><th>Observed reason</th></tr></thead>
+      <tbody>
+        <tr><td class="k">WP.BAR.01</td><td><code>SiteChrome.test.ts</code></td><td><b>RED</b></td><td>no <code>header.site-bar</code>; the elements take no <code>chrome</code>/<code>href-*</code></td></tr>
+        <tr><td class="k">WP.BAR.02</td><td><code>SiteChrome.test.ts</code></td><td><b>RED</b></td><td>no long or short title in a site bar</td></tr>
+        <tr><td class="k">WP.BAR.03</td><td><code>e2e/site-chrome.spec.ts</code></td><td><b>RED</b></td><td>13 of 13: no site bar in the custom-element build at 320/360/390 px or at 429/430 px</td></tr>
+        <tr><td class="k">WP.NAV.01</td><td><code>Sidebar.test.ts</code></td><td><b>RED</b></td><td>entries are buttons, not same-tab links; nothing marked current; the logo link is hard-coded, not taken from the page</td></tr>
+        <tr><td class="k">WP.NAV.02</td><td><code>Sidebar.test.ts</code></td><td><b>RED</b></td><td>Esc does not close the drawer</td></tr>
+        <tr><td class="k">WP.NAV.03</td><td><code>Sidebar.test.ts</code></td><td>guard, proven by mutation</td><td>passes today by design; a planted „Zaloguj” entry turns it red</td></tr>
+        <tr><td class="k">WP.ADM.01</td><td><code>SiteChrome.test.ts</code></td><td><b>RED</b></td><td>no site bar, no <code>admin-entry</code></td></tr>
+        <tr><td class="k">WP.ADM.02</td><td><code>SiteChrome.test.ts</code></td><td><b>RED</b></td><td>no site bar to open the drawer from</td></tr>
+        <tr><td class="k">WP.ADM.03</td><td><code>EventManager.test.ts</code></td><td><b>RED</b></td><td>link built from the page address: <code>…/ranking/register.html</code></td></tr>
+        <tr><td class="k">WP.ENV.01</td><td><code>env-toggle.test.ts, CalendarEmbed.test.ts</code></td><td><b>RED</b></td><td>the CT/PD switch is still drawn and there is no ribbon; the PROD read for promotion already works</td></tr>
+        <tr><td class="k">WP.ENV.02</td><td><code>env-toggle.test.ts</code></td><td>guard, proven by mutation</td><td>passes today by design; CERT as the default turns it red</td></tr>
+        <tr><td class="k">WP.REL.01</td><td><code>test_release_env_injection.py</code></td><td><b>RED</b></td><td>root copies get PROD, not CERT; <code>embed/</code> copies are not injected; no guard step</td></tr>
+        <tr><td class="k">WP.DOC.01</td><td><code>DocumentElement.test.ts</code></td><td><b>RED</b></td><td><code>DocumentElement.svelte</code> does not exist</td></tr>
+        <tr><td class="k">WP.DOC.02</td><td><code>DocumentElement.test.ts</code></td><td><b>RED</b></td><td>the same: the module does not exist</td></tr>
+        <tr><td class="k">WP.DOC.03</td><td><code>assets.test.ts</code></td><td><b>RED</b></td><td>7 of 7: no <code>embed/</code> copies; the generator does not write them</td></tr>
+        <tr><td class="k">WP.CALC.01</td><td><code>e2e/site-chrome.spec.ts</code></td><td><b>RED</b></td><td>number boxes are left-aligned; <code>embed/</code> copies 404; title is „Kalkulator punktów za wynik”</td></tr>
+        <tr><td class="k">WP.PAGE.01</td><td><code>test_wp_pages.py</code></td><td><b>RED</b></td><td>four of five reference copies are missing (the FTL page's copy passes)</td></tr>
+        <tr><td class="k">WP.PAGE.02</td><td><code>test_wp_pages.py</code></td><td><b>RED</b></td><td>no <code>fill_prod_key</code>; the placeholder is posted as is; nothing refuses it</td></tr>
+        <tr><td class="k">WP.COMP.01</td><td><code>CalendarEmbed.test.ts</code></td><td>guard, proven by mutation</td><td>passes today by design; a site bar drawn for <code>chrome="none"</code> turns it red</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -1186,5 +1213,5 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
     </ul>
   </section>
 
-  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 9 · 3 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 10 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
 </div>

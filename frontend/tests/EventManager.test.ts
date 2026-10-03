@@ -15,6 +15,7 @@ const mockRequestDispatch = vi.mocked(requestDispatch)
 const mockSetSourceOverride = vi.mocked(setEventSourceOverride)
 
 import EventManager from '../src/components/EventManager.svelte'
+import { setAssetBase } from '../src/lib/assetBase'
 
 // Mock window.confirm for delete confirmation dialogs
 vi.stubGlobal('confirm', vi.fn(() => true))
@@ -619,6 +620,30 @@ describe('EventManager Accordion (Phase 6)', () => {
       registration: `${base}?event=PPW-WRO-2025-01`,
       urlEntryList: `${base}?event=PPW-WRO-2025-01&view=list`,
     }))
+  })
+
+  // WP.ADM.03 — on WordPress the admin page lives at weteraniszermierki.pl/ranking/,
+  // but register.html stays on the file host (ADR-109, FR-149). The links are
+  // built from the asset base, never from the page address.
+  it('WP.ADM.03: registration links come from the asset base, not the page address', async () => {
+    const ASSET_BASE = 'https://fencer4life.github.io/spws-automated-ranklist/'
+    window.history.replaceState(null, '', '/ranking/?admin=1')
+    setAssetBase(ASSET_BASE)
+    try {
+      const { container } = render(EventManager, { props: propsWithTournaments })
+      await fireEvent.click(container.querySelector('[data-field="edit-btn"]')!)
+      const toggle = container.querySelector('[data-field="form-use-spws-registration"]') as HTMLInputElement
+      const regUrl = container.querySelector('[data-field="form-registration"]') as HTMLInputElement
+      const listUrl = container.querySelector('[data-field="form-entry-list-url"]') as HTMLInputElement
+
+      await fireEvent.click(toggle) // off
+      await fireEvent.click(toggle) // on again → derived
+      expect(regUrl.value).toBe(`${ASSET_BASE}register.html?event=PPW-WRO-2025-01`)
+      expect(listUrl.value).toBe(`${ASSET_BASE}register.html?event=PPW-WRO-2025-01&view=list`)
+    } finally {
+      setAssetBase('')
+      window.history.replaceState(null, '', '/')
+    }
   })
 
   it('FTLDEL-UI-01: organizer email and read-only sent timestamp render and save', async () => {

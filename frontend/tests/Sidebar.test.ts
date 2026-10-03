@@ -240,3 +240,107 @@ describe('Sidebar — the way back to the association site', () => {
     expect(link.querySelector('img.sidebar-logo')).not.toBeNull()
   })
 })
+
+// WP.NAV.01–03 — the drawer on the association's WordPress pages (chrome="site").
+// ADR-090 amendment 2026-10-03; FR-148, FR-149.
+// Plan: doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html §05.
+//
+// On a WordPress page every drawer entry is its own page: a same-tab link to the
+// address the page body gives, never an in-app view switch and never a new tab.
+const SITE_LINKS = {
+  home: 'https://weteraniszermierki.pl/',
+  ranking: '/ranking/',
+  calendar: '/znajdz-zawody/',
+  calculator: '/kalkulator-punktow/',
+  table: '/tabela-punktacji/',
+}
+
+describe('WP.NAV.01 — the drawer leads to the four public pages in the same tab', () => {
+  const siteProps = {
+    open: true,
+    currentView: 'calendar' as const,
+    isAdmin: false,
+    links: SITE_LINKS,
+    onnavigate: vi.fn(),
+    onclose: vi.fn(),
+  }
+
+  it('renders four same-tab links in order, the current page marked', () => {
+    const { container } = render(Sidebar, { props: siteProps })
+    const items = Array.from(container.querySelectorAll('.nav-list .nav-item')) as HTMLAnchorElement[]
+    expect(items.map((a) => a.tagName)).toEqual(['A', 'A', 'A', 'A'])
+    expect(items.map((a) => a.getAttribute('href'))).toEqual([
+      '/ranking/', '/znajdz-zawody/', '/kalkulator-punktow/', '/tabela-punktacji/',
+    ])
+    expect(items.map((a) => a.textContent?.trim())).toEqual([
+      'Ranking', 'Kalendarz', 'Kalkulator punktów', 'Tabela punktacji',
+    ])
+    for (const a of items) expect(a.hasAttribute('target')).toBe(false)
+    expect(items[1].classList.contains('active')).toBe(true)
+    expect(items[1].getAttribute('aria-current')).toBe('page')
+  })
+
+  it('marks a document page as current', () => {
+    const { container } = render(Sidebar, { props: { ...siteProps, currentView: 'calculator' as const } })
+    const items = Array.from(container.querySelectorAll('.nav-list .nav-item'))
+    expect(items[2].getAttribute('aria-current')).toBe('page')
+    expect(items.filter((a) => a.getAttribute('aria-current') === 'page').length).toBe(1)
+  })
+
+  it('the logo leads to the address the page gives', () => {
+    const { container } = render(Sidebar, { props: siteProps })
+    const link = container.querySelector('.sidebar-brand a') as HTMLAnchorElement
+    expect(link.getAttribute('href')).toBe('https://weteraniszermierki.pl/')
+  })
+
+  it('a choice closes the drawer and does not switch an in-app view', async () => {
+    const onnavigate = vi.fn()
+    const onclose = vi.fn()
+    const { container } = render(Sidebar, { props: { ...siteProps, onnavigate, onclose } })
+    const ranking = container.querySelector('.nav-list .nav-item') as HTMLAnchorElement
+    // jsdom does not navigate; a same-tab link is followed by the browser.
+    ranking.addEventListener('click', (e) => e.preventDefault())
+    await fireEvent.click(ranking)
+    expect(onclose).toHaveBeenCalled()
+    expect(onnavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('WP.NAV.02 — the drawer closes on Esc, in every mode', () => {
+  it('closes on Escape while open, and ignores it while closed', async () => {
+    for (const links of [undefined, SITE_LINKS]) {
+      const onclose = vi.fn()
+      const open = render(Sidebar, {
+        props: { open: true, currentView: 'ranklist' as const, links, onnavigate: vi.fn(), onclose },
+      })
+      await fireEvent.keyDown(window, { key: 'Escape' })
+      expect(onclose).toHaveBeenCalledTimes(1)
+      open.unmount()
+
+      const closedClose = vi.fn()
+      const closed = render(Sidebar, {
+        props: { open: false, currentView: 'ranklist' as const, links, onnavigate: vi.fn(), onclose: closedClose },
+      })
+      await fireEvent.keyDown(window, { key: 'Escape' })
+      expect(closedClose).not.toHaveBeenCalled()
+      closed.unmount()
+    }
+  })
+})
+
+// A guard: W2 says there is never a sign-in entry in the drawer. Today no mode
+// has one, so this passes before the change; it is proven by mutation (adding
+// such an entry turns it red), and it keeps the rule once chrome="site" lands.
+describe('WP.NAV.03 — no sign-in entry in the drawer, in any mode (guard)', () => {
+  const SIGN_IN = /zaloguj|logowanie|sign\s*in|log\s*in/i
+  for (const links of [undefined, SITE_LINKS]) {
+    for (const isAdmin of [false, true]) {
+      it(`${links ? 'WordPress' : 'github.io'} drawer, ${isAdmin ? 'signed in' : 'signed out'}`, () => {
+        const { container } = render(Sidebar, {
+          props: { open: true, currentView: 'ranklist' as const, isAdmin, links, onnavigate: vi.fn(), onclose: vi.fn() },
+        })
+        expect(container.textContent ?? '').not.toMatch(SIGN_IN)
+      })
+    }
+  }
+})
