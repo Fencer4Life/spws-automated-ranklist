@@ -213,8 +213,8 @@
     "schema_fingerprint": "24c6b0ee539237d5be9cb543e7d27542"
   },
   "prod": {
-    "last_updated": "2026-10-03T12:35:51Z",
-    "last_sha": "305cae3eb59f8ac9013c423a8567ed020492bbb5",
+    "last_updated": "2026-10-03T14:59:47Z",
+    "last_sha": "e800cd7b8110516279bef789441e341c65e5b370",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -420,8 +420,9 @@
       "20261003000011_replace_event_registrations.sql",
       "20261003000012_vcat_violation_calendar_year.sql",
       "20261003000013_seed_load_fencers.sql",
-      "20261003000014_ingest_run.sql"
+      "20261003000014_ingest_run.sql",
+      "20261003000015_registration_roster_name.sql"
     ],
-    "schema_fingerprint": "806c321ccd5cec27b806c69dfcaa933d"
+    "schema_fingerprint": "24c6b0ee539237d5be9cb543e7d27542"
   }
 }
