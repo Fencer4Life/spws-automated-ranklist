@@ -438,6 +438,8 @@
     'href-calendar': hrefCalendar = '',
     'href-calculator': hrefCalculator = '',
     'href-table': hrefTable = '',
+    // On chrome="site", the one page where ?admin=1 opens the sign-in (FR-149).
+    'admin-entry': adminEntry = false,
     demo = false,
   }: {
     'supabase-cert-url'?: string
@@ -452,6 +454,7 @@
     'href-calendar'?: string
     'href-calculator'?: string
     'href-table'?: string
+    'admin-entry'?: boolean
     demo?: boolean
   } = $props()
 
@@ -492,13 +495,14 @@
   let currentView: AppView = $state(view)
   let sidebarOpen = $state(false)
 
-  // The embed ignores ?admin=1 outright. Administration stays on GitHub Pages,
-  // and the embed is a public page on the association's own site — the sign-in
-  // modal must not be reachable from it whatever the address bar says.
-  // Reads `chrome` rather than the `embedded` rune: this is a one-shot const
-  // evaluated at init, and the attribute is static once the element is created.
+  // Where ?admin=1 opens the sign-in modal at load. On github.io (chrome="full")
+  // as before. On the association's site (chrome="site") only on the page whose
+  // element carries `admin-entry` — /ranking/ (W2, FR-149); the calendar and
+  // the documents ignore it. The old embed (chrome="none") ignores it outright.
+  // Reads the props rather than runes: this is a one-shot const evaluated at
+  // init, and the attributes are static once the element is created.
   // svelte-ignore state_referenced_locally
-  const adminRequested = chrome !== 'none'
+  const adminRequested = (chrome === 'full' || (chrome === 'site' && adminEntry))
     && typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('admin') === '1'
   const auth = getAuthState()

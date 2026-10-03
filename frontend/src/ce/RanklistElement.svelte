@@ -1,5 +1,12 @@
+<!-- `admin-entry` is written as a bare attribute on the WordPress page, whose
+     value is "": declared Boolean, its presence reads as true. The compiler
+     takes only identifier keys here, so the prop is adminEntry, mapped to the
+     attribute. -->
 <svelte:options
-  customElement={{ tag: 'spws-ranklist', props: { demo: { type: 'Boolean' } } }}
+  customElement={{
+    tag: 'spws-ranklist',
+    props: { demo: { type: 'Boolean' }, adminEntry: { type: 'Boolean', attribute: 'admin-entry' } },
+  }}
 />
 
 <App
@@ -15,6 +22,7 @@
   href-calendar={hrefCalendar}
   href-calculator={hrefCalculator}
   href-table={hrefTable}
+  admin-entry={adminEntry}
   demo={demo}
 />
 
@@ -40,6 +48,8 @@
     'href-calendar': hrefCalendar = '',
     'href-calculator': hrefCalculator = '',
     'href-table': hrefTable = '',
+    // Only /ranking/ carries it: ?admin=1 opens the sign-in there (FR-149).
+    adminEntry = false,
     demo = false,
   }: {
     'supabase-cert-url'?: string
@@ -54,6 +64,7 @@
     'href-calendar'?: string
     'href-calculator'?: string
     'href-table'?: string
+    adminEntry?: boolean
     demo?: boolean
   } = $props()
 </script>
