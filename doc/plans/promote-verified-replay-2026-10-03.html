@@ -1,0 +1,467 @@
+<meta charset="utf-8">
+<title>Promote as verified replay</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">CERT → PROD · domestic events · plan and ADR draft · 3 Oct 2026</p>
+  <h1>Promote copies nothing: it replays a verified CERT ingestion on PROD</h1>
+  <p class="dek">Today's <code>promote.py</code> copies CERT's rows to PROD and gets the fencers wrong. The new promote checks that CERT and PROD started from the same inputs and that CERT holds no open issues. It then <b>runs the same ingestion on PROD</b>, writes the result <b>in one transaction that rolls itself back</b> if it differs from CERT, and moves the event through its lifecycle.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>P1 decided: refresh CERT from PROD</span><span class="pill"><span class="dot"></span>P1b decided: identical ids, name and birth year</span><span class="pill"><span class="dot"></span>P2 decided: identity · scoring · joined bracket</span><span class="pill"><span class="dot"></span>P4 decided: end date passed</span><span class="pill"><span class="dot"></span>P1c decided: LOCAL too</span><span class="pill"><span class="dot"></span>All decided: P2a, P3, P4b, P5 as recommended</span><span class="pill"><span class="dot"></span>Signed off 3 Oct 2026; in implementation on claude/promote-verified-replay</span>
+    <span class="pill">ADR-107 (draft)</span>
+    <span class="pill danger"><span class="dot"></span>PPW1 on PROD waits for this</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Five decisions</h2>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P1</span> Every ingestion starts with a CERT master-data refresh from PROD (your proposal, 3 Oct)</p>
+      <p>You said it: a birth-year difference like today's is the normal state, because birth years are corrected on PROD during registration (ADR-093). I agree, and I'd make the refresh cover the <b>whole roster</b>, not only the rows one event mentions. The whole roster is easier to reason about, it also carries admin edits and merges made on PROD, and it is about 370 rows.</p>
+      <ul>
+        <li><b>PROD → CERT, in this order:</b> the roster (names, birth year and its estimated flag, gender, nationality, aliases), then PROD&rsquo;s registrations for the event (name, gender, declared birth year, weapons, FTL name, club and the fencer link; no e-mail hash, edit token or consent stamp), replacing CERT&rsquo;s test entries.</li>
+        <li><b>Then CERT's recompute queue drains.</b> A moved birth year re-files the fencer's earlier CERT results (<code>trg_fencer_change_enqueue</code>). The CERT ingestion starts only on an empty queue.</li>
+        <li><b>Then the fingerprint</b> is recorded on both. Nothing on PROD is ever written by this step.</li>
+      </ul>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P1b</span> Fencer ids identical on CERT and PROD; matched by name and birth year at every refresh (B, decided 3 Oct)</p>
+      <p>Your rule: <b>the fencer id is the same on PROD and CERT, and nothing is ever guessed.</b> Every refresh matches CERT to PROD by name and birth year, with the namesake rule below, and leaves CERT with PROD's ids. The confirmed flag on the birth year is what makes a match certain. After PPW1 every participant's year is confirmed (gate check in step 2), so matching gets easier with each event.</p>
+      <p><b>The matching rule</b>, per folded surname and first name:</p>
+      <ul>
+        <li><b>one fencer of that name on each side:</b> the same person; PROD's birth year wins;</li>
+        <li><b>namesakes on either side:</b> paired only by an equal <em>confirmed</em> birth year; anything left over is not paired;</li>
+        <li><b>only on PROD:</b> created on CERT with PROD's id;</li>
+        <li><b>only on CERT:</b> deleted when nothing refers to it; otherwise not paired.</li>
+      </ul>
+      <p>Anything not paired <b>stops the whole refresh before it writes</b>, and is listed for your decision. A typical case is a name corrected on PROD.</p>
+      <p>The first refresh is the big one. Today the ids differ for most fencers (CHUDY Tomasz is 37 on CERT and 38 on PROD), so CERT's rows are renumbered to PROD's ids and every reference follows. Step 0 below spells out how. After that, a refresh mostly confirms the ids are equal and copies PROD's values. Promote then writes each new fencer on PROD with the very id the CERT ingestion gave him.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P1c</span> LOCAL too: master data identical on LOCAL, CERT and PROD (decided 3 Oct)</p>
+      <p>Today the seed export drops <code>id_fencer</code> (<code>python/pipeline/export_seed.py</code> lines 29 and 82). It inserts fencers by name and points each result at its fencer with a name-and-birth-year lookup (<code>fencer_lookup</code>, line 161). LOCAL therefore numbers fencers its own way: KRAWCZYK Paweł is 5 and 6 on LOCAL, 354 and 355 on PROD.</p>
+      <ul>
+        <li><b>Export:</b> keeps PROD&rsquo;s <code>id_fencer</code> and writes every reference with the id itself, not a lookup.</li>
+        <li><b>Load:</b> inserts fencers at those ids. A fresh bootstrap runs migrations before the seed, and three data migrations add fencers by hand, so those rows already exist under other ids. The load renumbers them with the same <code>fn_align_fencers_to</code> the CERT refresh uses, so one renumbering routine serves both. It then sets the id sequence.</li>
+        <li><b>Check:</b> <code>scripts/mirror-prod-local.sh</code> and the CI bootstrap compare LOCAL&rsquo;s roster with PROD&rsquo;s, id for id (names, birth year, confirmed flag, gender), and fail on any difference.</li>
+        <li><b>ADR-036 amendment:</b> the seed carries PROD&rsquo;s fencer ids.</li>
+      </ul>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P2</span> Three kinds of issue block promote (decided 3 Oct)</p>
+      <p>A fencer identity issue, a scoring error, or a joined-bracket issue. Each one blocks: you fix it, CERT is re-ingested, and promote looks again. There is no acknowledge step. Everything else is either a precondition, which is always required, or information in the report. Step 2 says which check falls where.</p>
+      <p><b>P2a, decided as recommended:</b> when the organiser grouped the categories differently from § 2 of the scoring table, ADR-104 §7 says "scored as fenced, never blocks". It stays information, because the results are correct as fenced.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">✓ P3</span> How the PROD write is made safe to undo: <b>A, as recommended</b></p>
+      <p><b>A (recommended): plan, compare, apply in one transaction.</b></p>
+      <ol>
+        <li>The ingestion runs on PROD in <em>plan</em> mode: it reads PROD and writes nothing, recording every write it would make.</li>
+        <li>That plan is compared with CERT's committed result, by identity.</li>
+        <li>One RPC applies the whole plan in a single transaction and checks the result against CERT's fingerprint before it commits. Any difference raises, and PostgreSQL undoes everything: new fencers, birth years, aliases, results, scores, the season's first scoring revision and its lock, and the recompute queue entries.</li>
+      </ol>
+      <p>Nothing half-written is ever visible on PROD.</p>
+      <p><b>B:</b> run the live ingestion on PROD, keep a journal of its writes and undo them on failure. Simpler to build, but PROD shows a partial event while it runs. Undoing the season lock also needs a new privileged unlock, which ADR-097 forbids. <b>C:</b> stage into the draft tables and commit in one transaction. That covers results only: new fencers and birth years are still written live, before the comparison.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓ P4</span> COMPLETED only once the end date has passed (decided 3 Oct)</p>
+      <p>Your amendment: organisers sometimes add tournaments the next day. All listings being in is therefore not proof that the fencing is over.</p>
+      <ul>
+        <li><b>COMPLETED</b>: every individual listing on the organiser&rsquo;s schedule (pools-only and team rounds excluded) is committed with its final results, <b>and</b> the end date has passed: today, Warsaw time, is later than the end date.</li>
+        <li><b>IN_PROGRESS</b>: anything else, including the evening of the last day with everything in.</li>
+      </ul>
+      <p>The same rule runs on CERT and PROD. SCORED is not set by automation. The Telegram <code>complete</code> command stays for a manual close.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">✓ P4b</span> What closes the event once the end date has passed: <b>A, as recommended</b></p>
+      <p>Under P4 the last promote usually runs on the final day, before the end date has passed, so something must come back afterwards.</p>
+      <p><b>A (recommended): a daily check.</b> A scheduled workflow in the <code>prod-write</code> group takes every domestic event still IN_PROGRESS whose end date has passed and re-reads the organiser&rsquo;s schedule.</p>
+      <ul>
+        <li>Every listing committed on both environments and nothing new published: it sets COMPLETED on CERT and on PROD.</li>
+        <li>New listings published, or one dated after the end date: it changes nothing and sends a Telegram message to ingest CERT and promote again, or to correct the event&rsquo;s dates.</li>
+      </ul>
+      <p><b>B:</b> you run promote again after the end date. <b>C:</b> only the Telegram <code>complete</code> command.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">✓ P5</span> PPW1 in the meantime: <b>A, as recommended</b></p>
+      <p><b>A (recommended):</b> build the refresh first (identical ids, P1b), run the refresh for PPW1, and ingest PPW1 on CERT straight away. You can then look at CERT's results while the rest is built. PROD gets PPW1 only through the new promote, after a rehearsal (step 6). <b>B:</b> ingest CERT now, before the refresh exists. CERT would read its own 8 registrations and stale birth years, so that run would be thrown away.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Why</p>
+    <h2>What today's promote does wrong</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> Five defects in <code>python/pipeline/promote.py</code></p>
+      <ol>
+        <li><b>It sends CERT's fencer ids.</b> <code>read_cert_event</code> reads <code>r.id_fencer</code> (line 123), and <code>write_prod_results</code> hands it to PROD's <code>fn_ingest_tournament_results</code>. Ids differ between the environments: CHUDY Tomasz is 37 on CERT and 38 on PROD.</li>
+        <li><b>It creates no fencers.</b> A fencer created on CERT by the ingestion does not exist on PROD.</li>
+        <li><b>It drops the joined-bracket order.</b> It never passes <code>p_joined_order</code>, which the 2026/27 engine needs (ADR-104 §3).</li>
+        <li><b>It keeps going after a failure.</b> A failing tournament is appended to <code>errors</code> and the loop continues (line 286). Nothing is rolled back.</li>
+        <li><b>It always sets COMPLETED.</b> PLANNED → IN_PROGRESS → COMPLETED (line 291), whether or not the event is finished. It also finds the event by a code prefix (<code>LIKE 'PPW1%'</code>) in the active season only.</li>
+      </ol>
+    </div>
+    <p>One more gap, outside the promote: <code>ingest-event.yml</code> belongs to no concurrency group. A run with target prod can therefore overlap the PROD recompute drain and a promote, both of which are in <code>prod-write</code>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The design</p>
+    <h2>Five steps, two of them new gates</h2>
+    <pre class="trace">0 REFRESH   PROD ──roster──▶ CERT     pair by name + birth year; CERT gets PROD ids;
+                                       drain CERT queue; fingerprint both
+1 INGEST    CERT                       ingest-event.yml target cert → run record
+2 GATE      CERT                       identity · scoring · joined bracket; preconditions
+3 PROMOTE   PROD                       re-check · source unchanged · plan on PROD ·
+                                       compare with CERT · apply in ONE transaction
+                                       (raises and rolls back on any difference)
+4 LIFECYCLE CERT + PROD                IN_PROGRESS or COMPLETED by the rule in P4</pre>
+
+    <h3>0 · CERT master-data refresh from PROD (new, P1 and P1b)</h3>
+    <p>The refresh <b>reads PROD and writes CERT only</b>. Every run goes through three gates:</p>
+    <ol>
+      <li>a <b>dry run</b> that computes the pairing and lists every change, writing nothing;</li>
+      <li>your sign-off on the first run, and on any run that renumbers a fencer;</li>
+      <li><b>one transaction</b> on CERT that checks itself before it commits.</li>
+    </ol>
+    <p>Inside that transaction, in this order, with plain statements and no trigger switched off:</p>
+    <ol class="steps">
+      <li><b>Find every reference</b> to <code>tbl_fencer</code> from the database's own constraint list, so no table is missed: results, registrations, match candidates, season nationality, review queues, audit tables.</li>
+      <li><b>Renumber in two phases.</b> First, every CERT fencer whose id changes is copied to a temporary negative id, its references move there, and the old row is deleted. Then a final row is inserted at the PROD id, the references move again, and the temporary row is deleted. Each row keeps CERT's own values during this step, so the category check on results is satisfied exactly as before.</li>
+      <li><b>Copy PROD's values</b> onto each pair: names, birth year and its confirmed flag, gender, nationality, aliases. This is an ordinary <code>UPDATE</code>, so a changed birth year queues the fencer's CERT events for recompute, the same path ADR-093 corrections take on PROD.</li>
+      <li><b>Create the PROD-only fencers</b> at PROD's ids. Delete the CERT-only fencers nothing refers to. Set CERT's fencer id sequence to PROD's.</li>
+      <li><b>Check before commit.</b> CERT's roster (id, names, birth year, confirmed flag, gender) must equal PROD's exactly, and every fencer must hold the same number of results as before, counted by person. Any difference raises and nothing changes.</li>
+    </ol>
+    <ul>
+      <li><b>Then PROD&rsquo;s registrations for the event, every time.</b> CERT&rsquo;s entries for that event, today 8 test rows, are replaced by PROD&rsquo;s, today 90. Copied: surname, first name, gender, declared birth year, weapons, FTL name, club, and the fencer link (<code>id_fencer</code>), which is valid on CERT once ids are identical. Not copied: e-mail hash, edit token and consent stamp. The ingestion does not read them, and personal data stays on PROD (RODO minimisation). These are the declared years D5 reads, and they are part of the input fingerprint: a registration made on PROD after the CERT run blocks promote until CERT is refreshed and re-ingested.</li>
+      <li><b>Then CERT&rsquo;s recompute queue drains to empty</b> before any ingestion starts.</li>
+      <li><b>Checks without copying:</b>
+        <ul>
+          <li>schema fingerprints equal (<code>scripts/schema-fingerprint.sh</code>);</li>
+          <li>the season's scoring settings, engines and lock state equal;</li>
+          <li>the event row as the ingestion reads it equal: code, dates, season, previous edition, source skip/process choices;</li>
+          <li>the override file is the same commit.</li>
+        </ul>
+        Any difference refuses, listing every field.</li>
+      <li><b>Fingerprint:</b> a hash of those inputs, normalised by identity (never by id), is recorded for both environments.</li>
+    </ul>
+
+    <h3>1 · CERT ingestion and its run record (new record)</h3>
+    <p><code>ingest-event.yml</code> with target cert runs unchanged, plus a row in a new <code>tbl_ingest_run</code>:</p>
+    <ul>
+      <li>event code, environment and the git commit of the code that ran;</li>
+      <li>the input fingerprint;</li>
+      <li>a hash of each source listing as parsed;</li>
+      <li>the result fingerprint by identity: per tournament code, N and the category order, and per fencer surname, first name, birth year, place, score and match method;</li>
+      <li>the master-data changes: fencers created, birth years moved, aliases added;</li>
+      <li>the gate outcome.</li>
+    </ul>
+
+    <h3>2 · The CERT gate (P2)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>Kind</th></tr></thead>
+      <tbody>
+        <tr><td>A listing refused for an identity reason: namesakes the birth year does not decide, or a two-category gap (NAMESAKE)</td><td><span class="chip over">identity</span></td></tr>
+        <tr><td>A PENDING row of any kind</td><td><span class="chip over">identity</span></td></tr>
+        <tr><td>A participant whose birth year is still an estimate (2026/27 domestic). Confirm the year on PROD in the Birth-year review tab, refresh CERT, re-ingest.</td><td><span class="chip over">identity</span></td></tr>
+        <tr><td>A declared year that contradicts the bracket the fencer fenced (<code>declared_vs_bracket</code>)</td><td><span class="chip over">identity</span></td></tr>
+        <tr><td>A confirmed year moved by the bracket alone, with no declaration to back it</td><td><span class="chip over">identity</span></td></tr>
+        <tr><td>A possible duplicate: a new fencer whom the alias checker&rsquo;s typo rule (NAME.CLS) would call the same person as an existing one. The trial&rsquo;s six loose flags (60–84 % similarity, other surnames) are not this, and stay information.</td><td><span class="chip over">identity</span></td></tr>
+        <tr><td>A result without a score, or without its components</td><td><span class="chip over">scoring</span></td></tr>
+        <tr><td>Not exactly one active scoring revision, or a 2026/27 result not stamped with it</td><td><span class="chip over">scoring</span></td></tr>
+        <tr><td>A stored score that the engine&rsquo;s preview does not reproduce for the same inputs (the SS26.PARITY contract, rerun for every result of the event)</td><td><span class="chip over">scoring</span></td></tr>
+        <tr><td>A tournament whose type does not match its code (TT.CODE.06)</td><td><span class="chip over">scoring</span></td></tr>
+        <tr><td>A listing refused for a bracket reason: a repeated place, or a place with no category</td><td><span class="chip over">joined bracket</span></td></tr>
+        <tr><td>N, or a place, different from the source listing</td><td><span class="chip over">joined bracket</span></td></tr>
+        <tr><td>Siblings of one joined listing disagreeing on N or on the category order; an order whose length is not N; an order digit not matching the stored fencer&rsquo;s category</td><td><span class="chip over">joined bracket</span></td></tr>
+        <tr><td>The run finished; every kept listing committed; CERT&rsquo;s recompute queue drained for every event the run touched</td><td><span class="chip plain">precondition</span></td></tr>
+        <tr><td>PROD&rsquo;s input fingerprint still equals the one recorded at the CERT run; the code on main is the commit the CERT run used; schemas equal</td><td><span class="chip plain">precondition</span></td></tr>
+        <tr><td>Every fencer the CERT run created has an id still free on PROD</td><td><span class="chip plain">precondition</span></td></tr>
+        <tr><td>A loose name similarity of a new fencer; a one-category move that follows a declaration; the § 2 joining check (P2a)</td><td><span class="chip never">information</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>3 · Promote (rewritten, P3 A)</h3>
+    <ol class="steps">
+      <li><b>Trigger:</b> <code>promote &lt;exact code&gt;</code> (Telegram), which dispatches <code>promote.yml</code> in the <code>prod-write</code> group, so the PROD drain cannot run alongside. The event is found by its exact code, never a prefix.</li>
+      <li><b>Re-check:</b> every gate check and precondition again. PROD's event must be PLANNED, or IN_PROGRESS holding exactly the previous promoted run (day 2 of a multi-day event).</li>
+      <li><b>Source unchanged:</b> each listing is fetched and hashed. A hash different from CERT's run means the organiser edited the results in between. Promote refuses: re-ingest CERT first.</li>
+      <li><b>URL:</b> CERT's event results URL goes into PROD's event-level field (<code>url_event</code>) inside the same apply transaction.</li>
+      <li><b>Plan on PROD:</b> the same <code>INGEST_DOMESTIC</code> flow runs against PROD with a recording connector. It reads PROD and records every write: fencers to create, birth years to move, aliases, tournaments, rows, joined orders. A new fencer takes the id the CERT run gave him, so ids stay identical; the apply refuses if that id is taken on PROD.</li>
+      <li><b>Compare:</b> with identical ids, the plan must equal CERT's result fingerprint and CERT's master-data changes, id for id. Any difference refuses with a diff table, and nothing has been written.</li>
+      <li><b>Apply:</b> one RPC, <code>fn_promote_event_apply(plan, expected_fingerprint)</code>, makes every write, scores and computes PROD's fingerprint, all in one transaction. A difference raises and everything rolls back. Then the joining check runs, and the post-commit report goes to Storage and Telegram.</li>
+      <li><b>After:</b> the PROD drain processes the queued recomputes. Promote waits for the drain and compares the affected events with CERT's. A difference here cannot be rolled back automatically, so it is reported loudly. With identical inputs it should not occur.</li>
+      <li><b>Seed:</b> the PROD seed export and its commit stay as today (ADR-036).</li>
+    </ol>
+
+    <h3>4 · Lifecycle (P4, P4b)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>After a successful promote</th><th>Status on CERT and PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Some scheduled individual listings committed, others not yet published</td><td>IN_PROGRESS</td></tr>
+        <tr><td>All committed, but the end date has not passed yet (the last day itself included)</td><td>IN_PROGRESS</td></tr>
+        <tr><td>All committed, and the end date has passed (at promote time, or later by the daily check of P4b)</td><td>COMPLETED (IN_PROGRESS → COMPLETED, a pair the validator allows)</td></tr>
+        <tr><td>Promote refused or rolled back</td><td>unchanged</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Scenarios</p>
+    <h2>How it behaves when something goes wrong</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Situation</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Someone registers on PROD after the CERT run</td><td>The input fingerprint differs, so the gate blocks. Refresh CERT again, re-ingest CERT, promote.</td></tr>
+        <tr><td>The organiser corrects a place on FTL between the runs</td><td>The source hash differs, so promote refuses before writing.</td></tr>
+        <tr><td>The plan on PROD differs from CERT (e.g. a namesake decides differently)</td><td>Refused at the compare step, with the diff. Nothing written.</td></tr>
+        <tr><td>Network drops in the middle of the apply</td><td>The transaction never commits, and PROD is unchanged.</td></tr>
+        <tr><td>First score of the season on PROD, then a mismatch</td><td>The season's revision and lock roll back with everything else.</td></tr>
+        <tr><td>Day 2 of a two-day event</td><td>CERT is re-ingested; promote replaces day 1's rows with both days' rows in one transaction, and the status follows P4.</td></tr>
+        <tr><td>Someone runs <code>ingest-event.yml</code> with target prod</td><td>Refused for a domestic event. PROD's domestic results come only through promote.</td></tr>
+        <tr><td>An international event</td><td>Promote refuses and names the Phase 5 runner, the per-environment path ADR-105 set; that path is unchanged.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Pre-mortem</p>
+    <h2>What else can go wrong, and what the plan does about it</h2>
+    <p>Each row is a way this could fail. The right-hand column says what the plan now does about it; items marked <span class="chip fill">added</span> are new design work from this review, folded into the build order.</p>
+
+    <h3>The id alignment (CERT and LOCAL)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Could go wrong</th><th>What the plan does</th></tr></thead>
+      <tbody>
+        <tr><td>A table stores a fencer id <b>without a foreign key</b>, so the renumbering would miss it and it would point at another person. There is one today: <code>tbl_result_draft.id_fencer</code> has no FK. <code>tbl_audit_log</code> keeps <code>id_row</code> for <code>tbl_fencer</code> rows, and the old and new values as JSON.</td><td><span class="chip fill">added</span> The align function carries an explicit list of soft references besides the FK list: draft results, audit log rows for <code>tbl_fencer</code>, and any JSON field holding <code>id_fencer</code>. A test fails when a new column whose name contains <code>fencer</code> appears without being on one of the lists. Old audit rows are re-pointed too, and the alignment writes one audit row with the whole old-to-new map.</td></tr>
+        <tr><td>CERT holds results for a fencer PROD doesn&rsquo;t know (a CERT-only test event, or an ingest never promoted). Or two CERT rows are one PROD fencer (PROD merged them, CERT didn&rsquo;t).</td><td>The refresh stops before writing and lists them. <span class="chip fill">added</span> You decide each in an alignment file, <code>doc/overrides/fencer-alignment.yaml</code>: pair with this PROD id, merge on CERT, or delete this CERT test data. The dry run shows the effect before anything runs.</td></tr>
+        <tr><td>The first alignment turns out wrong after it committed</td><td><span class="chip fill">added</span> Before the first CERT alignment, a backup of <code>tbl_fencer</code> and every referencing table, kept as a workflow artifact, with a tested restore. Rehearsed on LOCAL first, where its ids differ from PROD&rsquo;s exactly as CERT&rsquo;s do.</td></tr>
+        <tr><td>The renumbering fires triggers on every moved result: V-category assert, season nationality, recompute queue. The transaction runs for minutes, and the Management API times it out.</td><td><span class="chip fill">added</span> The alignment and the apply run over a direct database connection with their own <code>statement_timeout</code>, not through the Management API or PostgREST. Runtime is measured in the LOCAL rehearsal. The queue flood on CERT is expected and drains before the ingest.</td></tr>
+        <tr><td>After the alignment, CERT&rsquo;s past results recompute with PROD&rsquo;s birth years and reveal past events where CERT and PROD differ</td><td><span class="chip fill">added</span> After the first alignment and drain, a full results comparison of CERT against PROD by id, all seasons, as a report. Every difference is resolved before the first promote. International events were made identical on 3 Oct, so domestic past events are the unknown.</td></tr>
+        <tr><td>The refresh writes PROD by mistake</td><td>Its PROD connection opens <code>READ ONLY</code> (<code>default_transaction_read_only</code>); a write raises. A test proves it.</td></tr>
+        <tr><td>Something on CERT relies on CERT-only data (registration-form tests, the 8 test entries)</td><td>Checked before the first refresh: Playwright and CI fixtures are inventoried; registration tests move to events without PROD registrations.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Inputs that change between the CERT run and promote</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Could go wrong</th><th>What the plan does</th></tr></thead>
+      <tbody>
+        <tr><td>A registration or an admin edit on PROD after the CERT run</td><td>The input fingerprint differs, so promote refuses. Refresh CERT, re-ingest, promote.</td></tr>
+        <tr><td>PROD changes between promote&rsquo;s plan and its apply (seconds apart)</td><td><span class="chip fill">added</span> The apply locks the participants&rsquo; fencer rows and the event row, recomputes the input fingerprint inside the transaction, and raises if it moved.</td></tr>
+        <tr><td>A new fencer created on PROD by an admin takes the id the CERT run gave a new entrant</td><td>Precondition: the ids are still free on PROD. The apply re-checks it inside the transaction.</td></tr>
+        <tr><td>main moves between the CERT run and promote (another session releases)</td><td><span class="chip fill">added</span> Promote checks out the exact commit the CERT run recorded, not main. The run record also keeps the schema fingerprint, and promote refuses if PROD&rsquo;s schema differs: for example during a release, when deploy-cert has run and deploy-prod waits for approval.</td></tr>
+        <tr><td>The organiser corrects FTL between the runs</td><td>Source hashes differ, so promote refuses before writing.</td></tr>
+        <tr><td>A registration purge removes declared years before promote</td><td>No purge exists today: the code comments call registrations ephemeral, but nothing deletes them. <span class="chip fill">added</span> ADR-107 states that any future purge runs only after the event is COMPLETED on PROD, and CERT&rsquo;s copy follows PROD&rsquo;s purge.</td></tr>
+        <tr><td>A registrant&rsquo;s name differs from the FTL name (typo, diacritics), so the declared year isn&rsquo;t found and the fencer stays on an estimate, which blocks</td><td>Blocking is right, and the fix is on PROD in the Birth-year review tab. <span class="chip fill">added</span> The declared-year lookup also tries the registration&rsquo;s FTL name (<code>txt_ftl_name</code>) before giving up.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>The source and the lifecycle</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Could go wrong</th><th>What the plan does</th></tr></thead>
+      <tbody>
+        <tr><td>A listing still being fenced is ingested as if final: provisional places, a wrong N. <code>ftl.py</code> reads no completion status today.</td><td><span class="chip fill">added</span> Investigation step first: find FTL&rsquo;s signal for a finished event (schedule status or results JSON). Until one is proven, a listing counts as final only when its places are complete, 1 to N with no gaps, and its day has ended. Anything else is skipped, listed, and leaves the event IN_PROGRESS.</td></tr>
+        <tr><td>Automatic COMPLETED changes behaviour elsewhere. 18 migrations name <code>'COMPLETED'</code>, and the calendar card shows result links only for COMPLETED.</td><td><span class="chip fill">added</span> Before enabling it: an inventory of every SQL and frontend consumer of the status, each one checked against the new rule, with a test where the behaviour matters.</td></tr>
+        <tr><td>A correction after COMPLETED (the organiser republishes)</td><td>Promote accepts a COMPLETED event only for a CERT run newer than the last promote. Inside the apply it steps COMPLETED → IN_PROGRESS → the rule&rsquo;s status; both pairs are in the validator.</td></tr>
+        <tr><td>The daily close sets COMPLETED on CERT, then fails on PROD</td><td>CERT first, then PROD, idempotent: the next day&rsquo;s run finishes it, and a failure alerts on Telegram.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Running it</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Could go wrong</th><th>What the plan does</th></tr></thead>
+      <tbody>
+        <tr><td>The CERT drain (<code>cert-recompute</code>) runs during the CERT ingest, so CERT&rsquo;s result mixes two states; <code>ingest-event.yml</code> belongs to no group</td><td><span class="chip fill">added</span> The refresh, the CERT ingest and the CERT drain share one group, <code>cert-write</code>. Promote, the PROD drain and the daily close share <code>prod-write</code>.</td></tr>
+        <tr><td>The in-transaction comparison disagrees with Python over formatting (59.16 vs 59.160), so a correct promote rolls back</td><td><span class="chip fill">added</span> One canonical fingerprint function in SQL, <code>fn_event_result_fingerprint</code>. The CERT run records its value, and the apply computes PROD&rsquo;s with the same function. Python never computes it.</td></tr>
+        <tr><td>Plan mode diverges from a live run: a plugin reads back its own writes (a created fencer, a returned tournament id)</td><td>The recording connector answers reads from its own recorded writes. Acceptance test: plan, then apply, equals a live run, on the PPW1 trial and on every 2025/26 PPW event, on LOCAL.</td></tr>
+        <tr><td>The apply works on LOCAL but fails on PROD (grants, timeouts, roles)</td><td><span class="chip fill">added</span> A <b>dry apply</b> on PROD first: the same RPC with <code>p_dry_run</code> does every write, computes the fingerprint and always raises at the end, so nothing persists. Only if it matches does the real apply run.</td></tr>
+        <tr><td>The job dies after the apply committed but before the status, joining check or report</td><td><span class="chip fill">added</span> Promote is idempotent: when PROD already equals CERT&rsquo;s fingerprint, it skips the apply and only finishes the remaining steps.</td></tr>
+        <tr><td>The seed export&rsquo;s commit to main is rejected by a concurrent push, and a correct promote ends red</td><td><span class="chip fill">added</span> The seed export becomes its own job, after promote, with a rebase and retry. Its failure alerts but doesn&rsquo;t mark the promote failed.</td></tr>
+        <tr><td>Habit: <code>promote PPW1</code> with a prefix</td><td>Exact codes only; the reply lists the matching exact codes.</td></tr>
+        <tr><td>Telegram or GAS is down</td><td>The same promote runs from <code>gh workflow run promote.yml -f event_code=…</code>; documented in the runbook.</td></tr>
+        <tr><td>Two Telegram messages for the same joining verdict (CERT run, then PROD)</td><td>Every message names its environment. The CERT run&rsquo;s joining-check message is labelled CERT.</td></tr>
+        <tr><td>Personal data spreads to CERT and LOCAL</td><td>Only what the ingestion reads is copied; no e-mail hash, edit token or consent stamp. CERT&rsquo;s copy follows PROD&rsquo;s retention.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Build order</p>
+    <h2>Test first, in this order</h2>
+    <ol class="steps">
+      <li><b>ADR-107</b>, drafted here and signed off with this plan. It supersedes ADR-026's per-event mode; the calendar mode stays. It amends ADR-077 and the lifecycle page (the results axis), ADR-086 (promote's status rule), ADR-075 (PROD's domestic results come only through promote) and ADR-036 (unchanged seed export, recorded).</li>
+      <li><b>Investigations, before code</b>: FTL&rsquo;s finished-event signal; the inventory of status consumers; the inventory of soft fencer-id references; CERT-only data that tests rely on. Each result goes on this page before the step that needs it.</li>
+      <li><b>Identity comparison</b> (<code>python/pipeline/promotion/identity.py</code>): normalise a result set or an input set by surname, first name and birth year, never by id, and diff two of them. Tests <code>PROMO.ID.*</code>.</li>
+      <li><b>Refresh with identical ids</b>:
+        <ul>
+          <li><code>promotion/refresh.py</code> holds the pairing rule and the dry-run report; <code>fn_align_fencers_to(pairs, prod_roster)</code> does the renumber, copy and check in one transaction; then the registrations and the drain. Tests <code>PROMO.REFRESH.*</code>, plus pgTAP for the transaction: renumbering with colliding ids, every referencing table followed, results-per-person unchanged, any difference rolls back.</li>
+          <li><b>Rehearsed on LOCAL first</b>: its ids differ from PROD&rsquo;s just as CERT&rsquo;s do.</li>
+          <li>Then the CERT dry run comes to you, and only after your sign-off the CERT apply.</li>
+          <li>Released alone; then run for PPW1 and ingest CERT (P5 A).</li>
+        </ul></li>
+      <li><b>Seed keeps PROD&rsquo;s ids (P1c)</b>: <code>export_seed.py</code> writes <code>id_fencer</code> and id references; the seed load aligns migration-created fencers through <code>fn_align_fencers_to</code>; the bootstrap and <code>mirror-prod-local.sh</code> fail on any roster difference with PROD. Then a seed refresh under ADR-036: the full suite must pass on the new seed before the pointer moves. Tests: <code>PROMO.SEED.*</code> and pgTAP.</li>
+      <li><b>Run record</b>: the <code>tbl_ingest_run</code> migration (service_role only, ADR-083) and its writer in <code>ingest_cli</code>. pgTAP and <code>PROMO.RUN.*</code>.</li>
+      <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>.</li>
+      <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>
+      <li><b><code>fn_event_result_fingerprint</code> and <code>fn_promote_event_apply</code></b> (with <code>p_dry_run</code>, its row locks and the in-transaction input check): pgTAP <code>PROMO.APPLY.*</code>. It must prove atomicity, rollback of the lock and the queue on a fingerprint mismatch, that a dry run persists nothing, the URL write, the status pairs, and idempotence.</li>
+      <li><b>Lifecycle rule</b> (<code>promotion/lifecycle.py</code>) and, under P4b A, the daily close workflow (<code>event-close.yml</code>, in <code>prod-write</code>; added to the workflow catalog). Tests <code>PROMO.LIFE.*</code>, including "everything in on the last day stays IN_PROGRESS" and "a listing published after the CERT run blocks the close".</li>
+      <li><b>Wiring:</b> the <code>promote.py --mode event</code> rewrite; <code>promote.yml</code> takes an exact code; the GAS <code>promote</code> command and the <code>/help</code> text; <code>ingest-event.yml</code> refuses target prod for a domestic event and joins <code>prod-write</code> when it writes PROD.</li>
+      <li><b>Rehearsal:</b> <code>promote --prod-target local</code> runs the whole path with CERT as source and LOCAL standing in for PROD. LOCAL is a PROD copy with registrations, and its fencer ids differ from CERT's, just like PROD's. This is the "promote path tested" you asked for, before the first real PROD run.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation coherence gate</p>
+    <h2>Pages that change</h2>
+    <ul>
+      <li><b>ADR-107</b>, new; amendments in ADR-026, 036 (the seed carries PROD&rsquo;s fencer ids; CERT refreshed from PROD), 075, 077 and 086; specification Appendix C entries.</li>
+      <li><b>Handbook:</b>
+        <ul>
+          <li><code>reference/event-status-lifecycle.html</code>, the "What promote_event changes" section;</li>
+          <li><code>operations/operator-runbooks.html</code>, the "Promote to production" and "Ingest or review one event" runbooks;</li>
+          <li><code>reference/workflow-catalog.html</code>, entries for <code>promote.yml</code> and <code>ingest-event.yml</code>;</li>
+          <li><code>operations/environments-and-release.html</code>;</li>
+          <li><code>subsystems/ingestion.html</code>, plan mode and the run record.</li>
+        </ul></li>
+      <li><b>RTM</b> rows <code>PROMO.*</code>; GAS <code>/help</code>.</li>
+      <li><b>Last:</b> the docs index and the graph refresh, then <code>scripts/preflight.sh</code> at exit 0.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">Not in this plan</p>
+    <h2>Left as it is</h2>
+    <ul>
+      <li>The calendar mode of <code>promote.py</code> (<code>fn_mirror_events_to_prod</code>), which promotes event rows, not results.</li>
+      <li>International events, which keep the Phase 5 runner on each environment.</li>
+      <li>An Admin UI button for promote: Telegram and the workflow are the surfaces for now.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Evidence: promote.py:71–158 (read_cert_event), 161–218 (writes), 221–309 (promote_event), 685+ (main); db_connector.ingest_results (p_joined_order); recompute-drain-prod.yml and promote.yml (prod-write), ingest-event.yml (no group); handbook event-status-lifecycle; ADR-077, ADR-086 amendment 2026-08-28; read-only queries on CERT and PROD, 3 Oct 2026.</p>
+</div>
