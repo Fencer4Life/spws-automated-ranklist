@@ -124,6 +124,7 @@
   <p class="dek">Today's <code>promote.py</code> copies CERT's rows to PROD and gets the fencers wrong. The new promote checks that CERT and PROD started from the same inputs and that CERT holds no open issues. It then <b>runs the same ingestion on PROD</b>, writes the result <b>in one transaction that rolls itself back</b> if it differs from CERT, and moves the event through its lifecycle.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>P1 decided: refresh CERT from PROD</span><span class="pill"><span class="dot"></span>P1b decided: identical ids, name and birth year</span><span class="pill"><span class="dot"></span>P2 decided: identity · scoring · joined bracket</span><span class="pill"><span class="dot"></span>P4 decided: end date passed</span><span class="pill"><span class="dot"></span>P1c decided: LOCAL too</span><span class="pill"><span class="dot"></span>All decided: P2a, P3, P4b, P5 as recommended</span><span class="pill"><span class="dot"></span>Signed off 3 Oct 2026; in implementation on claude/promote-verified-replay</span>
+    <span class="pill warn"><span class="dot"></span>P6 open: carry-over while IN_PROGRESS (found in build step 1)</span>
     <span class="pill">ADR-107 (draft)</span>
     <span class="pill danger"><span class="dot"></span>PPW1 on PROD waits for this</span>
   </div>
@@ -211,6 +212,24 @@
       <p class="lede"><span class="tick">✓ P5</span> PPW1 in the meantime: <b>A, as recommended</b></p>
       <p><b>A (recommended):</b> build the refresh first (identical ids, P1b), run the refresh for PPW1, and ingest PPW1 on CERT straight away. You can then look at CERT's results while the rest is built. PROD gets PPW1 only through the new promote, after a rehearsal (step 6). <b>B:</b> ingest CERT now, before the refresh exists. CERT would read its own 8 registrations and stale birth years, so that run would be thrown away.</p>
     </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">? P6</span> While an event is IN_PROGRESS, last season's edition still counts next to it. When should it stop? (open, found 3 Oct in build step 1)</p>
+      <p><b>What happens today.</b> Season 2026/27 uses the FK carry-over engine on LOCAL, CERT and PROD (<code>tbl_season.enum_carryover_engine = EVENT_FK_MATCHING</code>, read on all three). Its view <code>vw_eligible_event</code> does two things:</p>
+      <ul>
+        <li>it counts the new event as soon as it leaves PLANNED, so IN_PROGRESS already counts;</li>
+        <li>it keeps carrying the previous edition until the new one is SCORED or COMPLETED, within 366 days of the previous edition&rsquo;s end.</li>
+      </ul>
+      <p>So while an event is IN_PROGRESS, a fencer who fenced both editions has <b>both results in the ranking</b>, and no ranking function removes the duplicate.</p>
+      <p><b>Why it matters now.</b> Today's promote jumps straight to COMPLETED, so PROD never showed this; CERT, which stays IN_PROGRESS, always could. Under P4, PROD keeps every event IN_PROGRESS from the promote until the daily close, at least one night, and days for a multi-day event. It is the normal case, not an edge: 13 of the 14 dated 2026/27 events on PROD start inside their previous edition&rsquo;s 366-day window. PPW1 is clear only because the window closed on 29 Sep.</p>
+      <p>ADR-018 already settled this for the older engine on 26 Jun 2026: the carry stops when a current result exists, per weapon and gender, "regardless of lifecycle status". It recorded the FK engine as "a known boundary divergence if ever activated". It is now active.</p>
+      <ul>
+        <li><b>A (recommended): stop the carry on results, per weapon and gender, as ADR-018 does for the older engine.</b> The previous edition stops counting for a weapon and gender once the new edition has a scored result there. Status no longer matters to the ranking, there is no double count and no empty slot, and at COMPLETED it ends exactly where it does today. Cost: a migration for the four FK ranking functions (the view alone cannot see weapons) and pgTAP tests, written RED first.</li>
+        <li><b>B: stop it at event level.</b> The previous edition stops counting once the new edition has any scored result. It changes only the view. But for a two-day event, a fencer whose weapon is fenced on day 2 loses the carried result overnight and has an empty slot until day 2 is promoted.</li>
+        <li><b>C: set SCORED while partial.</b> No ranking change, but the same overnight gap as B, and automation would set SCORED, which P4 rules out.</li>
+      </ul>
+      <p>A is built before the lifecycle step (build step 10), because that step is what makes IN_PROGRESS last on PROD.</p>
+    </div>
   </section>
 
   <section>
@@ -251,7 +270,7 @@
     <p>Inside that transaction, in this order, with plain statements and no trigger switched off:</p>
     <ol class="steps">
       <li><b>Find every reference</b> to <code>tbl_fencer</code> from the database's own constraint list, so no table is missed: results, registrations, match candidates, season nationality, review queues, audit tables.</li>
-      <li><b>Renumber in two phases.</b> First, every CERT fencer whose id changes is copied to a temporary negative id, its references move there, and the old row is deleted. Then a final row is inserted at the PROD id, the references move again, and the temporary row is deleted. Each row keeps CERT's own values during this step, so the category check on results is satisfied exactly as before.</li>
+      <li><b>Renumber in two phases.</b> First, every CERT fencer whose id changes is copied to a temporary negative id, its references move there, and the old row is deleted. Then a final row is inserted at the PROD id, the references move again, and the temporary row is deleted. Each row keeps CERT's own values during this step, so the category check on results is satisfied exactly as before. The one exception is aliases: the temporary copy carries none, because the alias-uniqueness trigger would refuse a second holder. References move before any old row is deleted, because two of them cascade on delete.</li>
       <li><b>Copy PROD's values</b> onto each pair: names, birth year and its confirmed flag, gender, nationality, aliases. This is an ordinary <code>UPDATE</code>, so a changed birth year queues the fencer's CERT events for recompute, the same path ADR-093 corrections take on PROD.</li>
       <li><b>Create the PROD-only fencers</b> at PROD's ids. Delete the CERT-only fencers nothing refers to. Set CERT's fencer id sequence to PROD's.</li>
       <li><b>Check before commit.</b> CERT's roster (id, names, birth year, confirmed flag, gender) must equal PROD's exactly, and every fencer must hold the same number of results as before, counted by person. Any difference raises and nothing changes.</li>
@@ -357,13 +376,13 @@
     <div class="tablewrap"><table>
       <thead><tr><th>Could go wrong</th><th>What the plan does</th></tr></thead>
       <tbody>
-        <tr><td>A table stores a fencer id <b>without a foreign key</b>, so the renumbering would miss it and it would point at another person. There is one today: <code>tbl_result_draft.id_fencer</code> has no FK. <code>tbl_audit_log</code> keeps <code>id_row</code> for <code>tbl_fencer</code> rows, and the old and new values as JSON.</td><td><span class="chip fill">added</span> The align function carries an explicit list of soft references besides the FK list: draft results, audit log rows for <code>tbl_fencer</code>, and any JSON field holding <code>id_fencer</code>. A test fails when a new column whose name contains <code>fencer</code> appears without being on one of the lists. Old audit rows are re-pointed too, and the alignment writes one audit row with the whole old-to-new map.</td></tr>
+        <tr><td>A table stores a fencer id <b>without a foreign key</b>, so the renumbering would miss it and it would point at another person. There is one today: <code>tbl_result_draft.id_fencer</code> has no FK. <code>tbl_audit_log</code> keeps <code>id_row</code> for <code>tbl_fencer</code> rows, and the old and new values as JSON.</td><td><span class="chip fill">added</span> The align function carries an explicit list of soft references besides the FK list: draft results, and the audit log (<code>id_row</code> of <code>tbl_fencer</code> rows and <code>id_fencer</code> in result rows&rsquo; values; build step 1 (c) found no other JSON field holding one). A test fails when a new column whose name contains <code>fencer</code> appears without being on one of the lists. Old audit rows are re-pointed too, and the alignment writes one audit row with the whole old-to-new map.</td></tr>
         <tr><td>CERT holds results for a fencer PROD doesn&rsquo;t know (a CERT-only test event, or an ingest never promoted). Or two CERT rows are one PROD fencer (PROD merged them, CERT didn&rsquo;t).</td><td>The refresh stops before writing and lists them. <span class="chip fill">added</span> You decide each in an alignment file, <code>doc/overrides/fencer-alignment.yaml</code>: pair with this PROD id, merge on CERT, or delete this CERT test data. The dry run shows the effect before anything runs.</td></tr>
         <tr><td>The first alignment turns out wrong after it committed</td><td><span class="chip fill">added</span> Before the first CERT alignment, a backup of <code>tbl_fencer</code> and every referencing table, kept as a workflow artifact, with a tested restore. Rehearsed on LOCAL first, where its ids differ from PROD&rsquo;s exactly as CERT&rsquo;s do.</td></tr>
         <tr><td>The renumbering fires triggers on every moved result: V-category assert, season nationality, recompute queue. The transaction runs for minutes, and the Management API times it out.</td><td><span class="chip fill">added</span> The alignment and the apply run over a direct database connection with their own <code>statement_timeout</code>, not through the Management API or PostgREST. Runtime is measured in the LOCAL rehearsal. The queue flood on CERT is expected and drains before the ingest.</td></tr>
         <tr><td>After the alignment, CERT&rsquo;s past results recompute with PROD&rsquo;s birth years and reveal past events where CERT and PROD differ</td><td><span class="chip fill">added</span> After the first alignment and drain, a full results comparison of CERT against PROD by id, all seasons, as a report. Every difference is resolved before the first promote. International events were made identical on 3 Oct, so domestic past events are the unknown.</td></tr>
         <tr><td>The refresh writes PROD by mistake</td><td>Its PROD connection opens <code>READ ONLY</code> (<code>default_transaction_read_only</code>); a write raises. A test proves it.</td></tr>
-        <tr><td>Something on CERT relies on CERT-only data (registration-form tests, the 8 test entries)</td><td>Checked before the first refresh: Playwright and CI fixtures are inventoried; registration tests move to events without PROD registrations.</td></tr>
+        <tr><td>Something on CERT relies on CERT-only data (registration-form tests, the 8 test entries)</td><td>Checked in build step 1 (d): no automated test reads CERT data. Only the 8 test registrations are CERT&rsquo;s own, and the refresh replaces them.</td></tr>
       </tbody>
     </table></div>
 
@@ -385,8 +404,8 @@
     <div class="tablewrap"><table>
       <thead><tr><th>Could go wrong</th><th>What the plan does</th></tr></thead>
       <tbody>
-        <tr><td>A listing still being fenced is ingested as if final: provisional places, a wrong N. <code>ftl.py</code> reads no completion status today.</td><td><span class="chip fill">added</span> Investigation step first: find FTL&rsquo;s signal for a finished event (schedule status or results JSON). Until one is proven, a listing counts as final only when its places are complete, 1 to N with no gaps, and its day has ended. Anything else is skipped, listed, and leaves the event IN_PROGRESS.</td></tr>
-        <tr><td>Automatic COMPLETED changes behaviour elsewhere. 18 migrations name <code>'COMPLETED'</code>, and the calendar card shows result links only for COMPLETED.</td><td><span class="chip fill">added</span> Before enabling it: an inventory of every SQL and frontend consumer of the status, each one checked against the new rule, with a test where the behaviour matters.</td></tr>
+        <tr><td>A listing still being fenced is ingested as if final: provisional places, a wrong N. <code>ftl.py</code> reads no completion status today.</td><td><span class="chip fill">added</span> Found in build step 1 (a): a listing is final only when its schedule row says <em>Finished</em>. Anything else is skipped, listed, and leaves the event IN_PROGRESS.</td></tr>
+        <tr><td>Automatic COMPLETED changes behaviour elsewhere. 18 migrations name <code>'COMPLETED'</code>, and the calendar card shows result links only for COMPLETED.</td><td><span class="chip fill">added</span> Inventory done in build step 1 (b). Three things follow from it: P6 for the rankings, the calendar card showing results links for IN_PROGRESS, and an exact code for the Telegram <code>complete</code> command. Each gets a test.</td></tr>
         <tr><td>A correction after COMPLETED (the organiser republishes)</td><td>Promote accepts a COMPLETED event only for a CERT run newer than the last promote. Inside the apply it steps COMPLETED → IN_PROGRESS → the rule&rsquo;s status; both pairs are in the validator.</td></tr>
         <tr><td>The daily close sets COMPLETED on CERT, then fails on PROD</td><td>CERT first, then PROD, idempotent: the next day&rsquo;s run finishes it, and a failure alerts on Telegram.</td></tr>
       </tbody>
@@ -411,11 +430,79 @@
   </section>
 
   <section>
+    <p class="kicker">Build step 1 · done 3 Oct 2026</p>
+    <h2>What the four investigations found</h2>
+    <p>All reads were read-only: LOCAL through <code>psql</code>, CERT and PROD through <code>scripts/cloud-sql.sh</code> with SELECT statements only. No names are on this page; fencers are named by id.</p>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">a</span> FTL&rsquo;s finished signal exists: the schedule row says "Finished"</p>
+      <ul>
+        <li>Each listing on the organiser&rsquo;s schedule (<code>eventSchedule/&lt;uuid&gt;</code>) carries its own status. A finished listing shows a green check and <em>Finished at 4:23 PM (7 competitors)</em>. Its results page is headed <em>Final Results</em>.</li>
+        <li>The results data JSON (keys <code>club1, clubs, country, excluded, id, name, place, search</code>) carries no status, so it cannot be the signal.</li>
+        <li><b>Rule:</b> a listing is final only when its schedule row says Finished. Any other listing is skipped, listed in the report, and keeps the event IN_PROGRESS. This replaces the "places 1 to N, day ended" fallback in the pre-mortem.</li>
+      </ul>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">b</span> Every consumer of the event status, checked against P4</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Consumer</th><th>What it does with the status</th><th>Under P4</th></tr></thead>
+        <tbody>
+          <tr><td><code>vw_eligible_event</code> (all FK-engine rankings)</td><td>The current event counts from IN_PROGRESS on; the previous edition carries until SCORED or COMPLETED</td><td><span class="chip over">P6</span> both editions count while IN_PROGRESS</td></tr>
+          <tr><td><code>EventCard.svelte:330</code> (calendar card)</td><td>Shows the results links only for COMPLETED</td><td><span class="chip fill">added</span> Today promote sets COMPLETED at once, so fencers see the links on the evening of the event. Under P4 they would wait for the daily close. To keep today&rsquo;s behaviour, the card also shows them for IN_PROGRESS when a results URL exists (Vitest first).</td></tr>
+          <tr><td><code>fn_ingest_tournament_results</code></td><td>PLANNED → IN_PROGRESS on the first imported result</td><td><span class="chip never">fits</span> unchanged</td></tr>
+          <tr><td><code>fn_validate_event_transition</code></td><td>Allows IN_PROGRESS → COMPLETED and COMPLETED → IN_PROGRESS</td><td><span class="chip never">fits</span> every pair the lifecycle step needs</td></tr>
+          <tr><td><code>fn_complete_event(p_prefix)</code>, called by the Telegram <code>complete</code> command (<code>doc/gas/Code.gs:146</code>)</td><td>IN_PROGRESS → COMPLETED. It finds the event with <code>_resolve_event_prefix</code>: <code>LIKE prefix%</code> … <code>LIMIT 1</code> in the active season</td><td><span class="chip fill">added</span> Same prefix defect as today&rsquo;s promote (<code>PEW1</code> also matches <code>PEW11</code>…). The wiring step makes it take an exact code. The manual close stays a manual decision and does not check the end date.</td></tr>
+          <tr><td><code>evf_sync._heal_future_completed</code></td><td>Puts a COMPLETED event with a future date back to PLANNED</td><td><span class="chip never">fits</span> agrees with "end date passed". Its comment says the validator forbids leaving COMPLETED, which is stale; corrected in the lifecycle step.</td></tr>
+          <tr><td><code>ftl_feed_seed_send</code> sweep</td><td>Skips CANCELLED and COMPLETED</td><td><span class="chip never">fits</span> an IN_PROGRESS two-day event still gets its day-2 seeding</td></tr>
+          <tr><td><code>fn_create_evf_event_from_results</code>, <code>fn_split_pew_by_weapon</code>, <code>fn_ingest_evf_calendar_identity_v1</code>, <code>fn_sync_evf_event_fields</code>, <code>evf_calendar.is_in_scope</code></td><td>EVF and international events only</td><td><span class="chip plain">out of scope</span> international events keep the Phase 5 runner</td></tr>
+          <tr><td><code>fn_calc_tournament_scores</code>, <code>fn_revise_and_rescore_season</code></td><td>SCORED here is the <em>tournament</em> import status, not the event status</td><td><span class="chip never">clean</span></td></tr>
+          <tr><td><code>EventManager.svelte:606</code>, <code>eventStatus.ts</code>, calendar fill (<code>calendarMonths.ts:952</code>)</td><td>The admin transition list mirrors the validator; labels; the calendar greys past events by date, not status</td><td><span class="chip never">clean</span></td></tr>
+          <tr><td><code>promote.py:289–302</code></td><td>Forces PLANNED → IN_PROGRESS → COMPLETED</td><td>replaced by the lifecycle step</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">c</span> Every place that holds a fencer id, and how big the first alignment is</p>
+      <ul>
+        <li><b>Six foreign keys</b> point at <code>tbl_fencer</code>: <code>tbl_result</code>, <code>tbl_registration</code>, <code>tbl_match_candidate</code>, <code>tbl_fencer_nationality</code>, <code>tbl_registration_identity_override</code>, <code>tbl_pzsz_match_review.id_candidate_fencer</code>. All are ON UPDATE NO ACTION and not deferrable, so an id cannot simply be updated. The copy-and-move renumbering of step 0 is therefore the right mechanism. References must move <b>before</b> the old row is deleted: nationality and identity-override rows are ON DELETE CASCADE and would otherwise be deleted with it.</li>
+        <li><b>One column without a foreign key:</b> <code>tbl_result_draft.id_fencer</code>.</li>
+        <li><b>JSON:</b> on CERT, of the 11 JSON columns only <code>tbl_audit_log</code> holds fencer ids: 1,408 <code>tbl_fencer</code> rows (<code>id_row</code>) and 40,526 <code>tbl_result</code> rows with <code>id_fencer</code> in the old and new values. Nine functions write the audit log and none reads it back. Re-pointing it, as planned, affects only the history.</li>
+        <li><b>Triggers on the way:</b>
+          <ul>
+            <li>The alias-uniqueness trigger would refuse a temporary copy that carries the same aliases. The copy therefore carries none, and PROD&rsquo;s aliases are written in the copy-values step.</li>
+            <li>The V-category assert re-checks every moved result. Results that would fail it today: 0 on CERT, 0 on PROD, 3 on LOCAL (2024/25). The align function checks this before it writes and lists any such result instead of failing halfway.</li>
+            <li>The audit trigger writes one row per updated or deleted fencer. Recompute is queued only by a birth-year or nationality change.</li>
+          </ul></li>
+        <li><b>The first CERT alignment, previewed on exact names:</b>
+          <ul>
+            <li>PROD has 367 fencers with ids 1–367; CERT has 367 with ids 1–368. Both hold the same 367 names, and none is on one side only.</li>
+            <li><b>344 ids differ and 19 are equal</b>: nearly a full permutation, which is why the renumbering has two phases.</li>
+            <li>Two namesake pairs, each separated by its birth year.</li>
+            <li>10 birth years differ, all on unique names. Each difference is 4 years or less, so at most one category: none is a data error under the two-category rule. 9 fencers have no birth year on either side.</li>
+          </ul>
+          The real dry run (build step 4) confirms this before anything is written. LOCAL is further apart: 373 fencers, highest id 971.</li>
+        <li><b>Clean:</b> LOCAL&rsquo;s <code>cert_ref</code> schema is an empty rebuild baseline (ADR-050), copied from LOCAL itself, and holds no CERT ids.</li>
+      </ul>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">d</span> No automated test relies on CERT-only data</p>
+      <ul>
+        <li>Playwright runs against a LOCAL build (<code>baseURL http://localhost:4174</code>). The Python tests that mention CERT only set a fake environment value. The Release CERT job checks migrations, the schema fingerprint, Edge Functions and the security posture, never data.</li>
+        <li>pgTAP inserts its own fencers at ids 90801–95002, far above PROD&rsquo;s 367. When the seed carries PROD&rsquo;s ids (step 5), the id sequence is set past the highest id, so nothing collides.</li>
+        <li>CERT&rsquo;s only data of its own is the <b>8 test registrations on PPW1-2026-2027</b>. The refresh replaces them with PROD&rsquo;s. Manual tests of the registration form on CERT should use an event that has no PROD registrations.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
     <p class="kicker">Build order</p>
     <h2>Test first, in this order</h2>
     <ol class="steps">
       <li><b>ADR-107</b>, drafted here and signed off with this plan. It supersedes ADR-026's per-event mode; the calendar mode stays. It amends ADR-077 and the lifecycle page (the results axis), ADR-086 (promote's status rule), ADR-075 (PROD's domestic results come only through promote) and ADR-036 (unchanged seed export, recorded).</li>
-      <li><b>Investigations, before code</b>: FTL&rsquo;s finished-event signal; the inventory of status consumers; the inventory of soft fencer-id references; CERT-only data that tests rely on. Each result goes on this page before the step that needs it.</li>
+      <li><b>Investigations, before code</b> (<b>done 3 Oct</b>, results above): FTL&rsquo;s finished-event signal; the inventory of status consumers; the inventory of soft fencer-id references; CERT-only data that tests rely on.</li>
       <li><b>Identity comparison</b> (<code>python/pipeline/promotion/identity.py</code>): normalise a result set or an input set by surname, first name and birth year, never by id, and diff two of them. Tests <code>PROMO.ID.*</code>.</li>
       <li><b>Refresh with identical ids</b>:
         <ul>
@@ -429,7 +516,8 @@
       <li><b>Gate</b> (<code>promotion/gate.py</code>): the identity, scoring and joined-bracket checks and the preconditions, each with its own test. Tests <code>PROMO.GATE.*</code>.</li>
       <li><b>Plan mode:</b> the recording connector for <code>INGEST_DOMESTIC</code>. Tests <code>PROMO.PLAN.*</code>, including "plan, then apply, equals a live run" on LOCAL.</li>
       <li><b><code>fn_event_result_fingerprint</code> and <code>fn_promote_event_apply</code></b> (with <code>p_dry_run</code>, its row locks and the in-transaction input check): pgTAP <code>PROMO.APPLY.*</code>. It must prove atomicity, rollback of the lock and the queue on a fingerprint mismatch, that a dry run persists nothing, the URL write, the status pairs, and idempotence.</li>
-      <li><b>Lifecycle rule</b> (<code>promotion/lifecycle.py</code>) and, under P4b A, the daily close workflow (<code>event-close.yml</code>, in <code>prod-write</code>; added to the workflow catalog). Tests <code>PROMO.LIFE.*</code>, including "everything in on the last day stays IN_PROGRESS" and "a listing published after the CERT run blocks the close".</li>
+      <li><b>Carry-over stop (P6, once you decide):</b> under A, a migration for the four FK ranking functions and pgTAP written RED first. The first test reproduces the double count while IN_PROGRESS.</li>
+      <li><b>Lifecycle rule</b> (<code>promotion/lifecycle.py</code>), the calendar card&rsquo;s results links for IN_PROGRESS, and, under P4b A, the daily close workflow (<code>event-close.yml</code>, in <code>prod-write</code>; added to the workflow catalog). Tests <code>PROMO.LIFE.*</code>, including "everything in on the last day stays IN_PROGRESS" and "a listing published after the CERT run blocks the close".</li>
       <li><b>Wiring:</b> the <code>promote.py --mode event</code> rewrite; <code>promote.yml</code> takes an exact code; the GAS <code>promote</code> command and the <code>/help</code> text; <code>ingest-event.yml</code> refuses target prod for a domestic event and joins <code>prod-write</code> when it writes PROD.</li>
       <li><b>Rehearsal:</b> <code>promote --prod-target local</code> runs the whole path with CERT as source and LOCAL standing in for PROD. LOCAL is a PROD copy with registrations, and its fencer ids differ from CERT's, just like PROD's. This is the "promote path tested" you asked for, before the first real PROD run.</li>
     </ol>
