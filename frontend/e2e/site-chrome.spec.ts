@@ -95,6 +95,41 @@ test.describe('WP.BAR.03 — the bar is one row on phones, on all four pages, in
   })
 })
 
+// WP.ADM.01, the element half: the WordPress page writes `admin-entry` as a bare
+// attribute (`<spws-ranklist … admin-entry>`), whose value is "". Only the
+// custom-element build shows whether the element reads that as true. The
+// credentials point at a closed port: the sign-in modal opens before any request.
+test.describe('WP.ADM.01 — admin-entry on the published elements', () => {
+  const DEAD_PAIR = { 'supabase-prod-url': 'http://127.0.0.1:9', 'supabase-prod-key': 'e2e-placeholder' }
+
+  async function mountWithAdmin(page: Page, tag: string, attrs: Record<string, string>) {
+    await page.goto('/index.ce.html?admin=1')
+    await page.evaluate(({ tag, attrs }) => {
+      document.body.replaceChildren()
+      const el = document.createElement(tag)
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      document.body.appendChild(el)
+    }, { tag, attrs: { ...attrs, ...DEAD_PAIR, ...HREFS, 'asset-base': `${new URL(page.url()).origin}/` } })
+    await expect(page.locator(`${tag} header.site-bar`)).toBeVisible()
+  }
+
+  test('/ranking/ with the bare admin-entry attribute opens the sign-in at load', async ({ page }) => {
+    await mountWithAdmin(page, 'spws-ranklist', { chrome: 'site', view: 'ranklist', 'admin-entry': '' })
+    await expect(page.locator('spws-ranklist .admin-modal-title')).toHaveText('Logowanie administratora')
+  })
+
+  test('without admin-entry, ?admin=1 is ignored (ranking and calendar)', async ({ page }) => {
+    for (const [tag, attrs] of [
+      ['spws-ranklist', { chrome: 'site', view: 'ranklist' }],
+      ['spws-calendar', { chrome: 'site' }],
+    ] as const) {
+      await mountWithAdmin(page, tag, attrs)
+      await page.waitForTimeout(300)
+      await expect(page.locator(`${tag} .admin-modal`)).toHaveCount(0)
+    }
+  })
+})
+
 // The four copies: the github.io (CERT) root copies and the embed/ (PROD) copies
 // that WordPress frames. All come from the same generator.
 const DOCUMENTS = [

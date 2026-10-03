@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="01dee62cd146d8de6d7d00457bacc797e165f258d14c076e81c71ebac7c7ec41">
+<meta name="doc-source-sha256" content="a655a26032df156c7a4fddd0933544560380352a611a0b92659f6d8e4b737d25">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2101,24 +2101,24 @@
 </tr>
 <tr>
 <td>WP.ADM.01</td>
-<td>With <code>admin-entry</code>, <code>?admin=1</code> opens the sign-in modal at load; without it (calendar, documents) <code>?admin=1</code> is ignored.</td>
-<td>Vitest</td>
-<td><code>frontend/tests/SiteChrome.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td>With <code>admin-entry</code>, <code>?admin=1</code> opens the sign-in modal at load; without it (calendar, documents) <code>?admin=1</code> is ignored. The published element reads the bare <code>admin-entry</code> attribute as true.</td>
+<td>Vitest, Playwright</td>
+<td><code>frontend/tests/SiteChrome.test.ts</code>, <code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.ADM.02</td>
 <td>After sign-in and TOTP the drawer holds the admin section and stays closed until ☰.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/SiteChrome.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.ADM.03</td>
 <td>Registration links in the event editor are built from <code>asset-base</code>, not from the page address.</td>
 <td>Vitest</td>
 <td><code>frontend/tests/EventManager.test.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.ENV.01</td>
@@ -2203,5 +2203,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>01dee62cd146d8de6d7d00457bacc797e165f258d14c076e81c71ebac7c7ec41</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a655a26032df156c7a4fddd0933544560380352a611a0b92659f6d8e4b737d25</code></footer>
 </div></body></html>

@@ -301,13 +301,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 11 · 4 October 2026</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 12 · 4 October 2026</p>
   <h1>WordPress UI: the plan, and a PROD manual for the next administrator</h1>
-  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 3 are done: the paperwork, every test written and seen RED, and the bar and the drawer. The next move is step 4, PROD admin on WordPress, on your word.</p>
+  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 4 are done: the paperwork, every test written and seen RED, the bar and the drawer, and PROD admin on WordPress. The next move is step 5, the environment split on github.io, on your word.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>ADRs signed off and on disk</span>
-    <span class="pill"><span class="dot"></span>Steps 1–3 done</span>
-    <span class="pill warn"><span class="dot"></span>Next: step 4 (PROD admin on WordPress), on your word</span>
+    <span class="pill"><span class="dot"></span>Steps 1–4 done</span>
+    <span class="pill warn"><span class="dot"></span>Next: step 5 (the environment split on github.io), on your word</span>
     <span class="pill"><span class="dot"></span>Q7 = C (deferred) · Q8 = A</span>
     <span class="pill"><span class="dot"></span>Part I: 13 steps, tests first</span>
     <span class="pill"><span class="dot"></span>Part II: PROD manual, facts read live on 3 Oct</span>
@@ -533,7 +533,7 @@
             <li><b>A signed-in admin's "Ranking" entry returns to the list in place.</b> Admin work happens on <code>/ranking/</code>. Following the link would reload that page, and the app resets the sign-in at load, so the admin would have to sign in again. The other entries leave the page as links do.</li>
             <li><b>One more size step below 360 px:</b> title 18 px, logo 16 px. With it every short title at 320 px has at least 20 px to spare, measured in the browser test font ("Calculator" 20.5 px, "Kalendarz" 21.9 px), so a wider phone font still fits. The browser test now mirrors the WordPress body (margins zeroed) and checks that the title is whole, not cut by an ellipsis.</li>
         </ul></li>
-      <li><b>PROD admin on WordPress.</b> The <code>admin-entry</code> attribute and the gate at <code>App.svelte</code> L457–460; registration links from the asset base (<code>EventManager.svelte</code> L703–708). Turns GREEN: WP.ADM.*.</li>
+      <li><span class="chip fill">done 4 Oct</span> <b>PROD admin on WordPress.</b> The <code>admin-entry</code> attribute and the gate at <code>App.svelte</code> L457–460; registration links from the asset base (<code>EventManager.svelte</code> L703–708). Turns GREEN: WP.ADM.*. <b>Done 4 Oct.</b> <code>?admin=1</code> opens the sign-in on github.io as before, and on the association's site only where the element carries <code>admin-entry</code>; the calendar and the documents ignore it. A browser test was added to WP.ADM.01: the WordPress body writes <code>admin-entry</code> as a bare attribute, and only the built element shows that it reads as true. It does. Registration links are built from the asset base: on github.io they are unchanged, on <code>/ranking/</code> they point at the PROD <code>register.html</code> on the file host. WP.ADM.01–03 pass. Vitest: 10 failures left, all for steps 5–6; 1,145 pass. One type error is left, for step 6.</li>
       <li><b>The environment split on github.io (W3).</b> No CT/PD switch, and the TEST ribbon whenever the surface runs on the CERT pair. The PROD read for promotion state stays (<code>refreshPromotionState</code>, <code>App.svelte</code> L1455). Dispatches target the host's own environment. Turns GREEN: WP.ENV.*.</li>
       <li><b>The framed documents.</b>
         <ul>
@@ -1220,5 +1220,5 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
     </ul>
   </section>
 
-  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 11 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 12 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
 </div>
