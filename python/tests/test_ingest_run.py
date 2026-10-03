@@ -277,9 +277,8 @@ class TestWiring:
         wf = yaml.safe_load((ROOT / ".github/workflows/ingest-event.yml").read_text())
         (job,) = wf["jobs"].values()
         run = next(s["run"] for s in job["steps"] if "ingest_cli" in s.get("run", ""))
-        assert re.search(
-            r'if \[\[ "\$TARGET_ENV" == "cert" \]\]; then\s+ARGS\+=\(--record-run cert\)', run
-        )
+        # ADR-108 §9: the only target is cert (prod is refused), so every run is recorded.
+        assert "--record-run cert)" in run
 
     def test_the_cli_refuses_a_record_without_a_url_ingestion(self, monkeypatch):
         """PROMO.RUN.08"""

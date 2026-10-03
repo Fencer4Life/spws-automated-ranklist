@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="026-cert-prod-promotion.md">
-<meta name="adr-source-sha256" content="d0ef00936f624168925ac17e09934ca048819fab04a48ddc473324009730f08f">
+<meta name="adr-source-sha256" content="699514e724527ce9d815a927c7de7ba594aee8f1c7562defd9a4d762fce720a6">
 <title>ADR-026 · CERT → PROD Event Promotion via Python Script</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 026</p><h1>CERT → PROD Event Promotion via Python Script</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see &quot;Calendar Promote Mode&quot; below). The per-event mode is superseded by <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (2026-10-03); the calendar mode stands.</dd></div><div><dt>Date</dt><dd class="">2026-04-05 <strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import) <strong>Companion implementation plan:</strong> <a href="../archive/evf_calendar_promote_plan.md">doc/archive/evf_calendar_promote_plan.md</a></dd></div><div><dt>Source</dt><dd class=""><code>026-cert-prod-promotion.md</code></dd></div><div><dt>Length</dt><dd class="">124 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see &quot;Calendar Promote Mode&quot; below). The per-event mode is superseded by <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (2026-10-03); the calendar mode stands.</dd></div><div><dt>Date</dt><dd class="">2026-04-05 <strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import) <strong>Companion implementation plan:</strong> <a href="../archive/evf_calendar_promote_plan.md">doc/archive/evf_calendar_promote_plan.md</a></dd></div><div><dt>Source</dt><dd class=""><code>026-cert-prod-promotion.md</code></dd></div><div><dt>Length</dt><dd class="">126 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-04-20 — calendar promote mode added for the EVF scraper; see &quot;Calendar Promote Mode&quot; below). The per-event mode is superseded by <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (2026-10-03); the calendar mode stands.
 <strong>Date:</strong> 2026-04-05
 <strong>Relates to:</strong> ADR-025 (Event-Centric Ingestion + Telegram Admin), ADR-011 (Three-Tier Release Pipeline), ADR-028 (EVF Calendar + Results Import)
@@ -125,8 +125,9 @@
 <li>The seed export becomes a separate job.</li>
 </ul>
 <p>The calendar mode, its concurrency group and its idempotency backstop are unchanged.</p>
+<p>Implemented 2026-10-03 (ADR-108 build step 12): <code>promote.py --mode event</code> hands off to <code>python/pipeline/promotion/replay.py</code>; <code>read_cert_event</code>, <code>write_prod_tournament</code>, <code>write_prod_results</code>, <code>promote_event</code> and their tests (plan IDs 9.204–9.207) are retired.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="025-event-centric-ingestion-telegram.html">← ADR-025: Event-Centric Ingestion + Telegram Admin Interface</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="027-full-season-seed-export.html">→ ADR-027: Full-Season Seed Export</a></nav>
-<footer class="foot">Generated from <code>026-cert-prod-promotion.md</code> · source SHA-256 <code>d0ef00936f624168925ac17e09934ca048819fab04a48ddc473324009730f08f</code></footer>
+<footer class="foot">Generated from <code>026-cert-prod-promotion.md</code> · source SHA-256 <code>699514e724527ce9d815a927c7de7ba594aee8f1c7562defd9a4d762fce720a6</code></footer>
 </div></body></html>

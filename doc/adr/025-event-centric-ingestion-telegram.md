@@ -131,3 +131,5 @@ Same permission model as `fn_rollback_event` (REVOKE anon, GRANT authenticated).
 - **`ingest`** keeps both targets for international events. For a domestic event, `ingest-event.yml` refuses `target: prod`: domestic results reach PROD only through promote, which replays a verified CERT run there.
 - **`promote`** takes the exact event code. A prefix is answered with the matching exact codes and nothing runs.
 - **`complete`** takes the exact event code too, instead of `_resolve_event_prefix` (`LIKE prefix%` … `LIMIT 1`, which lets `PEW1` match `PEW11`). It remains a manual close and does not check the end date. Automatic completion follows ADR-108 §7.
+
+Implemented 2026-10-03: `complete` in build step 11; `promote`, `ingest-event.yml`'s refusal of `target: prod` and the GAS `ingest` command's refusal of `prod` in build step 12 (ADR-108 §6).

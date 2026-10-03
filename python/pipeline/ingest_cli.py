@@ -368,21 +368,30 @@ def _run_parsed_through_flow(
     return ctx
 
 
-def _send_staging_via_telegram(notifier, event_code, post_ctx, *, n_tournaments=None):
+def _send_staging_via_telegram(
+    notifier,
+    event_code,
+    post_ctx,
+    *,
+    n_tournaments=None,
+    reason="cert-reingest",
+    hint: str | None = "",
+):
     """N15 — send the rendered staging report(s) to Telegram (reuses ADR-059
     send_staging_report / send_document). `post_ctx` is the POST_COMMIT Context the
     StagingFormatter stashed `_rendered_md` / `_rendered_diff` on. Best-effort: a
-    Telegram hiccup never fails the (already-committed) ingest."""
+    Telegram hiccup never fails the (already-committed) ingest. The CERT ingestion
+    hints at `promote <exact code>` (ADR-108 §6); promote's own PROD report passes
+    its reason and no hint."""
     if notifier is None or post_ctx is None:
         return
     md = post_ctx.get("_rendered_md")
     diff = post_ctx.get("_rendered_diff")
     try:
         if md:
-            extras = {
-                "reason": "cert-reingest",
-                "promote_hint": f"reply `promote {event_code.split('-')[0]}` to push to PROD",
-            }
+            extras: dict = {"reason": reason}
+            if hint is not None:
+                extras["promote_hint"] = hint or f"reply `promote {event_code}` to push to PROD"
             if n_tournaments is not None:
                 extras["tournament_count"] = n_tournaments
             notifier.send_staging_report(

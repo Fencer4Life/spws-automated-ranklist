@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="df66369a89b08f7d27056de08202fd6c45d22849cf798cc17911fac33bfcd564">
+<meta name="adr-source-sha256" content="2341ec838156183b2e162c73f0d576276cac17fc0899daa217dba56c4af20f6b">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">315 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">326 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
@@ -279,6 +279,17 @@
 <li>Every refusal is an exception, so nothing the apply wrote survives it. pgTAP APPLY.01–11 (<code>103_promote_apply.sql</code>).</li>
 <li>Acceptance, 2026-10-03, on LOCAL refreshed from PROD (<code>plan_check plan --apply sql</code>): <strong>PPW1 2026/27 planned, dry-run and applied through <code>fn_promote_event_apply</code> equals its live run</strong>, fingerprint for fingerprint and row for row (58 writes; 25 tournaments, 102 results, 373 fencers).</li>
 </ul>
+<p><strong>Wiring implemented 2026-10-03 (build step 12).</strong> <code>python/pipeline/promotion/replay.py</code>:</p>
+<ul>
+<li><strong>The order.</strong> The exact code (a prefix is answered with the active season's codes it starts); the latest CERT run, whose commit must be the one checked out; the gate again, reading CERT and PROD only; what PROD holds; the plan against PROD; the source check (the schedule's hash and every listing's hash against the run's); the master-data check (created fencers by id and name, birth-year moves by id, year and estimate flag, against the run's; a write that leaves PROD's value is not a move); the plan's status, which must exist; the dry apply, whose <code>PROMOTE_DRY_RUN_OK</code> must carry the run's result fingerprint; the apply.</li>
+<li><strong>What PROD may hold.</strong> Nothing; the result of an earlier FINISHED CERT run of the event, which becomes the apply's prior fingerprint (day 2, or a correction after COMPLETED); or this run's result, which the apply skips. Anything else refuses: results no recorded CERT run produced are never overwritten.</li>
+<li><strong>The direct connection.</strong> The apply runs through psycopg2 on the connection string in the repository secret <code>SUPABASE_PROD_DB_URL</code> (LOCAL's for the rehearsal), one transaction per call, with <code>SET LOCAL statement_timeout</code> (900 s by default). The plan reads PROD through the service-role API with the recording connector; the gate and the comparisons read through the Management API inside read-only transactions, and LOCAL in a read-only session (<code>default_transaction_read_only</code>). The API URL and the connection must both be the target's.</li>
+<li><strong>After the commit.</strong> The staging report goes to PROD's Storage and to Telegram (reason &quot;promoted to PROD&quot;), the joining check runs, and PROD's recompute queue drains to empty. Promote holds <code>prod-write</code>, and the drain workflow is a member of it, so a queued drain would wait for promote; promote therefore drains with the same worker (<code>drain_recompute_queue</code>, no debounce) instead of waiting. Every drained event and the promoted one are then compared with CERT by result fingerprint; a difference is sent to Telegram and the job exits 2. The seed job still runs, because the apply has committed.</li>
+<li><strong><code>promote.yml</code>.</strong> Job <code>resolve</code> (read only) finds the run's commit, refuses a commit that is not on main or predates the replay, and passes the exact code on. Job <code>promote</code>, in <code>prod-write</code> with <code>queue: max</code>, checks that commit out and runs the replay (<code>dry_run</code> input: plan, compare and dry apply only). Job <code>seed</code> exports PROD's seed after an applied promote, rebasing and retrying its push; it alerts on failure and does not fail the workflow. <code>promote.py --mode event</code> hands off to the replay; the per-result copy (<code>read_cert_event</code>, <code>write_prod_tournament</code>, <code>write_prod_results</code>, <code>promote_event</code>) and its tests are retired.</li>
+<li><strong>Exact codes elsewhere.</strong> The CERT staging report's hint reads <code>promote &lt;exact code&gt;</code>; the GAS <code>promote</code> text and <code>/help</code> name an exact code; the GAS <code>ingest</code> command refuses <code>prod</code> and names promote.</li>
+<li><strong>§9.</strong> <code>ingest-event.yml</code> refuses <code>target: prod</code> (every event it accepts is domestic: ADR-105 refuses an international one), always records the run, and joins <code>cert-write</code>; <code>recompute-drain.yml</code> leaves <code>cert-recompute</code> for <code>cert-write</code>.</li>
+<li><strong>Tests.</strong> pytest <code>test_promotion_replay.py</code> (PROMO.REPLAY.01–25; 9 mutants caught) and <code>test_promote.py</code> (PROMO.REPLAY.26). On LOCAL the readers ran read-only, a write was refused by PostgreSQL, and the direct apply's dry run on PPW1 2026/27 raised <code>PROMOTE_DRY_RUN_OK</code> with the event's fingerprint and left it PLANNED.</li>
+</ul>
 <h3 id="7-event-lifecycle-completed-once-everything-is-final-and-the-end-date-has-passed">7 · Event lifecycle: COMPLETED once everything is final and the end date has passed</h3>
 <div class="tablewrap"><table>
 <thead>
@@ -405,5 +416,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>df66369a89b08f7d27056de08202fd6c45d22849cf798cc17911fac33bfcd564</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>2341ec838156183b2e162c73f0d576276cac17fc0899daa217dba56c4af20f6b</code></footer>
 </div></body></html>

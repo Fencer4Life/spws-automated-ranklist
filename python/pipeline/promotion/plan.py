@@ -280,6 +280,9 @@ class Plan:
     # ADR-108 §7: the status the lifecycle rule gives PROD's event after the
     # apply, or None when the run committed nothing.
     status: str | None = None
+    # The driver's per-listing contexts, for the staging report after the apply.
+    # Not part of the plan the apply receives.
+    contexts: list = field(default_factory=list, repr=False, compare=False)
 
     def to_json(self) -> dict:
         return {
@@ -325,7 +328,7 @@ def plan_event(
             "Correct the URL on one of them and re-run the CERT ingestion.",
         )
     log = ListingLog()
-    ingest_cli._ingest_event_rounds(
+    contexts = ingest_cli._ingest_event_rounds(
         event,
         event_code,
         season_end_year,
@@ -348,7 +351,9 @@ def plan_event(
         if end
         else None
     )
-    return Plan(event_code, url_event, recorder.ops, recorder.created, listings, status)
+    return Plan(
+        event_code, url_event, recorder.ops, recorder.created, listings, status, list(contexts)
+    )
 
 
 def apply_plan(

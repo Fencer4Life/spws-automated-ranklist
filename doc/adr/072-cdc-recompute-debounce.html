@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="072-cdc-recompute-debounce.md">
-<meta name="adr-source-sha256" content="76f1de79eb20dd4c5878509fdb953a8725c4262d20cd18000b5d230f295eed98">
+<meta name="adr-source-sha256" content="bb15d669565a2db5ff2709608755402a882f21e68a0127b5faf93548c04bc55e">
 <title>ADR-072 · Master-data-change-triggered idempotent recompute (CDC queue + debounce)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 072</p><h1>Master-data-change-triggered idempotent recompute (CDC queue + debounce)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline. <strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — an international result stays in its stored tournament with its N and place); the 2026-10-01 provenance amendment below (a recompute writes the stored name, confidence and method back verbatim).</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">206 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.</dd></div><div><dt>Date</dt><dd class="">2026-06-14 <strong>Relates to:</strong> ADR-014 (delete + re-import), ADR-022 (atomic commit), ADR-056 (V-cat from BY), ADR-070 (identity) / ADR-071 (dedup) — the change <em>sources</em>; ADR-041 (edge-function dispatch), ADR-074 (no-halt recompute). This ADR builds the <strong>self-healing</strong> half of the pipeline. <strong>Amended by:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (2026-10-01 — an international result stays in its stored tournament with its N and place); the 2026-10-01 provenance amendment below (a recompute writes the stored name, confidence and method back verbatim).</dd></div><div><dt>Source</dt><dd class=""><code>072-cdc-recompute-debounce.md</code></dd></div><div><dt>Length</dt><dd class="">208 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (implemented 2026-06-15, NEW pipeline build M1–M5). Design in
 <a href="../archive/legacy-2026-07/ingestion_pipeline_NEW_design.md">archive/legacy-2026-07/ingestion_pipeline_NEW_design.md</a> §6 / §8. <strong>Implemented</strong> — see <a href="../archive/legacy-2026-07/development_history.md">development_history</a>.
 <strong>Date:</strong> 2026-06-14
@@ -211,8 +211,9 @@ story.</li>
 <li>PROD's drain stays in <code>prod-write</code>, which the daily close (<code>event-close.yml</code>) also joins.</li>
 <li>Promote waits for the PROD drain after its apply and compares the affected events with CERT's.</li>
 </ul>
+<p>Implemented 2026-10-03 (ADR-108 build step 12): <code>recompute-drain.yml</code> and <code>ingest-event.yml</code> are in <code>cert-write</code>. Because promote holds <code>prod-write</code>, it drains PROD's queue itself with the same worker after its apply rather than wait for the drain workflow queued behind it.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="071-mdm-dedup-sweep.html">← ADR-071: Master-data management + eventual-consistency dedup (DEDUP_SWEEP)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="073-plugin-rule-engine-architecture.html">→ ADR-073: Plugin + rule-engine ingestion architecture</a></nav>
-<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>76f1de79eb20dd4c5878509fdb953a8725c4262d20cd18000b5d230f295eed98</code></footer>
+<footer class="foot">Generated from <code>072-cdc-recompute-debounce.md</code> · source SHA-256 <code>bb15d669565a2db5ff2709608755402a882f21e68a0127b5faf93548c04bc55e</code></footer>
 </div></body></html>

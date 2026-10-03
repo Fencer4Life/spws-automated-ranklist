@@ -168,12 +168,13 @@ function handleCommand(props, command, arg) {
         + '<i>Seed export triggered</i>';
 
     case 'promote':
+      // ADR-108 §6: an exact event code; promote.yml answers a prefix with the matching codes.
       var githubPat = props.getProperty('GITHUB_PAT');
       var githubRepo = props.getProperty('GITHUB_REPO');
       triggerGitHubWorkflow(githubPat, githubRepo, 'promote.yml', { event_code: arg });
       return '<b>Promotion Triggered</b>\n'
         + '<pre>' + arg + '</pre>\n'
-        + '<i>CERT data will be pushed to PROD.\nWatch for completion notification.</i>';
+        + '<i>The verified CERT run will be replayed on PROD.\nWatch for the result notification.</i>';
 
     // --- Data review ---
     case 'results':
@@ -256,9 +257,10 @@ function handleCommand(props, command, arg) {
     // --- Pipeline ---
     case 'ingest':
       // Overloaded (N15):
-      //   ingest <prefix> <url> [cert|prod] → re-ingest ONE event from its FTL URL
-      //       via ingest-event.yml (keep-rule + url_results); staging report (full +
-      //       diff) is sent back to this chat when the run finishes.
+      //   ingest <code> <url> → re-ingest ONE event on CERT from its FTL URL via
+      //       ingest-event.yml (keep-rule + url_results); staging report (full + diff)
+      //       is sent back to this chat when the run finishes. ADR-108: PROD is
+      //       refused; promote <exact code> replays the verified CERT run there.
       //   ingest            (no args)        → legacy: process already-staged email XMLs.
       var iParts = arg ? arg.split(/\s+/) : [];
       if (iParts.length >= 2 && /^https?:\/\//.test(iParts[1])) {
@@ -267,11 +269,15 @@ function handleCommand(props, command, arg) {
         var iTarget = (iParts[2] || 'cert').toLowerCase();
         var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
         if (!iYm) {
-          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</pre>\n'
+          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n'
                + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
         }
-        if (iTarget !== 'cert' && iTarget !== 'prod') {
-          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</pre>\n<i>target must be cert or prod</i>';
+        if (iTarget === 'prod') {
+          return '<b>Not on PROD</b>\n<i>A domestic event reaches PROD only through promote, which replays the verified CERT run. '
+               + 'Ingest on CERT, then send</i> <pre>promote ' + iEvent + '</pre>';
+        }
+        if (iTarget !== 'cert') {
+          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n<i>the target is cert</i>';
         }
         // Dispatch straight to the workflow (like `promote`) — no Management API call,
         // so it does not depend on SUPABASE_ACCESS_TOKEN. ingest_cli matches the exact code.
@@ -419,8 +425,8 @@ function handleCommand(props, command, arg) {
         '<pre>rollback &lt;event&gt;</pre>',
         'Delete all ingested data, reset to PLANNED',
         '',
-        '<pre>promote &lt;event&gt;</pre>',
-        'Push event data from CERT to PROD',
+        '<pre>promote &lt;exact code&gt;</pre>',
+        'Replay the verified CERT run on PROD (e.g. PPW1-2026-2027); a prefix is answered with the matching codes',
         '',
         '<b><u>Review</u></b>',
         '',
@@ -451,8 +457,8 @@ function handleCommand(props, command, arg) {
         '',
         '<b><u>Pipeline</u></b>',
         '',
-        '<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt; [cert|prod]</pre>',
-        'Re-ingest one event from its FTL URL → staging report (full + diff) to Telegram (default cert). Full code, e.g. PPW5-2025-2026',
+        '<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>',
+        'Re-ingest one event on CERT from its FTL URL → staging report (full + diff) to Telegram. Full code, e.g. PPW5-2025-2026; PROD gets it through promote',
         '',
         '<pre>ingest</pre>',
         '(no args) Trigger ingestion from emailed staging files',
