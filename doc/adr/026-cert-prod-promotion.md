@@ -122,3 +122,5 @@ The per-event mode above copied CERT's rows to PROD. It sent CERT's fencer ids, 
 - The seed export becomes a separate job.
 
 The calendar mode, its concurrency group and its idempotency backstop are unchanged.
+
+Implemented 2026-10-03 (ADR-108 build step 12): `promote.py --mode event` hands off to `python/pipeline/promotion/replay.py`; `read_cert_event`, `write_prod_tournament`, `write_prod_results`, `promote_event` and their tests (plan IDs 9.204–9.207) are retired.

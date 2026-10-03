@@ -421,18 +421,21 @@ class ManagementTransport:
 
 
 class LocalTransport:
-    """SQL against LOCAL through `docker exec psql`, the statement on stdin."""
+    """SQL against LOCAL through `docker exec psql`, the statement on stdin. With
+    `read_only` the session starts read only (default_transaction_read_only), so
+    PostgreSQL refuses any write: promote's rehearsal reads LOCAL as PROD."""
 
-    read_only = False
-
-    def __init__(self, container: str = "supabase_db_SPWSranklist"):
+    def __init__(self, container: str = "supabase_db_SPWSranklist", *, read_only: bool = False):
         self.container = container
+        self.read_only = read_only
 
     def fetch_json(self, sql: str) -> Any:
+        session = ["-e", "PGOPTIONS=-c default_transaction_read_only=on"] if self.read_only else []
         cmd = [
             "docker",
             "exec",
             "-i",
+            *session,
             self.container,
             "psql",
             "-U",

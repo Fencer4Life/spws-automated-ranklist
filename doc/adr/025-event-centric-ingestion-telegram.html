@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="025-event-centric-ingestion-telegram.md">
-<meta name="adr-source-sha256" content="bc3943e4cf3cf7746d491604682ba143b673ab7833545f4b0dc8a3777ea611f1">
+<meta name="adr-source-sha256" content="ed5b651a7b2d0ab2d61b9549ff3d3ba07d213c59978257f36dcf36ee131a5050">
 <title>ADR-025 · Event-Centric Ingestion + Telegram Admin Interface</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 025</p><h1>Event-Centric Ingestion + Telegram Admin Interface</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-10-03 by ADR-108: domestic results reach PROD only through promote; exact codes)</dd></div><div><dt>Date</dt><dd class="">2026-04-05 <strong>Supersession narrowed (ADR-077, 2026-06-28):</strong> ADR-050 supersedes this ADR only on the <em>ingestion mechanism</em>. The <strong>event-status lifecycle</strong> and the <strong>Telegram admin surface</strong> described here remain authoritative and are carried forward (and extended to 8 states) by <strong>ADR-077</strong>. <strong>Relates to:</strong> ADR-022 (Ingestion DB Transaction), ADR-023 (Email Ingestion via GAS), ADR-024 (Combined Category Splitting), ADR-077 (lifecycle + Telegram doctrine carried forward)</dd></div><div><dt>Source</dt><dd class=""><code>025-event-centric-ingestion-telegram.md</code></dd></div><div><dt>Length</dt><dd class="">133 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-10-03 by ADR-108: domestic results reach PROD only through promote; exact codes)</dd></div><div><dt>Date</dt><dd class="">2026-04-05 <strong>Supersession narrowed (ADR-077, 2026-06-28):</strong> ADR-050 supersedes this ADR only on the <em>ingestion mechanism</em>. The <strong>event-status lifecycle</strong> and the <strong>Telegram admin surface</strong> described here remain authoritative and are carried forward (and extended to 8 states) by <strong>ADR-077</strong>. <strong>Relates to:</strong> ADR-022 (Ingestion DB Transaction), ADR-023 (Email Ingestion via GAS), ADR-024 (Combined Category Splitting), ADR-077 (lifecycle + Telegram doctrine carried forward)</dd></div><div><dt>Source</dt><dd class=""><code>025-event-centric-ingestion-telegram.md</code></dd></div><div><dt>Length</dt><dd class="">135 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-10-03 by ADR-108: domestic results reach PROD only through promote; exact codes)
 <strong>Date:</strong> 2026-04-05<br />
 <strong>Supersession narrowed (ADR-077, 2026-06-28):</strong> ADR-050 supersedes this ADR only on the <em>ingestion
@@ -140,8 +140,9 @@ authoritative and are carried forward (and extended to 8 states) by <strong>ADR-
 <li><strong><code>promote</code></strong> takes the exact event code. A prefix is answered with the matching exact codes and nothing runs.</li>
 <li><strong><code>complete</code></strong> takes the exact event code too, instead of <code>_resolve_event_prefix</code> (<code>LIKE prefix%</code> … <code>LIMIT 1</code>, which lets <code>PEW1</code> match <code>PEW11</code>). It remains a manual close and does not check the end date. Automatic completion follows ADR-108 §7.</li>
 </ul>
+<p>Implemented 2026-10-03: <code>complete</code> in build step 11; <code>promote</code>, <code>ingest-event.yml</code>'s refusal of <code>target: prod</code> and the GAS <code>ingest</code> command's refusal of <code>prod</code> in build step 12 (ADR-108 §6).</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="024-combined-category-splitting.html">← ADR-024: Combined Category Splitting Strategy</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="026-cert-prod-promotion.html">→ ADR-026: CERT → PROD Event Promotion via Python Script</a></nav>
-<footer class="foot">Generated from <code>025-event-centric-ingestion-telegram.md</code> · source SHA-256 <code>bc3943e4cf3cf7746d491604682ba143b673ab7833545f4b0dc8a3777ea611f1</code></footer>
+<footer class="foot">Generated from <code>025-event-centric-ingestion-telegram.md</code> · source SHA-256 <code>ed5b651a7b2d0ab2d61b9549ff3d3ba07d213c59978257f36dcf36ee131a5050</code></footer>
 </div></body></html>
