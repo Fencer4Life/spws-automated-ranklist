@@ -111,6 +111,21 @@ A test fails when a column whose name contains `fencer` appears that is on neith
 
 The fingerprint is computed by one canonical SQL function and never by Python, so formatting cannot differ between the two sides.
 
+**Implemented 2026-10-03 (build step 6).** Migration `20261003000014_ingest_run.sql`; `python/pipeline/promotion/run_record.py`; `ingest_cli --record-run`, which `ingest-event.yml` passes for target `cert`.
+
+- `fn_ingest_run_open` writes the row before the ingestion writes anything. It holds the input fingerprint and the roster as the run found it (`fn_roster_snapshot`), plus the event URL the run ingests and the season end year. A run of the same event and environment still `RUNNING` becomes `ABANDONED`.
+- `fn_ingest_run_finish` closes the row `FINISHED` with its listings. `fn_ingest_run_fail` closes it `FAILED` with the error. Both record the master-data changes since the row opened.
+- `fn_event_input_fingerprint` returns one hash, plus one part per input:
+  - `schema`: `fn_schema_fingerprint`, the query of `scripts/schema-fingerprint.sh`;
+  - `roster`: every column the refresh copies, by person, never by id;
+  - `registrations`: the columns the refresh copies, with the fencer link as that fencer's name and birth year;
+  - `season`: dates, engines by code, and the scoring and per-type settings. The EVF toggles and the default ranking mode are display switches, not scoring settings.
+  - `lock`;
+  - `event`: code, dates, season, previous edition, and the admin's skip/process choices. Not the URL, which promote writes.
+- `fn_roster_changes` lists the fencers created (with the id each got), the fencers deleted, the birth years moved, the aliases added, and any other column that changed.
+- The listing hashes are the one part computed in Python, because the listings are parsed there (`listing_sha256`, `schedule_sha256`). Promote recomputes them with the same functions.
+- `txt_result_fingerprint` and `jsonb_gate` stay empty until build steps 9 and 7.
+
 ### 5 · The CERT gate
 
 Three kinds of issue block promote. Each one is fixed at its source, CERT is re-ingested, and the gate runs again; there is no acknowledge step.
@@ -194,6 +209,10 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 6. **Refresh only the event's participants.** Rejected. Admin edits and merges made on PROD elsewhere in the roster would be missed. The whole roster is about 370 rows.
 7. **COMPLETED as soon as every listing is in.** Rejected, because organisers add tournaments the next day (§7).
 8. **Stop the carry at event level (P6 B), or set SCORED while partial (P6 C).** Rejected. Both leave an empty slot overnight for a weapon fenced on a later day, and C would have automation set SCORED.
+
+## Open items
+
+1. **How §5 compares the season lock (build step 7).** The season's first scored result locks it (`fn_ensure_active_scoring_revision`). So the ingestion of a season's first event changes the lock on CERT, and any later CERT re-run of that event starts locked while PROD is not. On 3 October 2026 the 2026/27 season was locked on CERT and unlocked on PROD. Compared literally, "lock state equal" refuses every re-ingested first event of a season. The run record therefore keeps the lock as a part of its own. **Recommendation:** compare the scoring settings and engines value by value, and refuse on the lock only when PROD is locked and CERT is not. That case means PROD scored results CERT never had.
 
 ## Consequences
 

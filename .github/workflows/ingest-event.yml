@@ -94,6 +94,10 @@ jobs:
           if [[ -n "$URL_EVENT" ]]; then
             ARGS+=(--url-event "$URL_EVENT")
           fi
+          # ADR-108 §4: a CERT run is recorded in tbl_ingest_run; promote replays it.
+          if [[ "$TARGET_ENV" == "cert" ]]; then
+            ARGS+=(--record-run cert)
+          fi
           python -m python.pipeline.ingest_cli "${ARGS[@]}"
 
       - name: Notify failure
