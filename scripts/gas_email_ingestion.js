@@ -1,91 +1,30 @@
 /**
- * Google Apps Script: Email Ingestion + Telegram Admin for SPWS Ranklist
- * (ADR-023 + ADR-025)
+ * Google Apps Script: Telegram admin bot for SPWS Ranklist (ADR-025, ADR-108)
  *
- * Two functions run on a 5-minute timer:
- *   1. checkEmailForResults() — polls Gmail for .zip/.xml attachments
- *   2. checkTelegramCommands() — polls Telegram getUpdates for admin commands
+ * The live Apps Script project runs this file verbatim: paste the whole file over
+ * the project's Code.gs (operator runbooks, "Change the Telegram bot"). The help
+ * text below is the bot's command list; python/tests/test_gas_bot.py keeps it in
+ * step with the commands (GAS.HELP.01–04).
+ *
+ * One function runs on a 5-minute timer:
+ *   checkTelegramCommands() — polls Telegram getUpdates for admin commands
  *
  * Setup (Script Properties):
- *   SUPABASE_URL           — Supabase project URL (CERT)
- *   SUPABASE_SERVICE_ROLE_KEY — service_role key (bypasses RLS)
- *   SUPABASE_PROD_REF      — PROD project ref (e.g. "ywgymtgcyturldazcpmw")
+ *   SUPABASE_PROJECT_REF   — CERT project ref; the database commands run there
+ *   SUPABASE_PROD_REF      — PROD project ref, for the read-only *-prod commands
+ *   SUPABASE_ACCESS_TOKEN  — Supabase personal access token (Management API) for the
+ *                            database commands; a stale token answers "Unauthorized"
  *   GITHUB_PAT             — GitHub personal access token (workflow_dispatch scope)
  *   GITHUB_REPO            — owner/repo (e.g. "Fencer4Life/spws-automated-ranklist")
  *   TELEGRAM_BOT_TOKEN     — Telegram bot token
  *   TELEGRAM_CHAT_ID       — Authorized admin chat ID
  *   TELEGRAM_LAST_UPDATE   — (auto-managed) last processed update_id
- *   PAUSED                 — (auto-managed) "true" to pause email polling
  *
  * Deploy:
  *   1. Create GAS project linked to spws.weterani@gmail.com
  *   2. Set Script Properties above
  *   3. Run createTimeTrigger() once to start 5-minute polling
  */
-
-
-// ═══════════════════════════════════════════════════════════════
-// EMAIL INGESTION
-// ═══════════════════════════════════════════════════════════════
-
-function checkEmailForResults() {
-  var props = PropertiesService.getScriptProperties();
-
-  // Auto-resume if an event is scheduled today (ADR-027)
-  if (props.getProperty('PAUSED') === 'true') {
-    try {
-      var today = Utilities.formatDate(new Date(), 'UTC', 'yyyy-MM-dd');
-      var events = callRpc(null, null, 'fn_find_event_by_date', { p_date: today });
-      if (events) {
-        props.deleteProperty('PAUSED');
-        sendTelegramMessage(props, '<b>Auto-Resumed</b>\nEmail polling activated — event scheduled today.');
-      } else {
-        return; // still paused, no event today
-      }
-    } catch (e) {
-      return; // query failed, stay paused
-    }
-  }
-
-  var supabaseUrl = props.getProperty('SUPABASE_URL');
-  var supabaseKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
-  var githubPat = props.getProperty('GITHUB_PAT');
-  var githubRepo = props.getProperty('GITHUB_REPO');
-
-  var threads = GmailApp.search('is:unread has:attachment (filename:zip OR filename:xml)', 0, 10);
-  if (threads.length === 0) return;
-
-  var uploadedCount = 0;
-
-  for (var t = 0; t < threads.length; t++) {
-    var messages = threads[t].getMessages();
-    for (var m = 0; m < messages.length; m++) {
-      var msg = messages[m];
-      if (msg.isUnread()) {
-        var attachments = msg.getAttachments();
-        for (var a = 0; a < attachments.length; a++) {
-          var att = attachments[a];
-          var name = att.getName().toLowerCase();
-          if (name.endsWith('.zip') || name.endsWith('.xml')) {
-            var timestamp = Utilities.formatDate(new Date(), 'UTC', 'yyyyMMdd_HHmmss');
-            var storagePath = 'staging/' + timestamp + '_' + att.getName();
-            uploadToSupabaseStorage(supabaseUrl, supabaseKey, storagePath, att.getBytes(), att.getContentType());
-            uploadedCount++;
-          }
-        }
-        msg.markRead();
-      }
-    }
-    var label = GmailApp.getUserLabelByName('PROCESSED');
-    if (!label) label = GmailApp.createLabel('PROCESSED');
-    threads[t].addLabel(label);
-  }
-
-  if (uploadedCount > 0) {
-    sendTelegramMessage(props, '<b>Files Received</b>\n' + uploadedCount + ' file(s) uploaded to staging.\n<i>Ingestion workflow triggered.</i>');
-    triggerGitHubWorkflow(githubPat, githubRepo, 'ingest.yml', { source: 'gas' });
-  }
-}
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -128,14 +67,11 @@ function checkTelegramCommands() {
 }
 
 function handleCommand(props, command, arg) {
-  var supabaseUrl = props.getProperty('SUPABASE_URL');
-  var supabaseKey = props.getProperty('SUPABASE_SERVICE_ROLE_KEY');
-
   switch (command) {
     // --- Lifecycle ---
     case 'status':
-      var statusData = callRpc(supabaseUrl, supabaseKey, 'fn_event_status', { p_prefix: arg });
-      return '<b>Event Status</b>\n'
+      var statusData = callRpc('fn_event_status', { p_prefix: arg });
+      return '<b>Event Status (CERT)</b>\n'
         + '<pre>' + (statusData.event_code || arg) + '</pre>\n'
         + 'Status: <b>' + (statusData.event_status || '—') + '</b>\n'
         + 'Tournaments: <b>' + (statusData.tournament_count || 0) + '</b>\n'
@@ -144,43 +80,38 @@ function handleCommand(props, command, arg) {
 
     case 'complete':
       // ADR-108 §7: an exact event code; a prefix is refused with the matching codes.
-      callRpc(supabaseUrl, supabaseKey, 'fn_complete_event', { p_prefix: arg });
-      // Trigger seed export from CERT (ADR-027)
-      var githubPatC = props.getProperty('GITHUB_PAT');
-      var githubRepoC = props.getProperty('GITHUB_REPO');
-      try { triggerGitHubWorkflow(githubPatC, githubRepoC, 'export-seed.yml', { reason: 'complete' }); } catch(e) {}
-      return '<b>Event Completed</b>\n'
+      // CERT only; the daily close (event-close.yml) closes PROD after the end date.
+      callRpc('fn_complete_event', { p_prefix: arg });
+      // export-seed.yml exports the seed from PROD (ADR-036).
+      try { triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'export-seed.yml', { reason: 'complete' }); } catch(e) {}
+      return '<b>Event Completed (CERT)</b>\n'
         + '<pre>' + arg + '</pre>\n'
-        + 'Status changed to <b>COMPLETED</b>\n'
-        + '<i>Seed export triggered</i>';
+        + 'Status changed to <b>COMPLETED</b> on CERT\n'
+        + '<i>PROD closes by the daily close after the end date. Seed export from PROD started.</i>';
 
     case 'rollback':
-      var result = callRpc(supabaseUrl, supabaseKey, 'fn_rollback_event', { p_prefix: arg });
-      // Trigger seed export from CERT (ADR-027)
-      var githubPatR = props.getProperty('GITHUB_PAT');
-      var githubRepoR = props.getProperty('GITHUB_REPO');
-      try { triggerGitHubWorkflow(githubPatR, githubRepoR, 'export-seed.yml', { reason: 'rollback' }); } catch(e) {}
-      return '<b>Event Rolled Back</b>\n'
+      var result = callRpc('fn_rollback_event', { p_prefix: arg });
+      // export-seed.yml exports the seed from PROD (ADR-036).
+      try { triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'export-seed.yml', { reason: 'rollback' }); } catch(e) {}
+      return '<b>Event Rolled Back (CERT)</b>\n'
         + '<pre>' + arg + '</pre>\n'
         + 'Tournaments deleted: <b>' + result.tournaments_deleted + '</b>\n'
         + 'Results deleted: <b>' + result.results_deleted + '</b>\n'
         + 'Status reset to <b>PLANNED</b>\n'
-        + '<i>Seed export triggered</i>';
+        + '<i>Seed export from PROD started.</i>';
 
     case 'promote':
       // ADR-108 §6: an exact event code; promote.yml answers a prefix with the matching codes.
-      var githubPat = props.getProperty('GITHUB_PAT');
-      var githubRepo = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPat, githubRepo, 'promote.yml', { event_code: arg });
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'promote.yml', { event_code: arg });
       return '<b>Promotion Triggered</b>\n'
         + '<pre>' + arg + '</pre>\n'
         + '<i>The verified CERT run will be replayed on PROD.\nWatch for the result notification.</i>';
 
-    // --- Data review ---
+    // --- Review ---
     case 'results':
-      var resData = callRpc(supabaseUrl, supabaseKey, 'fn_event_results_summary', { p_prefix: arg });
-      if (!resData || resData.length === 0) return '<b>Results</b>\n<pre>' + arg + '</pre>\n<i>No tournaments found</i>';
-      var resLines = ['<b>Results</b>\n<pre>' + arg + '</pre>'];
+      var resData = callRpc('fn_event_results_summary', { p_prefix: arg });
+      if (!resData || resData.length === 0) return '<b>Results (CERT)</b>\n<pre>' + arg + '</pre>\n<i>No tournaments found</i>';
+      var resLines = ['<b>Results (CERT)</b>\n<pre>' + arg + '</pre>'];
       resData.forEach(function(t) {
         resLines.push('\n<b>' + t.category + ' ' + t.gender + ' ' + t.weapon + '</b>  (' + t.participants + ' fencers)');
         if (t.top3) {
@@ -192,9 +123,9 @@ function handleCommand(props, command, arg) {
       return resLines.join('\n');
 
     case 'pending':
-      var pendData = callRpc(supabaseUrl, supabaseKey, 'fn_event_pending', { p_prefix: arg });
-      if (!pendData || pendData.length === 0) return '<b>Pending</b>\n<pre>' + arg + '</pre>\n<i>No unresolved matches</i>';
-      var pendLines = ['<b>Pending Matches</b>\n<pre>' + arg + '</pre>'];
+      var pendData = callRpc('fn_event_pending', { p_prefix: arg });
+      if (!pendData || pendData.length === 0) return '<b>Pending (CERT)</b>\n<pre>' + arg + '</pre>\n<i>No unresolved matches</i>';
+      var pendLines = ['<b>Pending Matches (CERT)</b>\n<pre>' + arg + '</pre>'];
       pendData.forEach(function(p) {
         pendLines.push('\n<code>' + p.scraped_name + '</code>');
         pendLines.push('  Suggested: ' + (p.suggested_fencer || '—') + ' (' + (p.confidence || 0) + '%)');
@@ -203,26 +134,19 @@ function handleCommand(props, command, arg) {
       return pendLines.join('\n');
 
     case 'missing':
-      var missData = callRpc(supabaseUrl, supabaseKey, 'fn_event_missing_categories', { p_prefix: arg });
-      if (!missData || missData.length === 0) return '<b>Missing Categories</b>\n<pre>' + arg + '</pre>\n<i>All categories have results</i>';
-      var missLines = ['<b>Missing Categories</b>\n<pre>' + arg + '</pre>'];
+      var missData = callRpc('fn_event_missing_categories', { p_prefix: arg });
+      if (!missData || missData.length === 0) return '<b>Missing Categories (CERT)</b>\n<pre>' + arg + '</pre>\n<i>All categories have results</i>';
+      var missLines = ['<b>Missing Categories (CERT)</b>\n<pre>' + arg + '</pre>'];
       missData.forEach(function(m) {
         missLines.push('  ' + m.category + ' ' + m.gender + ' ' + m.weapon);
       });
       return missLines.join('\n');
 
-    // --- Storage ---
-    case 'staging':
-      return listStagingFiles(supabaseUrl, supabaseKey);
-
-    case 'cleanup':
-      return cleanupStaging(supabaseUrl, supabaseKey);
-
     // --- Season ---
     case 'season':
-      var seasonData = callRpc(supabaseUrl, supabaseKey, 'fn_season_overview', {});
-      if (!seasonData || seasonData.length === 0) return '<b>Season Overview</b>\n<i>No events found</i>';
-      var seasonLines = ['<b>Season Overview</b>'];
+      var seasonData = callRpc('fn_season_overview', {});
+      if (!seasonData || seasonData.length === 0) return '<b>Season Overview (CERT)</b>\n<i>No events found</i>';
+      var seasonLines = ['<b>Season Overview (CERT)</b>'];
       seasonData.forEach(function(e) {
         var status = e.status || 'PLANNED';
         var intl = e.is_international ? '  [INT]' : '';
@@ -232,7 +156,7 @@ function handleCommand(props, command, arg) {
         seasonLines.push('Tournaments: ' + (e.tournament_count || 0) + '  |  Results: ' + (e.result_count || 0));
       });
       // Summary totals
-      var summary = callRpc(supabaseUrl, supabaseKey, 'fn_season_summary', {});
+      var summary = callRpc('fn_season_summary', {});
       if (summary) {
         seasonLines.push('\n<b>Summary</b>');
         seasonLines.push('Fencers: <b>' + (summary.fencers || 0) + '</b>');
@@ -244,93 +168,74 @@ function handleCommand(props, command, arg) {
     case 'ranking':
       var rParts = arg.toUpperCase().split(/\s+/);
       if (rParts.length < 3) return '<b>Usage</b>\n<pre>ranking V2 M EPEE</pre>\n<i>category  gender  weapon</i>';
-      var rankData = callRpc(supabaseUrl, supabaseKey, 'fn_category_ranking', {
+      var rankData = callRpc('fn_category_ranking', {
         p_weapon: rParts[2], p_gender: rParts[1], p_category: rParts[0]
       });
       if (!rankData || rankData.length === 0) return '<b>Ranking ' + arg + '</b>\n<i>No results found</i>';
-      var rankLines = ['<b>Ranking ' + rParts[0] + ' ' + rParts[1] + ' ' + rParts[2] + '</b>\n<i>Domestic points (PPW/MPW)</i>'];
+      var rankLines = ['<b>Ranking ' + rParts[0] + ' ' + rParts[1] + ' ' + rParts[2] + ' (CERT)</b>\n<i>Top 5 by PPW/MPW points only</i>'];
       rankData.forEach(function(r, i) {
         rankLines.push('\n<pre>' + (i + 1) + '. ' + r.fencer + '</pre>' + r.total_score + ' pts');
       });
       return rankLines.join('\n');
 
-    // --- Pipeline ---
+    // --- Ingestion ---
     case 'ingest':
-      // Overloaded (N15):
-      //   ingest <code> <url> → re-ingest ONE event on CERT from its FTL URL via
-      //       ingest-event.yml (keep-rule + url_results); staging report (full + diff)
-      //       is sent back to this chat when the run finishes. ADR-108: PROD is
-      //       refused; promote <exact code> replays the verified CERT run there.
-      //   ingest            (no args)        → legacy: process already-staged email XMLs.
+      // ingest <EVENT-CODE> <url> → re-ingest ONE event on CERT from its results URL via
+      // ingest-event.yml (keep-rule + url_results, a recorded run); the staging report
+      // (full + diff) comes back to this chat when the run finishes. ADR-108: PROD is
+      // refused; promote <exact code> replays the verified CERT run there.
       var iParts = arg ? arg.split(/\s+/) : [];
-      if (iParts.length >= 2 && /^https?:\/\//.test(iParts[1])) {
-        var iEvent = iParts[0];                                   // full event code, e.g. PPW5-2025-2026
-        var iUrl = iParts[1];
-        var iTarget = (iParts[2] || 'cert').toLowerCase();
-        var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
-        if (!iYm) {
-          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n'
-               + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
-        }
-        if (iTarget === 'prod') {
-          return '<b>Not on PROD</b>\n<i>A domestic event reaches PROD only through promote, which replays the verified CERT run. '
-               + 'Ingest on CERT, then send</i> <pre>promote ' + iEvent + '</pre>';
-        }
-        if (iTarget !== 'cert') {
-          return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n<i>the target is cert</i>';
-        }
-        // Dispatch straight to the workflow (like `promote`) — no Management API call,
-        // so it does not depend on SUPABASE_ACCESS_TOKEN. ingest_cli matches the exact code.
-        triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
-          'ingest-event.yml', { event_code: iEvent, season_end_year: iYm[2], target: iTarget, url_event: iUrl });
-        return '<b>Event Re-ingest Triggered</b>\n'
-          + '<pre>' + iEvent + '</pre>\n'
-          + 'Target: <b>' + iTarget + '</b>\n'
-          + '<i>Re-ingesting from URL (keep-rule + url_results).\n'
-          + 'Staging report (full + diff) will arrive here when done (~1 min).</i>';
+      var iUsage = '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n'
+                 + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
+      if (iParts.length < 2 || !/^https?:\/\//.test(iParts[1])) return iUsage;
+      var iEvent = iParts[0];                                   // full event code, e.g. PPW5-2025-2026
+      var iUrl = iParts[1];
+      var iTarget = (iParts[2] || 'cert').toLowerCase();
+      var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
+      if (!iYm) return iUsage;
+      if (iTarget === 'prod') {
+        return '<b>Not on PROD</b>\n<i>A domestic event reaches PROD only through promote, which replays the verified CERT run. '
+             + 'Ingest on CERT, then send</i> <pre>promote ' + iEvent + '</pre>';
       }
-      // Legacy bare `ingest` — process emailed staging files (ingest.yml).
-      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
-        'ingest.yml', { source: 'telegram' });
-      return '<b>Ingestion Triggered</b>\n<i>Processing staging files. Watch for completion notification.</i>';
-
-    case 'send':
-      // ADR-080 §5 — send <EVENT-CODE> participants (PROD, allowlisted admin).
-      var sendParts = arg ? arg.trim().split(/\s+/) : [];
-      var sendEvent = (sendParts[0] || '').toUpperCase();
-      if (sendParts.length !== 2 || sendParts[1].toLowerCase() !== 'participants'
-          || !/^[A-Z0-9_-]+$/.test(sendEvent)) {
-        return '<b>Usage</b>\n<pre>send &lt;EVENT-CODE&gt; participants</pre>';
+      if (iTarget !== 'cert') {
+        return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n<i>the target is cert</i>';
       }
+      // Dispatch straight to the workflow (like `promote`) — no Management API call,
+      // so it does not depend on SUPABASE_ACCESS_TOKEN. ingest_cli matches the exact code.
       triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
-        'ftl-seed.yml', { event_code: sendEvent, target: 'prod' });
-      return '<b>FTL Seed Delivery Triggered</b>\n<pre>' + sendEvent + '</pre>\n'
-        + '<i>The current declared roster will be generated and sent to the saved organizer email.</i>';
+        'ingest-event.yml', { event_code: iEvent, season_end_year: iYm[2], target: iTarget, url_event: iUrl });
+      return '<b>Event Re-ingest Triggered</b>\n'
+        + '<pre>' + iEvent + '</pre>\n'
+        + 'Target: <b>' + iTarget + '</b>\n'
+        + '<i>Re-ingesting from URL (keep-rule + url_results).\n'
+        + 'Staging report (full + diff) will arrive here when done (~1 min).</i>';
 
-    case 'export-seed':
-      var githubPatS = props.getProperty('GITHUB_PAT');
-      var githubRepoS = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatS, githubRepoS, 'export-seed.yml', { reason: 'manual' });
-      return '<b>Seed Export</b>\n<i>Regeneration triggered. Watch for completion notification.</i>';
+    case 't-scrape':
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'scrape-tournament.yml', { tournament_code: arg });
+      return '<b>Scrape Tournament (CERT)</b>\n<pre>' + arg + '</pre>\n<i>Scraping results from URL and ingesting...</i>';
+
+    case 'populate-urls':
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'populate-urls.yml', { event_code: arg });
+      return '<b>Populate URLs (CERT)</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament result URLs from event page...</i>';
+
+    case 'populate-urls-prod':
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'populate-urls.yml', { event_code: arg, target: 'prod' });
+      return '<b>Populate URLs (PROD)</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament URLs on PROD...</i>';
 
     // --- EVF ---
     case 'evf-cal-import':
-      var githubPatE = props.getProperty('GITHUB_PAT');
-      var githubRepoE = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatE, githubRepoE, 'evf-sync.yml', { mode: 'calendar' });
-      return '<b>EVF Calendar Import</b>\n<i>Scraping veteransfencing.eu calendar. Watch for notification.</i>';
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'evf-sync.yml', { mode: 'calendar' });
+      return '<b>EVF Calendar Import</b>\n<i>Scraping veteransfencing.eu into CERT, then promoting the calendar to PROD. Watch for notification.</i>';
 
     case 'evf-results-import':
-      var githubPatER = props.getProperty('GITHUB_PAT');
-      var githubRepoER = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatER, githubRepoER, 'evf-sync.yml', { mode: 'results', event_code: arg });
-      return '<b>EVF Results Import</b>\n<pre>' + arg + '</pre>\n<i>Fetching results from EVF API. Watch for notification.</i>';
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'evf-sync.yml', { mode: 'results', event_code: arg });
+      return '<b>EVF Results Import (CERT)</b>\n<pre>' + arg + '</pre>\n<i>Fetching results from EVF API. Watch for notification.</i>';
 
     case 'evf-status':
-      var evfEvents = callRpc(supabaseUrl, supabaseKey, 'fn_season_overview', {});
-      if (!evfEvents || evfEvents.length === 0) return '<b>EVF Status</b>\n<i>No events</i>';
+      var evfEvents = callRpc('fn_season_overview', {});
+      if (!evfEvents || evfEvents.length === 0) return '<b>EVF Status (CERT)</b>\n<i>No events</i>';
       var today = new Date().toISOString().slice(0, 10);
-      var evfLines = ['<b>EVF Status</b>\n<i>International events missing results:</i>'];
+      var evfLines = ['<b>EVF Status (CERT)</b>\n<i>International events missing results:</i>'];
       evfEvents.forEach(function(e) {
         if (e.is_international && e.dt_end && e.dt_end < today && e.result_count === 0) {
           evfLines.push('\n<pre>' + e.event_code + '</pre>');
@@ -342,8 +247,7 @@ function handleCommand(props, command, arg) {
 
     // --- PROD read-only commands ---
     case 'status-prod':
-      var prodRef = props.getProperty('SUPABASE_PROD_REF');
-      var statusProd = callRpc(null, null, 'fn_event_status', { p_prefix: arg }, prodRef);
+      var statusProd = callRpc('fn_event_status', { p_prefix: arg }, props.getProperty('SUPABASE_PROD_REF'));
       return '<b>Event Status (PROD)</b>\n'
         + '<pre>' + (statusProd.event_code || arg) + '</pre>\n'
         + 'Status: <b>' + (statusProd.event_status || '—') + '</b>\n'
@@ -352,8 +256,7 @@ function handleCommand(props, command, arg) {
         + 'Pending: <b>' + (statusProd.pending_count || 0) + '</b>';
 
     case 'results-prod':
-      var prodRefR = props.getProperty('SUPABASE_PROD_REF');
-      var resProd = callRpc(null, null, 'fn_event_results_summary', { p_prefix: arg }, prodRefR);
+      var resProd = callRpc('fn_event_results_summary', { p_prefix: arg }, props.getProperty('SUPABASE_PROD_REF'));
       if (!resProd || resProd.length === 0) return '<b>Results (PROD)</b>\n<pre>' + arg + '</pre>\n<i>No tournaments found</i>';
       var resProdLines = ['<b>Results (PROD)</b>\n<pre>' + arg + '</pre>'];
       resProd.forEach(function(t) {
@@ -367,8 +270,7 @@ function handleCommand(props, command, arg) {
       return resProdLines.join('\n');
 
     case 'evf-status-prod':
-      var prodRefE = props.getProperty('SUPABASE_PROD_REF');
-      var evfProd = callRpc(null, null, 'fn_season_overview', {}, prodRefE);
+      var evfProd = callRpc('fn_season_overview', {}, props.getProperty('SUPABASE_PROD_REF'));
       if (!evfProd || evfProd.length === 0) return '<b>EVF Status (PROD)</b>\n<i>No events</i>';
       var todayP = new Date().toISOString().slice(0, 10);
       var evfProdLines = ['<b>EVF Status (PROD)</b>\n<i>International events missing results:</i>'];
@@ -381,134 +283,90 @@ function handleCommand(props, command, arg) {
       if (evfProdLines.length === 1) evfProdLines.push('\n<i>All past international events have results ✓</i>');
       return evfProdLines.join('\n');
 
-    // --- URL Population + Scraping ---
-    case 'populate-urls':
-      var githubPatPU = props.getProperty('GITHUB_PAT');
-      var githubRepoPU = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatPU, githubRepoPU, 'populate-urls.yml', { event_code: arg });
-      return '<b>Populate URLs</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament result URLs from event page...</i>';
-
-    case 'populate-urls-prod':
-      var githubPatPUP = props.getProperty('GITHUB_PAT');
-      var githubRepoPUP = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatPUP, githubRepoPUP, 'populate-urls.yml', { event_code: arg, target: 'prod' });
-      return '<b>Populate URLs (PROD)</b>\n<pre>' + arg + '</pre>\n<i>Discovering tournament URLs on PROD...</i>';
-
-    case 't-scrape':
-      var githubPatTS = props.getProperty('GITHUB_PAT');
-      var githubRepoTS = props.getProperty('GITHUB_REPO');
-      triggerGitHubWorkflow(githubPatTS, githubRepoTS, 'scrape-tournament.yml', { tournament_code: arg });
-      return '<b>Scrape Tournament</b>\n<pre>' + arg + '</pre>\n<i>Scraping results from URL and ingesting...</i>';
-
-    // --- Emergency ---
-    case 'pause':
-      props.setProperty('PAUSED', 'true');
-      return '<b>Paused</b>\nEmail polling stopped.\n<i>Send</i> <code>resume</code> <i>to re-enable.</i>';
-
-    case 'resume':
-      props.deleteProperty('PAUSED');
-      return '<b>Resumed</b>\nEmail polling is active.';
+    // --- Seed ---
+    case 'export-seed':
+      triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'export-seed.yml', { reason: 'manual' });
+      return '<b>Seed Export (PROD)</b>\n<i>Exporting the seed from PROD into the repository. Watch for completion notification.</i>';
 
     // --- Admin ---
     case 'help':
       return [
         '<b>SPWS Ranklist Bot</b>',
+        '<i>CERT = test database · PROD = public site</i>',
         '',
         '<b><u>Lifecycle</u></b>',
         '',
         '<pre>status &lt;event&gt;</pre>',
-        'Event status, tournament + result counts',
+        'Event status and counts on CERT; a prefix works · <code>status PPW1</code>',
         '',
         '<pre>complete &lt;exact code&gt;</pre>',
-        'Manual close: IN_PROGRESS → COMPLETED (e.g. PPW1-2026-2027); the daily close does this after the end date',
+        'IN_PROGRESS → COMPLETED on CERT only; PROD closes by the daily close after the end date',
         '',
         '<pre>rollback &lt;event&gt;</pre>',
-        'Delete all ingested data, reset to PLANNED',
+        'Delete the event results and tournaments on CERT, back to PLANNED (active season)',
         '',
         '<pre>promote &lt;exact code&gt;</pre>',
-        'Replay the verified CERT run on PROD (e.g. PPW1-2026-2027); a prefix is answered with the matching codes',
+        'Replay the verified CERT run on PROD; a prefix gets the matching codes · <code>promote PPW1-2026-2027</code>',
         '',
         '<b><u>Review</u></b>',
         '',
         '<pre>results &lt;event&gt;</pre>',
-        'Top 3 fencers per tournament',
+        'Top 3 of each tournament on CERT',
         '',
         '<pre>pending &lt;event&gt;</pre>',
-        'Fencers with unresolved identity match',
+        'Fencers whose identity is unresolved, on CERT',
         '',
         '<pre>missing &lt;event&gt;</pre>',
-        'Categories without results yet',
-        '',
-        '<b><u>Storage</u></b>',
-        '',
-        '<pre>staging</pre>',
-        'List files in staging bucket',
-        '',
-        '<pre>cleanup</pre>',
-        'Delete all files from staging',
-        '',
-        '<b><u>Season</u></b>',
+        'Categories with no results yet, on CERT',
         '',
         '<pre>season</pre>',
-        'All events with status overview',
+        'Every event of the active season with counts, plus totals, on CERT',
         '',
-        '<pre>ranking V2 M EPEE</pre>',
-        'Top 5 fencers in a category',
+        '<pre>ranking &lt;category&gt; &lt;gender&gt; &lt;weapon&gt;</pre>',
+        'Top 5 by PPW/MPW points only, on CERT (not the SPWS + EVF+ ranking) · <code>ranking V2 M EPEE</code>',
         '',
-        '<b><u>Pipeline</u></b>',
+        '<b><u>Ingestion</u></b>',
         '',
         '<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>',
-        'Re-ingest one event on CERT from its FTL URL → staging report (full + diff) to Telegram. Full code, e.g. PPW5-2025-2026; PROD gets it through promote',
+        'Re-ingest one event on CERT from its results URL as a recorded run; the report comes here. Full code, e.g. PPW1-2026-2027. PROD gets it through promote',
         '',
-        '<pre>ingest</pre>',
-        '(no args) Trigger ingestion from emailed staging files',
+        '<pre>t-scrape &lt;tournament_code&gt;</pre>',
+        'Scrape one international tournament into CERT; a domestic event goes through ingest',
         '',
-        '<pre>send &lt;EVENT-CODE&gt; participants</pre>',
-        'Generate the current FTL roster bundle and send it to the saved organizer email (PROD)',
+        '<pre>populate-urls &lt;event&gt;</pre>',
+        'Find the tournament result URLs of an event on CERT',
         '',
-        '<pre>export-seed</pre>',
-        'Regenerate seed files from CERT',
+        '<pre>populate-urls-prod &lt;event&gt;</pre>',
+        'Find the tournament result URLs of an event on PROD',
         '',
         '<b><u>EVF</u></b>',
         '',
         '<pre>evf-cal-import</pre>',
-        'Scrape EVF calendar for PEW/MEW events',
+        'Scrape the EVF calendar into CERT, then promote the calendar to PROD (also runs daily)',
         '',
         '<pre>evf-results-import &lt;event&gt;</pre>',
-        'Fetch + import results from EVF API',
+        'Import one event results from the EVF API into CERT',
         '',
         '<pre>evf-status</pre>',
-        'Show past intl events missing results (CERT)',
+        'Past PEW/MEW/MSW events with no results, on CERT',
         '',
-        '<b><u>PROD</u></b>',
+        '<b><u>PROD, read only</u></b>',
         '',
         '<pre>status-prod &lt;event&gt;</pre>',
-        'Event status on PROD',
+        'Event status and counts on PROD',
         '',
         '<pre>results-prod &lt;event&gt;</pre>',
-        'Results summary on PROD',
+        'Top 3 of each tournament on PROD',
         '',
         '<pre>evf-status-prod</pre>',
-        'Intl events missing results on PROD',
+        'Past PEW/MEW/MSW events with no results, on PROD',
         '',
-        '<b><u>URLs</u></b>',
+        '<b><u>Seed</u></b>',
         '',
-        '<pre>populate-urls &lt;event&gt;</pre>',
-        'Auto-discover tournament result URLs (CERT)',
+        '<pre>export-seed</pre>',
+        'Export the seed files from PROD into the repository',
         '',
-        '<pre>populate-urls-prod &lt;event&gt;</pre>',
-        'Auto-discover tournament result URLs (PROD)',
-        '',
-        '<pre>t-scrape &lt;tournament_code&gt;</pre>',
-        'Scrape results from tournament URL and ingest',
-        '',
-        '<b><u>Emergency</u></b>',
-        '',
-        '<pre>pause</pre>',
-        'Stop email polling',
-        '',
-        '<pre>resume</pre>',
-        'Re-enable email polling',
+        '<i>Database commands use the Supabase token in Script Properties; "Unauthorized" means it is stale.</i>',
       ].join('\n');
 
     default:
@@ -521,7 +379,7 @@ function handleCommand(props, command, arg) {
 // SUPABASE HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-function callRpc(url, key, fnName, params, overrideRef) {
+function callRpc(fnName, params, overrideRef) {
   // Build SQL call from function name and params
   var paramParts = [];
   for (var k in params) {
@@ -536,7 +394,7 @@ function callRpc(url, key, fnName, params, overrideRef) {
   }
   var sql = 'SELECT ' + fnName + '(' + paramParts.join(', ') + ')';
 
-  // Use Management API (bypasses PostgREST restrictions)
+  // Use Management API (bypasses PostgREST restrictions); CERT unless a ref is given.
   var props = PropertiesService.getScriptProperties();
   var accessToken = props.getProperty('SUPABASE_ACCESS_TOKEN');
   var projectRef = overrideRef || props.getProperty('SUPABASE_PROJECT_REF');
@@ -552,6 +410,10 @@ function callRpc(url, key, fnName, params, overrideRef) {
     muteHttpExceptions: true,
   });
 
+  if (response.getResponseCode() === 401) {
+    throw new Error('Unauthorized: SUPABASE_ACCESS_TOKEN in Script Properties is stale or missing. '
+      + 'Replace it (operator runbooks, "Change the Telegram bot").');
+  }
   if (response.getResponseCode() >= 400) {
     throw new Error(response.getContentText());
   }
@@ -563,79 +425,6 @@ function callRpc(url, key, fnName, params, overrideRef) {
     return rows[0][firstKey];
   }
   return null;
-}
-
-function uploadToSupabaseStorage(url, key, path, bytes, contentType) {
-  var endpoint = url + '/storage/v1/object/xml-inbox/' + path;
-  var response = UrlFetchApp.fetch(endpoint, {
-    method: 'post',
-    headers: {
-      'Authorization': 'Bearer ' + key,
-      'apikey': key,
-      'Content-Type': contentType || 'application/octet-stream',
-    },
-    payload: bytes,
-    muteHttpExceptions: true,
-  });
-  if (response.getResponseCode() >= 400) {
-    throw new Error('Storage upload failed: ' + response.getContentText());
-  }
-}
-
-function listStagingFiles(url, key) {
-  var endpoint = url + '/storage/v1/object/list/xml-inbox';
-  var response = UrlFetchApp.fetch(endpoint, {
-    method: 'post',
-    headers: {
-      'Authorization': 'Bearer ' + key,
-      'apikey': key,
-      'Content-Type': 'application/json',
-    },
-    payload: JSON.stringify({ prefix: 'staging', limit: 100 }),
-    muteHttpExceptions: true,
-  });
-
-  var files = JSON.parse(response.getContentText());
-  if (!files || files.length === 0) return '<b>Staging</b>\n<i>Empty — no files</i>';
-
-  var lines = ['<b>Staging</b>  (' + files.length + ' files)'];
-  for (var i = 0; i < files.length; i++) {
-    lines.push('  <code>' + files[i].name + '</code>');
-  }
-  return lines.join('\n');
-}
-
-function cleanupStaging(url, key) {
-  var endpoint = url + '/storage/v1/object/list/xml-inbox';
-  var response = UrlFetchApp.fetch(endpoint, {
-    method: 'post',
-    headers: {
-      'Authorization': 'Bearer ' + key,
-      'apikey': key,
-      'Content-Type': 'application/json',
-    },
-    payload: JSON.stringify({ prefix: 'staging', limit: 100 }),
-    muteHttpExceptions: true,
-  });
-
-  var files = JSON.parse(response.getContentText());
-  if (!files || files.length === 0) return '<b>Cleanup</b>\n<i>Staging already empty</i>';
-
-  var paths = files.map(function(f) { return 'staging/' + f.name; });
-
-  var delEndpoint = url + '/storage/v1/object/xml-inbox';
-  UrlFetchApp.fetch(delEndpoint, {
-    method: 'delete',
-    headers: {
-      'Authorization': 'Bearer ' + key,
-      'apikey': key,
-      'Content-Type': 'application/json',
-    },
-    payload: JSON.stringify({ prefixes: paths }),
-    muteHttpExceptions: true,
-  });
-
-  return '<b>Cleanup Complete</b>\n' + files.length + ' file(s) deleted from staging.';
 }
 
 
@@ -677,24 +466,17 @@ function sendTelegramMessage(props, message) {
   });
 }
 
-function formatJson(data) {
-  if (typeof data === 'string') return data;
-  return JSON.stringify(data, null, 2);
-}
-
 
 // ═══════════════════════════════════════════════════════════════
 // SETUP
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Run once to set up the 5-minute polling trigger for both functions.
+ * Run once after pasting: removes every existing trigger (including the retired
+ * e-mail check's) and sets up the 5-minute Telegram polling trigger.
  */
 function createTimeTrigger() {
-  ScriptApp.newTrigger('checkEmailForResults')
-    .timeBased()
-    .everyMinutes(5)
-    .create();
+  ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('checkTelegramCommands')
     .timeBased()
     .everyMinutes(5)
