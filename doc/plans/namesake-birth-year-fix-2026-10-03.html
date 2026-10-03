@@ -1,0 +1,235 @@
+<meta charset="utf-8">
+<title>Namesakes by birth year</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+  <p class="eyebrow">Ingestion · identity · fix plan · 3 Oct 2026</p>
+  <h1>Namesakes are told apart by birth year, on every path</h1>
+  <p class="dek">The name matcher already chooses the namesake whose birth year fits the bracket. <b>The exact-name step that runs before it doesn't</b>: it takes the first namesake it reads, links the result to that fencer and overwrites his birth year. This plan applies the matcher's birth-year rule to that step, and refuses a listing when the birth year can't decide.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Decided: go, D1 A</span><span class="pill"><span class="dot"></span>Built and checked on LOCAL</span>
+    <span class="pill danger"><span class="dot"></span>Blocks PPW1 2026/27</span>
+    <span class="pill">test first</span>
+  </div>
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The defect, with evidence</p>
+    <h2>Where the birth year is skipped</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> <code>_find_exact_fencer</code> returns the first namesake it reads</p>
+      <p><code>python/pipeline/stages.py:191</code> walks the roster and returns at the first exact name or alias match. It never looks at the birth year and never notices a second namesake. Two paths call it:</p>
+      <ul>
+        <li><b>ResolveFencers, phase A</b> (<code>plugins/resolve_fencers.py:114</code>). This is <code>ingest-event.yml</code>, the path PPW1 takes. A hit is linked as AUTO_MATCHED with confidence 100 and its birth year is reconciled, so the row never reaches the matcher.</li>
+        <li><b>Stage 0</b> (<code>stages.py:558, 570</code>, the Phase 5 runner path). A hit has its birth year reconciled before the matcher runs.</li>
+      </ul>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The matcher already has the rule</p>
+      <p><code>find_best_match</code> (<code>python/matcher/fuzzy_match.py:306</code>) takes the namesakes tied at the best score and keeps those whose birth year fits the bracket's category. If exactly one fits, it links him; if none or several fit, the row is PENDING. Its docstring uses KRAWCZYK Paweł, 1954 and 1989, as the example.</p>
+    </div>
+    <p><b>What happened on 1 Oct</b> (trial on LOCAL, <code>doc/staging/PPW1-2026-2027.20261001-044227Z.md</code>): the V4 épée result went to KRAWCZYK Paweł born 1989, whose year was changed to 1957. The V4 sabre win went to MŁYNEK Janusz born 1984, whose year was also changed to 1957. Both changed rows were confirmed birth years. PROD and CERT hold both pairs: KRAWCZYK 1954 (registered for PPW1) and 1989, MŁYNEK 1951 (19 results) and 1984.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this</p>
+    <h2>D1 · One roster fencer, a birth year far from the bracket</h2>
+    <p>The same step also handles a name with only one fencer on the roster. Today, if his confirmed year doesn't fit, it is moved into the bracket's category (ADR-056). One category up is the intended correction: PĘCZEK Sandra, 1991, fenced V1 and is 1987 on PROD, as she declared. A move of two or more categories means it is not the same person. Example: a V4 KRAWCZYK Paweł when only the 1989 one exists would make the 1989 man 1957.</p>
+    <div class="note good"><p class="lede"><span class="tick">✓</span> Decided 3 Oct: A</p><p>"A move of two or more categories is FORBIDDEN, it means a data error." This applies in both directions and to an estimated year as well as a confirmed one.</p></div>
+    <p><b>A (recommended):</b> a move of two or more categories is not made. The row is PENDING and the listing is refused, as for undecidable namesakes. A one-category move stays as it is. <b>B:</b> change namesakes only.<br>Under A, PPW1 gives the same results as under B: in the trial every single-fencer move was one category (PĘCZEK, WALCZEWSKI, CHUDY, STANISŁAWSKI, KIEROŃSKI).</p>
+  </section>
+
+  <section>
+    <p class="kicker">The change</p>
+    <h2>Four pieces</h2>
+    <ol class="steps">
+      <li><b>One lookup for every path</b> (<code>stages.py</code>). <code>_find_exact_fencer</code> collects <em>every</em> exact name or alias match, with the nationality rule unchanged. It takes the row's category and the season's end year. With none, the result is a new person. With one, it is that fencer. With two or more, it keeps those whose birth year fits the category, using <code>birth_year_matches_category</code>, the check the matcher already uses. If exactly one fits, it is that fencer. Otherwise the result is <b>undecided</b>, carrying the list of namesakes. It never picks the first one read.</li>
+      <li><b>ResolveFencers phase A</b> (<code>resolve_fencers.py</code>). It passes the row's category. An undecided row becomes PENDING, with the namesakes and their birth years as alternatives. No birth year is written, no fencer is created, and a conflict <code>namesakes_undecided</code> goes into the report.</li>
+      <li><b>Stage 0</b> (<code>stages.py</code>, <code>s0_reconcile_roster</code>). It uses the same lookup. An undecided row is neither created nor reconciled, and the conflict is recorded. The matcher then marks it PENDING, as it already does for namesake ties.</li>
+      <li><b>Commit refuses a domestic listing that holds a PENDING row</b> (<code>plugins/ingest.py</code>, next to the existing international refusal). The error names the fencer and the namesakes, and nothing of that listing is written. Today such a row is quietly left out. To resolve it, correct the roster birth year, or add an identity entry with a birth year to <code>doc/overrides/&lt;event&gt;.yaml</code> (<code>overrides.py</code> already tells namesakes apart by year). Then run the ingest again; <code>--replace</code> makes that safe.</li>
+    </ol>
+    <p>The staging report lists each namesake decision, for example "KRAWCZYK Paweł → born 1954 (fits V4); 1989 does not".</p>
+  </section>
+
+  <section>
+    <p class="kicker">Tests first</p>
+    <h2>Each observed failing before the fix</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Case</th><th>Expected</th></tr></thead>
+      <tbody>
+        <tr><td><code>NAMESAKE.01</code></td><td>KRAWCZYK 1989 read first, 1954 second; V4, season ending 2027</td><td>the 1954 fencer</td></tr>
+        <tr><td><code>NAMESAKE.02</code></td><td>MŁYNEK 1984 read first, 1951 second; V4</td><td>the 1951 fencer</td></tr>
+        <tr><td><code>NAMESAKE.03</code></td><td>two namesakes, both fit V2 / neither fits / category unknown</td><td>undecided, never the first</td></tr>
+        <tr><td><code>NAMESAKE.04</code></td><td>one roster fencer (unchanged path)</td><td>that fencer</td></tr>
+        <tr><td><code>NAMESAKE.05</code></td><td>ResolveFencers, PPW V4 listing, roster 1989 first</td><td>linked to 1954; no birth-year write on 1989; nothing created</td></tr>
+        <tr><td><code>NAMESAKE.06</code></td><td>ResolveFencers, undecided</td><td>PENDING; no create; no birth-year write</td></tr>
+        <tr><td><code>NAMESAKE.07</code></td><td>Commit, domestic listing with a PENDING row</td><td>refused, names given, nothing written</td></tr>
+        <tr><td><code>NAMESAKE.08</code></td><td>Stage 0, undecided / decided</td><td>no insert, no write / only the right fencer touched</td></tr>
+        <tr><td><code>NAMESAKE.09</code></td><td>D1 A: one fencer, confirmed, two categories away</td><td>PENDING; birth year unchanged (one category still moves)</td></tr>
+      </tbody>
+    </table></div>
+    <p>The existing suites stay green: <code>test_s0_reconcile_roster.py</code>, <code>test_resolve_fencers.py</code> and <code>test_matcher.py</code>.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Then</p>
+    <h2>Verification and release</h2>
+    <ol class="steps">
+      <li><b>Trial on LOCAL</b> (a copy of PROD, registrations included, since this morning). I run the PPW1 ingest with the FTL URL and check:
+        <ul>
+          <li>the results go to KRAWCZYK 1954 and MŁYNEK 1951;</li>
+          <li>the 1989 and 1984 rows are untouched;</li>
+          <li>no new KRAWCZYK or MŁYNEK is created.</li>
+        </ul>
+        I also go through the rest of the report and show it to you.</li>
+      <li><b>Documentation.</b>
+        <ul>
+          <li>The ingestion handbook page gets the present-tense rule (phase A, Stage 0, Commit).</li>
+          <li>ADR-056 gets an amendment for namesakes and D1.</li>
+          <li>The RTM gets rows <code>NAMESAKE.01–09</code>.</li>
+          <li>Then the docs index and the graph are refreshed.</li>
+        </ul></li>
+      <li><b>Release.</b>
+        <ul>
+          <li>Commit, integrate, then <code>scripts/preflight.sh</code> must exit 0.</li>
+          <li>Push to main. I announce CI and Release, about 25 minutes. You approve the PROD deploy.</li>
+        </ul></li>
+      <li><b>PPW1</b> follows the walkthrough. Its D1 (LOCAL trial, then PROD directly, then CERT), D3 (scoring settings final) and D4 (URL) are still open there.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Status</p>
+    <h2>Built and checked on LOCAL (3 Oct)</h2>
+    <ul>
+      <li><b>Tests:</b> <code>NAMESAKE.01–10</code> failed first; the failure showed today's rule linking the 1989 KRAWCZYK and writing 1957 on him. They now pass, and so does the whole Python suite (1573). Seven older Stage-0 tests used two- or three-category jumps. They now use one-category moves, and the jumps they used are covered by <code>NAMESAKE.09</code>.</li>
+      <li><b>PPW1 trial on LOCAL</b> (a copy of PROD, with the FTL address from 1 Oct): 14 listings, 25 tournaments, 102 results.
+        <ul>
+          <li>V4 épée, 2nd: KRAWCZYK Paweł born <b>1954</b>.</li>
+          <li>V4 sabre, 1st: MŁYNEK Janusz born <b>1951</b>.</li>
+          <li>The 1989 and 1984 rows are untouched, and no extra namesake was created.</li>
+          <li>2 birth years were moved by one category (STANISŁAWSKI Albert, KIEROŃSKI Tomasz), against 7 in the 1 Oct trial.</li>
+        </ul></li>
+      <li><b>Documentation:</b> ADR-056 amendment and its Appendix C entry, RTM row <code>NAMESAKE.01–10</code>, and the ingestion, identity-and-recompute and operator-runbooks pages.</li>
+      <li><b>Not done:</b> LOCAL holds no PPW1 registrations, so the trial couldn't show the birth years people declared. Also, the <code>ingest-event.yml</code> path does not yet use declared years at all, neither for a new fencer nor for a move. On PROD, the 13 new entrants will get the middle of their band, marked estimated.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Evidence: stages.py:191 (_find_exact_fencer), resolve_fencers.py:105–140 (phase A), fuzzy_match.py:306–400 (find_best_match), plugins/ingest.py:424–436 (PENDING refusal, international only), read-only queries on CERT and PROD, 3 Oct 2026.</p>
+</div>
