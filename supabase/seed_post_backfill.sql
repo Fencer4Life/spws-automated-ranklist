@@ -158,10 +158,13 @@ BEGIN
 END;
 $fix_tourn_380$;
 
--- Phase 4 (ADR-046): re-run splitter after seed loads so LOCAL DB matches the
--- post-migration shape that PROD/CERT see when the migration applies against
--- their existing data. Idempotent — safe to re-run.
-SELECT * FROM fn_split_pew_by_weapon();
+-- Phase 4 (ADR-046): the splitter is NOT re-run here (removed 2026-10-03). It
+-- once made an old dump match the shape the June 2026 split migration gave
+-- PROD and CERT; the dump now IS that shape. Re-run on a current PROD dump it
+-- derives each event's weapon letters from its tournaments, and since the
+-- organiser re-ingests keep only brackets with results (ADR-105) that renamed
+-- Faches 2026 (PEW31fs) and Chania 2026 (PEW8es) to one weapon on LOCAL and in
+-- CI while PROD keeps both (pgTAP 55.12, 55.13, 55.18). LOCAL must mirror PROD.
 SELECT fn_backfill_id_prior_event();
 
 -- Phase 4 child-code reconciliation: when fn_split_pew_by_weapon Step 2 finds
