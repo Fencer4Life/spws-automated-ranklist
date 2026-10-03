@@ -1,6 +1,6 @@
 # ADR-047: V-cat invariant trigger + combined-pool splitter consolidation
 
-**Status:** Accepted (LOCAL: Layers 1–6 implemented + 8 row-level deletes applied; CERT/PROD: NOTICE-only trigger + view migrations pending; FATAL flip pending full re-scrape)
+**Status:** Accepted (LOCAL: Layers 1–6 implemented + 8 row-level deletes applied; CERT/PROD: NOTICE-only trigger + view migrations pending; FATAL flip pending full re-scrape). Amended 2026-10-03: the check accepts the calendar year a labelled result was fenced in (see Amendment).
 **Date:** 2026-04-30
 **Relates to:** ADR-024 (Combined Category Splitting), ADR-022 (Ingestion Transaction Strategy)
 
@@ -55,8 +55,18 @@ Migration `20260430000001_vw_vcat_violation.sql` adds the view `vw_vcat_violatio
 ## Tests
 
 - pgTAP `23_assert_result_vcat_trigger.sql` — 7 tests (helper branches + FATAL trigger smoke).
-- pgTAP `24_vw_vcat_violation.sql` — 4 tests (view shape + violator surfacing).
+- pgTAP `24_vw_vcat_violation.sql` — 8 tests (view shape + violator surfacing; 24.5–24.8 the calendar-year acceptance of the 2026-10-03 amendment).
 - pytest `test_age_split.py` — 13 tests (V-cat boundaries + FTL-shape splitter).
 - pytest `test_audit_vcat_violations.py` — 7 tests (CLI summary shapes).
 - pytest `test_scrape_tournament.py` — 4 new tests (idempotency + Telegram).
 - vitest `TournamentManager.test.ts` test 9.312 — sibling-shared URL contract.
+
+## Amendment (2026-10-03) — the check accepts the calendar year a labelled result was fenced in
+
+**Decided by the user on 2026-10-03** (V2 A on `doc/plans/category-check-seven-results-2026-10-03.html`).
+
+**Context.** Since the [ADR-056](056-vcat-from-birthyear.md) revision (migration `20260503000009`), `trg_assert_result_vcat` trusts a result that carries its source's category label (`enum_source_age_category`) and skips the comparison. `vw_vcat_violation` was written four days earlier and kept comparing every result with the birth-year category for the season's end year, so it listed labelled results the guard had deliberately accepted. On 2026-10-03 it listed seven, identical on CERT and PROD. Three of them were World Championships results: KORONA Przemysław (épée, foil) and KROCHMALSKI Jakub (sabre), both born 1976, fenced V1 on 12–16 November 2025, which is 49 in the event's calendar year. SPWS counts them V2 for 2025/26, which is 50 in the season's end year. Both facts are right, and [ADR-106](106-international-intake-by-identity-nationality-per-season.md) §1 already accepts this one-year shift when it identifies international rows. The other four were LEAHEY John's 2024/25 results, caused by a wrong roster birth year (1976, where EVF and his own registration say 1969). That year was corrected on PROD the same day.
+
+**Decision.** A result passes the check when it carries its source's label, the label is its tournament's category, and that category is the birth-year category for the calendar year the tournament was fenced in. The year is the tournament's date, or its event's start when the tournament is undated. Every other result is checked by the season's end year, as before. A labelled result that fits neither year is still listed. The guard on insert is unchanged, and so are the view's columns, order and grants. Migration `20261003000012_vcat_violation_calendar_year.sql`.
+
+**Consequences.** After LEAHEY's correction and this change, PROD and CERT list one result: LEAHEY's V1 result at the 2023/24 European Championships. It is a seed-imported row with no source address and a placeholder date, and it is to be checked against that championship's results. Rankings are unaffected: they file every result under the fencer's birth-year category and never read this view. pgTAP 24.5–24.8.
