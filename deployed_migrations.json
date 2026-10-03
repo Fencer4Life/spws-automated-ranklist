@@ -215,8 +215,8 @@
     "schema_fingerprint": "4cbdac676ef5018d3e76f253886413bf"
   },
   "prod": {
-    "last_updated": "2026-10-03T15:10:28Z",
-    "last_sha": "818ab909c68706a9dab20323caa7ef9b8fb6b298",
+    "last_updated": "2026-10-03T16:08:14Z",
+    "last_sha": "deba4191a4291c02a9881c74a7c9c70b11200efa",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -424,8 +424,9 @@
       "20261003000013_seed_load_fencers.sql",
       "20261003000014_ingest_run.sql",
       "20261003000015_registration_roster_name.sql",
-      "20261003000016_promote_gate.sql"
+      "20261003000016_promote_gate.sql",
+      "20261003000017_promote_apply.sql"
     ],
-    "schema_fingerprint": "fd16241146d47eb33596b3df255427e8"
+    "schema_fingerprint": "4cbdac676ef5018d3e76f253886413bf"
   }
 }
