@@ -360,7 +360,7 @@ See ADR-080's 2026-09-12 amendment (h) for the first use.
 
 ## Amendment (2026-10-03) — the WordPress pages carry the site's navigation, and PROD admin moves to `/ranking/?admin=1`
 
-**Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implementation pending: steps 1–13 of the development plan.
+**Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03). Implemented on LOCAL 2026-10-04 (plan steps 1–10); the release and the WordPress pages follow (steps 11–13).
 **Development plan:** [`doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html`](../plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html) — steps §04, tests §05 (WP.BAR.\*, WP.NAV.\*, WP.ADM.\*, WP.DOC.\*, WP.CALC.01, WP.PAGE.\*, WP.COMP.01), definition of done §08, and Part II, the PROD manual.
 **Relates to:** [ADR-109](109-environments-split-by-host.md) (the environments split by host, decided the same day)
 
@@ -423,5 +423,11 @@ The menu item (the live weteraniszermierki.pl menu, with "Ranking" added in the 
 - **The dispatch function's origin.** If `ALLOWED_ORIGIN` is ever set on the PROD Edge Function, it must include `https://weteraniszermierki.pl`.
 - **Rotating the PROD anon key means republishing every page** from its reference copy, because the key sits in each page body.
 - **Registration links are built from the asset base,** not from the page address. From the page address they would point at `/ranking/register.html`, which does not exist.
-- **The FTP upload route and its copy are retired:** `doc/tools/WP-instrukcja-wgrania.txt` (deleted 2026-10-03) and `doc/tools/WP-kalkulator-punktow-za-wynik-spws.html` (plan step 8). Open item 3's dependency on a DirectAdmin/FTP login falls away with them.
+- **The FTP upload route and its copy are retired:** `doc/tools/WP-instrukcja-wgrania.txt` (deleted 2026-10-03) and `doc/tools/WP-kalkulator-punktow-za-wynik-spws.html` (deleted 2026-10-04, plan step 8). Open item 3's dependency on a DirectAdmin/FTP login falls away with them.
 - **Deployment order stays load-bearing.** The bundle ships before any page body changes.
+
+### As built (2026-10-04)
+
+- **A framed document's link to the annex leaves the frame.** Followed inside the frame, it would open the annex under a bar that names the calculator. The `embed/` copy asks `<spws-document>` to open the page's own `href-table` in the same tab, and the element accepts the request only from the asset base's origin (WP.DOC.04).
+- **The calculator follows the chosen mock.** The calculator comes first. The premium table, the simulator and „W skrócie" are folded below it, closed. The full rules are a pill to the annex (WP.CALC.02).
+- **The publishing script posts a reference copy without its opening note and final newline**, which the live page does not carry, so republishing an unchanged copy changes nothing on the page (WP.PAGE.02).

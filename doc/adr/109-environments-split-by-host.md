@@ -1,6 +1,6 @@
 # ADR-109: The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD
 
-**Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03, with Q8 decided A the same day). Implementation pending: steps 1–13 of the development plan.
+**Status:** Accepted (proposed 2026-10-03; signed off by the user 2026-10-03, with Q8 decided A the same day). Implemented on LOCAL 2026-10-04 (plan steps 1–10); the release and the WordPress pages follow (steps 11–13).
 **Date:** 2026-10-03
 **Supersedes in part:** [ADR-009](009-cert-prod-runtime-toggle.md) — the runtime CERT/PROD toggle. Its single GitHub Pages site and its build-time credential injection stand.
 **Relates to:** [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (weteraniszermierki.pl is the PROD surface; amended the same day), [ADR-011](011-artifact-release-pipeline.md) (the release order below), [ADR-079](079-event-self-registration-identity.md) (`register.html` stays PROD), [ADR-041](041-edge-function-dispatch.md) (dispatch targets), [ADR-085](085-points-calculator-temporary-static-page.md), [ADR-092](092-scoring-table-annex-bilingual-static-page.md) and [ADR-102](102-published-pages-share-one-scoring-module.md) (the published documents)
