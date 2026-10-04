@@ -177,6 +177,7 @@
         <tr><td>PROMO.REFRESH.26</td><td>One <code>fn_replace_event_registrations</code> per PROD event. It carries the club and FTL name, never the consent stamp, and writes nothing to PROD. <code>event_code</code> narrows the copy to one event.</td></tr>
         <tr><td>PROMO.REFRESH.27</td><td>A registrations part that still differs afterwards fails and names the event.</td></tr>
         <tr><td>PROMO.REFRESH.28</td><td>The mirror script calls the copy and contains no <code>INSERT INTO tbl_registration</code> and no consent stamp.</td></tr>
+        <tr><td>REGNAME.01&ndash;09</td><td>Unchanged assertions. Lookups by name are scoped to the fixture event, so the file also passes on a mirrored LOCAL.</td></tr>
       </tbody>
     </table></div>
     <p>All five failed before the code existed. Now all 28 tests in <code>test_promotion_refresh.py</code> pass, and ruff is clean.</p>
@@ -194,6 +195,8 @@
           <li>373 fencers, 2 same-name pairs, 108 registrations.</li>
         </ul></li>
       <li><b>Every part of the input fingerprint</b>, LOCAL against PROD, after that mirror: PPW1 and PEW5efs equal as a whole, no part differing. This is the comparison promote&rsquo;s gate makes.</li>
+      <li><b>The whole pgTAP suite on that mirror</b>: 106 files, 1,395 assertions pass, with PROD&rsquo;s registrations loaded. First, preflight found one test that assumed LOCAL has no other registrations. <code>101_registration_roster_name.sql</code> looked up &ldquo;Paweł&rdquo; by first name, and PROD has more than one Paweł. Its three lookups by name are now scoped to its own fixture event, with the assertions unchanged. The old mirror loaded registrations too, so it had the same failure.</li>
+      <li><b>The mirror script&rsquo;s closing note</b> said six calendar/event test files fail on PROD data. None does now, so it says the whole suite passes.</li>
       <li><b>Side effects:</b> none. Today&rsquo;s re-export of the seed was byte-identical to the committed <code>seed_prod_2026-10-04.sql</code>, and the seed pointer was restored.</li>
     </ul>
   </section>
