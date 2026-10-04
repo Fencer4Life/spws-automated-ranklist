@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="69e140508e32f38ef8931ebdbadf571d489727a1ee117d56dbe61627b14cf4c2">
+<meta name="doc-source-sha256" content="ac860cea03b377389240a288f2884be7e76d2785f660365c72353160608d609f">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>404 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>406 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -2163,11 +2163,25 @@
 <td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
+<td>WP.DOC.04</td>
+<td>A framed document's link to the rules asks the element to open the annex page; the element opens the page body's <code>href-table</code> in the same tab, only for a request from the asset base's origin and only for one of the site's pages. Found in step 6: inside the frame the link opened the annex in the frame.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/DocumentElement.test.ts</code>, <code>frontend/tests/assets.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
 <td>WP.CALC.01</td>
 <td>Every number box on both documents is right-aligned and vertically centred with tabular digits; the calculator's title is „Kalkulator punktów”.</td>
 <td>Playwright</td>
 <td><code>frontend/e2e/site-chrome.spec.ts</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.CALC.02</td>
+<td>The calculator as in the signed-off mock (<code>doc/adr/assets/adr-090-calculator.png</code>; plan §03, rev 2's revamp): the calculator first, with no subtitle; the premium table, the step-by-step simulator and „W skrócie” folded below and closed at load; the full rules a pill to the annex; „Stawka” as two segments (Jedna kategoria / Łączona) and the rank chips as one segmented control, in the ranklist's blue; the result soft blue with a blue edge. The annex keeps its content and order and takes the same controls and colours. Markup and CSS only.</td>
+<td>Playwright</td>
+<td><code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.PAGE.01</td>
@@ -2203,5 +2217,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>69e140508e32f38ef8931ebdbadf571d489727a1ee117d56dbe61627b14cf4c2</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ac860cea03b377389240a288f2884be7e76d2785f660365c72353160608d609f</code></footer>
 </div></body></html>

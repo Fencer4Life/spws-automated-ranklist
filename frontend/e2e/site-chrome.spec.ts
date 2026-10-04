@@ -173,3 +173,63 @@ test.describe('WP.CALC.01 — the number boxes and the calculator title', () => 
     await expect(page.locator('h1 .copy-en')).toHaveText('Points calculator')
   })
 })
+
+// WP.CALC.02 — the calculator as in the signed-off mock (ADR-090 amendment
+// 2026-10-03 §7, doc/adr/assets/adr-090-calculator.png; plan §03 "the rest of
+// rev 2's revamp stands"). Markup and CSS only: the maths and its script stay.
+// The calculator comes first; the other tools fold below, closed; the rules are
+// a pill to the annex; "Stawka" reads as two segments; the result is soft blue.
+// The annex keeps its content and order and takes the same controls and colours.
+const rgb = (css: string) => (css.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number)
+
+test.describe('WP.CALC.02 — the calculator first, the rest folded, the result soft blue', () => {
+  for (const path of ['/kalkulator-punktow.html', '/embed/kalkulator-punktow.html']) {
+    test(`${path}: the calculator first, the other tools folded and closed, the rules a pill`, async ({ page }) => {
+      await page.goto(path)
+      const layout = await page.evaluate(() => {
+        const at = (id: string) => document.getElementById(id)
+        const before = (a: Element | null, b: Element | null) =>
+          !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+        const folded = (id: string) => {
+          const d = at(id)?.closest('details')
+          return d ? (d.open ? 'open' : 'closed') : 'not folded'
+        }
+        return {
+          calcFirst: ['shortTitle', 'premiumTitle', 'simTitle'].every((id) => before(at('calcTitle'), at(id))),
+          shortTitle: folded('shortTitle'),
+          premiumTitle: folded('premiumTitle'),
+          simTitle: folded('simTitle'),
+          calcFolded: folded('calcTitle'),
+          lead: document.querySelectorAll('.document-head .lead').length,
+          rulesSection: !!at('rulesTitle'),
+          pill: document.querySelectorAll('a.rules-pill.annex-link').length,
+        }
+      })
+      expect(layout.calcFirst, 'the calculator comes before every other tool').toBe(true)
+      expect(layout.calcFolded).toBe('not folded')
+      expect([layout.shortTitle, layout.premiumTitle, layout.simTitle]).toEqual(['closed', 'closed', 'closed'])
+      expect(layout.lead, 'no subtitle').toBe(0)
+      expect(layout.rulesSection, 'the full rules leave the page').toBe(false)
+      expect(layout.pill, 'one pill leads to the annex').toBe(1)
+    })
+  }
+
+  for (const path of DOCUMENTS) {
+    test(`${path}: "Stawka" as two segments, the result soft blue with a blue edge`, async ({ page }) => {
+      await page.goto(path)
+      const joined = page.locator('#joinedLabel')
+      await expect(joined.locator('.seg-single .copy-pl')).toHaveText('Jedna kategoria')
+      await expect(joined.locator('.seg-joined .copy-pl')).toHaveText('Łączona')
+      const colours = await page.locator('.result').first().evaluate((el) => {
+        const cs = getComputedStyle(el)
+        return { bg: cs.backgroundColor, edge: cs.borderLeftColor }
+      })
+      const [br, bgG, bb] = rgb(colours.bg)
+      const [er, , eb] = rgb(colours.edge)
+      expect(bb, `${path}: a blue background, not pink (${colours.bg})`).toBeGreaterThan(br)
+      expect(bb, `${path}: a soft one (${colours.bg})`).toBeGreaterThan(220)
+      expect(bgG).toBeGreaterThan(200)
+      expect(eb, `${path}: a blue edge, not red (${colours.edge})`).toBeGreaterThan(er)
+    })
+  }
+})

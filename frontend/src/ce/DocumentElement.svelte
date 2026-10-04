@@ -47,6 +47,7 @@
   import Sidebar from '../components/Sidebar.svelte'
   import { t, getLocale } from '../lib/locale.svelte'
   import { setAssetBase, assetUrl } from '../lib/assetBase'
+  import { goTo } from '../lib/navigate'
   import type { SiteLinks, SitePage } from '../lib/types'
 
   let {
@@ -108,14 +109,34 @@
   let frame: HTMLIFrameElement | undefined = $state()
   let frameHeight = $state(0)
 
+  // The two things a framed document may say, and only from the file host:
+  // its height, and "open this page of the site" — a link followed inside the
+  // frame would open its target there, under a bar that names this document
+  // (WP.DOC.04). The page is one of the four, and its address is the one this
+  // page body gives, never one the document supplies.
   function onReport(e: MessageEvent) {
     if (!assetOrigin || e.origin !== assetOrigin) return
     if (frame && e.source && e.source !== frame.contentWindow) return
-    const data = e.data as { type?: unknown; height?: unknown } | null
-    if (!data || data.type !== 'spws-doc-height') return
-    const h = data.height
-    if (typeof h !== 'number' || !Number.isFinite(h) || h <= 0) return
-    frameHeight = Math.ceil(h)
+    const data = e.data as { type?: unknown; height?: unknown; page?: unknown } | null
+    if (!data) return
+    if (data.type === 'spws-doc-height') {
+      const h = data.height
+      if (typeof h !== 'number' || !Number.isFinite(h) || h <= 0) return
+      frameHeight = Math.ceil(h)
+    } else if (data.type === 'spws-doc-nav') {
+      const target = typeof data.page === 'string' && Object.hasOwn(SITE_PAGES, data.page)
+        ? links[SITE_PAGES[data.page]]
+        : ''
+      if (target) goTo(target)
+    }
+  }
+
+  const SITE_PAGES: Record<string, keyof SiteLinks> = {
+    home: 'home',
+    ranking: 'ranking',
+    calendar: 'calendar',
+    calculator: 'calculator',
+    table: 'table',
   }
 </script>
 

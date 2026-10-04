@@ -87,12 +87,17 @@ const ARTEFACTS = [
 const OMIT_BLOCK =
   /[ \t]*(?:<!-- SPWS-EMBED:OMIT:BEGIN -->[\s\S]*?<!-- SPWS-EMBED:OMIT:END -->|\/\* SPWS-EMBED:OMIT:BEGIN \*\/[\s\S]*?\/\* SPWS-EMBED:OMIT:END \*\/)\n?/g
 
-// The frame cannot see into the page, so the page says how tall it is, and
-// again whenever that changes (fonts, the season's parameters arriving, a
-// folded tool opening). The element believes only the asset base's origin;
-// the height is not sensitive, so any parent may hear it.
-const HEIGHT_REPORT = `  <!-- SPWS-EMBED: the height report for the framing <spws-document>
-       (ADR-090 amendment 2026-10-03, FR-150). Added by the generator. -->
+// What the framed page tells the framing element. The frame cannot see into
+// the page, so the page says how tall it is, and again whenever that changes
+// (fonts, the season's parameters arriving, a folded tool opening). And a link
+// to the rules, followed inside the frame, would open the annex there, under a
+// bar that names the calculator — so the page asks the element to open the
+// site's annex page instead (WP.DOC.04). The element believes only the asset
+// base's origin and opens only addresses its own page gives; nothing here is
+// sensitive, so any parent may hear it.
+const FRAME_BRIDGE = `  <!-- SPWS-EMBED: the bridge to the framing <spws-document>: the height
+       report and the request to open the annex (ADR-090 amendment 2026-10-03,
+       FR-150). Added by the generator. -->
   <script>
     (function () {
       if (window.parent === window) return;
@@ -111,6 +116,12 @@ const HEIGHT_REPORT = `  <!-- SPWS-EMBED: the height report for the framing <spw
       }
       window.addEventListener('load', report);
       report();
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a.annex-link') : null;
+        if (!a) return;
+        e.preventDefault();
+        window.parent.postMessage({ type: 'spws-doc-nav', page: 'table' }, '*');
+      });
     })();
   </script>
 `
@@ -134,7 +145,7 @@ function toEmbed(html, source, embedPath) {
     '     DO NOT EDIT. The copy <spws-document> frames on WordPress: no ribbon, no\n' +
     '     language bar, no banner, and a height report. -->\n'
   out = out.replace('<body>\n', `<body>\n${banner}`)
-  return out.replace('</body>', `${HEIGHT_REPORT}</body>`)
+  return out.replace('</body>', `${FRAME_BRIDGE}</body>`)
 }
 
 /** Bundle scoring.ts to a plain browser script exposing globalThis.SPWSScoring. */
