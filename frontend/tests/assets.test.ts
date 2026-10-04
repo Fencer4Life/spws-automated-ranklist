@@ -257,3 +257,15 @@ describe('WP.DOC.03 — the embed/ copies framed on WordPress', () => {
     expect(generatorSource).toContain("'frontend/public/embed/tabela-punktacji.html'")
   })
 })
+
+// WP.DOC.04, the document half: inside the frame the calculator's links to the
+// rules ask the framing element to open the annex page, rather than loading the
+// annex inside the calculator's frame.
+describe('WP.DOC.04 — the framed calculator asks the element to open the annex', () => {
+  it('the embed copy turns its annex links into a request to the parent', () => {
+    const html = EMBED['../public/embed/kalkulator-punktow.html'] ?? ''
+    expect(html).toContain("type: 'spws-doc-nav'")
+    expect(html).toContain("page: 'table'")
+    expect(html).toContain('a.annex-link')
+  })
+})

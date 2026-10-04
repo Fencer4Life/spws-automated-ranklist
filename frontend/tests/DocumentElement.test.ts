@@ -13,8 +13,11 @@ import { render, fireEvent } from '@testing-library/svelte'
 import { tick } from 'svelte'
 
 vi.mock('../src/lib/admin-auth.svelte', () => import('./helpers/fakeAdminAuth.svelte'))
+// jsdom does not navigate; the element leaves the page through this one function.
+vi.mock('../src/lib/navigate', () => ({ goTo: vi.fn() }))
 
 import DocumentElement from '../src/ce/DocumentElement.svelte'
+import { goTo } from '../src/lib/navigate'
 import { setLocale } from '../src/lib/locale.svelte'
 import { setAssetBase } from '../src/lib/assetBase'
 
@@ -134,5 +137,32 @@ describe('WP.DOC.02 — the frame takes the reported height, from the file host 
     report(frame, ASSET_ORIGIN, { type: 'other', height: 300 })
     await tick()
     expect(frame.style.height).toBe('900px')
+  })
+})
+
+// WP.DOC.04 — the framed document opens the site's pages through the element.
+// A link inside the frame would open its target INSIDE the frame, under a bar
+// that still names the calculator. So the calculator's link to the rules asks
+// the element instead, and the element opens the address the page body gives
+// (href-table) in the same tab. Only a request from the file host counts, and
+// only for one of the four pages.
+describe('WP.DOC.04 — a request from the framed document opens a site page', () => {
+  const ask = (frame: HTMLIFrameElement, origin: string, data: unknown) =>
+    window.dispatchEvent(new MessageEvent('message', { origin, data, source: frame.contentWindow }))
+
+  it('opens href-table for the annex, from the file host only', async () => {
+    vi.mocked(goTo).mockClear()
+    const { container } = render(DocumentElement, { props: docProps('kalkulator-punktow') })
+    const frame = frameOf(container)!
+
+    ask(frame, 'https://evil.example', { type: 'spws-doc-nav', page: 'table' })
+    ask(frame, ASSET_ORIGIN, { type: 'spws-doc-nav', page: 'admin' })
+    ask(frame, ASSET_ORIGIN, { type: 'spws-doc-nav' })
+    await tick()
+    expect(goTo).not.toHaveBeenCalled()
+
+    ask(frame, ASSET_ORIGIN, { type: 'spws-doc-nav', page: 'table' })
+    await tick()
+    expect(goTo).toHaveBeenCalledWith('/tabela-punktacji/')
   })
 })

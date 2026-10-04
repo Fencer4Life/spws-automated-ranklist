@@ -100,25 +100,34 @@
     .formula { overflow-x: auto; margin: 14px 0 0; padding: 14px 16px; background: #101b29; color: #eef5ff; border-radius: 9px; font: 13px/1.7 var(--mono); white-space: pre; }
 
     /* ---- kalkulator ---- */
-    .calculator { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
+    .calculator { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 18px; margin-top: 16px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .field.wide { grid-column: 1 / -1; }
-    .field label { color: var(--muted); font-size: 13px; font-weight: 700; }
-    .field input[type="number"], .field select { width: 100%; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); }
-    .toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-weight: 700; cursor: pointer; user-select: none; }
-    .toggle input { width: 19px; height: 19px; margin: 0; accent-color: var(--navy); cursor: pointer; }
-    .toggle.on { border-color: var(--navy); border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: var(--blue-soft); }
-    .joined-block { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: -12px; padding: 12px; border: 1px solid var(--navy); border-top: none; border-radius: 0 0 8px 8px; background: var(--blue-soft); }
+    .field.wide { flex-basis: 100%; }
+    /* Etykiety jak w filtrach rankingu: małe, wersalikami. */
+    .field > label:not(.seg), .field > .field-label { color: var(--muted); font: 700 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+    /* Pola z liczbami (W4): wąskie, bo mieszczą 1–300; cyfry do prawej, jak każda
+       kolumna liczb w Tabeli i w rankingu, równej szerokości i na środku w pionie. */
+    .field input[type="number"], .field select { width: 6.5em; max-width: 100%; min-height: 40px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); text-align: right; text-align-last: right; font-variant-numeric: tabular-nums; line-height: 1.25; }
+    /* „Stawka”: ten sam niebieski przełącznik dwóch pól co Ranking/PPW w rankingu.
+       Pod spodem to nadal jeden checkbox #joinedToggle, więc skrypt się nie zmienia. */
+    .seg { display: inline-flex; gap: 2px; padding: 3px; background: #eef2f7; border: 1px solid #c7ced8; border-radius: 10px; cursor: pointer; user-select: none; }
+    .seg input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .seg > span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 13px; border-radius: 7px; color: #3d4a5c; font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .seg input:not(:checked) ~ .seg-single, .seg input:checked ~ .seg-joined { background: #3b82d6; color: #fff; box-shadow: 0 1px 3px rgba(16, 34, 64, .28); }
+    .seg input:focus-visible ~ span { outline: 2px solid #12467e; outline-offset: 1px; }
+    .joined-block { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; padding: 12px; border: 1px solid #c7ced8; border-radius: 8px; background: var(--blue-soft); }
     .joined-block[hidden] { display: none; }
-    .joined-block p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13.5px; }
-    .joined-block .steps { grid-column: 1 / -1; font: 700 14px var(--mono); color: var(--navy-2); }
+    .joined-block p { flex-basis: 100%; margin: 0; color: var(--muted); font-size: 13.5px; }
+    .joined-block .steps { flex-basis: 100%; font: 700 14px var(--mono); color: var(--navy-2); }
     .rank-control { display: flex; align-items: center; gap: 10px; min-height: 44px; }
     .rank-control input { flex: 1; min-width: 0; }
     .rank-value { min-width: 3.2em; font: 700 16px var(--mono); text-align: right; }
-    .type-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .type-chips button { min-height: 32px; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--navy); font: 700 12.5px var(--mono); cursor: pointer; }
-    .type-chips button.on { border-color: var(--navy); background: var(--navy); color: #fff; }
-    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 8px; }
+    /* Ranga: te same pola co „Stawka”, po jednym na rodzaj zawodów. */
+    .type-chips { display: inline-flex; align-self: flex-start; flex-wrap: wrap; gap: 2px; margin-top: 6px; padding: 3px; background: #eef2f7; border: 1px solid #c7ced8; border-radius: 10px; }
+    .type-chips:empty { display: none; }
+    .type-chips button { min-height: 32px; padding: 0 13px; border: 0; border-radius: 7px; background: none; color: #3d4a5c; font: 600 13.5px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+    .type-chips button.on { background: #3b82d6; color: #fff; box-shadow: 0 1px 3px rgba(16, 34, 64, .28); }
+    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid #3b82d6; background: var(--blue-soft); border-radius: 8px; }
     .result strong { font-size: clamp(34px, 6vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; }
     .result .unit { font-weight: 800; }
     .result .description { flex-basis: 100%; color: var(--muted); font-size: 14px; }
@@ -136,11 +145,12 @@
     .premium-head .field { min-width: 180px; }
     table.premium { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
     table.premium th, table.premium td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
-    table.premium thead th { color: var(--muted); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    /* Nagłówek jak w tabeli rankingu: szary wiersz, zwykłe wiersze pod nim. */
+    table.premium thead th { padding-top: 8px; padding-bottom: 8px; background: #f4f6f9; border-bottom: 2px solid #dee2e6; color: #333; font: 600 12px var(--sans); }
     table.premium th[scope=row], table.premium thead th:first-child { text-align: left; font-family: var(--mono); }
     table.premium td.d0 { color: var(--muted); }
     table.premium td.plus { background: var(--small-soft); }
-    table.premium td.cur { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 900; }
+    table.premium td.cur { outline: 2px solid #3b82d6; outline-offset: -2px; font-weight: 900; }
     .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line-strong); background: var(--small-soft); }
 
     /* ---- pełna tabela ---- */
@@ -305,14 +315,16 @@
         <p class="note"><span class="copy-pl" lang="pl">Podaj liczbę zawodników w stawce i zajęte miejsce. W stawce łączonej wybierz też swoją kategorię i najmłodszą kategorię stawki. Suwak współczynnika rangi przelicza również tabele poniżej.</span><span class="copy-en" lang="en">Enter the number of fencers in the bracket and the place. In a joined bracket, also choose your category and the youngest category in the bracket. The rank slider also recalculates the tables below.</span></p>
         <div class="calculator">
           <div class="field">
-            <label for="participants"><span class="copy-pl" lang="pl">Liczba zawodników w stawce (N)</span><span class="copy-en" lang="en">Fencers in the bracket (N)</span></label>
+            <label for="participants"><span class="copy-pl" lang="pl">Zawodników (N)</span><span class="copy-en" lang="en">Fencers (N)</span></label>
             <input id="participants" type="number" min="1" max="300" step="1" value="10" inputmode="numeric">
           </div>
           <div class="field">
-            <label for="place"><span class="copy-pl" lang="pl">Miejsce w stawce</span><span class="copy-en" lang="en">Place in the bracket</span></label>
+            <label for="place"><span class="copy-pl" lang="pl">Miejsce</span><span class="copy-en" lang="en">Place</span></label>
             <input id="place" type="number" min="1" max="300" step="1" value="2" inputmode="numeric">
           </div>
-          <label class="toggle" id="joinedLabel" for="joinedToggle"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock"><span class="copy-pl" lang="pl">Stawka łączona</span><span class="copy-en" lang="en">Joined bracket</span></label>
+          <div class="field"><span class="field-label" id="joinedCaption"><span class="copy-pl" lang="pl">Stawka</span><span class="copy-en" lang="en">Bracket</span></span>
+            <label class="toggle seg" id="joinedLabel" for="joinedToggle" aria-describedby="joinedCaption"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock"><span class="seg-single"><span class="copy-pl" lang="pl">Jedna kategoria</span><span class="copy-en" lang="en">One category</span></span><span class="seg-joined"><span class="copy-pl" lang="pl">Łączona</span><span class="copy-en" lang="en">Joined</span></span></label>
+          </div>
           <div class="joined-block" id="joinedBlock" hidden>
             <p><span class="copy-pl" lang="pl">d to różnica między Twoją kategorią a najmłodszą kategorią stawki (§ 1 ust. 6).</span><span class="copy-en" lang="en">d is the difference between your category and the youngest category in the bracket (§ 1 ust. 6).</span></p>
             <div class="field">
@@ -1484,8 +1496,9 @@ var SPWSScoring = (() => {
       }
     }
   </script>
-  <!-- SPWS-EMBED: the height report for the framing <spws-document>
-       (ADR-090 amendment 2026-10-03, FR-150). Added by the generator. -->
+  <!-- SPWS-EMBED: the bridge to the framing <spws-document>: the height
+       report and the request to open the annex (ADR-090 amendment 2026-10-03,
+       FR-150). Added by the generator. -->
   <script>
     (function () {
       if (window.parent === window) return;
@@ -1504,6 +1517,12 @@ var SPWSScoring = (() => {
       }
       window.addEventListener('load', report);
       report();
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a.annex-link') : null;
+        if (!a) return;
+        e.preventDefault();
+        window.parent.postMessage({ type: 'spws-doc-nav', page: 'table' }, '*');
+      });
     })();
   </script>
 </body>

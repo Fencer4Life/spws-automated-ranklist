@@ -8,7 +8,7 @@
        o publikacji, USUŃ poniższy wiersz. -->
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="Kalkulator punktów rankingowych SPWS — ile punktów daje zajęte miejsce w stawce, także w stawce łączonej.">
-  <title>Kalkulator punktów za wynik — SPWS</title>
+  <title>Kalkulator punktów — SPWS</title>
   <style>
     :root {
       color-scheme: light;
@@ -99,25 +99,34 @@
     .formula { overflow-x: auto; margin: 14px 0 0; padding: 14px 16px; background: #101b29; color: #eef5ff; border-radius: 9px; font: 13px/1.7 var(--mono); white-space: pre; }
 
     /* ---- kalkulator ---- */
-    .calculator { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
+    .calculator { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 18px; margin-top: 16px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .field.wide { grid-column: 1 / -1; }
-    .field label { color: var(--muted); font-size: 13px; font-weight: 700; }
-    .field input[type="number"], .field select { width: 100%; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); }
-    .toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-weight: 700; cursor: pointer; user-select: none; }
-    .toggle input { width: 19px; height: 19px; margin: 0; accent-color: var(--navy); cursor: pointer; }
-    .toggle.on { border-color: var(--navy); border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: var(--blue-soft); }
-    .joined-block { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: -12px; padding: 12px; border: 1px solid var(--navy); border-top: none; border-radius: 0 0 8px 8px; background: var(--blue-soft); }
+    .field.wide { flex-basis: 100%; }
+    /* Etykiety jak w filtrach rankingu: małe, wersalikami. */
+    .field > label:not(.seg), .field > .field-label { color: var(--muted); font: 700 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+    /* Pola z liczbami (W4): wąskie, bo mieszczą 1–300; cyfry do prawej, jak każda
+       kolumna liczb w Tabeli i w rankingu, równej szerokości i na środku w pionie. */
+    .field input[type="number"], .field select { width: 6.5em; max-width: 100%; min-height: 40px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); text-align: right; text-align-last: right; font-variant-numeric: tabular-nums; line-height: 1.25; }
+    /* „Stawka”: ten sam niebieski przełącznik dwóch pól co Ranking/PPW w rankingu.
+       Pod spodem to nadal jeden checkbox #joinedToggle, więc skrypt się nie zmienia. */
+    .seg { display: inline-flex; gap: 2px; padding: 3px; background: #eef2f7; border: 1px solid #c7ced8; border-radius: 10px; cursor: pointer; user-select: none; }
+    .seg input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .seg > span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 13px; border-radius: 7px; color: #3d4a5c; font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .seg input:not(:checked) ~ .seg-single, .seg input:checked ~ .seg-joined { background: #3b82d6; color: #fff; box-shadow: 0 1px 3px rgba(16, 34, 64, .28); }
+    .seg input:focus-visible ~ span { outline: 2px solid #12467e; outline-offset: 1px; }
+    .joined-block { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; padding: 12px; border: 1px solid #c7ced8; border-radius: 8px; background: var(--blue-soft); }
     .joined-block[hidden] { display: none; }
-    .joined-block p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13.5px; }
-    .joined-block .steps { grid-column: 1 / -1; font: 700 14px var(--mono); color: var(--navy-2); }
+    .joined-block p { flex-basis: 100%; margin: 0; color: var(--muted); font-size: 13.5px; }
+    .joined-block .steps { flex-basis: 100%; font: 700 14px var(--mono); color: var(--navy-2); }
     .rank-control { display: flex; align-items: center; gap: 10px; min-height: 44px; }
     .rank-control input { flex: 1; min-width: 0; }
     .rank-value { min-width: 3.2em; font: 700 16px var(--mono); text-align: right; }
-    .type-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .type-chips button { min-height: 32px; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--navy); font: 700 12.5px var(--mono); cursor: pointer; }
-    .type-chips button.on { border-color: var(--navy); background: var(--navy); color: #fff; }
-    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 8px; }
+    /* Ranga: te same pola co „Stawka”, po jednym na rodzaj zawodów. */
+    .type-chips { display: inline-flex; align-self: flex-start; flex-wrap: wrap; gap: 2px; margin-top: 6px; padding: 3px; background: #eef2f7; border: 1px solid #c7ced8; border-radius: 10px; }
+    .type-chips:empty { display: none; }
+    .type-chips button { min-height: 32px; padding: 0 13px; border: 0; border-radius: 7px; background: none; color: #3d4a5c; font: 600 13.5px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+    .type-chips button.on { background: #3b82d6; color: #fff; box-shadow: 0 1px 3px rgba(16, 34, 64, .28); }
+    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid #3b82d6; background: var(--blue-soft); border-radius: 8px; }
     .result strong { font-size: clamp(34px, 6vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; }
     .result .unit { font-weight: 800; }
     .result .description { flex-basis: 100%; color: var(--muted); font-size: 14px; }
@@ -135,11 +144,12 @@
     .premium-head .field { min-width: 180px; }
     table.premium { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
     table.premium th, table.premium td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
-    table.premium thead th { color: var(--muted); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    /* Nagłówek jak w tabeli rankingu: szary wiersz, zwykłe wiersze pod nim. */
+    table.premium thead th { padding-top: 8px; padding-bottom: 8px; background: #f4f6f9; border-bottom: 2px solid #dee2e6; color: #333; font: 600 12px var(--sans); }
     table.premium th[scope=row], table.premium thead th:first-child { text-align: left; font-family: var(--mono); }
     table.premium td.d0 { color: var(--muted); }
     table.premium td.plus { background: var(--small-soft); }
-    table.premium td.cur { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 900; }
+    table.premium td.cur { outline: 2px solid #3b82d6; outline-offset: -2px; font-weight: 900; }
     .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line-strong); background: var(--small-soft); }
 
     /* ---- pełna tabela ---- */
@@ -228,6 +238,25 @@
     }
     .brand img { display: block; height: 30px; width: auto; margin-bottom: 14px; }
     .rules-link { font-weight: 700; }
+    /* ---- układ kalkulatora (W4) ---- */
+    .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .calc-card { margin-top: 0; }
+    details.fold { margin-top: 14px; padding: 0; }
+    details.fold > summary { display: flex; align-items: center; gap: 10px; padding: 16px 22px; list-style: none; cursor: pointer; }
+    details.fold > summary::-webkit-details-marker { display: none; }
+    details.fold > summary::before { content: '▸'; color: var(--muted); font-size: 14px; }
+    details.fold[open] > summary::before { content: '▾'; }
+    details.fold > summary h2 { margin: 0; font-size: 18px; }
+    details.fold > :not(summary) { margin-left: 22px; margin-right: 22px; }
+    details.fold[open] { padding-bottom: 18px; }
+    .rules-pill { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 50;
+      display: inline-flex; align-items: center; gap: 7px; max-width: calc(100vw - 32px); padding: 7px 15px 7px 11px;
+      border: 1px solid #c7ced8; border-radius: 999px; background: #fff; color: var(--navy); font-size: 13.5px; font-weight: 700;
+      text-decoration: none; white-space: nowrap; box-shadow: 0 6px 18px rgba(16, 34, 64, .22), 0 1px 3px rgba(16, 34, 64, .12); }
+    .rules-pill svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+    .rules-pill:hover { text-decoration: underline; }
+    main.wrap { padding-bottom: 96px; }
+    @media print { .rules-pill { display: none; } }
   </style>
 </head>
 <body>
@@ -263,42 +292,31 @@
   </div>
 </noscript>
 
-    <!-- ============ W SKRÓCIE ============ -->
-    <section class="section" aria-labelledby="shortTitle">
-      <h2 id="shortTitle"><span class="copy-pl" lang="pl">W skrócie</span><span class="copy-en" lang="en">In short</span></h2>
-      <p><span class="copy-pl" lang="pl">Sposób liczenia punktów zależy od liczby zawodników w całej stawce (N) i od tego, czy walczy w niej jedna kategoria wiekowa, czy kilka.</span><span class="copy-en" lang="en">How points are calculated depends on the number of fencers in the whole bracket (N) and on whether one age category or several fence in it.</span></p>
-      <div class="ranges">
-        <div class="r-small"><b>N = 1–3</b><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></div>
-        <div><b>N = 4–15</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce. W stawce łączonej zawodnicy starszych kategorii dostają premię.</span><span class="copy-en" lang="en">EVF points for the place in the bracket. In a joined bracket, fencers of older categories get a premium.</span></div>
-        <div class="r-evf"><b>N ≥ 16</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce, także w stawce łączonej. Bez premii.</span><span class="copy-en" lang="en">EVF points for the place in the bracket, also in a joined bracket. No premium.</span></div>
-      </div>
-      <ol class="law">
-        <li><span class="copy-pl" lang="pl">Kategoria, w której startuje mniej niż 4 zawodników, łączy się z najbliższą obecną kategorią (§ 2).</span><span class="copy-en" lang="en">A category with fewer than 4 fencers is joined with the nearest category present (§ 2).</span></li>
-        <li><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></li>
-        <li><span class="copy-pl" lang="pl">Stawka jednej kategorii od 4 zawodników i każda stawka od 16 zawodników: punkty EVF (§ 4).</span><span class="copy-en" lang="en">A single-category bracket of 4 or more, and any bracket of 16 or more: EVF points (§ 4).</span></li>
-        <li><span class="copy-pl" lang="pl">W stawce łączonej 4–15 zawodników najmłodsza kategoria dostaje punkty EVF, a starsza większą z wartości <b>EVF × (1 + 0,05 · d)</b> i <b>EVF + d</b>. Nikt nie dostaje więcej niż zawodnik bezpośrednio przed nim minus 1 pkt (§ 3).</span><span class="copy-en" lang="en">In a joined bracket of 4–15 fencers the youngest category gets EVF points and an older one the larger of <b>EVF × (1 + 0.05 · d)</b> and <b>EVF + d</b>. Nobody gets more than the fencer directly ahead minus 1 point (§ 3).</span></li>
-        <li><span class="copy-pl" lang="pl">Wynik mnoży się przez współczynnik rangi zawodów (§ 6).</span><span class="copy-en" lang="en">The result is multiplied by the competition rank coefficient (§ 6).</span></li>
-      </ol>
-      <p class="note"><span class="copy-pl" lang="pl">Wynik dla dowolnego miejsca podaje <a href="#calcTitle">kalkulator</a>, a całą stawkę łączoną, razem z ograniczeniem, liczy <a href="#simTitle">symulator</a> poniżej.</span><span class="copy-en" lang="en">The <a href="#calcTitle">calculator</a> gives the result for any place, and the <a href="#simTitle">simulator</a> below scores a whole joined bracket, cap included.</span></p>
-    </section>
 
-    <p class="part"><span class="copy-pl" lang="pl">Narzędzia</span><span class="copy-en" lang="en">Tools</span></p>
 
-    <section class="grid" aria-label="Kalkulator i tabela premii">
-      <!-- ============ KALKULATOR ============ -->
-      <article class="card">
-        <h2 id="calcTitle"><span class="copy-pl" lang="pl">Kalkulator wyniku</span><span class="copy-en" lang="en">Result calculator</span></h2>
+
+
+
+
+
+    <!-- Najpierw kalkulator, zaraz pod paskiem; reszta zwinięta pod nim (W4,
+         makieta doc/adr/assets/adr-090-calculator.png). -->
+    <!-- ============ KALKULATOR ============ -->
+      <article class="card calc-card">
+        <h2 id="calcTitle" class="vh"><span class="copy-pl" lang="pl">Kalkulator wyniku</span><span class="copy-en" lang="en">Result calculator</span></h2>
         <p class="note"><span class="copy-pl" lang="pl">Podaj liczbę zawodników w stawce i zajęte miejsce. W stawce łączonej wybierz też swoją kategorię i najmłodszą kategorię stawki. Suwak współczynnika rangi przelicza również tabele poniżej.</span><span class="copy-en" lang="en">Enter the number of fencers in the bracket and the place. In a joined bracket, also choose your category and the youngest category in the bracket. The rank slider also recalculates the tables below.</span></p>
         <div class="calculator">
           <div class="field">
-            <label for="participants"><span class="copy-pl" lang="pl">Liczba zawodników w stawce (N)</span><span class="copy-en" lang="en">Fencers in the bracket (N)</span></label>
+            <label for="participants"><span class="copy-pl" lang="pl">Zawodników (N)</span><span class="copy-en" lang="en">Fencers (N)</span></label>
             <input id="participants" type="number" min="1" max="300" step="1" value="10" inputmode="numeric">
           </div>
           <div class="field">
-            <label for="place"><span class="copy-pl" lang="pl">Miejsce w stawce</span><span class="copy-en" lang="en">Place in the bracket</span></label>
+            <label for="place"><span class="copy-pl" lang="pl">Miejsce</span><span class="copy-en" lang="en">Place</span></label>
             <input id="place" type="number" min="1" max="300" step="1" value="2" inputmode="numeric">
           </div>
-          <label class="toggle" id="joinedLabel" for="joinedToggle"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock"><span class="copy-pl" lang="pl">Stawka łączona</span><span class="copy-en" lang="en">Joined bracket</span></label>
+          <div class="field"><span class="field-label" id="joinedCaption"><span class="copy-pl" lang="pl">Stawka</span><span class="copy-en" lang="en">Bracket</span></span>
+            <label class="toggle seg" id="joinedLabel" for="joinedToggle" aria-describedby="joinedCaption"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock"><span class="seg-single"><span class="copy-pl" lang="pl">Jedna kategoria</span><span class="copy-en" lang="en">One category</span></span><span class="seg-joined"><span class="copy-pl" lang="pl">Łączona</span><span class="copy-en" lang="en">Joined</span></span></label>
+          </div>
           <div class="joined-block" id="joinedBlock" hidden>
             <p><span class="copy-pl" lang="pl">d to różnica między Twoją kategorią a najmłodszą kategorią stawki (§ 1 ust. 6).</span><span class="copy-en" lang="en">d is the difference between your category and the youngest category in the bracket (§ 1 ust. 6).</span></p>
             <div class="field">
@@ -329,8 +347,8 @@
       </article>
 
       <!-- ============ TABELA PREMII ============ -->
-      <article class="card" aria-labelledby="premiumTitle">
-        <h2 id="premiumTitle"><span class="copy-pl" lang="pl">Premia w stawce łączonej</span><span class="copy-en" lang="en">The joined-bracket premium</span></h2>
+      <details class="fold card">
+        <summary><h2 id="premiumTitle"><span class="copy-pl" lang="pl">Premia w stawce łączonej</span><span class="copy-en" lang="en">The joined-bracket premium</span></h2></summary>
         <p class="note"><span class="copy-pl" lang="pl">Punkty za miejsce w stawce łączonej od 4 do 15 zawodników, według d. Kolumna d = 0 to punkty EVF najmłodszej kategorii. Wartości są przed ograniczeniem z § 3 ust. 3 lit. c: w prawdziwej stawce wynik nie przekracza wyniku zawodnika bezpośrednio przed nim minus 1 pkt. Tabela uwzględnia współczynnik rangi z kalkulatora.</span><span class="copy-en" lang="en">Points for a place in a joined bracket of 4 to 15 fencers, by d. The d = 0 column is the EVF points of the youngest category. The values are before the cap of § 3 ust. 3 point c: in a real bracket a result does not exceed the result of the fencer directly ahead minus 1 point. The table applies the calculator's rank coefficient.</span></p>
         <div class="premium-head">
           <div class="field">
@@ -340,12 +358,11 @@
           <span class="note"><span class="swatch"></span><span class="copy-pl" lang="pl">większa jest wartość EVF + d (poniżej 20 pkt EVF)</span><span class="copy-en" lang="en">EVF + d is the larger value (below 20 EVF points)</span></span>
         </div>
         <div class="tw"><table class="premium" id="premiumTable"><thead></thead><tbody></tbody></table></div>
-      </article>
-    </section>
+      </details>
 
     <!-- ============ SYMULATOR ============ -->
-    <section class="section" aria-labelledby="simTitle">
-      <h2 id="simTitle"><span class="copy-pl" lang="pl">Stawka łączona krok po kroku</span><span class="copy-en" lang="en">A joined bracket step by step</span></h2>
+    <details class="fold section">
+      <summary><h2 id="simTitle"><span class="copy-pl" lang="pl">Stawka łączona krok po kroku</span><span class="copy-en" lang="en">A joined bracket step by step</span></h2></summary>
       <p class="note"><span class="copy-pl" lang="pl">Ułóż kolejność miejsc od pierwszego: każde kliknięcie kategorii dodaje zawodnika na kolejnym miejscu. Symulator liczy całą stawkę, razem z ograniczeniem z § 3 ust. 3 lit. c. „Osobno” to punkty tego samego zawodnika w turnieju samej jego kategorii: kategoria licząca 1–3 zawodników tworzy wtedy spotkanie, a licząca co najmniej 4 — stawkę z punktami EVF. Symulator nie sprawdza, czy kategorie zostałyby połączone właśnie tak; rozstrzyga o tym § 2.</span><span class="copy-en" lang="en">Build the finishing order from first place: each click on a category adds a fencer in the next place. The simulator scores the whole bracket, including the cap of § 3 ust. 3 point c. “Alone” is the same fencer's points in a tournament of their category only: a category of 1–3 fencers then forms a meeting, and one of at least 4 a bracket with EVF points. The simulator does not check whether the categories would be joined this way; § 2 decides that.</span></p>
       <p class="note"><span class="copy-pl" lang="pl">Przykłady z zawodów: składy kategorii są prawdziwe, a kolejność miejsc przykładowa, bo wyniki podają tylko miejsca w kategoriach.</span><span class="copy-en" lang="en">Examples from past events: the category line-ups are real and the finishing orders illustrative, because results give only places within each category.</span></p>
       <div class="presets" id="simPresets"></div>
@@ -373,14 +390,31 @@
         <tbody></tbody>
       </table></div>
       <p class="note"><span class="copy-pl" lang="pl">Kolumny od EVF do „Granica” są przed współczynnikiem rangi; „Wynik”, „Osobno” i „Różnica” — po nim. „Granica” to wynik zawodnika z miejsca wyżej minus 1 pkt; wiersz na zakolorowanym tle został do niej obniżony.</span><span class="copy-en" lang="en">The columns from EVF to “Cap” are before the rank coefficient; “Result”, “Alone” and “Difference” are after it. “Cap” is the result of the fencer one place higher minus 1 point; a highlighted row was lowered to it.</span></p>
-    </section>
+    </details>
 
-    <p class="part"><span class="copy-pl" lang="pl">Zasady</span><span class="copy-en" lang="en">Rules</span></p>
+    <!-- ============ W SKRÓCIE ============ -->
+    <details class="fold section">
+      <summary><h2 id="shortTitle"><span class="copy-pl" lang="pl">W skrócie</span><span class="copy-en" lang="en">In short</span></h2></summary>
+      <p><span class="copy-pl" lang="pl">Sposób liczenia punktów zależy od liczby zawodników w całej stawce (N) i od tego, czy walczy w niej jedna kategoria wiekowa, czy kilka.</span><span class="copy-en" lang="en">How points are calculated depends on the number of fencers in the whole bracket (N) and on whether one age category or several fence in it.</span></p>
+      <div class="ranges">
+        <div class="r-small"><b>N = 1–3</b><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></div>
+        <div><b>N = 4–15</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce. W stawce łączonej zawodnicy starszych kategorii dostają premię.</span><span class="copy-en" lang="en">EVF points for the place in the bracket. In a joined bracket, fencers of older categories get a premium.</span></div>
+        <div class="r-evf"><b>N ≥ 16</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce, także w stawce łączonej. Bez premii.</span><span class="copy-en" lang="en">EVF points for the place in the bracket, also in a joined bracket. No premium.</span></div>
+      </div>
+      <ol class="law">
+        <li><span class="copy-pl" lang="pl">Kategoria, w której startuje mniej niż 4 zawodników, łączy się z najbliższą obecną kategorią (§ 2).</span><span class="copy-en" lang="en">A category with fewer than 4 fencers is joined with the nearest category present (§ 2).</span></li>
+        <li><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></li>
+        <li><span class="copy-pl" lang="pl">Stawka jednej kategorii od 4 zawodników i każda stawka od 16 zawodników: punkty EVF (§ 4).</span><span class="copy-en" lang="en">A single-category bracket of 4 or more, and any bracket of 16 or more: EVF points (§ 4).</span></li>
+        <li><span class="copy-pl" lang="pl">W stawce łączonej 4–15 zawodników najmłodsza kategoria dostaje punkty EVF, a starsza większą z wartości <b>EVF × (1 + 0,05 · d)</b> i <b>EVF + d</b>. Nikt nie dostaje więcej niż zawodnik bezpośrednio przed nim minus 1 pkt (§ 3).</span><span class="copy-en" lang="en">In a joined bracket of 4–15 fencers the youngest category gets EVF points and an older one the larger of <b>EVF × (1 + 0.05 · d)</b> and <b>EVF + d</b>. Nobody gets more than the fencer directly ahead minus 1 point (§ 3).</span></li>
+        <li><span class="copy-pl" lang="pl">Wynik mnoży się przez współczynnik rangi zawodów (§ 6).</span><span class="copy-en" lang="en">The result is multiplied by the competition rank coefficient (§ 6).</span></li>
+      </ol>
+      <p class="note"><span class="copy-pl" lang="pl">Wynik dla dowolnego miejsca podaje <a href="#calcTitle">kalkulator</a>, a całą stawkę łączoną, razem z ograniczeniem, liczy <a href="#simTitle">symulator</a> poniżej.</span><span class="copy-en" lang="en">The <a href="#calcTitle">calculator</a> gives the result for any place, and the <a href="#simTitle">simulator</a> below scores a whole joined bracket, cap included.</span></p>
+    </details>
 
-    <section class="section" aria-labelledby="rulesTitle">
-      <h2 id="rulesTitle"><span class="copy-pl" lang="pl">Pełne zasady</span><span class="copy-en" lang="en">The full rules</span></h2>
-      <p><span class="copy-pl" lang="pl">Łączenie kategorii w stawki (§ 2), punktację (§ 3), punkty EVF (§ 4), kolejność obliczeń (§ 5) i współczynniki rangi zawodów (§ 6) opisuje <a class="rules-link annex-link" href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html">Załącznik nr 1 — Tabela punktacji Pucharu Polski Weteranów w szermierce</a>. Do niego odnoszą się też paragrafy przywołane na tej stronie.</span><span class="copy-en" lang="en">How categories are joined into brackets (§ 2), scoring (§ 3), EVF points (§ 4), the order of calculation (§ 5) and the competition rank coefficients (§ 6) are set out in <a class="rules-link annex-link" href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html">Annex 1 — Scoring Table of the Polish Veterans Fencing Cup</a>. The paragraphs cited on this page refer to it too.</span></p>
-    </section>
+    <!-- Pełne zasady opuszczają tę stronę (W4): pigułka u dołu ekranu prowadzi do
+         Załącznika nr 1, tak jak „Zasady sezonu” w rankingu. W ramce na WordPressie
+         pomost generatora prosi stronę-gospodarza o otwarcie strony załącznika. -->
+    <a class="rules-pill annex-link" href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.6" /><path d="M10 9v5M10 6.2v.1" /></svg><span class="copy-pl" lang="pl">Pełne zasady: Załącznik nr 1</span><span class="copy-en" lang="en">The full rules: Annex 1</span></a>
 
     <footer><span class="copy-pl" lang="pl">Stowarzyszenie Polskich Weteranów Szermierki</span><span class="copy-en" lang="en">Polish Veterans Fencing Association</span></footer>
   </main>
@@ -638,7 +672,7 @@ var SPWSScoring = (() => {
     const T = {
       pl: {
         htmlLang: 'pl',
-        docTitle: 'Kalkulator punktów za wynik — SPWS',
+        docTitle: 'Kalkulator punktów — SPWS',
         loading: 'Wczytywanie parametrów sezonu…',
         failed: e => 'Nie udało się pobrać parametrów sezonu: ' + e,
         describe: (p, n, own, young, d, joined) => joined
@@ -676,7 +710,7 @@ var SPWSScoring = (() => {
       },
       en: {
         htmlLang: 'en',
-        docTitle: 'Result points calculator — SPWS',
+        docTitle: 'Points calculator — SPWS',
         loading: 'Loading season parameters…',
         failed: e => 'Season parameters unavailable: ' + e,
         describe: (p, n, own, young, d, joined) => joined
@@ -1102,8 +1136,9 @@ var SPWSScoring = (() => {
       }
     }
   </script>
-  <!-- SPWS-EMBED: the height report for the framing <spws-document>
-       (ADR-090 amendment 2026-10-03, FR-150). Added by the generator. -->
+  <!-- SPWS-EMBED: the bridge to the framing <spws-document>: the height
+       report and the request to open the annex (ADR-090 amendment 2026-10-03,
+       FR-150). Added by the generator. -->
   <script>
     (function () {
       if (window.parent === window) return;
@@ -1122,6 +1157,12 @@ var SPWSScoring = (() => {
       }
       window.addEventListener('load', report);
       report();
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a.annex-link') : null;
+        if (!a) return;
+        e.preventDefault();
+        window.parent.postMessage({ type: 'spws-doc-nav', page: 'table' }, '*');
+      });
     })();
   </script>
 </body>
