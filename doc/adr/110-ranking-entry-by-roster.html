@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="110-ranking-entry-by-roster.md">
+<meta name="adr-source-sha256" content="f3c9342df67f64d4df884621e2716de7bec721bed078f54d3b38d1b304e672f6">
+<title>ADR-110 · From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 110</p><h1>From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off 2026-10-04 with D1 A, D2 A, D3 A, D4 A and the audit reason as proposed); implemented 2026-10-04: the audited revision ran on CERT (revision 8) and PROD (revision 10)</dd></div><div><dt>Date</dt><dd class="">2026-10-04</dd></div><div><dt>Source</dt><dd class=""><code>110-ranking-entry-by-roster.md</code></dd></div><div><dt>Length</dt><dd class="">64 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off 2026-10-04 with D1 A, D2 A, D3 A, D4 A and the audit reason as proposed); implemented 2026-10-04: the audited revision ran on CERT (revision 8) and PROD (revision 10)
+<strong>Date:</strong> 2026-10-04
+<strong>Supersedes:</strong> <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> §6 (ranking entry through PPW or MPW in the ranking's window; FR-141). The gate mechanism stays, unused.
+<strong>Relates to:</strong> <a href="020-seed-generator-domestic-auto-create.html">ADR-020</a> and <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> (who enters the fencer table), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (PZSz results never create a fencer), <a href="097-scoring-governance-lock-and-privileged-revision.html">ADR-097</a> (the audited revision of a locked season), <a href="091-no-season-skeletons-for-scraped-events.html">ADR-091</a> and <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (carry-over and the CERT/PROD result fingerprint)
+<strong>Source:</strong> <code>doc/plans/ranking-entry-by-roster-2026-10-04.html</code>; the trigger question in <code>doc/plans/konczylo-ranking-entry-2026-10-04.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-fencer-table-is-the-entry">1 · The fencer table is the entry</a></li><li class="depth-3"><a href="#2-everyone-in-it-with-points-in-the-window-is-ranked">2 · Everyone in it with points in the window is ranked</a></li><li class="depth-3"><a href="#3-legacy-rows-are-ranked-like-everyone-else">3 · Legacy rows are ranked like everyone else</a></li><li class="depth-3"><a href="#4-the-gate-stays-unused">4 · The gate stays, unused</a></li><li class="depth-3"><a href="#5-through-the-audited-revision">5 · Through the audited revision</a></li><li class="depth-3"><a href="#6-the-rebuild-no-longer-re-applies-the-gate">6 · The rebuild no longer re-applies the gate</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-103 §6 made a 2026/2027 fencer rankable only with a PPW or MPW result in the ranking's window: the ranked season, plus the previous season when the ranking is rolling. The Season Scoring Rules carried it as <code>entry_types: [&quot;PPW&quot;, &quot;MPW&quot;]</code>, read by both bodies of <code>fn_ranking_full</code>.</p>
+<p>On 4 October 2026 this left KOŃCZYŁO Tomasz (#136) out of the ranking. His last PPW and MPW starts were in 2024/2025, two seasons back; in 2025/2026 he fenced only PEW events, and in 2026/2027 he has no start yet. His EVF results were stored (ADR-106 admits a fencer with a PPW/MPW start in any season), yet no ranking listed them.</p>
+<p>The user set the rule: from 2026/2027 a fencer enters the fencer table only through a PPW or MPW start, and everyone in it with points in the rolling window appears in the ranking, EVF+ points included.</p>
+<p>Evidence, 4 October 2026:</p>
+<ul>
+<li><strong>Fencer creation already follows the rule.</strong> Only domestic ingestion creates a fencer, from a PPW/MPW result (ADR-020). International intake stores a row only for an existing fencer with a PPW/MPW start (ADR-106), PZSz intake links exact names or approved aliases only (ADR-100), and a registration creates no fencer. No fencer created since 1 September 2026 lacks a PPW/MPW start.</li>
+<li><strong>Legacy rows.</strong> 54 of PROD's 373 fencers have no PPW/MPW start in any season, all created in June–July 2026, before ADR-106. 46 hold no result, 5 only 2023/2024 results, and 3 hold results inside the 2026/2027 window: GOLA Maciej, KOSZYK Agnieszka and SZUMIELEWICZ Paweł.</li>
+<li><strong>The gate is driven by data.</strong> With no <code>entry_types</code> in a season's rules, <code>fn_ranking_full</code> ranks every fencer with points in its window; seasons up to 2025/2026 already work so.</li>
+<li><strong>Measured.</strong> On LOCAL, holding PROD's data of 3 October, in a rolled-back transaction: dropping <code>entry_types</code> grows the rolling 2026/2027 ranking from 227 to 250 rows (188 to 207 fencers). Nobody drops out, no total changes, and the season-only view is unchanged.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-the-fencer-table-is-the-entry">1 · The fencer table is the entry</h3>
+<p>A fencer enters the fencer table only through a PPW or MPW result (ADR-020). International results (ADR-106) and PZSz results (ADR-100) never create one, and neither does a registration. This is unchanged, and recorded here as the rule the ranking now relies on.</p>
+<h3 id="2-everyone-in-it-with-points-in-the-window-is-ranked">2 · Everyone in it with points in the window is ranked</h3>
+<p>The 2026/2027 ranking ranks every fencer in the fencer table with points in its window: the Season Scoring Rules of <code>SPWS-2026-2027</code> carry no <code>entry_types</code>. The window and the buckets are unchanged — the ranked season, plus the previous season's carried results when rolling; SPWS counts the best 2 PPW and every MPW, EVF+ the best 5 of PEW, MEW, MSW, PSW, PPS and MPS.</p>
+<h3 id="3-legacy-rows-are-ranked-like-everyone-else">3 · Legacy rows are ranked like everyone else</h3>
+<p>Fencers created before ADR-106 without a PPW/MPW start are ranked when they have points in the window, because they are in the fencer table (decision D2 A).</p>
+<h3 id="4-the-gate-stays-unused">4 · The gate stays, unused</h3>
+<p><code>fn_ranking_full</code> still honours <code>entry_types</code>, the Admin validator still accepts it, and the public season-rules window shows its &quot;who enters&quot; line only while it is set. No season uses it from 2026/2027, and no new public text is added (D3 A, D4 A).</p>
+<h3 id="5-through-the-audited-revision">5 · Through the audited revision</h3>
+<p>The season is locked (ADR-097), so the change ran through <code>fn_revise_and_rescore_season</code> on CERT and PROD, with the reason &quot;ADR-110: ranking entry by roster (decision of 4 Oct 2026)&quot; and no board reference. A checked script compared every 2026/2027 score, PPW1's result fingerprint and all 30 sub-rankings before and after, and would have aborted on any difference beyond the added fencers. Scores do not change, because the multipliers do not; the result fingerprint ignores revision ids and timestamps, so promote's CERT/PROD comparison holds.</p>
+<h3 id="6-the-rebuild-no-longer-re-applies-the-gate">6 · The rebuild no longer re-applies the gate</h3>
+<p><code>supabase/seed_post_backfill.sql</code> no longer calls <code>fn_backfill_ranking_entry_types</code>, and its ADM27 block skips a locked 2026/2027: the season's rules arrive with the seed.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep ADR-103 §6.</strong> Rejected: it leaves SPWS fencers with EVF+ points out of the ranking, as it did KOŃCZYŁO.</li>
+<li><strong>Gate international intake by the window (D1 B).</strong> Rejected: it refuses the EVF results of a fencer whose last PPW start is two seasons back, the results the rule wants counted.</li>
+<li><strong>Rank only fencers with a PPW/MPW start in any season (D2 B).</strong> Rejected: it needs a migration of both ranking bodies, and the user chose to rank the fencer table as it stands.</li>
+<li><strong>Remove the gate (D3 B).</strong> Rejected for now: a larger change across SQL, the validator, the rules window and their tests; kept, a future season can use it again.</li>
+<li><strong>A direct UPDATE of the rules as the database owner.</strong> Rejected: it bypasses the audit trail ADR-097 requires for a locked season.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li><strong>Ranking.</strong> The rolling 2026/2027 ranking adds 19 fencers in 23 places, all with 0 SPWS points; KOŃCZYŁO is second in men's V2 foil, and GINZERY Tomas leads men's V1 foil. Carried 2025/2026 results drop out as each event's next edition is held, as before.</li>
+<li><strong>Data.</strong> One revision row per environment: CERT revision 8, PROD revision 10, LOCAL rehearsed. The seed exported from PROD carries the new rules.</li>
+<li><strong>Tests.</strong> <code>85_spws_evf_joined_engine.sql</code>: SE27.RANK.01–05 set <code>entry_types</code> themselves and keep testing the gate; ROSTER.01–04 pin this decision. <code>84_admin_ranking_rules_validation.sql</code>: ADM27.RULES.14 pins the new 2026/2027 rules.</li>
+<li><strong>Requirements.</strong> FR-141 is superseded by FR-152.</li>
+<li><strong>Not changed.</strong> The engines, the buckets, the carry-over rule, international intake, and every season up to 2025/2026.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="109-environments-split-by-host.html">← ADR-109: The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>110-ranking-entry-by-roster.md</code> · source SHA-256 <code>f3c9342df67f64d4df884621e2716de7bec721bed078f54d3b38d1b304e672f6</code></footer>
+</div></body></html>

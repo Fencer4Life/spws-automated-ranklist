@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ranking entry by roster</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Ranking · 2026/27 · Plan</p>
+  <h1>Ranking entry by roster: everyone in the database with points in the window</h1>
+  <p class="dek">Your rule: from 2026/27 a fencer enters the <b>fencer table</b> only through a PPW or MPW start, and <b>anyone in it with points in the rolling window appears in the ranking</b>, EVF+ points included. <b>The change is small.</b> It needs no schema change and no change to the ranking functions. One governed setting changes through the audited revision procedure, then tests and documentation follow, in one release.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Approved 4 Oct: A, A, A, A, reason as proposed</span>
+    <span class="pill"><span class="dot"></span>ADR-110 signed off; done on CERT (rev. 8) and PROD (rev. 10)</span>
+    <span class="pill warn"><span class="dot"></span>Waiting: your go to push the tests and docs</span>
+    <span class="pill">+19 fencers in the 2026/27 ranking, none removed</span>
+    <span class="pill">no migration</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · How big</p>
+    <h2>One setting, two approvals, one release</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Part</th><th>Change</th><th>Size</th></tr></thead>
+      <tbody>
+        <tr><td>Ranking functions</td><td>None. The gate is driven by data: when the season&rsquo;s rules carry no <code>entry_types</code>, <code>fn_ranking_full</code> ranks every fencer with points in its window. Seasons up to 2025/26 already work this way.</td><td><span class="chip never">none</span></td></tr>
+        <tr><td>2026/27 rules</td><td>Remove <code>entry_types</code> from the season&rsquo;s rules. The season is locked (ADR-097), so the change goes through <code>fn_revise_and_rescore_season</code>: audited, atomic, run as the database owner. It runs on LOCAL as a rehearsal, then CERT, then PROD, each on your go.</td><td><span class="chip fill">3 runs</span></td></tr>
+        <tr><td>Fencer table</td><td>None. Creation already follows your rule (&sect;02). Since 1 September 2026 no fencer has been created without a PPW/MPW start.</td><td><span class="chip never">none</span></td></tr>
+        <tr><td>Tests</td><td>SE27.RANK.01&ndash;05 move onto a test season, so the gate keeps its tests. New ROSTER tests pin your rule, and ADM27.RULES.14 follows the new 2026/27 rules.</td><td><span class="chip fill">~10 tests</span></td></tr>
+        <tr><td>Public pages</td><td>None needed. The season-rules window shows its &ldquo;who enters&rdquo; line only while <code>entry_types</code> exists, so the line goes away by itself (decision D4).</td><td><span class="chip never">none</span></td></tr>
+        <tr><td>Documentation</td><td>A new ADR-110 that supersedes ADR-103 &sect;6. The ranking-entry paragraph in the handbook, the RTM (FR-141 superseded, a new FR) and Appendix C.</td><td><span class="chip fill">5 pages</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede"><span class="tick">&#10003;</span> Measured, not estimated</p>
+      <p style="margin-bottom:0">I ran it on LOCAL, which holds PROD&rsquo;s data as exported on 3 October, inside a transaction that was rolled back. I computed all 30 sub-rankings with the gate, removed <code>entry_types</code>, and computed them again. The rolling view grows from 227 to 250 rows (188 to 207 fencers). <b>Nobody drops out and no total changes.</b> The season-only view is unchanged (102 rows), because everyone with a 2026/27 result so far fenced PPW1.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Your rule in the system</p>
+    <h2>The fencer table is already the gate</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where a fencer can be created</th><th>Today</th></tr></thead>
+      <tbody>
+        <tr><td>PPW / MPW results (domestic ingestion, <code>t-scrape</code>)</td><td>An unknown name becomes a new fencer: <b>the PPW/MPW start</b>.</td></tr>
+        <tr><td>EVF / FIE results (PEW, MEW, MSW, PSW)</td><td>Never creates one. A row is stored only for a fencer with a PPW or MPW start in any season (ADR-106).</td></tr>
+        <tr><td>PZSz senior results (PPS, MPS)</td><td>Never creates one: exact name or approved alias only (ADR-100).</td></tr>
+        <tr><td>Event registration</td><td>Never creates one: the fencer is created when the PPW results are scraped.</td></tr>
+        <tr><td>Admin, &ldquo;create new fencer&rdquo; in the identity manager</td><td>From an unmatched result row, which is a domestic result.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Legacy rows.</b> 54 of PROD&rsquo;s 373 fencers have no PPW or MPW start in any season. All were created in June&ndash;July 2026, before ADR-106. 46 of them hold no result, so they can never appear in a ranking. 5 hold results only from 2023/24, outside the window. <b>3 hold results inside the window</b> and would appear (decision D2): GOLA Maciej, KOSZYK Agnieszka and SZUMIELEWICZ Pawe&#322;.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Who appears</p>
+    <h2>19 fencers, 23 places, in the rolling 2026/27 ranking</h2>
+    <p>All of them have 0 SPWS points; their total is their EVF+ points in the window. &ldquo;Rank&rdquo; is their place in that sub-ranking after the change. &#9733; marks the three without any PPW/MPW start.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Sub-ranking</th><th>Fencer</th><th>EVF+</th><th>Rank</th></tr></thead>
+      <tbody>
+        <tr><td>Foil M V1</td><td>GINZERY Tomas</td><td>330.83</td><td><b>1 of 12</b></td></tr>
+        <tr><td>Foil M V1</td><td>PRZYSTAJKO Daniel</td><td>234.70</td><td><b>2 of 12</b></td></tr>
+        <tr><td>Foil M V1</td><td>SZUMIELEWICZ Pawe&#322; &#9733;</td><td>111.16</td><td>4 of 12</td></tr>
+        <tr><td>Foil M V1</td><td>SERAFIN B&#322;a&#380;ej</td><td>22.83</td><td>8 of 12</td></tr>
+        <tr><td>Foil M V1</td><td>ALCSER Norbert</td><td>12.03</td><td>10 of 12</td></tr>
+        <tr><td>Foil M V2</td><td>KO&#323;CZY&#321;O Tomasz</td><td>204.83</td><td><b>2 of 8</b></td></tr>
+        <tr><td>Foil M V2</td><td>SOKOL Vratislav</td><td>41.41</td><td>6 of 8</td></tr>
+        <tr><td>Sabre M V1</td><td>PRZYSTAJKO Daniel</td><td>118.94</td><td>4 of 13</td></tr>
+        <tr><td>Sabre M V2</td><td>KO&#323;CZY&#321;O Tomasz</td><td>94.24</td><td>9 of 19</td></tr>
+        <tr><td>Sabre M V3</td><td>WOJCIECHOWSKI Marek</td><td>20.24</td><td>7 of 9</td></tr>
+        <tr><td>Sabre M V3</td><td>FARAGO J&oacute;zsef</td><td>1.00</td><td>9 of 9</td></tr>
+        <tr><td>Sabre F V1</td><td>KOSZYK Agnieszka &#9733;</td><td>25.18</td><td>6 of 7</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V1</td><td>ALCSER Norbert</td><td>96.90</td><td>9 of 26</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V1</td><td>STOLARIK Peter</td><td>5.72</td><td>24 of 26</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V1</td><td>GOLA Maciej &#9733;</td><td>3.06</td><td>25 of 26</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V2</td><td>SOKOL Vratislav</td><td>39.72</td><td>16 of 26</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V2</td><td>KOBIERSKI Krzysztof</td><td>14.18</td><td>24 of 26</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V2</td><td>SZKODA Marek Tomasz</td><td>2.11</td><td>25 of 26</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V3</td><td>SOMERS Jan</td><td>99.93</td><td>7 of 18</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V3</td><td>QUEVRAIN Michel</td><td>4.29</td><td>16 of 18</td></tr>
+        <tr><td>&Eacute;p&eacute;e M V4</td><td>LYNCH Pat</td><td>32.40</td><td>8 of 13</td></tr>
+        <tr><td>&Eacute;p&eacute;e F V1</td><td>MURRAY Claire</td><td>27.01</td><td>5 of 8</td></tr>
+        <tr><td>&Eacute;p&eacute;e F V3</td><td>MCGINNITY Marie</td><td>31.65</td><td>1 of 1</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Visible at the top of the ranking</p>
+      <p style="margin-bottom:0">GINZERY Tomas would lead men&rsquo;s V1 foil with no SPWS points, and KO&#323;CZY&#321;O would be second in men&rsquo;s V2 foil. That is what the rule says. The data is from 3 October; carried 2025/26 results drop out as each event&rsquo;s next edition is held, so the list will change through the season.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Decide this first</p>
+    <h2>Five decisions</h2>
+
+    <h3>D1 · What does &ldquo;the rolling window determining entry&rdquo; govern for the fencer table?</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; The window decides which points count; intake stays as it is</b> <span class="chip never">recommended</span></td><td>A fencer is in the table after one PPW or MPW start, at any time (ADR-106 today). The ranking counts their points from the ranked season and the one before. KO&#323;CZY&#321;O appears now, and his EVF results this season are stored and count.</td></tr>
+        <tr><td><b>B &middot; EVF results are stored only for a fencer with a PPW/MPW start inside the window</b></td><td>ADR-106 is tightened, with a change to the admission module and its tests. KO&#323;CZY&#321;O&rsquo;s 2026/27 EVF results would be refused until his next PPW start. Only his 2025/26 points would show, which works against your aim.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D2 · The three fencers in the window with no PPW/MPW start (GOLA, KOSZYK, SZUMIELEWICZ)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; Rank them: they are in the database</b> <span class="chip never">recommended</span></td><td>&ldquo;All fencers in the DB are in the ranking&rdquo;, literally. No extra work.</td></tr>
+        <tr><td><b>B &middot; Rank only fencers with a PPW/MPW start in any season</b></td><td>The ranking enforces the table rule even for legacy rows. This needs a migration of both ranking bodies (the gate reads <code>fn_spws_starter_ids()</code>), so the plan grows by one migration and its tests.</td></tr>
+        <tr><td><b>C &middot; Review the three</b> and remove whatever should not be in the database</td><td>A data clean-up, with your sign-off per fencer.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D3 · The gate itself (<code>entry_types</code> in SQL, the Admin validator, the rules window)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; Keep it, unused</b> <span class="chip never">recommended</span></td><td>No code change. A future season could use it again by setting <code>entry_types</code>, and its tests stay on a test season.</td></tr>
+        <tr><td><b>B &middot; Remove it</b></td><td>Cleaner, but larger: two SQL functions, the validator, the rules window, the type and their tests.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D4 · The public season-rules window</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><b>A &middot; No new line</b> <span class="chip never">recommended</span></td><td>The &ldquo;who enters&rdquo; line disappears with <code>entry_types</code>; the bucket rows already say what counts.</td></tr>
+        <tr><td><b>B &middot; A new line</b>, e.g. &bdquo;W rankingu jest ka&#380;dy zawodnik SPWS, kt&oacute;ry ma punkty w okresie rankingu.&rdquo;</td><td>I draft it in Polish, you approve the wording, and it gets one frontend test.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D5 · What the audit record says</h3>
+    <p>The revision records an actor, a reason and an optional board-decision reference. I propose reason <em>&ldquo;ADR-110: ranking entry by roster (decision of 4 Oct 2026)&rdquo;</em>, with a board reference only if you have one, for example a resolution number.</p>
+
+    <div class="note accent">
+      <p class="lede">Reply with D1&ndash;D5, or &ldquo;as recommended&rdquo;</p>
+      <p style="margin-bottom:0">As recommended: A, A, A, A, with the reason as proposed and no board reference.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Build, tests first (as recommended)</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li><b>ADR-110 draft</b> (skill <code>new-adr</code>), signed off before it goes to disk. It supersedes ADR-103 &sect;6 and FR-141, relates to ADR-106 (intake is the gate) and ADR-097 (the revision used).</li>
+      <li><b>RED.</b> In <code>supabase/tests/85_spws_evf_joined_engine.sql</code>, SE27.RANK.01&ndash;05 move onto an unscored test season that carries <code>entry_types</code>, so the gate keeps its tests. New ROSTER.01&ndash;04 run on a test season shaped like the new 2026/27 rules:
+        <ul>
+          <li>01: a fencer with EVF points only, in the window, is ranked in the rolling view;</li>
+          <li>02: KO&#323;CZY&#321;O&rsquo;s case (PPW two seasons back, EVF the season before) is ranked rolling, not season-only;</li>
+          <li>03: points all outside the window are not ranked;</li>
+          <li>04: the totals of already-ranked fencers are unchanged.</li>
+        </ul>
+        Neither block depends on the live 2026/27 rules, so both pass on the old and the new seed.</li>
+      <li><b>LOCAL rehearsal</b> of <code>fn_revise_and_rescore_season</code> with the exported 2026/27 configuration minus <code>entry_types</code> and the engine unchanged. Check before and after: PPW1&rsquo;s result fingerprint unchanged, every 2026/27 score unchanged, the ranking difference exactly the 23 rows of &sect;03, and one new revision row.</li>
+      <li><b>CERT</b>, on your go: the same call through the Management API, then the same checks.</li>
+      <li><b>PROD</b>, on your go: the same call. Check through what the site reads (KO&#323;CZY&#321;O second in men&rsquo;s V2 foil) and that CERT and PROD still give the same PPW1 fingerprint.</li>
+      <li><b>Seed and release.</b> Export the seed from PROD, rebuild LOCAL from it, move ADM27.RULES.14 to the new rules, and update the documentation:
+        <ul>
+          <li>handbook <em>Competition and ranking</em>, &ldquo;Ranking entry&rdquo;, and <em>Scoring and ranking</em>;</li>
+          <li>RTM: FR-141 superseded, the new FR traced, the spec-sync count raised by one;</li>
+          <li>Appendix C.</li>
+        </ul>
+        Then the docs index, the graph refresh and <code>scripts/preflight.sh</code> exit 0. I push on your word; CI and Release follow.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Pre-mortem</p>
+    <h2>What could go wrong, and what the plan does</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Could go wrong</th><th>The plan</th></tr></thead>
+      <tbody>
+        <tr><td>The revision rescores every scored 2026/27 tournament and one fails</td><td>The procedure is one transaction and rolls back whole on any failure. The multipliers are unchanged, so the scores come out identical. LOCAL proves it first.</td></tr>
+        <tr><td>CERT and PROD stop matching for promote</td><td>The result fingerprint leaves out the revision id and every timestamp (checked in <code>fn_event_result_document</code>), so an unchanged rescore keeps it equal.</td></tr>
+        <tr><td>It runs while a promote, ingest or drain is writing</td><td>Run it only when none is running: those hold <code>prod-write</code> and <code>cert-write</code>, and a direct SQL call does not.</td></tr>
+        <tr><td>Tests break when the seed changes</td><td>The ranking tests stop reading the live rules (step 2). The single test that pins the live rules changes in the same commit as the new seed (step 6).</td></tr>
+        <tr><td>Fencers ask why a name with no SPWS points leads a ranking</td><td>That is the rule. If you want it said on the page, choose D4 B.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Boundaries</p>
+    <h2>Not changing</h2>
+    <ul>
+      <li>The engines and the buckets: best 2 PPW plus every MPW for SPWS, best 5 of the EVF and PZSz types for EVF+.</li>
+      <li>The carry-over rule and the window (ranked season plus the one before, rolling).</li>
+      <li>Seasons up to 2025/26: their rules carry no <code>entry_types</code>.</li>
+      <li>International intake (ADR-106), under D1 A.</li>
+    </ul>
+  </section>
+
+
+  <section>
+    <p class="kicker">08 · Progress, 4 Oct</p>
+    <h2>Done on CERT and PROD; tests and documentation ready to push</h2>
+    <ul>
+      <li><b>Number.</b> ADR-109 was taken on <code>main</code> the same morning (environments split by host), so this record is <b>ADR-110</b> and the new requirement is <b>FR-152</b>.</li>
+      <li><b>Tests</b> (<code>85_spws_evf_joined_engine.sql</code>, 43 &rarr; 47). SE27.RANK.01&ndash;05 now set <code>entry_types</code> themselves. ROSTER.01&ndash;04 remove it and pin your rule; ROSTER.02 is KO&#323;CZY&#321;O&rsquo;s case. A mutant that leaves the gate on fails ROSTER.01 and .02. ADM27.RULES.14 (<code>84</code>) pins the new rules and is committed with the new seed.</li>
+      <li><b>Found and fixed:</b> <code>supabase/seed_post_backfill.sql</code> re-applied the old rules after every fresh LOCAL/CI rebuild. Against the new seed it would have failed the rebuild (a governed field changed on a locked season). It no longer calls <code>fn_backfill_ranking_entry_types</code>, and its ADM27 block skips a locked season.</li>
+      <li><b>LOCAL rehearsal</b> of <code>fn_revise_and_rescore_season</code>, committed only because every check passed:
+        <ul>
+          <li>revision 301 recorded (reason as approved, actor &ldquo;SPWS admin, via Claude Code&rdquo;);</li>
+          <li>25 tournaments rescored, 0 scores changed, PPW1&rsquo;s fingerprint unchanged;</li>
+          <li>the ranking went from 329 to 352 rows: exactly the 23 places of &sect;03, with nobody removed and no total changed.</li>
+        </ul>
+        Tests 84 and 85 pass on it (58).</li>
+      <li><b>CERT and PROD</b>, after your sign-off: the same checked script, revision 8 on CERT and revision 10 on PROD. Each run: 0 scores changed, PPW1&rsquo;s result fingerprint the same on CERT and PROD, the rules the same, the ranking 329 &rarr; 352 rows, exactly the 23 places of &sect;03, nobody removed, no total changed. PROD&rsquo;s public ranking call (the anon key, as the site makes it) lists KO&#323;CZY&#321;O second in men&rsquo;s V2 foil and ninth in men&rsquo;s V2 sabre.</li>
+      <li><b>Seed and LOCAL.</b> The seed exported from PROD carries the new rules; LOCAL was rebuilt from it (827 tournaments scored, 0 errors). The full pgTAP suite passes: 106 files, 1395 assertions.</li>
+      <li><b>Documentation.</b> ADR-110 written (Accepted); ADR-103 &sect;6 marked superseded, ADR-106 noted; Appendix C row; FR-141 superseded by FR-152 in the RTM, with the ROSTER tests traced; the two handbook pages (competition and ranking, scoring and ranking) in present tense.</li>
+      <li><b>Next:</b> on your go, the commit goes to <code>main</code> after <code>scripts/preflight.sh</code> exits 0; CI and Release follow. Nothing in it changes CERT or PROD data again.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Sign off</p>
+    <h2>ADR-110 draft</h2>
+    <p>Signed off 4 Oct and written to <code>doc/adr/110-ranking-entry-by-roster.md</code> (status Accepted). The draft below is kept as you signed it.</p>
+    <div class="note accent">
+      <p class="lede">ADR-110: From 2026/2027 the fencer table is the ranking entry; everyone in it with points in the window is ranked</p>
+      <p><b>Status:</b> Draft (proposed 2026-10-04; awaiting sign-off). <b>Supersedes:</b> ADR-103 &sect;6, ranking entry through PPW or MPW (FR-141); the gate mechanism stays, unused. <b>Relates to:</b> ADR-106 and ADR-020 (who enters the fencer table), ADR-100, ADR-097 (the audited revision), ADR-091 and ADR-108 (carry-over).</p>
+      <p><b>Context.</b> Under ADR-103 &sect;6 a 2026/27 fencer was ranked only with a PPW or MPW result in the ranking&rsquo;s window. On 4 Oct 2026 this left out KO&#323;CZY&#321;O Tomasz, whose last PPW/MPW start was in 2024/25 and who fenced only PEW in 2025/26. The user set the rule: the fencer table is the gate, and the ranking shows everyone in it with points in the window.</p>
+      <p><b>Decision.</b></p>
+      <ol>
+        <li>A fencer enters the fencer table only through a PPW or MPW result (ADR-020). International results (ADR-106) and PZSz results (ADR-100) never create one, and neither does a registration. This is unchanged and recorded here as the rule.</li>
+        <li>The 2026/27 ranking ranks everyone in the fencer table with points in its window: the SPWS-2026-2027 rules carry no <code>entry_types</code>. The window and the buckets are unchanged.</li>
+        <li>Fencers created before ADR-106 without a PPW/MPW start are ranked like everyone else when they have points in the window.</li>
+        <li>The gate stays, unused: <code>fn_ranking_full</code> still honours <code>entry_types</code>, and the season-rules window shows its line only when it is set. No new public text.</li>
+        <li>The change goes through <code>fn_revise_and_rescore_season</code> on CERT and PROD, with the reason &ldquo;ADR-110: ranking entry by roster (decision of 4 Oct 2026)&rdquo; and no board reference. Scores do not change, and the result fingerprint ignores revision ids and timestamps, so promote&rsquo;s comparison holds.</li>
+        <li><code>seed_post_backfill.sql</code> stops re-applying the old rules.</li>
+      </ol>
+      <p><b>Alternatives rejected.</b></p>
+      <ul>
+        <li>Keep &sect;6: it leaves out SPWS fencers with EVF+ points.</li>
+        <li>Gate intake by the window: it refuses results the rule wants counted.</li>
+        <li>Rank only fencers with a PPW/MPW start in any season: a migration, and not the table as it stands.</li>
+        <li>Remove the gate: larger.</li>
+        <li>A direct UPDATE: it bypasses ADR-097&rsquo;s audit.</li>
+      </ul>
+      <p style="margin-bottom:0"><b>Consequences.</b> The rolling 2026/27 ranking grows from 227 to 250 rows (188 to 207 fencers), with nobody removed and no total changed. SE27.RANK.01&ndash;05 set <code>entry_types</code> themselves, ROSTER.01&ndash;04 are new, and ADM27.RULES.14 pins the new rules. FR-141 is superseded by FR-152. Each environment gets one revision row, and the seed carries the new rules.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Reply &ldquo;sign off + CERT&rdquo;, or &ldquo;sign off + CERT + PROD&rdquo; to approve both environments at once</p>
+      <p style="margin-bottom:0">Each run is the same checked script as on LOCAL. It aborts, changing nothing, if a score, the PPW1 fingerprint or a ranked fencer would change.</p>
+    </div>
+  </section>
+
+  <p class="foot">plan · 4 October 2026 · SPWS Ranklist · ranking entry by roster · measured on LOCAL (PROD data of 3 Oct, rolled back) and read-only on PROD</p>
+</div>
+</body>
+</html>

@@ -130,7 +130,10 @@ SELECT ok(
 -- Part 1: SPWS-2026-2027 carries the rules chosen on 28 Sep 2026. Migration
 -- 20260928000003 sets them on CERT and PROD; on a fresh LOCAL/CI rebuild the
 -- migration runs before the seed creates the season, so seed_post_backfill.sql
--- applies the same rules after the seed. This pins that LOCAL result.
+-- applies the same rules after the seed. This pins that LOCAL result. Since
+-- 2026-10-04 (ADR-110, the audited revision on CERT and PROD) the rules carry
+-- no entry_types: everyone in the fencer table with points in the window is
+-- ranked.
 -- -----------------------------------------------------------------------------
 SELECT is(
   (SELECT sc.json_ranking_rules FROM tbl_scoring_config sc
@@ -138,8 +141,7 @@ SELECT is(
     WHERE s.txt_code = 'SPWS-2026-2027'),
   $j$
     {"domestic":[{"types":["PPW"],"best":2},{"types":["MPW"],"always":true}],
-     "international":[{"types":["PEW","MEW","MSW","PSW","PPS","MPS"],"best":5}],
-     "entry_types":["PPW","MPW"]}
+     "international":[{"types":["PEW","MEW","MSW","PSW","PPS","MPS"],"best":5}]}
   $j$::jsonb,
   'ADM27.RULES.14 SPWS-2026-2027 carries best 2 PPW + MPW and the best 5 of the six international and PZSz types');
 
