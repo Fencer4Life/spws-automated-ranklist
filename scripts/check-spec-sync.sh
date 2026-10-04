@@ -91,7 +91,9 @@ if [ -f "$RTM" ]; then
   # 150 since 2026-10-03: +FR-148–FR-151 (WordPress site navigation, PROD admin on
   #   WordPress, the framed documents, the environments split by host; ADR-090
   #   amendment 2026-10-03, ADR-109). Registered as Planned before code.
-  EXPECTED=150
+  # 151 since 2026-10-04: +FR-152 (the fencer table is the ranking entry,
+  #   ADR-110; supersedes FR-141).
+  EXPECTED=151
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

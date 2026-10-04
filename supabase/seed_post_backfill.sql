@@ -135,10 +135,9 @@ $fix_guildford$;
 -- are served by the call inside it. Idempotent.
 SELECT fn_backfill_scoring_engines();
 
--- The 2026/2027 engine (2026-09-28, ADR-103 §6): the Season Scoring Rules gain
--- entry_types. The rules arrive with the seed dump, after the migration's own
--- call ran against an empty tbl_scoring_config. Idempotent.
-SELECT fn_backfill_ranking_entry_types();
+-- ADR-110 (2026-10-04): the 2026/2027 rules carry no entry_types — everyone in
+-- the fencer table with points in the ranking's window is ranked — so the
+-- ADR-103 §6 backfill (fn_backfill_ranking_entry_types) is no longer called.
 
 -- Tournament 380 (PEW3-V2-M-SABRE-2025-2026, Munich Dec 6 2025): the v2 ingest
 -- recorded int_participant_count=2 (POL-only count) instead of the true field
@@ -376,14 +375,16 @@ SELECT fn_backfill_score_method();
 -- ADM27 Part 1 (Migration 20260928000003): SPWS-2026-2027 ranking buckets —
 -- best 2 PPW + MPW; the full ranking adds the best 5 of PEW, MEW, MSW, PSW, PPS,
 -- MPS. Repeated here for LOCAL dev, where the migration ran before the seed
--- created the season. PROD/CERT run the migration directly; the next seed
--- export from PROD carries these rules itself. Same admin contract, so a
--- locked season is refused rather than silently rewritten.
+-- created the season. PROD/CERT run the migration directly; the seed export
+-- from PROD carries the rules itself. A locked season is skipped: its rules
+-- come with the seed (since 2026-10-04 without entry_types, ADR-110), and
+-- this block never rewrites a governed field.
 DO $adm27$
 DECLARE
   v_season INT;
 BEGIN
-  SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027';
+  SELECT id_season INTO v_season FROM tbl_season
+   WHERE txt_code = 'SPWS-2026-2027' AND ts_scoring_locked_at IS NULL;
   IF v_season IS NULL THEN
     RETURN;
   END IF;
@@ -391,7 +392,6 @@ BEGIN
     'id_season', v_season,
     'ranking_rules', $j$
       {"domestic": [{"types": ["PPW"], "best": 2}, {"types": ["MPW"], "always": true}],
-       "international": [{"types": ["PEW", "MEW", "MSW", "PSW", "PPS", "MPS"], "best": 5}],
-       "entry_types": ["PPW", "MPW"]}
+       "international": [{"types": ["PEW", "MEW", "MSW", "PSW", "PPS", "MPS"], "best": 5}]}
     $j$::JSONB));
 END $adm27$;
