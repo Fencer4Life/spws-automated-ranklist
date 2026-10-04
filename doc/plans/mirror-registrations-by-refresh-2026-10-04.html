@@ -1,0 +1,224 @@
+<meta charset="utf-8">
+<title>LOCAL mirror registrations</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">LOCAL mirror · registrations · ADR-036 &sect;3 · Record</p>
+  <h1>The LOCAL mirror copies registrations like the refresh</h1>
+  <p class="dek"><code>mirror-prod-local.sh</code> loaded PROD&rsquo;s registrations with a copy of its own, which left out the club and FTL name. Promote&rsquo;s LOCAL rehearsal then stopped at <code>input.registrations</code>. The mirror now uses the CERT refresh&rsquo;s own copy and checks that the result matches PROD.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Built and verified on LOCAL, 4 Oct</span>
+    <span class="pill">pytest PROMO.REFRESH.24&ndash;28</span>
+    <span class="pill">no migration</span>
+    <span class="pill warn"><span class="dot"></span>Not pushed: waits on your go</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Why</p>
+    <h2>Same rows, different hash</h2>
+    <p>On 3 October the rehearsal mirrored PROD to LOCAL. Both held 90 PPW1 registrations, but promote&rsquo;s gate refused on <code>input.registrations</code> and wrote nothing (<code>promote-rehearsal-2026-10-03.html</code>, step 7). The cause is in what step 5 inserted:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Column</th><th>The fingerprint hashes it</th><th>The refresh copied it</th><th>Old mirror step 5</th></tr></thead>
+      <tbody>
+        <tr><td>names, gender, birth year, weapons, fencer link</td><td>yes</td><td>yes</td><td>yes</td></tr>
+        <tr><td><code>txt_club</code></td><td>yes</td><td>yes</td><td><b>no</b>: 41 of PPW1&rsquo;s 90 and 4 of PEW5efs&rsquo;s 18 have one on PROD</td></tr>
+        <tr><td><code>txt_ftl_name</code></td><td>yes</td><td>yes</td><td><b>no</b></td></tr>
+        <tr><td><code>txt_consent_version</code></td><td>no</td><td>no (stays on PROD)</td><td><b>copied</b></td></tr>
+      </tbody>
+    </table></div>
+    <p>The fingerprint (<code>fn_event_input_fingerprint</code>, migration <code>20261003000014</code>) hashes the columns the refresh copies, so a LOCAL copy without clubs can never match PROD.</p>
+  </section>
+
+  <section>
+    <p class="kicker">02 · What changed</p>
+    <h2>One copy, used by both</h2>
+    <ul>
+      <li><b>Step 5 of <code>scripts/mirror-prod-local.sh</code></b> is now one line: <code>python -m python.pipeline.promotion.refresh --target local --mode registrations</code>. The script writes no registration SQL of its own.</li>
+      <li><b><code>run_copy_registrations</code></b> in <code>python/pipeline/promotion/refresh.py</code>:
+        <ul>
+          <li>refuses any target but LOCAL. CERT keeps copying only the ingested event, in <code>--mode apply --event</code> (ADR-108 &sect;2);</li>
+          <li>refuses unless LOCAL&rsquo;s roster equals PROD&rsquo;s, id for id, because the entries carry PROD&rsquo;s fencer ids;</li>
+          <li>sends every PROD event with entries through <code>fn_replace_event_registrations</code>, the same call and columns the refresh uses. No e-mail hash, edit token or consent stamp;</li>
+          <li>fails unless each event&rsquo;s registrations part of the input fingerprint then equals PROD&rsquo;s.</li>
+        </ul></li>
+      <li><b><code>--event CODE</code></b> narrows the copy to one event.</li>
+      <li><b>PROD is only read</b>, inside a read-only transaction, as in every refresh mode.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Tests</p>
+    <h2>Red first, then green</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Pins</th></tr></thead>
+      <tbody>
+        <tr><td>PROMO.REFRESH.24</td><td>CERT is refused, by the function and the CLI, before anything is read or written.</td></tr>
+        <tr><td>PROMO.REFRESH.25</td><td>A roster that differs from PROD&rsquo;s stops the copy before any write.</td></tr>
+        <tr><td>PROMO.REFRESH.26</td><td>One <code>fn_replace_event_registrations</code> per PROD event. It carries the club and FTL name, never the consent stamp, and writes nothing to PROD. <code>event_code</code> narrows the copy to one event.</td></tr>
+        <tr><td>PROMO.REFRESH.27</td><td>A registrations part that still differs afterwards fails and names the event.</td></tr>
+        <tr><td>PROMO.REFRESH.28</td><td>The mirror script calls the copy and contains no <code>INSERT INTO tbl_registration</code> and no consent stamp.</td></tr>
+      </tbody>
+    </table></div>
+    <p>All five failed before the code existed. Now all 28 tests in <code>test_promotion_refresh.py</code> pass, and ruff is clean.</p>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Verified on real data, 4 Oct</p>
+    <h2>LOCAL&rsquo;s inputs equal PROD&rsquo;s</h2>
+    <ul>
+      <li><b>The copy alone</b>, on a LOCAL rebuilt from PROD&rsquo;s seed: PEW5efs 2026/27 got 18 entries and PPW1 2026/27 got 90; both registrations parts equal PROD&rsquo;s.</li>
+      <li><b>The full mirror</b> (<code>mirror-prod-local.sh</code>, exit 0):
+        <ul>
+          <li>roster equal to PROD&rsquo;s, id for id;</li>
+          <li>step 5 reported &ldquo;local registrations equal PROD&rsquo;s in 2 event(s)&rdquo;;</li>
+          <li>373 fencers, 2 same-name pairs, 108 registrations.</li>
+        </ul></li>
+      <li><b>Every part of the input fingerprint</b>, LOCAL against PROD, after that mirror: PPW1 and PEW5efs equal as a whole, no part differing. This is the comparison promote&rsquo;s gate makes.</li>
+      <li><b>Side effects:</b> none. Today&rsquo;s re-export of the seed was byte-identical to the committed <code>seed_prod_2026-10-04.sql</code>, and the seed pointer was restored.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Documentation gate</p>
+    <h2>Pages updated</h2>
+    <ul>
+      <li>ADR-036: new &sect;3 in the 2026-10-03 amendment, and its status line. Specification Appendix C: the ADR-036 row.</li>
+      <li>RTM FR-86: PROMO.REFRESH.01&ndash;28.</li>
+      <li>Handbook: <code>operations/environments-and-release.html</code> (the mirror&rsquo;s registration step) and <code>reference/codebase-map.html</code> (<code>refresh.py</code>).</li>
+      <li><code>promote-rehearsal-2026-10-03.html</code>: the &ldquo;found on the way&rdquo; box points here.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Not changed</p>
+    <h2>Boundaries</h2>
+    <ul>
+      <li>The CERT refresh: it still copies only the ingested event&rsquo;s registrations.</li>
+      <li><code>fn_replace_event_registrations</code> and the fingerprint: no migration.</li>
+      <li>The seed: registrations stay out of it (ADR-079 keeps them ephemeral).</li>
+      <li>LOCAL no longer holds PROD&rsquo;s consent stamps, by the same data-minimisation rule as CERT.</li>
+    </ul>
+  </section>
+
+  <p class="foot">record · LOCAL mirror registrations by the refresh&rsquo;s copy · 4 Oct 2026</p>
+</div>

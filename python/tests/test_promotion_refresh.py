@@ -1,4 +1,4 @@
-"""PROMO.REFRESH.01–23 — CERT starts from PROD's master data with identical fencer ids.
+"""PROMO.REFRESH.01–28 — CERT starts from PROD's master data with identical fencer ids.
 
 ADR-108 §2–§3. The administrator's rule: the fencer id is the same on LOCAL, CERT
 and PROD, and nothing is guessed. `python.pipeline.promotion.refresh`:
@@ -500,3 +500,106 @@ class TestRestore:
         monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "not-a-real-token")
         assert rf.main(["--target", "cert", "--mode", "apply"]) == 1
         assert rf.main(["--target", "cert", "--mode", "restore"]) == 1
+
+
+_REG = {
+    "txt_surname": "CHUDY",
+    "txt_first_name": "Tomasz",
+    "enum_gender": "M",
+    "int_birth_year": 1977,
+    "arr_weapons": ["EPEE"],
+    "txt_ftl_name": None,
+    "txt_club": "AZS AWF Warszawa",
+    "id_fencer": 38,
+    "txt_consent_version": "v1.0",
+}
+
+
+def _mirror_world(target_roster, *, target_part="aa11", prod_events=None):
+    """PROD with entries in two events; a LOCAL target whose roster and registrations
+    part are given. The registered-events key comes first: the fake answers by the
+    first key found, and that query also reads tbl_registration."""
+    prod = _FakeTransport(
+        {
+            "SELECT DISTINCT e.txt_code": prod_events
+            if prod_events is not None
+            else ["PEW5efs-2026-2027", "PPW1-2026-2027"],
+            "FROM tbl_registration": [_REG],
+            "fn_event_input_fingerprint": "aa11",
+            "FROM tbl_fencer f": [_f(38, "CHUDY", "Tomasz", 1977)],
+        },
+        read_only=True,
+    )
+    target = _FakeTransport(
+        {
+            "fn_replace_event_registrations": {"deleted": 0, "inserted": 1},
+            "fn_event_input_fingerprint": target_part,
+            "FROM tbl_fencer f": target_roster,
+        }
+    )
+    return rf.ProdReader(prod), target, prod
+
+
+class TestMirrorRegistrations:
+    """ADR-036 §3: the LOCAL mirror loads registrations by the refresh's own copy, so
+    LOCAL's registrations part of the input fingerprint equals PROD's (the 3 Oct
+    rehearsal stopped at input.registrations after mirror-prod-local.sh)."""
+
+    def test_only_local_mirrors_every_event(self, monkeypatch: pytest.MonkeyPatch):
+        """PROMO.REFRESH.24 — CERT copies one event in the refresh apply (ADR-108 §2);
+        the every-event copy is refused for it before anything is read or written."""
+        prod, target_t, prod_t = _mirror_world([_f(38, "CHUDY", "Tomasz", 1977)])
+        with pytest.raises(rf.RefreshError, match="LOCAL"):
+            rf.run_copy_registrations(prod, rf.TargetDb("cert", target_t))
+        assert target_t.sql == [] and prod_t.sql == []
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "not-a-real-token")
+        assert rf.main(["--target", "cert", "--mode", "registrations"]) == 1
+
+    def test_a_roster_that_differs_from_prods_stops_the_copy(self):
+        """PROMO.REFRESH.25 — the entries carry PROD's fencer ids, so the roster must
+        equal PROD's id for id before any is written."""
+        prod, target_t, _ = _mirror_world([_f(38, "CHUDY", "Tomasz", 1980)])
+        with pytest.raises(rf.RefreshError, match="roster differs"):
+            rf.run_copy_registrations(prod, rf.TargetDb("local", target_t))
+        assert not any("fn_replace_event_registrations" in s for s in target_t.sql)
+
+    def test_every_prod_event_is_copied_by_the_refreshs_call(self):
+        """PROMO.REFRESH.26 — one fn_replace_event_registrations per PROD event with
+        entries, carrying only what the ingestion reads: the club and FTL name, never
+        the consent stamp. `event_code` narrows the copy to one event."""
+        prod, target_t, prod_t = _mirror_world([_f(38, "CHUDY", "Tomasz", 1977)])
+        out = rf.run_copy_registrations(prod, rf.TargetDb("local", target_t))
+        assert out == {
+            "PEW5efs-2026-2027": {"deleted": 0, "inserted": 1},
+            "PPW1-2026-2027": {"deleted": 0, "inserted": 1},
+        }
+        calls = [s for s in target_t.sql if "fn_replace_event_registrations" in s]
+        assert [c.split("'")[1] for c in calls] == ["PEW5efs-2026-2027", "PPW1-2026-2027"]
+        for call in calls:
+            assert "AZS AWF Warszawa" in call and '"txt_ftl_name"' in call
+            assert "txt_consent_version" not in call and "v1.0" not in call
+        assert not any("INSERT" in s.upper() for s in prod_t.sql)
+
+        prod, target_t, _ = _mirror_world([_f(38, "CHUDY", "Tomasz", 1977)])
+        out = rf.run_copy_registrations(
+            prod, rf.TargetDb("local", target_t), event_code="PPW1-2026-2027"
+        )
+        assert list(out) == ["PPW1-2026-2027"]
+
+    def test_the_copy_ends_with_prods_registrations_part(self):
+        """PROMO.REFRESH.27 — afterwards each event's registrations part of
+        fn_event_input_fingerprint equals PROD's; a difference names the event."""
+        prod, target_t, _ = _mirror_world([_f(38, "CHUDY", "Tomasz", 1977)], target_part="bb22")
+        with pytest.raises(rf.RefreshError, match="PEW5efs-2026-2027, PPW1-2026-2027"):
+            rf.run_copy_registrations(prod, rf.TargetDb("local", target_t))
+        parts = [s for s in target_t.sql if "fn_event_input_fingerprint" in s]
+        assert len(parts) == 2 and all("'registrations'" in s for s in parts)
+
+
+def test_the_mirror_loads_registrations_through_the_refresh():
+    """PROMO.REFRESH.28 — mirror-prod-local.sh writes no registration SQL of its own:
+    its registration step is the refresh's every-event copy on LOCAL."""
+    script = (Path(__file__).resolve().parents[2] / "scripts" / "mirror-prod-local.sh").read_text()
+    assert "python.pipeline.promotion.refresh --target local --mode registrations" in script
+    assert "INSERT INTO tbl_registration" not in script
+    assert "txt_consent_version" not in script
