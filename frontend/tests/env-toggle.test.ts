@@ -1,8 +1,16 @@
-// Plan tests: 8.01, 8.02, 8.03, 8.04 — CERT/PROD env toggle.
+// Plan tests: 8.02 — CERT/PROD environment pairs (T8.0).
 // See doc/archive/m8_implementation_plan.md §T8.0.
+//
+// WP.ENV.01–02 — each host serves one environment (ADR-109, FR-151; plan
+// doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html §05).
+// github.io gets both pairs but shows CERT only, with a TEST ribbon and no CT/PD
+// switch; the PROD pair stays there for one read: which seasons already exist on
+// PROD (ADR-077 promotion). WordPress gets the PROD pair only. WP.ENV.01 replaces
+// 8.01, 8.03 and 8.04, which asserted the switch that ADR-109 removes.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
+import { tick } from 'svelte'
 
 // Mock the api module before importing App
 vi.mock('../src/lib/api', () => ({
@@ -14,41 +22,40 @@ vi.mock('../src/lib/api', () => ({
   fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),
   fetchRankingKadra: vi.fn().mockResolvedValue([]),
+  fetchRankingFull: vi.fn().mockResolvedValue([]),
   fetchFencerScores: vi.fn().mockResolvedValue([]),
   fetchRankingRules: vi.fn().mockResolvedValue(null),
+  fetchScoringConfig: vi.fn().mockResolvedValue(null),
   // ADR-084 — the calendar view spans every season, so App loads through this.
   fetchAllCalendarEvents: vi.fn().mockResolvedValue([]),
+  fetchCalendarEvents: vi.fn().mockResolvedValue([]),
+  // ADR-077 — the promotion state of each season, read on the Seasons view.
+  fetchSeasonChildState: vi.fn().mockResolvedValue({}),
+  fetchProdSeasonCodes: vi.fn().mockResolvedValue([]),
 }))
 
+vi.mock('../src/lib/admin-auth.svelte', () => import('./helpers/fakeAdminAuth.svelte'))
+
 import App from '../src/App.svelte'
-import { initClient } from '../src/lib/api'
+import { initClient, fetchSeasons, fetchProdSeasonCodes } from '../src/lib/api'
+import { setAuthStep } from './helpers/fakeAdminAuth.svelte'
 
 const CERT_URL = 'https://cert.supabase.co'
 const CERT_KEY = 'cert-key-123'
 const PROD_URL = 'https://prod.supabase.co'
 const PROD_KEY = 'prod-key-456'
 
+const BOTH = {
+  'supabase-cert-url': CERT_URL,
+  'supabase-cert-key': CERT_KEY,
+  'supabase-prod-url': PROD_URL,
+  'supabase-prod-key': PROD_KEY,
+}
+
 describe('Env toggle (T8.0)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  // 8.01 — Both CERT + PROD creds → env toggle rendered
-  it('renders env toggle when both CERT and PROD creds provided', () => {
-    const { container } = render(App, {
-      props: {
-        'supabase-cert-url': CERT_URL,
-        'supabase-cert-key': CERT_KEY,
-        'supabase-prod-url': PROD_URL,
-        'supabase-prod-key': PROD_KEY,
-      },
-    })
-    const toggle = container.querySelector('.env-toggle')
-    expect(toggle).not.toBeNull()
-    const buttons = toggle!.querySelectorAll('.env-btn')
-    expect(buttons.length).toBe(2)
-    expect(buttons[0].textContent).toBe('CT')
-    expect(buttons[1].textContent).toBe('PD')
+    setAuthStep('idle')
   })
 
   // 8.02 — Only CERT creds → env toggle hidden
@@ -64,52 +71,85 @@ describe('Env toggle (T8.0)', () => {
     const toggle = container.querySelector('.env-toggle')
     expect(toggle).toBeNull()
   })
+})
 
-  // 8.03 — Click PD → activeEnv = PROD, initClient called with PROD URL
-  it('switches to PROD when PD button clicked', async () => {
-    const { container } = render(App, {
-      props: {
-        'supabase-cert-url': CERT_URL,
-        'supabase-cert-key': CERT_KEY,
-        'supabase-prod-url': PROD_URL,
-        'supabase-prod-key': PROD_KEY,
-      },
-    })
-
-    // Initially CERT is active
-    const buttons = container.querySelectorAll('.env-btn')
-    expect(buttons[0].classList.contains('active')).toBe(true) // CT active
-
-    // Click PD
-    await fireEvent.click(buttons[1])
-
-    // PD should now be active
-    expect(buttons[1].classList.contains('active')).toBe(true)
-    // initClient should have been called with PROD creds
-    expect(initClient).toHaveBeenCalledWith(PROD_URL, PROD_KEY)
-  })
-
-  // 8.04 — Click CT → activeEnv = CERT, initClient called with CERT URL
-  it('switches back to CERT when CT button clicked after PROD', async () => {
-    const { container } = render(App, {
-      props: {
-        'supabase-cert-url': CERT_URL,
-        'supabase-cert-key': CERT_KEY,
-        'supabase-prod-url': PROD_URL,
-        'supabase-prod-key': PROD_KEY,
-      },
-    })
-
-    const buttons = container.querySelectorAll('.env-btn')
-
-    // Switch to PROD first
-    await fireEvent.click(buttons[1])
+describe('WP.ENV.01 — github.io (both pairs) is CERT only', () => {
+  beforeEach(() => {
     vi.clearAllMocks()
-
-    // Switch back to CERT
-    await fireEvent.click(buttons[0])
-
-    expect(buttons[0].classList.contains('active')).toBe(true)
-    expect(initClient).toHaveBeenCalledWith(CERT_URL, CERT_KEY)
+    setAuthStep('idle')
+    vi.mocked(fetchSeasons).mockResolvedValue([
+      { id_season: 1, txt_code: 'SPWS-2026-2027', dt_start: '2026-07-13', dt_end: '2027-07-15', bool_active: true },
+    ] as never)
   })
+
+  // The ribbon as signed off with ADR-109 (doc/adr/assets/adr-109-ribbon.png):
+  // "ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl", the short
+  // "ŚRODOWISKO TESTOWE · TEST" on a phone, leading to the real site.
+  const expectRibbon = (container: HTMLElement) => {
+    const ribbon = container.querySelector('a.env-ribbon') as HTMLAnchorElement | null
+    expect(ribbon).not.toBeNull()
+    expect(ribbon!.getAttribute('href')).toBe('https://weteraniszermierki.pl')
+    expect(ribbon!.querySelector('.env-ribbon-long')?.textContent?.trim())
+      .toBe('ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl')
+    expect(ribbon!.querySelector('.env-ribbon-short')?.textContent?.trim())
+      .toBe('ŚRODOWISKO TESTOWE · TEST')
+  }
+
+  it('shows no CT/PD switch and a TEST ribbon, and works on CERT', () => {
+    const { container } = render(App, { props: BOTH })
+    expect(container.querySelector('.env-toggle')).toBeNull()
+    expect(container.querySelector('.env-btn')).toBeNull()
+    expectRibbon(container)
+    expect(initClient).toHaveBeenCalledWith(CERT_URL, CERT_KEY)
+    expect(initClient).not.toHaveBeenCalledWith(PROD_URL, PROD_KEY)
+  })
+
+  it('the calendar view shows no switch either, and keeps the ribbon', async () => {
+    const { container } = render(App, { props: { ...BOTH, view: 'calendar' } })
+    await tick()
+    expect(container.querySelector('.calendar-view')).not.toBeNull()
+    expect(container.querySelector('.env-toggle')).toBeNull()
+    expect(container.querySelector('.env-btn')).toBeNull()
+    expectRibbon(container)
+  })
+
+  it('still reads from PROD which seasons are already there (promotion, ADR-077)', async () => {
+    const { container } = render(App, { props: BOTH })
+    await vi.waitFor(() => expect(fetchSeasons).toHaveBeenCalled())
+    await tick()
+    setAuthStep('authenticated')
+    await tick()
+
+    const seasonsItem = Array.from(container.querySelectorAll('.sidebar .admin-item'))
+      .find((b) => b.textContent?.trim() === 'Sezony')
+    expect(seasonsItem).toBeDefined()
+    await fireEvent.click(seasonsItem!)
+
+    await vi.waitFor(() => expect(fetchProdSeasonCodes).toHaveBeenCalledWith(PROD_URL, PROD_KEY))
+    // A read of PROD, never a switch of the whole page to PROD.
+    expect(initClient).not.toHaveBeenCalledWith(PROD_URL, PROD_KEY)
+    expect(container.querySelector('.env-ribbon')).not.toBeNull()
+  })
+})
+
+// A guard for the WordPress side: it already works on PROD with no switch; this
+// keeps it there (and keeps the ribbon off it) once github.io gains the ribbon.
+// Proven by mutation (an unconditional ribbon, or CERT as the default, turns it red).
+describe('WP.ENV.02 — WordPress (the PROD pair only) is PROD, without a ribbon', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setAuthStep('idle')
+  })
+
+  for (const chrome of ['none', 'site'] as const) {
+    it(`chrome="${chrome}": no ribbon, no switch, and the client — and so every dispatch — targets PROD`, () => {
+      const { container } = render(App, {
+        props: { 'supabase-prod-url': PROD_URL, 'supabase-prod-key': PROD_KEY, chrome, view: 'calendar' },
+      })
+      expect(container.querySelector('.env-ribbon')).toBeNull()
+      expect(container.querySelector('.env-toggle')).toBeNull()
+      expect(initClient).toHaveBeenCalledWith(PROD_URL, PROD_KEY)
+      expect(initClient).not.toHaveBeenCalledWith(CERT_URL, CERT_KEY)
+    })
+  }
 })

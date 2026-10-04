@@ -2,10 +2,18 @@
 
 **Status:** Accepted (proposed 2026-09-11, signed off 2026-09-11)
 **Date:** 2026-09-11
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the annex becomes the signed-off 64 × 64 table). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the annex is rewritten for the joined rule).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the annex becomes the signed-off 64 × 64 table). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the annex is rewritten for the joined rule). [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (amendment 2026-10-03 — framed on the association's site).
 **Amends:** [ADR-015](015-m8-ui-design-decisions.md) §1 (App Navigation — Sidebar Drawer) — the drawer gains a **fourth** entry, again an external link rather than a view switch; §§2–9 untouched. [ADR-085](085-points-calculator-temporary-static-page.md) — its *Tests* consequence only: plan test 8.84 pins the drawer's entry list as an equality, so a fourth entry necessarily extends that assertion. ADR-085 §§1–3 — the calculator's publication mechanism, its status as an exception and its expiry condition — are untouched.
 **Relates to:** [ADR-085](085-points-calculator-temporary-static-page.md) §2, which requires any further standalone page to carry its own decision — this is that decision; [ADR-011](011-artifact-release-pipeline.md) (the page rides the existing Pages artifact, unchanged); [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (the eventual WordPress destination); [ADR-079](079-event-self-registration-identity.md) and [ADR-007](007-shadow-dom-deferred.md) (`register.html`, built as a custom element through `vite.config.ce.ts` — deliberately *not* the mechanism used here)
 **Source:** `doc/plans/tabela-punktacji-2026-09-11.html` §6
+
+## Amendment (2026-10-04 — framed on the association's site)
+
+The annex keeps its address and its content and order. It also keeps the bilingual CSS switch, the season pin and the `noindex` rule of §4.
+
+- **A generated PROD copy for the site.** The generator writes `embed/tabela-punktacji.html`, a PROD copy without the TEST ribbon, the page's own language bar and its banner. `<spws-document doc="tabela-punktacji">` frames that copy on `/tabela-punktacji/`, under the SPWS bar ([ADR-090 amendment 2026-10-03](090-prod-surface-as-wordpress-menu-item.md)).
+- **github.io is CERT.** The github.io copy is a CERT copy under the TEST ribbon ([ADR-109](109-environments-split-by-host.md)).
+- **The controls and colours follow the calculator's:** „Stawka" as two segments, the type chips as one segmented control, and a soft-blue result. These are markup and CSS changes only.
 
 ## Amendment (2026-09-30 — the annex is rewritten for the joined rule)
 

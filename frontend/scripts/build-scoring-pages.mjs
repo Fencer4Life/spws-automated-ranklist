@@ -13,10 +13,11 @@
 // forbids: "Preserve both published URLs".
 //
 // A second option — emitting one .js beside them and having each page import it
-// — would work, but it turns the WordPress calculator into TWO files that must
-// be uploaded together, and that page exists precisely to be hand-carried as a
-// single file. So the formula is GENERATED INTO each page between markers, and
-// this script is the only thing allowed to write between them.
+// — was rejected while the calculator was also carried by hand to WordPress as
+// one file (ADR-102). That upload copy is retired (ADR-090 amendment
+// 2026-10-03), but each page still carries the formula inside it: the formula
+// is GENERATED INTO each page between markers, and this script is the only
+// thing allowed to write between them.
 //
 // WHAT THIS GUARANTEES
 // -----------------------------------------------------------------------------
@@ -25,12 +26,11 @@
 // page has drifted — the same contract scripts/render_docs.py --check provides
 // for the generated HTML twins.
 //
-// THE THREE-WAY IDENTITY IS PRESERVED
+// THE PUBLISHED COPY IS THE SOURCE
 // -----------------------------------------------------------------------------
-// frontend/tests/assets.test.ts asserts published === source for the calculator
-// AND wordpress === source. This script writes the doc/tools/ source, then
-// copies it byte-for-byte to its published and WordPress destinations, so that
-// assertion keeps holding rather than needing to be relaxed.
+// frontend/tests/assets.test.ts asserts published === source for both pages.
+// This script writes the doc/tools/ source, then copies it byte-for-byte to its
+// published destination, so that assertion holds without being relaxed.
 //
 // Usage:
 //   node scripts/build-scoring-pages.mjs            # write
@@ -38,7 +38,7 @@
 // =============================================================================
 
 import { build } from 'esbuild'
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -53,21 +53,97 @@ const BEGIN = '/* === SPWS-SCORING-MODULE:BEGIN'
 // throws SyntaxError at load — invisible to every unit test, fatal in the browser.
 const END = '/* === SPWS-SCORING-MODULE:END === */'
 
-// Each published artefact: the doc/tools/ source that carries the markers, and
-// every destination that must stay byte-identical to it.
+// Each published artefact: the doc/tools/ source that carries the markers,
+// every destination that must stay byte-identical to it, and its embed copy.
+//
+// THE EMBED COPIES (ADR-090 amendment 2026-10-03, FR-150)
+// -----------------------------------------------------------------------------
+// <spws-document> frames frontend/public/embed/<page>.html on the association's
+// WordPress pages, under the SPWS bar, and release.yml fills it with the PROD
+// pair. It is the same page with three things removed and one added: the blocks
+// between SPWS-EMBED:OMIT markers go (the TEST ribbon and its style, the page's
+// own language bar and its banner — the SPWS bar does those jobs there), and a
+// script that reports the page's height to the frame is added before </body>.
+// In markup the markers are HTML comments; inside <style> they are CSS comments,
+// because an HTML comment is not a comment there. The scoring module block is
+// untouched, so the maths is the same bytes (ADR-102), and --check guards these
+// copies like every other.
 const ARTEFACTS = [
   {
     source: 'doc/tools/kalkulator-punktow-za-wynik-spws.v2.html',
-    copies: [
-      'frontend/public/kalkulator-punktow.html',
-      'doc/tools/WP-kalkulator-punktow-za-wynik-spws.html',
-    ],
+    copies: ['frontend/public/kalkulator-punktow.html'],
+    embed: 'frontend/public/embed/kalkulator-punktow.html',
   },
   {
     source: 'doc/tools/Tabela-punktacji-SPWS_2026-2027.html',
     copies: ['frontend/public/tabela-punktacji.html'],
+    embed: 'frontend/public/embed/tabela-punktacji.html',
   },
 ]
+
+const OMIT_BLOCK =
+  /[ \t]*(?:<!-- SPWS-EMBED:OMIT:BEGIN -->[\s\S]*?<!-- SPWS-EMBED:OMIT:END -->|\/\* SPWS-EMBED:OMIT:BEGIN \*\/[\s\S]*?\/\* SPWS-EMBED:OMIT:END \*\/)\n?/g
+
+// What the framed page tells the framing element. The frame cannot see into
+// the page, so the page says how tall it is, and again whenever that changes
+// (fonts, the season's parameters arriving, a folded tool opening). And a link
+// to the rules, followed inside the frame, would open the annex there, under a
+// bar that names the calculator — so the page asks the element to open the
+// site's annex page instead (WP.DOC.04). The element believes only the asset
+// base's origin and opens only addresses its own page gives; nothing here is
+// sensitive, so any parent may hear it.
+const FRAME_BRIDGE = `  <!-- SPWS-EMBED: the bridge to the framing <spws-document>: the height
+       report and the request to open the annex (ADR-090 amendment 2026-10-03,
+       FR-150). Added by the generator. -->
+  <script>
+    (function () {
+      if (window.parent === window) return;
+      var last = 0;
+      function report() {
+        var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+        if (h > 0 && h !== last) {
+          last = h;
+          window.parent.postMessage({ type: 'spws-doc-height', height: h }, '*');
+        }
+      }
+      if ('ResizeObserver' in window) {
+        var ro = new ResizeObserver(report);
+        ro.observe(document.documentElement);
+        ro.observe(document.body);
+      }
+      window.addEventListener('load', report);
+      report();
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a.annex-link') : null;
+        if (!a) return;
+        e.preventDefault();
+        window.parent.postMessage({ type: 'spws-doc-nav', page: 'table' }, '*');
+      });
+    })();
+  </script>
+`
+
+function toEmbed(html, source, embedPath) {
+  const omitted = html.match(OMIT_BLOCK) ?? []
+  // The ribbon's style, the ribbon, and the language bar with the banner:
+  // fewer means a marker was lost.
+  if (omitted.length < 3) {
+    throw new Error(`${source}: expected at least 3 SPWS-EMBED:OMIT blocks, found ${omitted.length}.`)
+  }
+  let out = html.replace(OMIT_BLOCK, '')
+  if (out.includes('SPWS-EMBED:OMIT')) {
+    throw new Error(`${source}: an unpaired SPWS-EMBED:OMIT marker.`)
+  }
+  if (out.split('<body>').length !== 2 || out.split('</body>').length !== 2) {
+    throw new Error(`${source}: expected exactly one <body> and one </body>.`)
+  }
+  const banner =
+    `<!-- ${embedPath}: GENERATED from ${source} by frontend/scripts/build-scoring-pages.mjs.\n` +
+    '     DO NOT EDIT. The copy <spws-document> frames on WordPress: no ribbon, no\n' +
+    '     language bar, no banner, and a height report. -->\n'
+  out = out.replace('<body>\n', `<body>\n${banner}`)
+  return out.replace('</body>', `${FRAME_BRIDGE}</body>`)
+}
 
 /** Bundle scoring.ts to a plain browser script exposing globalThis.SPWSScoring. */
 async function bundleModule() {
@@ -121,7 +197,9 @@ async function main() {
       stale.push(artefact.source)
       if (!check) await writeFile(sourcePath, next, 'utf8')
     }
-    for (const copy of artefact.copies) {
+    const expected = artefact.copies.map((copy) => [copy, next])
+    expected.push([artefact.embed, toEmbed(next, artefact.source, artefact.embed)])
+    for (const [copy, content] of expected) {
       const copyPath = resolve(ROOT, copy)
       let existing = null
       try {
@@ -129,9 +207,12 @@ async function main() {
       } catch {
         /* a missing copy is stale by definition */
       }
-      if (existing !== next) {
+      if (existing !== content) {
         stale.push(copy)
-        if (!check) await writeFile(copyPath, next, 'utf8')
+        if (!check) {
+          await mkdir(dirname(copyPath), { recursive: true })
+          await writeFile(copyPath, content, 'utf8')
+        }
       }
     }
   }

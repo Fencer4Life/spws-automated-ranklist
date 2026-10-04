@@ -1,10 +1,12 @@
-<!-- Reference copy of WordPress page 13505, /pliki-zasilajace-xml-ftl/.
-     The CMS is the source of truth; this is a checked-in copy so the published
-     body is diffable and recoverable, not a deployable artifact and not synced.
-     Read the live one with:
-       scripts/wp_publish_page.py get --slug pliki-zasilajace-xml-ftl --content-out <path>
-     supabase-prod-key is redacted here on the same rule frontend/register.html
-     follows: the PROD anon key is not committed, it is injected at release. -->
+<!-- Reference copy of WordPress page 13505, /pliki-zasilajace-xml-ftl/ (a capability
+     link, not in the menu). Below this note it matches the live body (checked 4 Oct 2026).
+     The CMS is the source of truth. Publish this copy with
+       WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id 13505 \
+         --content-file doc/wordpress/pliki-zasilajace-xml-ftl.html
+     The script drops this note, fills @@SUPABASE_PROD_KEY@@ from
+     SUPABASE_PROD_ANON_KEY and never prints the key; the key is never committed.
+     Read the live body with
+       scripts/wp_publish_page.py get --slug pliki-zasilajace-xml-ftl --content-out <path> -->
 <style>
 /* Full-screen FTL export page: the theme's chrome is removed on THIS page only
    (ADR-090 §7), the same treatment and the same selectors as /znajdz-zawody/.

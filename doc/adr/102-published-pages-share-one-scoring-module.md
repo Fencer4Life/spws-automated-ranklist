@@ -2,11 +2,19 @@
 
 **Status:** Accepted (proposed 2026-09-20; signed off 2026-09-28, with the open items resolved as recommended)
 **Date:** 2026-09-20
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the module gains the new engine and loses field-scaled; public parameters are per type). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the module implements the joined engine and scores a whole bracket; place-and-medal is removed).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the module gains the new engine and loses field-scaled; public parameters are per type). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the module implements the joined engine and scores a whole bracket; place-and-medal is removed). [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (amendment 2026-10-03 — the `embed/` copies; the WordPress upload copy is retired).
 **Supersedes:** [ADR-085](085-points-calculator-temporary-static-page.md) §3 (Expiry condition) — its *intent* is fulfilled and its *mechanism* is reversed: the calculator is driven by the ranklist scoring engine as §3 required, but it is **kept at its address** rather than removed, and plan test 8.88 is kept rather than deleted. §§1–2 (publication mechanism, exception-not-pattern) are untouched and still bind.
 **Amends:** [ADR-092](092-scoring-table-annex-bilingual-static-page.md) — the scoring-table annex stops carrying its own copy of the formula and computes from the shared module. Its identity is unchanged: it stays *Załącznik nr 1* pinned to `SPWS-2026-2027`, by season code, and does not follow the active season.
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (deny-by-default: the new function is granted to `anon` in both copies of the allowlist), [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the lock that freezes these pages along with the scorer), [ADR-011](011-artifact-release-pipeline.md) (both pages still ride the same Pages artifact), [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (the WordPress destination), [ADR-066](066-min-participants-ingestion-gate.md) (walkover brackets, which the new base re-prices)
 **Source:** `doc/plans/versioned-season-scoring-and-pzsz-ranking-design.html` §08 and §11 step 8
+
+## Amendment (2026-10-04 — the copies the generator writes)
+
+`frontend/scripts/build-scoring-pages.mjs` writes each page's `doc/tools/` source to its github.io copy. Since the [ADR-090 amendment of 2026-10-03](090-prod-surface-as-wordpress-menu-item.md), it also writes an `embed/` copy, which the WordPress frames show.
+
+- **What an `embed/` copy drops and adds.** It drops the blocks between `SPWS-EMBED:OMIT` markers and adds a bridge script, which reports the page's height and asks the frame to open the annex.
+- **The maths is the same bytes.** The scoring module block is kept byte for byte, and `--check` guards the `embed/` copies like the others.
+- **The WordPress upload copy is retired.** The reason alternative 3 was rejected — a hand-carried page had to stay one file — has therefore expired. The pages keep the module inside them, which is what `--check` compares.
 
 ## Amendment (2026-09-30 — the joined engine replaces place-and-medal)
 

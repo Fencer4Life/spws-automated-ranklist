@@ -437,6 +437,7 @@
   import { isBlank, isValidIban } from '../lib/iban'
   import { getEventDisplayStatus } from '../lib/eventStatus'
   import { requestDispatch, setEventSourceOverride } from '../lib/api'
+  import { assetUrl } from '../lib/assetBase'
 
   // ADR-041: Per-event dispatch status, rendered inline below each event-row.
   type DispatchPhase = 'pending' | 'success' | 'error'
@@ -694,15 +695,20 @@
   let draftFtlSentAt = $state('')
 
   // ADR-079 amend — ticking the toggle derives self-contained absolute
-  // register.html URLs (form + entry list) from the admin app's own origin +
+  // register.html URLs (form + entry list) from where register.html lives +
   // the event code, so a calendar embedded cross-origin (e.g. WordPress) is
   // self-sufficient; unticking clears both. Deliberate exception to the
   // "URLs are always hand-entered" rule. Called on the checkbox's `onchange`
   // (user action only) — NOT a reactive $effect, which would clobber a
   // toggle-OFF event's hand-entered url_registration when the form opens.
+  //
+  // register.html lives on the file host, so the link is built from the asset
+  // base (FR-149, ADR-109). On github.io the base is empty and this resolves
+  // against the page, as before; on weteraniszermierki.pl/ranking/ the page
+  // address would give /ranking/register.html, which does not exist.
   function onToggleSpwsRegistration() {
     if (draftUseSpwsRegistration) {
-      const base = new URL('register.html', window.location.href).href
+      const base = new URL(assetUrl('register.html'), window.location.href).href
       const q = `?event=${encodeURIComponent(draftCode)}`
       draftRegistration = `${base}${q}`
       draftUrlEntryList = `${base}${q}&view=list`

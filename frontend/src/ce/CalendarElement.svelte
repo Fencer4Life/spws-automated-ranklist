@@ -9,7 +9,12 @@
   supabase-prod-key={supabaseProdKey}
   asset-base={assetBase}
   view="calendar"
-  chrome="none"
+  {chrome}
+  href-home={hrefHome}
+  href-ranking={hrefRanking}
+  href-calendar={hrefCalendar}
+  href-calculator={hrefCalculator}
+  href-table={hrefTable}
   demo={demo}
 />
 
@@ -27,6 +32,11 @@
   //
   // `chrome="none"` drops the header, hamburger and drawer: a single embed has
   // no second view to navigate to. `view="calendar"` opens on the barrel.
+  //
+  // `chrome="site"` (ADR-090 amendment 2026-10-03, FR-148) draws the SPWS bar
+  // and a drawer of the site's pages, from the addresses the page body gives.
+  // "none" stays the default: the live /znajdz-zawody/ body names no chrome and
+  // must render exactly as before until it is republished (WP.COMP.01).
 
   import App from '../App.svelte'
 
@@ -38,6 +48,12 @@
     // Points at the GitHub Pages origin, where the four organizer marks already
     // deploy. Without it they resolve against /znajdz-zawody/ and 404.
     'asset-base': assetBase = '',
+    chrome = 'none',
+    'href-home': hrefHome = '',
+    'href-ranking': hrefRanking = '',
+    'href-calendar': hrefCalendar = '',
+    'href-calculator': hrefCalculator = '',
+    'href-table': hrefTable = '',
     demo = false,
   }: {
     'supabase-cert-url'?: string
@@ -45,6 +61,12 @@
     'supabase-prod-url'?: string
     'supabase-prod-key'?: string
     'asset-base'?: string
+    chrome?: 'site' | 'none'
+    'href-home'?: string
+    'href-ranking'?: string
+    'href-calendar'?: string
+    'href-calculator'?: string
+    'href-table'?: string
     demo?: boolean
   } = $props()
 </script>

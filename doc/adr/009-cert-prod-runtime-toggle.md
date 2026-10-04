@@ -2,6 +2,14 @@
 
 **Status:** Accepted
 **Date:** 2025-03-15 (M6)
+**Superseded in part by:** [ADR-109](109-environments-split-by-host.md) — the runtime CERT/PROD toggle. The single GitHub Pages site and the build-time credential injection stand.
+
+## Superseded in part (2026-10-03 — the runtime toggle)
+
+[ADR-109](109-environments-split-by-host.md) splits the environments by host. github.io is CERT, under a yellow TEST ribbon and with no switch. weteraniszermierki.pl is PROD (ADR-090).
+
+- **What goes:** the toggle described below.
+- **What stands:** one Pages site, the `sed` injection of credentials at build time, and the security consequences. `index.html` keeps the PROD pair only for the read-only promotion state.
 
 ## Context
 

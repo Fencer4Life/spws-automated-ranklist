@@ -232,35 +232,28 @@ describe('CalendarView orchestrator (ADR-084)', () => {
     expect(container.querySelector('.vp')).toBeNull()
   })
 
-  // CV.11 — activeEnv is $bindable and App re-points the Supabase client from
-  // it, so dropping the env toggle fails only at runtime.
-  it('CV.11: shows the CERT/PROD toggle only when dualEnv is set', () => {
-    const off = render(CalendarView, { props: { events: EVENTS } })
-    // The footer itself now survives both flags being off, because the weapon
-    // chips live in it and are always available. Only the env segment is gated.
-    expect(off.container.querySelector('.env-toggle')).toBeNull()
-
-    const on = render(CalendarView, { props: { events: EVENTS, dualEnv: true } })
-    const btns = on.container.querySelectorAll('.env-btn')
-    expect([...btns].map((b) => b.textContent?.trim())).toEqual(['CT', 'PD'])
+  // CV.11 — amended 2026-10-04 by ADR-109 (FR-151): each host serves one
+  // environment, so the calendar has no CERT/PROD switch of its own any more.
+  // The app-level half (both pairs supplied, still no switch) is WP.ENV.01.
+  it('CV.11: draws no CERT/PROD switch', () => {
+    const { container } = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
+    expect(container.querySelector('.env-toggle')).toBeNull()
+    expect(container.querySelector('.env-btn')).toBeNull()
   })
 
-  // CV.11b — all three segments share one footer row, in this order. Pinned
-  // because the ordering is the requirement, not an accident of markup order:
-  // weapons read left-to-right into the scope they apply to.
-  it('CV.11b: puts weapons, then scope, then the env toggle in one footer row', () => {
+  // CV.11b — the segments share one footer row, in this order. Pinned because
+  // the ordering is the requirement, not an accident of markup order: weapons
+  // read left-to-right into the scope they apply to.
+  it('CV.11b: puts weapons, then scope, in one footer row', () => {
     const { container } = render(CalendarView, {
-      props: { events: EVENTS, showEvfToggle: true, dualEnv: true },
+      props: { events: EVENTS, showEvfToggle: true },
     })
     const footer = container.querySelector('.calendar-footer')!
     expect(footer).not.toBeNull()
     // Svelte appends a scoped-style hash to className, so compare first tokens.
     const kids = [...footer.children].map((e) => e.classList[0])
-    expect(kids).toEqual(['weapon-filters', 'scope-filters', 'env-toggle'])
-    // and the scope segment still renders without the env toggle
-    const scopeOnly = render(CalendarView, { props: { events: EVENTS, showEvfToggle: true } })
-    expect(scopeOnly.container.querySelectorAll('.scope-filter-btn').length).toBe(2)
-    expect(scopeOnly.container.querySelector('.env-toggle')).toBeNull()
+    expect(kids).toEqual(['weapon-filters', 'scope-filters'])
+    expect(container.querySelectorAll('.scope-filter-btn').length).toBe(2)
   })
 
   // ADR-079 amend — the modal wiring moved from the timeline row to the card,

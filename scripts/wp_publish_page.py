@@ -45,11 +45,18 @@ Usage:
 Environment:
   WP_URL, WP_USER, WP_APP_PASSWORD — read from the environment, falling back
   to .env (never echoed), same convention as cloud-sql.sh.
+  SUPABASE_PROD_ANON_KEY — the PROD anon key, read the same way. A body is
+  posted from its reference copy in doc/wordpress/, which holds the
+  placeholder @@SUPABASE_PROD_KEY@@ instead of the key (plan
+  doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html §13).
+  The script fills the placeholder as it posts, never prints the key, and
+  refuses to post a body that still holds the placeholder.
   WP_PUBLISH_CONFIRM=yes — required for create/update; get never needs it.
 """
 import argparse
 import http.client
 import os
+import re
 import sys
 import urllib.parse
 import xmlrpc.client
@@ -58,6 +65,10 @@ from typing import Any, cast
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_FILE = os.path.join(REPO_ROOT, ".env")
 USER_AGENT = "Mozilla/5.0 (compatible; spws-wp-publish/1.0)"
+PLACEHOLDER = "@@SUPABASE_PROD_KEY@@"
+# The note a reference copy opens with. It is for the repository; the page
+# never carried it, so it is not posted.
+REFERENCE_NOTE = re.compile(r"\A<!-- Reference copy\b.*?-->\n?", re.DOTALL)
 
 
 def env_lookup(name: str) -> str:
@@ -85,6 +96,32 @@ def creds() -> tuple[str, str, str]:
         print(f"ERROR: missing {', '.join(missing)} in .env or the environment", file=sys.stderr)
         sys.exit(1)
     return wp_url, user, password
+
+
+def fill_prod_key(body: str) -> str:
+    """Put the PROD anon key where the placeholder is. A body without the
+    placeholder (the framed documents pass no key) is returned unchanged. With
+    no key to fill, nothing may be posted: the page would hold the placeholder
+    and read nothing."""
+    if PLACEHOLDER not in body:
+        return body
+    key = env_lookup("SUPABASE_PROD_ANON_KEY")
+    if not key or PLACEHOLDER in key:
+        print(
+            f"ERROR: the body holds {PLACEHOLDER} and SUPABASE_PROD_ANON_KEY is not set "
+            "in .env or the environment; nothing was posted",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return body.replace(PLACEHOLDER, key)
+
+
+def page_body(content_file: str) -> str:
+    """The body to post from a reference copy: without its note and its final
+    newline, which the live page does not carry, and with the key filled."""
+    with open(content_file, encoding="utf-8") as fh:
+        content = fh.read()
+    return fill_prod_key(REFERENCE_NOTE.sub("", content, count=1).rstrip("\n"))
 
 
 def xmlrpc_call(wp_url: str, method: str, params: tuple[Any, ...]) -> Any:
@@ -189,7 +226,7 @@ def cmd_get(args):
 def cmd_create(args):
     wp_url, user, password = creds()
     require_confirm(f"CREATE page '{args.slug}' (status={args.status})", wp_url)
-    content = open(args.content_file, encoding="utf-8").read()
+    content = page_body(args.content_file)
     post = {
         "post_type": "page",
         "post_title": args.title,
@@ -212,7 +249,7 @@ def cmd_update(args):
     if args.title is not None:
         fields["post_title"] = args.title
     if args.content_file is not None:
-        fields["post_content"] = open(args.content_file, encoding="utf-8").read()
+        fields["post_content"] = page_body(args.content_file)
     if args.status is not None:
         fields["post_status"] = args.status
     if not fields:
