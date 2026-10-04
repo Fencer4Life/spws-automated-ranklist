@@ -10,7 +10,6 @@
 import { describe, it, expect } from 'vitest'
 import published from '../public/kalkulator-punktow.html?raw'
 import source from '../../doc/tools/kalkulator-punktow-za-wynik-spws.v2.html?raw'
-import wordpress from '../../doc/tools/WP-kalkulator-punktow-za-wynik-spws.html?raw'
 import tablePublished from '../public/tabela-punktacji.html?raw'
 import tableSource from '../../doc/tools/Tabela-punktacji-SPWS_2026-2027.html?raw'
 import scoringSource from '../src/lib/scoring.ts?raw'
@@ -27,12 +26,6 @@ describe('static tool assets (ADR-085)', () => {
   it('ships the points calculator identical to the documentation copy', () => {
     expect(published.length).toBeGreaterThan(1000)
     expect(published).toBe(source)
-  })
-
-  // The WordPress upload copy is the third of three copies of the same file and
-  // the only one nothing else checks — it is carried by hand to the SPWS site.
-  it('keeps the WordPress upload copy in step with the same source', () => {
-    expect(wordpress).toBe(source)
   })
 })
 
@@ -148,9 +141,10 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
   // tools: the calculator, the premium table and the simulator, with the same
   // texts, following the ACTIVE season and computing only with the joined
   // engine. The SPWS/EVF toggle and the K/m fields are gone, and so is the
-  // 64 x 64 table; the rules are a link to the annex, absolute so that the
-  // WordPress copy, uploaded alone, still reaches it. The browser half — PL
-  // and EN, 375 px, a clean console — is checked in the browser.
+  // 64 x 64 table; the rules are a link to the annex at its github.io address,
+  // and inside the WordPress frame the page asks for the site's annex page
+  // instead (WP.DOC.04). The browser half — PL and EN, 375 px, a clean
+  // console — is checked in the browser.
   it('JB27.PAGE.01 calculator: the annex tools for the active season, no toggle, the rules linked', () => {
     expect(published).toContain('const MAX_PARTICIPANTS = 300;')
     expect(published).toContain('const SEASON_CODE = null;')
@@ -189,6 +183,20 @@ describe('JB27.CLEAN.06 — the place-and-medal engine is gone from the frontend
       expect(text.match(RETIRED)?.[0] ?? null).toBeNull()
     })
   }
+})
+
+// WP.DOC.05 (ADR-090 amendment 2026-10-03, plan step 8) — the WordPress upload
+// copy is retired. The calculator reaches the association's site only framed,
+// from embed/, so the generator writes no third copy and doc/tools/ holds none.
+// The glob asks Vite which files exist, because this project has no Node types.
+describe('WP.DOC.05 — the WordPress upload copy is retired', () => {
+  it('the generator writes no WordPress upload copy', () => {
+    expect(generatorSource).not.toContain('doc/tools/WP-')
+  })
+
+  it('doc/tools/ holds no WordPress upload copy', () => {
+    expect(Object.keys(import.meta.glob('../../doc/tools/WP-*.html'))).toEqual([])
+  })
 })
 
 // WP.DOC.03 (ADR-090 amendment 2026-10-03, FR-150) — the embed/ copies that

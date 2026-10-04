@@ -13,10 +13,11 @@
 // forbids: "Preserve both published URLs".
 //
 // A second option — emitting one .js beside them and having each page import it
-// — would work, but it turns the WordPress calculator into TWO files that must
-// be uploaded together, and that page exists precisely to be hand-carried as a
-// single file. So the formula is GENERATED INTO each page between markers, and
-// this script is the only thing allowed to write between them.
+// — was rejected while the calculator was also carried by hand to WordPress as
+// one file (ADR-102). That upload copy is retired (ADR-090 amendment
+// 2026-10-03), but each page still carries the formula inside it: the formula
+// is GENERATED INTO each page between markers, and this script is the only
+// thing allowed to write between them.
 //
 // WHAT THIS GUARANTEES
 // -----------------------------------------------------------------------------
@@ -25,12 +26,11 @@
 // page has drifted — the same contract scripts/render_docs.py --check provides
 // for the generated HTML twins.
 //
-// THE THREE-WAY IDENTITY IS PRESERVED
+// THE PUBLISHED COPY IS THE SOURCE
 // -----------------------------------------------------------------------------
-// frontend/tests/assets.test.ts asserts published === source for the calculator
-// AND wordpress === source. This script writes the doc/tools/ source, then
-// copies it byte-for-byte to its published and WordPress destinations, so that
-// assertion keeps holding rather than needing to be relaxed.
+// frontend/tests/assets.test.ts asserts published === source for both pages.
+// This script writes the doc/tools/ source, then copies it byte-for-byte to its
+// published destination, so that assertion holds without being relaxed.
 //
 // Usage:
 //   node scripts/build-scoring-pages.mjs            # write
@@ -71,10 +71,7 @@ const END = '/* === SPWS-SCORING-MODULE:END === */'
 const ARTEFACTS = [
   {
     source: 'doc/tools/kalkulator-punktow-za-wynik-spws.v2.html',
-    copies: [
-      'frontend/public/kalkulator-punktow.html',
-      'doc/tools/WP-kalkulator-punktow-za-wynik-spws.html',
-    ],
+    copies: ['frontend/public/kalkulator-punktow.html'],
     embed: 'frontend/public/embed/kalkulator-punktow.html',
   },
   {
