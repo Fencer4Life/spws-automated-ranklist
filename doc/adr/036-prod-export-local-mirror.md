@@ -278,7 +278,7 @@ It reads PROD over a read-only connection and never writes it. Results still flo
 - **What it copies.** Every PROD event with entries goes through `fn_replace_event_registrations`, the call the CERT refresh makes. It carries the columns the ingestion reads: names, gender, declared birth year, weapons, FTL name, club and the fencer link. The e-mail hash, edit token and consent stamp stay on PROD.
 - **Guards.** LOCAL only: CERT copies the ingested event's registrations in the refresh apply (§2). The copy refuses unless LOCAL's roster equals PROD's, id for id. Afterwards it fails unless each event's registrations part of `fn_event_input_fingerprint` equals PROD's.
 - **Why.** Step 5 used to build its own `INSERT`s. They left out the club and FTL name and added the consent stamp. Both sides held 90 PPW1 entries, yet the registrations part differed. On 3 October 2026 promote's LOCAL rehearsal therefore stopped at `input.registrations` until the refresh's copy was run by hand (`doc/plans/promote-rehearsal-2026-10-03.html`, step 7).
-- **Verified 2026-10-04.** The copy loaded PROD's 108 entries: PPW1 2026/27 with 90 and PEW5efs 2026/27 with 18. Afterwards LOCAL's whole input fingerprint for both events equals PROD's.
+- **Verified 2026-10-04.** The copy loaded PROD's 108 entries: PPW1 2026/27 with 90 and PEW5efs 2026/27 with 18. Afterwards LOCAL's whole input fingerprint for both events equals PROD's. The whole pgTAP suite passes on that mirror, PROD's registrations included (106 files, 1,395 assertions), once test 101 scoped its lookups by name to its own fixture event.
 - **Tests.** pytest PROMO.REFRESH.24–28 (`test_promotion_refresh.py`); .28 pins that the mirror script calls the copy and writes no registration SQL.
 
 ## Related ADRs

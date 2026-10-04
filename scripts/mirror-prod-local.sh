@@ -106,6 +106,5 @@ SELECT 'same-name pairs  = '||count(*)||'   <- PROD has 2; more than that means 
 SELECT 'registrations    = '||count(*) FROM tbl_registration;"
 
 echo ""
-echo "NOTE: six calendar/event pgTAP files are calibrated against the older seed"
-echo "      snapshot and fail on current PROD data (19, 54, 56, 63, 67, 74)."
-echo "      Every registration and identity test passes. See the 2026-09-12 report."
+echo "NOTE: the whole pgTAP suite passes on this mirror, PROD's registrations"
+echo "      included (supabase test db: 106 files, 1395 assertions, 2026-10-04)."
