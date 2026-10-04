@@ -204,6 +204,21 @@ def test_wp_page_02_refuses_a_body_that_still_holds_the_placeholder(
     assert "SUPABASE_PROD_ANON_KEY" in capsys.readouterr().err
 
 
+def test_wp_page_02_the_reference_note_is_never_published(wp: ModuleType, tmp_path: Path) -> None:
+    """WP.PAGE.02 — a reference copy opens with a note for the repository, which the page
+    never carried (13505's live body has neither the note nor a final newline). The
+    script posts the body without them, so republishing an unchanged copy changes
+    nothing on the page."""
+    content = tmp_path / "body.html"
+    content.write_text(
+        "<!-- Reference copy of WordPress page 1, /x/.\n     Not part of the page. -->\n"
+        '<style>a { b: c; }</style>\n<div class="spws-embed"></div>\n',
+        encoding="utf-8",
+    )
+    wp.cmd_update(SimpleNamespace(page_id=1, title=None, content_file=str(content), status=None))
+    assert _posted_content(wp.calls) == '<style>a { b: c; }</style>\n<div class="spws-embed"></div>'
+
+
 def test_wp_page_02_a_body_without_the_placeholder_is_posted_unchanged(
     wp: ModuleType, tmp_path: Path
 ) -> None:

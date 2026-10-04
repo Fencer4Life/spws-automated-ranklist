@@ -1,0 +1,45 @@
+<!-- Reference copy of the WordPress page /kalkulator-punktow/ (new). Plan step 12
+     creates it as a draft; its page id is added here then. It passes no key: the
+     element frames the PROD copy embed/kalkulator-punktow.html from the file host.
+     The CMS is the source of truth. Publish this copy with
+       WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py create --slug kalkulator-punktow --title "Kalkulator punktów" \
+         --content-file doc/wordpress/kalkulator-punktow.html --status draft
+     The script drops this note, fills @@SUPABASE_PROD_KEY@@ from
+     SUPABASE_PROD_ANON_KEY and never prints the key; the key is never committed.
+     Read the live body with
+       scripts/wp_publish_page.py get --slug kalkulator-punktow --content-out <path> -->
+<style>
+/* The points calculator under the SPWS bar: the theme's chrome is removed on THIS
+   page only (ADR-090 §7); the element draws the bar and the drawer.
+   Selectors read off the rendered page. .footer-bottom is a SIBLING of
+   </footer>, not a child, so hiding footer.footer alone leaves it behind. */
+header.header,
+section.page-image,
+.entry-header,
+.entry-title,
+#slideout,
+#facebook,
+.footer-image,
+footer.footer,
+.footer-bottom {
+  display: none !important;
+}
+
+html, body { margin: 0 !important; padding: 0 !important; }
+#content.site-content,
+#primary.content,
+#primary.content > .content-area,
+.entry-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+}
+.spws-embed { margin: 0; padding: 0; }
+/* NOT font-size/line-height:0 here — those are INHERITED properties and
+   inheritance crosses the shadow boundary, which collapsed the embed's own
+   title to a zero-height box. Shadow DOM isolates selectors, not inheritance. */
+/* Guard: if wpautop ever reintroduces a <br> here, it costs no height. */
+.spws-embed br { display: none !important; }
+</style>
+<div class="spws-embed"><script src="https://fencer4life.github.io/spws-automated-ranklist/assets/main.ce.js" type="module"></script><spws-document doc="kalkulator-punktow" asset-base="https://fencer4life.github.io/spws-automated-ranklist/" href-home="https://weteraniszermierki.pl/" href-ranking="/ranking/" href-calendar="/znajdz-zawody/" href-calculator="/kalkulator-punktow/" href-table="/tabela-punktacji/"></spws-document></div>

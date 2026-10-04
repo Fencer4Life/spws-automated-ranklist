@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="dead5026b29c1765be79c88d972471f372a31092d6f65092d10acb2002e00bfd">
+<meta name="doc-source-sha256" content="ee24af7a637bd86cc32182737c9ed93b6aefff63eea65783d8336f90687462a7">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2195,14 +2195,14 @@
 <td>Every reference copy in <code>doc/wordpress/</code> loads <code>assets/main.ce.js</code>, holds the theme style block, and carries the key placeholder, never a key.</td>
 <td>pytest</td>
 <td><code>python/tests/test_wp_pages.py</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.PAGE.02</td>
-<td><code>wp_publish_page.py</code> fills the placeholder from the environment, refuses a body that still holds it, and never prints the key.</td>
+<td><code>wp_publish_page.py</code> fills the placeholder from the environment, refuses a body that still holds it, and never prints the key. It posts a reference copy without its opening note and final newline, which the live page does not carry, so republishing an unchanged copy posts the live body.</td>
 <td>pytest</td>
 <td><code>python/tests/test_wp_pages.py</code></td>
-<td><strong>Planned</strong> (2026-10-03)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
 </tr>
 <tr>
 <td>WP.COMP.01</td>
@@ -2224,5 +2224,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>dead5026b29c1765be79c88d972471f372a31092d6f65092d10acb2002e00bfd</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ee24af7a637bd86cc32182737c9ed93b6aefff63eea65783d8336f90687462a7</code></footer>
 </div></body></html>

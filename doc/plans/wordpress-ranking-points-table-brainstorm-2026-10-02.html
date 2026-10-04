@@ -301,13 +301,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 16 · 4 October 2026</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 17 · 4 October 2026</p>
   <h1>WordPress UI: the plan, and a PROD manual for the next administrator</h1>
-  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 5 are done: the paperwork, every test written and seen RED, the bar and the drawer, PROD admin on WordPress, the environment split on github.io, the framed documents, the calculator, and the upload copy's retirement. The next move is step 9, the publishing script that fills the key, on your word.</p>
+  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 5 are done: the paperwork, every test written and seen RED, the bar and the drawer, PROD admin on WordPress, the environment split on github.io, the framed documents, the calculator, the upload copy's retirement, and the publishing script with all five page bodies. The next move is step 10, preflight and the documentation gate, on your word.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>ADRs signed off and on disk</span>
-    <span class="pill"><span class="dot"></span>Steps 1–8 done</span>
-    <span class="pill warn"><span class="dot"></span>Next: step 9 (the publishing script fills the key), on your word</span>
+    <span class="pill"><span class="dot"></span>Steps 1–9 done</span>
+    <span class="pill warn"><span class="dot"></span>Next: step 10 (preflight and the documentation gate), on your word</span>
     <span class="pill"><span class="dot"></span>Q7 = C (deferred) · Q8 = A</span>
     <span class="pill"><span class="dot"></span>Part I: 13 steps, tests first</span>
     <span class="pill"><span class="dot"></span>Part II: PROD manual, facts read live on 3 Oct</span>
@@ -583,16 +583,29 @@
           <li><b><code>scoring-and-ranking.html</code></b> says the generator copies to "its published and WordPress destinations" for a "three-way identity". That page was missing from the gate list in §08; it is there now.</li>
         </ul>
         ADR-102 rejected a shared <code>.js</code> beside the pages only because the upload copy had to be one file. That reason is gone. The pages keep the formula inside them, and ADR-102's amendment in step 10 says so.</li>
-      <li><b>The publishing script fills the key.</b>
+      <li><span class="chip fill">done 4 Oct</span> <b>The publishing script fills the key.</b>
         <ul>
           <li><code>scripts/wp_publish_page.py</code> replaces <code>@@SUPABASE_PROD_KEY@@</code> from <code>SUPABASE_PROD_ANON_KEY</code> (in <code>.env</code>), never prints it, and refuses to publish a body that still holds the placeholder.</li>
           <li>Reference copies of all five page bodies go to <code>doc/wordpress/</code>. Today only 13505 has one.</li>
         </ul>
-        Turns GREEN: WP.PAGE.*.</li>
+        Turns GREEN: WP.PAGE.*.
+        <b>Done 4 Oct.</b> <code>doc/wordpress/</code> holds all five bodies:
+        <ul>
+          <li><b><code>ranking.html</code>, <code>kalkulator-punktow.html</code> and <code>tabela-punktacji.html</code></b> are new pages, created in step 12.</li>
+          <li><b><code>znajdz-zawody.html</code></b> is the <code>chrome="site"</code> body that step 12 publishes.</li>
+          <li><b><code>pliki-zasilajace-xml-ftl.html</code></b> is unchanged below its note.</li>
+        </ul>
+        Each keeps the live pages' style block word for word, apart from its first comment line, with the script and the element on one line inside the div, as on the live pages. Before writing them I read the two live bodies, read-only, with the key blanked before anything was shown. The script fills the placeholder as it posts. It refuses with a message naming <code>SUPABASE_PROD_ANON_KEY</code> if the key is missing, and nothing reaches WordPress. The 19 tests pass, and all 1,794 Python tests pass. Ruff and BasedPyright report nothing on the new lines; the script had formatting drift before this step, which I left as it was.
+        <br><b>Decided while building; overrule it if you like:</b>
+        <ul>
+          <li><b>The script drops a copy's opening note and final newline before it posts.</b> 13505's live body has neither. Without this, republishing a copy would add the note to the page. With it, the FTL copy, once the script has dropped those, is the live body byte for byte; I checked. A new test under WP.PAGE.02 holds this.</li>
+        </ul>
+        <b>Your action before step 12.</b> <code>SUPABASE_PROD_ANON_KEY</code> is not in <code>.env</code> today; I checked names only. I have not added it, because that means handling the key. Copy it from the PROD project's API settings in the Supabase dashboard into the <code>.env</code> of the checkout the script runs from, or export it in the shell. The script refuses to publish until it is there.</li>
       <li><b>Done locally.</b> <code>scripts/preflight.sh</code> exits 0, and the documentation gate (§08) is complete. Then <code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code>. Commit only on your word.</li>
       <li><b>Release, on your go.</b> Push <code>integration/main:main</code> from the integration checkout; CI runs, then Release, then you approve PROD. This release changes no database object, so Q8's rule is met. Check with §14, items 1–2 and 8–10. <code>/znajdz-zawody/</code> must still look exactly as it does today, because its body has not changed yet.</li>
       <li><b>WordPress, one page at a time, each on your word</b> (ADR-090 §8).
         <ul>
+          <li><b>First:</b> <code>SUPABASE_PROD_ANON_KEY</code> is in <code>.env</code> or the shell (step 9). The script refuses to publish without it.</li>
           <li>Create <code>/ranking/</code>, <code>/kalkulator-punktow/</code> and <code>/tabela-punktacji/</code> as drafts, <code>/ranking/</code> first. You preview them in wp-admin, then each one is published. <b>Between the release and the publication of <code>/ranking/</code>, github.io no longer reaches PROD</b>, because the release removes the CT/PD switch. In that window PROD admin runs from the <code>/ranking/</code> draft's preview with <code>&amp;admin=1</code> added to its address. To be confirmed with the first draft.</li>
           <li>Republish <code>/znajdz-zawody/</code> with <code>chrome="site"</code>.</li>
           <li>You then create the "Ranking" menu item (§13 has the clicks).</li>
@@ -961,7 +974,7 @@ Superseded prose archived rather than appended: yes</pre>
     <h3>Google Apps Script → Project settings → Script properties</h3>
     <p><code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>SUPABASE_PROD_REF</code>, <code>GITHUB_PAT</code>, <code>GITHUB_REPO</code>, <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code>; plus <code>TELEGRAM_LAST_UPDATE</code> and <code>PAUSED</code>, which the script manages itself (<code>doc/gas/Code.gs</code>, header).</p>
     <h3>The working copy's <code>.env</code> (never committed)</h3>
-    <p>It holds these 14 names: <code>FTL_PASSWORD</code>, <code>FTL_USERNAME</code>, <code>GH_DISPATCH_PAT</code>, <code>GH_REPO</code>, <code>SUPABASE_ACCESS_TOKEN</code>, <code>SUPABASE_CERT_REF</code>, <code>SUPABASE_KEY</code>, <code>SUPABASE_PROD_REF</code>, <code>SUPABASE_URL</code>, <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code>, <code>WP_APP_PASSWORD</code>, <code>WP_URL</code>, <code>WP_USER</code>. Step 9 adds <code>SUPABASE_PROD_ANON_KEY</code>.</p>
+    <p>It holds these 14 names: <code>FTL_PASSWORD</code>, <code>FTL_USERNAME</code>, <code>GH_DISPATCH_PAT</code>, <code>GH_REPO</code>, <code>SUPABASE_ACCESS_TOKEN</code>, <code>SUPABASE_CERT_REF</code>, <code>SUPABASE_KEY</code>, <code>SUPABASE_PROD_REF</code>, <code>SUPABASE_URL</code>, <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code>, <code>WP_APP_PASSWORD</code>, <code>WP_URL</code>, <code>WP_USER</code>. <code>SUPABASE_PROD_ANON_KEY</code> is not there yet (checked 4 Oct). You add it before step 12, from the PROD project's API settings in the Supabase dashboard; the publishing script reads it and never prints it.</p>
     <ul>
       <li><code>WP_USER</code> is the WordPress account name, <b>not</b> the label of the application password. The label fails with „Błędna nazwa lub hasło", which looks exactly like a wrong password.</li>
       <li><code>WP_APP_PASSWORD</code> contains spaces and is stored in quotes.</li>
@@ -1012,9 +1025,9 @@ gh run watch &lt;run id&gt; \
     <div class="tablewrap"><table>
       <thead><tr><th>Address</th><th>Page id</th><th>Element</th><th>Reference copy</th></tr></thead>
       <tbody>
-        <tr><td><code>/znajdz-zawody/</code></td><td>13472</td><td><code>&lt;spws-calendar&gt;</code></td><td>added in step 9</td></tr>
+        <tr><td><code>/znajdz-zawody/</code></td><td>13472</td><td><code>&lt;spws-calendar&gt;</code></td><td><code>doc/wordpress/znajdz-zawody.html</code> (the <code>chrome="site"</code> body step 12 publishes)</td></tr>
         <tr><td><code>/pliki-zasilajace-xml-ftl/</code></td><td>13505</td><td><code>&lt;spws-ftl-export&gt;</code> (capability link, not in the menu)</td><td><code>doc/wordpress/pliki-zasilajace-xml-ftl.html</code></td></tr>
-        <tr><td><code>/ranking/</code>, <code>/kalkulator-punktow/</code>, <code>/tabela-punktacji/</code></td><td>created in step 12</td><td>see §03</td><td>added in step 9</td></tr>
+        <tr><td><code>/ranking/</code>, <code>/kalkulator-punktow/</code>, <code>/tabela-punktacji/</code></td><td>created in step 12</td><td>see §03</td><td><code>doc/wordpress/ranking.html</code>, <code>kalkulator-punktow.html</code>, <code>tabela-punktacji.html</code></td></tr>
       </tbody>
     </table></div>
     <p>A page body is a <code>&lt;style&gt;</code> block that hides the theme on that page only (selectors read off the live page; ADR-090 §7), then <code>&lt;div class="spws-embed"&gt;</code> holding the bundle's <code>&lt;script&gt;</code> and one element. <b>The WordPress database is the source of truth.</b> The copies in <code>doc/wordpress/</code> exist so a body can be compared and recovered; nothing syncs them automatically.</p>
@@ -1118,7 +1131,7 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
       <li>The Supabase owner account has no MFA (§18, step 2).</li>
       <li>Nobody on this project holds the hosting or DNS login (§18, step 8).</li>
       <li>Pages goes live before PROD is approved. This is covered by the Q8 rule in §12.</li>
-      <li><code>/znajdz-zawody/</code> (13472) has no reference copy in the repository. Step 9 adds one.</li>
+      <li><code>/znajdz-zawody/</code> (13472) had no reference copy in the repository. Step 9 added one: the <code>chrome="site"</code> body, so it differs from the live page until step 12 republishes it.</li>
       <li>If GitHub Pages is down, every WordPress page shows an empty screen. There is no fallback.</li>
       <li>The handbook lists two Gmail secrets that do not exist. Step 13 corrects it.</li>
       <li>Every public PROD page load gets a 401 from <code>fn_refresh_active_season</code> (seen 2 Oct). This is outside this plan, but reported.</li>
@@ -1260,5 +1273,5 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
     </ul>
   </section>
 
-  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 16 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 17 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
 </div>
