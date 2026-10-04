@@ -132,7 +132,7 @@
   <div class="meta">
     <span class="pill"><span class="dot"></span>Approved 4 Oct: A, A, A, A, reason as proposed</span>
     <span class="pill"><span class="dot"></span>ADR-110 signed off; done on CERT (rev. 8) and PROD (rev. 10)</span>
-    <span class="pill warn"><span class="dot"></span>Waiting: your go to push the tests and docs</span>
+    <span class="pill"><span class="dot"></span>Released 4 Oct: main 675582d9, CI and Release green, PROD approved</span>
     <span class="pill">+19 fencers in the 2026/27 ranking, none removed</span>
     <span class="pill">no migration</span>
   </div>
@@ -318,7 +318,7 @@
 
   <section>
     <p class="kicker">08 · Progress, 4 Oct</p>
-    <h2>Done on CERT and PROD; tests and documentation ready to push</h2>
+    <h2>Done on CERT and PROD; released</h2>
     <ul>
       <li><b>Number.</b> ADR-109 was taken on <code>main</code> the same morning (environments split by host), so this record is <b>ADR-110</b> and the new requirement is <b>FR-152</b>.</li>
       <li><b>Tests</b> (<code>85_spws_evf_joined_engine.sql</code>, 43 &rarr; 47). SE27.RANK.01&ndash;05 now set <code>entry_types</code> themselves. ROSTER.01&ndash;04 remove it and pin your rule; ROSTER.02 is KO&#323;CZY&#321;O&rsquo;s case. A mutant that leaves the gate on fails ROSTER.01 and .02. ADM27.RULES.14 (<code>84</code>) pins the new rules and is committed with the new seed.</li>
@@ -333,7 +333,7 @@
       <li><b>CERT and PROD</b>, after your sign-off: the same checked script, revision 8 on CERT and revision 10 on PROD. Each run: 0 scores changed, PPW1&rsquo;s result fingerprint the same on CERT and PROD, the rules the same, the ranking 329 &rarr; 352 rows, exactly the 23 places of &sect;03, nobody removed, no total changed. PROD&rsquo;s public ranking call (the anon key, as the site makes it) lists KO&#323;CZY&#321;O second in men&rsquo;s V2 foil and ninth in men&rsquo;s V2 sabre.</li>
       <li><b>Seed and LOCAL.</b> The seed exported from PROD carries the new rules; LOCAL was rebuilt from it (827 tournaments scored, 0 errors). The full pgTAP suite passes: 106 files, 1395 assertions.</li>
       <li><b>Documentation.</b> ADR-110 written (Accepted); ADR-103 &sect;6 marked superseded, ADR-106 noted; Appendix C row; FR-141 superseded by FR-152 in the RTM, with the ROSTER tests traced; the two handbook pages (competition and ranking, scoring and ranking) in present tense.</li>
-      <li><b>Next:</b> on your go, the commit goes to <code>main</code> after <code>scripts/preflight.sh</code> exits 0; CI and Release follow. Nothing in it changes CERT or PROD data again.</li>
+      <li><b>Released.</b> <code>scripts/preflight.sh</code> exited 0 (15 gates); <code>main</code> = 675582d9; CI run 37189255470 and Release run 37189329343 green, PROD deploy approved. Checked after the deploy: CERT and PROD hold the same 2026/27 rules and PPW1 fingerprint, and PROD&rsquo;s public ranking call lists KO&#323;CZY&#321;O second in men&rsquo;s V2 foil.</li>
     </ul>
   </section>
 
