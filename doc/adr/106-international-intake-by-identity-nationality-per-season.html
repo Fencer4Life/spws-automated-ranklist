@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="106-international-intake-by-identity-nationality-per-season.md">
-<meta name="adr-source-sha256" content="3fd97b597b4b780b5bac9aa39e1700e7d324ec860450a7936bed97c6279387e1">
+<meta name="adr-source-sha256" content="01c05b08f4cbc188aa29a8d3086bd5f3c3ae0fa415ed0ced5e3a05c88a6f45c7">
 <title>ADR-106 · International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -16,7 +16,7 @@
 <strong>Date:</strong> 2026-10-02
 <strong>Supersedes:</strong> <a href="038-evf-intake-polish-only.html">ADR-038</a> — the country gate before matching (Decision, points 2 and 4) and its rejection of alternative 1. Its other consequences stand: an international event never auto-creates a fencer, and a foreign row never reaches the identity queue.
 <strong>Amends:</strong> <a href="105-international-results-keep-source-bracket.html">ADR-105</a> §1.1 and §5.1 (only POL rows reach the matcher → the three-step admission below; N and the place are unchanged)
-<strong>Relates to:</strong> <a href="020-seed-generator-domestic-auto-create.html">ADR-020</a> (international unmatched rows are never created — unchanged), <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> §6 (the ranking entry gate stays on 2026/27 only), <a href="056-vcat-from-birthyear.html">ADR-056</a> (Stage 0's dedup still reads <code>tbl_fencer.txt_nationality</code>), <a href="072-cdc-recompute-debounce.html">ADR-072</a> and <a href="093-registration-as-birth-year-source.html">ADR-093</a> (a nationality edit enqueues a recompute; the season nationality enqueues none), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the export and the local mirror carry the new table), <a href="035-fencers-view-tabs.html">ADR-035</a> (UC16's deferred nationality editing becomes the season-nationality editor), <a href="050-unified-ingestion-pipeline.html">ADR-050</a> (the override file)
+<strong>Relates to:</strong> <a href="020-seed-generator-domestic-auto-create.html">ADR-020</a> (international unmatched rows are never created — unchanged), <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> §6 (the ranking entry gate stays on 2026/27 only; superseded 2026-10-04 by <a href="110-ranking-entry-by-roster.html">ADR-110</a>: this ADR's intake rule is now the ranking entry), <a href="056-vcat-from-birthyear.html">ADR-056</a> (Stage 0's dedup still reads <code>tbl_fencer.txt_nationality</code>), <a href="072-cdc-recompute-debounce.html">ADR-072</a> and <a href="093-registration-as-birth-year-source.html">ADR-093</a> (a nationality edit enqueues a recompute; the season nationality enqueues none), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the export and the local mirror carry the new table), <a href="035-fencers-view-tabs.html">ADR-035</a> (UC16's deferred nationality editing becomes the season-nationality editor), <a href="050-unified-ingestion-pipeline.html">ADR-050</a> (the override file)
 <strong>Source:</strong> <code>doc/plans/international-intake-identity-and-nationality-brainstorm-2026-10-02.html</code></p>
 </div>
 </header>
@@ -99,5 +99,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="105-international-results-keep-source-bracket.html">← ADR-105: International Results Keep the Whole Source Bracket and Their Own Place</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="108-promote-replays-verified-cert-ingestion.html">→ ADR-108: Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</a></nav>
-<footer class="foot">Generated from <code>106-international-intake-by-identity-nationality-per-season.md</code> · source SHA-256 <code>3fd97b597b4b780b5bac9aa39e1700e7d324ec860450a7936bed97c6279387e1</code></footer>
+<footer class="foot">Generated from <code>106-international-intake-by-identity-nationality-per-season.md</code> · source SHA-256 <code>01c05b08f4cbc188aa29a8d3086bd5f3c3ae0fa415ed0ced5e3a05c88a6f45c7</code></footer>
 </div></body></html>

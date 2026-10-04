@@ -7,7 +7,9 @@
 -- This file replaces 83_spws_place_medal_engine.sql, deleted with the engine
 -- it pinned. What 83 held that outlives the engine moves here unchanged:
 -- SE27.TYPE.01 and .05 (the engine per type), SE27.CALC.02-04 (the published
--- parameters) and SE27.RANK.01-05 (ranking entry through PPW or MPW).
+-- parameters) and SE27.RANK.01-05 (the ranking entry gate through PPW or MPW).
+-- ROSTER.01-04 pin ADR-110: from 2026/2027 everyone in the fencer table with
+-- points in the ranking's window is ranked; the gate stays, unused.
 --
 -- JB27.CLEAN pins the cleanup migration: the strategy, its registry row, its
 -- dispatcher branch and every column it added are gone, and nothing that was
@@ -46,7 +48,7 @@ BEGIN;
 -- same targeted bypass 80_season_scoring_contract.sql uses.
 ALTER TABLE tbl_result DISABLE TRIGGER trg_assert_result_vcat;
 
-SELECT plan(43);
+SELECT plan(47);
 
 CREATE FUNCTION pg_temp.safe_bool(p_sql TEXT)
 RETURNS BOOLEAN LANGUAGE plpgsql AS $$
@@ -944,6 +946,27 @@ RETURNS BOOLEAN LANGUAGE sql AS $$
      WHERE f.txt_surname = p_fencer);
 $$;
 
+-- The gate is tested with entry_types set here. Since ADR-110 the live
+-- 2026/2027 rules carry none, so the block sets them itself and holds on any
+-- seed; ROSTER below removes them again. Both roll back with the file.
+UPDATE tbl_scoring_config
+   SET json_ranking_rules = json_ranking_rules || '{"entry_types": ["PPW", "MPW"]}'::jsonb
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+
+-- Totals of fencers the gate admits, for ROSTER.04.
+CREATE TEMP TABLE se27_gate_totals AS
+SELECT f.txt_surname AS who, rk.total_score AS total
+  FROM fn_ranking_full('FOIL', 'M', 'V4',
+         (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'), FALSE) rk
+  JOIN tbl_fencer f ON f.id_fencer = rk.id_fencer
+ WHERE f.txt_surname = 'SE27-12'
+UNION ALL
+SELECT f.txt_surname, rk.total_score
+  FROM fn_ranking_full('FOIL', 'M', 'V2',
+         (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'), TRUE) rk
+  JOIN tbl_fencer f ON f.id_fencer = rk.id_fencer
+ WHERE f.txt_surname = 'SE27-13';
+
 -- SE27.RANK.01 — a fencer with only EVF results is absent from 2026/2027.
 -- Guarded on the fixture so an absent fixture cannot pass it.
 SELECT is(
@@ -986,6 +1009,87 @@ SELECT is(
     WHERE f.txt_surname = 'SE27-15'),
   TRUE,
   'SE27.RANK.05 a V1 → V2 move carries the previous season''s points into the V2 ranking');
+
+-- =============================================================================
+-- ROSTER — ADR-110: ranking entry by roster
+-- =============================================================================
+-- From 2026/2027 a fencer enters the fencer table only through a PPW or MPW
+-- start, and everyone in it with points in the ranking's window is ranked,
+-- EVF+ points included. The live rules carry no entry_types; the block removes
+-- them here so it holds on any seed.
+UPDATE tbl_scoring_config
+   SET json_ranking_rules = json_ranking_rules - 'entry_types'
+ WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027');
+
+-- SE27-17: a last PPW start two seasons back (2024/2025 épée) and an EVF result
+-- in the previous season (PEW 2025/2026 foil), carried into the rolling ranking.
+DO $ro$
+DECLARE
+  v_s26 INT; v_org INT; v_e INT; v_t INT; v_t25 INT; v_f INT;
+BEGIN
+  SELECT id_season INTO v_s26 FROM tbl_season WHERE txt_code = 'SPWS-2025-2026';
+  SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
+  INSERT INTO tbl_fencer (txt_surname, txt_first_name, txt_nationality, int_birth_year, enum_gender)
+  VALUES ('SE27-17', 'Test', 'PL', 1970, 'M') RETURNING id_fencer INTO v_f;
+  SELECT id_tournament INTO v_t25 FROM tbl_tournament WHERE txt_code = 'SE27-PPW25-E';
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t25, 2);
+  -- Dated yesterday: a previous-season result is carried while the event's end
+  -- plus the season's carry-over days has not passed (vw_eligible_event), so
+  -- the fixture holds on any test date.
+  INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start, dt_end)
+  VALUES ('PEW97-2025-2026', 'SE27 PEW 2025/26', v_s26, v_org, 'COMPLETED',
+          CURRENT_DATE - 1, CURRENT_DATE - 1) RETURNING id_event INTO v_e;
+  INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender,
+    enum_age_category, dt_tournament, int_participant_count, enum_import_status)
+  VALUES (v_e, 'SE27-PEW26', 'SE27 PEW 2025/26', 'PEW', 'FOIL', 'M', 'V2', '2026-01-10', 8, 'IMPORTED')
+  RETURNING id_tournament INTO v_t;
+  INSERT INTO tbl_result (id_fencer, id_tournament, int_place) VALUES (v_f, v_t, 1);
+  PERFORM fn_calc_tournament_scores(v_t25);
+  PERFORM fn_calc_tournament_scores(v_t);
+  INSERT INTO se27_fx VALUES ('roster', 'ok');
+EXCEPTION WHEN OTHERS THEN
+  INSERT INTO se27_fx VALUES ('roster', SQLERRM);
+END $ro$;
+
+-- ROSTER.01 — EVF points only, in the ranked season: ranked, rolling and not.
+SELECT is(
+  ROW(pg_temp.in_ranking('SE27-11', 'FOIL', 'M', 'V2', TRUE),
+      pg_temp.in_ranking('SE27-11', 'FOIL', 'M', 'V2', FALSE))::TEXT,
+  ROW(TRUE, TRUE)::TEXT,
+  'ROSTER.01 a fencer with EVF points only, in the ranked season, is ranked');
+
+-- ROSTER.02 — PPW two seasons back, EVF in the previous season: in the rolling
+-- ranking only (the case of KOŃCZYŁO Tomasz, 4 Oct 2026).
+SELECT is(
+  ROW((SELECT detail FROM se27_fx WHERE fixture = 'roster'),
+      pg_temp.in_ranking('SE27-17', 'FOIL', 'M', 'V2', TRUE),
+      pg_temp.in_ranking('SE27-17', 'FOIL', 'M', 'V2', FALSE))::TEXT,
+  ROW('ok', TRUE, FALSE)::TEXT,
+  'ROSTER.02 EVF points in the previous season rank a fencer in the rolling ranking, not the season one');
+
+-- ROSTER.03 — points only outside the window rank nobody: SE27-14's one épée
+-- result is a PPW of 2024/2025.
+SELECT is(
+  ROW(pg_temp.in_ranking('SE27-14', 'EPEE', 'M', 'V2', TRUE),
+      pg_temp.in_ranking('SE27-14', 'EPEE', 'M', 'V2', FALSE))::TEXT,
+  ROW(FALSE, FALSE)::TEXT,
+  'ROSTER.03 a fencer whose points all lie outside the window is not ranked');
+
+-- ROSTER.04 — a fencer the gate admitted keeps the same total without it.
+SELECT is(
+  (SELECT count(*)::INT FROM se27_gate_totals g
+     WHERE g.total = CASE g.who
+       WHEN 'SE27-12' THEN (SELECT rk.total_score
+                              FROM fn_ranking_full('FOIL', 'M', 'V4',
+                                     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'), FALSE) rk
+                              JOIN tbl_fencer f ON f.id_fencer = rk.id_fencer WHERE f.txt_surname = 'SE27-12')
+       WHEN 'SE27-13' THEN (SELECT rk.total_score
+                              FROM fn_ranking_full('FOIL', 'M', 'V2',
+                                     (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027'), TRUE) rk
+                              JOIN tbl_fencer f ON f.id_fencer = rk.id_fencer WHERE f.txt_surname = 'SE27-13')
+     END),
+  2,
+  'ROSTER.04 the totals of fencers the gate admitted are unchanged without it');
 
 SELECT * FROM finish();
 

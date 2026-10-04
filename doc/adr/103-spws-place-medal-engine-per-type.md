@@ -1,6 +1,6 @@
 # ADR-103: SPWS 2026/2027 — Place-and-Medal Engine per Tournament Type, Joined Brackets Scored Whole, Ranking Entered through PPW/MPW
 
-**Status:** Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic); superseded in part by ADR-104 on 2026-09-30 (§1, §5, K, m and b)
+**Status:** Accepted (signed off 2026-09-28; §2 amended the same day — PPS and MPS stay on EVF classic); superseded in part by ADR-104 on 2026-09-30 (§1, §5, K, m and b) and by ADR-110 on 2026-10-04 (§6)
 **Date:** 2026-09-28
 **Amended by:** [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — superseded in part: §1, §5 and the K, m and b parts of §4 and of the amendment below; §2, §4 and §7 amended; §3 and §6 stand); [ADR-105](105-international-results-keep-source-bracket.md) (2026-10-01 — §4 gains a third module, `SOURCE_FIELD_PLACE`, selected for every international type whatever its engine).
 **Amends:** [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the engine is governed per tournament type, not only per season), [ADR-098](098-ranking-schema-v2-and-generalized-ranking-rpc.md) (the Season Scoring Rules gain `entry_types`), [ADR-102](102-published-pages-share-one-scoring-module.md) (the shared module gains the new engine and loses field-scaled; public parameters are per type), [ADR-092](092-scoring-table-annex-bilingual-static-page.md) (annex content becomes the 64 × 64 table), [ADR-085](085-points-calculator-temporary-static-page.md) (calculator gains the joined mode; the toggle compares SPWS with EVF classic), [ADR-049](049-joint-pool-split-flag.md) (renumbering becomes the named module `PER_CATEGORY_RENUMBER`), [ADR-069](069-participant-count-url-validator.md) (the count check compares the joined N), [ADR-100](100-pzsz-senior-result-ingestion.md) (PPS/MPS are scored by the new engine with K = N, m = place)
@@ -95,6 +95,8 @@ Ingestion (`Commit`) and `RECOMPUTE_DOMESTIC` use the module of the engine assig
 `int_below_count` is stored, not derived. It depends on fencers who are not in the fencer's own tournament row set: other categories of a joined bracket, and the unstored senior field of a PZSz bracket.
 
 ### 6 · Ranking entry through PPW or MPW
+
+> **Superseded 2026-10-04 by [ADR-110](110-ranking-entry-by-roster.md):** from 2026/2027 the fencer table is the ranking entry, and everyone in it with points in the window is ranked. The 2026/2027 rules carry no `entry_types`; the mechanism below stays, unused.
 
 The Season Scoring Rules gain `entry_types`, a top-level key of `json_ranking_rules` read in both rule schemas. From 2026/2027 it is `["PPW","MPW"]`. `fn_ranking_full_event_code_matching` and `fn_ranking_full_event_fk_matching` then admit only fencers with a result of those types in the ranking's window: the ranked season, plus the carried previous season in rolling mode, in any weapon. Their PPS, MPS, EVF and FIE results count as today. Seasons without the key are unchanged.
 
