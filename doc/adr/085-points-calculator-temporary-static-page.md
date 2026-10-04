@@ -2,10 +2,18 @@
 
 **Status:** Accepted (signed off 2026-08-15; §2 amended 2026-09-28)
 **Date:** 2026-08-15
-**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the joined mode and the SPWS/EVF toggle). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the calculator is rebuilt in line with the annex, without the SPWS/EVF toggle).
+**Amended by:** [ADR-103](103-spws-place-medal-engine-per-type.md) (the joined mode and the SPWS/EVF toggle). [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (2026-09-30 — the calculator is rebuilt in line with the annex, without the SPWS/EVF toggle). [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (amendment 2026-10-03 — the WordPress copy is retired; the page is framed on the association's site).
 **Amends:** [ADR-015](015-m8-ui-design-decisions.md) §1 (App Navigation — Sidebar Drawer) — the drawer gains a third entry which is an external link rather than a view switch. §§2–9 are untouched.
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (frontend built once in CI and deployed to GitHub Pages — unchanged; the page rides the same artifact), [ADR-079](079-event-self-registration-identity.md) and [ADR-007](007-shadow-dom-deferred.md) (`register.html`, the existing standalone page, built through `vite.config.ce.ts` as a custom element — deliberately *not* the mechanism used here)
 **Source:** `doc/plans/kalkulator-w-menu-ranklisty-2026-08-15.html` §4
+
+## Amendment (2026-10-04 — the WordPress copy is retired; the page is framed there)
+
+The page keeps its address and its drawer entry on github.io, where [ADR-109](109-environments-split-by-host.md) makes it a CERT copy under the TEST ribbon.
+
+- **The site shows a generated PROD copy, not an uploaded one.** On weteraniszermierki.pl, `<spws-document doc="kalkulator-punktow">` frames `embed/kalkulator-punktow.html`, a PROD copy written by the same generator ([ADR-090 amendment 2026-10-03](090-prod-surface-as-wordpress-menu-item.md)).
+- **The upload copy is deleted.** The WordPress upload copy this ADR kept byte-identical, `doc/tools/WP-kalkulator-punktow-za-wynik-spws.html`, is gone. Plan test 8.88 still holds the published copy equal to its source.
+- **The layout follows the signed-off mock.** The calculator comes first. The premium table, the simulator and „W skrócie" are folded below it, and the full rules are a pill to the annex. The script and the generated module are unchanged.
 
 ## Amendment (2026-09-30 — rebuilt in line with the annex)
 

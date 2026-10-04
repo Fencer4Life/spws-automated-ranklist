@@ -301,13 +301,13 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 17 · 4 October 2026</p>
+  <p class="eyebrow">PROD on WordPress · CERT on GitHub Pages · Plan rev 18 · 4 October 2026</p>
   <h1>WordPress UI: the plan, and a PROD manual for the next administrator</h1>
-  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 5 are done: the paperwork, every test written and seen RED, the bar and the drawer, PROD admin on WordPress, the environment split on github.io, the framed documents, the calculator, the upload copy's retirement, and the publishing script with all five page bodies. The next move is step 10, preflight and the documentation gate, on your word.</p>
+  <p class="dek">Every design question is now decided; Q2 was your last answer (C). This page has two parts. <b>Part I</b> is the implementation plan, with tests first. <b>Part II</b> is a manual for whoever runs PROD after us. It covers what runs where, which accounts hold the keys, how a change reaches PROD, how to check it, and how to undo it. It names accounts, secrets and settings, but never their values. Writing Part II turned up two decisions. You took them on 3 Oct: you stay the sole administrator for now (Q7 = C), with the full procedure for adding a second one written down in §18, and releases follow a database-first rule (Q8 = A). You signed off both ADRs the same day; they are on disk (§07). Steps 1 to 5 are done: the paperwork, every test written and seen RED, the bar and the drawer, PROD admin on WordPress, the environment split on github.io, the framed documents, the calculator, the upload copy's retirement, the publishing script with all five page bodies, and the documentation. Preflight passes. The next move is step 11, the release, on your go.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>ADRs signed off and on disk</span>
-    <span class="pill"><span class="dot"></span>Steps 1–9 done</span>
-    <span class="pill warn"><span class="dot"></span>Next: step 10 (preflight and the documentation gate), on your word</span>
+    <span class="pill"><span class="dot"></span>Steps 1–10 done</span>
+    <span class="pill warn"><span class="dot"></span>Next: step 11, the release, on your go</span>
     <span class="pill"><span class="dot"></span>Q7 = C (deferred) · Q8 = A</span>
     <span class="pill"><span class="dot"></span>Part I: 13 steps, tests first</span>
     <span class="pill"><span class="dot"></span>Part II: PROD manual, facts read live on 3 Oct</span>
@@ -601,7 +601,27 @@
           <li><b>The script drops a copy's opening note and final newline before it posts.</b> 13505's live body has neither. Without this, republishing a copy would add the note to the page. With it, the FTL copy, once the script has dropped those, is the live body byte for byte; I checked. A new test under WP.PAGE.02 holds this.</li>
         </ul>
         <b>Your action before step 12.</b> <code>SUPABASE_PROD_ANON_KEY</code> is not in <code>.env</code> today; I checked names only. I have not added it, because that means handling the key. Copy it from the PROD project's API settings in the Supabase dashboard into the <code>.env</code> of the checkout the script runs from, or export it in the shell. The script refuses to publish until it is there.</li>
-      <li><b>Done locally.</b> <code>scripts/preflight.sh</code> exits 0, and the documentation gate (§08) is complete. Then <code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code>. Commit only on your word.</li>
+      <li><span class="chip fill">done 4 Oct</span> <b>Done locally.</b> <code>scripts/preflight.sh</code> exits 0, and the documentation gate (§08) is complete. Then <code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code>. Commit only on your word.
+        <b>Done 4 Oct.</b> <code>scripts/preflight.sh</code> exits 0: all 15 gates pass, pgTAP included. The handbook describes what the code now does, in the present tense:
+        <ul>
+          <li><b>Frontend and automation:</b> the two hosts and the three bar modes, the page bodies, the drawer in every mode, where <code>?admin=1</code> is honoured, the environment per host, and the new files in the implementation map.</li>
+          <li><b>Product surfaces:</b> the documents framed on the site, the calculator as built, and admin on <code>/ranking/</code>.</li>
+          <li><b>Scoring and ranking:</b> the generator's copies, with no "three-way identity".</li>
+          <li><b>Environments and release:</b> one environment per host, the injection and its guard, the ten-minute cache, the Q8 rule, and a corrected secret table. I checked the secrets myself (names only): 13 repository secrets, none in the three environments, no variables, and no Gmail secret anywhere, so those two rows are gone.</li>
+          <li><b>Operator runbooks:</b> a new runbook, "Publish or change a WordPress page", with the menu-item clicks.</li>
+          <li><b>Workflow catalog:</b> the <code>release.yml</code> injection and guard.</li>
+          <li><b>Also:</b> the codebase map and the documentation map, which now gives <code>doc/wordpress/</code> to the runbooks page.</li>
+        </ul>
+        <b>The ADRs.</b> Each amendment is dated 4 Oct and says only what changed:
+        <ul>
+          <li>ADR-015: §1 and §3 on the association's site.</li>
+          <li>ADR-085: the upload copy is gone, and the page is framed on the site.</li>
+          <li>ADR-092: framed on the site.</li>
+          <li>ADR-102: the copies the generator writes. Alternative 3's reason has expired.</li>
+          <li>ADR-090 and ADR-109: their status now reads "implemented on LOCAL". ADR-090 also gains a short "As built" list: WP.DOC.04, the calculator's layout, and the publishing script dropping the note.</li>
+        </ul>
+        The specification's ADR register and the RTM say the same. FR-148–151 are Covered on LOCAL, and WP.COMP.01, a guard since step 2, is Landed.
+        <b>Documentation check.</b> <code>check_docs.py --changed-from origin/main</code> passes with 12 ownership warnings. Each is a page that owns a changed file by pattern, such as the index, the glossary for the locale files, or the RTM's readers. I read each one, and every statement on it still holds. The page in §19 is written after the deploy, as you asked.</li>
       <li><b>Release, on your go.</b> Push <code>integration/main:main</code> from the integration checkout; CI runs, then Release, then you approve PROD. This release changes no database object, so Q8's rule is met. Check with §14, items 1–2 and 8–10. <code>/znajdz-zawody/</code> must still look exactly as it does today, because its body has not changed yet.</li>
       <li><b>WordPress, one page at a time, each on your word</b> (ADR-090 §8).
         <ul>
@@ -878,7 +898,7 @@
     <p class="kicker">08 · Done means</p>
     <h2>One command, and one box</h2>
     <p><b>The code is done when <code>scripts/preflight.sh</code> exits 0.</b> This plan touches no <code>.sql</code> file, so no <code>postgrestools check</code> is needed. <code>scripts/refresh-graph.sh</code> runs before the commit. <b>The deploy is done when</b> every item in §14 holds on PROD and the record in §19 is written.</p>
-    <pre class="cmd">☐ Documentation coherence gate complete
+    <pre class="cmd">☑ Documentation coherence gate complete
 Impact: product | architecture | operations | configuration | reference
 Canonical docs affected: doc/handbook/subsystems/frontend-and-automation.html;
   doc/handbook/product/product-surfaces.html;
@@ -886,7 +906,8 @@ Canonical docs affected: doc/handbook/subsystems/frontend-and-automation.html;
   doc/handbook/operations/environments-and-release.html;
   doc/handbook/operations/operator-runbooks.html;
   doc/handbook/reference/workflow-catalog.html;
-  doc/handbook/operations/prod-wordpress-deployment.html (new, §19)
+  doc/handbook/reference/codebase-map.html; doc/handbook/documentation-map.html;
+  doc/handbook/operations/prod-wordpress-deployment.html (new, §19, after the deploy)
 ADR impact: amend ADR-090, ADR-015, ADR-092, ADR-102, ADR-085;
   new ADR-109 (supersedes ADR-009's switch)
 Operational impact:
@@ -894,7 +915,8 @@ Operational impact:
   operator-runbooks (publish a WordPress page, create the menu item);
   workflow-catalog (release.yml injection and guard)
 Source-map / last-verified updated: yes
-Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS;
+  12 ownership warnings, each read: the page's text still holds]
 Superseded prose archived rather than appended: yes</pre>
   </section>
 
@@ -963,7 +985,7 @@ Superseded prose archived rather than appended: yes</pre>
         <tr><td class="k">FTL_USERNAME<br>FTL_PASSWORD</td><td>Result scraping from FencingTimeLive</td><td>FTL scraping.</td></tr>
       </tbody>
     </table></div>
-    <p class="measured">The handbook also lists <code>SPWS_GMAIL_USER</code> and <code>SPWS_GMAIL_APP_PASSWORD</code>. Neither exists in the repository; step 13 corrects the page.</p>
+    <p class="measured">The handbook used to list <code>SPWS_GMAIL_USER</code> and <code>SPWS_GMAIL_APP_PASSWORD</code>. Neither exists: on 4 Oct the repository held these 13 secrets and no variables, and the <code>cert</code>, <code>github-pages</code> and <code>production</code> environments held none. Step 10 removed them from the handbook.</p>
     <h3>Supabase → each project → Edge Functions → Secrets (<code>dispatch-workflow</code>)</h3>
     <ul>
       <li><code>GH_DISPATCH_PAT</code>: a fine-grained GitHub token (this repository; Actions read and write) that starts the allowlisted workflows. It expires, and §16 covers that.</li>
@@ -1273,5 +1295,5 @@ WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id &lt;id&gt; --
     </ul>
   </section>
 
-  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 17 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
+  <p class="foot">SPWS Automated Ranklist · WordPress UI plan rev 18 · 4 October 2026. The facts in Part II were read live on 3 Oct: GitHub environments, collaborators and secret names; Supabase projects, plan and members (counts only); <code>release.yml</code>; <code>wp_publish_page.py</code>; the live <code>/znajdz-zawody/</code> body (key redacted); the bundle's cache headers. No value of any secret was read or shown. Rev 2 is in git as <code>cc8870aa</code>.</p>
 </div>
