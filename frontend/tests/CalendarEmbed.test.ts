@@ -63,8 +63,9 @@ describe('WordPress embed — credential resolution', () => {
   })
 
   // Guard against fixing the above by making PROD win unconditionally: the
-  // Pages app supplies both pairs and must still open on CERT with the toggle.
-  it('still opens on CERT and shows the switch when both pairs are supplied', () => {
+  // Pages app supplies both pairs and must still open on CERT. Since ADR-109
+  // (WP.ENV.01) it shows the TEST ribbon instead of the switch.
+  it('still opens on CERT, with the TEST ribbon and no switch, when both pairs are supplied', () => {
     const { container } = render(App, {
       props: {
         'supabase-cert-url': CERT_URL,
@@ -74,7 +75,8 @@ describe('WordPress embed — credential resolution', () => {
       },
     })
     expect(initClient).toHaveBeenCalledWith(CERT_URL, CERT_KEY)
-    expect(container.querySelector('.env-toggle')).not.toBeNull()
+    expect(container.querySelector('.env-toggle')).toBeNull()
+    expect(container.querySelector('.env-ribbon')).not.toBeNull()
   })
 })
 
@@ -247,5 +249,40 @@ describe('<spws-calendar> element', () => {
       },
     })
     expect(assetUrl('SPWS-logo.png')).toBe('https://spws.github.io/ranklist/SPWS-logo.png')
+  })
+})
+
+// WP.COMP.01 — a guard (ADR-090 amendment 2026-10-03, FR-148). The live
+// /znajdz-zawody/ body says chrome="none" and changes only after the release that
+// adds chrome="site" (plan §08). Until then the old body must keep rendering
+// exactly as it does today. Passes before the change by design; proven by
+// mutation (drawing the site bar or the ribbon for "none" turns it red).
+describe('WP.COMP.01 — chrome="none" renders exactly as today', () => {
+  beforeEach(() => { vi.clearAllMocks(); setLocale('pl'); setAssetBase('') })
+
+  it('the embed row, and nothing of the site bar, the drawer or the ribbon', () => {
+    const { container } = render(App, {
+      props: embedProps({ 'asset-base': 'https://fencer4life.github.io/spws-automated-ranklist/' }),
+    })
+    const bar = container.querySelector('.embed-bar')
+    expect(bar).not.toBeNull()
+    expect(Array.from(bar!.children).map((el) => el.className.split(' ')[0])).toEqual([
+      'embed-home', 'embed-title', 'embed-actions',
+    ])
+    expect(bar!.querySelector('.embed-actions .lang-toggle')).not.toBeNull()
+    expect(container.querySelector('header.site-bar')).toBeNull()
+    expect(container.querySelector('.env-ribbon')).toBeNull()
+    expect(container.querySelector('.sidebar')).toBeNull()
+    expect(container.querySelector('.hamburger-btn')).toBeNull()
+    expect(container.querySelector('.app-header')).toBeNull()
+    expect(container.querySelector('.calendar-view')).not.toBeNull()
+  })
+
+  it('the <spws-calendar> element still defaults to chrome="none"', () => {
+    const { container } = render(CalendarElement, {
+      props: { 'supabase-prod-url': PROD_URL, 'supabase-prod-key': PROD_KEY },
+    })
+    expect(container.querySelector('.embed-bar')).not.toBeNull()
+    expect(container.querySelector('header.site-bar')).toBeNull()
   })
 })

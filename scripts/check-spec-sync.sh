@@ -88,7 +88,10 @@ if [ -f "$RTM" ]; then
   #   pinned to the bottom of the ranklist screen and its modal).
   # 146 since 2026-10-02: +FR-147 (nationality per season, fixed for the
   #   season, ADR-106).
-  EXPECTED=146
+  # 150 since 2026-10-03: +FR-148–FR-151 (WordPress site navigation, PROD admin on
+  #   WordPress, the framed documents, the environments split by host; ADR-090
+  #   amendment 2026-10-03, ADR-109). Registered as Planned before code.
+  EXPECTED=150
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

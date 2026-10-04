@@ -3,6 +3,18 @@
 **Status:** Accepted
 **Date:** 2026-03-26 (M8)
 **Superseded in part by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) — §2 (Calendar Layout — Vertical Timeline) and its `m8_calendar_view.html` mockup registry entry. §§1, 3–9 stand.
+**Amended by:** [ADR-090](090-prod-surface-as-wordpress-menu-item.md) (amendment 2026-10-03 — §1 and §3 on the association's site).
+
+## Amendment (2026-10-04 — §1 and §3 on the association's site)
+
+The [ADR-090 amendment of 2026-10-03](090-prod-surface-as-wordpress-menu-item.md) draws §1's drawer on every public page of weteraniszermierki.pl, in a third mode, `chrome="site"`.
+
+- **The ☰ sits in an SPWS bar.** The bar also holds the logo (the link home), the page's title and the PL/EN switch.
+- **The drawer's entries are same-tab links** to the site's four pages.
+- **In every mode, the drawer floats over the page and opens only on ☰.** It closes on a choice, a tap outside or Esc, and it holds no sign-in entry.
+- **§3's `?admin=1` is honoured there only on `/ranking/`,** whose element carries `admin-entry`.
+
+On github.io §1 stands as written; [ADR-109](109-environments-split-by-host.md) removes the CT/PD switch under the list.
 
 ## Superseded in part (2026-08-09 — §2 Calendar Layout)
 

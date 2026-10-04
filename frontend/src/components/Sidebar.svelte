@@ -1,15 +1,36 @@
+<svelte:window onkeydown={closeOnEscape} />
+
 {#if open}
   <div class="sidebar-overlay" onclick={onclose} role="presentation"></div>
 {/if}
 <nav class="sidebar" class:open>
   <div class="sidebar-brand">
     <!-- The Pages copy of the app has no other route back to the association's
-         site — PROD deployment step 1, plan §03. -->
-    <a href="https://weteraniszermierki.pl" class="sidebar-home" aria-label={t('embed_home_label')}>
+         site — PROD deployment step 1, plan §03. On a WordPress page the body
+         gives the address (href-home). -->
+    <a href={links?.home ?? 'https://weteraniszermierki.pl'} class="sidebar-home" aria-label={t('embed_home_label')}>
       <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="sidebar-logo" />
     </a>
   </div>
   <ul class="nav-list">
+  {#if links}
+    <!-- chrome="site" (ADR-090 amendment 2026-10-03, FR-148): on the
+         association's WordPress pages every entry is its own page, opened in
+         the same tab from the address the page body gives. -->
+    {#each SITE_ENTRIES as entry (entry.page)}
+      <li>
+        <a
+          class="nav-item"
+          class:active={currentView === entry.page}
+          aria-current={currentView === entry.page ? 'page' : undefined}
+          href={links[entry.link]}
+          onclick={(e) => followSiteLink(e, entry.page)}
+        >
+          {t(entry.label)}
+        </a>
+      </li>
+    {/each}
+  {:else}
     <li>
       <button
         class="nav-item"
@@ -64,6 +85,7 @@
         {t('nav_points_table')}
       </a>
     </li>
+  {/if}
   </ul>
 
   {#if isAdmin}
@@ -84,27 +106,59 @@
 </nav>
 
 <script lang="ts">
-  import type { AppView } from '../lib/types'
+  import type { AppView, SiteLinks, SitePage } from '../lib/types'
   import { t, getLocale } from '../lib/locale.svelte'
   import { assetUrl } from '../lib/assetBase'
 
   let {
     open = false,
-    currentView = 'ranklist' as AppView,
+    currentView = 'ranklist' as AppView | SitePage,
     isAdmin = false,
     adminTimerText = '',
+    // Given only on the association's WordPress pages (chrome="site").
+    links = undefined,
     onnavigate = (_view: AppView) => {},
     onclose = () => {},
     onlogout = () => {},
   }: {
     open?: boolean
-    currentView?: AppView
+    currentView?: AppView | SitePage
     isAdmin?: boolean
     adminTimerText?: string
+    links?: SiteLinks
     onnavigate?: (view: AppView) => void
     onclose?: () => void
     onlogout?: () => void
   } = $props()
+
+  // The four public pages, in drawer order, with today's drawer labels.
+  const SITE_ENTRIES: { page: SitePage; link: keyof SiteLinks; label: string }[] = [
+    { page: 'ranklist', link: 'ranking', label: 'nav_ranklist' },
+    { page: 'calendar', link: 'calendar', label: 'nav_calendar' },
+    { page: 'calculator', link: 'calculator', label: 'nav_calculator' },
+    { page: 'table', link: 'table', label: 'nav_points_table' },
+  ]
+
+  // A same-tab link, with two exceptions that keep the visitor where they are.
+  // The entry for the page already open only closes the drawer: following it
+  // would just reload the page. And a signed-in admin is on /ranking/, the only
+  // page that admits sign-in, where App resets the sign-in at mount: there the
+  // Ranking entry returns to the list in place instead of reloading the page
+  // and losing the session.
+  function followSiteLink(e: MouseEvent, page: SitePage) {
+    if (page === currentView) {
+      e.preventDefault()
+    } else if (page === 'ranklist' && isAdmin) {
+      e.preventDefault()
+      onnavigate('ranklist')
+    }
+    onclose()
+  }
+
+  // Esc closes the drawer in every mode (WP.NAV.02).
+  function closeOnEscape(e: KeyboardEvent) {
+    if (open && e.key === 'Escape') onclose()
+  }
 </script>
 
 <style>
@@ -121,15 +175,17 @@
     width: 260px;
     height: 100%;
     background: #fff;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
     z-index: 100;
     transition: left 0.25s ease;
     display: flex;
     flex-direction: column;
     padding: 0;
   }
+  /* The shadow only while open: on the closed drawer, parked at -260 px, its
+     blur leaked a grey strip along the page's left edge. */
   .sidebar.open {
     left: 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   }
   .sidebar-brand {
     padding: 20px 20px 12px;

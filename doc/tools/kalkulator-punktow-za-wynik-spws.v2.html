@@ -8,7 +8,7 @@
        o publikacji, USUŃ poniższy wiersz. -->
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="Kalkulator punktów rankingowych SPWS — ile punktów daje zajęte miejsce w stawce, także w stawce łączonej.">
-  <title>Kalkulator punktów za wynik — SPWS</title>
+  <title>Kalkulator punktów — SPWS</title>
   <style>
     :root {
       color-scheme: light;
@@ -99,25 +99,34 @@
     .formula { overflow-x: auto; margin: 14px 0 0; padding: 14px 16px; background: #101b29; color: #eef5ff; border-radius: 9px; font: 13px/1.7 var(--mono); white-space: pre; }
 
     /* ---- kalkulator ---- */
-    .calculator { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
+    .calculator { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 18px; margin-top: 16px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .field.wide { grid-column: 1 / -1; }
-    .field label { color: var(--muted); font-size: 13px; font-weight: 700; }
-    .field input[type="number"], .field select { width: 100%; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); }
-    .toggle { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-weight: 700; cursor: pointer; user-select: none; }
-    .toggle input { width: 19px; height: 19px; margin: 0; accent-color: var(--navy); cursor: pointer; }
-    .toggle.on { border-color: var(--navy); border-bottom-left-radius: 0; border-bottom-right-radius: 0; background: var(--blue-soft); }
-    .joined-block { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 12px; margin-top: -12px; padding: 12px; border: 1px solid var(--navy); border-top: none; border-radius: 0 0 8px 8px; background: var(--blue-soft); }
+    .field.wide { flex-basis: 100%; }
+    /* Etykiety jak w filtrach rankingu: małe, wersalikami. */
+    .field > label:not(.seg), .field > .field-label { color: var(--muted); font: 700 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+    /* Pola z liczbami (W4): wąskie, bo mieszczą 1–300; cyfry do prawej, jak każda
+       kolumna liczb w Tabeli i w rankingu, równej szerokości i na środku w pionie. */
+    .field input[type="number"], .field select { width: 6.5em; max-width: 100%; min-height: 40px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); text-align: right; text-align-last: right; font-variant-numeric: tabular-nums; line-height: 1.25; }
+    /* „Stawka”: ten sam niebieski przełącznik dwóch pól co Ranking/PPW w rankingu.
+       Pod spodem to nadal jeden checkbox #joinedToggle, więc skrypt się nie zmienia. */
+    .seg { display: inline-flex; gap: 2px; padding: 3px; background: #eef2f7; border: 1px solid #c7ced8; border-radius: 10px; cursor: pointer; user-select: none; }
+    .seg input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .seg > span { display: inline-flex; align-items: center; min-height: 32px; padding: 0 13px; border-radius: 7px; color: #3d4a5c; font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .seg input:not(:checked) ~ .seg-single, .seg input:checked ~ .seg-joined { background: #3b82d6; color: #fff; box-shadow: 0 1px 3px rgba(16, 34, 64, .28); }
+    .seg input:focus-visible ~ span { outline: 2px solid #12467e; outline-offset: 1px; }
+    .joined-block { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; padding: 12px; border: 1px solid #c7ced8; border-radius: 8px; background: var(--blue-soft); }
     .joined-block[hidden] { display: none; }
-    .joined-block p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13.5px; }
-    .joined-block .steps { grid-column: 1 / -1; font: 700 14px var(--mono); color: var(--navy-2); }
+    .joined-block p { flex-basis: 100%; margin: 0; color: var(--muted); font-size: 13.5px; }
+    .joined-block .steps { flex-basis: 100%; font: 700 14px var(--mono); color: var(--navy-2); }
     .rank-control { display: flex; align-items: center; gap: 10px; min-height: 44px; }
     .rank-control input { flex: 1; min-width: 0; }
     .rank-value { min-width: 3.2em; font: 700 16px var(--mono); text-align: right; }
-    .type-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .type-chips button { min-height: 32px; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: #fff; color: var(--navy); font: 700 12.5px var(--mono); cursor: pointer; }
-    .type-chips button.on { border-color: var(--navy); background: var(--navy); color: #fff; }
-    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 8px; }
+    /* Ranga: te same pola co „Stawka”, po jednym na rodzaj zawodów. */
+    .type-chips { display: inline-flex; align-self: flex-start; flex-wrap: wrap; gap: 2px; margin-top: 6px; padding: 3px; background: #eef2f7; border: 1px solid #c7ced8; border-radius: 10px; }
+    .type-chips:empty { display: none; }
+    .type-chips button { min-height: 32px; padding: 0 13px; border: 0; border-radius: 7px; background: none; color: #3d4a5c; font: 600 13.5px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+    .type-chips button.on { background: #3b82d6; color: #fff; box-shadow: 0 1px 3px rgba(16, 34, 64, .28); }
+    .result { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 18px; padding: 18px; border-left: 5px solid #3b82d6; background: var(--blue-soft); border-radius: 8px; }
     .result strong { font-size: clamp(34px, 6vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; }
     .result .unit { font-weight: 800; }
     .result .description { flex-basis: 100%; color: var(--muted); font-size: 14px; }
@@ -135,11 +144,12 @@
     .premium-head .field { min-width: 180px; }
     table.premium { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
     table.premium th, table.premium td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
-    table.premium thead th { color: var(--muted); font: 600 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    /* Nagłówek jak w tabeli rankingu: szary wiersz, zwykłe wiersze pod nim. */
+    table.premium thead th { padding-top: 8px; padding-bottom: 8px; background: #f4f6f9; border-bottom: 2px solid #dee2e6; color: #333; font: 600 12px var(--sans); }
     table.premium th[scope=row], table.premium thead th:first-child { text-align: left; font-family: var(--mono); }
     table.premium td.d0 { color: var(--muted); }
     table.premium td.plus { background: var(--small-soft); }
-    table.premium td.cur { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 900; }
+    table.premium td.cur { outline: 2px solid #3b82d6; outline-offset: -2px; font-weight: 900; }
     .swatch { display: inline-block; width: 11px; height: 11px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--line-strong); background: var(--small-soft); }
 
     /* ---- pełna tabela ---- */
@@ -228,6 +238,45 @@
     }
     .brand img { display: block; height: 30px; width: auto; margin-bottom: 14px; }
     .rules-link { font-weight: 700; }
+    /* ---- układ kalkulatora (W4) ---- */
+    .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .calc-card { margin-top: 0; }
+    details.fold { margin-top: 14px; padding: 0; }
+    details.fold > summary { display: flex; align-items: center; gap: 10px; padding: 16px 22px; list-style: none; cursor: pointer; }
+    details.fold > summary::-webkit-details-marker { display: none; }
+    details.fold > summary::before { content: '▸'; color: var(--muted); font-size: 14px; }
+    details.fold[open] > summary::before { content: '▾'; }
+    details.fold > summary h2 { margin: 0; font-size: 18px; }
+    details.fold > :not(summary) { margin-left: 22px; margin-right: 22px; }
+    details.fold[open] { padding-bottom: 18px; }
+    .rules-pill { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 50;
+      display: inline-flex; align-items: center; gap: 7px; max-width: calc(100vw - 32px); padding: 7px 15px 7px 11px;
+      border: 1px solid #c7ced8; border-radius: 999px; background: #fff; color: var(--navy); font-size: 13.5px; font-weight: 700;
+      text-decoration: none; white-space: nowrap; box-shadow: 0 6px 18px rgba(16, 34, 64, .22), 0 1px 3px rgba(16, 34, 64, .12); }
+    .rules-pill svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+    .rules-pill:hover { text-decoration: underline; }
+    main.wrap { padding-bottom: 96px; }
+    @media print { .rules-pill { display: none; } }
+    /* SPWS-EMBED:OMIT:BEGIN */
+    /* ---- Wstęga TEST (ADR-109, W3) ----------------------------------------
+       Kopia na github.io działa na CERT — ma to być widać przez cały czas.
+       Ta sama żółta wstęga co w aplikacji, prowadzi na stronę stowarzyszenia.
+       Generator usuwa ją z kopii embed/ (PROD, w ramce na WordPressie). */
+    .env-ribbon {
+      position: sticky; top: 0; z-index: 60; display: block;
+      padding: 5px 12px; background: #f5c518; color: #1f2328;
+      font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.06em; text-align: center; text-decoration: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .env-ribbon:hover .env-ribbon-site { text-decoration: underline; }
+    .env-ribbon-short { display: none; }
+    @media (max-width: 429.98px) {
+      .env-ribbon-long { display: none; }
+      .env-ribbon-short { display: inline; }
+    }
+    @media print { .env-ribbon { display: none; } }
+    /* SPWS-EMBED:OMIT:END */
   </style>
 </head>
 <body>
@@ -241,21 +290,28 @@
      data-supabase-cert-key="sb_publishable_local_anon_placeholder"
      data-supabase-prod-url=""
      data-supabase-prod-key=""></div>
+  <!-- SPWS-EMBED:OMIT:BEGIN -->
+  <!-- Wstęga TEST: ta kopia działa na CERT (ADR-109). Kopie embed/ jej nie mają. -->
+  <a class="env-ribbon" href="https://weteraniszermierki.pl"><span class="env-ribbon-long">ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → <span class="env-ribbon-site">weteraniszermierki.pl</span></span><span class="env-ribbon-short">ŚRODOWISKO TESTOWE · TEST</span></a>
+  <!-- SPWS-EMBED:OMIT:END -->
   <!-- Radiobuttony MUSZĄ stać tutaj: bezpośrednio w BODY, przed MAIN.
        Patrz komentarz przy .lang-switch w arkuszu stylów. -->
   <input class="lang-radio" type="radio" name="lang" id="langPl" checked>
   <input class="lang-radio" type="radio" name="lang" id="langEn">
 
   <main class="wrap">
+    <!-- SPWS-EMBED:OMIT:BEGIN -->
+    <!-- Własny pasek języka i nagłówek dokumentu. W ramce na WordPressie
+         zastępuje je pasek SPWS, więc generator usuwa je z kopii embed/. -->
     <nav class="lang-switch" aria-label="język / language">
       <label for="langPl" lang="pl">PL</label><label for="langEn" lang="en">EN</label>
     </nav>
 
     <header class="document-head">
       <div class="brand"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAABICAYAAACHtCxzAAAtO0lEQVR42u19h3tc5ZX+saW5bSQ3bOwYQ/gF74Y4AQwmkAIb0wIESJZOIEBIDAQSmhPaLkW0AKGT0AkJEEINJYDBGBDFmCZbmjt3JMuyPCq28LLP79n9D7zn/c53NVcjjabdO5qRZ57nPpalafcr73fKe95DVH/UH/VH/VF/RPPYRjSFr6l8NfIV84iMHiIzTbtauPAzLvwef99GS/G8qfWRqz8m2R5o2EZL9PpfaI7eAwt5Dywy9D5pwGvqI1e7k92Iid1KFO8k66sJsvd3yfmJR9ayJJm/S5J1LV+/98i4JUXWTXxd65G53CXrLP77UfzcJR1EOw0ROVgcGhSnhPw9G3zwrcy1UIG8XuSxwEKfGua94b3C/u74ziV+l6nlfjbGqJTP9g/a8j57SazU+8bnDxLZbdQ8O0VN30xQ/BDeBz/1yP5Nkoz/8Mi5kdf/zbwncN2QIuNKj2LnJ8k+mffGUpead+f3mDVIC/g91HqpGwVVDnyNmHAGsN1cajqRJ/dWnsxXecLX8e828jXIEzskl/2FXCN/9tT/zQH+t4df9xn//gX+fQtAEYCYJrJK3RDZDwbbf+P3vhHgG+XF93INX1fxeFzB97Q8RbFfeRQ/g0H+3z1qOogX/V44JNqJZmD89KYv2QrGe2HM5LONa8q/rOtcMs8t5fvwvS3WG72kz8b8uGR/t9jPXU/UzK+/jMegpfT7dm5kwDq+OLBfyFYdzXCp8bu8Zi/iOf4Lz/kHfB9dfMD38bVl9PrP/r+5mZ+X5svj17by+D+UIvNXCYrt8yVRk/aU6tZhtTxwOuGU4wk8LknOYzxpCUyinsxBmUwrzf/fVOiF52PBCGhiYQAUHQZE854kxX/437zAARLlfO8EmRfzxv7fzCKM+goCPTbC8Nh08721879v89+fSKpN23QKgDFNM2bAki4G9HFQ8Hut57n4MqTv/l/YwJ00+yvFA6BzAx80ZYyx+T88JncX+7kdFNuPxwBj/UWpn81r438YeC4sBPhwMLsU34OB83Ie97f49b36QMc89xe7/mUPmGl5rYAmv8cGGBT8nS5IUPPX9bqoW4UTZ/EtbRyi+bN5kS9j0HtHb+gtMnHFTXZhFwBRgQf/6/yTF8NJGghLsgh5gf9Gb5BNE3lpsMeYDcjBoQAfBwhAbBXcJAbrI/igmV3I6Y+/82uf1u8R1tgPslVzaDHj28oHFDYsv36wjM/GmKzCZi8OeM1f89htLX1ObJ4Pe1MHOXuP9zmw1l2KLeHn/5HnsTNzWFvpKNZJxouyEwgfAXTxHepoVOGHTLz5I56MN7U1M1BJwNALAWDxD8RLSlkE1QKAee5zQFtCbAnY78HCwOmv3eQpuQHAvqQcABh9OVsRoypujUzfzRPXL13e4WBvWE/m14uJgfJrnxDrq+R7htX2AR84Tbnix+uI5iM8wGtwvT6Y05VbG/gs+wv+fI///5/8PeeFFRqqP/Isrm62RCSBYfpANIFAoSwmuBstXUQ7FBMbqXYAHONe+7UbnZC44sxdcoUBOsg6QINmWJtSHTbFuFwJMo6XmG7Z9w2L5+RCP7eLmnfg57eJp1AywLALbN+bK+TD93UQj+27AkKVA77cQGi/nSDrEHgIdZSKMMmxjmJ7sRXyiqdOPDtdLZaS/j7sFjv7FpqxrD0AHL7fPrlfa02KrNPYGpw2+t6mz+TnfszP6Q/RGnV5s+1c+AFj3+VJzLPMz1YbvOA4IBJLrjosSgZcfOZQ5xigK8kV89d8bSjTtQ/7GuQ52sjf+VLEjetoFT74NYDKwgvjQyyOKgWGLXx9mqLGgk7CWgXAYHwMVo5Lzg2DRLOy74838iPJUCwwuXi8BlPkHFnIetlKc+M8F60SwwvjPq13kCEvDAAbLysHePm1PKZW11oyF44Ev9nNnexuarDpq8aQCfaAS7E72T2fU4p3V0+q5BgYT1l+9mq+tlQ5KPDidFyP4oeDazfJAVAF62EN8uF0Tz/RzJFAYC0LwwIbaYlZ1xSyZtYS7cmv2RiGl6DvcQN7HosKycjyofB8OevUFcBdEYwrA3wRf8X7Vovnk3usYKCYD/RQU1EgiOd3En2ljnijBsZewIvijTKDyhUGQbMdcbDxTrTJAIBBEGTr7KaglcT/3xv8yxAzkuCnvbyNzslLDubn/iIZIvgiDsiH2qn5446zFugYaRn3rID+hmDoh/9/pk6MpGskTIK46d09NGtaofu8k5yjQDGrI17gAX4TD+Q9ngpE1xQwYLN+4JKxe67EyGQBwAxtwxrgg+pUH/ThsjFogIQbYhzQSiaJds7vMVgPeyG637A+EVMsgP5yhKsSNqXH/ySxZh6VAXNnX14rybDGsZKHIsj3qCQpLHRg38ye3tl11Ass5E6yj5UYjJ2uQVD4IkXWsx5NmzXZAVBbLgN8fd5FtGtgUf8xGeLh5SovwDlqvHWDihbeeGvCBQyzoDigq7Lj5cX/+P6SCaIFmaSH/XwNeT9ZB5bdnyDjhEJCB/ya1/neW+rIl4l7zEJ6vcqyXcVYK6gkSeAE3z4AUN03u2/O9b4VyBbwaTomFNqhAspRHhrKd7Hxwjw0xaIxu5NkfGOcTRxLKiZA6Ragq8j8xvPPaU5diuKn1SL46QtsASTK/tiap2oKlVwovePx/XMd+Yath9iZYboxEwB+q1FBsT24wEGKDN93xzqyvipzaCxKqgSC3RdeaMH+53giAQxCF3mhxv+CcUD7p7mBd8aufP+pcuJ02tW+HO/XSzSdP/Mtvp8aMwBMzQ+0NvJ3vzdBTTvm2+uIF7vK0DFXtuVJHm4XjzVK1MB5PWyis07VpzMgpU6p4O/CMPvxnivZEvr2ZM8C587WOmfLPC7APK4KiY7iz5/H1y65s7DWU1FYTQJO5p25N7HxE7eMz9XrD+O0VBIqzce4EXg//lp3BaT6XF0rr7mWIby3Wv/dyNivKZA6xJbfsbxvtqKOv5Oceia4k+zvCJCE6cYMA1wvvzcoEhukwBsnlSoe31QOGPoLCXG/bA5XpQAw+P2zL3/Bhwn4ufiQvKCf2UYnajfOvi1cPqCKAx49dhaWdoT6TzQ8OcQBzbdzxQGlOqmc+J+am8/BodtGLQDyh8KlEfnrwEa8tpffu0fvgR7839Wuvlvi2si8v8OurHleMZw+iD7wa1DH3FeK+s4kdH+Ny8Ke/KSaaOs9vh6EHhoAKEH2xZCK4p//xIsblRztAojmpsIXwbDJzyBq3o9NOBGVIHoBAtCTbIF5Iy/EV6xOHtNugD9/z95AhUUEFobjolZVgKHhOK1KEqKFaVw39kayDnEjqgvXmU0ev6ZvjGYrLLVcMt4opyZdW4+PI2Syjprm8Oe1JUMCcg188E5cXgsv8P9v4XG6RO8B6GP+Hp/N1/tQ3gkCWnFhH6fNKyDpMUbVzi16v/Pl/GJ7z/42stXwEk/W5rDiUjzRa3lT/pone0Guz/2EZk3roNje/LkX6kXi6VM5ncfkR43sWp7ES9povlP4pIdtAdqbdcbwgI7AlSDrwHZ2qzyKH8H3fwJv0l8llUYeFFusNonPhQuCACEIcOI+1yl9QNMNMQ44CF4oKFKjD07rumjif8E4oPXz0Zan8S0d6ywn/of3XqazyYeGB+TmJm39/82lph+0EY25RpGowP7g5x/N1+38/A+FTD4+COu/w6N6gfft/qXseVQN6fJKxFnv20bbtl+9wR52AbAxtfxUGAXbKFG7upjvwKDx/xJkXsqvX53LGszISNkfJSh2xnNFqmFEYAHCzXygUIpRGzlf4fs8g1/zmYB4qJSYrfx9zpYMH4r37RfdkOK52jLp6iTzX7LWjcl/fy1K1oDeoH/KTmx5PP/l0H107JhBZMZizScMbW1oak0ie7zG98DI4Pv5Ib/ucV9MNcfe6pPsuPNYogjFnDE4gM9I9YyNw+2dXCBdIwac336jNBBPkfFNL6Qypsyidc4pNruEG4DkFsqSXHF/0kEVDFesplX88zGl3GcUAIi4UfGnL1wgRb4NNWEQpKvwBvnPMC0zV9Vd2ydkkZAX8tUZcbUErLL3gjJVep38qZwadU90B99t1e/L93FHeOOlBFH5II/PLXZt4JBMktEiYZVRINgvYZX4nevImV9eyMt+WTL8Kobe7VHToioBsgbgBvQg0R4DvEwobncrAWaa2032TqKAbu4GyTRgF1vR34HaO3QaQZvCc4qSy4OZHu4pDoKu9VaKXbL1PFFgpheDzsjmJlV8UEqRtMnfy79/mSfu+6UOcPUAoPENL1yqyiYpjTPvCRCED9XioiHGAe1bRx6c9kluqCKsOSteehhM9sxYnrOm6dhZGfE/c0uw0oR/92RYmWwdu0Rc9uouMv8VG7gYNXNk8hEvBMVH07s26XgfSv6uYoCYXn7M33zFD3m5ymMzTi0TvKYgCSdlhGQgXJIgimOu2ocBLD4XeACFofXs8eEABYiButVN8b3Yqv+2R40H8PMOg5EDSTSEP0Ts1rxUt2q4w1UtA6y/8Ti/AmFmCKLwczv4549S5Kzgn29zyfkRALOgL99FztER0BgGJN6F4K/x7+gVgZuGhl8har8AQd7Qms6hpIge72C0L2eSqgUAUamCCo4w3WAdz3rE/4zPiOYlVRw2tOwsDsg3/TiglL/Zd1SGN6rqgs/MzOP0JeV5LEr+ChbtKYGY2IthUsA0CPLY2y/yWj4fRgaDwO4AgPVK1XxpY36X2LpSy+JjL6E9xHkrQlCDFgFZczjmL5a0fZ/fGGqI5juwuHtp5nSs1W6lTB6fB8sKdKggeOEwX0/Gnkmavi+/x/f47wcnqPEI/vlY1HKjRlyaQtmX8nOv5T14a5Ji97L7/ij//u/8+5f4NW/y92nlA/VjzSjwJPnl17Wr+9+s52z40mtyQBtKfdpCHpS/w1J2rhsvBxEABjTriWQh98uXQczCep+R+8+dFL8U6A61mS6ydkUXrFzmqpwExkco7/qsCF26agdAbABeDB+FWTomB5jzmP8ZiI9CJr+8OtlRccD1UKfW9Jc4j+fbYfEN840zf9YffS+C1+s55Ze/WV2wzgQQWqby2L0aVhIwy3odlHk228XqMv/A1stZcNkAIAKIs8ds8wD3HAIHnkqO2Cfje4bH+rCfCVTQIKm4BiWPDBrHoJSOf3c6f+45nYrkbl0B64tB6zaEHrCPA+AF0ZR3+foIlCIRprC7RD9RMR/69BoZzAawkSCmQK4/QxtTKjflKIv3iVyeeaebpZo0BtAoC3AoWjfGHvBvmL8UJMVbeTAf5lNiOT5/Pbs48O1x4gS1/QCCxcr8VDsASpwHJrvZF6YFyPf3UBbVYXnYccAUGSfKext7aF5bJWrGsTlaPVrUpK2XR8rUqEQFxOutAWs2aBFFV7HjgwD4q+icaL/kqhaZsTMQ2gEgg5Ts0ZwmHxATSpmp8Qdhx9t0FnhL1nfsTMre9BWF+nVVzFjW12YZL/x9BHiFAmBhHkA8pr8clyOZpMalwqcyK/jFgoCIrJf1Ln/+g52qtaB5pMQF7J1gaYQ16dUAgCI40fAjWShhLhBVNnbnyFO+8QA3RAK2gKl9m4xl/KxkhRSDtDvZI8k6ZRV9nCxLAVol6W7MIlX/LRmStZzf/fbBRQEL1mM/r00FiOAHsiFwOsjJYhDMaSrJzd02fswdDZbAHBiDYlYV4BXWWAuZHqLOc+aNAwwz99BM9b6JQWorCIgD2n9fyYvgDhSnd9OMveRkXGRUGwCC5F1IdguxM9CNUhTbG8X3EVBHcF8jmhh1q4J3+1MvNFcbp73xpkimmQ9UVilcATxahy6WCqDS439iuZhHZ1nLd5W/NsxAZZDpJ+90bMrsyxx62GtWj6viXEh0gCxttwsVDXEwawW7yQ+6FDsHbnIwgQhgK/TKU/l1cTJS/mZkgDZqjHU9vB8D7PcClmhSVeFYgyibHIeDRzumyF4bpksWQhWJBkSzV2IMxo1sHR6GU7HUtoARACB4VE8iJZ99SZC4+espavpmgqZ9B4kgoaaoXsADEVhJX8ByGB3sth5zQ8tuqoXXmZCyyffLtMKKdvGlxM85r9zyN1EMGhlTFjL+eO8b3HgjN13Q7UPgPimJi/WuqgayOySBYX/kqrk30Tb0GU+1LzBvB18Wn80Hy88Qg0ODdXg/bUS7JJpoR8QBt7XQ1GKArxAAlCTFRLe6KATQ/INjuNc4qr96NAkeiRI+QMykp8bZ/ly8AzAEVD38a1ALTwrn8ZScg9GqUtfmP9yKuAClCX9q6xAlZw9hocA9LrafQQQA2Kcz3U/wif2kXPaTkqJXfXpf5H/fQppesloqxjQQkQXd51Lzd0ef9OZ54QqVqo1+h1jplXST4CGow+OFcqxnV7mdxvPZclGgbPm9P7xRVptYEp7eePz7Ts3TW6ctbIjQviVxRLjS5gN84N3M1xVSBWSfnKTGw5IU2xfkaGRUV8+m5rYlhfFkSwG/fACIZmdCLQuTw1ksoKn105sZV/TFVtSfpFjECtDWZADNYUCznpMSQvN+vlDzfi0/57c8r0iM/RTCtkgwocKsg5r/tUNlrmlWXpEITFS1Nj8amb2zsUi7XSlB+3kxShbRiCHIdxp5KZDLymxFBxaa1PveWPwwLY+1PsQ4YFpO3glZA73F9R0xN2U2oqqgQFD/S9BJsscJXDURCEWVjvk2JMD4tX8XpWvzDk3hWI7SOf75ZDAZEmQdjFI0xCbbydoVMlTI8Ksezi2FHc6lglu5AChMBPt9b9wDOdvqVeDVr9fbgE4mQbDCp6Hg+T2eqm1WHQXXCoCZyBKv4HFDT282DsyHoTqPeKcrugCokT6XD4jTJQNtHi0tP+3vS6ls0zfaFWMkPg9JUuEXLjRbwmzoBD6PIG/1db8aB3R4gK2bOqnpWxMFgFVygcd1+1hkc5Q4JZVUWHiCBRPVJ2NkcH54c47alFoUVG9Ikw9LNBNXa2U1KomwqXJUIR0Jaw3VSPyaH6CyIKG4bvbO4K9i46FKIR+4VALcygVA4XHCihrtHWig0+OHTD8sXhuAhhjlGv7/O+yJreC//UMTyAFod7OF9nv+vQY06xz+28/4AD4eLA8AGniCHUqH0NjdBzS0c8W4gvnRMpEd6oR46dzn1pQaLiwsxFwM8JL22x4B0AejTmo8dBzW/621FfDOB27Kou4Vl0lZGp9pa+YNLU7xF/79vTgcPeWGxs6TGJt9HP/+MJ9ZMAo0iqhWmmhwKxcAtZDFmSOpMMqFhajqk7xX7mI8uIl/j5LKiwFofEFt/HjhC1oHI1PNILYYh4SUp9FcWNIJ1SJ1kREmb7FCIGgdICxss692AEBZg4gRPtNJsX22QwsQXKyX2sdpjs2b/7hkVcR3R7uk2gXTrtRw6aPvRiEz+jHP2zt8j69qNZ1HeOPdKfWypo79NJzCm/DHsDISFNsfSjEirkE7fkI0DS5ptnUxHmDUArjBEoV1D5eQ3dn5SLrxmOwJmlChAOhS8+5JpaitlGt8elp/QoBxF4wfAA2foyzfUsUGakgVxuQFdb24l2atWUHYSE/w9//a9gKAviYiA8KJeeK7u3mBhR691ebH2/w4kaXBTfX52MAWBDJ3iA+hGmaVJiGDh/cg//0P7CJdzb+7KEWxX/DPJyKwDdVm6dZm7I4uddLTgpqK2ZhVD2zKLSXDm0NN4nLbC0COBvUH8TBYr6BzsFX7U3Rz81RM0rgG3Ewe3/uhzJ2i+FmtBdYdY7/z+z498nBEbbd9WzG1y5PqoWkc/4iSFR8VCGq+2025yNOTDwCVmsfDiKOMN6eoeNBB/cHoXFJFT1ivY0Woc/4ANZ7QrON//+qqbnXG7+GSorjdU7JgxnHQTBTPI7YYGVKIuqJ0qW0+Oa1FbMIqB7apABtJkEB4FdYV3MbYPimyDuTxOBwS9Qxup0nW2Pwd6ljZdb8dxQH8tyf5Qq3ySmScPaHVuFpIdWOGR2tB4OETdkf/rXCvL36m5kX6YaV+9NhGpU+tYli+/VCQOgw0wmqtO5y47mYX3KHtAABRUvi2S86Swg42qyWbDhNg/SOM0K+z1gOBjPaAVrDuEY06lO9Zn/DVyr97jf/+bErVhZp3MbBdj42bIvNc/vupKXJ+whvxULRa6NQuKWJEPdolVdJHNR5Ha11KjThc2lQzpfhcCewbiyDkIUkUSLsZxwPsBfTty9GAHfE1KQNFltl+RaxgJGjsNlf1YTbXe4osrUIF2pKWS8IGQXqOOUYTK+spWMgFSrPtrKkmA1nvcXOwJLV2wA9xyfF7AxWkyyUqtZgY0E5qqixGxcTGWgCTCAABTmsAMoW6f51KHkhli3X9puJk4b16xD1WKhwoaGdQtV/hjfiUWB/mbXCzeNNdzBbJLyGBlXFJY/tqaa9dRDGEmrxFZFQrkJXyOnDI2tkylbiivT+C/8hqwjWHqAED/gX875XwPNCRjcfmURCdJWapxCLWYGxdia13C59Q2ldmZa01sJllNUvymyQhA1vYXm+Zyt/tas2zDRgStpui5gNrBfieoxMbEsLlvB9hkrLfEMXYQguAVL1vIdSMK4zve9xkA0Dt6gyKQKhxSjEnNE56XtgvCznbeNwTQdFbGMCulD4VCHzbbK2YR8AtQ8keXFKRQJo2C+KUflyoljKdw+u5RYltFv0eCdGru14636GqAFxB812dnFmnY6sbAvSRgLXmxz7LB7YiQxaI4b+KBEahFDhPkY6DJZN4D+NxNIyqdvCDfiKMAYQI+Dvf1BpW/FIK92PfkZS4ndDWYNVniF05zR4HWbKWAHCkSzqsb+a7pJsl4WE+n1ByYmOD33hZwxQ1HgguFsRFkSzi95iHXrio7a02l7QYYFOJA7Y+P9WJg46sxAHiay5vEFinxScGVcxumWjWqZDQUAbYrAoDW1FWYBohiEKNHdBdtFpNOnDYYk3+ppr7BrcpoVXrlzz+HyKxVq5m6JgP6PYJsRHERxXoxobsq2JLCU2ZUKq0sFoA0BuW+A/G20ZUj/TrjYRSq5Qujof79I6rdOSsp6FggsqDWomflQNsz51IDX7iYN1w4oC+jphnQiUO4kcIsA0nDn6rqTG3SxdCZJUhcmpBVOMTuKalbmTNjkBM71ZPdBx96lUVh4bQU9m6pdAQiRyI9oi4v8QfURkTP7wawU8OOucqCd9AENi+ZFtUZGosAliD/CGXgbag2z4OZALlVWdNbUlk9bCICgAz4GblADcJH6AnLAq3pX7Y/BDN3GWTGk94EruAS8onsXmhq6TA7RNSZB6JrF6X2vi0Yy2DGjYjhFr9xIHwzCRxgHiiBpkj/cQBCMzSrtW43lWJFksnDuDKq/j0al2d4I6XOODnfslu/bXl7gEJB9gnQKBXen5A8FMdXn3VBoaaX7mqmGZHouCs3Pm+LO3EV1HBUT1WH8VQ74t4n553yLS9iPmpAFdwoYl4kv4CV3pCUO3KiCQK36sKFgF6WNxRDgBmuaTaHc2IQ2q3FG5Qj5bxRmH8OwA1BrM/u6qG1PoPvZFPcamBN3fj9zdQfLHw2UA5QhYuPhfUD7hxaBfgd7iqFWDzK4naZtJ0uNV8LUxQbJ+EShjASoud06FkwED3MO+FdD+ATFu2EBF431NWGsrVoNSiCuLX6824MdNjY5QCy7ALmssNlcbjaFMZXvNvxNYwf1J8bz2gJazSATm3dJXEwnuQvCnGyOF7uWhk4lNRoHCov9dB1kETT9ObvhtK7pJKvUrty82MRR+EkvgoMj7YiPiILATnGC31xG4aypIgYTXRgIievdZzQZM4CIBZVtsoyW4tuqAbc0PmW2VIV4L6wRv6QdAEpFGLs0x6/zYehiqELjL2AHkVfRN0d6o5aZqhy4PIQLylZiw2fm7rrmKtdRDtJAkBez+odKNoPaGEAezfgTzvUQx6en/2M6A8NujeB87apylVY958ANYJFq2nmhxBBSQb2IbpHXmBrbgObfaa/nK5YWMmSCiOEjAG9/0kDmXfw9/7LU9JNPn6lrKOJsoLQqigOCsXMTVoPVpbstvRSgOiiXGHpVTXPhZJWVDdNOWtX1SsnaO3Fdkit0TTc/6Y5FTdTGUOYm6iZ4aT0bhWMmeIYyke2Wa9ICKPnWhdNrie7wWbyIDKwYD9/3UNca+2XNcJudR8TXea+hNba9d18nN5U5/JVttP+O8HgVsEVw2ZUSz6TqKvYLGA1zZI7IdJRcLUqiflIht6IjVAHggUD8kOG4ug8SekZPsUXlC/Yovpcp7DG8ViM/6iZYhec5VSirUaB52OU8Kl73RVa0UzCGx+QT36zibblKDttIVamaavUokDiQ2ZD4UVG2qjmdPHoo2h+xkD4gLoP8o4mufDVeY19YYmh/cHemBUxGWWTn7WGcXeI9a4q8Jco0HQld4+p7XRkoolRlyK7yEkeusTLeHVl1Gpcc4fqkRPY3Ch0HYRsjXjLSb8DScj3DoseABHQsVNjCt44P4q2mmq78CgD4glxtvGcEl9i9PaKC6U83qwKiRBjYcIpcFBJcKpUtRNbJnQYkjuiEtKO4OwKzWWs5t1hrQqXNIwLD5xtY3reDHfh0w5//wC/7xCUzs+0lUcHRKrtLtEeBIWm8oI5tB2yyxIXxNuJC/TeAYntG7+/c8KVxmB/P2L8oFvSUwOB+tRvzHUeNZKWslrIbyheJIH85o721U6iuYr+tBN+2GUCC3EreyVnF8K+wPJJlERsreM5hja0MC8OoxGZeMnOWgnV1pivi5E/OA6U/v8KuzTCpifyLjZLwppFmUy1s8Lrr+klqmwkOAubyDrayly9kalRkqJGEIXzHw/mFXzhl3Skc1YNGE0rcmkrrTQg9io/TyaAUmGDkz72NlSP9r4QwTWYe34QABAAzCnlWIFNMVURULDZAG3Qq143oxvaAtkoybmjnBDCwS2YvoJL88AsHO1VyFlGh2/5TUb36u8uBMOc+sqEegEzcp4KpthkC9oD08BIRG0xkT8HN6FWDWqVNDTaz1kILS3QsmlVB4wlMx117ctWWWRWCOdIk5hHNsaaFofxgNN3yUJqMIpiQwu+KV6WJfGNUiiRezyzpzOH3iB5thoBrvKaKJk56znSvC7ATawqrqoeQfQa6Qe0rxQlHWNblHZNT9k1+F1T6oR7uMFdwP/7hIw7zHgcqLGvg13A+Y63gftBVGNgF6mQ0olQ8Xbpm4vwFbM+OtWi19E7YbqBEQ62Mzeo8aDK9FK0+8m51Ls7XIaa8GD4TX3mFCTht16KEs/hZhoaXOwtBGHMcR8ReygkV1m59EIxCq2sqFwQTlxfliCvO+e1b1201lq6L2yb0GqN4/Bni69kgOFFyoxeJ7OJazTArh9gTWKBFM339PvcChF7Hcbu8PllYYtfsxmuKk03J+1UMgtF/1FAWPaLFAgeBB/7MtZi+tgLgT/S5RgCbI/4pIuqXy8LV+yYCJBrXiLxji5MrqPSoF5TbAvK1STpeog+soi6dpn31GKjJOQqxEmQeJLCQ70jdz8KiTwAmLeYTArpEe29XS4smWwAK0zy9yfDWK1KkbDpuDhpQ/QPt0D5WMtVX8hEl6Y53wGEsYYNeLoS67jza/pHiq92gtJByz5LQzE+IyfdRdY51yGhWAexR/4Mn+ZjV5G2j0Qb0PDYQSXUQZk3NLGIFUOMGjFjMaJiLcVPC46cYDNjGoDUdBu/F47xRdXE7gVlr1sRjZ3fdTZSWmxYD4YjBlLnblqrD0UfUWQuTlFxknFez7o26x6TXyu457psaTIXPWzs4r/PbWVdrXKDzUhphVmeADSVuZR4dDf7AVSEWN/pDGgL7v8VJJgoDGZraA58fj9AS44DhLwO9vJWgoDh40rlK1dgDaubPm+LBQolZDUOpEjxntQj/VfhQAfrrudHeub51L8CsnwqZvaIA28kfVTsYCnhfdk3MjW4W8TFFsmTdVpXrW6kPnADqcUpJegv6Y6cZHxLQCbdOiyTkU2D3xHl+ybkSGWxIFKxb+uqTE3U409cNC4KvERtdqPOYRYzmgABn3GGqoAD66rk6b9S3GHAzreKUumU8dD831GWlRc7FtwGJY6JzhcQSFyA0mHEJqJbSrnO2U/EF7C+PDauVPzXrckxwRCcY8Dit2fi5Q+EqC25nyaCVeSoZv8mLM/1n5Dc+3yQvHoXOQPItUo1Bm6H6aUFpl9CVoswq9HV/oE0T4eNS0Sl5R2kdhF8w5I/ftF8lVHzF1ERmvW92pXJX04fazTJbaJqgv7D+A9QXMtRc5LPCmgLbyHMjRdZZDQVS9QKN4gp5zti7DCxXiYavCBhjRRJiN04HrDWP1aoDWn2xpGaYFiA71WaAtVIfijIbm5yqdaFNEJrU+4adabDGCXoZfIiqw69Dx7bx5bQldrKlFIY6Jc088RFw/ZQ2yANcgYcBTi88IYUG77YFaMMNAbeWRibWS3vSDo+dxJlW9YKYKvsb16x2j2Vd5N5OCHYbAAbn5Vgs6SRu6SFgtsq1VHK1BVzIXS/s46CH13dfnYxeK+mLevI+urIxda7IyktNvLqjhQLfk2jlSTyV9xIDEm66FaBEAcBGFZG7kSEIifDdH8URytrTQ3zgfOyiiTIZoDd12hdAsGoBv86oJSQgM6QYh1k3SFDH03W7q/RAIIdbYwGLBuQYj3ieW8HvfTNfbolOaF2ZBMxFGNv0dFEBY1acTnGw/SfUNeFVKyT2+zfD3JAGcvSHxX1SWDGZaHuVHKC6EKHj8DnfYwZpHI8FdjxYG4ZTSzTRW9Q3ut8cAENfwYHK6EyvoYN6EXqJYlQqXBuzzBHwPQxEJDTMvukYFUAfZWj+Y0jbR6YPXZ/+UGwCx4FZsRrWUA1HWtiajigGJdotFXTgv02igtUAaWwRRZh+S3hM3DxNqwVMa6zKqTYbfYFSsS69HldQrB0bcEJBDzslZodzChq2JC77QnB4CzLOp1hJguDjQkJhLkQOH6Z64SU0UzcuxB1Tfb0z1euuRnex0/D67wiwk+KIQ03nQQABXWXuRCrBUsfp+K+BqfeLPbiXb1VDPmxqUihW6Br3c5+Hvs46Ot3rPSO9R+X7p8mR08gZ26cqBHxxR6Xfl3k87CBcBLKcD4MZmtSXJask+PCBqj1ywAYm6gb+dFZAVKA3Lz8HG4dYe5IbbqHMMaWzceVaJdlSfGLk4qXqu/bsKNQWYO2oyr7yoBhRFlgFF9ttdG5m4VXlMNg7TARqzQ72kCqhC4vyihRMmgp+rgm3f3aKYS0QUnFwC6rZKSW+UCG6TAwa0CEZHBbTdd+H4IA9tJCcXjca6CC8o/PyqbzHlTTjz0MnDQywAkym4elI3iepq9/sIIBpflRM4AWyEWm15MG9Aha7TbVwfAkSEBKK3YX0QDQGZ7J83O2bR+nSqdVNZBXwSfD7fqqfEqlrTlt2kkxSvyhlEh1TcXZP3dX5H62Lyg2DJVFxs0gP+of57Ydpm5AK9tiTDWPyOaJ1pbQG3zcHShAnjwqX4NT9zdrvRdfVHMeuW3t0lNqN0l4gEqnuZbbJu0OELaj6+MB2ylVhxkVR7cN1bGqA6A2ePRCPmp/mgAyHoqX8mkZNTDzwYLqJsXjnfvXxI1JZR4wWTrE63I5xshzEH1R24AxL8gFkutnXWjdO2yngD/D6lnZEH5b2t1mU6XaNmNALbeYG1uENjCiK+VankgsZGro1UdALOtsKY5yQisMK3PdmG+z2fX6NyI4oB9XdScl6C8iWhuUsWqouckVrAxGMjfd22rYhXnaooDNcgiHOYz+TGKUcAWVuIgevULqMIubawDYGHuiWQgwwOATPlbbL98n7+WaE+dtArTBe1nj2VNof0wkKF1yVkxSUAQWddPXKKv1dGtcA5SE7tCy5OZ/q5VB2yFglGSYo8juJ17sdcBcLQVphj5YVYfgDr04Sc0a1q+z95Ke8bF2wgvGaLn5OHCxTrgiivFljdrGQT9OKYrnQKn1pGtKBCc08Sm828CMlO1NvlbXCWRPn7Wqw6AYwFgbP8w9elkTFQAfkpha0+p+IQIwHgvpyj5Kx8EXTJe9iKuUIkQ/DZ3kn1RocTv+iPrgawuGsz40jw1FPSF4OW7kDzKd/LVAXAsOgjN8BRPzewLa0wgmFn44ev82FU1q6EJ4W5cOwYDoBAQ3EDTvwblF13nnq4l8IMiezmqN/UHP8Dh8ajpYJG+Vl2W0tWc7ZLNBgWJ+J6FpPzrADjmxp/CIPRIGJaPzvR3FyMTJcISSnEoHVIM7F3wykodCxB6he0wXE5X7TE/lJwtR0KzjmAhPCDeuFFJ2zv36rrEalwE/br58wPovVEo36kOgLmsMKXyEcK4mAPsRawoxg3TdJhnvRDkuTzVCtK8s9zxAJh0UdNxKdUqofqsQX3QDKUUS8M+Jbviqf4I4SGlaQ0/YtN6pSh3mP1VkOJPS7c353O2+k7HdyzmnuoAmGtc4nt4UrqVLjf+liKnpfg4JEoUna1hzAdblMeHxZBYRzQfNcKwavVcVwEQqoMfSaPHELeMVCFle3+ATjJENFurtK7WbtIEdLlCfEpZKF0eGTcniXYrhedUB8BcoQ80SLJayz/k1OY8rPh5oSXlloTpfsCd8AjCW//bpkjRv70f5lmXZA5FoNxcQJxPjS1ipSvRYwdzFolQQP0xlou0yIBOP0/EOa4q5FYLYEhTHtJRWXtSUWBuYatirfRPiC/WfXNLmniIMGoJq3Q4l1IceXgyzDFk8rWCcEljodufdkClp/j1NadJesOYA2XMBxoMvdoagUUENx3xcel4CC08JyHGgLk5KjDUoDegD370NX4ZyaXNRDvUrb4JjA8yAM1gl+lQKEHzgv/A77wFoJIFXFxhua8bJtYHTjhVxsTv4/Bmsp9IUPyMTqKvauAri9+UUOKmapN1h3OpA+D+yTC30khK3U+p44Es8hOlHk5s1dzu93wo5dKvvSrihNFUhF1EF9NZ5orqsatZE0Pyr1l0bbHeA33auxrSntZGSUZaN0AJGaV72yrYirL+yBMfASBB5cWjxu97qk4Yii7OKkj8aE3/AT2RY14+YGrXKSlgav9NtMWaj0GvAG3mx8Iy9WGdoMlLBzl7h3HhvaBUOxnm9L9pdjPkjMoZCy9Ha4TCrECal6Tp+5b6+Xgt+lBUaP1PgTEArcMOakbN/PF879ezlfa87o3RpTUlNyfH2QNasr5PdzpEPT16YtwLpSRxu6fN8jsX1lGnisEQ+l0AK+mFakIdZn+AGBqYeBQ7X5Rd0bIS6iPm8k4yz8PfeMPxc+zvoUfFp2zaS/vMjAhrFAtXdYoL95oyieZywsYijLmZoDFT/WywbqUbIdpKGHuATpakppM8Jf9vXpRUSuvG5bzeL5UuiPh900lsRbI3FVsMOtCXNKcJFmYbZZp+1R+1t4n8hQwQiyF+KB22gtciQ1t2jZMNROqP+kOv6YbMHqBReyCw/hvqe6D+qD/qj/qj/qjI4/8Af8RfHlePWF4AAAAASUVORK5CYII=" alt="SPWS"></div>
-      <h1><span class="copy-pl" lang="pl">Kalkulator punktów za wynik</span><span class="copy-en" lang="en">Result points calculator</span></h1>
-      <p class="lead"><span class="copy-pl" lang="pl">Ile punktów do rankingu daje zajęte miejsce — według Załącznika nr 1, w sezonie, który właśnie trwa.</span><span class="copy-en" lang="en">How many ranking points a finishing place is worth — under Annex 1, in the current season.</span></p>
+      <h1><span class="copy-pl" lang="pl">Kalkulator punktów</span><span class="copy-en" lang="en">Points calculator</span></h1>
     </header>
+    <!-- SPWS-EMBED:OMIT:END -->
 
     <noscript>
   <div class="warn" style="margin:0 0 16px">
@@ -269,42 +325,31 @@
   </div>
 </noscript>
 
-    <!-- ============ W SKRÓCIE ============ -->
-    <section class="section" aria-labelledby="shortTitle">
-      <h2 id="shortTitle"><span class="copy-pl" lang="pl">W skrócie</span><span class="copy-en" lang="en">In short</span></h2>
-      <p><span class="copy-pl" lang="pl">Sposób liczenia punktów zależy od liczby zawodników w całej stawce (N) i od tego, czy walczy w niej jedna kategoria wiekowa, czy kilka.</span><span class="copy-en" lang="en">How points are calculated depends on the number of fencers in the whole bracket (N) and on whether one age category or several fence in it.</span></p>
-      <div class="ranges">
-        <div class="r-small"><b>N = 1–3</b><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></div>
-        <div><b>N = 4–15</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce. W stawce łączonej zawodnicy starszych kategorii dostają premię.</span><span class="copy-en" lang="en">EVF points for the place in the bracket. In a joined bracket, fencers of older categories get a premium.</span></div>
-        <div class="r-evf"><b>N ≥ 16</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce, także w stawce łączonej. Bez premii.</span><span class="copy-en" lang="en">EVF points for the place in the bracket, also in a joined bracket. No premium.</span></div>
-      </div>
-      <ol class="law">
-        <li><span class="copy-pl" lang="pl">Kategoria, w której startuje mniej niż 4 zawodników, łączy się z najbliższą obecną kategorią (§ 2).</span><span class="copy-en" lang="en">A category with fewer than 4 fencers is joined with the nearest category present (§ 2).</span></li>
-        <li><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></li>
-        <li><span class="copy-pl" lang="pl">Stawka jednej kategorii od 4 zawodników i każda stawka od 16 zawodników: punkty EVF (§ 4).</span><span class="copy-en" lang="en">A single-category bracket of 4 or more, and any bracket of 16 or more: EVF points (§ 4).</span></li>
-        <li><span class="copy-pl" lang="pl">W stawce łączonej 4–15 zawodników najmłodsza kategoria dostaje punkty EVF, a starsza większą z wartości <b>EVF × (1 + 0,05 · d)</b> i <b>EVF + d</b>. Nikt nie dostaje więcej niż zawodnik bezpośrednio przed nim minus 1 pkt (§ 3).</span><span class="copy-en" lang="en">In a joined bracket of 4–15 fencers the youngest category gets EVF points and an older one the larger of <b>EVF × (1 + 0.05 · d)</b> and <b>EVF + d</b>. Nobody gets more than the fencer directly ahead minus 1 point (§ 3).</span></li>
-        <li><span class="copy-pl" lang="pl">Wynik mnoży się przez współczynnik rangi zawodów (§ 6).</span><span class="copy-en" lang="en">The result is multiplied by the competition rank coefficient (§ 6).</span></li>
-      </ol>
-      <p class="note"><span class="copy-pl" lang="pl">Wynik dla dowolnego miejsca podaje <a href="#calcTitle">kalkulator</a>, a całą stawkę łączoną, razem z ograniczeniem, liczy <a href="#simTitle">symulator</a> poniżej.</span><span class="copy-en" lang="en">The <a href="#calcTitle">calculator</a> gives the result for any place, and the <a href="#simTitle">simulator</a> below scores a whole joined bracket, cap included.</span></p>
-    </section>
 
-    <p class="part"><span class="copy-pl" lang="pl">Narzędzia</span><span class="copy-en" lang="en">Tools</span></p>
 
-    <section class="grid" aria-label="Kalkulator i tabela premii">
-      <!-- ============ KALKULATOR ============ -->
-      <article class="card">
-        <h2 id="calcTitle"><span class="copy-pl" lang="pl">Kalkulator wyniku</span><span class="copy-en" lang="en">Result calculator</span></h2>
+
+
+
+
+
+    <!-- Najpierw kalkulator, zaraz pod paskiem; reszta zwinięta pod nim (W4,
+         makieta doc/adr/assets/adr-090-calculator.png). -->
+    <!-- ============ KALKULATOR ============ -->
+      <article class="card calc-card">
+        <h2 id="calcTitle" class="vh"><span class="copy-pl" lang="pl">Kalkulator wyniku</span><span class="copy-en" lang="en">Result calculator</span></h2>
         <p class="note"><span class="copy-pl" lang="pl">Podaj liczbę zawodników w stawce i zajęte miejsce. W stawce łączonej wybierz też swoją kategorię i najmłodszą kategorię stawki. Suwak współczynnika rangi przelicza również tabele poniżej.</span><span class="copy-en" lang="en">Enter the number of fencers in the bracket and the place. In a joined bracket, also choose your category and the youngest category in the bracket. The rank slider also recalculates the tables below.</span></p>
         <div class="calculator">
           <div class="field">
-            <label for="participants"><span class="copy-pl" lang="pl">Liczba zawodników w stawce (N)</span><span class="copy-en" lang="en">Fencers in the bracket (N)</span></label>
+            <label for="participants"><span class="copy-pl" lang="pl">Zawodników (N)</span><span class="copy-en" lang="en">Fencers (N)</span></label>
             <input id="participants" type="number" min="1" max="300" step="1" value="10" inputmode="numeric">
           </div>
           <div class="field">
-            <label for="place"><span class="copy-pl" lang="pl">Miejsce w stawce</span><span class="copy-en" lang="en">Place in the bracket</span></label>
+            <label for="place"><span class="copy-pl" lang="pl">Miejsce</span><span class="copy-en" lang="en">Place</span></label>
             <input id="place" type="number" min="1" max="300" step="1" value="2" inputmode="numeric">
           </div>
-          <label class="toggle" id="joinedLabel" for="joinedToggle"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock"><span class="copy-pl" lang="pl">Stawka łączona</span><span class="copy-en" lang="en">Joined bracket</span></label>
+          <div class="field"><span class="field-label" id="joinedCaption"><span class="copy-pl" lang="pl">Stawka</span><span class="copy-en" lang="en">Bracket</span></span>
+            <label class="toggle seg" id="joinedLabel" for="joinedToggle" aria-describedby="joinedCaption"><input type="checkbox" id="joinedToggle" autocomplete="off" aria-controls="joinedBlock"><span class="seg-single"><span class="copy-pl" lang="pl">Jedna kategoria</span><span class="copy-en" lang="en">One category</span></span><span class="seg-joined"><span class="copy-pl" lang="pl">Łączona</span><span class="copy-en" lang="en">Joined</span></span></label>
+          </div>
           <div class="joined-block" id="joinedBlock" hidden>
             <p><span class="copy-pl" lang="pl">d to różnica między Twoją kategorią a najmłodszą kategorią stawki (§ 1 ust. 6).</span><span class="copy-en" lang="en">d is the difference between your category and the youngest category in the bracket (§ 1 ust. 6).</span></p>
             <div class="field">
@@ -335,8 +380,8 @@
       </article>
 
       <!-- ============ TABELA PREMII ============ -->
-      <article class="card" aria-labelledby="premiumTitle">
-        <h2 id="premiumTitle"><span class="copy-pl" lang="pl">Premia w stawce łączonej</span><span class="copy-en" lang="en">The joined-bracket premium</span></h2>
+      <details class="fold card">
+        <summary><h2 id="premiumTitle"><span class="copy-pl" lang="pl">Premia w stawce łączonej</span><span class="copy-en" lang="en">The joined-bracket premium</span></h2></summary>
         <p class="note"><span class="copy-pl" lang="pl">Punkty za miejsce w stawce łączonej od 4 do 15 zawodników, według d. Kolumna d = 0 to punkty EVF najmłodszej kategorii. Wartości są przed ograniczeniem z § 3 ust. 3 lit. c: w prawdziwej stawce wynik nie przekracza wyniku zawodnika bezpośrednio przed nim minus 1 pkt. Tabela uwzględnia współczynnik rangi z kalkulatora.</span><span class="copy-en" lang="en">Points for a place in a joined bracket of 4 to 15 fencers, by d. The d = 0 column is the EVF points of the youngest category. The values are before the cap of § 3 ust. 3 point c: in a real bracket a result does not exceed the result of the fencer directly ahead minus 1 point. The table applies the calculator's rank coefficient.</span></p>
         <div class="premium-head">
           <div class="field">
@@ -346,12 +391,11 @@
           <span class="note"><span class="swatch"></span><span class="copy-pl" lang="pl">większa jest wartość EVF + d (poniżej 20 pkt EVF)</span><span class="copy-en" lang="en">EVF + d is the larger value (below 20 EVF points)</span></span>
         </div>
         <div class="tw"><table class="premium" id="premiumTable"><thead></thead><tbody></tbody></table></div>
-      </article>
-    </section>
+      </details>
 
     <!-- ============ SYMULATOR ============ -->
-    <section class="section" aria-labelledby="simTitle">
-      <h2 id="simTitle"><span class="copy-pl" lang="pl">Stawka łączona krok po kroku</span><span class="copy-en" lang="en">A joined bracket step by step</span></h2>
+    <details class="fold section">
+      <summary><h2 id="simTitle"><span class="copy-pl" lang="pl">Stawka łączona krok po kroku</span><span class="copy-en" lang="en">A joined bracket step by step</span></h2></summary>
       <p class="note"><span class="copy-pl" lang="pl">Ułóż kolejność miejsc od pierwszego: każde kliknięcie kategorii dodaje zawodnika na kolejnym miejscu. Symulator liczy całą stawkę, razem z ograniczeniem z § 3 ust. 3 lit. c. „Osobno” to punkty tego samego zawodnika w turnieju samej jego kategorii: kategoria licząca 1–3 zawodników tworzy wtedy spotkanie, a licząca co najmniej 4 — stawkę z punktami EVF. Symulator nie sprawdza, czy kategorie zostałyby połączone właśnie tak; rozstrzyga o tym § 2.</span><span class="copy-en" lang="en">Build the finishing order from first place: each click on a category adds a fencer in the next place. The simulator scores the whole bracket, including the cap of § 3 ust. 3 point c. “Alone” is the same fencer's points in a tournament of their category only: a category of 1–3 fencers then forms a meeting, and one of at least 4 a bracket with EVF points. The simulator does not check whether the categories would be joined this way; § 2 decides that.</span></p>
       <p class="note"><span class="copy-pl" lang="pl">Przykłady z zawodów: składy kategorii są prawdziwe, a kolejność miejsc przykładowa, bo wyniki podają tylko miejsca w kategoriach.</span><span class="copy-en" lang="en">Examples from past events: the category line-ups are real and the finishing orders illustrative, because results give only places within each category.</span></p>
       <div class="presets" id="simPresets"></div>
@@ -379,14 +423,31 @@
         <tbody></tbody>
       </table></div>
       <p class="note"><span class="copy-pl" lang="pl">Kolumny od EVF do „Granica” są przed współczynnikiem rangi; „Wynik”, „Osobno” i „Różnica” — po nim. „Granica” to wynik zawodnika z miejsca wyżej minus 1 pkt; wiersz na zakolorowanym tle został do niej obniżony.</span><span class="copy-en" lang="en">The columns from EVF to “Cap” are before the rank coefficient; “Result”, “Alone” and “Difference” are after it. “Cap” is the result of the fencer one place higher minus 1 point; a highlighted row was lowered to it.</span></p>
-    </section>
+    </details>
 
-    <p class="part"><span class="copy-pl" lang="pl">Zasady</span><span class="copy-en" lang="en">Rules</span></p>
+    <!-- ============ W SKRÓCIE ============ -->
+    <details class="fold section">
+      <summary><h2 id="shortTitle"><span class="copy-pl" lang="pl">W skrócie</span><span class="copy-en" lang="en">In short</span></h2></summary>
+      <p><span class="copy-pl" lang="pl">Sposób liczenia punktów zależy od liczby zawodników w całej stawce (N) i od tego, czy walczy w niej jedna kategoria wiekowa, czy kilka.</span><span class="copy-en" lang="en">How points are calculated depends on the number of fencers in the whole bracket (N) and on whether one age category or several fence in it.</span></p>
+      <div class="ranges">
+        <div class="r-small"><b>N = 1–3</b><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></div>
+        <div><b>N = 4–15</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce. W stawce łączonej zawodnicy starszych kategorii dostają premię.</span><span class="copy-en" lang="en">EVF points for the place in the bracket. In a joined bracket, fencers of older categories get a premium.</span></div>
+        <div class="r-evf"><b>N ≥ 16</b><span class="copy-pl" lang="pl">Punkty EVF za miejsce w stawce, także w stawce łączonej. Bez premii.</span><span class="copy-en" lang="en">EVF points for the place in the bracket, also in a joined bracket. No premium.</span></div>
+      </div>
+      <ol class="law">
+        <li><span class="copy-pl" lang="pl">Kategoria, w której startuje mniej niż 4 zawodników, łączy się z najbliższą obecną kategorią (§ 2).</span><span class="copy-en" lang="en">A category with fewer than 4 fencers is joined with the nearest category present (§ 2).</span></li>
+        <li><span class="copy-pl" lang="pl">Unikamy za wszelką cenę stawek jedno, dwu i trzy osobowych.</span><span class="copy-en" lang="en">We avoid brackets of one, two or three fencers at all costs.</span></li>
+        <li><span class="copy-pl" lang="pl">Stawka jednej kategorii od 4 zawodników i każda stawka od 16 zawodników: punkty EVF (§ 4).</span><span class="copy-en" lang="en">A single-category bracket of 4 or more, and any bracket of 16 or more: EVF points (§ 4).</span></li>
+        <li><span class="copy-pl" lang="pl">W stawce łączonej 4–15 zawodników najmłodsza kategoria dostaje punkty EVF, a starsza większą z wartości <b>EVF × (1 + 0,05 · d)</b> i <b>EVF + d</b>. Nikt nie dostaje więcej niż zawodnik bezpośrednio przed nim minus 1 pkt (§ 3).</span><span class="copy-en" lang="en">In a joined bracket of 4–15 fencers the youngest category gets EVF points and an older one the larger of <b>EVF × (1 + 0.05 · d)</b> and <b>EVF + d</b>. Nobody gets more than the fencer directly ahead minus 1 point (§ 3).</span></li>
+        <li><span class="copy-pl" lang="pl">Wynik mnoży się przez współczynnik rangi zawodów (§ 6).</span><span class="copy-en" lang="en">The result is multiplied by the competition rank coefficient (§ 6).</span></li>
+      </ol>
+      <p class="note"><span class="copy-pl" lang="pl">Wynik dla dowolnego miejsca podaje <a href="#calcTitle">kalkulator</a>, a całą stawkę łączoną, razem z ograniczeniem, liczy <a href="#simTitle">symulator</a> poniżej.</span><span class="copy-en" lang="en">The <a href="#calcTitle">calculator</a> gives the result for any place, and the <a href="#simTitle">simulator</a> below scores a whole joined bracket, cap included.</span></p>
+    </details>
 
-    <section class="section" aria-labelledby="rulesTitle">
-      <h2 id="rulesTitle"><span class="copy-pl" lang="pl">Pełne zasady</span><span class="copy-en" lang="en">The full rules</span></h2>
-      <p><span class="copy-pl" lang="pl">Łączenie kategorii w stawki (§ 2), punktację (§ 3), punkty EVF (§ 4), kolejność obliczeń (§ 5) i współczynniki rangi zawodów (§ 6) opisuje <a class="rules-link annex-link" href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html">Załącznik nr 1 — Tabela punktacji Pucharu Polski Weteranów w szermierce</a>. Do niego odnoszą się też paragrafy przywołane na tej stronie.</span><span class="copy-en" lang="en">How categories are joined into brackets (§ 2), scoring (§ 3), EVF points (§ 4), the order of calculation (§ 5) and the competition rank coefficients (§ 6) are set out in <a class="rules-link annex-link" href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html">Annex 1 — Scoring Table of the Polish Veterans Fencing Cup</a>. The paragraphs cited on this page refer to it too.</span></p>
-    </section>
+    <!-- Pełne zasady opuszczają tę stronę (W4): pigułka u dołu ekranu prowadzi do
+         Załącznika nr 1, tak jak „Zasady sezonu” w rankingu. W ramce na WordPressie
+         pomost generatora prosi stronę-gospodarza o otwarcie strony załącznika. -->
+    <a class="rules-pill annex-link" href="https://fencer4life.github.io/spws-automated-ranklist/tabela-punktacji.html"><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.6" /><path d="M10 9v5M10 6.2v.1" /></svg><span class="copy-pl" lang="pl">Pełne zasady: Załącznik nr 1</span><span class="copy-en" lang="en">The full rules: Annex 1</span></a>
 
     <footer><span class="copy-pl" lang="pl">Stowarzyszenie Polskich Weteranów Szermierki</span><span class="copy-en" lang="en">Polish Veterans Fencing Association</span></footer>
   </main>
@@ -644,7 +705,7 @@ var SPWSScoring = (() => {
     const T = {
       pl: {
         htmlLang: 'pl',
-        docTitle: 'Kalkulator punktów za wynik — SPWS',
+        docTitle: 'Kalkulator punktów — SPWS',
         loading: 'Wczytywanie parametrów sezonu…',
         failed: e => 'Nie udało się pobrać parametrów sezonu: ' + e,
         describe: (p, n, own, young, d, joined) => joined
@@ -682,7 +743,7 @@ var SPWSScoring = (() => {
       },
       en: {
         htmlLang: 'en',
-        docTitle: 'Result points calculator — SPWS',
+        docTitle: 'Points calculator — SPWS',
         loading: 'Loading season parameters…',
         failed: e => 'Season parameters unavailable: ' + e,
         describe: (p, n, own, young, d, joined) => joined

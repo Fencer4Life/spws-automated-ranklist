@@ -18,11 +18,10 @@
     <div class="no-events">{t('no_results')}</div>
   {/if}
 
-  <!-- One footer row carries both segments: scope on the left, environment on
-       the right. The env toggle is ADR-009's and retires with the WordPress
-       migration; `activeEnv` is $bindable and App.svelte re-points the Supabase
-       client from it. -->
-  {#if hasEvents || showEvfToggle || dualEnv}
+  <!-- One footer row carries the weapon chips and the scope. The CERT/PROD
+       switch that sat on its right is gone: each host serves one environment
+       (ADR-109, FR-151). -->
+  {#if hasEvents || showEvfToggle}
     <div class="calendar-footer">
       <!-- Weapon chips share the row with the scope control. They carry the
            event card's own pill colours, so a chip here and a pill there mean
@@ -64,14 +63,6 @@
           >EVF+</button>
         </div>
       {/if}
-      {#if dualEnv}
-        <div class="env-toggle">
-          <button class="env-btn" class:active={activeEnv === 'CERT'}
-            onclick={() => { activeEnv = 'CERT' }}>CT</button>
-          <button class="env-btn" class:active={activeEnv === 'PROD'}
-            onclick={() => { activeEnv = 'PROD' }}>PD</button>
-        </div>
-      {/if}
     </div>
   {/if}
 </div>
@@ -96,7 +87,7 @@
   // dropdown (the barrel owns season state and the seam carries the code), the
   // time filter (the drum IS the time control), the month grouping, and the
   // flat rolling-progress strip.
-  import type { CalendarEvent, Environment } from '../lib/types'
+  import type { CalendarEvent } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import { buildCalendar, type CalendarScope } from '../lib/calendarMonths'
   import { WEAPON_ORDER, WEAPON_LETTER, WEAPON_KEY, WEAPON_COLOR } from '../lib/weapons'
@@ -108,13 +99,9 @@
   let {
     events = [] as CalendarEvent[],
     showEvfToggle = false,
-    dualEnv = false,
-    activeEnv = $bindable('CERT' as Environment),
   }: {
     events?: CalendarEvent[]
     showEvfToggle?: boolean
-    dualEnv?: boolean
-    activeEnv?: Environment
   } = $props()
 
   // ADR-044 amend — with the Calendar +EVF flag ON, default the scope to the
@@ -257,28 +244,5 @@
     color: #888;
     padding: 32px 0;
     font-size: 14px;
-  }
-  .env-toggle {
-    display: flex;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .env-btn {
-    padding: 5px 10px;
-    border: none;
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
-  }
-  .env-btn:first-child {
-    border-right: 1px solid #ccc;
-  }
-  .env-btn.active {
-    background: #4a90d9;
-    color: #fff;
   }
 </style>

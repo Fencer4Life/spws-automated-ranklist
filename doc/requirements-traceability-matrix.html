@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="ab3ac09a3d6c7bbc178330368ac2047ad76bbde8bec90fefdfd02486076518cb">
+<meta name="doc-source-sha256" content="ff8e5ce70a91a5e4a4a20dfbfe752908138919bc6800b6d5820720938d86a125">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>374 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>407 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -320,10 +320,10 @@
 </tr>
 <tr>
 <td>FR-42</td>
-<td>CERT/PROD environment toggle with runtime switching</td>
+<td><s>CERT/PROD environment toggle with runtime switching</s> — <strong>retired 2026-10-04</strong> (<a href="adr/109-environments-split-by-host.html">ADR-109</a>): each host serves one environment — github.io CERT under the TEST ribbon, the WordPress pages PROD — so no surface switches. Replaced by FR-151.</td>
 <td>§2.2</td>
-<td>8.01–8.04</td>
-<td>Covered (M8)</td>
+<td>8.02 (one pair, no switch) stays; 8.01, 8.03 and 8.04 were replaced by WP.ENV.01, and the calendar's CV.11/CV.11b now assert its footer without a switch</td>
+<td><strong>Superseded 2026-10-04 by FR-151</strong> (ADR-109; LOCAL)</td>
 </tr>
 <tr>
 <td>FR-43</td>
@@ -439,7 +439,7 @@
 </tr>
 <tr>
 <td>FR-59</td>
-<td>App shell: sidebar drawer with Ranklista + Kalendarz view navigation, plus links to two standalone static pages. The points calculator (ADR-085, one-off exception; removed when the proposed formula becomes the live SPWS scoring). <strong>Amended 2026-09-11 (ADR-092):</strong> a <strong>fourth</strong> entry, „Tabela punktacji”, links Załącznik nr 1 to the national-team selection regulation — the scoring table for fields of 4–300 entries across places 1–300, published as <code>frontend/public/tabela-punktacji.html</code>. It is <strong>bilingual in one file, switched by CSS alone</strong>, so it stays readable and switchable with JavaScript disabled — the failure that made hosting necessary (messenger and iOS previews run no script, and the page computes its table in the browser). <code>?lang=</code> from the drawer is honoured as a hint, never a precondition, because the page is destined for WordPress where there is no drawer and no such parameter. Parity with the calculator was verified against source, not assumed: the scoring functions match line for line; the domain deliberately differs (<code>N≥4</code> vs <code>N≥2</code>). <code>noindex, nofollow</code> holds while the annex is unadopted and is load-bearing — the visible <em>Status: projekt</em> chip was removed 2026-09-11, so nothing else marks it a draft. Test 8.84 pins the entry list as an <strong>equality</strong>, so the fourth entry extends that assertion rather than loosening it; order is the property held. <strong>Amended 2026-09-28 (ADR-085 §2 amendment):</strong> a third static page, <code>frontend/public/tabela-punktacji-projekt-2026-2027.html</code>, is a time-limited board preview of the proposed 2026/2027 engine. It is <strong>not</strong> a drawer entry, so the drawer and 8.84 are unchanged. It is self-contained, reading no season parameters, and <code>noindex, nofollow</code>. It is deleted with SE27.PREVIEW.01–03 when that engine is released. <strong>Amended 2026-09-28 (ADR-103 §7):</strong> the preview and SE27.PREVIEW.01–03 are deleted in the engine change, and the drawer's annex and calculator show the adopted engine (FR-142).</td>
+<td>App shell: sidebar drawer with Ranklista + Kalendarz view navigation, plus links to two standalone static pages. The points calculator (ADR-085, one-off exception; removed when the proposed formula becomes the live SPWS scoring). <strong>Amended 2026-09-11 (ADR-092):</strong> a <strong>fourth</strong> entry, „Tabela punktacji”, links Załącznik nr 1 to the national-team selection regulation — the scoring table for fields of 4–300 entries across places 1–300, published as <code>frontend/public/tabela-punktacji.html</code>. It is <strong>bilingual in one file, switched by CSS alone</strong>, so it stays readable and switchable with JavaScript disabled — the failure that made hosting necessary (messenger and iOS previews run no script, and the page computes its table in the browser). <code>?lang=</code> from the drawer is honoured as a hint, never a precondition, because the page is destined for WordPress where there is no drawer and no such parameter. Parity with the calculator was verified against source, not assumed: the scoring functions match line for line; the domain deliberately differs (<code>N≥4</code> vs <code>N≥2</code>). <code>noindex, nofollow</code> holds while the annex is unadopted and is load-bearing — the visible <em>Status: projekt</em> chip was removed 2026-09-11, so nothing else marks it a draft. Test 8.84 pins the entry list as an <strong>equality</strong>, so the fourth entry extends that assertion rather than loosening it; order is the property held. <strong>Amended 2026-09-28 (ADR-085 §2 amendment):</strong> a third static page, <code>frontend/public/tabela-punktacji-projekt-2026-2027.html</code>, is a time-limited board preview of the proposed 2026/2027 engine. It is <strong>not</strong> a drawer entry, so the drawer and 8.84 are unchanged. It is self-contained, reading no season parameters, and <code>noindex, nofollow</code>. It is deleted with SE27.PREVIEW.01–03 when that engine is released. <strong>Amended 2026-09-28 (ADR-103 §7):</strong> the preview and SE27.PREVIEW.01–03 are deleted in the engine change, and the drawer's annex and calculator show the adopted engine (FR-142). <strong>Amended 2026-10-03 (ADR-090 amendment; FR-148, covered on LOCAL 2026-10-04):</strong> on the association's WordPress pages the same drawer is drawn in a third mode, <code>chrome=&quot;site&quot;</code>, whose entries are same-tab links to the WordPress pages; the drawer floats on every device, opens only on ☰ and also closes on Esc. On github.io it keeps today's entries.</td>
 <td>UC12, UC21, ADR-092, ADR-085</td>
 <td>8.27–8.37, 8.84–8.88, 8.90–8.96, SE27.PAGE.01–03</td>
 <td>Covered (M8; calculator link 2026-08-15; scoring table 2026-09-11; board preview 2026-09-28, removed in the engine change)</td>
@@ -931,7 +931,7 @@
 <td>FR-130</td>
 <td><strong>Public registration UI (Phase 2)</strong>: standalone shareable page <code>frontend/register.html</code> (own URL, zero dependency on calendar/main app) renders <code>&lt;spws-registration event=&quot;…&quot;&gt;</code> (identity → exact-match routing → RODO consent gate → payment, click-to-copy) or <code>&lt;spws-entry-list event=&quot;…&quot;&gt;</code> (<code>?view=list</code>) — custom elements built by <code>vite.config.ce.ts</code>. <strong>Expiry gating (D10, client-side mirror of the FR-122 server guard):</strong> <code>today ≤ COALESCE(dt_registration_deadline, dt_start)</code> → form open; past cutoff but <code>≤ dt_end</code> → &quot;Zapisy zamknięte&quot; (list still viewable); past <code>dt_end</code> → whole page expired, no form/list. <code>bool_use_spws_registration=FALSE</code> → external <code>url_registration</code> link only (self-enforced, so a shared link is always safe). Mobile-first (D8): single-column reflow ≤480px, no horizontal scroll, ≥36px touch targets. <strong>RODO checkbox mobile fix + invalid-state cue (same day, user-reported on-device regression):</strong> the global <code>input, select { width: 100% }</code> rule was stretching the RODO <code>&lt;input type=&quot;checkbox&quot;&gt;</code> to fill its flex row, pushing the consent label off-screen on narrow viewports — <code>.reg-rodo-checkbox</code> now overrides to a fixed custom-styled 20×20px box (<code>appearance: none</code>, own checked/unchecked paint) so D8's &quot;no horizontal scroll&quot; holds on the consent step too. The accept button no longer hard-<code>disabled</code>s on an unticked box (which silently swallowed the click with no feedback); clicking without consent now sets <code>consentInvalid</code> — the checkbox fills light red (<code>rgba(255,92,92,.45)</code> background + red border) until the box is ticked, then clears automatically. <strong>Calendar integration (P2.8, amended ADR-079 §7 2026-07-05):</strong> admin <code>EventManager.svelte</code> &quot;Rejestracja SPWS&quot; section (toggle + 2/3-weapon fee tiers) writes via extended <code>fn_update_event</code>, which now also auto-derives and persists absolute <code>url_registration</code>/<code>url_entry_list</code> (<code>fn_update_event p_url_entry_list</code>, migration <code>20260705000004</code>) so a cross-origin embed is self-sufficient (no <code>registration-base</code> attribute — that plumbing was removed). <code>CalendarView.svelte</code> renders both links from the stored columns and opens them in an in-app <code>RegistrationModal.svelte</code> overlay (DrilldownModal-style; <code>RegistrationForm</code>/<code>EntryList</code> gained <code>onclose</code>/<code>onviewlist</code> props) instead of navigating away; <code>href</code> is kept for copy-link/open-in-new-tab. <code>bool_use_spws_registration=FALSE</code> still keeps the existing external <code>url_registration</code> link unchanged, plain navigation (add-only, ADR-080 §5 UI constraint). <strong>Amended 2026-08-17 (ADR-079 amendment):</strong> an unmatched fencer no longer dead-ends — both paths run identity → RODO → payment, the miss writing <code>id_fencer</code> NULL; <code>release.yml</code> injects the <strong>PROD pair only</strong> into <code>register.html</code> because <code>RegistrationElement</code> resolves `(certUrl</td>
 <td></td>
-<td>prodUrl)<code>and a populated CERT pair silently won, sending every public registration to CERT; gender is a required declared value (no</code>M<code>default); write failures surface; one Back step from RODO; payment payee/IBAN come from</code>frontend/src/lib/orgPayment.ts<code>; the payment note quotes </code>COALESCE(dt_registration_deadline, dt_start)<code>. **Amended 2026-09-02:** the payee and IBAN are no longer a module constant compiled into the bundle — </code>lib/orgPayment.ts<code>keeps only the weapon names. They are resolved server-side and arrive with the event, so each organizer shows its own account and an event may override it. The event editor gains both fields, inline ISO 13616 validation and a line naming which account is in force; leaving them empty is the normal case and reads as inherited, not as an error. Vitest PAY-UI-01..04. **Amended 2026-09-02 — the fee is quoted in the event's currency:** the page showed a literal</code>PLN<code>in four places (the fee derived on step one, the payment panel's amount row, that row's copy button and *copy everything*) although</code>tbl_event.txt_entry_fee_currency<code>has existed since March 2026 (FR-48) and every writer honours it — EVF import,</code>fn_create_event<code>/</code>fn_update_event<code>, the PROD mirror — and </code>EventCard<code>already read it.</code>RegistrationEventInfo<code>simply did not carry the field, so the template had no alternative. One</code>$derived<code>value now serves all four sites; unstated (NULL, empty or whitespace) reads as</code>PLN<code>, preserving what the events carrying no value already showed. The copy paths are the material half: a fencer pastes what the button gave them, so a euro-priced event was putting a złoty figure into a real transfer. **Amended 2026-08-28 — return from the roster:** the entry-list affordance no longer navigates. It was an </code><a><code>to</code>?view=list<code>, which made </code>register.html<code>mount</code>spws-entry-list<code>*instead of*</code>spws-registration<code>— a full page load that unmounted the form; in the calendar modal</code>RegistrationModal<code>unmounted it just as surely via an</code>{:else}<code>branch. Since the payment details (payee, IBAN, transfer title, amount) are</code>$derived<code>from form state, both routes destroyed the only copy of the transfer data with no way back.</code>RegistrationForm<code>now owns a</code>list<code>step and is never unmounted;</code>EntryList<code>takes an optional</code>onback<code>(same conditional pattern as</code>onclose<code>) whose label names the destination. Cold arrivals — a shared </code>?view=list<code>link, or</code>CalendarView.openEntryListModal<code>— pass no</code>onback<code>and are unchanged, and</code>register.html<code>still honours the URL. **Amended 2026-08-28:** the standalone roster was nevertheless a dead end — no back affordance (it never passed through the form) and no close either, since neither custom element ever supplied</code>onclose<code>, so a visitor following the shared link had no route to the registration form at all. </code>EntryListElement<code>now supplies one, navigating to</code>?event=<code><code>; it is a real navigation rather than a step change, because </code>register.html<code>mounts a different custom element per view. The **in-flow** roster gained one too:</code>RegistrationForm<code>passes</code>onclose ?? backFromList<code>, so the × dismisses the modal where there is one and otherwise closes the list to the step it was opened from. Standalone that is deliberately the same action as back — the corner × is what people reach for, and its absence read as a missing control rather than a considered omission. The now-dead </code>onviewlist<code>prop is removed from</code>RegistrationForm<code>, </code>RegistrationModal<code>and</code>CalendarView<code>. No browser-history manipulation: the element is destined for the WordPress CMS page and must not mutate its host's navigation. **Amended 2026-08-28 — correcting a submitted entry:** re-submitting a corrected spelling through the create path inserted a SECOND row, because the declared name is that path's dedupe arbiter for an unmatched entrant (adding a forgotten weapon always worked, leaving the arbiter untouched). The form mints a short-lived edit handle (</code>lib/editToken.ts<code>), sends it with the registration and holds it in component state only — **nothing is written to the device**. A returning fencer re-enters the tuple they declared, which upserts onto their row and mints a fresh handle, and corrects it from there. </code>localStorage<code>persistence was built and then removed: it bound the capability to one origin and one device (a token minted on</code>register.html<code>is invisible to the CMS-embedded element, and a phone registration could not be corrected from a laptop), and the property it bought — only the first registrant may rename — defended a birth year that</code>fn_match_registration_fencer` already answers per-year before any write.</td>
+<td>prodUrl)<code>and a populated CERT pair silently won, sending every public registration to CERT; gender is a required declared value (no</code>M<code>default); write failures surface; one Back step from RODO; payment payee/IBAN come from</code>frontend/src/lib/orgPayment.ts<code>; the payment note quotes </code>COALESCE(dt_registration_deadline, dt_start)<code>. **Amended 2026-09-02:** the payee and IBAN are no longer a module constant compiled into the bundle — </code>lib/orgPayment.ts<code>keeps only the weapon names. They are resolved server-side and arrive with the event, so each organizer shows its own account and an event may override it. The event editor gains both fields, inline ISO 13616 validation and a line naming which account is in force; leaving them empty is the normal case and reads as inherited, not as an error. Vitest PAY-UI-01..04. **Amended 2026-09-02 — the fee is quoted in the event's currency:** the page showed a literal</code>PLN<code>in four places (the fee derived on step one, the payment panel's amount row, that row's copy button and *copy everything*) although</code>tbl_event.txt_entry_fee_currency<code>has existed since March 2026 (FR-48) and every writer honours it — EVF import,</code>fn_create_event<code>/</code>fn_update_event<code>, the PROD mirror — and </code>EventCard<code>already read it.</code>RegistrationEventInfo<code>simply did not carry the field, so the template had no alternative. One</code>$derived<code>value now serves all four sites; unstated (NULL, empty or whitespace) reads as</code>PLN<code>, preserving what the events carrying no value already showed. The copy paths are the material half: a fencer pastes what the button gave them, so a euro-priced event was putting a złoty figure into a real transfer. **Amended 2026-08-28 — return from the roster:** the entry-list affordance no longer navigates. It was an </code><a><code>to</code>?view=list<code>, which made </code>register.html<code>mount</code>spws-entry-list<code>*instead of*</code>spws-registration<code>— a full page load that unmounted the form; in the calendar modal</code>RegistrationModal<code>unmounted it just as surely via an</code>{:else}<code>branch. Since the payment details (payee, IBAN, transfer title, amount) are</code>$derived<code>from form state, both routes destroyed the only copy of the transfer data with no way back.</code>RegistrationForm<code>now owns a</code>list<code>step and is never unmounted;</code>EntryList<code>takes an optional</code>onback<code>(same conditional pattern as</code>onclose<code>) whose label names the destination. Cold arrivals — a shared </code>?view=list<code>link, or</code>CalendarView.openEntryListModal<code>— pass no</code>onback<code>and are unchanged, and</code>register.html<code>still honours the URL. **Amended 2026-08-28:** the standalone roster was nevertheless a dead end — no back affordance (it never passed through the form) and no close either, since neither custom element ever supplied</code>onclose<code>, so a visitor following the shared link had no route to the registration form at all. </code>EntryListElement<code>now supplies one, navigating to</code>?event=<code><code>; it is a real navigation rather than a step change, because </code>register.html<code>mounts a different custom element per view. The **in-flow** roster gained one too:</code>RegistrationForm<code>passes</code>onclose ?? backFromList<code>, so the × dismisses the modal where there is one and otherwise closes the list to the step it was opened from. Standalone that is deliberately the same action as back — the corner × is what people reach for, and its absence read as a missing control rather than a considered omission. The now-dead </code>onviewlist<code>prop is removed from</code>RegistrationForm<code>, </code>RegistrationModal<code>and</code>CalendarView<code>. No browser-history manipulation: the element is destined for the WordPress CMS page and must not mutate its host's navigation. **Amended 2026-08-28 — correcting a submitted entry:** re-submitting a corrected spelling through the create path inserted a SECOND row, because the declared name is that path's dedupe arbiter for an unmatched entrant (adding a forgotten weapon always worked, leaving the arbiter untouched). The form mints a short-lived edit handle (</code>lib/editToken.ts<code>), sends it with the registration and holds it in component state only — **nothing is written to the device**. A returning fencer re-enters the tuple they declared, which upserts onto their row and mints a fresh handle, and corrects it from there. </code>localStorage<code>persistence was built and then removed: it bound the capability to one origin and one device (a token minted on</code>register.html<code>is invisible to the CMS-embedded element, and a phone registration could not be corrected from a laptop), and the property it bought — only the first registrant may rename — defended a birth year that</code>fn_match_registration_fencer<code>already answers per-year before any write. **Amended 2026-10-03 (ADR-109; FR-151, covered on LOCAL 2026-10-04):**</code>register.html` stays PROD-only on the file host, without the TEST ribbon that the rest of github.io gets; registration links built in the WordPress admin are built from the asset base, never from the page address (FR-149).</td>
 <td>ADR-079 §6 (UI), §7 (URL auto-fill + modal, 2026-07-05 amend), ADR-080 §5 (add-only constraint), ADR-078 (RODO notice/consent)</td>
 </tr>
 <tr>
@@ -970,7 +970,11 @@
 | FR-144 | <strong>A joined bracket is scored from its stored category order.</strong> Every category tournament of a listing on the new engine stores the listing's category digits per place in <code>tbl_tournament.txt_joined_order</code> (0 = V0 … 4 = V4, length N; <code>tbl_tournament_draft</code> too). The writer scores the whole bracket from the order and updates only its own tournament's rows, so no sibling row is read and rescoring one tournament gives the same numbers as rescoring all; it refuses a missing order and a row whose place carries another category's digit. The preview returns the capped value. | ADR-104, ADR-002, ADR-022 | JB27.ORD.01–02, JB27.PRE.01 | Covered (2026-09-30, ADR-104; released 2026-10-01) |
 | FR-145 | <strong>An automatic check compares each PPW/MPW event's listings with the joining rules.</strong> At the end of each event ingestion run and after each recompute, the pipeline reads the stored orders per weapon and gender, computes the joining rules' grouping with <code>plan_brackets</code>, and stores the verdict in <code>tbl_joining_check</code> (service role only). When the verdict changes — to a mismatch, or back — it sends one Telegram message through <code>TelegramNotifier</code>; a repeat run sends nothing. It never blocks the commit and needs no sign-off; every listing is scored as fenced. | ADR-104 | JB27.JOIN.01–02 | Covered (2026-09-30, ADR-104; released 2026-10-01) |
 | FR-146 | <strong>Ranking rules for the chosen season, one tap from the ranklist.</strong> A pill „Reguły rankingu na sezon {season}” / “Ranking rules for the {season} season” is pinned to the middle of the bottom of the visible screen (<code>position: fixed</code>, above an iPhone's home bar, under the drawer, the modals and the error banner). It names the season chosen in the dropdown, shows only once that season's own rules have arrived, and is absent for a season without stored rules. While it shows, a spacer ends the ranklist view so the last row clears it; the birth-year strip (FR-67) is unchanged. It opens a modal drawn from that season's definition: the sum in the table's column names (SPWS + EVF+ = Razem; one „Punkty” box for a PPW-only season); one card per pool, each bucket with its types, its rule and one ★ per counted result (one ★ per always-counted type, e.g. MPW); who is ranked (<code>entry_types</code>); the rolling-ranking note for the active season only; and the coefficients of the types shown, read on opening from <code>fn_public_scoring_params</code> and left out if they fail to load. Its scoring-table link resolves through <code>assetUrl()</code> so it also works in the WordPress embed. PL+EN, Polish plural forms; ✕, Esc and an outside click close it; a full-screen sheet on a phone. | UC12 | SeasonRulesModal.test.ts SR.MODAL.01–13, SeasonRulesLink.test.ts SR.LINK.01–06, api.test.ts SR.API.01–02 | Covered (2026-10-01; mock doc/mockups/ranking-rules-modal-2026-10-01.html revision 2) |
-| FR-147 | <strong>Nationality per season, fixed for the season</strong> (ADR-106 §3). Each stored international result keeps the federation its source printed (<code>tbl_result.txt_entered_for</code>, three letters, or none). <code>tbl_fencer_nationality</code> holds one federation per fencer and season: that of the season's earliest-dated result carrying one, kept current by a trigger on <code>tbl_result</code> whatever the path or the order of ingestion. A later start in the same season printing another federation does not change it and is listed in <code>vw_fencer_nationality_conflict</code>. An admin entry is kept as entered. Authenticated users read; anon reads nothing. | ADR-106 | pgTAP 96 NAT.SEASON.01–06, NAT.EVID.02–03; NAT.EVID.01, NAT.EVID.04 (pytest) | Covered (2026-10-02, LOCAL) |</p>
+| FR-147 | <strong>Nationality per season, fixed for the season</strong> (ADR-106 §3). Each stored international result keeps the federation its source printed (<code>tbl_result.txt_entered_for</code>, three letters, or none). <code>tbl_fencer_nationality</code> holds one federation per fencer and season: that of the season's earliest-dated result carrying one, kept current by a trigger on <code>tbl_result</code> whatever the path or the order of ingestion. A later start in the same season printing another federation does not change it and is listed in <code>vw_fencer_nationality_conflict</code>. An admin entry is kept as entered. Authenticated users read; anon reads nothing. | ADR-106 | pgTAP 96 NAT.SEASON.01–06, NAT.EVID.02–03; NAT.EVID.01, NAT.EVID.04 (pytest) | Covered (2026-10-02, LOCAL) |
+| FR-148 | <strong>The SPWS bar and drawer on every public WordPress page, drawn by our bundle</strong> (<code>chrome=&quot;site&quot;</code>). The bar holds ☰, the SPWS logo as the link to weteraniszermierki.pl, the page title and the PL/EN switch; below 430 px the title is short — Ranking, Kalendarz, Kalkulator, Tabela (EN: Ranklist, Calendar, Calculator, Table) — and the bar stays one row. The drawer floats over the page on every device, opens only on ☰, closes on a choice, a tap outside or Esc, and leads to the four public pages in the same tab through the page's <code>href-home</code>, <code>href-ranking</code>, <code>href-calendar</code>, <code>href-calculator</code> and <code>href-table</code> attributes. <code>chrome=&quot;none&quot;</code> keeps working until <code>/znajdz-zawody/</code> is republished. | ADR-090 (amendment 2026-10-03) | WP.BAR.01–03, WP.NAV.01–03, WP.COMP.01 | Covered (2026-10-04, LOCAL; release in plan step 11) |
+| FR-149 | <strong>PROD administration on the association's site.</strong> <code>weteraniszermierki.pl/ranking/?admin=1</code> opens the sign-in modal at load, then TOTP, on an element carrying <code>admin-entry</code> (only <code>/ranking/</code>); elsewhere <code>?admin=1</code> is ignored. After sign-in the drawer holds the admin section and stays closed until ☰. No mode shows a sign-in entry in the drawer, and there is no PROD tag. Registration links in the event editor are built from the asset base. | ADR-090 (amendment 2026-10-03, §3) | WP.ADM.01–03 | Covered (2026-10-04, LOCAL; release in plan step 11) |
+| FR-150 | <strong>The calculator and the annex on the association's site, inside the SPWS bar.</strong> <code>&lt;spws-document doc=&quot;…&quot;&gt;</code> frames the PROD copy from the file host (<code>embed/kalkulator-punktow.html</code>, <code>embed/tabela-punktacji.html</code>), which has no banner of its own; the frame takes the document's reported height, accepted only from the asset base's origin. The maths comes only from the shared generated module (ADR-102). The calculator is titled „Kalkulator punktów” (phone bar: „Kalkulator”), and every number box is narrow, right-aligned and vertically centred with tabular digits. | ADR-090 (amendment 2026-10-03), ADR-102 | WP.DOC.01–03, WP.CALC.01 | Covered (2026-10-04, LOCAL; release in plan step 11) |
+| FR-151 | <strong>Each host serves one environment.</strong> github.io is CERT: no CT/PD switch, a yellow TEST ribbon, and the PROD pair kept only for the read-only promotion state. weteraniszermierki.pl is PROD. <code>register.html</code> stays PROD. <code>release.yml</code> injects CERT into the root calculator and annex and PROD into their <code>embed/</code> copies and <code>register.html</code>, behind a guard; dispatches target the host's own environment. WordPress page bodies keep reference copies in <code>doc/wordpress/</code> with a key placeholder that <code>scripts/wp_publish_page.py</code> fills, never printing the key and refusing a body that still holds it. Supersedes FR-42 on landing. | ADR-109 | WP.ENV.01–02, WP.REL.01, WP.PAGE.01–02 | Covered (2026-10-04, LOCAL; release in plan step 11) |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery, ADR-080 §5); implementation complete with CERT pilot and PROD cron enablement pending.</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Total active FRs = 131 assigned; 129 covered + 1 implemented/pilot-pending + 1 superseded. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong></p>
 </blockquote>
@@ -1314,7 +1318,7 @@
 </tr>
 <tr>
 <td>SS26.CALC.01–09</td>
-<td>The published scoring-parameter surface: <code>fn_public_scoring_params(TEXT)</code> exists keyed by season <strong>code</strong>, is anon-executable, is <code>STABLE</code> with a pinned <code>search_path</code>, reports 2026/2027's assigned field-scaled engine, publishes the season's own stored base and podium coefficients rather than literals, reports <code>base_slope</code> and <code>de_round</code> as separate parameters, returns zero rows for an unknown season rather than raising, and resolves a NULL code to the active season. Both published URLs are unchanged, no local formula remains in either page, the rank-coefficient control and EVF/SPWS toggle survive, no season or tournament-type selector is added, and <code>assets.test.ts</code> keeps its three-way byte identity.</td>
+<td>The published scoring-parameter surface: <code>fn_public_scoring_params(TEXT)</code> exists keyed by season <strong>code</strong>, is anon-executable, is <code>STABLE</code> with a pinned <code>search_path</code>, reports 2026/2027's assigned field-scaled engine, publishes the season's own stored base and podium coefficients rather than literals, reports <code>base_slope</code> and <code>de_round</code> as separate parameters, returns zero rows for an unknown season rather than raising, and resolves a NULL code to the active season. Both published URLs are unchanged, no local formula remains in either page, the rank-coefficient control and EVF/SPWS toggle survive, no season or tournament-type selector is added, and <code>assets.test.ts</code> keeps its three-way byte identity. <strong>Amended 2026-10-04 (ADR-090 amendment 2026-10-03, WP.DOC.05):</strong> the WordPress upload copy is retired, so the identity is two-way, the published calculator against its <code>doc/tools/</code> source.</td>
 <td>pgTAP (<code>82_published_page_params.sql</code>) + 27 Vitest parity cases (<code>frontend/tests/scoring.test.ts</code>)</td>
 <td>ADR-102</td>
 <td>Implemented</td>
@@ -2040,6 +2044,176 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</h2>
+<p>Acceptance IDs for the <a href="adr/090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> amendment of 2026-10-03, <a href="adr/109-environments-split-by-host.html">ADR-109</a> and <a href="plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html">doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html</a> §05. FR-148–FR-151. Registered before any code (plan step 1); each is observed RED for its stated reason before its implementation lands. Three are guards that pass before the change by design — WP.NAV.03, WP.ENV.02 and WP.COMP.01 — and were proven by mutation instead (2026-10-04): each turns red when the rule it keeps is broken on purpose.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WP.BAR.01</td>
+<td><code>chrome=&quot;site&quot;</code> renders ☰, the logo linking to <code>href-home</code>, the title and the PL/EN switch, and no CT/PD switch.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/SiteChrome.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.BAR.02</td>
+<td>The bar carries the long title and the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table) in the active language; below 430 px the short one shows. jsdom evaluates no media query, so the switch itself is measured by WP.BAR.03.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/SiteChrome.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.BAR.03</td>
+<td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the short title unwrapped and no sideways scroll; the long title shows from 430 px up. Against the custom-element build WordPress loads.</td>
+<td>Playwright</td>
+<td><code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.NAV.01</td>
+<td>On <code>site</code>, the drawer entries are same-tab links to the four <code>href-*</code> values; the current page is marked; none opens a new tab. The entry for the page already open only closes the drawer, and a signed-in admin's Ranking entry returns to the list in place, because following it would reload /ranking/ and end the session.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/Sidebar.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.NAV.02</td>
+<td>The drawer opens only on ☰, and closes on a choice, a tap outside and Esc, in every mode.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/Sidebar.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.NAV.03</td>
+<td>No mode shows a sign-in entry in the drawer, signed in or not.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/Sidebar.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.ADM.01</td>
+<td>With <code>admin-entry</code>, <code>?admin=1</code> opens the sign-in modal at load; without it (calendar, documents) <code>?admin=1</code> is ignored. The published element reads the bare <code>admin-entry</code> attribute as true.</td>
+<td>Vitest, Playwright</td>
+<td><code>frontend/tests/SiteChrome.test.ts</code>, <code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.ADM.02</td>
+<td>After sign-in and TOTP the drawer holds the admin section and stays closed until ☰.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/SiteChrome.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.ADM.03</td>
+<td>Registration links in the event editor are built from <code>asset-base</code>, not from the page address.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/EventManager.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.ENV.01</td>
+<td>With both pairs (github.io): no CT/PD switch on the ranking or the calendar, the TEST ribbon shown (as signed off: „ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → weteraniszermierki.pl”, on a phone „ŚRODOWISKO TESTOWE · TEST”, a link to weteraniszermierki.pl), the active environment CERT, and the promotion state still read from PROD. The github.io calculator and annex carry the same ribbon (their static half).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/env-toggle.test.ts</code>, <code>frontend/tests/assets.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.ENV.02</td>
+<td>With only the PROD pair (WordPress): no ribbon, and dispatches target PROD.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/env-toggle.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.REL.01</td>
+<td><code>release.yml</code> injects CERT into the root calculator and annex, PROD into their <code>embed/</code> copies, and PROD only into <code>register.html</code>; the guard step exists.</td>
+<td>pytest</td>
+<td><code>python/tests/test_release_env_injection.py</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.DOC.01</td>
+<td><code>&lt;spws-document doc=&quot;…&quot;&gt;</code> renders the bar, the drawer and a frame of <code>{asset-base}embed/{doc}.html?lang=…</code>.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/DocumentElement.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.DOC.02</td>
+<td>The frame's height follows the reported height; a report from any other origin is ignored.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/DocumentElement.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.DOC.03</td>
+<td>The <code>embed/</code> copies have no banner of their own, report their height, and hold the same generated scoring module (<code>build-scoring-pages.mjs --check</code>).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/assets.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.DOC.04</td>
+<td>A framed document's link to the rules asks the element to open the annex page; the element opens the page body's <code>href-table</code> in the same tab, only for a request from the asset base's origin and only for one of the site's pages. Found in step 6: inside the frame the link opened the annex in the frame.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/DocumentElement.test.ts</code>, <code>frontend/tests/assets.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.DOC.05</td>
+<td>The WordPress upload copy is retired: the calculator reaches the association's site only framed, from <code>embed/</code>, so <code>build-scoring-pages.mjs</code> writes no <code>doc/tools/WP-*.html</code> and none exists.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/assets.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.CALC.01</td>
+<td>Every number box on both documents is right-aligned and vertically centred with tabular digits; the calculator's title is „Kalkulator punktów”.</td>
+<td>Playwright</td>
+<td><code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.CALC.02</td>
+<td>The calculator as in the signed-off mock (<code>doc/adr/assets/adr-090-calculator.png</code>; plan §03, rev 2's revamp): the calculator first, with no subtitle; the premium table, the step-by-step simulator and „W skrócie” folded below and closed at load; the full rules a pill to the annex; „Stawka” as two segments (Jedna kategoria / Łączona) and the rank chips as one segmented control, in the ranklist's blue; the result soft blue with a blue edge. The annex keeps its content and order and takes the same controls and colours. Markup and CSS only.</td>
+<td>Playwright</td>
+<td><code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.PAGE.01</td>
+<td>Every reference copy in <code>doc/wordpress/</code> loads <code>assets/main.ce.js</code>, holds the theme style block, and carries the key placeholder, never a key.</td>
+<td>pytest</td>
+<td><code>python/tests/test_wp_pages.py</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.PAGE.02</td>
+<td><code>wp_publish_page.py</code> fills the placeholder from the environment, refuses a body that still holds it, and never prints the key. It posts a reference copy without its opening note and final newline, which the live page does not carry, so republishing an unchanged copy posts the live body.</td>
+<td>pytest</td>
+<td><code>python/tests/test_wp_pages.py</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.COMP.01</td>
+<td><code>chrome=&quot;none&quot;</code> renders exactly as today, so the live <code>/znajdz-zawody/</code> survives the release before its body changes.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/CalendarEmbed.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -2050,5 +2224,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ab3ac09a3d6c7bbc178330368ac2047ad76bbde8bec90fefdfd02486076518cb</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ff8e5ce70a91a5e4a4a20dfbfe752908138919bc6800b6d5820720938d86a125</code></footer>
 </div></body></html>

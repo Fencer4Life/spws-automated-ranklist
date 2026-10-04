@@ -10,7 +10,6 @@
 import { describe, it, expect } from 'vitest'
 import published from '../public/kalkulator-punktow.html?raw'
 import source from '../../doc/tools/kalkulator-punktow-za-wynik-spws.v2.html?raw'
-import wordpress from '../../doc/tools/WP-kalkulator-punktow-za-wynik-spws.html?raw'
 import tablePublished from '../public/tabela-punktacji.html?raw'
 import tableSource from '../../doc/tools/Tabela-punktacji-SPWS_2026-2027.html?raw'
 import scoringSource from '../src/lib/scoring.ts?raw'
@@ -19,6 +18,7 @@ import exportSource from '../src/lib/export.ts?raw'
 import editorSource from '../src/components/ScoringConfigEditor.svelte?raw'
 import plLocale from '../src/lib/locales/pl.json?raw'
 import enLocale from '../src/lib/locales/en.json?raw'
+import generatorSource from '../scripts/build-scoring-pages.mjs?raw'
 
 describe('static tool assets (ADR-085)', () => {
   // 8.88 — the menu entry must point at a file that actually ships, and that
@@ -26,12 +26,6 @@ describe('static tool assets (ADR-085)', () => {
   it('ships the points calculator identical to the documentation copy', () => {
     expect(published.length).toBeGreaterThan(1000)
     expect(published).toBe(source)
-  })
-
-  // The WordPress upload copy is the third of three copies of the same file and
-  // the only one nothing else checks — it is carried by hand to the SPWS site.
-  it('keeps the WordPress upload copy in step with the same source', () => {
-    expect(wordpress).toBe(source)
   })
 })
 
@@ -147,9 +141,10 @@ describe('the 2026/2027 engine on the published pages (ADR-103)', () => {
   // tools: the calculator, the premium table and the simulator, with the same
   // texts, following the ACTIVE season and computing only with the joined
   // engine. The SPWS/EVF toggle and the K/m fields are gone, and so is the
-  // 64 x 64 table; the rules are a link to the annex, absolute so that the
-  // WordPress copy, uploaded alone, still reaches it. The browser half — PL
-  // and EN, 375 px, a clean console — is checked in the browser.
+  // 64 x 64 table; the rules are a link to the annex at its github.io address,
+  // and inside the WordPress frame the page asks for the site's annex page
+  // instead (WP.DOC.04). The browser half — PL and EN, 375 px, a clean
+  // console — is checked in the browser.
   it('JB27.PAGE.01 calculator: the annex tools for the active season, no toggle, the rules linked', () => {
     expect(published).toContain('const MAX_PARTICIPANTS = 300;')
     expect(published).toContain('const SEASON_CODE = null;')
@@ -188,4 +183,97 @@ describe('JB27.CLEAN.06 — the place-and-medal engine is gone from the frontend
       expect(text.match(RETIRED)?.[0] ?? null).toBeNull()
     })
   }
+})
+
+// WP.DOC.05 (ADR-090 amendment 2026-10-03, plan step 8) — the WordPress upload
+// copy is retired. The calculator reaches the association's site only framed,
+// from embed/, so the generator writes no third copy and doc/tools/ holds none.
+// The glob asks Vite which files exist, because this project has no Node types.
+describe('WP.DOC.05 — the WordPress upload copy is retired', () => {
+  it('the generator writes no WordPress upload copy', () => {
+    expect(generatorSource).not.toContain('doc/tools/WP-')
+  })
+
+  it('doc/tools/ holds no WordPress upload copy', () => {
+    expect(Object.keys(import.meta.glob('../../doc/tools/WP-*.html'))).toEqual([])
+  })
+})
+
+// WP.DOC.03 (ADR-090 amendment 2026-10-03, FR-150) — the embed/ copies that
+// <spws-document> frames on the association's WordPress pages. They are PROD
+// copies of the calculator and the annex (release.yml fills them with the PROD
+// pair, WP.REL.01) and sit under the SPWS bar, so they carry no banner, no
+// language bar and no ribbon of their own; they report their height so the
+// frame can grow to it; and their maths is the same generated module as the
+// root copies (ADR-102), written by the same generator. Plan:
+// doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html §03, §05.
+//
+// Read through import.meta.glob rather than a static import, so that the
+// absence of the copies fails these tests and not the whole file.
+const EMBED = import.meta.glob('../public/embed/*.html', {
+  query: '?raw', import: 'default', eager: true,
+}) as Record<string, string>
+const EMBED_PAGES: [string, string, string][] = [
+  ['kalkulator-punktow', '../public/embed/kalkulator-punktow.html', published],
+  ['tabela-punktacji', '../public/embed/tabela-punktacji.html', tablePublished],
+]
+
+// WP.ENV.01, the static half (ADR-109 §1, W3): the github.io copies of the
+// calculator and the annex become CERT copies (release.yml, WP.REL.01) and
+// carry the same TEST ribbon as the app — as signed off, leading to the real
+// site. Their embed/ copies, which are PROD, carry none (WP.DOC.03).
+describe('WP.ENV.01 — the github.io calculator and annex carry the TEST ribbon', () => {
+  for (const [name, html] of PAGES) {
+    it(`${name}: the ribbon, linking to the site, in both lengths`, () => {
+      expect(html).toContain('<a class="env-ribbon" href="https://weteraniszermierki.pl">')
+      expect(html).toContain('ŚRODOWISKO TESTOWE · TEST ENVIRONMENT → ')
+      expect(html).toContain('<span class="env-ribbon-short">ŚRODOWISKO TESTOWE · TEST</span>')
+    })
+  }
+})
+
+describe('WP.DOC.03 — the embed/ copies framed on WordPress', () => {
+  for (const [name, path, root] of EMBED_PAGES) {
+    it(`${name}: exists, without a banner, a language bar or a ribbon of its own`, () => {
+      const html = EMBED[path] ?? ''
+      expect(html.length, `${path} is missing`).toBeGreaterThan(1000)
+      expect(html).not.toContain('class="document-head"')
+      expect(html).not.toContain('class="lang-switch"')
+      expect(html).not.toContain('env-ribbon')
+      // Still a PROD copy the release fills, and still bilingual through ?lang=.
+      expect(html).toContain('id="spws-env"')
+      expect(html).toContain('class="copy-pl"')
+      expect(html).toContain('class="copy-en"')
+    })
+
+    it(`${name}: reports its height to the framing element`, () => {
+      const html = EMBED[path] ?? ''
+      expect(html).toContain("'spws-doc-height'")
+      expect(html).toMatch(/parent\.postMessage\(/)
+    })
+
+    it(`${name}: carries the same generated scoring module as the root copy`, () => {
+      const html = EMBED[path] ?? ''
+      const block = html.match(MODULE_BLOCK)?.[0] ?? ''
+      expect(block.length).toBeGreaterThan(1000)
+      expect(block).toBe(root.match(MODULE_BLOCK)?.[0])
+    })
+  }
+
+  it('the generator writes both copies, so --check guards them', () => {
+    expect(generatorSource).toContain("'frontend/public/embed/kalkulator-punktow.html'")
+    expect(generatorSource).toContain("'frontend/public/embed/tabela-punktacji.html'")
+  })
+})
+
+// WP.DOC.04, the document half: inside the frame the calculator's links to the
+// rules ask the framing element to open the annex page, rather than loading the
+// annex inside the calculator's frame.
+describe('WP.DOC.04 — the framed calculator asks the element to open the annex', () => {
+  it('the embed copy turns its annex links into a request to the parent', () => {
+    const html = EMBED['../public/embed/kalkulator-punktow.html'] ?? ''
+    expect(html).toContain("type: 'spws-doc-nav'")
+    expect(html).toContain("page: 'table'")
+    expect(html).toContain('a.annex-link')
+  })
 })
