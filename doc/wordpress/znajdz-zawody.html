@@ -1,15 +1,16 @@
-<!-- Reference copy of WordPress page 13505, /pliki-zasilajace-xml-ftl/ (a capability
-     link, not in the menu). Below this note it matches the live body (checked 4 Oct 2026).
+<!-- Reference copy of WordPress page 13472, /znajdz-zawody/. This is the body plan
+     step 12 publishes (chrome="site"); until then the live page holds the
+     chrome="none" body, which the bundle keeps working (WP.COMP.01).
      The CMS is the source of truth. Publish this copy with
-       WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id 13505 \
-         --content-file doc/wordpress/pliki-zasilajace-xml-ftl.html
+       WP_PUBLISH_CONFIRM=yes scripts/wp_publish_page.py update --page-id 13472 \
+         --content-file doc/wordpress/znajdz-zawody.html
      The script drops this note, fills @@SUPABASE_PROD_KEY@@ from
      SUPABASE_PROD_ANON_KEY and never prints the key; the key is never committed.
      Read the live body with
-       scripts/wp_publish_page.py get --slug pliki-zasilajace-xml-ftl --content-out <path> -->
+       scripts/wp_publish_page.py get --slug znajdz-zawody --content-out <path> -->
 <style>
-/* Full-screen FTL export page: the theme's chrome is removed on THIS page only
-   (ADR-090 §7), the same treatment and the same selectors as /znajdz-zawody/.
+/* The calendar under the SPWS bar: the theme's chrome is removed on THIS page only
+   (ADR-090 §7); the element draws the bar and the drawer (chrome="site").
    Selectors read off the rendered page. .footer-bottom is a SIBLING of
    </footer>, not a child, so hiding footer.footer alone leaves it behind. */
 header.header,
@@ -41,4 +42,4 @@ html, body { margin: 0 !important; padding: 0 !important; }
 /* Guard: if wpautop ever reintroduces a <br> here, it costs no height. */
 .spws-embed br { display: none !important; }
 </style>
-<div class="spws-embed"><script src="https://fencer4life.github.io/spws-automated-ranklist/assets/main.ce.js" type="module"></script><spws-ftl-export supabase-prod-url="https://ywgymtgcyturldazcpmw.supabase.co" supabase-prod-key="@@SUPABASE_PROD_KEY@@" asset-base="https://fencer4life.github.io/spws-automated-ranklist/"></spws-ftl-export></div>
+<div class="spws-embed"><script src="https://fencer4life.github.io/spws-automated-ranklist/assets/main.ce.js" type="module"></script><spws-calendar chrome="site" supabase-prod-url="https://ywgymtgcyturldazcpmw.supabase.co" supabase-prod-key="@@SUPABASE_PROD_KEY@@" asset-base="https://fencer4life.github.io/spws-automated-ranklist/" href-home="https://weteraniszermierki.pl/" href-ranking="/ranking/" href-calendar="/znajdz-zawody/" href-calculator="/kalkulator-punktow/" href-table="/tabela-punktacji/"></spws-calendar></div>
