@@ -179,6 +179,7 @@
     <div class="note warn">
       <p class="lede"><span class="tick">!</span> Found on the way: the LOCAL mirror loads registrations differently</p>
       <p><code>mirror-prod-local.sh</code> step 5 loads PROD&rsquo;s registrations in a way whose fingerprint part differs from PROD&rsquo;s, so a LOCAL rehearsal needs the refresh&rsquo;s copy after the mirror. Offered as a separate task.</p>
+      <p><b>Done 4 Oct</b> (ADR-036 &sect;3): step 5 now runs <code>refresh --target local --mode registrations</code>, the refresh&rsquo;s own copy for every PROD event with entries, and fails unless each event&rsquo;s registrations part equals PROD&rsquo;s. After a full mirror, LOCAL&rsquo;s whole input fingerprint for PPW1 and PEW5efs equals PROD&rsquo;s. Record: <code>doc/plans/mirror-registrations-by-refresh-2026-10-04.html</code>.</p>
     </div>
   </section>
 

@@ -1,6 +1,6 @@
 # ADR-036: PROD Export & Local Mirror (Single Monolithic Dump)
 
-**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; see the amendments)
+**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; 2026-10-04 — the mirror loads registrations by the refresh's copy, §3 of the 2026-10-03 amendment; see the amendments)
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
 
@@ -270,6 +270,16 @@ ADR-108 §2 adds a sanctioned PROD → CERT flow for **master data only**. It co
 - PROD's registrations for the event being ingested, without e-mail hash, edit token or consent stamp.
 
 It reads PROD over a read-only connection and never writes it. Results still flow PROD → LOCAL only, and CERT's results come from CERT's own ingestion.
+
+### 3. The mirror loads registrations by the refresh's copy (2026-10-04)
+
+`scripts/mirror-prod-local.sh` step 5 loads PROD's registrations with `python -m python.pipeline.promotion.refresh --target local --mode registrations` (`run_copy_registrations`). It writes no registration SQL of its own.
+
+- **What it copies.** Every PROD event with entries goes through `fn_replace_event_registrations`, the call the CERT refresh makes. It carries the columns the ingestion reads: names, gender, declared birth year, weapons, FTL name, club and the fencer link. The e-mail hash, edit token and consent stamp stay on PROD.
+- **Guards.** LOCAL only: CERT copies the ingested event's registrations in the refresh apply (§2). The copy refuses unless LOCAL's roster equals PROD's, id for id. Afterwards it fails unless each event's registrations part of `fn_event_input_fingerprint` equals PROD's.
+- **Why.** Step 5 used to build its own `INSERT`s. They left out the club and FTL name and added the consent stamp. Both sides held 90 PPW1 entries, yet the registrations part differed. On 3 October 2026 promote's LOCAL rehearsal therefore stopped at `input.registrations` until the refresh's copy was run by hand (`doc/plans/promote-rehearsal-2026-10-03.html`, step 7).
+- **Verified 2026-10-04.** The copy loaded PROD's 108 entries: PPW1 2026/27 with 90 and PEW5efs 2026/27 with 18. Afterwards LOCAL's whole input fingerprint for both events equals PROD's. The whole pgTAP suite passes on that mirror, PROD's registrations included (106 files, 1,395 assertions), once test 101 scoped its lookups by name to its own fixture event.
+- **Tests.** pytest PROMO.REFRESH.24–28 (`test_promotion_refresh.py`); .28 pins that the mirror script calls the copy and writes no registration SQL.
 
 ## Related ADRs
 

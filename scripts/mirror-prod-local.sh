@@ -83,25 +83,15 @@ echo "=== 5/5 Loading registrations ==="
 # declarations into the shared dump would push 57 people's entries into every
 # CI run and every developer's machine, permanently. It is fetched here instead,
 # with PROD's fencer ids, which step 4 has just shown LOCAL holds.
-FIXTURE="$(mktemp -t spws_regs)"
-trap 'rm -f "$FIXTURE"; restore_symlink' EXIT
-
-env -u SUPABASE_ACCESS_TOKEN scripts/cloud-sql.sh prod "
-SELECT string_agg(stmt, E'\n' ORDER BY stmt) FROM (
-SELECT 'INSERT INTO tbl_registration (id_event, id_fencer, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons, txt_consent_version) SELECT (SELECT id_event FROM tbl_event WHERE txt_code='
- || quote_literal(e.txt_code) || '), '
- || COALESCE(r.id_fencer::text, 'NULL') || ', '
- || quote_literal(r.txt_surname) || ', ' || quote_literal(r.txt_first_name) || ', '
- || quote_literal(r.enum_gender::text) || '::enum_gender_type, ' || r.int_birth_year || ', '
- || quote_literal(r.arr_weapons::text) || '::enum_weapon_type[], ' || quote_literal(COALESCE(r.txt_consent_version,'v1.0')) || ';' AS stmt
-FROM tbl_registration r
-JOIN tbl_event e ON e.id_event = r.id_event
-) s;" \
- | .venv/bin/python -c "
-import json, sys
-print(json.load(sys.stdin)[0]['string_agg'] or '')" > "$FIXTURE"
-
-docker exec -i supabase_db_SPWSranklist psql -U postgres -d postgres -q < "$FIXTURE"
+#
+# By the refresh's own copy (ADR-036 §3): every PROD event with entries goes
+# through fn_replace_event_registrations with the columns the ingestion reads —
+# never the e-mail hash, edit token or consent stamp — and the step fails unless
+# each event's registrations part of the input fingerprint then equals PROD's.
+# A copy of its own here once left out the club and FTL name, and promote's
+# LOCAL rehearsal stopped at input.registrations (3 Oct 2026).
+SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
+.venv/bin/python -m python.pipeline.promotion.refresh --target local --mode registrations
 
 echo ""
 echo "=== LOCAL now mirrors PROD ==="
@@ -116,6 +106,5 @@ SELECT 'same-name pairs  = '||count(*)||'   <- PROD has 2; more than that means 
 SELECT 'registrations    = '||count(*) FROM tbl_registration;"
 
 echo ""
-echo "NOTE: six calendar/event pgTAP files are calibrated against the older seed"
-echo "      snapshot and fail on current PROD data (19, 54, 56, 63, 67, 74)."
-echo "      Every registration and identity test passes. See the 2026-09-12 report."
+echo "NOTE: the whole pgTAP suite passes on this mirror, PROD's registrations"
+echo "      included (supabase test db: 106 files, 1395 assertions, 2026-10-04)."

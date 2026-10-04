@@ -9,6 +9,9 @@
 -- name, so they show the roster's. A fencer renamed on the roster renames his
 -- linked registrations. An unlinked registration keeps the name as typed.
 --
+-- Lookups by name are scoped to the fixture event: a LOCAL mirrored from PROD
+-- holds PROD's real entries (scripts/mirror-prod-local.sh, ADR-036 §3).
+--
 -- Everything rolls back.
 -- =============================================================================
 
@@ -46,14 +49,16 @@ SELECT is((SELECT txt_surname || ' ' || txt_first_name FROM tbl_registration WHE
           'STANISŁAWSKI Albert',
   'REGNAME.01 a registration linked when created carries the roster name, Ł and case included');
 
-SELECT is((SELECT txt_surname || ' ' || txt_first_name FROM tbl_registration WHERE txt_surname = 'NOWY'),
+SELECT is((SELECT txt_surname || ' ' || txt_first_name FROM tbl_registration
+            WHERE txt_surname = 'NOWY' AND id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REGNAME101EVT')),
           'NOWY Fencer',
   'REGNAME.02 an unlinked registration keeps the name as typed');
 
 -- ---------------------------------------------------------------- linking later
 INSERT INTO tbl_registration (id_event, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons)
 SELECT id_event, 'PAWEL', 'KACZMAREK', 'M', 1970, ARRAY['FOIL']::enum_weapon_type[] FROM tbl_event WHERE txt_code = 'REGNAME101EVT';
-UPDATE tbl_registration SET id_fencer = 97902 WHERE txt_surname = 'PAWEL';
+UPDATE tbl_registration SET id_fencer = 97902
+ WHERE txt_surname = 'PAWEL' AND id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REGNAME101EVT');
 
 SELECT is((SELECT txt_surname || ' ' || txt_first_name FROM tbl_registration WHERE id_fencer = 97902),
           'KACZMAREK Paweł',
@@ -84,7 +89,8 @@ SELECT is((SELECT txt_first_name FROM tbl_registration WHERE id_fencer = 97901),
   'REGNAME.06 renaming a fencer renames his linked registrations');
 
 UPDATE tbl_registration SET id_fencer = NULL WHERE id_fencer = 97902;
-SELECT is((SELECT txt_surname || ' ' || txt_first_name FROM tbl_registration WHERE txt_first_name = 'Paweł'),
+SELECT is((SELECT txt_surname || ' ' || txt_first_name FROM tbl_registration
+            WHERE txt_first_name = 'Paweł' AND id_event = (SELECT id_event FROM tbl_event WHERE txt_code = 'REGNAME101EVT')),
           'KACZMAREK Paweł',
   'REGNAME.07 unlinking keeps the last name; nothing is guessed back');
 

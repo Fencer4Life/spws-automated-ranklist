@@ -21,8 +21,13 @@ nothing is guessed. Before every CERT ingestion this module:
 4. drains the target's recompute queue to empty and re-reads the roster, which
    must equal PROD's.
 
+The LOCAL mirror (scripts/mirror-prod-local.sh) loads its registrations with the
+same copy, for every PROD event with entries (`run_copy_registrations`), so the
+registrations part of a LOCAL input fingerprint equals PROD's.
+
     python -m python.pipeline.promotion.refresh --target cert --mode plan
     python -m python.pipeline.promotion.refresh --target local --mode apply --event PPW1-2026-2027
+    python -m python.pipeline.promotion.refresh --target local --mode registrations
 """
 
 from __future__ import annotations
@@ -478,6 +483,22 @@ def registrations_sql(event_code: str) -> str:
     )
 
 
+# Every event with entries, by code: what the LOCAL mirror copies.
+REGISTERED_EVENTS_SQL = (
+    "SELECT coalesce(jsonb_agg(s.code ORDER BY s.code), '[]'::jsonb) AS j FROM ("
+    "SELECT DISTINCT e.txt_code AS code FROM tbl_registration r "
+    "JOIN tbl_event e ON e.id_event = r.id_event) s"
+)
+
+
+def registrations_part_sql(event_code: str) -> str:
+    """The registrations part of the event's input fingerprint (ADR-108 §4), the
+    hash promote's gate compares between environments."""
+    if not _EVENT_CODE.match(event_code or ""):
+        raise RefreshError(f"not an exact event code: {event_code!r}")
+    return f"SELECT fn_event_input_fingerprint('{event_code}')->'parts'->>'registrations' AS j"
+
+
 class ProdReader:
     """Reads PROD. It cannot be built on a transport that could write."""
 
@@ -495,6 +516,12 @@ class ProdReader:
     def registrations(self, event_code: str) -> list[dict[str, Any]]:
         return list(self.transport.fetch_json(registrations_sql(event_code)) or [])
 
+    def registered_events(self) -> list[str]:
+        return list(self.transport.fetch_json(REGISTERED_EVENTS_SQL) or [])
+
+    def registrations_part(self, event_code: str) -> str | None:
+        return self.transport.fetch_json(registrations_part_sql(event_code))
+
 
 class TargetDb:
     """LOCAL or CERT, the only databases a refresh writes."""
@@ -507,6 +534,9 @@ class TargetDb:
 
     def roster(self) -> list[dict[str, Any]]:
         return list(self.transport.fetch_json(ROSTER_SQL) or [])
+
+    def registrations_part(self, event_code: str) -> str | None:
+        return self.transport.fetch_json(registrations_part_sql(event_code))
 
     def references(self) -> dict[int, int]:
         """How many live rows refer to each fencer, over every reference."""
@@ -675,6 +705,39 @@ def run_verify(prod: HasRoster, target: HasRoster) -> idn.IdentityDiff:
     return roster_diff(target.roster(), prod.roster())
 
 
+def run_copy_registrations(
+    prod: ProdReader, target: TargetDb, *, event_code: str | None = None
+) -> dict[str, dict[str, Any]]:
+    """ADR-036 §3: LOCAL's registrations become PROD's, by the refresh's own copy.
+
+    The mirror's step 5. LOCAL only: CERT copies the one event being ingested, in
+    the refresh apply (ADR-108 §2). The entries carry PROD's fencer ids, so the
+    roster must equal PROD's first. Every PROD event with entries (or the one
+    named) goes through `replace_registrations` — the columns the ingestion reads,
+    never the e-mail hash, edit token or consent stamp — and afterwards each
+    event's registrations part of the input fingerprint must equal PROD's.
+    """
+    if target.name != "local":
+        raise RefreshError(
+            "only LOCAL mirrors every event's registrations; "
+            "CERT copies the ingested event's in --mode apply --event"
+        )
+    diff = run_verify(prod, target)
+    if not diff.equal:
+        raise RefreshError(
+            "the LOCAL roster differs from PROD's; registrations carry PROD's ids:\n"
+            + "\n".join(diff.lines("local", "PROD"))
+        )
+    codes = [event_code] if event_code else prod.registered_events()
+    copied = {code: target.replace_registrations(code, prod.registrations(code)) for code in codes}
+    differ = [c for c in codes if target.registrations_part(c) != prod.registrations_part(c)]
+    if differ:
+        raise RefreshError(
+            f"after the copy the registrations part differs from PROD's for: {', '.join(differ)}"
+        )
+    return copied
+
+
 def run_restore(target: TargetDb, point: Mapping[str, Any]) -> dict[str, Any]:
     """Undo an alignment with the same function: the inverse pairing, the saved roster.
 
@@ -719,10 +782,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--target", required=True, choices=TARGETS)
     parser.add_argument(
-        "--mode", default="plan", choices=("plan", "dry-run", "apply", "restore", "verify")
+        "--mode",
+        default="plan",
+        choices=("plan", "dry-run", "apply", "restore", "verify", "registrations"),
     )
     parser.add_argument(
-        "--event", help="exact event code whose registrations are copied (apply only)"
+        "--event",
+        help="exact event code whose registrations are copied (apply; registrations: "
+        "this event only instead of every PROD event with entries)",
     )
     parser.add_argument("--recorded", type=Path, default=RECORDED_PAIRS_FILE)
     parser.add_argument("--report", type=Path, help="also write the report to this file")
@@ -738,6 +805,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.mode == "apply" and args.snapshot.exists():
         print(f"{args.snapshot} exists; a restore point is never overwritten", file=sys.stderr)
+        return 1
+    if args.mode == "registrations" and args.target != "local":
+        print(
+            "--mode registrations is the LOCAL mirror's copy; CERT copies the ingested "
+            "event's registrations in --mode apply --event",
+            file=sys.stderr,
+        )
         return 1
 
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
@@ -761,6 +835,16 @@ def main(argv: list[str] | None = None) -> int:
         for line in diff.lines(args.target, "PROD"):
             print(line, file=sys.stderr)
         return 1
+    if args.mode == "registrations":
+        try:
+            copied = run_copy_registrations(prod, target, event_code=args.event)
+        except RefreshError as e:
+            print(f"REGISTRATIONS STOPPED: {e}", file=sys.stderr)
+            return 1
+        for code, counts in copied.items():
+            print(f"{code}: {json.dumps(counts)}")
+        print(f"local registrations equal PROD's in {len(copied)} event(s)")
+        return 0
     drain = None
     if args.mode in ("apply", "restore"):
         try:
