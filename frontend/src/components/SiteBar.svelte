@@ -4,7 +4,9 @@
 
      One row: ☰, the SPWS logo as the link home, the page's title and the PL/EN
      switch. The bar carries both titles and CSS shows the short one below
-     430 px (Q2 = C), so the switch stays in the bar on a phone. Our bundle draws
+     430 px (Q2 = C), so the switch stays in the bar on a phone. The calendar's
+     title is fitted instead: its menu name wherever that fits, shorter names
+     only for lack of room (ADR-090 amendment 2026-10-06). Our bundle draws
      it, not the CMS, so the same tag works under any CMS (W5). The app and
      <spws-document> both use it. -->
 <header class="site-bar">
@@ -12,8 +14,18 @@
   <a class="site-home" href={homeHref} aria-label={t('embed_home_label')} title={t('embed_home_label')}>
     <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="site-logo" />
   </a>
-  <h1 class="site-title">
-    <span class="site-title-long">{longTitle}</span><span class="site-title-short">{shortTitle}</span>
+  <h1 class="site-title" bind:this={titleEl}>
+    {#if fitTitles}
+      <!-- The calendar (ADR-090 amendment 2026-10-06): the first candidate
+           that fits the room the title has, measured from aria-hidden copies
+           set in the title's own font. -->
+      <span class="site-title-fit">{fitTitles[picked] ?? fitTitles[0]}</span><span
+        class="title-measure"
+        aria-hidden="true"
+        bind:this={measureEl}>{#each fitTitles as name, i (i)}<span>{name}</span>{/each}</span>
+    {:else}
+      <span class="site-title-long">{longTitle}</span><span class="site-title-short">{shortTitle}</span>
+    {/if}
   </h1>
   <div class="site-actions">
     <LangToggle />
@@ -24,18 +36,42 @@
   import LangToggle from './LangToggle.svelte'
   import { t } from '../lib/locale.svelte'
   import { assetUrl } from '../lib/assetBase'
+  import { fitIndex } from '../lib/fitTitle'
 
   let {
     homeHref,
     longTitle,
     shortTitle,
+    fitTitles = undefined,
     onmenu = () => {},
   }: {
     homeHref: string
     longTitle: string
     shortTitle: string
+    /** The calendar's names, longest first: shown by measured fit, not at 430 px. */
+    fitTitles?: string[]
     onmenu?: () => void
   } = $props()
+
+  let titleEl = $state<HTMLElement | null>(null)
+  let measureEl = $state<HTMLElement | null>(null)
+  let picked = $state(0)
+
+  // The title takes the bar's slack (flex 1 1 auto, min-width 0), so its own
+  // width IS the room. Measured again when that changes and when the
+  // candidates do — a language switch.
+  $effect(() => {
+    const names = fitTitles
+    const el = titleEl
+    const copies = measureEl
+    if (!names || !el || !copies) return
+    const fit = () => { picked = fitIndex(copies.children, el.getBoundingClientRect().width) }
+    fit()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
 </script>
 
 <style>
@@ -83,6 +119,19 @@
   }
   .site-title-short {
     display: none;
+  }
+  /* The calendar title's measuring copies: in the title's font, out of the
+     flow, and taking no room and no scroll width. */
+  .title-measure {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+  .title-measure > span {
+    position: absolute;
+    white-space: nowrap;
   }
   .site-actions {
     display: flex;

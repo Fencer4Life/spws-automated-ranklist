@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="7f3e697bb40d206e8326128a44d529e05dbb8fa1a403dcb5f8977ac917f2b0e0">
+<meta name="doc-source-sha256" content="792a1f0d433eacad78ff3ed5050a9ea27867c6082ec4301571dcb2f3aaac290b">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>409 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>430 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -971,11 +971,13 @@
 | FR-145 | <strong>An automatic check compares each PPW/MPW event's listings with the joining rules.</strong> At the end of each event ingestion run and after each recompute, the pipeline reads the stored orders per weapon and gender, computes the joining rules' grouping with <code>plan_brackets</code>, and stores the verdict in <code>tbl_joining_check</code> (service role only). When the verdict changes — to a mismatch, or back — it sends one Telegram message through <code>TelegramNotifier</code>; a repeat run sends nothing. It never blocks the commit and needs no sign-off; every listing is scored as fenced. | ADR-104 | JB27.JOIN.01–02 | Covered (2026-09-30, ADR-104; released 2026-10-01) |
 | FR-146 | <strong>Ranking rules for the chosen season, one tap from the ranklist.</strong> A pill „Reguły rankingu na sezon {season}” / “Ranking rules for the {season} season” is pinned to the middle of the bottom of the visible screen (<code>position: fixed</code>, above an iPhone's home bar, under the drawer, the modals and the error banner). It names the season chosen in the dropdown, shows only once that season's own rules have arrived, and is absent for a season without stored rules. While it shows, a spacer ends the ranklist view so the last row clears it; the birth-year strip (FR-67) is unchanged. It opens a modal drawn from that season's definition: the sum in the table's column names (SPWS + EVF+ = Razem; one „Punkty” box for a PPW-only season); one card per pool, each bucket with its types, its rule and one ★ per counted result (one ★ per always-counted type, e.g. MPW); who is ranked (<code>entry_types</code>); the rolling-ranking note for the active season only; and the coefficients of the types shown, read on opening from <code>fn_public_scoring_params</code> and left out if they fail to load. Its scoring-table link resolves through <code>assetUrl()</code> so it also works in the WordPress embed. PL+EN, Polish plural forms; ✕, Esc and an outside click close it; a full-screen sheet on a phone. | UC12 | SeasonRulesModal.test.ts SR.MODAL.01–13, SeasonRulesLink.test.ts SR.LINK.01–06, api.test.ts SR.API.01–02 | Covered (2026-10-01; mock doc/mockups/ranking-rules-modal-2026-10-01.html revision 2) |
 | FR-147 | <strong>Nationality per season, fixed for the season</strong> (ADR-106 §3). Each stored international result keeps the federation its source printed (<code>tbl_result.txt_entered_for</code>, three letters, or none). <code>tbl_fencer_nationality</code> holds one federation per fencer and season: that of the season's earliest-dated result carrying one, kept current by a trigger on <code>tbl_result</code> whatever the path or the order of ingestion. A later start in the same season printing another federation does not change it and is listed in <code>vw_fencer_nationality_conflict</code>. An admin entry is kept as entered. Authenticated users read; anon reads nothing. | ADR-106 | pgTAP 96 NAT.SEASON.01–06, NAT.EVID.02–03; NAT.EVID.01, NAT.EVID.04 (pytest) | Covered (2026-10-02, LOCAL) |
-| FR-148 | <strong>The SPWS bar and drawer on every public WordPress page, drawn by our bundle</strong> (<code>chrome=&quot;site&quot;</code>). The bar holds ☰, the SPWS logo as the link to weteraniszermierki.pl, the page title and the PL/EN switch; below 430 px the title is short — Ranking, Kalendarz, Kalkulator, Tabela (EN: Ranklist, Calendar, Calculator, Table) — and the bar stays one row. The drawer floats over the page on every device, opens only on ☰, closes on a choice, a tap outside or Esc, and leads to the four public pages in the same tab through the page's <code>href-home</code>, <code>href-ranking</code>, <code>href-calendar</code>, <code>href-calculator</code> and <code>href-table</code> attributes. <code>chrome=&quot;none&quot;</code> keeps working until <code>/znajdz-zawody/</code> is republished. | ADR-090 (amendment 2026-10-03) | WP.BAR.01–03, WP.NAV.01–03, WP.COMP.01 | Covered (2026-10-04, LOCAL; release in plan step 11) |
+| FR-148 | <strong>The SPWS bar and drawer on every public WordPress page, drawn by our bundle</strong> (<code>chrome=&quot;site&quot;</code>). The bar holds ☰, the SPWS logo as the link to weteraniszermierki.pl, the page title and the PL/EN switch; below 430 px the title is short — Ranking, Kalkulator, Tabela (EN: Ranklist, Calculator, Table) — and the bar stays one row. The calendar's title is its drawer entry, „Znajdź zawody” / “Competition Finder”, wherever it fits, and squeezes by measured fit to „Zawody” (“Competitions”, then “Events”), in the WordPress bar and the github.io header alike (amended 2026-10-06, ADR-090 amendment 2026-10-06). The drawer floats over the page on every device, opens only on ☰, closes on a choice, a tap outside or Esc, holds no keyboard stop while closed, and leads to the four public pages in the same tab through the page's <code>href-home</code>, <code>href-ranking</code>, <code>href-calendar</code>, <code>href-calculator</code> and <code>href-table</code> attributes. <code>chrome=&quot;none&quot;</code> keeps working until <code>/znajdz-zawody/</code> is republished. | ADR-090 (amendments 2026-10-03, 2026-10-06) | WP.BAR.01–03, WP.BAR.05, WP.NAV.01–04, WP.COMP.01 | Covered (2026-10-04, LOCAL; release in plan step 11); the 2026-10-06 amendment (calendar title, inert closed drawer) Planned |
 | FR-149 | <strong>PROD administration on the association's site.</strong> <code>weteraniszermierki.pl/ranking/?admin=1</code> opens the sign-in modal at load, then TOTP, on an element carrying <code>admin-entry</code> (only <code>/ranking/</code>); elsewhere <code>?admin=1</code> is ignored. After sign-in the drawer holds the admin section and stays closed until ☰. No mode shows a sign-in entry in the drawer, and there is no PROD tag. Registration links in the event editor are built from the asset base. | ADR-090 (amendment 2026-10-03, §3) | WP.ADM.01–03 | Covered (2026-10-04, LOCAL; release in plan step 11) |
 | FR-150 | <strong>The calculator and the annex on the association's site, inside the SPWS bar.</strong> <code>&lt;spws-document doc=&quot;…&quot;&gt;</code> frames the PROD copy from the file host (<code>embed/kalkulator-punktow.html</code>, <code>embed/tabela-punktacji.html</code>), which has no banner of its own; the frame takes the document's reported height, accepted only from the asset base's origin. The maths comes only from the shared generated module (ADR-102). The calculator is titled „Kalkulator punktów” (phone bar: „Kalkulator”), and every number box is narrow, right-aligned and vertically centred with tabular digits. | ADR-090 (amendment 2026-10-03), ADR-102 | WP.DOC.01–03, WP.CALC.01 | Covered (2026-10-04, LOCAL; release in plan step 11) |
 | FR-151 | <strong>Each host serves one environment.</strong> github.io is CERT: no CT/PD switch, a yellow TEST ribbon, and the PROD pair kept only for the read-only promotion state. weteraniszermierki.pl is PROD. <code>register.html</code> stays PROD. <code>release.yml</code> injects CERT into the root calculator and annex and PROD into their <code>embed/</code> copies and <code>register.html</code>, behind a guard; dispatches target the host's own environment. WordPress page bodies keep reference copies in <code>doc/wordpress/</code> with a key placeholder that <code>scripts/wp_publish_page.py</code> fills, never printing the key and refusing a body that still holds it. Supersedes FR-42 on landing. | ADR-109 | WP.ENV.01–02, WP.REL.01, WP.PAGE.01–02 | Covered (2026-10-04, LOCAL; release in plan step 11) |
-| FR-152 | <strong>From 2026/2027 the fencer table is the ranking entry; everyone in it with points in the ranking's window is ranked</strong> (ADR-110). A fencer enters the fencer table only through a PPW or MPW result (ADR-020; ADR-106 and ADR-100 never create one). The 2026/2027 Season Scoring Rules carry no <code>entry_types</code>, so <code>fn_ranking_full</code> ranks every fencer with points in the window — the ranked season, plus the previous season's carried results when rolling — EVF+ points included. Changed on CERT and PROD through <code>fn_revise_and_rescore_season</code> (revisions 8 and 10). | ADR-110, ADR-106, ADR-097 | ROSTER.01–04 (<code>85_spws_evf_joined_engine.sql</code>); ADM27.RULES.14 (<code>84_admin_ranking_rules_validation.sql</code>) | Covered (CERT and PROD 2026-10-04) |</p>
+| FR-152 | <strong>From 2026/2027 the fencer table is the ranking entry; everyone in it with points in the ranking's window is ranked</strong> (ADR-110). A fencer enters the fencer table only through a PPW or MPW result (ADR-020; ADR-106 and ADR-100 never create one). The 2026/2027 Season Scoring Rules carry no <code>entry_types</code>, so <code>fn_ranking_full</code> ranks every fencer with points in the window — the ranked season, plus the previous season's carried results when rolling — EVF+ points included. Changed on CERT and PROD through <code>fn_revise_and_rescore_season</code> (revisions 8 and 10). | ADR-110, ADR-106, ADR-097 | ROSTER.01–04 (<code>85_spws_evf_joined_engine.sql</code>); ADM27.RULES.14 (<code>84_admin_ranking_rules_validation.sql</code>) | Covered (CERT and PROD 2026-10-04) |
+| FR-153 | <strong>The calendar drum reads downward in time and shows how it turns.</strong> Earlier months above the focused month, later below; ▲/▼ step to the nearest earlier/later month with competitions, as a tap on the neighbouring month does, and disappear where nothing lies further; the „najbliższe zawody” arrow points to where the opening month is drawn; turned-away months are inert; month labels are in the page's language; crowded previews stop before the buttons; ↑/↓ keys step. | ADR-084 (amendment 2026-10-06) | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50; CB.E1–CB.E4 | Planned |
+| FR-154 | <strong>Every interface string and screen-reader label is in the reader's language.</strong> Every key the code uses exists in both locales, runtime key families are complete, identical PL/EN values are allowlisted with a reason, and the calendar surfaces render no word of the other language. | ADR-005 | TR.01–TR.06 | Planned |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery, ADR-080 §5); implementation complete with CERT pilot and PROD cron enablement pending.</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Total active FRs = 131 assigned; 129 covered + 1 implemented/pilot-pending + 1 superseded. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong></p>
 </blockquote>
@@ -2074,17 +2076,24 @@
 </tr>
 <tr>
 <td>WP.BAR.02</td>
-<td>The bar carries the long title and the short one (Ranking, Kalendarz, Kalkulator, Tabela; EN Ranklist, Calendar, Calculator, Table) in the active language; below 430 px the short one shows. jsdom evaluates no media query, so the switch itself is measured by WP.BAR.03.</td>
+<td>The bar carries the long title and the short one (Ranking, Kalkulator, Tabela; EN Ranklist, Calculator, Table) in the active language; below 430 px the short one shows. jsdom evaluates no media query, so the switch itself is measured by WP.BAR.03. The calendar instead carries its fit candidates, „Znajdź zawody”, „Zawody” (EN “Competition Finder”, “Competitions”, “Events”), and shows the one <code>pickTitle</code> chose (amended 2026-10-06).</td>
 <td>Vitest</td>
 <td><code>frontend/tests/SiteChrome.test.ts</code></td>
-<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL); the calendar's candidates Planned (2026-10-06)</td>
 </tr>
 <tr>
 <td>WP.BAR.03</td>
-<td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the short title unwrapped and no sideways scroll; the long title shows from 430 px up. Against the custom-element build WordPress loads.</td>
+<td>At 320, 360 and 390 px the bar is one row on all four pages, in PL and EN, with the title unwrapped and no sideways scroll; on the ranking, the calculator and the table the long title shows from 430 px up, and the calendar's title follows WP.BAR.05 (amended 2026-10-06). Against the custom-element build WordPress loads.</td>
 <td>Playwright</td>
 <td><code>frontend/e2e/site-chrome.spec.ts</code></td>
-<td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+<td><strong>Landed</strong> (2026-10-04, LOCAL); amendment Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>WP.BAR.05</td>
+<td>The calendar's title shows the full name „Znajdź zawody” / “Competition Finder” whenever it fits and otherwise the first shorter candidate that fits („Zawody”; “Competitions”, “Events”); it is never clipped, keeps the bar's font size, and the bar stays one row. Measured at 320, 360, 375 and 414 px and on a desktop, in PL and EN, in the WordPress bar and the github.io header. ADR-090 amendment 2026-10-06.</td>
+<td>Playwright</td>
+<td><code>frontend/e2e/site-chrome.spec.ts</code></td>
+<td>Planned (2026-10-06)</td>
 </tr>
 <tr>
 <td>WP.NAV.01</td>
@@ -2106,6 +2115,13 @@
 <td>Vitest</td>
 <td><code>frontend/tests/Sidebar.test.ts</code></td>
 <td><strong>Landed</strong> (2026-10-04, LOCAL)</td>
+</tr>
+<tr>
+<td>WP.NAV.04</td>
+<td>The closed drawer holds no focusable element in any mode (it is <code>inert</code>); the open drawer keeps all its links reachable. ADR-090 amendment 2026-10-06.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/Sidebar.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
 </tr>
 <tr>
 <td>WP.ADM.01</td>
@@ -2222,6 +2238,92 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.<em>, CB.</em>, TR.<em>, TITLE.</em>)</h2>
+<p>Acceptance IDs for the <a href="adr/084-calendar-quarter-barrel-event-card.html">ADR-084</a> and <a href="adr/090-prod-surface-as-wordpress-menu-item.html">ADR-090</a> amendments of 2026-10-06 and <a href="plans/kalendarz-beben-strzalki-plan-2026-10-06.html">doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html</a> §05–§06. FR-153, FR-154, and FR-148 as amended. Registered before any code (plan §08 step 1); each is observed RED for its stated reason before its implementation lands, and a guard whose invariant already holds is proven by a recorded mutation run instead. Keyboard ↑/↓ only (D8 (a)): CB.51–CB.52 (wheel, swipe) are not built.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CM.40–CM.44</td>
+<td><code>stepRow(rows, from, direction)</code> returns the nearest month with events strictly beyond <code>from</code>, skipping empty months forward (40) and backward (41); <code>null</code> at either end and for no rows (42); it lands where a tap on the neighbouring row lands (43); and it never reverses from an empty month (44).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/calendarMonths.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>CB.3, CB.35, CB.36</td>
+<td>Earlier months above, later below: the drum turns by <code>rotateX(+active·θ)</code> and row <em>i</em> sits at <code>rotateX(−i·θ)</code> (3); the row drawn directly above the focus is <code>rows[active − 1]</code> (35); the heavier season rule lies between two seasons (36).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/CalendarBarrel.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>CB.26–CB.27c, CB.29, CB.47</td>
+<td>The „najbliższe zawody” control: focus later than the opening month → on the upper seam, ↑ (26); earlier by two or more → pinned, ↓ (27); earlier by one → pinned, ← (27b), also at the end of the drum (27c); its tap does not reach the row beneath it (29, proven by a mutation); its arrow points to where the opening month is drawn, for every distance −4…+4 (47).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/CalendarBarrel.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>CB.37–CB.43</td>
+<td>▲ ▼: buttons beside the drum in DOM order ▲, drum, ▼, labelled from the locale and never with forbidden classes (37); ▼ steps later with one <code>onselect</code>, animated (38); ▲ steps earlier (39); ▼ lands where a tap on the lower month lands (40); a button is absent where nothing lies further (41); focus passes to the other button when one disappears (42); after ▲ there is one pinned control and two buttons (43).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/CalendarBarrel.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>CB.44–CB.46</td>
+<td>Months two or more rows from the focus are <code>inert</code> and nothing in them is focusable; months within one row are not (44). A row's <code>aria-label</code> equals its seam text, in PL and EN, and follows a language switch (45). A receded row's tile strip declares <code>max-width: min(calc(100% − 42px), 294px)</code> (46).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/CalendarBarrel.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>CB.48–CB.50</td>
+<td>With focus inside the drum, ↓ steps later and ↑ earlier, like the buttons, and the page does not scroll for that key press (48, 49); arrow keys with focus outside the drum leave it alone (50).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/CalendarBarrel.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>CB.E1–CB.E4</td>
+<td>In a real browser against the custom-element build, with the calendar request stubbed: no overlap of the buttons with tiles, seam labels or the jump control at 320, 375 and 1280 px in PL and EN with the control in either place (E1); earlier above, later below on screen (E2); ▼ then ▲ returns to the same month (E3); with an eight-event neighbouring month at 288 and 300 px, no tile reaches a button (E4).</td>
+<td>Playwright</td>
+<td><code>frontend/e2e/calendar-barrel.spec.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>TR.01–TR.06</td>
+<td>Every literal key in <code>t('…')</code> / <code>tIn(l, '…')</code> exists in both locale files (01); every key family built at runtime is complete for its domain (02); a value identical in PL and EN is allowed only for an allowlisted key with a reason (03); the calendar page in Polish shows no English UI word and no raw key in text, <code>aria-label</code>, <code>title</code> or <code>alt</code> (04), in English no Polish UI word (05), and the same over the github.io shell's calendar view (06).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/translation-completeness.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>TITLE.01–TITLE.02</td>
+<td><code>pickTitle(widths, room)</code> returns the first candidate that fits, the last when none does, and fits at the exact boundary (01); the title is picked again on a language switch (02).</td>
+<td>Vitest</td>
+<td><code>frontend/tests/fitTitle.test.ts</code></td>
+<td>Planned (2026-10-06)</td>
+</tr>
+<tr>
+<td>8.34 (amended)</td>
+<td>The github.io header's title follows the view; on the calendar it reads „Znajdź zawody” (EN “Competition Finder”), with its fit candidates, where it read „Kalendarz”.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/AppShell.test.ts</code></td>
+<td>Amendment Planned (2026-10-06)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -2232,5 +2334,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7f3e697bb40d206e8326128a44d529e05dbb8fa1a403dcb5f8977ac917f2b0e0</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>792a1f0d433eacad78ff3ed5050a9ea27867c6082ec4301571dcb2f3aaac290b</code></footer>
 </div></body></html>

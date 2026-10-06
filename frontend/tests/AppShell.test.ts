@@ -91,8 +91,12 @@ describe('App Shell (T8.4)', () => {
     )
     await fireEvent.click(calendarItem!)
 
-    // Title should change
-    expect(title?.textContent).toContain('Kalendarz')
+    // Title should change. The calendar's title is its drawer entry, with its
+    // fit candidates (ADR-090 amendment 2026-10-06); jsdom measures every
+    // width as 0, so the full name is the one shown.
+    expect(title?.querySelector('.app-title-fit')?.textContent?.trim()).toBe('Znajdź zawody')
+    expect([...title!.querySelectorAll('.title-measure > span')].map((s) => s.textContent?.trim()))
+      .toEqual(['Znajdź zawody', 'Zawody'])
     expect(title?.querySelector('.header-logo')).not.toBeNull()
   })
 

@@ -39,6 +39,7 @@ import {
   rowScroll,
   seasonShortCode,
   settleRow,
+  stepRow,
   tournamentsPluralKey,
   visibleEvents,
   weaponLetters,
@@ -1103,6 +1104,86 @@ describe('empty-row skipping', () => {
     // today sits in a quiet month; the anchor must move to a populated one
     const i = resolveAnchorRow(rows, null, '2026-10-15')
     expect(rows[i]!.isEmpty).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The ▲ ▼ step — ADR-084 amendment 2026-10-06 (§M), FR-153. Test IDs
+// CM.40–CM.44. A step goes to the nearest month WITH events strictly beyond
+// the focus, or nowhere — never back the other way, which is what settleRow
+// does at the end of the drum and why the buttons cannot call it directly.
+// ---------------------------------------------------------------------------
+
+describe('stepRow', () => {
+  /** Sep (A), quiet Oct and Nov, Dec (B), quiet Jan, Feb (C). */
+  const gappy = () =>
+    buildMonths([
+      ev({ txt_code: 'A', dt_start: '2026-09-05' }),
+      ev({ txt_code: 'B', dt_start: '2026-12-05' }),
+      ev({ txt_code: 'C', dt_start: '2027-02-05' }),
+    ])
+
+  it('CM.40 — forward skips empty months to the next month with events', () => {
+    const rows = gappy()
+    expect(rows.map((r) => r.isEmpty)).toEqual([false, true, true, false, true, false])
+    expect(stepRow(rows, 0, 1)).toBe(3)
+    expect(stepRow(rows, 3, 1)).toBe(5)
+  })
+
+  it('CM.41 — backward skips empty months to the previous month with events', () => {
+    const rows = gappy()
+    expect(stepRow(rows, 5, -1)).toBe(3)
+    expect(stepRow(rows, 3, -1)).toBe(0)
+  })
+
+  it('CM.42 — null at either end, and for no rows at all', () => {
+    const rows = gappy()
+    expect(stepRow(rows, 5, 1)).toBeNull()
+    expect(stepRow(rows, 0, -1)).toBeNull()
+    expect(stepRow([], 0, 1)).toBeNull()
+    expect(stepRow([], 0, -1)).toBeNull()
+  })
+
+  it('CM.43 — lands where a tap on the neighbouring row lands', () => {
+    // A tap on row `from ± 1` rotates through settleRow in that direction.
+    // Wherever that does not reverse, a step must land on the same month.
+    const rows = gappy()
+    for (let from = 0; from < rows.length; from++) {
+      for (const dir of [1, -1] as const) {
+        const step = stepRow(rows, from, dir)
+        const neighbour = from + dir
+        if (neighbour < 0 || neighbour >= rows.length) {
+          expect(step).toBeNull()
+          continue
+        }
+        const tap = settleRow(rows, neighbour, dir)
+        if ((tap - from) * dir > 0) expect(step).toBe(tap)
+        else expect(step).toBeNull()
+      }
+    }
+  })
+
+  it('CM.44 — never reverses from an empty month with nothing beyond it', () => {
+    // A drum cut so that it ends on quiet months: Sep (A), then Oct and Nov empty.
+    const rows = gappy().slice(0, 3)
+    expect(rows.map((r) => r.isEmpty)).toEqual([false, true, true])
+    // settleRow, asked to roll forward from Oct, reverses back to September.
+    expect(settleRow(rows, 2, 1)).toBe(0)
+    // A step forward from Oct has nowhere to go, so it is null — not September.
+    expect(stepRow(rows, 1, 1)).toBeNull()
+    // Backward from the same empty month is a real step.
+    expect(stepRow(rows, 1, -1)).toBe(0)
+    // And every step that exists moves strictly the way it was asked to.
+    const full = gappy()
+    for (let from = 0; from < full.length; from++) {
+      for (const dir of [1, -1] as const) {
+        const step = stepRow(full, from, dir)
+        if (step !== null) {
+          expect((step - from) * dir).toBeGreaterThan(0)
+          expect(full[step]!.isEmpty).toBe(false)
+        }
+      }
+    }
   })
 })
 
