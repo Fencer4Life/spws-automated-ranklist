@@ -119,7 +119,7 @@
   <div class="meta">
     <span class="pill"><span class="dot"></span>V built · committed <code>32726416</code></span>
     <span class="pill"><span class="dot"></span>preflight exit 0</span>
-    <span class="pill"><span class="dot"></span>your answer 6 Oct: push A</span>
+    <span class="pill"><span class="dot"></span>push A · released 6 Oct · verified on CERT and PROD</span>
   </div>
 
   <hr class="rule">
@@ -144,6 +144,18 @@
     <div class="note accent">
       <p class="lede">Your answer, 6 Oct 2026: &bdquo;push A&ldquo;</p>
       <p>Both changes go to <code>main</code> in one push, from <code>claude/arrows-and-active-season</code>, through the integration checkout.</p>
+    </div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Released 6 Oct 2026, verified on CERT and PROD</p>
+      <p><code>main</code> <code>1346bd92</code>. CI run 37456655977 passed: coherence, Vitest, pgTAP and pytest. Release run 37456824805 passed: gate, build, <code>deploy-pages</code>, <code>deploy-cert</code> and <code>deploy-prod</code> (you approved it). Migrations, edge functions and the security posture check passed on both databases.</p>
+      <p>Before the release, as anon, CERT and PROD both had only 2026-2027 active (stored); <code>fn_active_season_id</code> returned 404 and <code>fn_refresh_active_season</code> returned <b>401</b>. After it, on each environment:</p>
+      <ul>
+        <li>Only SPWS-2026-2027 (13 Jul 2026 to 15 Jul 2027) is active, now computed.</li>
+        <li><code>bool_active=eq.true</code> works.</li>
+        <li><code>fn_active_season_id</code> returns 4.</li>
+        <li><code>fn_refresh_active_season</code> returns <b>404</b>.</li>
+      </ul>
+      <p>On PROD, the rewritten <code>fn_season_summary</code> returns the active season (32 events, 102 scored results). A ranking with no season (<code>fn_ranking_ppw</code>, epee M V2) returns 8 rows. The bundle the WordPress <code>/ranking/</code> page loads (<code>main.ce.js</code>) no longer contains the refresh call, and it carries the arrows&rsquo; <code>right: 0</code>.</p>
     </div>
 
     <h3>What happens after &bdquo;go&ldquo;</h3>
@@ -277,5 +289,5 @@
     </div>
   </section>
 
-  <p class="foot">active season · result · 2026-10-06 · branches claude/active-season-computed (32726416), claude/arrows-and-active-season (d4c69bad) · answer: push A</p>
+  <p class="foot">active season · result · 2026-10-06 · branches claude/active-season-computed (32726416), claude/arrows-and-active-season (d4c69bad) · answer: push A · released and verified 2026-10-06 (main 1346bd92)</p>
 </div>
