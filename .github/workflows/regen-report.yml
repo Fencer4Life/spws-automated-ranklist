@@ -10,7 +10,7 @@ name: Regen Verdict Report (.md)
 #   * Manual: gh workflow run regen-report.yml -f event_code=<X> -f target=<env>
 #
 # Security: all user-controlled inputs (event_code, target) are validated
-# before being interpolated into shell. event_code matches [A-Z0-9_-]+ only.
+# before being interpolated into shell. event_code matches [A-Za-z0-9_-]+ only.
 
 on:
   workflow_dispatch:
@@ -46,8 +46,8 @@ jobs:
 
       - name: Validate inputs
         run: |
-          if ! [[ "$EVENT_CODE" =~ ^[A-Z0-9_-]+$ ]]; then
-            echo "::error::invalid event_code (must match [A-Z0-9_-]+)"
+          if ! [[ "$EVENT_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::invalid event_code (must match [A-Za-z0-9_-]+)"
             exit 1
           fi
           if [[ "$TARGET_ENV" != "cert" && "$TARGET_ENV" != "prod" ]]; then
