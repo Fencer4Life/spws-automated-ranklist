@@ -127,7 +127,8 @@
   <div class="meta">
     <span class="pill"><span class="dot"></span>Decided 6 Oct: Q1 = ingest for CERT, promote for PROD · Q2–Q4 = A</span>
     <span class="pill"><span class="dot"></span>Built test-first and rehearsed on LOCAL (6 Oct) · not pushed · CERT and PROD unchanged</span>
-    <span class="pill"><span class="dot"></span>Decided 6 Oct: D1 = A, D2 = A · push approved</span>
+    <span class="pill"><span class="dot"></span>Decided 6 Oct: D1 = A, D2 = A · pushed to main (2bc34500)</span>
+    <span class="pill warn"><span class="dot"></span>Awaiting: sign-off of §6 (F1, F2) and Q5</span>
   </div>
 
   <section id="decide-now">
@@ -355,15 +356,58 @@
     <p>The report files of the rehearsal named real young fencers and were deleted.</p>
   </section>
 
+  <section id="calendar-fixes">
+    <p class="kicker">6 · Added to the plan · 6 October</p>
+    <h2>Two calendar fixes: fail on the JavaScript check, and carry the PZSz id to PROD</h2>
+    <p>You asked for both to be added to this plan. They are independent of Poznań, which goes ahead on the code already pushed. They will be a second push, with a migration.</p>
+
+    <h3>F1 · The PZSz calendar sync fails on pzszerm.pl's JavaScript check</h3>
+    <ul>
+      <li><b>Today:</b> <code>pzsz_calendar.fetch_series</code> parses the check page as an empty listing. The sync then reads 0 events, reports all 6 as "no longer listed", and the run ends green. That happened on 30 September and on 3–6 October (runs 36708978089, 37117508293, 37198815901, 37312830202, 37462676901).</li>
+      <li><b>Fix:</b> <code>fetch_series</code> recognises the check page by the rule the start-list reader already uses (<code>id="pzs-m"</code> and no table) and raises <code>PzszPageError</code>. The rule moves into one public function in <code>pzsz_start_list.py</code>, used by both readers. <code>sync_calendar</code> then stops before any CERT write and reports nothing as vanished. <code>main()</code> already turns the error into the Telegram message "❌ PZSz Calendar failed", with the reason ("pzszerm.pl answered with its JavaScript check… run it again later"), and exit 1, so the run goes red.</li>
+      <li><b>Enrichment</b> (the event detail pages) stays best-effort, but names the check page in its log instead of skipping silently. The 70-row truncation assertion stays as it is. The workflow's calendar-promotion job still runs after a failed scrape (<code>!cancelled()</code>), so CERT and PROD keep reconciling.</li>
+      <li><b>Never</b> get past the check: no cookie, no pixel request, no headless browser.</li>
+      <li><b>Tests first:</b> the listing check page raises; a sync that meets it writes nothing and reports nothing as vanished; a real listing is unchanged; enrichment logs the check page.</li>
+      <li><b>Documents:</b> the workflow catalog's <code>pzsz-sync.yml</code> row, the PZSz lane on the events page, ADR-087 (amendment) and the RTM.</li>
+    </ul>
+
+    <h3>F2 · The calendar promotion carries <code>id_pzsz_event</code> to PROD</h3>
+    <ul>
+      <li><b>Today:</b> <code>promote.py --mode calendar</code> and <code>fn_mirror_events_to_prod</code> carry <code>id_evf_event</code>, <code>id_evf_calendar_event</code> and <code>txt_evf_slug</code>, but not <code>id_pzsz_event</code>. PPS1s-2026-2027 has 4588 on CERT and none on PROD. ADR-111's promote works around it with the CERT run's PZSz event; the calendar should still hold the id.</li>
+      <li><b>Fix:</b> add the column to the CERT read and to the CREATE and UPDATE payloads in <code>promote.py</code>. A <b>new</b> migration redefines <code>fn_mirror_events_to_prod</code> from its latest body (<code>20260902000002</code>), with <code>id_pzsz_event</code> in the INSERT and the UPDATE. No applied migration is edited.</li>
+      <li><b>Tests first:</b> pgTAP (create carries the id, update fills an empty one, the Q5 rule below) and pytest (both payloads). <code>postgrestools check</code> on the migration and the test.</li>
+      <li><b>After the release:</b> the next calendar promotion fills the six PZSz rows on PROD. I verify it with a read-only query. Promote's fallback to the CERT run's PZSz event stays, unused.</li>
+      <li><b>Documents:</b> the promotion contracts (environments and release), the events page's implementation map, ADR-087 (amendment) and the RTM.</li>
+    </ul>
+
+    <h3>Q5 · PROD already has a PZSz id and CERT sends another</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>As for <code>id_evf_event</code>: CERT's id wins when it has one, and PROD keeps its own when CERT has none.</td><td>CERT owns the calendar identity and PROD only receives it (ADR-077). It is the rule the EVF id already follows, so a re-key on CERT reaches PROD.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Fill an empty PROD id only; never change a set one.</td><td>Safest against a bad CERT value, but a re-key on CERT would leave PROD wrong for good.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>Refuse the promotion when they differ.</td><td>Puts a person in the loop, and stops the whole calendar promotion over one id.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Order</h3>
+    <ol class="steps">
+      <li>Your sign-off of this section and Q5, in chat.</li>
+      <li>F1, then F2, each test-first (RED seen first). Then the documents, the docs index and the graph.</li>
+      <li><code>scripts/preflight.sh</code> exits 0. The push happens on your go; the migration reaches CERT and PROD only through the release.</li>
+      <li>Verify: a dry run of the PZSz sync on LOCAL against the check-page fixture fails red, and PROD's six PZSz rows carry their ids after the next calendar promotion.</li>
+    </ol>
+  </section>
+
   <section id="out">
-    <p class="kicker">6 · Not in this plan</p>
+    <p class="kicker">7 · Not in this plan</p>
     <h2>Left for later</h2>
     <ul>
       <li><b>EVF onto ingest and promote</b>, the next plan, under the same rule. Today EVF results reach each environment through separate runs.</li>
       <li>Team results (your question of 6 October, deferred).</li>
       <li>An automatic close for PZSz and international events. Today's daily close covers PPW and MPW only.</li>
       <li>Retiring the ADR-100 review table and its two functions. They stay in place, unused, and the new ADR says so.</li>
-      <li>Two defects found on the way, offered as separate tasks: the PZSz calendar sync reads the JavaScript check page as "every event vanished" and stays green; the calendar promotion does not carry <code>id_pzsz_event</code> to PROD.</li>
+      <li>Keeping the PZSz calendar sync from setting an admin-corrected end date back to the start date (D2's follow-up), offered as a separate task. The two other defects found on the way are now in this plan, §6.</li>
     </ul>
   </section>
 
