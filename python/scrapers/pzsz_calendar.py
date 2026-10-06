@@ -41,6 +41,7 @@ import httpx
 from bs4 import BeautifulSoup, Tag
 
 from python.scrapers._location import looks_like_venue, normalise_city, resolve_location
+from python.scrapers.pzsz_start_list import refuse_js_check
 
 logger = logging.getLogger(__name__)
 
@@ -405,6 +406,9 @@ def fetch_series(
     try:
         response = http.get(PZSZ_CALENDAR, params=params)
         response.raise_for_status()
+        # The JavaScript check page holds no table, so it would parse as zero
+        # events and every event would read as vanished (plan §6 F1).
+        refuse_js_check(response.text)
         rows = parse_calendar_html(response.text)
     finally:
         if owned:
