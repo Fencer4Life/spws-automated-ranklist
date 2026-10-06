@@ -51,8 +51,8 @@ DECLARE
   v_evf    INT;
   v_spws   INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('WPN71', '2126-07-01', '2127-06-30', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('WPN71', '2126-07-01', '2127-06-30')
   RETURNING id_season INTO v_season;
 
   SELECT id_organizer INTO v_evf  FROM tbl_organizer WHERE txt_code = 'EVF';

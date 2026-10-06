@@ -51,10 +51,10 @@ INSERT INTO tbl_organizer (txt_code, txt_name) VALUES ('TST-ORG', 'Test Organize
 -- since moved to EVENT_FK_MATCHING, which is a different, inactive engine.
 -- trg_season_auto_config auto-creates a default (NULL-rules) scoring_config row
 -- for each.
-INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine) VALUES
-  ('TST-PREV', '2090-09-01', '2091-08-31', FALSE, 'EVENT_CODE_MATCHING'),
-  ('TST-CURR', '2091-09-01', '2092-08-31', FALSE, 'EVENT_CODE_MATCHING'),
-  ('TST-ROOT', '1850-09-01', '1851-08-31', FALSE, 'EVENT_CODE_MATCHING');
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_carryover_engine) VALUES
+  ('TST-PREV', '2090-09-01', '2091-08-31', 'EVENT_CODE_MATCHING'),
+  ('TST-CURR', '2091-09-01', '2092-08-31', 'EVENT_CODE_MATCHING'),
+  ('TST-ROOT', '1850-09-01', '1851-08-31', 'EVENT_CODE_MATCHING');
 
 -- A season must be assigned a scoring engine before anything in it can be
 -- scored (2026-09-19, versioned season scoring). This is deliberate: nothing

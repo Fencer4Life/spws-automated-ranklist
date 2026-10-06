@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The active-season 401 on every public page</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Decision note · frontend · database · daily workflow · 6 Oct 2026</p>
+  <h1>Every public page load asks for a write it is not allowed to make</h1>
+  <p class="dek">Each public page load, on the github.io app and on every WordPress page, sends <code>POST /rest/v1/rpc/fn_refresh_active_season</code> as <b>anon</b>. It gets <b>401</b> and the browser logs it. Since 23 July (ADR-083) that call does nothing. As a result, <b>no scheduled process moves the active season when its dates pass</b>.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Superseded 6 Oct — V (computed on read) chosen instead</span>
+    <span class="pill">branch <code>claude/active-season-401</code> from <code>origin/main</code> <code>ae2a7a1b</code></span>
+    <span class="pill danger"><span class="dot"></span>CERT 401 · PROD 401 · LOCAL anon EXECUTE = false</span>
+  </div>
+
+  <div class="note accent">
+    <p class="lede">Superseded on 6 Oct 2026: option V, not D</p>
+    <p>After this note, the user asked for a better design. The decision is <a href="active-season-computed-on-read-2026-10-06.html">active-season-computed-on-read-2026-10-06.html</a>: the database computes the active season on every read, so no daily refresh is built. The stored flag, its trigger and <code>fn_refresh_active_season()</code> are removed, and tests set today with <code>spws.today</code>. ADR-031 carries the amendment (2026-10-06). This page stays as the incident record: the observations, the grant history and the call sites below are still accurate. Its recommendation (D), its TDD plan and its draft amendment are not.</p>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order</p>
+    <ol>
+      <li><a href="#decide">Decide this first</a>: four options, one recommendation and two smaller questions.</li>
+      <li><a href="#today">What the system does today</a>: the function, its callers, what happens to the failure, and its grant history.</li>
+      <li><a href="#evidence">Evidence</a>: CERT/PROD/LOCAL observations, migration lines, RAG hits and graph nodes.</li>
+      <li><a href="#walk">Scenario walk-through and parity matrix</a>.</li>
+      <li><a href="#tdd">Strict-TDD plan for the recommended option</a>.</li>
+      <li><a href="#docs">Documentation coherence impact</a>, including the draft ADR-031 amendment.</li>
+      <li><a href="#unverified">What is not verified</a>.</li>
+    </ol>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">01 · Decide this first</p>
+    <h2>Two defects, one call site</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">1 ×</span> The visible defect: a 401 on every public page load</p>
+      <p><code>App.svelte:697</code> calls <code>refreshActiveSeason()</code> in <code>init()</code>, which runs on every non-demo mount. Both shells run it: the github.io <code>index.html</code>, and <code>&lt;spws-calendar&gt;</code>, because <code>CalendarElement.svelte</code> imports <code>App.svelte</code>. Anon lost EXECUTE on 23 July (<code>20260723000001_adr083_deny_by_default_grants.sql</code> L186). The JavaScript discards the failure, but the browser still logs <q>Failed to load resource … 401</q>. JavaScript cannot suppress that line.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">2 ~</span> The latent defect: nothing moves the active season when the date passes</p>
+      <p>The trigger <code>trg_season_refresh_active</code> fires only on INSERT, DELETE or a change of <code>dt_start</code>/<code>dt_end</code> on <code>tbl_season</code>. Nothing else calls the function: no workflow, no Python, no <code>pg_cron</code>. The only remaining date-driven path is an App mount whose supabase-js client already holds an authenticated session (unverified how often that happens; see <a href="#unverified">07</a>). CERT and PROD are both on <code>SPWS-2026-2027</code> (13 Jul 2026 to 15 Jul 2027), and no later season exists yet. Suppose <code>SPWS-2027-2028</code> is created in advance, as 2026-2027 was (seeded 28 Jun 2026). Then on 16 Jul 2027 nothing moves the flag on either environment.</p>
+    </div>
+
+    <h3>Options</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What changes</th><th>Consequences</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>A</b><br>Drop the browser call</td>
+          <td>Remove <code>refreshActiveSeason</code> from <code>App.svelte</code> and <code>api.ts</code>. Nothing else changes.</td>
+          <td>Fixes defect 1. Makes defect 2 slightly worse: the rare signed-in mount also stops refreshing, so a date roll-over depends entirely on someone editing a season row. ADR-031's "zero admin overhead" stops being true. ADR-031 must be amended to say so. <span class="chip over">not enough alone</span></td>
+        </tr>
+        <tr>
+          <td><b>B</b><br>Call it only for a signed-in admin</td>
+          <td>Move the call from <code>init()</code> into an <code>isAdmin</code> effect. This is the pattern SE27.UI.09 used for <code>fetchScoringEngines</code>, which <q>cost every public visitor a 401</q> (<code>App.svelte</code> L670–680).</td>
+          <td>Fixes defect 1 with frontend-only code. Defect 2 stays: a roll-over needs an admin to sign in on <b>each</b> environment after the boundary, on CERT through github.io <code>?admin=1</code> and on PROD through <code>/ranking/?admin=1</code>. A sign-in on only one environment makes CERT and PROD disagree. <code>promote_calendar</code> then refuses with "active season mismatch" (ADR-081 §6, <code>promote.py</code> L276–291). That is the 14 Jul 2026 incident pattern. It also brings back the "remember once a year" duty that ADR-031 removed. <span class="chip warn">partial</span></td>
+        </tr>
+        <tr>
+          <td><b>C</b><br>Re-grant anon EXECUTE</td>
+          <td><code>GRANT EXECUTE … TO anon</code>; add the function to both allowlists (pgTAP 52.7 and <code>scripts/check-security-posture.sh</code>, kept in sync by <code>scripts/check-anon-allowlist-sync.sh</code>).</td>
+          <td>Restores ADR-031 as written: the roll-over happens on the first visit after UTC midnight. But it reverses an ADR-083 finding that names this function: a <code>SECURITY DEFINER</code> write open to the public. Every public page view would again run 2 <code>UPDATE</code>s on <code>tbl_season</code> (L42 deactivates every active row, L44 re-activates the target, even when nothing changes). <code>trg_audit_season</code> turns those into 2 <code>tbl_audit_log</code> rows per view. Anyone can loop the call. <span class="chip over">against ADR-083</span></td>
+        </tr>
+        <tr>
+          <td><b>D</b><br>Drop the browser call; refresh daily on the server</td>
+          <td>Option A, plus a daily run of <code>SELECT fn_refresh_active_season()</code> on CERT and then PROD, inside an existing scheduled workflow. The trigger stays. Grants stay as they are.</td>
+          <td>Fixes both defects. The roll-over happens on both environments in the same run, with no visitor, admin or date edit needed, so CERT and PROD cannot drift at the boundary. ADR-083, 52.7 and the posture check are untouched. It costs one small module, one workflow step and tests, plus 2 audit rows per day per environment. The roll-over lands at the daily run (04:00 UTC, which GitHub may delay), not at midnight. LOCAL behaviour does not change (planning rule 4). <span class="chip never">recommended</span></td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Recommendation: D</p>
+      <p>Since 23 July the browser call has done nothing, so removing it changes no behaviour and removes the 401. That fixes only defect 1. Defect 2 is the one with consequences. The active season sets the ranklist's default season, rolling carry-over (ADR-018), the calculator's season (<code>fn_public_scoring_params</code> with a NULL season), the Telegram and ingestion scope, <code>promote.yml</code>, the daily close, and <code>promote_calendar</code>'s same-season guard. That state should not depend on who happens to visit or sign in. Option C would fix it by making a public <code>SECURITY DEFINER</code> write part of the design, which is exactly what ADR-083 §4 forbids. Option B fixes it only with a human remembering to sign in, on two environments. Option D keeps ADR-083 intact and makes ADR-031's promise true again: create the season with correct dates, and activation is automatic.</p>
+    </div>
+
+    <h3>Q2 · Where does the daily refresh run?</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Variant</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><b>D1</b> (recommended)</td><td>A new step at the end of <code>.github/workflows/event-close.yml</code> ("Daily Event Close", cron <code>0 4 * * *</code>, concurrency group <code>prod-write</code>). It runs after "Close events" with <code>if: ${{ !cancelled() }}</code>, so a failed close does not block it, and the existing "Notify failure" step still alerts. It calls a small module that uses the <code>ManagementTransport</code> <code>close.py</code> already uses (<code>SUPABASE_ACCESS_TOKEN</code>), so no new secret is needed. It honours the workflow's <code>DRY_RUN</code>. Running it after the close lets the close treat the old season's last events one final time before the flag moves.</td></tr>
+        <tr><td>D2</td><td><code>pg_cron</code> in a migration. Rejected. The project has no <code>pg_cron</code> today (available but not installed on LOCAL; not checked on CERT/PROD). It would start a job on LOCAL, which breaks planning rule 4, and its effect on the posture gate on hosted Supabase is unverified.</td></tr>
+        <tr><td>D3</td><td>A new dedicated workflow that calls the RPC over PostgREST with each environment's service-role key. Viable. It costs a new workflow, a catalog row and secret wiring, for one statement a day.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: D1.</b> It adds the fewest new parts and reuses a credential path that already writes PROD every day.</p>
+
+    <h3>Q3 · Announce a change of active season on Telegram?</h3>
+    <p><b>Recommendation: yes, but only when the active season actually changes on an environment.</b> That happens about once a year, and it is the moment CERT and PROD could disagree. The module reads the active code before and after the refresh and sends one line, for example "Active season CERT: SPWS-2026-2027 → SPWS-2027-2028". It sends nothing otherwise. Planning rule 8 says a new Telegram-fired event updates the GAS <code>/help</code> text. Whether a pure notification counts is unverified, so check at implementation. If you answer no, drop AS31.SCHED.03.</p>
+  </section>
+
+  <section id="today">
+    <p class="kicker">02 · What the system does today</p>
+    <h2>The function, its callers, the failure, the grants</h2>
+
+    <h3>The function</h3>
+    <p><code>fn_refresh_active_season()</code> (<code>supabase/migrations/20260411000003_auto_active_season.sql</code> L19) is <code>LANGUAGE plpgsql SECURITY DEFINER</code> and returns VOID. It picks the season with <code>dt_start &lt;= CURRENT_DATE &lt;= dt_end</code>, or else the nearest future season, or else none. It then runs <code>UPDATE tbl_season SET bool_active = FALSE WHERE bool_active = TRUE</code> (L42) and <code>UPDATE … SET bool_active = TRUE WHERE id_season = v_target_id</code> (L44). The database runs in UTC (LOCAL <code>SHOW timezone</code> = UTC).</p>
+
+    <h3>Who calls it</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Caller</th><th>When</th><th>Runs as</th></tr></thead>
+      <tbody>
+        <tr><td><code>fn_trg_refresh_active_season()</code> via <code>trg_season_refresh_active</code> (L56, L67)</td><td><code>AFTER INSERT OR DELETE OR UPDATE OF dt_start, dt_end ON tbl_season FOR EACH STATEMENT</code></td><td>definer, so it works for any writer</td></tr>
+        <tr><td>Migration bootstrap (L78)</td><td>once, when the migration runs, for example on a fresh LOCAL</td><td>postgres</td></tr>
+        <tr><td><code>refreshActiveSeason()</code>, <code>frontend/src/lib/api.ts</code> L59–61, called from <code>init()</code> at <code>frontend/src/App.svelte</code> L697 (import L366)</td><td>every non-demo App mount: github.io <code>index.html</code>, and <code>&lt;spws-calendar&gt;</code> through <code>CalendarElement.svelte</code> → <code>App.svelte</code></td><td>anon, which gets 401. A client already holding an authenticated session would succeed.</td></tr>
+        <tr><td>pgTAP <code>08_crud_functions.sql</code> 9.41–9.43 (and L583)</td><td>tests of the date rules</td><td>test session</td></tr>
+        <tr><td>Workflows, Python, scripts, <code>pg_cron</code></td><td colspan="2"><b>none</b>: a grep of <code>.github</code>, <code>python</code>, <code>scripts</code> and <code>supabase</code> finds no other caller, and no migration mentions <code>pg_cron</code> or <code>cron.schedule</code>.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>What the frontend does with the failure</h3>
+    <ul>
+      <li><code>refreshActiveSeason</code> awaits <code>getClient().rpc('fn_refresh_active_season')</code> and ignores the result. postgrest-js 2.98.0 resolves with <code>{ error }</code>; it throws only after <code>throwOnError()</code> (<code>dist/index.mjs</code> L48, L143). So the 401 resolves normally, and the <code>.catch(() =&gt; {})</code> at L697 never runs.</li>
+      <li>Nothing uses the result. <code>init()</code> then calls <code>fetchSeasons()</code> and selects <code>seasons.find((s) =&gt; s.bool_active)</code>. When the call succeeds, its only effect is that this read sees a fresh flag.</li>
+      <li>No test checks the call. Ten Vitest files only mock it to <code>vi.fn().mockResolvedValue(undefined)</code>: <code>CalendarEmbed</code>, <code>DrilldownRankedSeason</code>, <code>AppShell</code>, <code>SeasonRulesLink</code>, <code>DrilldownModeSwitch</code>, <code>SiteChrome</code>, <code>AdminScoringEngines</code>, <code>CalendarBoundary</code>, <code>identity-integration</code> and <code>env-toggle</code>. No e2e spec checks console errors.</li>
+    </ul>
+
+    <h3>Grant history</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Date · commit</th><th>Change</th><th>Effect for anon</th></tr></thead>
+      <tbody>
+        <tr><td>11 Apr 2026 · <code>e8003c3f</code></td><td>Function, trigger and client call created. L81 <code>GRANT EXECUTE … TO authenticated</code>.</td><td>Callable, through the PUBLIC default grant (the ADR-083 migration says so at L142–144).</td></tr>
+        <tr><td>14 Jul 2026 · <code>07eebea5</code></td><td><code>20260714000002</code> syncs SPWS-2026-2027's <code>dt_start</code>. PROD had not rolled over because its dates differed, not because of the grant.</td><td>Still callable.</td></tr>
+        <tr><td>23 Jul 2026 · <code>63e3105e</code></td><td><code>20260723000001</code> L186 <code>REVOKE EXECUTE ON FUNCTION fn_refresh_active_season() FROM anon, PUBLIC;</code> The comment at L182–185 assumed this was "invisible to the public site". It was not: the browser logs the 401.</td><td><b>Denied</b> (401) from then on.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Is an anonymous client meant to call it at all? Under ADR-031 as written, yes ("init() calls fn_refresh_active_season() on app load"). Under ADR-083, no. ADR-083 lists it among the 13 anon-executable write RPCs it closed (Context table), and it is not on the 19-function allowlist. The two ADRs have disagreed since 23 July, and nobody reconciled them. Three later plans recorded the 401 as known and left it out of scope: the 9 Aug calendar handover, the 28 Aug registration entry-list note, and the 2 Oct WordPress plan.</p>
+  </section>
+
+  <section id="evidence">
+    <p class="kicker">03 · Evidence</p>
+    <h2>Observations, migration lines, RAG hits, graph nodes</h2>
+
+    <h3>Observed on 6 Oct 2026, read-only</h3>
+    <p>Each page was loaded headlessly as an anonymous visitor (Playwright from <code>frontend/node_modules</code>). The script recorded only the host, path, method and status of the RPC and the console error text, never headers or keys. The RPC was never invoked directly. The season list is the public <code>tbl_season</code> read the page itself makes. The CERT project is the github.io app's Supabase project. The PROD project is the one <code>scripts/export-prod.sh</code> names.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Env</th><th>Page · time (UTC)</th><th><code>POST …/rpc/fn_refresh_active_season</code></th><th>Console</th><th>Active season seen by the page</th></tr></thead>
+      <tbody>
+        <tr><td>CERT</td><td><code>fencer4life.github.io/spws-automated-ranklist/</code> · 10:04, 10:07, 10:32</td><td><b>401</b> (three times)</td><td>1 error: "Failed to load resource: … status of 401 ()"</td><td>SPWS-2026-2027, 2026-07-13 → 2027-07-15, active; newest season</td></tr>
+        <tr><td>PROD</td><td><code>weteraniszermierki.pl/znajdz-zawody/</code> · 10:04, 10:07, 10:32</td><td><b>401</b> (three times)</td><td>same single error</td><td>same as CERT; newest season</td></tr>
+        <tr><td>PROD</td><td><code>weteraniszermierki.pl/ranking/</code> · 10:04, 10:32</td><td><b>401</b></td><td>same single error</td><td>not captured</td></tr>
+        <tr><td>LOCAL</td><td>catalog query on <code>supabase_db_SPWSranklist</code>, 10:03</td><td colspan="2"><code>has_function_privilege</code>: anon <b>false</b>, authenticated true, service_role true. <code>proacl</code> = <code>{postgres=X, authenticated=X, service_role=X}</code>. <code>prosecdef</code> true. No dev server was running, so no browser load was observed (see <a href="#unverified">07</a>).</td><td>SPWS-2026-2027 active</td></tr>
+      </tbody>
+    </table></div>
+    <p>Each call writes audit rows. On LOCAL, <code>tbl_audit_log</code> holds the pair the function leaves behind, at one timestamp (2026-10-04 09:08:47 UTC): <code>id_row 4</code> true → false, then false → true. <code>trg_audit_season</code> is <code>AFTER DELETE OR UPDATE … FOR EACH ROW EXECUTE FUNCTION fn_audit_log('id_season')</code>, and <code>fn_audit_log</code> inserts on every UPDATE, whether or not anything changed.</p>
+
+    <h3>The migration lines</h3>
+    <pre class="trace">20260411000003_auto_active_season.sql
+  L19   CREATE OR REPLACE FUNCTION fn_refresh_active_season() … SECURITY DEFINER
+  L42   UPDATE tbl_season SET bool_active = FALSE WHERE bool_active = TRUE;
+  L44   UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_target_id;
+  L67   CREATE TRIGGER trg_season_refresh_active
+          AFTER INSERT OR UPDATE OF dt_start, dt_end OR DELETE ON tbl_season FOR EACH STATEMENT
+  L81   GRANT EXECUTE ON FUNCTION fn_refresh_active_season() TO authenticated;
+
+20260723000001_adr083_deny_by_default_grants.sql
+  L142  -- FROM anon, PUBLIC — both are required. The grant on these came from the
+  L143  -- PUBLIC default (the bare `=X/postgres` entry in proacl) …
+  L184  -- frontend already calls it best-effort and tolerates failure for anon
+  L185  -- (api.ts / App.svelte:467), so revoking is invisible to the public site.
+  L186  <b>REVOKE EXECUTE ON FUNCTION fn_refresh_active_season() FROM anon, PUBLIC;</b></pre>
+
+    <h3>RAG hits this rests on (<code>spws_docs</code>)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Path</th><th>What it contributes</th></tr></thead>
+      <tbody>
+        <tr><td><code>doc/adr/031-auto-active-season.md</code></td><td>Activation rules; trigger plus "frontend refresh on app load" for the midnight boundary</td></tr>
+        <tr><td><code>doc/adr/083-server-enforced-authorization.md</code></td><td>Context: the 13 anon write RPCs include this one ("moves the system's active season"). §4: the explicit allowlist, and its "surface for nothing" principle.</td></tr>
+        <tr><td><code>doc/plans/supabase-rls-deep-analysis-2026-07-22.html</code></td><td>Finding B: a DEFINER state-changing function open to anon</td></tr>
+        <tr><td><code>doc/plans/security-implementation-progress-2026-07-23.html</code></td><td>The behavioural check: <code>SELECT fn_refresh_active_season()</code> as anon gives "permission denied for function"</td></tr>
+        <tr><td><code>doc/plans/kalendarz-barrel-handover-2026-08-09.html</code>, <code>registration-entry-list-return-2026-08-28.html</code>, <code>wordpress-ranking-points-table-brainstorm-2026-10-02.html</code></td><td>The 401 recorded three times (LOCAL, LOCAL, PROD) as known and out of scope</td></tr>
+        <tr><td><code>doc/handbook/subsystems/scoring-and-ranking.html</code> (Tests: SE27.UI.09)</td><td>Precedent: an admin-only fetch moved out of <code>init()</code> to stop a public 401</td></tr>
+        <tr><td><code>doc/adr/081-cert-prod-event-reconciler.md</code> §6; <code>doc/handbook/operations/operator-runbooks.html</code> (Synchronize EVF); <code>doc/plans/evf-calendar-sync-how-it-works.html</code></td><td>The active-season-mismatch guard, and the July incident where PROD's active season fell behind CERT's</td></tr>
+        <tr><td><code>doc/handbook/reference/security-posture.html</code> (Tests); <code>doc/plans/ftl-export-handover-2026-09-13.html</code></td><td>52.7 set equality; the two-file allowlist and <code>check-anon-allowlist-sync.sh</code></td></tr>
+        <tr><td><code>doc/handbook/reference/workflow-catalog.html</code> (Promotion)</td><td><code>event-close.yml</code>: daily 04:00 UTC, CERT then PROD, in <code>prod-write</code></td></tr>
+        <tr><td><code>doc/handbook/reference/documentation-standard.html</code></td><td>The coherence gate used in <a href="#docs">06</a></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Graph nodes this rests on</h3>
+    <p>Graph: today's session graph (<code>…-session-20261006-1016-695986/graphify-out/graph.json</code>, built 11:41). Queries: <code>graphify explain</code> and <code>graphify query</code>, plus a node and edge lookup.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Node</th><th>Edges found</th></tr></thead>
+      <tbody>
+        <tr><td><code>fn_refresh_active_season()</code> (<code>…20260411000003…</code> L19)</td><td>degree 1: <i>contains</i> from its migration only. No caller edges.</td></tr>
+        <tr><td><code>fn_trg_refresh_active_season()</code> L56 · <code>trg_season_refresh_active</code> L67</td><td>contained in the same migration</td></tr>
+        <tr><td><code>refreshActiveSeason()</code> (<code>lib_api_refreshactiveseason</code>, <code>api.ts</code> L59)</td><td>calls <code>getClient()</code>. <b>No inbound edge</b>: the graph misses <code>App.svelte</code>'s call, which grep confirms at L366 and L697.</td></tr>
+        <tr><td><code>init()</code> (<code>src_app_init</code>, <code>App.svelte</code>)</td><td>calls <code>loadCalendar()</code>, <code>loadRanking()</code> and <code>refreshEvfToggle()</code>, but not <code>refreshActiveSeason</code> (a graph gap, as above)</td></tr>
+        <tr><td><code>CalendarElement.svelte</code></td><td><i>imports_from</i> <code>App.svelte</code>, which is why the WordPress element runs <code>init()</code> too</td></tr>
+        <tr><td><code>trg_audit_season</code></td><td><i>triggers</i> <code>fn_audit_log()</code></td></tr>
+        <tr><td><code>promote_calendar()</code> (<code>promote.py</code> L238)</td><td>the active-season guard at L276–291</td></tr>
+        <tr><td><code>close.py</code> (<code>promotion_close</code>)</td><td>imports <code>ManagementTransport</code>, <code>TelegramNotifier</code>; the host for D1</td></tr>
+        <tr><td><code>initClient()</code>, <code>fetchScoringEngines()</code></td><td>SE27.UI.09 precedent: tested by <code>AdminScoringEngines.test.ts</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="walk">
+    <p class="kicker">04 · Scenario walk-through</p>
+    <h2>The next roll-over, under each option</h2>
+    <p><b>Setup.</b> In June 2027 an admin creates <code>SPWS-2027-2028</code> on CERT with the wizard (say 17 Jul 2027 to 15 Jul 2028), and <code>promote-season.yml</code> copies it to PROD. Each INSERT fires the trigger. It is still within 2026-2027, so 2026-2027 stays active on both. Nothing else touches <code>tbl_season</code> until 16 Jul 2027.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>16 Jul 2027, CERT</th><th>16 Jul 2027, PROD</th><th>06:00 UTC <code>evf-sync</code> → <code>promote_calendar</code></th></tr></thead>
+      <tbody>
+        <tr><td>today / A</td><td>2026-2027 stays active</td><td>2026-2027 stays active</td><td>runs on the wrong season. Public defaults, carry-over and the calculator stay on 2026-2027 until someone edits a date.</td></tr>
+        <tr><td>B</td><td>moves only if an admin signs in on github.io</td><td>moves only if an admin signs in on <code>/ranking/</code></td><td>refuses on a mismatch if only one environment saw a sign-in</td></tr>
+        <tr><td>C</td><td>moves on the first visit after 00:00 UTC</td><td>moves on the first visit after 00:00 UTC</td><td>usually consistent, but depends on traffic to each origin</td></tr>
+        <tr><td><b>D (D1)</b></td><td>moves at the 04:00 UTC daily close</td><td>moves in the same run, right after CERT</td><td>both on 2027-2028, so it reconciles normally</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Adjacent paths under D.</b> A failed or skipped run triggers "Notify failure" on Telegram. The next day's run catches up, or a manual dispatch with <code>dry_run</code> unticked refreshes now. A season date edited on one environment still refreshes that environment immediately through the trigger, as today. A manual dispatch in dry run writes nothing and reports each environment's stored active season. A failure in the close step does not stop the refresh step.</p>
+
+    <h3>LOCAL / CERT / PROD parity</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>anon EXECUTE today</td><td>no (catalog)</td><td>no (401 observed)</td><td>no (401 observed)</td></tr>
+        <tr><td>Browser call today</td><td>401 on every page load (observed 6 Oct, both local pages)</td><td>401 on every load</td><td>401 on every WordPress page load</td></tr>
+        <tr><td>Browser call after D</td><td>none</td><td>none</td><td>none</td></tr>
+        <tr><td>Date refresh after D</td><td>trigger plus migration bootstrap: <b>unchanged</b></td><td>trigger plus daily 04:00 UTC</td><td>trigger plus daily 04:00 UTC, after CERT</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="tdd">
+    <p class="kicker">05 · Tests first · RED before GREEN</p>
+    <h2>Strict-TDD plan for option D (D1)</h2>
+    <p>The proposed test IDs use the prefix <code>AS31</code> and are recorded under FR-21, "auto-activate by date (ADR-031)". No ID is reused, and none is renumbered later.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer · file</th><th>Asserts</th><th>Why it is RED today</th></tr></thead>
+      <tbody>
+        <tr><td><b>AS31.UI.01</b> (first)</td><td>Vitest · new <code>frontend/tests/ActiveSeasonRefresh.test.ts</code>, shaped like <code>AdminScoringEngines.test.ts</code></td><td>An anonymous App mount (CERT props) reaches <code>fetchSeasons</code> and never calls <code>refreshActiveSeason</code>. Hold the spy in <code>vi.hoisted()</code> and pass it through the <code>vi.mock</code> factory, so the test still type-checks after the export is removed.</td><td><code>App.svelte</code> L697 calls it on every mount. This is the visible defect, pinned at the one boundary both shells pass through. That is why it goes first.</td></tr>
+        <tr><td><b>AS31.UI.02</b></td><td>same file</td><td>An admin's in-page sign-in (<code>setAuthStep('authenticated')</code>) does not call it either. Under D the server owns the refresh.</td><td>It asserts zero calls across the mount and the sign-in together. Today the mount makes one call, so it fails.</td></tr>
+        <tr><td><b>AS31.API.01</b></td><td>Vitest · <code>frontend/tests/api.test.ts</code></td><td><code>import * as api</code>: <code>'refreshActiveSeason' in api</code> is false. No frontend path can request the RPC.</td><td>The export exists at <code>api.ts</code> L59.</td></tr>
+        <tr><td><b>AS31.SCHED.01</b></td><td>pytest · new <code>python/tests/test_season_refresh.py</code></td><td>The refresh module sends exactly <code>SELECT fn_refresh_active_season()</code> to CERT and then to PROD, using fake transports.</td><td>Start from a stub module with a no-op function, so the test fails on its assertion rather than on an ImportError ("RED for the intended reason").</td></tr>
+        <tr><td><b>AS31.SCHED.02</b></td><td>same file</td><td>Dry run: a read-only transport receives no write; the report names each environment's stored active season.</td><td>The stub reports nothing.</td></tr>
+        <tr><td><b>AS31.SCHED.03</b> (only if Q3 = yes)</td><td>same file</td><td>The before and after active codes differ, so one Telegram line is sent. Equal codes send nothing.</td><td>The stub sends nothing.</td></tr>
+        <tr><td><b>AS31.SCHED.04</b></td><td>pytest · workflow contract, pattern of <code>python/tests/test_ftl_seed_workflow_contract.py</code></td><td><code>event-close.yml</code> runs the module after "Close events" with <code>if: ${{ !cancelled() }}</code>, passes <code>DRY_RUN</code>, and keeps <code>concurrency.group: prod-write</code>.</td><td>The step does not exist.</td></tr>
+        <tr><td>pgTAP</td><td colspan="3"><b>None needed.</b> Grants do not change. 52.7 already requires the function to stay off anon's set, and 9.41–9.43 already pin the date rules. Option C would have needed 52.7, <code>check-security-posture.sh</code> and a behavioural pgTAP, all changed together.</td></tr>
+      </tbody>
+    </table></div>
+
+    <ol class="steps">
+      <li>Write AS31.UI.01–02 and AS31.API.01. Run Vitest and record RED for the stated reason.</li>
+      <li>Write the stub module and AS31.SCHED.01–04. Run pytest and record RED for the stated reason.</li>
+      <li>GREEN, minimum change. Remove the import (<code>App.svelte</code> L366) and the call (L697), then remove <code>refreshActiveSeason</code> from <code>api.ts</code> (L59–61). Implement the module on <code>ManagementTransport</code>. Add the workflow step.</li>
+      <li>Refactor with tests green: delete the dead <code>refreshActiveSeason</code> entries from the ten mocks listed in <a href="#today">02</a>. Run <code>svelte-check</code> on the touched <code>.svelte</code> and <code>.ts</code> files. No SQL changes, so <code>postgrestools</code> is not needed.</li>
+      <li>Documentation (<a href="#docs">06</a>). The ADR-031 amendment goes to disk only after you sign off the draft.</li>
+      <li><code>scripts/preflight.sh</code> exits 0. Per change, before the commit: <code>scripts/refresh-graph.sh</code> and <code>python3 tools/docs-search/ingest.py</code>.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">Definition of done, binary</p>
+      <p>Preflight exits 0, and the release workflows are green. After the release, a headless anonymous load of CERT github.io, PROD <code>/znajdz-zawody/</code> and PROD <code>/ranking/</code> makes no request to <code>fn_refresh_active_season</code> and logs no 401. A manual "Daily Event Close" dispatch in dry run reports the same active season on CERT and PROD. The next scheduled run completes green.</p>
+    </div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">06 · Documentation coherence</p>
+    <h2>What changes in the docs</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Document</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>doc/adr/031-auto-active-season.md</code> plus its HTML twin (<code>scripts/render_adrs.py</code>)</td><td><span class="chip fill">amend</span> Replace the Implementation bullet "Frontend refresh — init() calls … on app load" with the daily server refresh. Add a dated amendment line and the consequences (draft below).</td></tr>
+        <tr><td><code>doc/adr/083-server-enforced-authorization.md</code></td><td><span class="chip never">none</span> The decision is unchanged and the function stays off the allowlist. The wrong "invisible to the public site" assumption lives in an immutable migration comment, so the ADR-031 amendment records it.</td></tr>
+        <tr><td>Spec Appendix C</td><td>ADR-031 row unchanged (ADR count unchanged).</td></tr>
+        <tr><td><code>doc/requirements-traceability-matrix.md</code> FR-21</td><td>Add AS31.UI.01–02, AS31.API.01 and AS31.SCHED.01–04 (SCHED.03 only if Q3 = yes) next to <code>1.13–1.14b, 9.40–9.46</code>.</td></tr>
+        <tr><td>Spec Appendix D · <code>doc/claude/testing.md</code></td><td>pgTAP total unchanged. Update the Vitest and pytest counts wherever they are recorded; check which ones at implementation.</td></tr>
+        <tr><td><code>doc/handbook/subsystems/events-and-registration.html</code> (owns the season lifecycle)</td><td>One present-tense passage: the active season is derived from dates, refreshed by the trigger on season edits and by the daily close on CERT then PROD, and the browser never refreshes it.</td></tr>
+        <tr><td><code>doc/handbook/reference/workflow-catalog.html</code></td><td>The <code>event-close.yml</code> row gains the refresh, which runs even when the close fails and honours the dry run.</td></tr>
+        <tr><td><code>doc/handbook/operations/operator-runbooks.html</code></td><td>Synchronize EVF, mismatch paragraph: a date roll-over now lands on both environments in the daily run. To force it, dispatch Daily Event Close with <code>dry_run</code> unticked.</td></tr>
+        <tr><td><code>security-posture.html</code>, <code>frontend-and-automation.html</code></td><td>None expected. Neither describes this call (grep). Confirm during the gate.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note warn">
+      <p class="lede">Draft ADR-031 amendment, for sign-off before it goes to disk (planning rule 6)</p>
+      <p><b>Amended 2026-10-xx.</b> The browser no longer refreshes the active season. ADR-083 (23 Jul 2026) revoked anon's EXECUTE, so from then on the "frontend refresh on app load" returned 401 on every public page load and refreshed nothing. Date roll-over had no automatic path left. <code>fn_refresh_active_season()</code> now runs daily on CERT and then PROD as a step of Daily Event Close (<code>event-close.yml</code>, 04:00 UTC), after the close, even if the close fails. The trigger is unchanged. <b>Consequences:</b> a boundary takes effect at the first daily run after UTC midnight, on both environments in the same run. LOCAL refreshes only through the trigger and the migration bootstrap. The function remains off the anon allowlist. <b>Alternatives rejected:</b> re-granting anon (contradicts ADR-083 §4; 2 <code>tbl_season</code> updates and 2 audit rows per public page view); refreshing on admin sign-in (needs a person on each environment and can split CERT from PROD, ADR-081 §6); <code>pg_cron</code> (changes LOCAL, new extension).</p>
+    </div>
+
+    <pre class="trace">☐ Documentation coherence gate complete
+  Impact: architecture | operations | reference
+  Canonical docs affected: doc/handbook/subsystems/events-and-registration.html,
+    doc/handbook/reference/workflow-catalog.html, doc/handbook/operations/operator-runbooks.html
+  ADR impact: amend (ADR-031)
+  Operational impact: workflow-catalog (event-close.yml), operator-runbooks (Synchronize EVF)
+  Source-map / last-verified updated: [at implementation]
+  Validation: python scripts/check_docs.py --changed-from &lt;base&gt; [at implementation]
+  Superseded prose archived rather than appended: not applicable</pre>
+  </section>
+
+  <section id="unverified">
+    <p class="kicker">07 · Not verified</p>
+    <h2>What this note does not prove</h2>
+    <ul>
+      <li><b>LOCAL: corrected 6 Oct, 10:35 UTC.</b> The 401 on a LOCAL page load <i>was</i> observed today, three times, in the calendar-drum session that found this issue: POST <code>127.0.0.1:54321/rest/v1/rpc/fn_refresh_active_season</code> → 401 from the github.io shell (dev server, port 5200) and from the <code>&lt;spws-calendar chrome="site"&gt;</code> element (port 5201). This note&rsquo;s research ran while those servers were down, so it saw only the catalog query (anon EXECUTE false).</li>
+      <li><b>How often a signed-in mount still refreshes on CERT or PROD.</b> This is inferred from code only. <code>init()</code> runs at mount, before any in-page sign-in, and the SE27.UI.09 test header says App resets the auth step at mount. A refresh therefore needs supabase-js to have restored a stored session already. That was not observed.</li>
+      <li><b>Audit-log volume on PROD before 23 Jul.</b> The 2-rows-per-call figure comes from the function body, <code>trg_audit_season</code> and the LOCAL rows. PROD's <code>tbl_audit_log</code> was not queried, because cloud reads need <code>cloud-db-ops</code> and were out of scope.</li>
+      <li><b><code>pg_cron</code> on hosted CERT/PROD.</b> It was not checked. On LOCAL it is available (1.6.4) but not installed.</li>
+      <li><b>Planning rule 8 and Q3.</b> Whether a notification-only Telegram line needs a GAS <code>/help</code> entry.</li>
+      <li><b>GitHub cron delay.</b> 04:00 UTC is the scheduled time, and the actual start can be later. That does not matter for a date-granular flag.</li>
+    </ul>
+  </section>
+
+  <p class="foot">decision note · active-season-401-2026-10-06 · steps 1–2 only; nothing implemented, committed or pushed</p>
+</div>
+</body>
+</html>

@@ -75,7 +75,7 @@ DECLARE
   v_fencer4 INT;
   v_fencer5 INT;
 BEGIN
-  SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
+  SELECT id_season INTO v_season FROM tbl_season s WHERE s.bool_active;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
 
   -- Create test event for scoring
@@ -552,7 +552,7 @@ BEGIN
   WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1';
 
   -- Change MP value in scoring config
-  SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
+  SELECT id_season INTO v_season FROM tbl_season s WHERE s.bool_active;
   SELECT int_mp_value INTO v_mp_before FROM tbl_scoring_config WHERE id_season = v_season;
   UPDATE tbl_scoring_config SET int_mp_value = v_mp_before + 50 WHERE id_season = v_season;
 
@@ -602,7 +602,7 @@ SELECT ok(
     AND result ? 'ranking_rules'
    FROM (
      SELECT fn_export_scoring_config(
-       (SELECT id_season FROM tbl_season WHERE bool_active = TRUE)
+       (SELECT id_season FROM tbl_season s WHERE s.bool_active)
      ) AS result
    ) sub),
   '2.12 fn_export_scoring_config returns JSON with all 19 parameters + id_season + season_code'
@@ -612,15 +612,15 @@ SELECT ok(
 -- 2.13  Export is idempotent
 -- ---------------------------------------------------------------------------
 SELECT is(
-  (SELECT fn_export_scoring_config(id_season) FROM tbl_season WHERE bool_active = TRUE),
-  (SELECT fn_export_scoring_config(id_season) FROM tbl_season WHERE bool_active = TRUE),
+  (SELECT fn_export_scoring_config(id_season) FROM tbl_season s WHERE s.bool_active),
+  (SELECT fn_export_scoring_config(id_season) FROM tbl_season s WHERE s.bool_active),
   '2.13 Export is idempotent: two calls return identical JSON'
 );
 
 -- ---------------------------------------------------------------------------
 -- 2.14  fn_import_scoring_config: upserts all columns, sets ts_updated
 -- ---------------------------------------------------------------------------
--- Uses a fresh scratch season, not `bool_active = TRUE`: by this point in the
+-- Uses a fresh scratch season, not the active one: by this point in the
 -- file, 2.1-2.13 have already scored fixture tournaments in the active
 -- season, which now locks its configuration (2026-09-19, governance lock).
 -- This test's own subject is fn_import_scoring_config's generic upsert
@@ -807,7 +807,7 @@ SELECT lives_ok(
   $test991$DO $body$
   DECLARE v_event INT; v_season INT; v_org INT;
   BEGIN
-    SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
+    SELECT id_season INTO v_season FROM tbl_season s WHERE s.bool_active;
     SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
     SELECT id_event INTO v_event FROM tbl_event WHERE txt_code = 'SCORE-TEST-EVT';
     INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type,

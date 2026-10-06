@@ -19,9 +19,8 @@ DECLARE
   v_season INT;
   v_org    INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('URLRES-INGEST', '2034-09-01', '2035-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_organizer (txt_code, txt_name)
     VALUES ('SPWS', 'SPWS') ON CONFLICT (txt_code) DO NOTHING;

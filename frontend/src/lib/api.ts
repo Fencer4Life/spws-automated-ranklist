@@ -56,10 +56,6 @@ export function _setClientForTesting(c: SupabaseClient | null): void {
   client = c
 }
 
-export async function refreshActiveSeason(): Promise<void> {
-  await getClient().rpc('fn_refresh_active_season')
-}
-
 export async function fetchSeasons(): Promise<Season[]> {
   const { data, error } = await getClient()
     .from('tbl_season')

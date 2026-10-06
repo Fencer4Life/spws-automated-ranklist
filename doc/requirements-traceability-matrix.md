@@ -30,8 +30,8 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-18 | Cross-category carryover (fencer ranked by birth-year category) | §8.5(2) | 5.14–5.15 | Covered |
 | FR-19 | JSONB bucket-based ranking rules | §8.6.6 | 5.4–5.7, 5.20–5.22, SS26.RANK.01–12, ADM27.RULES.01–14 | Covered (M6; **amended 2026-09-28, ADM27:** a change to original-shape rules is refused unless each bucket admits only its own pool's types, no type sits in two buckets and each bucket takes exactly one of best N ≥ 1 or all — in the Admin editor and in `fn_import_scoring_config`; an unchanged resend passes; **amended 2026-09-19, ADR-098:** `schema_version: 2` adds three independently-configured sections (SPWS/EVF-FIE/PZSz) aggregating into two display groups, read by `fn_ranking_rules_canonical` alongside the original `domestic`/`international` shape via a frozen legacy adapter; the original shape is unchanged and `fn_ranking_ppw`/`fn_ranking_kadra` are untouched) |
 | FR-20 | Legacy code path (NULL json_ranking_rules) | §8.6.6 | 5.23 | Covered |
-| FR-21 | Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date (ADR-031) | UC7(a,b) | 1.13–1.14b, 9.40–9.46 | Covered |
-| FR-22 | Single active season constraint (auto-derived, no overlapping dates) | UC7(c) | 1.7, 1.15, 9.41–9.46 | Covered |
+| FR-21 | Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date, computed on every read with nothing stored or refreshed (ADR-031, amended 2026-10-06) | UC7(a,b) | 1.13–1.14b, 9.40–9.46 (9.41–9.46 amended 2026-10-06), 106.1–106.13, AS.UI.01, AS.PY.01 | Covered |
+| FR-22 | Single active season constraint (derived from the dates on read, no overlapping dates) | UC7(c) | 1.7, 1.15, 9.41–9.46, 106.4–106.7 | Covered |
 | FR-23 | Event lifecycle state machine | UC10(a,b) | 1.20–1.24, 9.86–9.90 | Covered (M9, T9.9) |
 | FR-24 | Audit logging for status changes | UC10(c) | 1.22a–b | Covered |
 | FR-25 | Tournament multiplier auto-population (trigger) | UC9(c) | 1.19, 1.19c | Covered |
@@ -400,6 +400,16 @@ Acceptance IDs for the [ADR-090](adr/090-prod-surface-as-wordpress-menu-item.md)
 | WP.PAGE.01 | Every reference copy in `doc/wordpress/` loads `assets/main.ce.js`, holds the theme style block, and carries the key placeholder, never a key. | pytest | `python/tests/test_wp_pages.py` | **Landed** (2026-10-04, LOCAL) |
 | WP.PAGE.02 | `wp_publish_page.py` fills the placeholder from the environment, refuses a body that still holds it, and never prints the key. It posts a reference copy without its opening note and final newline, which the live page does not carry, so republishing an unchanged copy posts the live body. | pytest | `python/tests/test_wp_pages.py` | **Landed** (2026-10-04, LOCAL) |
 | WP.COMP.01 | `chrome="none"` renders exactly as today, so the live `/znajdz-zawody/` survives the release before its body changes. | Vitest | `frontend/tests/CalendarEmbed.test.ts` | **Landed** (2026-10-04, LOCAL) |
+
+## Active season computed on read (AS.*)
+
+Acceptance IDs for the [ADR-031](adr/031-auto-active-season.md) amendment of 2026-10-06 and [doc/plans/active-season-computed-on-read-2026-10-06.html](plans/active-season-computed-on-read-2026-10-06.html). FR-21 and FR-22.
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| 106.1–106.13 | `tbl_season` stores no `bool_active` (1); `fn_today()` returns `spws.today` when set and `CURRENT_DATE` otherwise (2–3); the computed `s.bool_active` marks the season containing today, else the nearest future one, else none (4–7); reading it writes no audit row (8); `fn_refresh_active_season()` and its trigger are gone (9–10); anon may execute `fn_today`, `fn_active_season_id` and `bool_active` (11); `fn_season_summary()` follows today and raises „No active season" when there is none (12–13). | pgTAP | `supabase/tests/106_active_season_computed.sql` | **Landed** (2026-10-06, LOCAL) |
+| AS.UI.01 | A page load never calls `rpc('fn_refresh_active_season')`; the app only reads the computed flag. | Vitest | `frontend/tests/ActiveSeasonRead.test.ts` | **Landed** (2026-10-06, LOCAL) |
+| AS.PY.01 | No Python query names the season flag without a table alias (`FROM tbl_season WHERE bool_active`), because only `s.bool_active` resolves to the computed field. | pytest | `python/tests/test_active_season_reads.py` | **Landed** (2026-10-06, LOCAL) |
 
 ## Cross-references
 
