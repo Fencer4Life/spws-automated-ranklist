@@ -180,17 +180,20 @@ function handleCommand(props, command, arg) {
 
     // --- Ingestion ---
     case 'ingest':
-      // ingest <EVENT-CODE> <url> → re-ingest ONE event on CERT from its results URL via
-      // ingest-event.yml (keep-rule + url_results, a recorded run); the staging report
-      // (full + diff) comes back to this chat when the run finishes. ADR-108: PROD is
-      // refused; promote <exact code> replays the verified CERT run there.
+      // ingest <EVENT-CODE> → re-ingest ONE event on CERT from the event's own URL
+      // (tbl_event.url_event, set in Admin) via ingest-event.yml (a recorded run); the
+      // staging report (full + diff) comes back to this chat when the run finishes.
+      // The bot never sends a URL: a blank url_event input makes the workflow read the
+      // stored one. ADR-108: PROD is refused; promote <exact code> replays the CERT run.
       var iParts = arg ? arg.split(/\s+/) : [];
-      var iUsage = '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n'
+      var iUsage = '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt;</pre>\n'
                  + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
-      if (iParts.length < 2 || !/^https?:\/\//.test(iParts[1])) return iUsage;
+      if (iParts.length < 1 || !iParts[0]) return iUsage;
+      if (iParts.slice(1).some(function (p) { return /^https?:\/\//.test(p); })) {
+        return '<b>No URL</b>\n<i>The URL comes from the event (Admin). Send</i> <pre>ingest ' + iParts[0] + '</pre>';
+      }
       var iEvent = iParts[0];                                   // full event code, e.g. PPW5-2025-2026
-      var iUrl = iParts[1];
-      var iTarget = (iParts[2] || 'cert').toLowerCase();
+      var iTarget = (iParts[1] || 'cert').toLowerCase();
       var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
       if (!iYm) return iUsage;
       if (iTarget === 'prod') {
@@ -198,16 +201,16 @@ function handleCommand(props, command, arg) {
              + 'Ingest on CERT, then send</i> <pre>promote ' + iEvent + '</pre>';
       }
       if (iTarget !== 'cert') {
-        return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>\n<i>the target is cert</i>';
+        return '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt;</pre>\n<i>the target is cert</i>';
       }
       // Dispatch straight to the workflow (like `promote`) — no Management API call,
       // so it does not depend on SUPABASE_ACCESS_TOKEN. ingest_cli matches the exact code.
       triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'),
-        'ingest-event.yml', { event_code: iEvent, season_end_year: iYm[2], target: iTarget, url_event: iUrl });
+        'ingest-event.yml', { event_code: iEvent, season_end_year: iYm[2], target: iTarget });
       return '<b>Event Re-ingest Triggered</b>\n'
         + '<pre>' + iEvent + '</pre>\n'
         + 'Target: <b>' + iTarget + '</b>\n'
-        + '<i>Re-ingesting from URL (keep-rule + url_results).\n'
+        + '<i>Re-ingesting from the event\'s own URL.\n'
         + 'Staging report (full + diff) will arrive here when done (~1 min).</i>';
 
     case 't-scrape':
@@ -327,8 +330,8 @@ function handleCommand(props, command, arg) {
         '',
         '<b><u>Ingestion</u></b>',
         '',
-        '<pre>ingest &lt;EVENT-CODE&gt; &lt;url&gt;</pre>',
-        'Re-ingest one event on CERT from its results URL as a recorded run; the report comes here. Full code, e.g. PPW1-2026-2027. PROD gets it through promote',
+        '<pre>ingest &lt;EVENT-CODE&gt;</pre>',
+        'Re-ingest one event on CERT from the event\'s own URL (set in Admin) as a recorded run; the report comes here. Full code, e.g. PPW1-2026-2027. PROD gets it through promote',
         '',
         '<pre>t-scrape &lt;tournament_code&gt;</pre>',
         'Scrape one international tournament into CERT; a domestic event goes through ingest',
