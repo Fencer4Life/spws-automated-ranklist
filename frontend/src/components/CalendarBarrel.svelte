@@ -1073,15 +1073,16 @@
     bottom: 4px;
   }
   /* ▲ ▼ — the approved mock's look (plan kalendarz-beben-strzalki §2.2): a
-     36px hit box around a 30px white disc. Placed beside the neighbouring
-     months, right of their left-aligned tiles, where those rows are empty;
-     capped at 300px so on a wide drum they stay by the tiles. Above the jump
-     control's z-index, and measured clear of it: ▲ 41-71px and ▼ 180-210px
-     against the pill at 11-31px or 219-242px. */
+     36px hit box around a 30px white disc, beside the neighbouring months.
+     Anchored to the drum's RIGHT edge at every width (the user, 6 Oct 2026;
+     CB.53, CB.E5): the mock's 300px cap held them 300px from the left on a
+     wide drum, which read as centred. Above the jump control's z-index, and
+     measured clear of it: ▲ 41-71px and ▼ 180-210px against the pill at
+     11-31px or 219-242px. */
   .stp {
     position: absolute;
     z-index: 20;
-    left: min(calc(100% - 36px), 300px);
+    right: 0;
     width: 36px;
     height: 36px;
     padding: 0;

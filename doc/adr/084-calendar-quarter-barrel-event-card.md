@@ -1097,12 +1097,14 @@ Fencers reported the calendar as not intuitive.
 **§6 is refined.** The whole row stays the tap target, and two buttons make that visible:
 
 - **What they do:** ▲ moves to the nearest earlier month with competitions and ▼ to the nearest later one, as tapping the neighbouring row does (`stepRow()`).
-- **Where they sit:** beside the neighbouring months, right of their left-aligned tiles, at most 300 px from the left edge.
+- **Where they sit:** beside the neighbouring months, against the drum's right edge at every width.
 - **How they render:** as siblings of the drum inside the viewport, at full opacity and never clipped.
 - **At the ends:** a button is removed when nothing lies further that way, and focus passes to the other.
-- **Crowded months:** a receded month's tiles stop 6 px before the buttons.
+- **Crowded months:** a receded month's tiles stop at least 6 px before the buttons.
 
-Measured at 320, 375 and 1,180 px, the buttons cover no tile, seam label or jump control. Buttons centred on the top and bottom edges were rejected: they covered the jump control at 320 px. Wheel, swipe and drag stay out (D8 (a), keyboard only).
+Measured at 320, 375 and 1,280 px, the buttons cover no tile, seam label or jump control. Buttons centred on the top and bottom edges were rejected: they covered the jump control at 320 px. Wheel, swipe and drag stay out (D8 (a), keyboard only).
+
+**Corrected before release (6 Oct 2026).** The mock placed the buttons at `left: min(100% − 36px, 300px)`. That is flush with the right edge only on a drum up to 336 px wide; on a wider one it held them 300 px from the left, so on a computer they stood near the middle of the drum. The user's rule is the right side, so the buttons are anchored to the right edge at every width (`right: 0`). CB.53 pins the declaration and CB.E5 measures it at 320, 375, 414, 768 and 1,280 px; both were seen red first, 19 to 920 px short of the edge.
 
 ### N · The jump control's arrow points to the opening month
 
@@ -1120,8 +1122,8 @@ With focus inside the drum, ↑ and ↓ step like the buttons and do not scroll 
 
 - **`stepRow(rows, from, direction)`** in `lib/calendarMonths.ts` returns the nearest non-empty row strictly beyond `from`, or `null`. Unlike `settleRow()` it never reverses at the end of the drum, so a `null` is what removes a button.
 - **The jump control's cases are one union,** `JumpCue` in `CalendarBarrel.svelte`: either it rides row `active − 1` with ↑, or it is pinned with ← (distance 1) or ↓ (distance 2 or more).
-- **The buttons** are `.stp.prev` and `.stp.next`: a 36 px hit area around a 30 px disc, at `top: 38px` and `top: 177px`, `left: min(100% − 36px, 300px)`. The arrow is one `aria-hidden` SVG path, rotated for ▼, the same choice §J made for the jump arrow. Their names are `calendar_step_prev` / `calendar_step_next` („Wcześniejsze zawody" / „Późniejsze zawody", "Earlier competitions" / "Later competitions").
-- **Receded rows** are capped at `max-width: min(100% − 42px, 294px)`, which is the 6 px gap in §M.
+- **The buttons** are `.stp.prev` and `.stp.next`: a 36 px hit area around a 30 px disc, at `top: 38px` and `top: 177px`, `right: 0`. The arrow is one `aria-hidden` SVG path, rotated for ▼, the same choice §J made for the jump arrow. Their names are `calendar_step_prev` / `calendar_step_next` („Wcześniejsze zawody" / „Późniejsze zawody", "Earlier competitions" / "Later competitions").
+- **Receded rows** are capped at `max-width: min(100% − 42px, 294px)`: 6 px short of the buttons on a drum up to 336 px wide, and never past the mock's 294 px, which is kept unchanged now that the buttons sit at the right edge.
 - **The before/after comparison** captured 102 states: the WordPress element at 320, 375 and 1,280 px, the github.io shell at 320, 360, 375 and 414 px, each in Polish and English. 100 differ only where the plan allows. The other two are 24 px of capture noise, which a second capture of the old build also shows, and one pixel 1/255 lighter on the corner of „EVF+". The user accepted both.
 
 ### What this amendment does *not* settle
@@ -1132,9 +1134,9 @@ With focus inside the drum, ↑ and ↓ step like the buttons and do not scroll 
 
 | Gate | Result |
 | --- | --- |
-| Unit tests | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50 |
-| Browser tests | CB.E1–CB.E4 (Playwright, the custom element: 320, 375 and 1,280 px in both languages; crowded months on 288 and 300 px drums) |
+| Unit tests | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50, CB.53 |
+| Browser tests | CB.E1–CB.E5 (Playwright, the custom element: 320, 375 and 1,280 px in both languages; crowded months on 288 and 300 px drums; the right edge at 320, 375, 414, 768 and 1,280 px) |
 | TDD record | each test seen red first; the guards CB.29 and CB.47 proven by recorded mutation runs (`doc/plans/kalendarz-beben-strzalki-porownanie-2026-10-06/tools/mutations.log`) |
-| vitest | 1,224 passing, 68 files |
-| Playwright | 57 passing |
+| vitest | 1,225 passing, 68 files |
+| Playwright | 62 passing |
 | svelte-check | 0 errors |
