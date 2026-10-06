@@ -128,6 +128,8 @@
     <span class="pill"><span class="dot"></span>Decided 6 Oct: Q1–Q5 = A</span>
     <span class="pill"><span class="dot"></span>Built · LOCAL done</span>
     <span class="pill"><span class="dot"></span>ADRs signed off · go CERT (6 Oct)</span>
+    <span class="pill"><span class="dot"></span>Released <code>d9f48b3a</code> · CERT done</span>
+    <span class="pill"><span class="dot"></span>PROD done · all three environments verified (6 Oct)</span>
     <span class="pill">branch <code>claude/evf-skopje-imew-fix</code></span>
   </div>
 
@@ -137,6 +139,8 @@
       <li><b>Built, test first.</b> 20 pytest cases (evf.76–evf.83) and 9 pgTAP assertions (107.1–107.9) were each seen RED, then GREEN. Migration <code>20261006000002_evf_singleton_championships.sql</code>: postgrestools clean. <code>scripts/preflight.sh</code> exits 0 with all 15 gates passing (pytest 1820, Vitest 1226, pgTAP 1417 in 108 files).</li>
       <li><b>LOCAL done</b> (<a href="#local">§9a</a>). The real sync ran against live EVF data, and LOCAL matches the end-state table. A second dry run plans no rename.</li>
       <li><b>Signed off 6 October:</b> the four ADR amendments (now on disk with their registry rows) and the go for CERT. <b>PROD waits for its own go.</b> Note: once CERT holds the fix, the next scheduled promote (06:00 UTC, in <code>evf-sync.yml</code> and <code>pzsz-sync.yml</code>) carries it to PROD by itself, so the PROD go is due before then.</li>
+      <li><b>Released and CERT done</b> (<a href="#cert">§9b</a>). <code>main</code> is at <code>d9f48b3a</code>; <code>scripts/preflight.sh</code> passed all 15 gates in the integration checkout first. CI and Release are green, and you approved the <code>production</code> deployment, so CERT and PROD run the same functions. CERT's data matches the end-state table. </li>
+      <li><b>PROD done</b> (<a href="#prod">§9c</a>) after your go. PROD matches CERT for all 19 events, and two later syncs changed nothing on CERT. <b>The fix is complete on LOCAL, CERT and PROD.</b></li>
     </ul>
   </div>
 
@@ -401,11 +405,11 @@ _weapons_from_text("Women's épée V3")             → <b>[]</b></pre>
     <ol class="steps">
       <li><b>Tests RED, then GREEN</b>; postgrestools clean on the migration. <span class="chip never">done</span></li>
       <li><b>LOCAL rehearsal</b>: the result is below. <span class="chip never">done</span></li>
-      <li><b>Your sign-off on the ADR drafts</b> (§10a), which then go to disk with their registry rows. <span class="chip never">signed off 6 Oct</span> <code>scripts/preflight.sh</code> exits 0, then the graph and docs index are refreshed. <span class="chip warn">waiting</span></li>
-      <li><b>Push</b> through the integration checkout (<code>integration/main:main</code>), just after a 06:00 UTC run. CI and the release run in the background, and I report when they finish. The release applies the migration to CERT and PROD; it changes functions only, no data.</li>
-      <li><b>CERT</b>, on your go: a dry run of <code>evf_sync</code> against CERT, which must list exactly the three renames, then the real calendar run. Verify the end-state table on CERT.</li>
-      <li><b>PROD</b>, on your go: dispatch <code>evf-sync.yml</code> (calendar). Its pre-scrape promote carries CERT's state to PROD. Verify the same table on PROD, and through the public calendar.</li>
-      <li><b>Idempotence:</b> the next scheduled run reports no rename and no change.</li>
+      <li><b>Your sign-off on the ADR drafts</b> (§10a), which then go to disk with their registry rows. <span class="chip never">signed off 6 Oct</span> <code>scripts/preflight.sh</code> exits 0, then the graph and docs index are refreshed. <span class="chip never">done</span></li>
+      <li><b>Push</b> through the integration checkout (<code>integration/main:main</code>), just after a 06:00 UTC run. CI and the release run in the background, and I report when they finish. The release applies the migration to CERT and PROD; it changes functions only, no data. <span class="chip never">done · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37465896826">CI</a> · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37466093250">Release</a></span></li>
+      <li><b>CERT</b>, on your go: a dry run of <code>evf_sync</code> against CERT, which must list exactly the three renames, then the real calendar run. Verify the end-state table on CERT. <span class="chip never">done (§9b)</span></li>
+      <li><b>PROD</b>, on your go: dispatch <code>evf-sync.yml</code> (calendar). Its pre-scrape promote carries CERT's state to PROD. Verify the same table on PROD, and through the public calendar. <span class="chip never">done (§9c) · <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37467634727">run</a></span></li>
+      <li><b>Idempotence:</b> the next scheduled run reports no rename and no change. <span class="chip never">done (§9c)</span></li>
     </ol>
 
     <h3 id="local">9a · LOCAL result, 6 October</h3>
@@ -424,6 +428,35 @@ _weapons_from_text("Women's épée V3")             → <b>[]</b></pre>
       <p class="lede"><span class="tick">!</span> Five fields restored on LOCAL afterwards</p>
       <p style="margin-bottom:0">LOCAL is a copy of PROD, but the sync writes with CERT's semantics. The existing series-key rule in the wrapper cleared two prior links that CERT already holds as NULL: Łomianki 2026 → Jabłonna, and Stockholm 2027 → Stockholm 2026. The identity sync cleared three Polish country names that exist only on PROD (Finlandia, Grecja, Kanada). PROD keeps all five through the reconciler, whose update is <code>COALESCE(new, old)</code>. This change does not cause them, and they feed LOCAL's rolling score. They were restored from the backup with one scoped update that returned the five rows. Everything else that changed on LOCAL is the daily sync's normal enrichment (invitation PDFs, Tampere's venue and fee), which CERT already has or receives tomorrow.</p>
     </div>
+
+    <h3 id="cert">9b · CERT result, 6 October</h3>
+    <p>Release <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37466093250">37466093250</a> applied the migration. The new classifier, identity validator and three-argument wrapper were confirmed live on CERT before any data step. CERT's 19 events for 2026/27 were saved first. The same <code>evf_sync.sync_calendar</code> as the scheduled job then ran against CERT. Credentials came from the primary checkout's <code>.env</code>, and Telegram was left unset, so the digest printed to the console. The dry run listed exactly the three planned renames, 0 new and 0 held championships. The real run's digest: <code>created=0, slot_reused=17, alerts=0, pending_weapons=1, held_championships=0</code>. The one pending entry is Critérium de Paris 2026, held for unknown weapons under the existing ADR-086 rule.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check on CERT, read through <code>vw_calendar</code></th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Skopje (id 153)</td><td><code>IMEW-2026-2027</code> · 5–9 May 2027 · EPEE, FOIL, SABRE · organizer EVF · previous edition id 56 = <code>IMEW-2024-2025</code> <span class="chip never">✓</span></td></tr>
+        <tr><td>Dublin, Toronto</td><td><code>PEW16efs</code> 29–30 May · <code>PEW17efs</code> 18–20 June; prior links unchanged <span class="chip never">✓</span></td></tr>
+        <tr><td>Madrid (id 124)</td><td><code>PEW2efs</code> · <code>arr_weapons</code> now EPEE, FOIL, SABRE (was EPEE, SABRE) <span class="chip never">✓</span></td></tr>
+        <tr><td>Other 2027 events</td><td>10 end dates restored to the day after the start, as EVF lists them <span class="chip never">✓</span></td></tr>
+        <tr><td>Code suffix against <code>arr_weapons</code>, active season</td><td>0 disagreements <span class="chip never">✓</span></td></tr>
+        <tr><td>Anything else</td><td>Tampere gained its country and the invitation EVF published in October: normal enrichment. Row count 19 before and after. No registrations on any changed event. <span class="chip never">✓</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>PROD already runs the same functions; you approved the <code>production</code> deployment. Its data is unchanged until the PROD step. Read on PROD after the release: Skopje is still <code>PEW16fs-2026-2027</code> (id 151), dated 5–5 May with FOIL and SABRE; Madrid (id 122) is still EPEE and SABRE.</p>
+
+    <h3 id="prod">9c · PROD result, 6 October</h3>
+    <p>PROD's 19 events for 2026/27 were saved first. Two runs of <code>evf-sync.yml</code> promoted CERT's calendar to PROD. The scheduled 06:00 UTC run, which GitHub started late at 12:59 UTC (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37467314020">37467314020</a>), was first. The dispatch made on your go (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37467634727">37467634727</a>) followed two minutes later. Both are green.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check on PROD</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Skopje (id 151), through <code>vw_calendar</code></td><td><code>IMEW-2026-2027</code> · 5–9 May 2027 · EPEE, FOIL, SABRE · organizer EVF · previous edition id 56 = <code>IMEW-2024-2025</code> (Plovdiv) <span class="chip never">✓</span></td></tr>
+        <tr><td>Dublin, Toronto, Madrid</td><td><code>PEW16efs</code> 29–30 May · <code>PEW17efs</code> 18–20 June · Madrid EPEE, FOIL, SABRE <span class="chip never">✓</span></td></tr>
+        <tr><td>All 19 events against CERT</td><td>Identical code, dates, weapons and status; 10 end dates restored; row count 19 before and after <span class="chip never">✓</span></td></tr>
+        <tr><td>Code suffix against <code>arr_weapons</code></td><td>0 disagreements <span class="chip never">✓</span></td></tr>
+        <tr><td>PROD-only values</td><td>Kept: Łomianki's 20 registrations and prior link, Stockholm's prior link, and the country names Finlandia, Grecja and Kanada <span class="chip never">✓</span></td></tr>
+        <tr><td>Idempotence on CERT</td><td>After both later syncs, CERT's code, dates, weapons, status and prior link are unchanged for all 19 events. The digest reads <code>0 new, 19 already in CERT</code> and <code>Identity sync: changed=0</code> <span class="chip never">✓</span></td></tr>
+      </tbody>
+    </table></div>
   </section>
 
   <section id="docs">
@@ -490,8 +523,9 @@ _weapons_from_text("Women's épée V3")             → <b>[]</b></pre>
       <li><span class="chip never">✓</span> LOCAL matches the end-state table, read through <code>vw_calendar</code>; no suffix/weapons disagreement; a second dry run plans no rename.</li>
       <li><span class="chip never">✓</span> <code>scripts/preflight.sh</code> exits 0. The first run failed three gates on this session's own setup, not on the change: a scrape-run row the LOCAL rehearsal recorded blocked the fixtures of pgTAP suites 19 and 74 (row removed), and the worktree's frontend install was partial (reinstalled from the identical lockfile).</li>
       <li><span class="chip never">✓</span> ADR amendments signed off, written and registered.</li>
-      <li><span class="chip warn">open</span> CERT, then PROD, each match the end-state table, with no suffix/weapons disagreement and every 2027 end date as EVF lists it.</li>
-      <li><span class="chip warn">open</span> The next scheduled <code>evf-sync.yml</code> run is green and reports no change.</li>
+      <li><span class="chip never">✓</span> CERT matches the end-state table, with no suffix/weapons disagreement and every 2027 end date as EVF lists it (§9b).</li>
+      <li><span class="chip never">✓</span> PROD matches the same table, read through <code>vw_calendar</code> (§9c).</li>
+      <li><span class="chip never">✓</span> The next scheduled <code>evf-sync.yml</code> run is green and changes nothing (§9c).</li>
     </ul>
   </section>
 

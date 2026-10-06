@@ -1,0 +1,308 @@
+<meta charset="utf-8">
+<title>Every past event in a closed status</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Event status · LOCAL · CERT · PROD · Decision sheet</p>
+  <h1>Every past event in a closed status</h1>
+  <p class="dek">You asked to close <b>DMEW-2025-2026</b> (European Team Championships, Cognac) with no results, and to have <b>every past event</b> in a closed status. Six past events are still open. They are the same six on LOCAL, CERT and PROD. This page lists them, what closing each one changes, and one decision per event. Team results are deferred to another day, as you asked.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Decided 6 Oct: close the four 2025/26 events; active season stays open, ingestion first</span>
+    <span class="pill"><span class="dot"></span>LOCAL done · rankings identical</span>
+    <span class="pill warn"><span class="dot"></span>Awaiting: Q-PPS (below) and the go for CERT</span>
+    <span class="pill"><span class="dot"></span>Data only · no code change</span>
+    <span class="pill"><span class="dot"></span>Order: LOCAL → CERT → PROD</span>
+  </div>
+
+  <div class="note accent">
+    <p class="lede"><span class="tick">▸</span> Where this stands · 6 October</p>
+    <ul>
+      <li><b>Your decision:</b> &ldquo;accept all&rdquo;, then &ldquo;do not accept the event in the active season. let&rsquo;s do the ingestion first&rdquo;. So the four 2025/26 events close, and <code>PPS1s-2026-2027</code> and <code>PEW1f-2026-2027</code> stay open until their results are checked (<a href="#ingest">§4a</a>).</li>
+      <li><b>Correction.</b> This page first said PZSz result ingestion was not built and called the Poznań cup &ldquo;information only&rdquo;. Both were wrong. Ingestion is built (ADR-100, <code>Flow.INGEST_PZSZ_SENIOR</code>), and the 2026/27 rules count PPS and MPS results in the full ranking&rsquo;s EVF+ total. The claim came from an out-of-date working note, now corrected.</li>
+      <li><b>LOCAL done</b> (<a href="#run">§5</a>): the four 2025/26 events are <code>COMPLETED</code>, and all 432 ranking calls are identical before and after. PPS1s had been closed in the same run, before your correction, and is back at <code>PLANNED</code>.</li>
+      <li><b>CERT and PROD are unchanged.</b></li>
+    </ul>
+    <p class="lede" style="margin-top:14px">First version of this summary</p>
+    <ul style="margin-bottom:0">
+      <li><b>Six past events are open</b>: three 2025/26 international events stuck at <code>IN_PROGRESS</code> with their results in, DMEW-2025-2026, and two 2026/27 events with no results.</li>
+      <li><b>"Closed with no results" is <code>COMPLETED</code> with no tournaments.</b> There is no separate status. <code>CANCELLED</code> would say the event did not take place.</li>
+      <li><b>No ranking changes.</b> None of the six has an earlier edition whose carry-over could stop. An <code>IN_PROGRESS</code> event's results already count exactly as a <code>COMPLETED</code> one's. LOCAL proves it with a before/after ranking comparison.</li>
+      <li><b>Recommendation:</b> close five now. Keep the Budapest foil event (<code>PEW1f-2026-2027</code>) open until we know whether results are coming, because EVF's results API lists no 2026/27 event yet.</li>
+    </ul>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order</p>
+    <h2>What is on this page</h2>
+    <ol>
+      <li><a href="#now">The six open events</a></li>
+      <li><a href="#means">What "closed" means here</a></li>
+      <li><a href="#effects">What closing changes, and what it does not</a></li>
+      <li><a href="#decide">Decide this: one line per event, and one about next time</a></li>
+      <li><a href="#run">How it runs after your sign-off</a></li>
+      <li><a href="#team">Team results: deferred</a></li>
+      <li><a href="#found">Found on the way</a></li>
+      <li><a href="#done">Definition of done</a></li>
+    </ol>
+  </section>
+
+  <section id="now">
+    <p class="kicker">1 · Today</p>
+    <h2>The six open events</h2>
+    <p>Query: every event whose end date is before today and whose status is neither <code>COMPLETED</code> nor <code>CANCELLED</code>. The result is the same six on all three environments. Only the row ids differ.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Dates</th><th>Status</th><th>Tournaments · results</th><th>id LOCAL · CERT · PROD</th></tr></thead>
+      <tbody>
+        <tr><td><code>IMSW-2025-2026</code><br>FIE World Veterans Championships</td><td>12–16 Nov 2025</td><td>IN_PROGRESS</td><td>15 · 36</td><td>56 · 83 · 64</td></tr>
+        <tr><td><code>PEW8es-2025-2026</code><br>EVF Circuit – Chania (GRE)</td><td>2–3 May 2026</td><td>IN_PROGRESS</td><td>2 · 6</td><td>68 · 59 · 59</td></tr>
+        <tr><td><code>DMEW-2025-2026</code><br>European Team Championships 2026 – Cognac</td><td>14 May 2026 <span style="color:var(--faint)">(stored as one day; see §7)</span></td><td>PLANNED</td><td>0 · 0</td><td>69 · 79 · 82</td></tr>
+        <tr><td><code>PEW9efs-2025-2026</code><br>EVF Circuit Dublin</td><td>30–31 May 2026</td><td>IN_PROGRESS</td><td>9 · 16</td><td>70 · 80 · 83</td></tr>
+        <tr><td><code>PEW1f-2026-2027</code><br>Foil Celebration in Buda Castle – Budapest (HUN)</td><td>19–20 Sep 2026</td><td>PLANNED</td><td>0 · 0</td><td>74 · 139 · 137</td></tr>
+        <tr><td><code>PPS1s-2026-2027</code><br>I PGE Puchar Polski seniorów w szabli kobiet (PZSz)</td><td>3 Oct 2026</td><td>PLANNED</td><td>0 · 0</td><td>76 · 147 · 145</td></tr>
+      </tbody>
+    </table></div>
+    <p>On the public calendar, a past <code>PLANNED</code> event is labelled <b>Awaiting results</b> (<code>getEventDisplayStatus()</code> in <code>frontend/src/lib/eventStatus.ts</code>). That label is wrong for DMEW, because we keep individual results only and will never ingest a team championship. It is just as wrong for the PZSz cup, whose results we do not ingest yet.</p>
+  </section>
+
+  <section id="means">
+    <p class="kicker">2 · Meaning</p>
+    <h2>What "closed" means here</h2>
+    <ul>
+      <li><b>The closed states are <code>COMPLETED</code> and <code>CANCELLED</code></b> (<a href="../handbook/reference/event-status-lifecycle.html">Event status lifecycle</a>). All six events took place, so the right one is <code>COMPLETED</code>. For DMEW and the PZSz cup, that means <code>COMPLETED</code> with no tournaments.</li>
+      <li><b>On the calendar card</b>, a <code>COMPLETED</code> event shows the "Completed" chip. Results links appear only when the event has result URLs (<code>EventCard.svelte</code>, the <code>hasResults &amp;&amp; urls.length &gt; 0</code> check). An event with no tournaments therefore shows the chip and no empty links.</li>
+      <li><b>The database refuses <code>PLANNED → COMPLETED</code> in one step</b> (<code>fn_validate_event_transition</code>). A <code>PLANNED</code> event steps through <code>IN_PROGRESS</code>, the way promote does, inside one transaction. An <code>IN_PROGRESS</code> event closes through <code>fn_complete_event('&lt;exact code&gt;')</code>, the function behind the Telegram <code>complete</code> command. It accepts an exact code from any season and moves only <code>IN_PROGRESS → COMPLETED</code>.</li>
+      <li><b>It can be undone.</b> The validator allows <code>COMPLETED → IN_PROGRESS</code> and <code>COMPLETED → PLANNED</code>. If results turn up later, the event can be reopened and ingested.</li>
+    </ul>
+  </section>
+
+  <section id="effects">
+    <p class="kicker">3 · Effects</p>
+    <h2>What closing changes, and what it does not</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Area</th><th>Effect</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Rankings, own results</td><td>None. <code>vw_eligible_event</code> branch 1 counts every status except <code>CREATED</code>, <code>PLANNED</code> and <code>CANCELLED</code>, so <code>IN_PROGRESS</code> and <code>COMPLETED</code> count the same.</td><td><code>20261002000007_carryover_without_successor.sql</code></td></tr>
+        <tr><td>Rankings, carry-over</td><td>None. Branch 2 stops carrying an earlier edition once the newer one is <code>COMPLETED</code>, but none of the six has an earlier edition (<code>id_prior_event</code> is empty for all six on PROD). Three of them are themselves the earlier edition of a 2026/27 event (IMSW → <code>MSW-2026-2027</code>, Chania → <code>PEW13es</code>, Dublin → <code>PEW16efs</code>). That carry depends on their own status not being <code>PLANNED</code>, which stays true.</td><td>PROD query, 6 Oct</td></tr>
+        <tr><td>Rankings, branch 3</td><td>DMEW-2025-2026 becomes a held event of the previous season with no 2026/27 successor, so it joins the 2026/27 carry set. It has no results, so it adds nothing.</td><td>Proved on LOCAL by comparing rankings before and after (§5)</td></tr>
+        <tr><td>CERT → PROD calendar mirror</td><td>Neither carries nor undoes it. The mirror writes only the planning half of the status (<code>CREATED → PLANNED</code>, <code>CREATED → CANCELLED</code>, <code>PLANNED → CANCELLED</code>), so CERT and PROD are each written directly.</td><td>ADR-081 amendment 2026-08-28; handbook lifecycle page</td></tr>
+        <tr><td>Daily close (<code>event-close.yml</code>)</td><td>Never touches these. It completes only domestic events that are <code>IN_PROGRESS</code> in the active season.</td><td>ADR-108 §7</td></tr>
+        <tr><td>EVF parity sweep</td><td>Unaffected. It selects by source status (<code>ENGINE_COMPUTED</code>) and age, not by event status.</td><td><code>python/pipeline/evf_parity_sweep.py</code></td></tr>
+        <tr><td>Public calendar</td><td>"Awaiting results" becomes "Completed" for DMEW and the PZSz cup. The three 2025/26 events change their label from in progress to completed.</td><td><code>eventStatus.ts</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">4 · Decide this</p>
+    <h2>One line per event, and one about next time</h2>
+    <p>Reply with <b>"accept all"</b> to take every recommendation, or name the events you want handled differently.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Recommendation</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>DMEW-2025-2026</code></td><td><span class="chip never">A · close</span><br><code>PLANNED → IN_PROGRESS → COMPLETED</code></td><td>Your request. It is a team championship, and we keep individual results only.</td></tr>
+        <tr><td><code>IMSW-2025-2026</code></td><td><span class="chip never">A · close</span><br><code>fn_complete_event</code></td><td>The season is over and its 36 results are in. It stayed <code>IN_PROGRESS</code> only because international events have no automatic close.</td></tr>
+        <tr><td><code>PEW8es-2025-2026</code></td><td><span class="chip never">A · close</span><br><code>fn_complete_event</code></td><td>Same: 6 results in, season over.</td></tr>
+        <tr><td><code>PEW9efs-2025-2026</code></td><td><span class="chip never">A · close</span><br><code>fn_complete_event</code></td><td>Same: 16 results in, season over.</td></tr>
+        <tr><td><code>PPS1s-2026-2027</code></td><td><span class="chip warn">kept open · your call</span></td><td><s>A PZSz senior cup, on the calendar for information only. PZSz result ingestion is not built yet.</s> Wrong: ingestion is built (ADR-100) and PPS results count in 2026/27. Ingestion first; see §4a.</td></tr>
+        <tr><td><code>PEW1f-2026-2027</code></td><td><span class="chip warn">B · keep open</span></td><td>An active-season EVF event whose results may still come. Yesterday's sync found <b>no 2026/27 event in EVF's results API</b> ("Found 0 events in EVF API"). Closing it now would hide a gap we have not checked. <b>A</b> (close now) is also safe, because it can be reopened.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q · It will happen again. Handle it once, or make it a rule?</h3>
+    <p>Every PZSz senior event and every team championship stays <code>PLANNED</code> after its date, showing "Awaiting results" indefinitely. Every international event stays <code>IN_PROGRESS</code> after its results are ingested. The daily close covers domestic events only.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended today</span></td><td>Close these six by hand now (§5). No code change.</td><td>The same question comes back after the next PZSz event or international event.</td></tr>
+        <tr><td><span class="chip plain">B · recommended next</span></td><td>Extend the daily close, as its own plan on another day:
+          <ul style="margin:6px 0 0">
+            <li>an event whose results we never ingest (team championships, PZSz senior events) closes the day after its end date;</li>
+            <li>an international event that is <code>IN_PROGRESS</code> closes a set number of days after its end date, for example the 30-day EVF parity window.</li>
+          </ul></td><td>An ADR-108 §7 amendment, tests and a release.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>Display only: stop showing "Awaiting results" for those kinds of event, and leave the stored status alone.</td><td>Small, but the stored status stays wrong, and so does every report that reads it.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="ingest">
+    <p class="kicker">4a · Ingestion first</p>
+    <h2>What the two active-season events have to ingest</h2>
+    <h3>Poznań, <code>PPS1s-2026-2027</code>: none of our fencers took part</h3>
+    <p>The PZSz event page (id 4588) lists two individual tournaments, both dated 4 October 2026: men&rsquo;s sabre (<code>turniej</code> 10628, 53 starters) and women&rsquo;s sabre (10629, 46 starters). Each start list carries birth dates. V0 is age 30–39 in the season&rsquo;s end year, 2027, so only three starters are old enough for any veteran category: Kaczkowski Krzysztof (1997, men), Drygała Gabriela (1995) and Szumilas Nikola (1994, women). Everyone else is born in 2000 or later.</p>
+    <p>None of the three is in CERT&rsquo;s fencer table, under any spelling with Polish letters folded, nor in any fencer&rsquo;s aliases. Fencer ids are identical on CERT and PROD (ADR-108). PZSz ingestion links only an exact name or an approved alias and never creates a fencer (ADR-100). <b>So an ingestion would store no result for this event.</b></p>
+    <p>A second limit: our flow reads FencingTimeLive. PZSz publishes this event&rsquo;s results on its own site (the tabs Grupy, Ranking Grupowy, Tabela and Klasyfikacja końcowa). I found no FTL listing for it, and ADR-100 records that no real PZSz bracket had been verified when the flow was built.</p>
+    <h3>Budapest, <code>PEW1f-2026-2027</code>: nothing published</h3>
+    <p>EVF&rsquo;s event page links only the invitation letter, no results. EVF files it under &ldquo;Foil, Outdoor Fencing&rdquo;, not &ldquo;EVF Circuit&rdquo;. EVF&rsquo;s results API lists no 2026/27 event at all. There is nothing to ingest yet.</p>
+    <h3>Q-PPS · What now for Poznań?</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Close it as <code>COMPLETED</code> with no results, on CERT and PROD.</td><td>The start lists show that no fencer of ours took part, so no result is missing. If one turns up, the event can be reopened (<code>COMPLETED → IN_PROGRESS</code> is allowed).</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Keep it <code>PLANNED</code> until results can be ingested through the flow.</td><td>The calendar keeps showing &ldquo;Awaiting results&rdquo; for results that will never hold a fencer of ours. It also needs a source our parser reads.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Budapest stays open in both cases, as decided.</p>
+  </section>
+
+  <section id="run">
+    <p class="kicker">5 · After sign-off</p>
+    <h2>How it runs</h2>
+    <ol class="steps">
+      <li><b>LOCAL first.</b> Take a snapshot of every 2025/26 and 2026/27 sub-ranking (3 weapons × 2 genders × 5 categories). Apply the closes, take the snapshot again, and require the two to be identical. Then read the events through <code>vw_calendar</code>. <span class="chip never">done 6 Oct</span> The snapshot covers <code>fn_ranking_full</code>, <code>fn_ranking_kadra</code> and <code>fn_ranking_ppw</code> for every weapon, gender and category, both seasons, rolling and not: 432 calls, 211 with rows, 72 refusals by design (2025/26 publishes the PPW ranking only). <b>0 differences</b> after closing <code>DMEW-2025-2026</code>, <code>IMSW-2025-2026</code>, <code>PEW8es-2025-2026</code> and <code>PEW9efs-2025-2026</code>. The transaction also closed <code>PPS1s-2026-2027</code>, which ran before your correction; it was returned to <code>PLANNED</code> with one scoped update, and the comparison was taken after that.</li>
+      <li><b>CERT.</b> <code>SELECT</code> the rows first and show you. Then one transaction per event, scoped by id, exact code and current status, with <code>RETURNING</code>: two <code>UPDATE</code>s for a <code>PLANNED</code> event, or <code>SELECT fn_complete_event('&lt;code&gt;')</code> for an <code>IN_PROGRESS</code> one. Verify through <code>vw_calendar</code>.</li>
+      <li><b>PROD</b>, on your go: the same statements. The session's permission check asks for an explicit go for each PROD write. Verify through <code>vw_calendar</code>, then rerun the open-events query: it returns no row, or only Budapest under B.</li>
+      <li><b>Undo, if ever needed:</b> <code>COMPLETED → PLANNED</code> per event, through the same path.</li>
+    </ol>
+  </section>
+
+  <section id="team">
+    <p class="kicker">6 · Deferred</p>
+    <h2>Team results: another day</h2>
+    <p>Your question was whether team results should be ingested into a separate table. It is not decided and not part of this page. My first thought, for when we return to it: <b>yes, a separate table, if they are stored at all</b>. A team result belongs to a team (a country and its members), not to one fencer. <code>tbl_result</code> feeds every ranking through <code>vw_eligible_event</code>, so keeping team results apart keeps them out of the rankings by construction. The questions for that day are what a page would show, and whether a biennial event justifies the work.</p>
+  </section>
+
+  <section id="found">
+    <p class="kicker">7 · Found on the way</p>
+    <h2>Not part of this change</h2>
+    <div class="note warn">
+      <p class="lede">DMEW-2025-2026 is stored as a one-day event (14–14 May 2026)</p>
+      <p style="margin-bottom:0">This is the same collapsed end date that today's fix repaired for 2026/27. Closed seasons are never re-scraped, so the sync will not repair it. A one-field date correction is possible if you want the real dates on record. I have not looked them up.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">EVF's results API lists no 2026/27 event yet</p>
+      <p style="margin-bottom:0">This may simply be early: Budapest is the only 2026/27 event that has taken place. If its results are published elsewhere, that is worth knowing before Budapest is closed.</p>
+    </div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">8 · Done means</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li><span class="chip warn">open</span> Every event you signed off is <code>COMPLETED</code> on LOCAL, CERT and PROD, read through <code>vw_calendar</code>.</li>
+      <li><span class="chip never">✓</span> LOCAL's rankings for 2025/26 and 2026/27 are identical before and after (432 calls).</li>
+      <li><span class="chip warn">open</span> The open-events query returns no row on any environment, or only Budapest if you keep it open.</li>
+    </ul>
+  </section>
+
+  <p class="foot">decision · close-past-events · 2026-10-06</p>
+</div>
