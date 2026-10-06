@@ -171,6 +171,20 @@ class TestIngestRoutesPzsz:
             _live(db, _pages(js_check_for=10629))
         assert db.state() == before
 
+    def test_the_event_lookup_returns_the_pzsz_event_id(self):
+        """PZSZ.ROUTE.01: the database connector's event row carries
+        id_pzsz_event, which leads to the start lists. The first LOCAL run
+        (6 Oct 2026) stopped on a row without it, though the column was set."""
+        from unittest.mock import MagicMock
+
+        from python.pipeline.db_connector import DbConnector
+
+        sb = MagicMock()
+        sb.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+        DbConnector(sb).find_event_by_code(CODE)
+        (columns,), _ = sb.table.return_value.select.call_args
+        assert "id_pzsz_event" in [c.strip() for c in columns.split(",")]
+
     def test_a_ppw_event_never_reads_pzsz_pages(self):
         """PZSZ.ROUTE.01: the PPW flow is unchanged and reads no start list."""
 
