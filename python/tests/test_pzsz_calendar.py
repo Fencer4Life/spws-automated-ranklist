@@ -482,3 +482,35 @@ class TestLocationContract:
         )
         assert city == "Warszawa"
         assert address == "OSiR SIENNICKA – Praga Południe"
+
+
+class TestTheJavaScriptCheck:
+    """pzsz.39-pzsz.40: pzszerm.pl answers some requests with a JavaScript
+    check page instead of the listing (ADR-111, plan §6 F1). On 30 September
+    and 3-6 October 2026 the sync read that page as an empty listing, reported
+    all six events as vanished, and ended green. The check is never worked
+    around: the run fails and is run again later."""
+
+    @staticmethod
+    def _client(html: str):
+        import httpx
+
+        return httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, text=html))
+        )
+
+    def test_the_check_page_raises_instead_of_reading_as_empty(self):
+        """pzsz.39: the check page is refused, never parsed as zero events."""
+        from python.scrapers.pzsz_calendar import fetch_series
+        from python.scrapers.pzsz_start_list import PzszPageError
+
+        check = (FIXTURES / "pzsz_js_check.html").read_text(encoding="utf-8")
+        with self._client(check) as client, pytest.raises(PzszPageError, match="JavaScript check"):
+            fetch_series("PPS", "2026/2027", client=client)
+
+    def test_a_real_listing_reads_as_before(self):
+        """pzsz.40: the six 2026/2027 rows come through unchanged."""
+        from python.scrapers.pzsz_calendar import fetch_series
+
+        with self._client(PPS_2026_2027.read_text(encoding="utf-8")) as client:
+            assert len(fetch_series("PPS", "2026/2027", client=client)) == 6

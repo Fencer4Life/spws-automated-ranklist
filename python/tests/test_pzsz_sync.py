@@ -19,11 +19,15 @@ Plan test IDs pzsz.25-pzsz.34:
   pzsz.34  a create carries the PZSz organizer, the source id and country PL
 """
 
+from pathlib import Path
 from unittest.mock import patch
 
+import httpx
 import pytest
 
 import python.scrapers.pzsz_sync as pzsz_sync
+from python.scrapers import pzsz_calendar
+from python.scrapers.pzsz_start_list import PzszPageError
 
 SEASON = {
     "txt_code": "SPWS-2026-2027",
@@ -245,3 +249,78 @@ class TestSeasonGuard:
         ):
             with pytest.raises(RuntimeError, match="active season"):
                 pzsz_sync.sync_calendar("ref", "tok", "bot", "chat", dry_run=True)
+
+
+CHECK_PAGE = (Path(__file__).parent / "fixtures" / "pzsz_js_check.html").read_text(encoding="utf-8")
+# Kept before any test patches httpx.Client, which _check_client stands in for.
+_REAL_CLIENT = httpx.Client
+
+
+def _check_client(*args, **kwargs) -> httpx.Client:
+    """An HTTP client that receives pzszerm.pl's JavaScript check for every page."""
+    return _REAL_CLIENT(
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, text=CHECK_PAGE))
+    )
+
+
+class TestTheJavaScriptCheck:
+    """pzsz.41-pzsz.43: a run that meets pzszerm.pl's JavaScript check fails
+    red, writes nothing and reports nothing as vanished (ADR-111, plan §6 F1).
+    It never tries to get past the check."""
+
+    def test_a_sync_meeting_the_check_writes_nothing_and_vanishes_nothing(self):
+        """pzsz.41: the listing is the check page — no CERT write, no
+        'no longer listed' report, and the run raises."""
+        statements: list[str] = []
+        sent: list[str] = []
+
+        def fake_query(ref, token, sql):
+            statements.append(sql)
+            if "tbl_season" in sql:
+                return [SEASON]
+            return [_existing()]
+
+        with (
+            patch.object(pzsz_sync, "_management_query", side_effect=fake_query),
+            patch.object(pzsz_sync, "_telegram", side_effect=lambda b, c, text: sent.append(text)),
+            patch.object(pzsz_calendar.httpx, "Client", side_effect=_check_client),
+        ):
+            with pytest.raises(PzszPageError, match="JavaScript check"):
+                pzsz_sync.sync_calendar("ref", "tok", "bot", "chat", dry_run=False)
+
+        assert not [s for s in statements if s.lstrip().upper().startswith(("INSERT", "UPDATE"))]
+        assert not [t for t in sent if "no longer listed" in t]
+
+    def test_main_fails_red_and_says_why_on_telegram(self):
+        """pzsz.42: the workflow step exits 1, and the Telegram message names
+        the check and says to run again later."""
+        sent: list[str] = []
+
+        def fake_query(ref, token, sql):
+            return [SEASON] if "tbl_season" in sql else []
+
+        env = {"SUPABASE_CERT_REF": "ref", "SUPABASE_ACCESS_TOKEN": "tok"}
+        with (
+            patch.dict("os.environ", env),
+            patch("sys.argv", ["pzsz_sync"]),
+            patch.object(pzsz_sync, "_management_query", side_effect=fake_query),
+            patch.object(pzsz_sync, "_telegram", side_effect=lambda b, c, text: sent.append(text)),
+            patch.object(pzsz_calendar.httpx, "Client", side_effect=_check_client),
+        ):
+            with pytest.raises(SystemExit) as exit_info:
+                pzsz_sync.main()
+
+        assert exit_info.value.code == 1
+        assert len(sent) == 1
+        assert "PZSz Calendar" in sent[0] and "failed" in sent[0]
+        assert "JavaScript check" in sent[0] and "again later" in sent[0]
+
+    def test_enrichment_names_the_check_page(self, capsys):
+        """pzsz.43: a detail page that is the check page is skipped by name,
+        and the event keeps what it had."""
+        rows = [_scraped()]
+        with _check_client() as client:
+            enriched = pzsz_sync.enrich_events(rows, client=client)
+
+        assert enriched == rows
+        assert "JavaScript check" in capsys.readouterr().out
