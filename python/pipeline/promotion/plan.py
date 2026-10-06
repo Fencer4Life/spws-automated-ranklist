@@ -302,13 +302,15 @@ def plan_event(
     *,
     url_event: str,
     created: Iterable[Mapping[str, Any]],
+    pzsz_event: int | None = None,
 ) -> Plan:
     """Plan the CERT run of `event_code` on PROD. `prod` is read only; `url_event`
-    is the URL the CERT run ingested; `created` its created fencers."""
+    is the URL the CERT run ingested; `created` its created fencers; `pzsz_event`
+    the PZSz event whose start lists a PZSz run read (ADR-111 §6)."""
     from python.pipeline import ingest_cli
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
-    from python.pipeline.stages import _is_international_intake
+    from python.pipeline.stages import _is_international_intake, _organizer_for_event
 
     recorder = RecordingConnector(prod, created)
     event = recorder.find_event_by_code(event_code)
@@ -327,6 +329,26 @@ def plan_event(
             f"PROD's url_event for {event_code} is {current}; the CERT run ingested {url_event}. "
             "Correct the URL on one of them and re-run the CERT ingestion.",
         )
+    if _organizer_for_event(event) == "PZSz":
+        # The calendar promotion does not carry id_pzsz_event, so PROD's row may
+        # lack it: the plan then reads the start lists the CERT run read. Only
+        # the plan's copy of the event takes the id; nothing is written for it.
+        on_prod = event.get("id_pzsz_event")
+        if on_prod and pzsz_event and int(on_prod) != int(pzsz_event):
+            raise PlanRefused(
+                "precondition",
+                f"PROD's id_pzsz_event for {event_code} is {on_prod}; the CERT run read the "
+                f"start lists of PZSz event {pzsz_event}. Correct one of them and re-run the "
+                "CERT ingestion.",
+            )
+        chosen = on_prod or pzsz_event
+        if not chosen:
+            raise PlanRefused(
+                "precondition",
+                f"Neither PROD's row nor the CERT run names the PZSz event (id_pzsz_event) "
+                f"of {event_code}, so its start lists cannot be read.",
+            )
+        event["id_pzsz_event"] = int(chosen)
     log = ListingLog()
     contexts = ingest_cli._ingest_event_rounds(
         event,

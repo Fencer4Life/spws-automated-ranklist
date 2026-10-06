@@ -136,6 +136,12 @@ class ListingLog:
         self.rounds: list[dict] = []
         self.current: str | None = None
         self.refusal: dict | None = None
+        self.pzsz_event: int | None = None
+
+    def add_pzsz_event(self, id_pzsz_event: int) -> None:
+        """The PZSz event whose start lists a PZSz run read (ADR-111 §6).
+        Promote reads the same ones, whether or not PROD's row names it."""
+        self.pzsz_event = id_pzsz_event
 
     def add_schedule(self, kept: Sequence[Mapping], skipped: Sequence[Mapping]) -> None:
         from python.pipeline.promotion.lifecycle import NOT_FINAL, last_day
@@ -184,6 +190,8 @@ class ListingLog:
 
     def listings(self) -> dict:
         out: dict = {"schedule": self.schedule, "rounds": self.rounds}
+        if self.pzsz_event is not None:
+            out["pzsz_event"] = self.pzsz_event
         if self.refusal:
             out["refusal"] = self.refusal
         return out

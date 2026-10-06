@@ -934,6 +934,8 @@ def _ingest_pzsz_event_rounds(
             f"Event {event_code!r} has no id_pzsz_event, so its PZSz start lists cannot be found."
         )
     start_lists = read_event_start_lists(int(id_pzsz), _pzsz_fetch)
+    if run is not None:
+        run.add_pzsz_event(int(id_pzsz))
 
     if url_event_override:
         if hasattr(db, "set_event_url_event"):
