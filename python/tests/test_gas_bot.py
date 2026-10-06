@@ -80,17 +80,33 @@ def test_one_apps_script_source():
 
 
 def test_source_keeps_the_live_behaviour():
-    """GAS.SRC.02: URL re-ingest on CERT, the PROD refusal naming promote, exact codes."""
+    """GAS.SRC.02: re-ingest on CERT, the PROD refusal naming promote, exact codes."""
     src = _source()
-    assert "'ingest-event.yml'" in src and "url_event: iUrl" in src
+    assert "'ingest-event.yml'" in src
     assert "A domestic event reaches PROD only through promote" in src
     assert "'promote.yml'" in src
     for entry in (
-        "ingest &lt;EVENT-CODE&gt; &lt;url&gt;",
+        "ingest &lt;EVENT-CODE&gt;</pre>",
         "promote &lt;exact code&gt;",
         "complete &lt;exact code&gt;",
     ):
         assert entry in src
+
+
+def test_ingest_never_takes_a_url():
+    """GAS.SRC.04: `ingest` sends the event code only; the URL is the event's own, set in Admin.
+
+    The workflow reads tbl_event.url_event when its url_event input is blank, so the bot
+    never sends one. A URL typed after the code is refused, not passed on.
+    """
+    src = _source()
+    calls = [inputs for workflow, inputs in _dispatches(src) if workflow == "ingest-event.yml"]
+    assert calls, "ingest-event.yml is not dispatched"
+    for inputs in calls:
+        assert "url_event" not in inputs, inputs
+    assert "&lt;url&gt;" not in src
+    assert "iUrl" not in src
+    assert "The URL comes from the event" in src
 
 
 def test_retired_commands_are_gone():
