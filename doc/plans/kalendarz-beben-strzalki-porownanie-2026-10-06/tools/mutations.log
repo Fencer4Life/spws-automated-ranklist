@@ -1,0 +1,92 @@
+== TR.01: src/lib/locales/pl.json: drop "calendar_jump_to_next":
+      Tests  1 failed | 1 passed | 21 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.01 — every literal key exists in both locales > every one of them is in pl.json and en.json
+AssertionError: keys used in code but missing from a locale: calendar_jump_to_next (../src/components/CalendarBarrel.svelte): expected [ Array(1) ] to deeply equal []
+exit=1; restored byte for byte
+
+== TR.02: src/lib/locales/en.json: drop "cal_dow_short_7":
+      Tests  1 failed | 14 passed | 8 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.02 — every key family built at runtime is complete > cal_dow_short_* is complete for its whole domain (card date, Monday-first)
+AssertionError: missing from a locale: cal_dow_short_7: expected [ 'cal_dow_short_7' ] to deeply equal []
+exit=1; restored byte for byte
+
+== TR.03: src/lib/locales/en.json: "calendar_empty_quarter": "no events" -> "calendar_empty_quarter": "brak zawodów"
+      Tests  1 failed | 1 passed | 21 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.03 — a value identical in PL and EN needs a reason > no identical pair outside the allowlist
+AssertionError: identical in PL and EN with no reason: calendar_empty_quarter: expected [ 'calendar_empty_quarter' ] to deeply equal []
+exit=1; restored byte for byte
+
+== TR.05: src/components/CalendarBarrel.svelte: aria-label={row.label} -> aria-label={`Wrzesień ${row.year}`}
+      Tests  1 failed | 22 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.04–TR.06 — the calendar speaks one language at a time > TR.05: the calendar page in English has no Polish UI word and no raw key
+AssertionError: Polish on the English page: "Wrzesień 2026" (Wrzesień); "Wrzesień 2027" (Wrzesień): expected [ '"Wrzesień 2026" (Wrzesień)', …(1) ] to deeply equal []
+exit=1; restored byte for byte
+
+== TR.06: src/App.svelte: currentView === 'calendar' ? t('calendar_title') -> currentView === 'calendar' ? 'Kalendarz'
+      Tests  2 failed | 2 passed | 19 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.04–TR.06 — the calendar speaks one language at a time > TR.04: the calendar page in Polish has no English UI word and no raw key
+AssertionError: English on the Polish page: "June 2026" (June); "July 2026" (July); "August 2026" (August); "September 2026" (September); "October 2026" (October); "November 2026" (November); "December 2026" (December); "January 2027" (January); "February 2027" (February): expected [ '"June 2026" (June)', …(8) ] to deeply equal []
+ FAIL  tests/translation-completeness.test.ts > TR.04–TR.06 — the calendar speaks one language at a time > TR.06: the github.io shell’s calendar view, in Polish and in English
+AssertionError: expected { …(2) } to deeply equal { pl: [], en: [] }
+exit=1; restored byte for byte
+
+== CB.47: state = both signs flipped (CalendarBarrel.svelte :41, :52), jumpCue NOT mirrored
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — jump back to the opening row > CB.47: the arrow points to where the opening month is drawn, at every distance
+AssertionError: d=-4: drawn below: expected { present: true, pinned: false, …(2) } to deeply equal { present: true, pinned: true, …(2) }
+      Tests  1 failed | 41 skipped (42)
+== CB.29: src/components/CalendarBarrel.svelte: e.stopPropagation()
+      jumpToAnchor() -> jumpToAnchor()
+      Tests  1 failed | 41 skipped (42)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — jump back to the opening row > CB.29: the tap does not also rotate the row it sits on
+AssertionError: expected 'Kwiecień 2026' to be 'Marzec 2026' // Object.is equality
+exit=1; restored byte for byte
+
+== CB.44: src/components/CalendarBarrel.svelte:         inert={Math.abs(qi - active) >= 2}
+ -> 
+      Tests  1 failed | 49 skipped (50)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — turned-away months > CB.44: nothing in a month two or more rows away is focusable; months within one row are
+AssertionError: row 0, active 4: expected { inert: false, open: 1 } to deeply equal { inert: true, open: +0 }
+exit=1; restored byte for byte
+
+== WP.NAV.04: src/components/Sidebar.svelte:  inert={!open}> -> >
+      Tests  3 failed | 30 skipped (33)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/Sidebar.test.ts > WP.NAV.04 — the closed drawer holds no keyboard stop, in every mode > github.io: closed is inert, open keeps every entry reachable
+ FAIL  tests/Sidebar.test.ts > WP.NAV.04 — the closed drawer holds no keyboard stop, in every mode > WordPress: closed is inert, open keeps every entry reachable
+AssertionError: expected [ Array(5) ] to deeply equal []
+ FAIL  tests/Sidebar.test.ts > WP.NAV.04 — the closed drawer holds no keyboard stop, in every mode > signed in: closed is inert, open keeps every entry reachable
+AssertionError: expected [ Array(9) ] to deeply equal []
+exit=1; restored byte for byte
+
+-- re-runs after D7 (TR.04/TR.06 green) --
+== TR.05: src/components/CalendarBarrel.svelte: aria-label={seamLabel(row)} -> aria-label={`Wrzesień ${row.year}`}
+      Tests  1 failed | 22 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.04–TR.06 — the calendar speaks one language at a time > TR.05: the calendar page in English has no Polish UI word and no raw key
+AssertionError: Polish on the English page: "Wrzesień 2026" (Wrzesień); "Wrzesień 2027" (Wrzesień): expected [ '"Wrzesień 2026" (Wrzesień)', …(1) ] to deeply equal []
+exit=1; restored byte for byte
+
+== TR.06: src/App.svelte: currentView === 'calendar' ? t('calendar_title') -> currentView === 'calendar' ? 'Kalendarz'
+      Tests  1 failed | 3 passed | 19 skipped (23)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/translation-completeness.test.ts > TR.04–TR.06 — the calendar speaks one language at a time > TR.06: the github.io shell’s calendar view, in Polish and in English
+AssertionError: Polish on the English github.io page: "Kalendarz" (Kalendarz): expected [ '"Kalendarz" (Kalendarz)' ] to deeply equal []
+exit=1; restored byte for byte
+
+== CB.50: src/components/CalendarBarrel.svelte: el.addEventListener('keydown', onKey)
+    return () => el.removeEventListener('keydown', onKey) -> window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+      Tests  1 failed | 54 skipped (55)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — the keyboard > CB.50: arrow keys with focus outside the drum leave it alone
+AssertionError: ArrowDown not prevented: expected false to be true // Object.is equality
+exit=1; restored byte for byte
+

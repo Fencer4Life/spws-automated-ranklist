@@ -3,7 +3,10 @@
 {#if open}
   <div class="sidebar-overlay" onclick={onclose} role="presentation"></div>
 {/if}
-<nav class="sidebar" class:open>
+<!-- Slid off-screen while closed, not removed, so it is inert then: its links
+     are no keyboard or screen-reader stops nobody can see (ADR-090 amendment
+     2026-10-06). Open, it is unchanged. -->
+<nav class="sidebar" class:open inert={!open}>
   <div class="sidebar-brand">
     <!-- The Pages copy of the app has no other route back to the association's
          site — PROD deployment step 1, plan §03. On a WordPress page the body

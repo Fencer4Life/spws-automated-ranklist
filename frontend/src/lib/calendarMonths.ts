@@ -927,6 +927,23 @@ export function settleRow(rows: MonthRow[], target: number, direction: 1 | -1): 
   return i
 }
 
+/**
+ * The month a ▲ or ▼ step lands on: the nearest month WITH events strictly
+ * beyond `from` in `direction`, or null when there is none — so the button can
+ * be removed instead of moving somewhere surprising (ADR-084 amendment
+ * 2026-10-06, §M).
+ *
+ * Not `settleRow(rows, from + direction, direction)`: at the end of the drum
+ * settleRow reverses and returns a month BEHIND the focus, so a step forward
+ * from a quiet month with nothing ahead would travel backward.
+ */
+export function stepRow(rows: MonthRow[], from: number, direction: 1 | -1): number | null {
+  for (let i = from + direction; i >= 0 && i < rows.length; i += direction) {
+    if (!rows[i]!.isEmpty) return i
+  }
+  return null
+}
+
 export type EventTimeState = 'past' | 'grace' | 'soon' | 'future'
 
 /**

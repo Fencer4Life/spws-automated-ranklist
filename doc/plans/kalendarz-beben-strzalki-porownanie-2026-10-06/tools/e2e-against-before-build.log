@@ -1,0 +1,521 @@
+
+Running 33 tests using 2 workers
+
+  ✓   2 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › ranking at 320 px (188ms)
+  ✓   3 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › calendar at 320 px (160ms)
+  ✓   4 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › calculator at 320 px (154ms)
+  ✓   5 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › table at 320 px (276ms)
+  ✓   6 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › ranking at 360 px (144ms)
+  ✘   1 e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below (1.0s)
+  ✓   7 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › calendar at 360 px (157ms)
+  ✓   8 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › calculator at 360 px (179ms)
+  ✓   9 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › table at 360 px (328ms)
+  ✓  11 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › ranking at 390 px (157ms)
+  ✓  12 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › calendar at 390 px (173ms)
+  ✓  13 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › calculator at 390 px (178ms)
+  ✓  14 e2e/site-chrome.spec.ts:72:7 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › table at 390 px (266ms)
+  ✓  15 e2e/site-chrome.spec.ts:93:3 › WP.BAR.03 — the bar is one row on phones, on all four pages, in PL and EN › the long title from 430 px up, the short one below (135ms)
+  ✘  10 e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below (1.0s)
+  ✘  16 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN (943ms)
+  ✘  17 e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below (981ms)
+  ✘  18 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN (973ms)
+  ✘  19 e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below (1.0s)
+  ✘  20 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN (968ms)
+  ✘  21 e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below (973ms)
+  ✘  22 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN (971ms)
+  ✘  23 e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below (990ms)
+  ✘  24 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN (976ms)
+  ✘  25 e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next (976ms)
+  ✘  26 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN (985ms)
+  ✘  28 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN (1.0s)
+  ✘  29 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN (1.0s)
+  ✘  30 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN (1.0s)
+  ✘  31 e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN (1.0s)
+  ✘  27 e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer (30.0s)
+  ✘  32 e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum (990ms)
+  ✘  33 e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum (984ms)
+
+
+  1) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below 
+
+    Error: opening: both buttons
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      121 |         const check = async (state: string) => {
+      122 |           const { boxes, buttons } = await drawn(page)
+    > 123 |           expect(buttons.length, `${state}: both buttons`).toBe(2)
+          |                                                            ^
+      124 |           for (const b of buttons) {
+      125 |             const hits = boxes.filter((x) => overlaps(b, x)).map((x) => x.what)
+      126 |             expect(hits, `${state}: ${b.what} covers`).toEqual([])
+        at check (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:123:60)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:129:9
+
+    Error Context: test-results/calendar-barrel-CB-E1-—-th-5bb68-trol-above-and-pinned-below/error-context.md
+
+  2) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below 
+
+    Error: opening: both buttons
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      121 |         const check = async (state: string) => {
+      122 |           const { boxes, buttons } = await drawn(page)
+    > 123 |           expect(buttons.length, `${state}: both buttons`).toBe(2)
+          |                                                            ^
+      124 |           for (const b of buttons) {
+      125 |             const hits = boxes.filter((x) => overlaps(b, x)).map((x) => x.what)
+      126 |             expect(hits, `${state}: ${b.what} covers`).toEqual([])
+        at check (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:123:60)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:129:9
+
+    Error Context: test-results/calendar-barrel-CB-E1-—-th-2e645-trol-above-and-pinned-below/error-context.md
+
+  3) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below 
+
+    Error: opening: both buttons
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      121 |         const check = async (state: string) => {
+      122 |           const { boxes, buttons } = await drawn(page)
+    > 123 |           expect(buttons.length, `${state}: both buttons`).toBe(2)
+          |                                                            ^
+      124 |           for (const b of buttons) {
+      125 |             const hits = boxes.filter((x) => overlaps(b, x)).map((x) => x.what)
+      126 |             expect(hits, `${state}: ${b.what} covers`).toEqual([])
+        at check (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:123:60)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:129:9
+
+    Error Context: test-results/calendar-barrel-CB-E1-—-th-db185-trol-above-and-pinned-below/error-context.md
+
+  4) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below 
+
+    Error: opening: both buttons
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      121 |         const check = async (state: string) => {
+      122 |           const { boxes, buttons } = await drawn(page)
+    > 123 |           expect(buttons.length, `${state}: both buttons`).toBe(2)
+          |                                                            ^
+      124 |           for (const b of buttons) {
+      125 |             const hits = boxes.filter((x) => overlaps(b, x)).map((x) => x.what)
+      126 |             expect(hits, `${state}: ${b.what} covers`).toEqual([])
+        at check (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:123:60)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:129:9
+
+    Error Context: test-results/calendar-barrel-CB-E1-—-th-60f4c-trol-above-and-pinned-below/error-context.md
+
+  5) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below 
+
+    Error: opening: both buttons
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      121 |         const check = async (state: string) => {
+      122 |           const { boxes, buttons } = await drawn(page)
+    > 123 |           expect(buttons.length, `${state}: both buttons`).toBe(2)
+          |                                                            ^
+      124 |           for (const b of buttons) {
+      125 |             const hits = boxes.filter((x) => overlaps(b, x)).map((x) => x.what)
+      126 |             expect(hits, `${state}: ${b.what} covers`).toEqual([])
+        at check (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:123:60)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:129:9
+
+    Error Context: test-results/calendar-barrel-CB-E1-—-th-aa99f-trol-above-and-pinned-below/error-context.md
+
+  6) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below 
+
+    Error: opening: both buttons
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      121 |         const check = async (state: string) => {
+      122 |           const { boxes, buttons } = await drawn(page)
+    > 123 |           expect(buttons.length, `${state}: both buttons`).toBe(2)
+          |                                                            ^
+      124 |           for (const b of buttons) {
+      125 |             const hits = boxes.filter((x) => overlaps(b, x)).map((x) => x.what)
+      126 |             expect(hits, `${state}: ${b.what} covers`).toEqual([])
+        at check (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:123:60)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:129:9
+
+    Error Context: test-results/calendar-barrel-CB-E1-—-th-d5119-trol-above-and-pinned-below/error-context.md
+
+  7) e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next 
+
+    Error: expect(received).toBeLessThan(expected)
+
+    Expected: < 185
+    Received:   260.4319839477539
+
+      158 |     expect(rows.up.label).toBe('Wrzesień 2026')
+      159 |     expect(rows.dn.label).toBe('Listopad 2026')
+    > 160 |     expect(rows.up.y).toBeLessThan(rows.mid.y)
+          |                       ^
+      161 |     expect(rows.mid.y).toBeLessThan(rows.dn.y)
+      162 |   })
+      163 | })
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:160:23
+
+    Error Context: test-results/calendar-barrel-CB-E2-—-ea-c6beb-previous-one-below-the-next/error-context.md
+
+  8) e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('spws-calendar .stp.next')
+
+
+      71 |
+      72 | async function press(page: Page, which: 'prev' | 'next') {
+    > 73 |   await page.locator(`spws-calendar .stp.${which}`).click()
+         |                                                     ^
+      74 |   await page.waitForTimeout(700) // the 0.42 s turn and the row fade
+      75 | }
+      76 |
+        at press (/Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:73:53)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:169:11
+
+    Error Context: test-results/calendar-barrel-CB-E3-—-▼--9556e-too-across-the-quiet-summer/error-context.md
+
+  9) e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      187 |       expect(vpWidth).toBe(drum)
+      188 |       const { boxes, buttons } = await drawn(page)
+    > 189 |       expect(buttons.length).toBe(2)
+          |                              ^
+      190 |       const neighbours = boxes.filter((b) => b.what.startsWith('tile') && !b.what.includes('mid'))
+      191 |       expect(neighbours.length, 'the crowded months are drawn').toBeGreaterThan(6)
+      192 |       for (const b of buttons) {
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:189:30
+
+    Error Context: test-results/calendar-barrel-CB-E4-—-a--34463--and-below-on-a-288-px-drum/error-context.md
+
+  10) e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 0
+
+      187 |       expect(vpWidth).toBe(drum)
+      188 |       const { boxes, buttons } = await drawn(page)
+    > 189 |       expect(buttons.length).toBe(2)
+          |                              ^
+      190 |       const neighbours = boxes.filter((b) => b.what.startsWith('tile') && !b.what.includes('mid'))
+      191 |       expect(neighbours.length, 'the crowded months are drawn').toBeGreaterThan(6)
+      192 |       for (const b of buttons) {
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/calendar-barrel.spec.ts:189:30
+
+    Error Context: test-results/calendar-barrel-CB-E4-—-a--5afaa--and-below-on-a-300-px-drum/error-context.md
+
+  11) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-04e48-ess-bar-at-320-px-PL-and-EN/error-context.md
+
+  12) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-2065f-ess-bar-at-360-px-PL-and-EN/error-context.md
+
+  13) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-74de6-ess-bar-at-375-px-PL-and-EN/error-context.md
+
+  14) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-3c4de-ess-bar-at-414-px-PL-and-EN/error-context.md
+
+  15) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-c2e94-ss-bar-at-1280-px-PL-and-EN/error-context.md
+
+  16) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-d06c1--header-at-320-px-PL-and-EN/error-context.md
+
+  17) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-ef376--header-at-360-px-PL-and-EN/error-context.md
+
+  18) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-f7b94--header-at-375-px-PL-and-EN/error-context.md
+
+  19) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-e1181--header-at-414-px-PL-and-EN/error-context.md
+
+  20) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN 
+
+    Error: pl: the candidates
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "Znajdź zawody",
+    -   "Zawody",
+    - ]
+    + Array []
+
+      170 |           }
+      171 |           const s = await titleShape(page, surface.tag)
+    > 172 |           expect(s.candidates, `${lang}: the candidates`).toEqual(
+          |                                                           ^
+      173 |             lang === 'pl' ? ['Znajdź zawody', 'Zawody'] : ['Competition Finder', 'Competitions', 'Events'],
+      174 |           )
+      175 |           const fits = s.widths.findIndex((x) => x <= s.room)
+        at /Users/aleks/coding/SPWSranklist-claude-session-20261006-1016-695986/frontend/e2e/site-chrome.spec.ts:172:59
+
+    Error Context: test-results/site-chrome-WP-BAR-05-—-th-63adc-header-at-1280-px-PL-and-EN/error-context.md
+
+  20 failed
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below 
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below 
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below 
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below 
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below 
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below 
+    e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next 
+    e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer 
+    e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum 
+    e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN 
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN 
+  13 passed (47.1s)

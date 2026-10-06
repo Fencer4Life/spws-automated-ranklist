@@ -93,7 +93,11 @@ if [ -f "$RTM" ]; then
   #   amendment 2026-10-03, ADR-109). Registered as Planned before code.
   # 151 since 2026-10-04: +FR-152 (the fencer table is the ranking entry,
   #   ADR-110; supersedes FR-141).
-  EXPECTED=151
+  # 153 since 2026-10-06: +FR-153 (the calendar drum reads downward and shows
+  #   how it turns, ADR-084 amendment 2026-10-06), +FR-154 (every interface
+  #   string in the reader's language). FR-148 amended in place. Registered as
+  #   Planned before code (plan kalendarz-beben-strzalki §08 step 1).
+  EXPECTED=153
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else
