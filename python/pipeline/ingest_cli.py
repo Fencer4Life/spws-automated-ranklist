@@ -331,16 +331,24 @@ def _after_event_run(event, db, notifier) -> None:
 
 
 def _run_parsed_through_flow(
-    parsed, event_code, season_end_year, overrides, db, *, label="", commit_cats=None, flow=None
+    parsed,
+    event_code,
+    season_end_year,
+    overrides,
+    db,
+    *,
+    label="",
+    commit_cats=None,
+    flow=None,
+    start_list=None,
 ):
     """Route one already-parsed IR bracket through `run_flow` and print a
-    one-line commit summary. Shared by the file path (`ingest_via_flow`), the
-    domestic URL path (`ingest_event_from_url`) and the PZSz senior URL path
-    (`ingest_pzsz_senior_bracket_from_url`). `commit_cats` (the keep-rule's
-    owned set, N13.3) restricts which categories `Commit` may write — None ⇒
-    write all; unused by the PZSz flow, which never splits by category.
-    `flow` defaults to INGEST_DOMESTIC, unchanged from before this parameter
-    existed."""
+    one-line commit summary. Shared by the file path (`ingest_via_flow`) and
+    the URL path (`ingest_event_from_url`, both its domestic and its PZSz
+    branch). `commit_cats` (the keep-rule's owned set, N13.3) restricts which
+    categories `Commit` may write — None ⇒ write all; unused by the PZSz flow,
+    which never splits by category. `flow` defaults to INGEST_DOMESTIC.
+    `start_list` is the PZSz start list the PZSz admission reads (ADR-111)."""
     from python.pipeline.core.contract import Services
     from python.pipeline.engine.flows import Flow, FlowParams
     from python.pipeline.run import run_flow
@@ -354,6 +362,7 @@ def _run_parsed_through_flow(
             "season_end_year": season_end_year,
             "event_code": event_code,
             "commit_cats": commit_cats,
+            "start_list": start_list,
         },
     )
     ctx = run_flow(FlowParams(flow), svc=svc)
@@ -696,7 +705,27 @@ def _ingest_event_rounds(
     """`ingest_event_from_url` from its first write on. `run` is the open run
     record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
     every listing. Plan mode passes `post_run=False`: the staging report, the
-    joining check and Telegram run after promote's apply commits (ADR-108 §6)."""
+    joining check and Telegram run after promote's apply commits (ADR-108 §6).
+
+    Ingest (CERT) and promote's plan (PROD) both come through here, so a PZSz
+    event takes its own path on both: the same ingestion (ADR-111 §6)."""
+    from python.pipeline.stages import _organizer_for_event
+
+    if _organizer_for_event(event) == "PZSz":
+        return _ingest_pzsz_event_rounds(
+            event,
+            event_code,
+            season_end_year,
+            url_event,
+            url_event_override,
+            db=db,
+            notifier=notifier,
+            replace=replace,
+            send_telegram=send_telegram,
+            md_target=md_target,
+            run=run,
+            post_run=post_run,
+        )
     from datetime import date as _date
 
     from python.pipeline.ir import ParsedTournament, SourceKind
@@ -842,66 +871,192 @@ def _ingest_event_rounds(
     return contexts
 
 
-def ingest_pzsz_senior_bracket_from_url(
-    event_code: str,
-    weapon: str,
-    gender: str,
-    url: str,
-    season_end_year: int,
-    db=None,
-) -> list:
-    """Design step 6 (ADR-100): ingest one PZSz PPS/MPS senior bracket from its
-    FTL results-data URL, through `Flow.INGEST_PZSZ_SENIOR`.
+def _pzsz_fetch(url: str, params: dict) -> str:
+    """One pzszerm.pl page as served. A JavaScript check page comes back as it
+    is; the start-list reader refuses it (ADR-111)."""
+    import httpx
 
-    Deliberately NOT `ingest_event_from_url`'s own round-discovery path: that
-    function's `parse_tournament_name` decodes a bracket's WEAPON/GENDER/V-CAT
-    from its FTL name, a convention specific to how SPWS/EVF name brackets
-    (e.g. "Weterani M V2"). A PZSz senior field carries no V-cat at all and
-    this session has no verified sample of PZSz's own FTL bracket-naming
-    convention to decode instead of guessing at one — see design plan §12
-    Flags. `weapon`/`gender` are therefore the caller's own (an admin action
-    naming the specific bracket, the same shape the N15 Telegram `ingest`
-    command already uses for a URL). Bracket discovery/name-decoding for PZSz
-    is left for whoever wires an operator-facing trigger onto this function.
-
-    REUSES the existing FTL parser end-to-end (`get_authed_ftl_client`,
-    `ftl.parse_json`) — no second parser, per design §07 item 1.
-    """
-    from python.pipeline.overrides import load_for_event
-    from python.scrapers import ftl
-    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
-
-    if db is None:
-        db = create_db_connector()
-
-    event = db.find_event_by_code(event_code)
-    if event is None:
-        raise ValueError(f"Event {event_code!r} not found in tbl_event.")
-
-    overrides = load_for_event(event_code)
-
-    with get_authed_ftl_client() as client:
-        resp = client.get(normalize_ftl_url(url))
+    with httpx.Client(timeout=30.0, follow_redirects=True) as http:
+        resp = http.get(url, params=params)
         resp.raise_for_status()
-        parsed = ftl.parse_json(resp.json(), source_url=url)
+        return resp.text
 
-    parsed.weapon = weapon
-    parsed.gender = gender
-    parsed.organizer_hint = "PZSz"
-    parsed.season_end_year = season_end_year
+
+def _pzsz_weapon_gender(name: str) -> tuple[str, str] | None:
+    """Weapon and gender from an FTL listing name. A PZSz field is one senior
+    competition, so whatever category the name seems to carry ("Seniorzy"
+    reads as V0 for SPWS) is dropped (ADR-111)."""
+    from python.tools.scrape_ftl_event_urls import parse_tournament_name
+
+    parsed = parse_tournament_name(name)
+    if parsed is None:
+        return None
+    weapon, gender, _ = parsed[0] if isinstance(parsed, list) else parsed
+    return weapon, gender
+
+
+def _ingest_pzsz_event_rounds(
+    event,
+    event_code,
+    season_end_year,
+    url_event,
+    url_event_override,
+    *,
+    db,
+    notifier,
+    replace,
+    send_telegram,
+    md_target,
+    run,
+    post_run=True,
+) -> list:
+    """A PZSz event (PPS, MPS), ADR-111: the places from the event's FTL schedule,
+    the birth years from the PZSz start lists, every kept listing through
+    `Flow.INGEST_PZSZ_SENIOR`. Every page is read before anything is written,
+    so a page that cannot be read (pzszerm.pl's JavaScript check among them)
+    fails the run with nothing written. The keep-rule is the domestic one, with
+    one category per listing, SENIOR."""
+    from datetime import date as _date
 
     from python.pipeline.engine.flows import Flow
+    from python.pipeline.ir import ParsedTournament, SourceKind
+    from python.pipeline.overrides import load_for_event
+    from python.pipeline.promotion.lifecycle import split_final
+    from python.pipeline.promotion.run_record import start_list_sha256
+    from python.scrapers import ftl
+    from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
+    from python.scrapers.pzsz_start_list import read_event_start_lists
+    from python.tools.scrape_ftl_event_urls import parse_event_schedule
 
-    ctx = _run_parsed_through_flow(
-        parsed,
-        event_code,
-        season_end_year,
-        overrides,
+    id_pzsz = event.get("id_pzsz_event")
+    if not id_pzsz:
+        raise ValueError(
+            f"Event {event_code!r} has no id_pzsz_event, so its PZSz start lists cannot be found."
+        )
+    start_lists = read_event_start_lists(int(id_pzsz), _pzsz_fetch)
+
+    if url_event_override:
+        if hasattr(db, "set_event_url_event"):
+            db.set_event_url_event(event["id_event"], url_event_override)
+        event["url_event"] = url_event_override
+
+    overrides = load_for_event(event_code)
+    dt = str(event.get("dt_start") or "")[:10]
+    parsed_date = _date.fromisoformat(dt) if dt else None
+    contexts = []
+
+    with get_authed_ftl_client() as client:
+        sched = client.get(normalize_ftl_url(url_event))
+        sched.raise_for_status()
+        kept, skipped = parse_event_schedule(sched.text, with_skips=True)
+        kept, not_final = split_final(kept)
+        skipped = [*skipped, *not_final]
+        print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
+        for s in skipped:
+            print(f"  schedule-skip {s['name']!r}: {s['reason']}")
+        if run is not None:
+            run.add_schedule(kept, skipped)
+
+        round_recs = []
+        for b in kept:
+            wg = _pzsz_weapon_gender(b["name"])
+            if wg is None:
+                print(f"  SKIP {b['name']!r}: unparseable name")
+                if run is not None:
+                    run.add_unparseable(b["name"], b["uuid"])
+                continue
+            weapon, gender = wg
+            if (weapon, gender) not in start_lists:
+                raise ValueError(
+                    f"{b['name']!r} is {weapon}/{gender}, and PZSz event {id_pzsz} has no "
+                    "such tournament: without its start list no birth year can be compared."
+                )
+            url = f"{_FTL_RESULTS}{b['uuid']}"
+            has_de = _ftl_has_direct_elimination(client, b["uuid"])
+            resp = client.get(f"{_FTL_DATA}{b['uuid']}")
+            resp.raise_for_status()
+            base = ftl.parse_json(resp.json(), source_url=url)
+            starters = start_lists[(weapon, gender)][1]
+            round_recs.append(
+                dict(
+                    name=b["name"],
+                    uuid=b["uuid"],
+                    url=url,
+                    weapon=weapon,
+                    gender=gender,
+                    cats=["SENIOR"],
+                    count=len(base.results),
+                    has_de=has_de,
+                    start_list_sha256=start_list_sha256(starters),
+                    _base=base,
+                    _starters=starters,
+                )
+            )
+
+        decisions = _resolve_sources(round_recs, overrides=event.get("json_source_overrides"))
+        dec = {d["uuid"]: d for d in decisions}
+
+        if replace:
+            nr, nt = _wipe_event_live(db, event["id_event"])
+            print(f"replace: deleted {nr} results + {nt} tournaments\n")
+
+        for r in round_recs:
+            d = dec[r["uuid"]]
+            if d["status"] != "committed":
+                print(f"  {d['status'].upper()} {r['name']!r}: {d['reason']}")
+                if run is not None:
+                    run.add_round(r, d)
+                continue
+            parsed = ParsedTournament(
+                source_kind=SourceKind.FTL,
+                results=r["_base"].results,
+                raw_pool_size=len(r["_base"].results),
+                weapon=r["weapon"],
+                gender=r["gender"],
+                category_hint=None,
+                parsed_date=parsed_date,
+                season_end_year=season_end_year,
+                source_url=r["url"],
+                organizer_hint="PZSz",
+                tournament_name=r["name"],
+            )
+            if run is not None:
+                run.begin(r)
+            ctx = _run_parsed_through_flow(
+                parsed,
+                event_code,
+                season_end_year,
+                overrides,
+                db,
+                label=f"{r['name']} [{r['weapon']}/{r['gender']}, PZSz senior field]",
+                flow=Flow.INGEST_PZSZ_SENIOR,
+                start_list=r["_starters"],
+            )
+            contexts.append(ctx)
+            if run is not None:
+                run.add_round(r, d, ctx)
+
+    sources = _ingest_source_records(decisions, skipped)
+    if hasattr(db, "set_event_ingest_sources"):
+        try:
+            db.set_event_ingest_sources(event["id_event"], sources)
+        except Exception as e:  # never fail an ingest on the display-data write
+            print(f"  (ingest-sources persist skipped: {e})")
+
+    if not post_run:
+        return contexts
+    post = _fire_staging_report(
+        event,
+        contexts,
         db,
-        label=f"{event_code} {weapon}/{gender}",
-        flow=Flow.INGEST_PZSZ_SENIOR,
+        schedule_skips=skipped,
+        source_decisions=sources,
+        notifier=notifier,
+        md_target=md_target,
     )
-    return [ctx]
+    if send_telegram:
+        _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
+    return contexts
 
 
 def _ingest_source_records(decisions, schedule_skips):

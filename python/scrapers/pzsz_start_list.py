@@ -7,16 +7,18 @@ that date is the birth year the PZSz admission compares. The event page
 (``/zawody/kalendarium-zawodow/zawody/?id=N``, the event's ``id_pzsz_event``)
 lists its tournaments with weapon and gender.
 
-Pure: this module reads HTML and never fetches. ``pzszerm.pl`` sometimes
-answers a client with a JavaScript check instead of the page; the reader
-recognises that page and refuses it. Nothing here tries to get past the
-check — a run that meets it fails, writes nothing, and is run again later.
+Pure: this module reads HTML and never fetches; ``read_event_start_lists``
+is given the fetch. ``pzszerm.pl`` sometimes answers a client with a
+JavaScript check instead of the page; the reader recognises that page and
+refuses it. Nothing here tries to get past the check — a run that meets it
+fails, writes nothing, and is run again later.
 """
 
 from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 
@@ -142,3 +144,26 @@ def parse_event_tournaments(html: str) -> list[PzszTournament]:
         assert found is not None  # the link was selected by this pattern
         tournaments.append(PzszTournament(int(found.group(1)), cells[0], weapon, gender))
     return tournaments
+
+
+def read_event_start_lists(
+    id_pzsz_event: int, fetch: Callable[[str, dict], str]
+) -> dict[tuple[str, str], tuple[PzszTournament, list[Starter]]]:
+    """Every individual tournament of a PZSz event with its start list, keyed
+    by (weapon, gender). `fetch(url, params)` returns a page's HTML. One page
+    that cannot be read refuses the whole event, so a run never goes on with
+    some birth years missing."""
+    tournaments = parse_event_tournaments(fetch(PZSZ_EVENT_PAGE, {"id": id_pzsz_event}))
+    if not tournaments:
+        raise PzszPageError(f"PZSz event {id_pzsz_event} lists no individual tournament.")
+    lists: dict[tuple[str, str], tuple[PzszTournament, list[Starter]]] = {}
+    for t in tournaments:
+        key = (t.weapon, t.gender)
+        if key in lists:
+            raise PzszPageError(
+                f"PZSz event {id_pzsz_event} has two {t.weapon}/{t.gender} tournaments; "
+                "which start list belongs to which FencingTimeLive listing cannot be told."
+            )
+        page = fetch(PZSZ_TOURNAMENT_PAGE, {"id": t.id_pzsz_tournament})
+        lists[key] = (t, parse_start_list(page))
+    return lists
