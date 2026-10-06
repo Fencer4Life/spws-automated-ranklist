@@ -1,6 +1,6 @@
 # ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar
 
-**Status:** Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.
+**Status:** Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), built on LOCAL.
 **Date:** 2026-09-03
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §F and §11 (`registryOf()` widens from three registries to four; a fourth hue enters the organizer channel; `PanelType` gains a fifth member)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the event-code shape this extends with a gender letter), [ADR-081](081-cert-prod-event-reconciler.md) (childless CREATE, field ownership, code-keyed reconcile), [ADR-028](028-evf-calendar-results-import.md) (the calendar-source precedent this deliberately does not generalise), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the partially-published-season lesson applied before it bit), [ADR-083](083-server-enforced-authorization.md) (grants are table-level, so the new column needs none)
@@ -422,3 +422,61 @@ starts from it rather than rediscovering it.
    `queue: max` combined with `cancel-in-progress: true` is a workflow validation error.
    All eight members are on `cancel-in-progress: false`, so none is affected. The
    15-minute stagger fallback is not needed.
+
+## Amendment (2026-10-06) — the JavaScript check fails the run; the PZSz id reaches PROD
+
+Two defects surfaced while rehearsing [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md)
+on LOCAL. The user added both to `doc/plans/pzsz-results-plugin-2026-10-06.html` §6 and
+signed it off on 6 October 2026, with Q5 decided A.
+
+### §4 gains a second refusal: pzszerm.pl's JavaScript check
+
+pzszerm.pl sometimes answers with a JavaScript check page (`<p id="pzs-m">` and no table)
+instead of the listing. `fetch_series` parsed that page as an empty listing. The sync then
+read 0 events, reported all six as *no longer listed*, and the run ended green. This
+happened on 30 September and on 3–6 October 2026 (runs 36708978089, 37117508293,
+37198815901, 37312830202 and 37462676901).
+
+- **Detection.** `refuse_js_check()` in `python/scrapers/pzsz_start_list.py` raises
+  `PzszPageError` on the check page. The start-list reader of ADR-111 and the calendar
+  listing fetch (`pzsz_calendar.fetch_series`) both call it, so the rule exists once.
+- **What the sync does.**
+  - It stops before any CERT write and reports nothing as no longer listed.
+  - `main()` exits 1 with one Telegram message: *PZSz Calendar failed*, with the reason
+    that pzszerm.pl answered with its JavaScript check and the instruction to run again
+    later.
+  - The promote job still runs (`if: ${{ !cancelled() }}`, §9) and reconciles PROD with
+    CERT's unchanged calendar.
+- **Enrichment.** Detail-page enrichment stays best-effort. It names the check page in its
+  log and leaves the row unchanged.
+- **Nothing tries to get past the check.** That means no cookie, no pixel request and no
+  headless browser. Getting past bot detection is out of bounds; the answer is to fail and
+  run again later.
+- **Unchanged and tested.** The 70-row assertion of §4 is unchanged. Tests: pzsz.39–pzsz.43.
+
+### §2's identity now reaches PROD
+
+`promote.py --mode calendar` and `fn_mirror_events_to_prod` carried `id_evf_event`,
+`id_evf_calendar_event` and `txt_evf_slug`, but not `id_pzsz_event`. None of PROD's PZSz
+events held an id; `PPS1s-2026-2027` held 4588 on CERT. ADR-111's promote reads the start
+lists through that id, and fell back to the CERT run's PZSz event.
+
+- **The carry.** The CERT read and both payloads carry the column. Migration
+  `20261006000003_prod_mirror_pzsz_identity.sql` redefines the mirror from its live body
+  and adds it to the INSERT and the UPDATE.
+- **Ownership (Q5 A).** The rule is the one `id_evf_event` follows. CERT's id wins when CERT
+  sends one, and PROD keeps its own when CERT sends none. CERT owns the calendar identity,
+  so a re-key on CERT reaches PROD.
+- **The release step.** CERT's id can now overwrite PROD's, so the unique index
+  `idx_tbl_event_pzsz_season` gets the release step the `id_prior_event` swap needed
+  ([ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md)). Before the loops assign ids,
+  an id that another element of the payload claims is cleared. "Another element" means an
+  update naming a different `id_event`, or a create whose code PROD does not hold yet. A
+  payload that says nothing releases nothing.
+- **Tests.**
+  - pgTAP 108.1–108.7: a create carries the id; an update fills an empty id; CERT's id
+    wins; a silent payload keeps PROD's id; a swap in one batch; a create taking a held
+    id; a skipped create taking nothing.
+  - pytest PZSZ.CAL.01: the CERT read and both payloads.
+- **Kept on purpose.** Promote's fallback to the CERT run's PZSz event stays, and is unused
+  once the calendar carries the id.
