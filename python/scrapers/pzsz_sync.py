@@ -39,6 +39,7 @@ registrations with it. The scraper reports and leaves it for a human.
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import os
 import sys
 import traceback
@@ -46,6 +47,7 @@ from dataclasses import dataclass, field
 
 import httpx
 
+from python.pipeline.promotion.lifecycle import warsaw_today
 from python.scrapers._supabase import _get_active_season as _shared_get_active_season
 from python.scrapers._supabase import _management_query, _telegram
 from python.scrapers.pzsz_calendar import (
@@ -63,6 +65,13 @@ ORGANIZER_CODE = "PZSz"
 # onto the existing row, because a reschedule or a renamed round has to reach
 # the calendar a veteran is planning around.
 SOURCE_OWNED_FIELDS = ("txt_code", "txt_name", "dt_start", "dt_end", "txt_location", "txt_country")
+
+# ...except the dates of an event that has started (plan §7, Q6 A). A started
+# event cannot be rescheduled, so its dates are history, and an admin correction
+# must survive: pzszerm.pl's listing prints Poznań 2026 as 3-3 October while
+# one of its FencingTimeLive listings is dated the 4th, and the lifecycle rule (ADR-108 §7) needs
+# the 4th to close the event.
+DATES_KEPT_ONCE_STARTED = ("dt_start", "dt_end")
 
 # Published late and only once: filled the first time the source has them, never
 # overwritten afterwards.
@@ -114,8 +123,17 @@ def _blank(value: object) -> bool:
     return value is None or (isinstance(value, str) and not value.strip())
 
 
-def diff_against_cert(planned: list[dict], existing: list[dict]) -> SyncPlan:
+def _has_started(current: dict, today: dt.date) -> bool:
+    """True when CERT's start date is before today. A row without one has not."""
+    start = current.get("dt_start")
+    return not _blank(start) and dt.date.fromisoformat(str(start)) < today
+
+
+def diff_against_cert(planned: list[dict], existing: list[dict], *, today: dt.date) -> SyncPlan:
     """Decide the writes for one run. Pure: no I/O, no ordering assumptions.
+
+    `today` is Warsaw's date, passed in rather than read here so the function
+    stays pure: an event whose start date is before it keeps its dates.
 
     Matching is by PZSz id FIRST and by event code only as a fallback. That
     order is load-bearing rather than tidy. PZSz names drift in casing and carry
@@ -148,9 +166,10 @@ def diff_against_cert(planned: list[dict], existing: list[dict]) -> SyncPlan:
         if current.get("id_pzsz_event") is None:
             changes["id_pzsz_event"] = source_id
 
+        started = _has_started(current, today)
         for column in SOURCE_OWNED_FIELDS:
             value = scraped.get(_SCRAPED_KEY[column])
-            if _blank(value):
+            if _blank(value) or (started and column in DATES_KEPT_ONCE_STARTED):
                 continue
             if str(current.get(column) or "") != str(value):
                 changes[column] = value
@@ -303,7 +322,7 @@ def sync_calendar(
         f"WHERE e.id_season = {int(season['id_season'])} AND o.txt_code = '{ORGANIZER_CODE}'",
     )
 
-    plan = diff_against_cert(planned, existing)
+    plan = diff_against_cert(planned, existing, today=warsaw_today())
     print(
         f"  {len(plan.creates)} to create, {len(plan.updates)} to update, "
         f"{len(plan.vanished)} vanished from the source"
