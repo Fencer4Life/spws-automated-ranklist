@@ -169,8 +169,8 @@
       <li><b>One rule for every organizer</b> (your decision, 6 October): <code>ingest &lt;code&gt;</code> runs the ingestion on CERT. <code>promote &lt;code&gt;</code> runs the <b>same</b> ingestion on PROD, with the same flow and the same plugins, and checks that the result equals the verified CERT run (ADR-108). PPW works this way today. PZSz does from this plan on. EVF moves onto it in the plan after this one. <code>ingest &lt;code&gt; prod</code> stays refused.</li>
       <li><b>Poznań, <code>PPS1s-2026-2027</code>, checked in full</b> (§1a): none of the 99 starters matches a fencer of ours on surname, first name and birth year, so the run stores nothing. Two starters share a name with a fencer of ours, and both are skipped:
         <ul>
-          <li>Krochmalski Jakub, born 2008, 18th in men's sabre (ours: 1976);</li>
-          <li>Nowak Marta, born 2007, 31st in women's sabre (ours: 1979).</li>
+          <li>Krochmalski Jakub, a junior, 18th in men's sabre (ours: 1976);</li>
+          <li>Nowak Marta, a junior, 31st in women's sabre (ours: 1979).</li>
         </ul></li>
     </ul>
   </div>
@@ -194,8 +194,8 @@
     <div class="tablewrap"><table>
       <thead><tr><th>Starter (PZSz)</th><th>Place</th><th>Born</th><th>Fencer of ours with that name</th><th>Outcome</th></tr></thead>
       <tbody>
-        <tr><td>Krochmalski Jakub, DRAGON ŁÓDŹ</td><td>men 18</td><td>2008</td><td>id 156, born 1976 (confirmed)</td><td><span class="chip never">skipped · another person</span></td></tr>
-        <tr><td>Nowak Marta</td><td>women 31</td><td>2007</td><td>id 205, born 1979 (confirmed)</td><td><span class="chip never">skipped · another person</span></td></tr>
+        <tr><td>Krochmalski Jakub</td><td>men 18</td><td>a junior</td><td>id 156, born 1976 (confirmed)</td><td><span class="chip never">skipped · another person</span></td></tr>
+        <tr><td>Nowak Marta</td><td>women 31</td><td>a junior</td><td>id 205, born 1979 (confirmed)</td><td><span class="chip never">skipped · another person</span></td></tr>
         <tr><td>the other 97</td><td>—</td><td>—</td><td>none</td><td><span class="chip never">skipped · not ours</span></td></tr>
       </tbody>
     </table></div>
@@ -307,7 +307,7 @@
       <li><b>Tests, seen RED first.</b> The plugin cases:
         <ul>
           <li>an exact match is stored with its original place and the full N;</li>
-          <li>Krochmalski Jakub 2008 against our 1976 is skipped;</li>
+          <li>Krochmalski Jakub, a junior, against our 1976 is skipped;</li>
           <li>a name missing from the start list is skipped;</li>
           <li>two fencers of ours with the same name and year are skipped;</li>
           <li>Polish letters and case are folded;</li>
@@ -347,7 +347,7 @@
       <tbody>
         <tr><td>FTL listings</td><td>men's and women's sabre, never V0</td><td>"Senior Men's Saber" → SABRE·M, "Senior Women's Saber" → SABRE·F, PZSz senior field</td></tr>
         <tr><td>Starters skipped</td><td>99</td><td>99 (53 + 46), each paired with its start-list entry</td></tr>
-        <tr><td>First in the report</td><td>the two namesakes</td><td>KROCHMALSKI Jakub, 18th, born 2008: ours #156 born 1976. NOWAK Marta, 31st, born 2007: ours #205 born 1979</td></tr>
+        <tr><td>First in the report</td><td>the two namesakes</td><td>KROCHMALSKI Jakub, 18th, a junior: ours #156 born 1976. NOWAK Marta, 31st, a junior: ours #205 born 1979</td></tr>
         <tr><td>Fencers created, aliases, birth years moved, review rows</td><td>0</td><td>0 (373 fencers, roster hash unchanged)</td></tr>
         <tr><td>Tournaments and results written</td><td>0</td><td>0</td></tr>
         <tr><td>Event status</td><td><code>COMPLETED</code></td><td><code>IN_PROGRESS</code>, held by the end date (D2)</td></tr>

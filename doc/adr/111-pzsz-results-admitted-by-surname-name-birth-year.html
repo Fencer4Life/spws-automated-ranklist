@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="111-pzsz-results-admitted-by-surname-name-birth-year.md">
-<meta name="adr-source-sha256" content="b4e881a34ddc513722b31ed4ad168ca5a777a5c2ac8921519a87e43805f8582a">
+<meta name="adr-source-sha256" content="37ae5eecc7455239cf4d8f4c7402961e186fe73a6db739af28bea085f643e0d3">
 <title>ADR-111 · PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -23,7 +23,7 @@
   <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-pps-and-mps-are-not-ppw-they-are-imported-similarly-to-evf-not-exactly-like-it">1 · PPS and MPS are not PPW; they are imported similarly to EVF, not exactly like it</a></li><li class="depth-3"><a href="#2-a-result-is-kept-only-on-surname-first-name-and-birth-year">2 · A result is kept only on surname, first name and birth year</a></li><li class="depth-3"><a href="#3-the-birth-year-comes-from-the-pzsz-start-list">3 · The birth year comes from the PZSz start list</a></li><li class="depth-3"><a href="#4-a-pzsz-plugin-started-as-a-copy-of-the-evf-admission">4 · A PZSz plugin, started as a copy of the EVF admission</a></li><li class="depth-3"><a href="#5-nobody-matched-the-event-is-closed-and-that-is-all-q2-a">5 · Nobody matched: the event is closed, and that is all (Q2 A)</a></li><li class="depth-3"><a href="#6-ingest-for-cert-promote-for-prod-the-same-thing-for-every-organizer-q1">6 · Ingest for CERT, promote for PROD — the same thing — for every organizer (Q1)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>On 2026-10-06 <code>ingest PPS1s-2026-2027</code> (Poznań, the first PZSz Polish Cup of 2026/27, men's and women's sabre) ran the PPW flow. That flow is the only one the URL ingest knows: <code>ingest-event.yml</code> passes <code>--flow ingest_domestic</code>, and <code>ingest_cli.py</code> hard-codes <code>organizer_hint=&quot;SPWS&quot;</code> for every listing. The PPW flow read the FencingTimeLive bracket name &quot;Senior&quot; as V0. It then matched place 18, &quot;KROCHMALSKI Jakub&quot;, by name to our fencer id 156, born 1976, and refused the listing because 1976 is two categories away from V0 (run 37475365271). Nothing was written.</p>
-<p>The PZSz start list shows another person: Krochmalski Jakub, born 16 June 2008, DRAGON ŁÓDŹ. The women's list holds a second namesake: Nowak Marta, born 2007, 31st, against our NOWAK Marta, born 1979. Neither of the 99 starters matches a fencer of ours on surname, first name and birth year.</p>
+<p>The PZSz start list shows another person of the same name, a junior from another club. The women's list holds a second namesake, also a junior, 31st, against our NOWAK Marta, born 1979. Neither of the 99 starters matches a fencer of ours on surname, first name and birth year.</p>
 <p>ADR-100 built a PZSz flow (<code>Flow.INGEST_PZSZ_SENIOR</code>, <code>ingest_pzsz_senior_bracket_from_url</code>), but nothing calls it. Its matcher, <code>ResolveFencers</code> with the <code>PZSZ_SENIOR</code> intake, checks no birth year. It links a single same-named fencer whatever the year, links a confident fuzzy match, and queues the rest in <code>tbl_pzsz_match_review</code>. FencingTimeLive results carry no birth year at all (<code>ftl.parse_json</code> fills name, place, country and club only). Promote (ADR-108) refuses anything but the PPW flow.</p>
 </section>
 <section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
@@ -70,7 +70,7 @@
 <section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
 <ol>
 <li><strong>Run PZSz through the PPW flow with a senior category.</strong> Rejected: PPS and MPS are not PPW. The PPW flow decodes age categories from bracket names and creates fencers, and it refused Poznań on a junior namesake.</li>
-<li><strong>Keep ADR-100's matcher (exact name or alias, then fuzzy, then review).</strong> Rejected: it never checks the birth year, so it would link Krochmalski Jakub (2008) to our Krochmalski Jakub (1976).</li>
+<li><strong>Keep ADR-100's matcher (exact name or alias, then fuzzy, then review).</strong> Rejected: it never checks the birth year, so it would link the junior of the same name to our Krochmalski Jakub (1976).</li>
 <li><strong>Share one admission module between EVF and PZSz, customized by a profile.</strong> Rejected by the user: PZSz is a different, non-veteran organizer. A copy keeps each free to change without touching the other.</li>
 <li><strong>Take the birth year from FencingTimeLive.</strong> Impossible: FencingTimeLive results carry none.</li>
 <li><strong>Ingest PZSz directly on PROD (<code>ingest &lt;code&gt; prod</code>).</strong> Rejected: one route to PROD for every organizer — ingest for CERT, promote for PROD.</li>
@@ -120,5 +120,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="110-ranking-entry-by-roster.html">← ADR-110: From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="112-pzsz-start-lists-are-stored-inputs.html">→ ADR-112: PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</a></nav>
-<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>b4e881a34ddc513722b31ed4ad168ca5a777a5c2ac8921519a87e43805f8582a</code></footer>
+<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>37ae5eecc7455239cf4d8f4c7402961e186fe73a6db739af28bea085f643e0d3</code></footer>
 </div></body></html>
