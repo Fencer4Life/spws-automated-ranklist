@@ -72,14 +72,22 @@ def _cells(row: Tag) -> list[str]:
     return [" ".join(c.get_text(" ").split()) for c in row.find_all(["td", "th"])]
 
 
-def _soup(html: str) -> BeautifulSoup:
+def refuse_js_check(html: str) -> None:
+    """Raise when pzszerm.pl answered with its JavaScript check (a page with
+    the `pzs-m` message and no table) instead of the page asked for. Every
+    PZSz reader calls it: the start lists, the event pages and the calendar
+    listing. Nothing tries to get past the check."""
     soup = BeautifulSoup(html, "html.parser")
     if soup.find(id="pzs-m") is not None and soup.find("table") is None:
         raise PzszPageError(
             "pzszerm.pl answered with its JavaScript check instead of the page; "
             "nothing was read. Run it again later."
         )
-    return soup
+
+
+def _soup(html: str) -> BeautifulSoup:
+    refuse_js_check(html)
+    return BeautifulSoup(html, "html.parser")
 
 
 def _table_with_header(soup: BeautifulSoup, *labels: str) -> Tag | None:

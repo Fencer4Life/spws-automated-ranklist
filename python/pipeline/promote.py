@@ -99,7 +99,7 @@ def _read_cert_promotable_events(query_fn, id_season: int) -> list[dict]:
         "e.url_entry_list, e.txt_organizer_email, e.bool_use_spws_registration, "
         "(SELECT COALESCE(ARRAY_AGG(w::TEXT), ARRAY[]::TEXT[]) "
         "   FROM UNNEST(e.arr_weapons) w) AS weapons, "
-        "e.id_evf_event, e.id_evf_calendar_event, e.txt_evf_slug, "
+        "e.id_evf_event, e.id_evf_calendar_event, e.txt_evf_slug, e.id_pzsz_event, "
         "o.txt_code AS organizer_code, "
         "(SELECT pe.txt_code FROM tbl_event pe WHERE pe.id_event = e.id_prior_event) AS prior_code "
         "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
@@ -147,6 +147,7 @@ def _build_create_payload(
         "id_evf_event": evt.get("id_evf_event"),
         "id_evf_calendar_event": evt.get("id_evf_calendar_event"),
         "txt_evf_slug": evt.get("txt_evf_slug") or "",
+        "id_pzsz_event": evt.get("id_pzsz_event"),
     }
 
 
@@ -176,6 +177,9 @@ def _build_update_payload(
         "id_evf_event": evt.get("id_evf_event"),
         "id_evf_calendar_event": evt.get("id_evf_calendar_event"),
         "txt_evf_slug": evt.get("txt_evf_slug") or "",
+        # The PZSz calendar identity (ADR-087), with id_evf_event's rule: CERT's
+        # id wins when it has one, PROD keeps its own otherwise (plan §6, Q5 A).
+        "id_pzsz_event": evt.get("id_pzsz_event"),
         "url_event": evt.get("url_event") or "",
         "url_event_2": evt.get("url_event_2") or "",
         "url_event_3": evt.get("url_event_3") or "",

@@ -55,6 +55,7 @@ from python.scrapers.pzsz_calendar import (
     parse_event_detail_html,
     plan_event_codes,
 )
+from python.scrapers.pzsz_start_list import refuse_js_check
 
 ORGANIZER_CODE = "PZSz"
 
@@ -237,6 +238,7 @@ def enrich_events(
             try:
                 page = http.get(PZSZ_EVENT, params={"id": int(event["id_pzsz_event"])})
                 page.raise_for_status()
+                refuse_js_check(page.text)  # named in the log, never worked around
                 detail = parse_event_detail_html(page.text)
                 invitation = detail.get("url_invitation")
                 if invitation:
