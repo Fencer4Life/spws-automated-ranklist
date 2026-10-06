@@ -1,6 +1,6 @@
 # ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar
 
-**Status:** Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), built on LOCAL.
+**Status:** Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started).
 **Date:** 2026-09-03
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §F and §11 (`registryOf()` widens from three registries to four; a fourth hue enters the organizer channel; `PanelType` gains a fifth member)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the event-code shape this extends with a gender letter), [ADR-081](081-cert-prod-event-reconciler.md) (childless CREATE, field ownership, code-keyed reconcile), [ADR-028](028-evf-calendar-results-import.md) (the calendar-source precedent this deliberately does not generalise), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the partially-published-season lesson applied before it bit), [ADR-083](083-server-enforced-authorization.md) (grants are table-level, so the new column needs none)
@@ -480,3 +480,44 @@ lists through that id, and fell back to the CERT run's PZSz event.
   - pytest PZSZ.CAL.01: the CERT read and both payloads.
 - **Kept on purpose.** Promote's fallback to the CERT run's PZSz event stays, and is unused
   once the calendar carries the id.
+
+## Amendment (2026-10-07) — the sync keeps the dates of an event that has started
+
+`pzszerm.pl`'s listing prints Poznań (`PPS1s-2026-2027`, id 4588) as 3–3 October 2026, but
+one of its two FencingTimeLive listings is dated the 4th. Under [ADR-108](108-promote-replays-verified-cert-ingestion.md)
+§7 an event closes only once the end date has passed and is not earlier than its listings.
+So an administrator corrected the end date to 4 October, on CERT and on PROD. `dt_end` is
+one of the sync's source-owned fields (`SOURCE_OWNED_FIELDS` in
+`python/scrapers/pzsz_sync.py`; §7 covers the fill-blank half), so the first run that got past pzszerm.pl's JavaScript
+check would have set it back to the 3rd, and the calendar promotion would have copied that
+to PROD.
+
+**Decision (plan `doc/plans/pzsz-results-plugin-2026-10-06.html` §7, Q6 A, signed off
+2026-10-07):**
+
+- **The rule.** The sync stops changing `dt_start` and `dt_end` once an event has started,
+  meaning CERT's start date is before today in Warsaw. A started event cannot be
+  rescheduled; its dates are history, and an admin correction stands.
+- **What still follows PZSz.** Future events follow every reschedule. An event starting
+  today still follows. Every other source-owned field (code, name, location, country)
+  still follows on a started event too.
+- **"Today" is the lifecycle's.** `diff_against_cert` takes it as a required keyword, so the
+  function stays pure; `sync_calendar` passes `warsaw_today()` from
+  `python/pipeline/promotion/lifecycle.py`. The sync and the close therefore agree on the
+  date.
+- **The cost, accepted.** If PZSz corrects a typo in a past event's dates, the sync does not
+  follow; Admin corrects it.
+- **Alternatives rejected.**
+  - Never shortening the end date would leave a future event that PZSz genuinely shortens
+    wrong for good.
+  - Correcting the date again before every ingest brings the race back each time the check
+    clears.
+- **Tests.**
+  - pzsz.44: Poznań's corrected end date survives.
+  - pzsz.45: a started event is still renamed.
+  - pzsz.46: a future reschedule applies.
+  - pzsz.47: an event starting today follows.
+  - pzsz.48: `sync_calendar` judges by Warsaw's today.
+
+  With the rule switched off, pzsz.44, .45 and .48 fail on the reset of the end date to the
+  3rd.
