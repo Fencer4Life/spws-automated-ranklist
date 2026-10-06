@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-06T11:32:43Z",
-    "last_sha": "1346bd9234d024226e9abb531caefbaf2764f209",
+    "last_updated": "2026-10-06T12:52:02Z",
+    "last_sha": "d9f48b3a0b2fc8154a0a6c5e8c0044ffbe6e91f7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -213,13 +213,14 @@
       "20261003000017_promote_apply.sql",
       "20261003000018_carry_stop_results.sql",
       "20261003000019_complete_event_exact_code.sql",
-      "20261006000001_active_season_computed.sql"
+      "20261006000001_active_season_computed.sql",
+      "20261006000002_evf_singleton_championships.sql"
     ],
-    "schema_fingerprint": "40c820c1cbb079032a160e75e5582109"
+    "schema_fingerprint": "afe507fe64f9ea19dfd239991045502d"
   },
   "prod": {
-    "last_updated": "2026-10-06T11:34:26Z",
-    "last_sha": "1346bd9234d024226e9abb531caefbaf2764f209",
+    "last_updated": "2026-10-06T12:53:52Z",
+    "last_sha": "d9f48b3a0b2fc8154a0a6c5e8c0044ffbe6e91f7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -431,8 +432,9 @@
       "20261003000017_promote_apply.sql",
       "20261003000018_carry_stop_results.sql",
       "20261003000019_complete_event_exact_code.sql",
-      "20261006000001_active_season_computed.sql"
+      "20261006000001_active_season_computed.sql",
+      "20261006000002_evf_singleton_championships.sql"
     ],
-    "schema_fingerprint": "40c820c1cbb079032a160e75e5582109"
+    "schema_fingerprint": "afe507fe64f9ea19dfd239991045502d"
   }
 }
