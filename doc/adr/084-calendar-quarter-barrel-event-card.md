@@ -1,6 +1,6 @@
 # ADR-084: Calendar Quarter Barrel + Single Event Card
 
-**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment. **Amended 2026-09-06:** a weapon filter joins the calendar footer, and the scope control is renamed `SPWS | EVF+`.
+**Status:** Draft (proposed 2026-08-09; awaiting sign-off). **Amended 2026-08-29:** the drum buckets by **month**, not quarter; the palette is **inverted** so time drives the fill and the past recedes to grey; the drum becomes a **true cylinder**; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment. **Amended 2026-09-06:** a weapon filter joins the calendar footer, and the scope control is renamed `SPWS | EVF+`. **Amended 2026-10-06:** time runs **downward** (earlier months above the focus, later below); two step buttons ▲/▼ and the ↑/↓ keys move to the nearest month with competitions; the jump control's arrow follows the new direction; turned-away months are `inert`, and a row is named in the page's language.
 **Date:** 2026-08-09
 **Supersedes:** [ADR-015](015-m8-ui-design-decisions.md) §2 (Calendar Layout — Vertical Timeline) and its `m8_calendar_view.html` mockup registry entry. ADR-015 §§1, 3–9 are untouched.
 **Amends:** [ADR-018](018-rolling-score.md) (withdraws the calendar rolling-progress strip; the scoring rule is unaffected), [ADR-017](017-season-configurable-evf-toggle.md) (records the calendar's own toggle field and the data constraint), [ADR-079](079-event-self-registration-identity.md) §7 (decouples the entry-list gate from the registration cutoff), [ADR-030](030-event-registration-url-deadline.md) (relocates the registration DOM contract), [ADR-005](005-svelte-state-i18n.md) (retires the no-pluralisation trade-off), [ADR-028](028-evf-calendar-results-import.md) (carves out one-time curated enrichment), [ADR-037](037-derived-display-status-awaiting-results.md) (repoints consumers), [ADR-040](040-multi-slot-event-urls.md) (permits render-time day labels)
@@ -1078,3 +1078,63 @@ Two further items are open and recorded in the plan rather than here, being prod
 | Live | verified against the seeded PROD pool at LOCAL, not only in tests |
 
 `lib/calendarQuarters.ts` is renamed `lib/calendarMonths.ts`; `Quarter` becomes `MonthRow`; `buildQuarters`/`quarterKeyOf`/`resolveAnchorQuarter` become `buildMonths`/`monthKeyOf`/`resolveAnchorRow`. New exports: `settleRow()`, `eventTimeState()`, `isRegistrationOpen()`. `CountryFlag.svelte` loses ~350 lines of hand-drawn geometry and its test suite is replaced rather than ported — 18 of its 22 tests asserted primitives that no longer exist.
+
+## Amendment (2026-10-06) — time runs downward, and the drum shows how it turns
+
+**Status:** Accepted (drafted in the plan's §09 and signed off by the user with plan rev 2, 2026-10-06; the before/after comparison approved 2026-10-06).
+**Development plan:** [`doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html`](../plans/kalendarz-beben-strzalki-plan-2026-10-06.html); mock: [`doc/plans/kalendarz-beben-strzalki-mock-2026-10-06.html`](../plans/kalendarz-beben-strzalki-mock-2026-10-06.html); before/after comparison: [`doc/plans/kalendarz-beben-strzalki-porownanie-2026-10-06.html`](../plans/kalendarz-beben-strzalki-porownanie-2026-10-06.html).
+
+Fencers reported the calendar as not intuitive.
+
+### L · Time runs downward
+
+**§C's direction sentence is superseded.** Earlier months sit above the focused row and later months below, so reading down the drum is reading forward in time. Rows sit at `rotateX(−i·θ) translateZ(R)` and the drum turns by `rotateX(+active·θ)`; the two signs flip together and nothing else reads them.
+
+"Future above" was never chosen: it arrived with the cylinder's angle sign on 29 Aug. Reversing it restores §2's original orientation, puts the heavier season-boundary rule between two seasons, and makes DOM and tab order run top to bottom.
+
+### M · Two floating step buttons
+
+**§6 is refined.** The whole row stays the tap target, and two buttons make that visible:
+
+- **What they do:** ▲ moves to the nearest earlier month with competitions and ▼ to the nearest later one, as tapping the neighbouring row does (`stepRow()`).
+- **Where they sit:** beside the neighbouring months, right of their left-aligned tiles, at most 300 px from the left edge.
+- **How they render:** as siblings of the drum inside the viewport, at full opacity and never clipped.
+- **At the ends:** a button is removed when nothing lies further that way, and focus passes to the other.
+- **Crowded months:** a receded month's tiles stop 6 px before the buttons.
+
+Measured at 320, 375 and 1,180 px, the buttons cover no tile, seam label or jump control. Buttons centred on the top and bottom edges were rejected: they covered the jump control at 320 px. Wheel, swipe and drag stay out (D8 (a), keyboard only).
+
+### N · The jump control's arrow points to the opening month
+
+§J's positions and look are unchanged; the cases they serve follow the direction. When the opening month is drawn above, the control rides the adjacent upper seam with ↑. When it is below, the control pins to the lower edge with ↓, or ← when it is the adjacent row. The pinned case no longer carries a row index.
+
+### O · What cannot be seen cannot be reached
+
+Months two or more rows from the focus are `inert`: they were already faint or invisible and untappable, and keyboard and screen readers now skip them too. A row's accessible name is its seam text in the page's language, not a hard-coded English month.
+
+### P · Keyboard
+
+With focus inside the drum, ↑ and ↓ step like the buttons and do not scroll the page.
+
+### As built (2026-10-06)
+
+- **`stepRow(rows, from, direction)`** in `lib/calendarMonths.ts` returns the nearest non-empty row strictly beyond `from`, or `null`. Unlike `settleRow()` it never reverses at the end of the drum, so a `null` is what removes a button.
+- **The jump control's cases are one union,** `JumpCue` in `CalendarBarrel.svelte`: either it rides row `active − 1` with ↑, or it is pinned with ← (distance 1) or ↓ (distance 2 or more).
+- **The buttons** are `.stp.prev` and `.stp.next`: a 36 px hit area around a 30 px disc, at `top: 38px` and `top: 177px`, `left: min(100% − 36px, 300px)`. The arrow is one `aria-hidden` SVG path, rotated for ▼, the same choice §J made for the jump arrow. Their names are `calendar_step_prev` / `calendar_step_next` („Wcześniejsze zawody" / „Późniejsze zawody", "Earlier competitions" / "Later competitions").
+- **Receded rows** are capped at `max-width: min(100% − 42px, 294px)`, which is the 6 px gap in §M.
+- **The before/after comparison** captured 102 states: the WordPress element at 320, 375 and 1,280 px, the github.io shell at 320, 360, 375 and 414 px, each in Polish and English. 100 differ only where the plan allows. The other two are 24 px of capture noise, which a second capture of the old build also shows, and one pixel 1/255 lighter on the corner of „EVF+". The user accepted both.
+
+### What this amendment does *not* settle
+
+**D4, the card's edge, is still open.** It waits for the user's screenshot of the defect, and it is fixed under its own test when that arrives.
+
+### Verification
+
+| Gate | Result |
+| --- | --- |
+| Unit tests | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50 |
+| Browser tests | CB.E1–CB.E4 (Playwright, the custom element: 320, 375 and 1,280 px in both languages; crowded months on 288 and 300 px drums) |
+| TDD record | each test seen red first; the guards CB.29 and CB.47 proven by recorded mutation runs (`doc/plans/kalendarz-beben-strzalki-porownanie-2026-10-06/tools/mutations.log`) |
+| vitest | 1,224 passing, 68 files |
+| Playwright | 57 passing |
+| svelte-check | 0 errors |

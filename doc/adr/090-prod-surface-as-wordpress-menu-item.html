@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="090-prod-surface-as-wordpress-menu-item.md">
-<meta name="adr-source-sha256" content="809120e74ac37911426d73f0e4e4d3302b16bad9d24c92b77a549edd72338fc6">
+<meta name="adr-source-sha256" content="63c60f8b0e1f028a2f9cd939cbc08e1613ee7540426ea49addb5df3bbb9c7c0f">
 <title>ADR-090 · Publishing a PROD surface as a full-screen WordPress menu item</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 090</p><h1>Publishing a PROD surface as a full-screen WordPress menu item</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (<code>chrome=&quot;site&quot;</code>), and §3 is amended so that <code>/ranking/?admin=1</code> opens the PROD sign-in; see <a href="109-environments-split-by-host.html">ADR-109</a> for the environment split.)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">433 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (<code>chrome=&quot;site&quot;</code>), and §3 is amended so that <code>/ranking/?admin=1</code> opens the PROD sign-in; see <a href="109-environments-split-by-host.html">ADR-109</a> for the environment split.)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (<code>chrome=&quot;site&quot;</code>), and §3 is amended so that <code>/ranking/?admin=1</code> opens the PROD sign-in; see <a href="109-environments-split-by-host.html">ADR-109</a> for the environment split. Amended 2026-10-06: the calendar's title is its menu name, „Znajdź zawody&quot; / &quot;Competition Finder&quot;, shortened only where the measured room is too small; the closed drawer is <code>inert</code>.)</dd></div><div><dt>Date</dt><dd class="">2026-09-05</dd></div><div><dt>Source</dt><dd class=""><code>090-prod-surface-as-wordpress-menu-item.md</code></dd></div><div><dt>Length</dt><dd class="">471 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds <code>FtlExport.svelte</code> as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (<code>chrome=&quot;site&quot;</code>), and §3 is amended so that <code>/ranking/?admin=1</code> opens the PROD sign-in; see <a href="109-environments-split-by-host.html">ADR-109</a> for the environment split. Amended 2026-10-06: the calendar's title is its menu name, „Znajdź zawody&quot; / &quot;Competition Finder&quot;, shortened only where the measured room is too small; the closed drawer is <code>inert</code>.)
 <strong>Date:</strong> 2026-09-05
 <strong>Amends:</strong> <a href="007-shadow-dom-deferred.html">ADR-007</a> (the anticipated WordPress embed is now built, and the element gains a <code>view</code>/<code>chrome</code> interface), <a href="009-cert-prod-runtime-toggle.html">ADR-009</a> (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at <code>CERT</code>)
 <strong>Relates to:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> (the bundle ships through the existing release pipeline), <a href="083-server-enforced-authorization.html">ADR-083</a> (the exposure argument rests on the anon grants), <a href="079-event-self-registration-identity.html">ADR-079</a> (self-registration becomes reachable from the association's own menu), <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (the calendar is the first surface through the pattern), <a href="085-points-calculator-temporary-static-page.html">ADR-085</a> (the calculator will reuse the presentation, not the build)
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-embed-is-the-same-application-not-a-second-one">1 · The embed is the same application, not a second one</a></li><li class="depth-3"><a href="#2-a-surface-opens-on-the-environment-it-holds-credentials-for">2 · A surface opens on the environment it holds credentials for</a></li><li class="depth-3"><a href="#3-the-embed-ignores-admin-1">3 · The embed ignores `?admin=1`</a></li><li class="depth-3"><a href="#4-asset-paths-resolve-through-a-base-not-the-origin-root">4 · Asset paths resolve through a base, not the origin root</a></li><li class="depth-3"><a href="#5-one-row-replaces-the-removed-application-header">5 · One row replaces the removed application header</a></li><li class="depth-3"><a href="#6-the-bundle-keeps-a-stable-file-name">6 · The bundle keeps a stable file name</a></li><li class="depth-3"><a href="#7-the-page-is-presented-full-screen-with-the-theme-removed">7 · The page is presented full-screen, with the theme removed</a></li><li class="depth-4"><a href="#amendment-2026-09-16-a-second-page-takes-the-same-treatment">Amendment (2026-09-16) — a second page takes the same treatment</a></li><li class="depth-3"><a href="#8-nothing-is-published-without-per-page-approval">8 · Nothing is published without per-page approval</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-09-12-a-protected-surface-without-a-sign-in">Amendment (2026-09-12 — a protected surface, without a sign-in)</a></li><li class="depth-2"><a href="#amendment-2026-10-03-the-wordpress-pages-carry-the-site-s-navigation-and-prod-admin-moves-to-ranking-admin-1">Amendment (2026-10-03) — the WordPress pages carry the site&#x27;s navigation, and PROD admin moves to `/ranking/?admin=1`</a></li><li class="depth-3"><a href="#context-2">Context</a></li><li class="depth-3"><a href="#decision-2">Decision</a></li><li class="depth-3"><a href="#alternatives-considered-2">Alternatives considered</a></li><li class="depth-3"><a href="#consequences-2">Consequences</a></li><li class="depth-3"><a href="#as-built-2026-10-04">As built (2026-10-04)</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-the-embed-is-the-same-application-not-a-second-one">1 · The embed is the same application, not a second one</a></li><li class="depth-3"><a href="#2-a-surface-opens-on-the-environment-it-holds-credentials-for">2 · A surface opens on the environment it holds credentials for</a></li><li class="depth-3"><a href="#3-the-embed-ignores-admin-1">3 · The embed ignores `?admin=1`</a></li><li class="depth-3"><a href="#4-asset-paths-resolve-through-a-base-not-the-origin-root">4 · Asset paths resolve through a base, not the origin root</a></li><li class="depth-3"><a href="#5-one-row-replaces-the-removed-application-header">5 · One row replaces the removed application header</a></li><li class="depth-3"><a href="#6-the-bundle-keeps-a-stable-file-name">6 · The bundle keeps a stable file name</a></li><li class="depth-3"><a href="#7-the-page-is-presented-full-screen-with-the-theme-removed">7 · The page is presented full-screen, with the theme removed</a></li><li class="depth-4"><a href="#amendment-2026-09-16-a-second-page-takes-the-same-treatment">Amendment (2026-09-16) — a second page takes the same treatment</a></li><li class="depth-3"><a href="#8-nothing-is-published-without-per-page-approval">8 · Nothing is published without per-page approval</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-09-12-a-protected-surface-without-a-sign-in">Amendment (2026-09-12 — a protected surface, without a sign-in)</a></li><li class="depth-2"><a href="#amendment-2026-10-03-the-wordpress-pages-carry-the-site-s-navigation-and-prod-admin-moves-to-ranking-admin-1">Amendment (2026-10-03) — the WordPress pages carry the site&#x27;s navigation, and PROD admin moves to `/ranking/?admin=1`</a></li><li class="depth-3"><a href="#context-2">Context</a></li><li class="depth-3"><a href="#decision-2">Decision</a></li><li class="depth-3"><a href="#alternatives-considered-2">Alternatives considered</a></li><li class="depth-3"><a href="#consequences-2">Consequences</a></li><li class="depth-3"><a href="#as-built-2026-10-04">As built (2026-10-04)</a></li><li class="depth-2"><a href="#amendment-2026-10-06-the-calendar-s-title-is-its-menu-name-a-closed-drawer-is-inert">Amendment (2026-10-06) — the calendar&#x27;s title is its menu name; a closed drawer is inert</a></li><li class="depth-3"><a href="#decision-3">Decision</a></li><li class="depth-3"><a href="#as-built-2026-10-06">As built (2026-10-06)</a></li><li class="depth-3"><a href="#consequences-3">Consequences</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The SPWS ranking, calendar and points calculator are published on GitHub Pages
 at <code>https://fencer4life.github.io/spws-automated-ranklist/</code>. That address is
@@ -390,8 +390,83 @@ still belongs behind Supabase Auth on GitHub Pages, exactly as §3 requires.</p>
 <li><strong>The calculator follows the chosen mock.</strong> The calculator comes first. The premium table, the simulator and „W skrócie&quot; are folded below it, closed. The full rules are a pill to the annex (WP.CALC.02).</li>
 <li><strong>The publishing script posts a reference copy without its opening note and final newline</strong>, which the live page does not carry, so republishing an unchanged copy changes nothing on the page (WP.PAGE.02).</li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-06-the-calendar-s-title-is-its-menu-name-a-closed-drawer-is-inert">Amendment (2026-10-06) — the calendar's title is its menu name; a closed drawer is inert</h2>
+<p><strong>Status:</strong> Accepted (drafted in the plan's §09 and signed off by the user with plan rev 2, 2026-10-06; the before/after comparison approved 2026-10-06).
+<strong>Development plan:</strong> <a href="../plans/kalendarz-beben-strzalki-plan-2026-10-06.html"><code>doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html</code></a>; before/after comparison: <a href="../plans/kalendarz-beben-strzalki-porownanie-2026-10-06.html"><code>doc/plans/kalendarz-beben-strzalki-porownanie-2026-10-06.html</code></a>.
+<strong>Relates to:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (the same day's amendment to the drum)</p>
+<h3 id="decision-3">Decision</h3>
+<p><strong>§5's phone title for the calendar is superseded</strong>, along with the 2026-10-03 amendment's „Kalendarz&quot; / &quot;Calendar&quot;.</p>
+<ul>
+<li>The calendar's title reads its drawer entry, „Znajdź zawody&quot; / &quot;Competition Finder&quot;, wherever that fits.</li>
+<li>It squeezes to „Zawody&quot; / &quot;Competitions&quot;, and in English finally to &quot;Events&quot;, only when the room the title actually has is too small. Fit is measured, not tied to a screen width.</li>
+<li>The same applies to the github.io header. Font, size and the mark's 84 px are unchanged.</li>
+<li>The other three pages keep §5's 430 px switch.</li>
+</ul>
+<p>The drawer is <code>inert</code> while closed in every mode, so its links are no longer reached by keyboard or screen reader while off-screen.</p>
+<h3 id="as-built-2026-10-06">As built (2026-10-06)</h3>
+<ul>
+<li><strong><code>lib/fitTitle.ts</code></strong> picks the first candidate whose measured width fits the room, or the last one when none does. <code>titleCandidates()</code> drops a candidate equal to the one before it, so Polish has two („Zawody&quot; is both the short and the tiny name) and English three.</li>
+<li><strong>The candidates are measured, not guessed.</strong> Each is set once in an <code>aria-hidden</code> copy inside a zero-size, clipped box, in the title's own font. A <code>ResizeObserver</code> measures again when the room changes, so a language switch or a rotated phone picks again.</li>
+<li><strong>The room</strong> on the WordPress bar is the title's own box, which takes the bar's slack. In the github.io header it is the header's width less the ☰, the language switch, the logo and the gaps between them.</li>
+<li><strong>Measured in Chromium (WP.BAR.05):</strong></li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>320 px</th>
+<th>360 px</th>
+<th>375 px</th>
+<th>414 px</th>
+<th>1,280 px</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WordPress bar, PL</td>
+<td>Zawody</td>
+<td>Znajdź zawody</td>
+<td>Znajdź zawody</td>
+<td>Znajdź zawody</td>
+<td>Znajdź zawody</td>
+</tr>
+<tr>
+<td>WordPress bar, EN</td>
+<td>Events</td>
+<td>Competitions</td>
+<td>Competitions</td>
+<td>Competition Finder</td>
+<td>Competition Finder</td>
+</tr>
+<tr>
+<td>github.io header, PL</td>
+<td>Zawody (wraps)</td>
+<td>Zawody</td>
+<td>Zawody</td>
+<td>Znajdź zawody</td>
+<td>Znajdź zawody</td>
+</tr>
+<tr>
+<td>github.io header, EN</td>
+<td>Events</td>
+<td>Events</td>
+<td>Competitions</td>
+<td>Competition Finder</td>
+<td>Competition Finder</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Two github.io cells differ from the plan's prediction, and the user accepted both</strong> (comparison Q3 and Q4). At 375 px Polish shows „Zawody&quot;, because „Znajdź zawody&quot; needs 115.8 px and the header leaves 113.8 px. At 320 px even „Zawody&quot; (61.2 px) does not fit the 58.8 px, so that header still wraps onto a second row, as it did with „Kalendarz&quot;. The rule holds either way: the full name only where it fits, and no smaller font or logo. github.io is CERT only (ADR-109).</li>
+</ul>
+<h3 id="consequences-3">Consequences</h3>
+<ul>
+<li><strong>Tests:</strong> TITLE.01–TITLE.02, WP.BAR.02 and WP.BAR.03 (amended), WP.BAR.05, WP.NAV.04, AppShell 8.34 (amended).</li>
+<li><strong>No WordPress page changes.</strong> The pages load <code>assets/main.ce.js</code>, so the title changes with the release.</li>
+</ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="089-event-weapons-and-card-header.html">← ADR-089: The event&#x27;s weapons live on the event, and the card header carries identity</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="091-no-season-skeletons-for-scraped-events.html">→ ADR-091: A season is bootstrapped only with skeletons nobody discovers for us</a></nav>
-<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>809120e74ac37911426d73f0e4e4d3302b16bad9d24c92b77a549edd72338fc6</code></footer>
+<footer class="foot">Generated from <code>090-prod-surface-as-wordpress-menu-item.md</code> · source SHA-256 <code>63c60f8b0e1f028a2f9cd939cbc08e1613ee7540426ea49addb5df3bbb9c7c0f</code></footer>
 </div></body></html>

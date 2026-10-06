@@ -129,11 +129,11 @@
 </style>
 <div class="wrap">
 
-  <p class="eyebrow">Calendar drum · plan §12 · for your approval before any push</p>
+  <p class="eyebrow">Calendar drum · plan §12 · approved 6 Oct · one release question open</p>
   <h1>The drum changed, and nothing else moved</h1>
-  <p class="dek">I captured the same 102 screens on the build before the first change and on the build after the last, with the same events, date, states, widths and languages. <b>100 of 102</b> differ only where we agreed. Of the other two, one is capture noise that also appears when the old build is captured twice. The other is <b>one pixel, off by 1/255</b>. Nothing is pushed. The work waits for your approval of this sheet.</p>
+  <p class="dek">I captured the same 102 screens on the build before the first change and on the build after the last, with the same events, date, states, widths and languages. <b>100 of 102</b> differ only where we agreed. Of the other two, one is capture noise that also appears when the old build is captured twice. The other is <b>one pixel, off by 1/255</b>. You approved this sheet on 6 Oct. The branch is pushed; <code>main</code> is not, and waits for Q6 below.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>branch claude/calendar-drum-arrows-impl (local, not pushed)</span>
+    <span class="pill"><span class="dot"></span>branch claude/calendar-drum-arrows-impl pushed · <b>main not pushed</b></span>
     <span class="pill"><span class="dot"></span>before: bb978576 · after: this branch</span>
     <span class="pill"><span class="dot"></span>Vitest 1,224 green · Playwright 57 green</span>
     <span class="pill warn"><span class="dot"></span>D4 still waits for your screenshot</span>
@@ -142,12 +142,43 @@
   <hr class="rule">
 
   <section>
-    <p class="kicker">00 · For you to decide</p>
+    <p class="kicker">Decide this first · 6 Oct, after your approval</p>
+    <h2>Q6 · This release has no stop before PROD. Push anyway?</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="q">Q6</span> A correction to Q1, and the one question left</p>
+      <p><b>Q1 below said the release goes to CERT, and to PROD only after you approve it in GitHub. For this change that is wrong.</b> I checked <code>.github/workflows/release.yml</code> before pushing. <code>deploy-pages</code> (line 240) needs only <code>build</code>. Only <code>deploy-prod</code> (line 373) waits for your <code>production</code> approval, and it carries the PROD database and functions. This change touches neither.</p>
+      <p>So one push to <code>main</code> does this, in order:</p>
+      <ol class="steps">
+        <li>CI runs (about 1&frac12; minutes on the last three runs).</li>
+        <li>Release builds once. github.io (CERT) and the bundle <code>assets/main.ce.js</code> deploy together, about 2 minutes into Release on each of the last three runs.</li>
+        <li>Every WordPress page on weteraniszermierki.pl loads that bundle, so <b>PROD shows the new calendar within 10 minutes of the deploy</b> (Pages serves it with <code>max-age=600</code>).</li>
+        <li>Your approval of <code>deploy-prod</code> in GitHub comes after that. It has no migrations to apply here, so it changes nothing visible.</li>
+      </ol>
+      <p>The handbook says the same: Pages does not wait for the production approval (<code>doc/handbook/operations/<wbr>environments-and-release.html</code>). There is no stage where only CERT has the new calendar.</p>
+    </div>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What happens</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">a · push now</span></td><td>I push <code>main</code> from the integration checkout and watch CI and Release in the background. Once Pages has deployed, I check both hosts live at 320 and 375 px in Polish and English.</td><td>PROD changes with no second look. If something is wrong, a revert commit goes out the same way: about 4 minutes to deploy, then up to 10 minutes of cache.</td></tr>
+        <tr><td><span class="chip plain">b · push at a time you name</span></td><td>The same, at a time when you can watch.</td><td>Waiting only.</td></tr>
+        <tr><td><span class="chip over">c · a CERT-only stage first</span></td><td>Make Pages wait for an approval, or split the bundle per host.</td><td>A release-workflow change, outside this plan, with its own ADR.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: (a).</b> What PROD will show is exactly what you approved on this sheet. 102 screens were compared, and the change is front-end only. <code>scripts/preflight.sh</code> exits 0 on the commit to be pushed.</p>
+    <p><b>Q1&ndash;Q5 were answered on 6 Oct: approved, every recommendation accepted.</b> The docs are done: the ADR-084 and ADR-090 amendments with their twins, the spec's Appendix C rows, FR-153 and FR-154 Covered, and the product-surfaces handbook page. Q5 is queued as its own task. D4 still waits for your screenshot.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · For you to decide (answered 6 Oct)</p>
     <h2>One approval, four small questions</h2>
 
     <div class="note good">
       <p class="lede"><span class="q">Q1</span> Approve this sheet?</p>
-      <p>With your approval I finish the plan: the ADR-084 and ADR-090 amendments as signed off in §09, the handbook pages, FR-153 and FR-154 marked Covered, and <code>scripts/preflight.sh</code>. Then the release goes to CERT, and to PROD only after you approve it in GitHub. <b>Recommendation: approve.</b></p>
+      <p>With your approval I finish the plan: the ADR-084 and ADR-090 amendments as signed off in §09, the handbook pages, FR-153 and FR-154 marked Covered, and <code>scripts/preflight.sh</code>. <span class="strike">Then the release goes to CERT, and to PROD only after you approve it in GitHub.</span> <b>Corrected in Q6 above:</b> for this change, PROD&rsquo;s pages update without a separate approval. <b>Recommendation: approve.</b></p>
     </div>
 
     <div class="note warn">
