@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="29ac1dc6cddf4075d6c8d9473978364699f2d5666a1a4fa86ff95c45614aca1c">
+<meta name="doc-source-sha256" content="523601cf90a2a6625c1b860dcee0a4b6b38c416bdb860810d2c7f5a6155fb78e">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -714,7 +714,7 @@
 <td>FR-99</td>
 <td>Server-side workflow dispatch: admin UI ⬇ buttons invoke a Supabase Edge Function (<code>dispatch-workflow</code>) that holds the GitHub PAT as a Supabase env secret and forwards <code>workflow_dispatch</code> calls. PAT never appears in HTML/JS bundles. Function uses an allowlist (<code>populate-urls.yml</code>, <code>scrape-tournament.yml</code>), verifies caller JWT (built-in Supabase auth), and returns sync <code>{ok, runs_url}</code>. Per-event inline status renders below the event-row in the admin accordion (pending → success-with-link → error). <code>github-pat</code> / <code>github-repo</code> HTML attributes removed from <code>&lt;spws-ranklist&gt;</code>. Telegram path (GAS server-side PAT) untouched. <strong>N15 (2026-06-19):</strong> new Telegram lifecycle command <code>ingest &lt;prefix&gt; &lt;url&gt; [cert|prod]</code> dispatches <code>ingest-event.yml</code> via the same GAS→<code>workflow_dispatch</code> path as <code>promote</code>; the from-URL ingest sets <code>tbl_event.url_event</code> (admin), re-ingests (keep-rule + N14 <code>url_results</code>), and sends the staging <code>full.md</code>+<code>.diff.md</code> back to Telegram (reuses ADR-059 <code>send_staging_report</code>/<code>send_document</code>; <code>ingest_cli --send-telegram --md-target storage</code>). GAS snippet: <a href="archive/legacy-2026-07/telegram-ingest-command-gas.html">archive/legacy-2026-07/telegram-ingest-command-gas.md</a>.</td>
 <td>UC22(c), UC27, ADR-041, ADR-025, ADR-059</td>
-<td>9.45a–9.45f, N15.1–N15.4</td>
+<td>9.45a–9.45f, N15.1–N15.4, WF.CODE.01–03 (<code>test_workflow_event_code_input.py</code>: every event_code input check accepts lower-case weapon letters and still refuses shell text)</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -2378,5 +2378,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>29ac1dc6cddf4075d6c8d9473978364699f2d5666a1a4fa86ff95c45614aca1c</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>523601cf90a2a6625c1b860dcee0a4b6b38c416bdb860810d2c7f5a6155fb78e</code></footer>
 </div></body></html>
