@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-03T18:41:12Z",
-    "last_sha": "0c35d7992cd84a61788d36899477e558efeef12f",
+    "last_updated": "2026-10-06T11:32:43Z",
+    "last_sha": "1346bd9234d024226e9abb531caefbaf2764f209",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -212,9 +212,10 @@
       "20261003000016_promote_gate.sql",
       "20261003000017_promote_apply.sql",
       "20261003000018_carry_stop_results.sql",
-      "20261003000019_complete_event_exact_code.sql"
+      "20261003000019_complete_event_exact_code.sql",
+      "20261006000001_active_season_computed.sql"
     ],
-    "schema_fingerprint": "850b2e7faa79da9bd78d96488eec4986"
+    "schema_fingerprint": "40c820c1cbb079032a160e75e5582109"
   },
   "prod": {
     "last_updated": "2026-10-03T18:42:30Z",
