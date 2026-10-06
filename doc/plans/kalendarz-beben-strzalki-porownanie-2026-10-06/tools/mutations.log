@@ -49,7 +49,7 @@ AssertionError: expected 'Kwiecień 2026' to be 'Marzec 2026' // Object.is equal
 exit=1; restored byte for byte
 
 == CB.44: src/components/CalendarBarrel.svelte:         inert={Math.abs(qi - active) >= 2}
- -> 
+ ->
       Tests  1 failed | 49 skipped (50)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — turned-away months > CB.44: nothing in a month two or more rows away is focusable; months within one row are
@@ -89,4 +89,3 @@ exit=1; restored byte for byte
  FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — the keyboard > CB.50: arrow keys with focus outside the drum leave it alone
 AssertionError: ArrowDown not prevented: expected false to be true // Object.is equality
 exit=1; restored byte for byte
-

@@ -36,7 +36,7 @@ Running 33 tests using 2 workers
   ✘  33 e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum (984ms)
 
 
-  1) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below 
+  1) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below
 
     Error: opening: both buttons
 
@@ -57,7 +57,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E1-—-th-5bb68-trol-above-and-pinned-below/error-context.md
 
-  2) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below 
+  2) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below
 
     Error: opening: both buttons
 
@@ -78,7 +78,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E1-—-th-2e645-trol-above-and-pinned-below/error-context.md
 
-  3) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below 
+  3) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below
 
     Error: opening: both buttons
 
@@ -99,7 +99,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E1-—-th-db185-trol-above-and-pinned-below/error-context.md
 
-  4) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below 
+  4) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below
 
     Error: opening: both buttons
 
@@ -120,7 +120,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E1-—-th-60f4c-trol-above-and-pinned-below/error-context.md
 
-  5) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below 
+  5) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below
 
     Error: opening: both buttons
 
@@ -141,7 +141,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E1-—-th-aa99f-trol-above-and-pinned-below/error-context.md
 
-  6) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below 
+  6) e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below
 
     Error: opening: both buttons
 
@@ -162,7 +162,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E1-—-th-d5119-trol-above-and-pinned-below/error-context.md
 
-  7) e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next 
+  7) e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next
 
     Error: expect(received).toBeLessThan(expected)
 
@@ -180,7 +180,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E2-—-ea-c6beb-previous-one-below-the-next/error-context.md
 
-  8) e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer 
+  8) e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer
 
     Test timeout of 30000ms exceeded.
 
@@ -201,7 +201,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E3-—-▼--9556e-too-across-the-quiet-summer/error-context.md
 
-  9) e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum 
+  9) e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum
 
     Error: expect(received).toBe(expected) // Object.is equality
 
@@ -219,7 +219,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E4-—-a--34463--and-below-on-a-288-px-drum/error-context.md
 
-  10) e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum 
+  10) e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum
 
     Error: expect(received).toBe(expected) // Object.is equality
 
@@ -237,7 +237,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/calendar-barrel-CB-E4-—-a--5afaa--and-below-on-a-300-px-drum/error-context.md
 
-  11) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN 
+  11) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN
 
     Error: pl: the candidates
 
@@ -263,7 +263,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-04e48-ess-bar-at-320-px-PL-and-EN/error-context.md
 
-  12) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN 
+  12) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN
 
     Error: pl: the candidates
 
@@ -289,7 +289,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-2065f-ess-bar-at-360-px-PL-and-EN/error-context.md
 
-  13) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN 
+  13) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN
 
     Error: pl: the candidates
 
@@ -315,7 +315,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-74de6-ess-bar-at-375-px-PL-and-EN/error-context.md
 
-  14) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN 
+  14) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN
 
     Error: pl: the candidates
 
@@ -341,7 +341,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-3c4de-ess-bar-at-414-px-PL-and-EN/error-context.md
 
-  15) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN 
+  15) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN
 
     Error: pl: the candidates
 
@@ -367,7 +367,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-c2e94-ss-bar-at-1280-px-PL-and-EN/error-context.md
 
-  16) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN 
+  16) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN
 
     Error: pl: the candidates
 
@@ -393,7 +393,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-d06c1--header-at-320-px-PL-and-EN/error-context.md
 
-  17) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN 
+  17) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN
 
     Error: pl: the candidates
 
@@ -419,7 +419,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-ef376--header-at-360-px-PL-and-EN/error-context.md
 
-  18) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN 
+  18) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN
 
     Error: pl: the candidates
 
@@ -445,7 +445,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-f7b94--header-at-375-px-PL-and-EN/error-context.md
 
-  19) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN 
+  19) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN
 
     Error: pl: the candidates
 
@@ -471,7 +471,7 @@ Running 33 tests using 2 workers
 
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-e1181--header-at-414-px-PL-and-EN/error-context.md
 
-  20) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN 
+  20) e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN
 
     Error: pl: the candidates
 
@@ -498,24 +498,24 @@ Running 33 tests using 2 workers
     Error Context: test-results/site-chrome-WP-BAR-05-—-th-63adc-header-at-1280-px-PL-and-EN/error-context.md
 
   20 failed
-    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below 
-    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below 
-    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below 
-    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below 
-    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below 
-    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below 
-    e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next 
-    e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer 
-    e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum 
-    e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN 
-    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN 
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, PL: at the opening month, with the control above and pinned below
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 320 px, EN: at the opening month, with the control above and pinned below
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, PL: at the opening month, with the control above and pinned below
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 375 px, EN: at the opening month, with the control above and pinned below
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, PL: at the opening month, with the control above and pinned below
+    e2e/calendar-barrel.spec.ts:119:7 › CB.E1 — the buttons cover nothing › 1280 px, EN: at the opening month, with the control above and pinned below
+    e2e/calendar-barrel.spec.ts:146:3 › CB.E2 — earlier months above, later below, on screen › the month drawn above the focus is the previous one; below, the next
+    e2e/calendar-barrel.spec.ts:166:3 › CB.E3 — ▼ then ▲ returns › to the same month, and ▲ then ▼ too, across the quiet summer
+    e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 288 px drum
+    e2e/calendar-barrel.spec.ts:184:5 › CB.E4 — a crowded neighbouring month stops before the buttons › eight events above and below, on a 300 px drum
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 320 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 360 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 375 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 414 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › WordPress bar at 1280 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 320 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 360 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 375 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 414 px, PL and EN
+    e2e/site-chrome.spec.ts:161:7 › WP.BAR.05 — the calendar title: the full name whenever it fits › github.io header at 1280 px, PL and EN
   13 passed (47.1s)
