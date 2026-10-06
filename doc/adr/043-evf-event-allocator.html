@@ -4,22 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="043-evf-event-allocator.md">
-<meta name="adr-source-sha256" content="53c381a2ef815dd714caa04871e4b6378cc6af520d08643218649f66b8c4a7af">
+<meta name="adr-source-sha256" content="57f3ab9ec41fe7e74997165ea3e1350a313a03fd4a66e4f642d11bb5dae86dc6">
 <title>ADR-043 · EVF Event Code Allocator + Classifier (Phase 2)</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 043</p><h1>EVF Event Code Allocator + Classifier (Phase 2)</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher) <strong>Amended by:</strong> <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">219 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero; amended 2026-10-06 — a European Championship is a season singleton outside the PEW sequence)</dd></div><div><dt>Date</dt><dd class="">2026-04-26 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher) <strong>Amended by:</strong> <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).</dd></div><div><dt>Source</dt><dd class=""><code>043-evf-event-allocator.md</code></dd></div><div><dt>Length</dt><dd class="">259 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero; amended 2026-10-06 — a European Championship is a season singleton outside the PEW sequence)
 <strong>Date:</strong> 2026-04-26
 <strong>Relates to:</strong> ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
 <strong>Amended by:</strong> <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#classifier-fn-classify-evf-event-p-name-p-is-team-pew-imew-dmew">Classifier — `fn_classify_evf_event(p_name, p_is_team) → &#x27;PEW&#x27; | &#x27;IMEW&#x27; | &#x27;DMEW&#x27;`</a></li><li class="depth-3"><a href="#allocator-fn-allocate-evf-event-code-p-id-season-p-kind-p-location-p-country">Allocator — `fn_allocate_evf_event_code(p_id_season, p_kind, p_location, p_country)`</a></li><li class="depth-3"><a href="#pre-allocation-pathway">Pre-allocation pathway</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#cross-phase-coordination">Cross-phase coordination</a></li><li class="depth-2"><a href="#amendment-2026-08-07-complete-snapshot-chronological-allocation">Amendment (2026-08-07) — complete-snapshot chronological allocation</a></li><li class="depth-2"><a href="#amendment-2026-08-08-rolling-links-move-by-series-never-by-slot-number">Amendment (2026-08-08) — rolling links move by series, never by slot number</a></li><li class="depth-2"><a href="#amendment-2026-08-08-historical-fragments-preserve-their-approved-bases">Amendment (2026-08-08) — historical fragments preserve their approved bases</a></li><li class="depth-2"><a href="#amendment-2026-08-09-predecessor-repair-preserves-historical-bases">Amendment (2026-08-09) — predecessor repair preserves historical bases</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#classifier-fn-classify-evf-event-p-name-p-is-team-pew-imew-dmew">Classifier — `fn_classify_evf_event(p_name, p_is_team) → &#x27;PEW&#x27; | &#x27;IMEW&#x27; | &#x27;DMEW&#x27;`</a></li><li class="depth-3"><a href="#allocator-fn-allocate-evf-event-code-p-id-season-p-kind-p-location-p-country">Allocator — `fn_allocate_evf_event_code(p_id_season, p_kind, p_location, p_country)`</a></li><li class="depth-3"><a href="#pre-allocation-pathway">Pre-allocation pathway</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#migration-test-references">Migration &amp; test references</a></li><li class="depth-2"><a href="#cross-phase-coordination">Cross-phase coordination</a></li><li class="depth-2"><a href="#amendment-2026-08-07-complete-snapshot-chronological-allocation">Amendment (2026-08-07) — complete-snapshot chronological allocation</a></li><li class="depth-2"><a href="#amendment-2026-08-08-rolling-links-move-by-series-never-by-slot-number">Amendment (2026-08-08) — rolling links move by series, never by slot number</a></li><li class="depth-2"><a href="#amendment-2026-08-08-historical-fragments-preserve-their-approved-bases">Amendment (2026-08-08) — historical fragments preserve their approved bases</a></li><li class="depth-2"><a href="#amendment-2026-08-09-predecessor-repair-preserves-historical-bases">Amendment (2026-08-09) — predecessor repair preserves historical bases</a></li><li class="depth-2"><a href="#amendment-2026-10-06-a-european-championship-is-a-singleton-in-the-snapshot-plan">Amendment (2026-10-06) — a European Championship is a singleton in the snapshot plan</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The Phase 1B FK-based carry-over engine (ADR-042) reads <code>tbl_event.id_prior_event</code> as the cross-season link. But the EVF scraper, untouched since ADR-028, was still emitting:</p>
 <ul>
@@ -230,8 +230,45 @@ carry a Guildford link remains a separate post-repair audit and requires explici
 evidence and approval.</p>
 <p>See <a href="../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql"><code>20260809000001_evf_predecessor_event_fragment_repair.sql</code></a>
 and <a href="../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql"><code>56_evf_predecessor_event_fragment_repair.sql</code></a>.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-06-a-european-championship-is-a-singleton-in-the-snapshot-plan">Amendment (2026-10-06) — a European Championship is a singleton in the snapshot plan</h2>
+<p><strong>Decision record:</strong> <code>doc/plans/evf-skopje-european-championships-2026-10-06.html</code> (Q1–Q5 = A, signed off 2026-10-06).</p>
+<p><strong>Context.</strong> The 2026-08-07 amendment numbered every retained calendar entry chronologically as
+<code>PEW{n}</code>. The 2027 Individual European Veterans Championships (Skopje, EVF calendar post 5407)
+therefore reached LOCAL, CERT and PROD as <code>PEW16fs-2026-2027</code>, and Dublin and Toronto moved to
+<code>PEW17efs</code> and <code>PEW18efs</code> to make room. <code>fn_classify_evf_event</code> still returned <code>IMEW</code> for the name;
+the insert branch of <code>fn_ingest_evf_calendar_identity_v1</code> used that answer only for a prior-season
+lookup and then inserted the PEW code. Had it stayed, Skopje's results would have been typed PEW and
+scored as a circuit event.</p>
+<p><strong>Decision.</strong></p>
+<ol>
+<li>An entry whose name carries both whole words <em>European</em> and <em>Championship(s)</em> (accents folded)
+is its season's singleton: <code>DMEW-{season}</code> for the team championship, <code>IMEW-{season}</code> otherwise.
+<code>fn_classify_evf_event</code> applies the same rule, so the team flag alone no longer makes a DMEW and
+a world championship is no longer an IMEW.</li>
+<li>A singleton takes no PEW number: the positive bases are exactly <code>{1..N}</code> over circuit entries.
+The RPC re-checks the plan, and a PEW code for a European Championship is a code plan mismatch.</li>
+<li>Held back and reported (Telegram and the scrape-run record), never guessed: any other
+championship; every new candidate when a singleton has more than one; a singleton of the kind
+<code>tbl_season.enum_european_event_type</code> does not expect. Only that entry waits — the ADR-086 lesson.
+An entry already imported is never withdrawn, because the reflow is about to hand its old code to
+another event; two imported candidates for one singleton are an integrity error.</li>
+<li>An unlinked singleton links to the latest earlier edition of its kind (ADR-021's biennial
+series); a link already present is kept. The three-argument <code>fn_ingest_evf_calendar</code> resolves it,
+because it rewrites every event's <code>id_prior_event</code> after the delegate and its series key carries
+the year (<code>europeanchampionships2027</code>), so it can never meet a predecessor.</li>
+</ol>
+<p><strong>Consequences.</strong> The next calendar run renames <code>PEW16fs-2026-2027</code> to <code>IMEW-2026-2027</code> (linked to
+<code>IMEW-2024-2025</code>) and closes the gap — Dublin <code>PEW16efs</code>, Toronto <code>PEW17efs</code> — through the existing
+reflow; nothing is anchored to the old codes, and the reconciler carries the renames to PROD by
+calendar identity (ADR-086 §4b). The <code>PEW[0-9]+-</code> lifecycle gate (<code>20260828000004</code>) does not apply to
+a singleton code, so its results can attach in May 2027 and are typed MEW. pgTAP evf.29's
+description now names the team <em>European Championship</em>; its assertion is unchanged.
+See <a href="../../supabase/migrations/20261006000002_evf_singleton_championships.sql"><code>20261006000002_evf_singleton_championships.sql</code></a>,
+<a href="../../supabase/tests/107_evf_singleton_championships.sql"><code>107_evf_singleton_championships.sql</code></a>
+(107.1–107.9) and <code>python/tests/test_evf_calendar.py</code> (evf.79–evf.83).</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="042-carryover-engine-dispatcher.html">← ADR-042: Per-season carry-over engine selection via dispatcher pattern</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="044-phase3-wizard.html">→ ADR-044: Phase 3 Admin UI + Season-Init Wizard (atomic transaction model)</a></nav>
-<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>53c381a2ef815dd714caa04871e4b6378cc6af520d08643218649f66b8c4a7af</code></footer>
+<footer class="foot">Generated from <code>043-evf-event-allocator.md</code> · source SHA-256 <code>57f3ab9ec41fe7e74997165ea3e1350a313a03fd4a66e4f642d11bb5dae86dc6</code></footer>
 </div></body></html>

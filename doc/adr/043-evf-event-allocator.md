@@ -1,6 +1,6 @@
 # ADR-043: EVF Event Code Allocator + Classifier (Phase 2)
 
-**Status:** Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero)
+**Status:** Accepted (amended 2026-08-07 — filtered chronological allocation with cancellation zero; amended 2026-10-06 — a European Championship is a season singleton outside the PEW sequence)
 **Date:** 2026-04-26
 **Relates to:** ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
 **Amended by:** [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).
@@ -217,3 +217,43 @@ evidence and approval.
 
 See [`20260809000001_evf_predecessor_event_fragment_repair.sql`](../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql)
 and [`56_evf_predecessor_event_fragment_repair.sql`](../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql).
+
+## Amendment (2026-10-06) — a European Championship is a singleton in the snapshot plan
+
+**Decision record:** `doc/plans/evf-skopje-european-championships-2026-10-06.html` (Q1–Q5 = A, signed off 2026-10-06).
+
+**Context.** The 2026-08-07 amendment numbered every retained calendar entry chronologically as
+`PEW{n}`. The 2027 Individual European Veterans Championships (Skopje, EVF calendar post 5407)
+therefore reached LOCAL, CERT and PROD as `PEW16fs-2026-2027`, and Dublin and Toronto moved to
+`PEW17efs` and `PEW18efs` to make room. `fn_classify_evf_event` still returned `IMEW` for the name;
+the insert branch of `fn_ingest_evf_calendar_identity_v1` used that answer only for a prior-season
+lookup and then inserted the PEW code. Had it stayed, Skopje's results would have been typed PEW and
+scored as a circuit event.
+
+**Decision.**
+
+1. An entry whose name carries both whole words *European* and *Championship(s)* (accents folded)
+   is its season's singleton: `DMEW-{season}` for the team championship, `IMEW-{season}` otherwise.
+   `fn_classify_evf_event` applies the same rule, so the team flag alone no longer makes a DMEW and
+   a world championship is no longer an IMEW.
+2. A singleton takes no PEW number: the positive bases are exactly `{1..N}` over circuit entries.
+   The RPC re-checks the plan, and a PEW code for a European Championship is a code plan mismatch.
+3. Held back and reported (Telegram and the scrape-run record), never guessed: any other
+   championship; every new candidate when a singleton has more than one; a singleton of the kind
+   `tbl_season.enum_european_event_type` does not expect. Only that entry waits — the ADR-086 lesson.
+   An entry already imported is never withdrawn, because the reflow is about to hand its old code to
+   another event; two imported candidates for one singleton are an integrity error.
+4. An unlinked singleton links to the latest earlier edition of its kind (ADR-021's biennial
+   series); a link already present is kept. The three-argument `fn_ingest_evf_calendar` resolves it,
+   because it rewrites every event's `id_prior_event` after the delegate and its series key carries
+   the year (`europeanchampionships2027`), so it can never meet a predecessor.
+
+**Consequences.** The next calendar run renames `PEW16fs-2026-2027` to `IMEW-2026-2027` (linked to
+`IMEW-2024-2025`) and closes the gap — Dublin `PEW16efs`, Toronto `PEW17efs` — through the existing
+reflow; nothing is anchored to the old codes, and the reconciler carries the renames to PROD by
+calendar identity (ADR-086 §4b). The `PEW[0-9]+-` lifecycle gate (`20260828000004`) does not apply to
+a singleton code, so its results can attach in May 2027 and are typed MEW. pgTAP evf.29's
+description now names the team *European Championship*; its assertion is unchanged.
+See [`20261006000002_evf_singleton_championships.sql`](../../supabase/migrations/20261006000002_evf_singleton_championships.sql),
+[`107_evf_singleton_championships.sql`](../../supabase/tests/107_evf_singleton_championships.sql)
+(107.1–107.9) and `python/tests/test_evf_calendar.py` (evf.79–evf.83).
