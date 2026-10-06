@@ -1,0 +1,310 @@
+<meta charset="utf-8">
+<title>PZSz Results Plugin</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · PZSz (PPS, MPS) · Plan</p>
+  <h1>A PZSz plugin for PPS and MPS results</h1>
+  <p class="dek">PPS and MPS are not PPW. Their results are imported <b>similarly to EVF, not exactly like it</b>. A result is kept only for a fencer already in our fencer table, matched on <b>surname, first name and birth year</b>. The birth year is the year of the birth date on the <b>PZSz start list</b>. Every other row is skipped. The matching is a new <b>PZSz plugin, started as a copy of the EVF admission and then changed</b>. PZSz is a different organizer, and it is not a veterans' organizer.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Decided 6 Oct: Q1 = ingest for CERT, promote for PROD · Q2–Q4 = A</span>
+    <span class="pill warn"><span class="dot"></span>Awaiting: sign-off of this revision</span>
+    <span class="pill"><span class="dot"></span>Nothing built yet · CERT and PROD unchanged</span>
+  </div>
+
+  <div class="note accent">
+    <p class="lede"><span class="tick">▸</span> In short · 6 October</p>
+    <ul style="margin-bottom:0">
+      <li><b>Your rules.</b> PPS and MPS are not PPW. They are imported similarly to EVF, not exactly like it. Results are kept only for fencers in the fencer table. Surname, first name and birth year must all match. Everything else is skipped.</li>
+      <li><b>The birth year</b> comes from the PZSz start list of each tournament. Each row there carries a full birth date, so the year is read straight off it. FencingTimeLive results carry no birth year at all.</li>
+      <li><b>A new plugin, <code>AdmitPzszRoster</code></b>, in its own file. It starts as a copy of the EVF admission (<code>python/pipeline/international_admission.py</code>) and is then changed for PZSz. The EVF code is left untouched. The PZSz flow of ADR-100 uses the new plugin in place of today's matcher, which links on the name alone, and on a fuzzy match.</li>
+      <li><b>One rule for every organizer</b> (your decision, 6 October): <code>ingest &lt;code&gt;</code> runs the ingestion on CERT. <code>promote &lt;code&gt;</code> runs the <b>same</b> ingestion on PROD, with the same flow and the same plugins, and checks that the result equals the verified CERT run (ADR-108). PPW works this way today. PZSz does from this plan on. EVF moves onto it in the plan after this one. <code>ingest &lt;code&gt; prod</code> stays refused.</li>
+      <li><b>Poznań, <code>PPS1s-2026-2027</code>, checked in full</b> (§1a): none of the 99 starters matches a fencer of ours on surname, first name and birth year, so the run stores nothing. Two starters share a name with a fencer of ours, and both are skipped:
+        <ul>
+          <li>Krochmalski Jakub, born 2008, 18th in men's sabre (ours: 1976);</li>
+          <li>Nowak Marta, born 2007, 31st in women's sabre (ours: 1979).</li>
+        </ul></li>
+    </ul>
+  </div>
+
+  <hr class="rule">
+
+  <section id="why">
+    <p class="kicker">1 · What happened</p>
+    <h2>The PPS ingest ran the PPW path</h2>
+    <ul>
+      <li><code>ingest PPS1s-2026-2027</code> started <code>ingest-event.yml</code>, which always runs <code>ingest_cli --flow ingest_domestic</code>, the PPW flow. It is the only flow the URL ingest knows (<code>ingest_cli.py:801</code>, <code>organizer_hint="SPWS"</code>).</li>
+      <li>The PPW flow read the FTL bracket name "Senior" as V0 (<code>parse_tournament_name</code>). It then matched place 18, "KROCHMALSKI Jakub", by name to our fencer id 156, born 1976. It refused, because 1976 is two categories away from V0. Nothing was written: CERT still holds 373 fencers and no Poznań tournament.</li>
+      <li>ADR-100's PZSz flow exists (<code>Flow.INGEST_PZSZ_SENIOR</code>, <code>ingest_pzsz_senior_bracket_from_url</code>), but nothing calls it. Its matcher (<code>ResolveFencers</code>, intake <code>PZSZ_SENIOR</code>) checks no birth year. It links a single same-named fencer, links a confident fuzzy match, and queues the rest for review.</li>
+    </ul>
+  </section>
+
+  <section id="poznan">
+    <p class="kicker">1a · Poznań, checked in full · 6 October</p>
+    <h2>Two namesakes, no fencer of ours</h2>
+    <p>Both PZSz final standings (<em>Klasyfikacja końcowa</em>, tournaments 10628 and 10629) list every fencer with a place and a full birth date: 53 in men's sabre and 46 in women's sabre. All 99 were compared with CERT's fencer table. The comparison used surname and first name with Polish letters folded and case ignored, with the birth years side by side.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Starter (PZSz)</th><th>Place</th><th>Born</th><th>Fencer of ours with that name</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>Krochmalski Jakub, DRAGON ŁÓDŹ</td><td>men 18</td><td>2008</td><td>id 156, born 1976 (confirmed)</td><td><span class="chip never">skipped · another person</span></td></tr>
+        <tr><td>Nowak Marta</td><td>women 31</td><td>2007</td><td>id 205, born 1979 (confirmed)</td><td><span class="chip never">skipped · another person</span></td></tr>
+        <tr><td>the other 97</td><td>—</td><td>—</td><td>none</td><td><span class="chip never">skipped · not ours</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>The PPW flow that ran on 6 October would have stopped at the women's list too, on Nowak Marta. Under your rule both are simply skipped. Under Q2 A, the Poznań run then writes no result and marks the event <code>COMPLETED</code>.</p>
+  </section>
+
+  <section id="evf">
+    <p class="kicker">2 · Similar to EVF, not exactly</p>
+    <h2>Where PZSz follows EVF and where it does not</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>EVF today</th><th>PZSz in this plan</th></tr></thead>
+      <tbody>
+        <tr><td>Who can be stored</td><td>A fencer in the fencer table with a PPW or MPW start (ADR-106)</td><td>Any fencer in the fencer table</td></tr>
+        <tr><td>Identity</td><td>Surname and first given name; our birth year must fit the bracket's category band</td><td>Surname, first name and the <b>exact</b> birth year from the PZSz start list</td></tr>
+        <tr><td>Anything else</td><td>Skipped; a row printed POL becomes PENDING</td><td>Skipped. No PENDING row and no review queue</td></tr>
+        <tr><td>New fencer, alias, roster change</td><td>Never</td><td>Never</td></tr>
+        <tr><td>Bracket</td><td>One per EVF category; N is EVF's bracket</td><td>One <code>SENIOR</code> field per weapon and gender; N is the placed fencers of the whole field; each fencer keeps the original place (ADR-100)</td></tr>
+        <tr><td>Scoring</td><td>EVF classic</td><td>EVF classic; PPS ×1.1 and MPS ×1.3 from the season's settings, unchanged</td></tr>
+        <tr><td>Source</td><td>EVF results API</td><td>Places from the event's FTL schedule (its URL, set in Admin); birth dates from the PZSz start list</td></tr>
+        <tr><td>CERT and PROD</td><td>Today it has its own runs on each environment; it moves onto ingest and promote in the next plan</td><td><code>ingest</code> on CERT, <code>promote</code> on PROD: the same ingestion, and promote checks it against the CERT run</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="plugin">
+    <p class="kicker">3 · The design</p>
+    <h2>A PZSz plugin, copied from EVF and changed</h2>
+    <p>The pipeline is built from plugins. <code>engine/flows.py</code> names the flows. <code>engine/rulebook.py</code> gives each flow an ordered list of plugins, with optional <code>params</code>. The plugins live in <code>python/pipeline/plugins/</code>, and <code>run_flow</code> runs them in order. The EVF admission is not a plugin: it is a module that <code>stages.py</code> and <code>evf_sync.py</code> call.</p>
+    <h3>The plugin: <code>AdmitPzszRoster</code></h3>
+    <p>New file <code>python/pipeline/plugins/pzsz_admission.py</code>. Its first commit is a <b>copy</b> of <code>python/pipeline/international_admission.py</code>, the EVF admission: <code>_words</code>, <code>identity_matches</code> and <code>admit</code>. Later commits change the copy into a plugin for PZSz, which is a different, non-veteran organizer. Nothing is shared with the EVF module, so a later change on either side cannot alter the other. What the copy changes:</p>
+    <ul>
+      <li><b>The birth year:</b> EVF checks our year against the bracket's category band. The copy compares it with the exact year on the PZSz start list.</li>
+      <li><b>The starter gate:</b> EVF requires a PPW or MPW start (<code>fn_spws_starter_ids</code>). The copy drops that gate; being in the fencer table is enough.</li>
+      <li><b>The outcomes:</b> EVF has PENDING for a row printed POL. The copy has none, so a row is either stored or skipped with its reason.</li>
+      <li><b>The shape:</b> EVF is a module called from <code>stages.py</code>. The copy becomes a plugin step in the PZSz flow.</li>
+    </ul>
+    <p>What it does for PZSz:</p>
+    <ul>
+      <li><b>Birth year:</b> from the PZSz start list (<code>pzszerm.pl/zawody/kalendarium-zawodow/turniej/?id=N</code>, column <em>Data urodzenia</em>). The year of the date is the birth year. The tournaments are listed on the event page, which is found from the event's stored <code>id_pzsz_event</code>.</li>
+      <li><b>Keys:</b> surname, first name and birth year. Names are compared with Polish letters folded and case ignored. The diacritic folding is the existing <code>fold_diacritics</code>, and the name split is the existing <code>parse_scraped_name</code>.</li>
+      <li><b>Store</b> only when exactly one fencer of ours matches all three keys.</li>
+      <li><b>Skip</b> everything else, with the reason recorded: not on the start list, the name appearing twice on the start list, no fencer of ours, a fencer of ours with the same name and another birth year, or two fencers of ours matching.</li>
+      <li><b>Never</b> create a fencer, write an alias, change a birth year or queue a review.</li>
+    </ul>
+    <h3>The flow</h3>
+    <p><code>Flow.INGEST_PZSZ_SENIOR</code> (<code>engine/rulebook.py</code>) becomes ParseSource → ValidateIR → ResolveEvent → <b>AdmitPzszRoster</b> → ValidateCounts → CommitPzszSenior. The new plugin replaces <code>ResolveFencers</code> in this flow only. The PPW and EVF flows are untouched. <code>CommitPzszSenior</code> keeps writing one <code>SENIOR</code> tournament per weapon and gender, with the full N and the original places.</p>
+    <h3>Getting there from <code>ingest &lt;code&gt;</code></h3>
+    <ul>
+      <li><code>ingest_cli</code> reads the event's organizer. A PZSz event takes the PZSz path. Every other event keeps the PPW path, unchanged.</li>
+      <li>The PZSz path reads the FTL schedule from the event's own URL and takes each finished listing's weapon and gender. It never decodes an age category from the name. It pairs each listing with the PZSz tournament of the same weapon and gender, and joins the start list to the results by the folded name.</li>
+      <li>A new pure reader, <code>python/scrapers/pzsz_start_list.py</code>, parses a PZSz tournament page into (name, club, birth date) rows. It is tested on saved copies of Poznań's two pages.</li>
+      <li>The run report, which already comes back to Telegram, lists every skipped starter with the reason. Same-name fencers with a different birth year are shown first.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">pzszerm.pl answers some networks with a JavaScript check</p>
+      <p>A plain request from this machine gets a "Wczytywanie danych…" page. The daily PZSz calendar sync reads the same site from GitHub Actions without trouble. If a start list cannot be read, the run fails and writes nothing. The plan does not try to get past the check.</p>
+    </div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">4 · Decide this first</p>
+    <h2>Four questions, each with a recommendation</h2>
+
+    <h3>Q1 · How do PZSz results reach PROD? <span class="chip never">decided 6 Oct</span></h3>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Ingest for CERT, promote for PROD, and they do the same thing</p>
+      <p>Your words. <code>promote &lt;code&gt;</code> runs the same PZSz ingestion against PROD and applies it only if it equals the verified CERT run, as it does for PPW today. <code>ingest &lt;code&gt; prod</code> stays refused for every event. EVF follows the same rule in the next plan. What promote needs for PZSz:</p>
+      <ul style="margin-bottom:0">
+        <li><code>plan_event</code> (<code>promotion/plan.py</code>) picks the flow from the event's organizer, as <code>ingest_cli</code> will.</li>
+        <li>The replay reads the PZSz start lists as well, and the run record keeps their hash beside the FTL schedule's.</li>
+        <li>The PZSz commit writes only what promote's apply already knows: <code>find_or_create_tournament</code>, and <code>ingest_results</code> with N. With nobody matched (Q2 A), nothing is written, so neither the separate participant-count write nor the review queue is needed.</li>
+        <li>ADR-108 is amended: promote covers PZSz events.</li>
+      </ul>
+    </div>
+    <p><b>Q2–Q4 decided 6 October: all A</b>, as recommended below.</p>
+
+    <h3>Q2 · When no starter is a fencer of ours, as in Poznań</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Store nothing, set the event <code>COMPLETED</code>, and report "0 of 99 starters are in the fencer table".</td><td>No empty tournaments on the calendar card, and the event stops showing "Awaiting results".</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Create the two <code>SENIOR</code> tournaments with their N and no results.</td><td>Records the field sizes, but shows two empty result lists.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q3 · Our birth year for the fencer is only an estimate</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Still exact. A mismatch is skipped and shown at the top of the report. You confirm the year in Admin and run the ingest again.</td><td>Your rule as stated, and no automatic change to the roster.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Accept a name match when our year is an estimate, and take the PZSz year.</td><td>Convenient, but it is how a junior namesake would reach a veteran's record.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q4 · Approved aliases</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Our canonical surname and first name only.</td><td>Your rule as stated: surname, name and birth year.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Also an approved alias, with the birth year still required.</td><td>Catches a spelling variant, such as a second given name, but widens the rule.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="steps">
+    <p class="kicker">5 · Order of work</p>
+    <h2>Test first, LOCAL first</h2>
+    <ol class="steps">
+      <li><b>Tests, seen RED first.</b> The plugin cases:
+        <ul>
+          <li>an exact match is stored with its original place and the full N;</li>
+          <li>Krochmalski Jakub 2008 against our 1976 is skipped;</li>
+          <li>a name missing from the start list is skipped;</li>
+          <li>two fencers of ours with the same name and year are skipped;</li>
+          <li>Polish letters and case are folded;</li>
+          <li>no fencer, alias, birth year or review row is ever written.</li>
+        </ul>
+        The other tests: the start-list reader on Poznań's two saved pages; the routing in <code>ingest_cli</code> and in promote's <code>plan_event</code> (PZSz goes to the PZSz flow, and PPW keeps the PPW flow, unchanged); a promote replay of a PZSz run, rehearsed with LOCAL standing in for PROD, which must equal the CERT run.</li>
+      <li><b>Build:</b> first commit the plain copy of the EVF admission as <code>plugins/pzsz_admission.py</code>, then change it for PZSz test by test. Then the start-list reader, the routing in <code>ingest_cli</code> and in promote's <code>plan_event</code>, the start-list hash in the run record, and the rulebook change. The bot and <code>ingest-event.yml</code> stay as they are: <code>ingest</code> for CERT, <code>promote</code> for PROD.</li>
+      <li><b>Documents:</b>
+        <ul>
+          <li>a new ADR, "PZSz results are admitted by roster identity with the start-list birth year", amending ADR-100 (matching; the review queue is no longer written) and ADR-108 (promote covers PZSz; one rule for every organizer: ingest for CERT, promote for PROD, the same ingestion);</li>
+          <li>the handbook's ingestion page, the RTM and the specification.</li>
+        </ul></li>
+      <li><b>LOCAL</b>, a copy of PROD: ingest Poznań. Expect 0 results stored and 0 fencers created. The report should list 99 skipped starters, with the two namesakes, Krochmalski Jakub and Nowak Marta, first.</li>
+      <li><code>scripts/preflight.sh</code> exits 0, then the push on your go. Then <code>ingest PPS1s-2026-2027</code> from Telegram on CERT, verified against the same expectations. Then <code>promote PPS1s-2026-2027</code> for PROD, verified the same way.</li>
+    </ol>
+  </section>
+
+  <section id="out">
+    <p class="kicker">6 · Not in this plan</p>
+    <h2>Left for later</h2>
+    <ul>
+      <li><b>EVF onto ingest and promote</b>, the next plan, under the same rule. Today EVF results reach each environment through separate runs.</li>
+      <li>Team results (your question of 6 October, deferred).</li>
+      <li>An automatic close for PZSz and international events. Today's daily close covers PPW and MPW only.</li>
+      <li>Retiring the ADR-100 review table and its two functions. They stay in place, unused, and the new ADR says so.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · pzsz-results-plugin · 2026-10-06</p>
+</div>

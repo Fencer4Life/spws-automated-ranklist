@@ -97,7 +97,10 @@ if [ -f "$RTM" ]; then
   #   how it turns, ADR-084 amendment 2026-10-06), +FR-154 (every interface
   #   string in the reader's language). FR-148 amended in place. Registered as
   #   Planned before code (plan kalendarz-beben-strzalki §08 step 1).
-  EXPECTED=153
+  # 155 since 2026-10-06: +FR-155 (a PZSz result is kept only on surname, first
+  #   name and birth year), +FR-156 (ingest for CERT, promote for PROD, for
+  #   every organizer); ADR-111. Registered as Planned before code.
+  EXPECTED=155
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else
