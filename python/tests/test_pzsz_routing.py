@@ -104,7 +104,7 @@ def _live(db: MemoryDb, fetch=None):
     )
 
 
-def _plan(db: MemoryDb, fetch=None) -> pl.Plan:
+def _plan(db: MemoryDb, fetch=None, pzsz_event=None) -> pl.Plan:
     plan, _, _ = _with_pages(
         fetch or _pages(),
         pl.plan_event,
@@ -113,6 +113,7 @@ def _plan(db: MemoryDb, fetch=None) -> pl.Plan:
         _ReadOnly(db),
         url_event=SCHEDULE,
         created=[],
+        pzsz_event=pzsz_event,
     )
     return plan
 
@@ -199,6 +200,35 @@ class TestPromoteRoutesPzsz:
         assert rounds["SABREM"]["start_list_sha256"] == start_list_sha256(men)
         assert rounds["SABREF"]["start_list_sha256"] != rounds["SABREM"]["start_list_sha256"]
         assert [o["op"] for o in plan.ops if o["op"] == "ingest_results"] == ["ingest_results"]
+
+    def test_the_run_records_the_pzsz_event_it_read(self):
+        """PZSZ.ROUTE.02: the listings carry the PZSz event id, so the CERT
+        run tells promote which start lists it read."""
+        assert _plan(_pzsz_db()).listings["pzsz_event"] == 4588
+
+    def test_a_prod_event_without_the_pzsz_id_takes_the_cert_runs(self):
+        """PZSZ.ROUTE.02: PROD's calendar row may lack id_pzsz_event (the
+        calendar promotion does not carry it); the plan reads the start lists
+        of the PZSz event the CERT run read, and writes nothing for it."""
+        db = _pzsz_db()
+        db.events[9]["id_pzsz_event"] = None
+        plan = _plan(db, pzsz_event=4588)
+        assert plan.listings["pzsz_event"] == 4588
+        assert [o["op"] for o in plan.ops if o["op"] == "ingest_results"] == ["ingest_results"]
+
+    def test_a_prod_event_with_another_pzsz_id_refuses(self):
+        """PZSZ.ROUTE.02: CERT read event 4588, PROD names 9999 — refused."""
+        db = _pzsz_db()
+        db.events[9]["id_pzsz_event"] = 9999
+        with pytest.raises(pl.PlanRefused, match="id_pzsz_event"):
+            _plan(db, pzsz_event=4588)
+
+    def test_no_pzsz_id_on_either_side_refuses(self):
+        """PZSZ.ROUTE.02: without a PZSz event id there is no start list."""
+        db = _pzsz_db()
+        db.events[9]["id_pzsz_event"] = None
+        with pytest.raises(pl.PlanRefused, match="id_pzsz_event"):
+            _plan(db)
 
     def test_a_start_list_changed_since_the_cert_run_is_refused(self):
         """PZSZ.ROUTE.02: the CERT run read another start list; promote names it."""

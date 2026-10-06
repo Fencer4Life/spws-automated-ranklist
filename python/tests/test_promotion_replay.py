@@ -182,9 +182,15 @@ class _PlanFn:
         self.plan = plan
         self.calls: list[dict] = []
 
-    def __call__(self, code, season_end_year, prod_db, *, url_event, created):
+    def __call__(self, code, season_end_year, prod_db, *, url_event, created, pzsz_event=None):
         self.calls.append(
-            {"code": code, "season": season_end_year, "url": url_event, "created": created}
+            {
+                "code": code,
+                "season": season_end_year,
+                "url": url_event,
+                "created": created,
+                "pzsz_event": pzsz_event,
+            }
         )
         if isinstance(self.plan, Exception):
             raise self.plan
@@ -315,8 +321,16 @@ class TestPlanCompare:
                 "season": 2027,
                 "url": _run()["url_event"],
                 "created": _run()["jsonb_master_data"]["created"],
+                "pzsz_event": None,
             }
         ]
+
+    def test_the_plan_gets_the_pzsz_event_the_cert_run_read(self):
+        """PZSZ.ROUTE.02 — a PZSz run records the PZSz event whose start lists
+        it read; the plan reads the same ones on PROD (ADR-111 §6)."""
+        listings = {**_listings(A="h1", B="h2"), "pzsz_event": 4588}
+        _, parts = _replay(cert=FakeSide("cert", run=_run(jsonb_listings=listings)))
+        assert parts["plan_fn"].calls[0]["pzsz_event"] == 4588
 
     def test_source_differences(self):
         """PROMO.REPLAY.10 — a listing changed, added or gone since the CERT run, or a changed

@@ -318,6 +318,7 @@ def replay(
             prod_db,
             url_event=run["url_event"],
             created=master.get("created") or [],
+            pzsz_event=(run.get("jsonb_listings") or {}).get("pzsz_event"),
         )
     except PlanRefused as e:
         raise PromoteRefused(f"[{e.kind}] {e}") from e
