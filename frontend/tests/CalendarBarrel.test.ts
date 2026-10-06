@@ -887,11 +887,13 @@ describe('CalendarBarrel — turned-away months', () => {
 
 // ---------------------------------------------------------------------------
 // CB.46 — a crowded neighbouring month stops before the buttons (D9). A
-// receded month's tiles take 41 × n − 3 px, and the buttons start at 252 px
-// (github.io, 320) or 300 px, so a month of seven would run under them. Its
-// strip now stops 6 px short: 36 + 6 = 42 px from the right, and 300 − 6 =
-// 294 px on a wide drum. jsdom has no layout engine, so — like CV.W7 — the
-// declaration is pinned; CB.E4 measures the result in a browser.
+// receded month's tiles take 41 × n − 3 px, and the buttons start 36 px from
+// the drum's right edge (252 px on github.io at 320, 264 px on WordPress), so
+// a month of seven would run under them. Its strip now stops 6 px short:
+// 36 + 6 = 42 px from the right, and never past 294 px, the mock's cap, kept
+// unchanged when the buttons moved to the right edge (CB.53). jsdom has no
+// layout engine, so — like CV.W7 — the declaration is pinned; CB.E4 measures
+// the result in a browser.
 // ---------------------------------------------------------------------------
 describe('CalendarBarrel — crowded neighbouring months', () => {
   it('CB.46: a receded row’s strip stops before the buttons; the focused row’s does not', () => {
@@ -900,6 +902,26 @@ describe('CalendarBarrel — crowded neighbouring months', () => {
       expect(getComputedStyle(container.querySelector(sel)!).maxWidth, sel).toBe('min(calc(100% - 42px), 294px)')
     }
     expect(['', 'none']).toContain(getComputedStyle(container.querySelector('.ln.mid .rw')!).maxWidth)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CB.53 — ▲ and ▼ sit at the drum's RIGHT edge at every width (the user,
+// 6 Oct 2026). The mock's `left: min(calc(100% - 36px), 300px)` was flush right
+// only on a drum up to 336 px; on a wider one it held the buttons 300 px from
+// the left, which reads as centred. jsdom has no layout engine, so the
+// declaration is pinned here and CB.E5 measures the result in a browser.
+// ---------------------------------------------------------------------------
+describe('CalendarBarrel — step buttons on the right edge', () => {
+  it('CB.53: ▲ and ▼ are anchored to the right edge, not offset from the left', () => {
+    const { container } = barrel({ anchorIndex: 2 })
+    for (const sel of ['.stp.prev', '.stp.next']) {
+      const button = container.querySelector(sel)
+      expect(button, sel).not.toBeNull()
+      const style = getComputedStyle(button!)
+      expect(['0', '0px'], `${sel} right`).toContain(style.right)
+      expect(['', 'auto'], `${sel} left`).toContain(style.left)
+    }
   })
 })
 

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="084-calendar-quarter-barrel-event-card.md">
-<meta name="adr-source-sha256" content="42711ae1f5693a7013a3615d121b34c9120eec7c8c45db884184218a5dc7d84d">
+<meta name="adr-source-sha256" content="5360d68efaea7511141126a373f5e7d53e0b304ac4bc468dd06a6a146130fb84">
 <title>ADR-084 · Calendar Quarter Barrel + Single Event Card</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 084</p><h1>Calendar Quarter Barrel + Single Event Card</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-08-09; awaiting sign-off). <strong>Amended 2026-08-29:</strong> the drum buckets by <strong>month</strong>, not quarter; the palette is <strong>inverted</strong> so time drives the fill and the past recedes to grey; the drum becomes a <strong>true cylinder</strong>; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment. <strong>Amended 2026-09-06:</strong> a weapon filter joins the calendar footer, and the scope control is renamed <code>SPWS | EVF+</code>. <strong>Amended 2026-10-06:</strong> time runs <strong>downward</strong> (earlier months above the focus, later below); two step buttons ▲/▼ and the ↑/↓ keys move to the nearest month with competitions; the jump control's arrow follows the new direction; turned-away months are <code>inert</code>, and a row is named in the page's language.</dd></div><div><dt>Date</dt><dd class="">2026-08-09</dd></div><div><dt>Source</dt><dd class=""><code>084-calendar-quarter-barrel-event-card.md</code></dd></div><div><dt>Length</dt><dd class="">1140 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-08-09; awaiting sign-off). <strong>Amended 2026-08-29:</strong> the drum buckets by <strong>month</strong>, not quarter; the palette is <strong>inverted</strong> so time drives the fill and the past recedes to grey; the drum becomes a <strong>true cylinder</strong>; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment. <strong>Amended 2026-09-06:</strong> a weapon filter joins the calendar footer, and the scope control is renamed <code>SPWS | EVF+</code>. <strong>Amended 2026-10-06:</strong> time runs <strong>downward</strong> (earlier months above the focus, later below); two step buttons ▲/▼ and the ↑/↓ keys move to the nearest month with competitions; the jump control's arrow follows the new direction; turned-away months are <code>inert</code>, and a row is named in the page's language.</dd></div><div><dt>Date</dt><dd class="">2026-08-09</dd></div><div><dt>Source</dt><dd class=""><code>084-calendar-quarter-barrel-event-card.md</code></dd></div><div><dt>Length</dt><dd class="">1142 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-08-09; awaiting sign-off). <strong>Amended 2026-08-29:</strong> the drum buckets by <strong>month</strong>, not quarter; the palette is <strong>inverted</strong> so time drives the fill and the past recedes to grey; the drum becomes a <strong>true cylinder</strong>; the tile is edge-coded; quiet months render but the drum never rests on one; country flags become the complete circular set; the card gains three surface treatments; a tap on a receded row's panel now carries that panel to the card rather than the row's default; the date leads the card; and the caret is realigned to the widened tiles. Open items 1 and 2 remain open — neither is settled by this amendment. <strong>Amended 2026-09-06:</strong> a weapon filter joins the calendar footer, and the scope control is renamed <code>SPWS | EVF+</code>. <strong>Amended 2026-10-06:</strong> time runs <strong>downward</strong> (earlier months above the focus, later below); two step buttons ▲/▼ and the ↑/↓ keys move to the nearest month with competitions; the jump control's arrow follows the new direction; turned-away months are <code>inert</code>, and a row is named in the page's language.
 <strong>Date:</strong> 2026-08-09
 <strong>Supersedes:</strong> <a href="015-m8-ui-design-decisions.html">ADR-015</a> §2 (Calendar Layout — Vertical Timeline) and its <code>m8_calendar_view.html</code> mockup registry entry. ADR-015 §§1, 3–9 are untouched.
@@ -1121,12 +1121,13 @@ styles and this repo has no global stylesheet to share custom properties on.</p>
 <p><strong>§6 is refined.</strong> The whole row stays the tap target, and two buttons make that visible:</p>
 <ul>
 <li><strong>What they do:</strong> ▲ moves to the nearest earlier month with competitions and ▼ to the nearest later one, as tapping the neighbouring row does (<code>stepRow()</code>).</li>
-<li><strong>Where they sit:</strong> beside the neighbouring months, right of their left-aligned tiles, at most 300 px from the left edge.</li>
+<li><strong>Where they sit:</strong> beside the neighbouring months, against the drum's right edge at every width.</li>
 <li><strong>How they render:</strong> as siblings of the drum inside the viewport, at full opacity and never clipped.</li>
 <li><strong>At the ends:</strong> a button is removed when nothing lies further that way, and focus passes to the other.</li>
-<li><strong>Crowded months:</strong> a receded month's tiles stop 6 px before the buttons.</li>
+<li><strong>Crowded months:</strong> a receded month's tiles stop at least 6 px before the buttons.</li>
 </ul>
-<p>Measured at 320, 375 and 1,180 px, the buttons cover no tile, seam label or jump control. Buttons centred on the top and bottom edges were rejected: they covered the jump control at 320 px. Wheel, swipe and drag stay out (D8 (a), keyboard only).</p>
+<p>Measured at 320, 375 and 1,280 px, the buttons cover no tile, seam label or jump control. Buttons centred on the top and bottom edges were rejected: they covered the jump control at 320 px. Wheel, swipe and drag stay out (D8 (a), keyboard only).</p>
+<p><strong>Corrected before release (6 Oct 2026).</strong> The mock placed the buttons at <code>left: min(100% − 36px, 300px)</code>. That is flush with the right edge only on a drum up to 336 px wide; on a wider one it held them 300 px from the left, so on a computer they stood near the middle of the drum. The user's rule is the right side, so the buttons are anchored to the right edge at every width (<code>right: 0</code>). CB.53 pins the declaration and CB.E5 measures it at 320, 375, 414, 768 and 1,280 px; both were seen red first, 19 to 920 px short of the edge.</p>
 <h3 id="n-the-jump-control-s-arrow-points-to-the-opening-month">N · The jump control's arrow points to the opening month</h3>
 <p>§J's positions and look are unchanged; the cases they serve follow the direction. When the opening month is drawn above, the control rides the adjacent upper seam with ↑. When it is below, the control pins to the lower edge with ↓, or ← when it is the adjacent row. The pinned case no longer carries a row index.</p>
 <h3 id="o-what-cannot-be-seen-cannot-be-reached">O · What cannot be seen cannot be reached</h3>
@@ -1137,8 +1138,8 @@ styles and this repo has no global stylesheet to share custom properties on.</p>
 <ul>
 <li><strong><code>stepRow(rows, from, direction)</code></strong> in <code>lib/calendarMonths.ts</code> returns the nearest non-empty row strictly beyond <code>from</code>, or <code>null</code>. Unlike <code>settleRow()</code> it never reverses at the end of the drum, so a <code>null</code> is what removes a button.</li>
 <li><strong>The jump control's cases are one union,</strong> <code>JumpCue</code> in <code>CalendarBarrel.svelte</code>: either it rides row <code>active − 1</code> with ↑, or it is pinned with ← (distance 1) or ↓ (distance 2 or more).</li>
-<li><strong>The buttons</strong> are <code>.stp.prev</code> and <code>.stp.next</code>: a 36 px hit area around a 30 px disc, at <code>top: 38px</code> and <code>top: 177px</code>, <code>left: min(100% − 36px, 300px)</code>. The arrow is one <code>aria-hidden</code> SVG path, rotated for ▼, the same choice §J made for the jump arrow. Their names are <code>calendar_step_prev</code> / <code>calendar_step_next</code> („Wcześniejsze zawody&quot; / „Późniejsze zawody&quot;, &quot;Earlier competitions&quot; / &quot;Later competitions&quot;).</li>
-<li><strong>Receded rows</strong> are capped at <code>max-width: min(100% − 42px, 294px)</code>, which is the 6 px gap in §M.</li>
+<li><strong>The buttons</strong> are <code>.stp.prev</code> and <code>.stp.next</code>: a 36 px hit area around a 30 px disc, at <code>top: 38px</code> and <code>top: 177px</code>, <code>right: 0</code>. The arrow is one <code>aria-hidden</code> SVG path, rotated for ▼, the same choice §J made for the jump arrow. Their names are <code>calendar_step_prev</code> / <code>calendar_step_next</code> („Wcześniejsze zawody&quot; / „Późniejsze zawody&quot;, &quot;Earlier competitions&quot; / &quot;Later competitions&quot;).</li>
+<li><strong>Receded rows</strong> are capped at <code>max-width: min(100% − 42px, 294px)</code>: 6 px short of the buttons on a drum up to 336 px wide, and never past the mock's 294 px, which is kept unchanged now that the buttons sit at the right edge.</li>
 <li><strong>The before/after comparison</strong> captured 102 states: the WordPress element at 320, 375 and 1,280 px, the github.io shell at 320, 360, 375 and 414 px, each in Polish and English. 100 differ only where the plan allows. The other two are 24 px of capture noise, which a second capture of the old build also shows, and one pixel 1/255 lighter on the corner of „EVF+&quot;. The user accepted both.</li>
 </ul>
 <h3 id="what-this-amendment-does-not-settle-2">What this amendment does <em>not</em> settle</h3>
@@ -1154,11 +1155,11 @@ styles and this repo has no global stylesheet to share custom properties on.</p>
 <tbody>
 <tr>
 <td>Unit tests</td>
-<td>CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50</td>
+<td>CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50, CB.53</td>
 </tr>
 <tr>
 <td>Browser tests</td>
-<td>CB.E1–CB.E4 (Playwright, the custom element: 320, 375 and 1,280 px in both languages; crowded months on 288 and 300 px drums)</td>
+<td>CB.E1–CB.E5 (Playwright, the custom element: 320, 375 and 1,280 px in both languages; crowded months on 288 and 300 px drums; the right edge at 320, 375, 414, 768 and 1,280 px)</td>
 </tr>
 <tr>
 <td>TDD record</td>
@@ -1166,11 +1167,11 @@ styles and this repo has no global stylesheet to share custom properties on.</p>
 </tr>
 <tr>
 <td>vitest</td>
-<td>1,224 passing, 68 files</td>
+<td>1,225 passing, 68 files</td>
 </tr>
 <tr>
 <td>Playwright</td>
-<td>57 passing</td>
+<td>62 passing</td>
 </tr>
 <tr>
 <td>svelte-check</td>
@@ -1181,5 +1182,5 @@ styles and this repo has no global stylesheet to share custom properties on.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="083-server-enforced-authorization.html">← ADR-083: Server-Enforced Authorization — Deny-by-Default Grants and a Standing Posture Gate</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="085-points-calculator-temporary-static-page.html">→ ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a></nav>
-<footer class="foot">Generated from <code>084-calendar-quarter-barrel-event-card.md</code> · source SHA-256 <code>42711ae1f5693a7013a3615d121b34c9120eec7c8c45db884184218a5dc7d84d</code></footer>
+<footer class="foot">Generated from <code>084-calendar-quarter-barrel-event-card.md</code> · source SHA-256 <code>5360d68efaea7511141126a373f5e7d53e0b304ac4bc468dd06a6a146130fb84</code></footer>
 </div></body></html>

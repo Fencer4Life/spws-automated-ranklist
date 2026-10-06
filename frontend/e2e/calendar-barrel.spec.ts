@@ -1,4 +1,4 @@
-// CB.E1–CB.E4 — the calendar drum in a real browser, against the custom-element
+// CB.E1–CB.E5 — the calendar drum in a real browser, against the custom-element
 // build WordPress loads. ADR-084 amendment 2026-10-06; FR-153.
 // Plan: doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html §06.
 //
@@ -196,6 +196,26 @@ test.describe('CB.E4 — a crowded neighbouring month stops before the buttons',
           expect(tile.x + tile.w, `${tile.what} beside ${b.what}`).toBeLessThanOrEqual(hitBoxLeft)
         }
       }
+    })
+  }
+})
+
+test.describe('CB.E5 — ▲ and ▼ sit at the drum’s right edge at every width', () => {
+  // The user's rule (6 Oct 2026): the buttons align to the drum's RIGHT side.
+  // The mock's 300 px cap kept them by the tiles on a wide drum, so from 375 px
+  // up they stood off the right edge, and on a computer they read as centred.
+  for (const width of [320, 375, 414, 768, 1280]) {
+    test(`${width} px`, async ({ page }) => {
+      await mountCalendar(page, POOL, width)
+      const { vpRight, rights } = await page.locator('spws-calendar').evaluate((host) => {
+        const root = host.shadowRoot!
+        return {
+          vpRight: root.querySelector('.vp')!.getBoundingClientRect().right,
+          rights: [...root.querySelectorAll('.stp')].map((b) => b.getBoundingClientRect().right),
+        }
+      })
+      expect(rights.length, 'both buttons are drawn').toBe(2)
+      for (const right of rights) expect(Math.abs(vpRight - right), `right edge ${right} vs drum ${vpRight}`).toBeLessThanOrEqual(0.5)
     })
   }
 })
