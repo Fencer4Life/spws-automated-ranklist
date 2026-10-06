@@ -34,6 +34,7 @@ from python.scrapers.evf_calendar import (
     is_ignored_calendar_entry,
     is_in_scope,
     match_scraped_to_existing,
+    partition_championships,
     plan_calendar_codes,
     scrape_full_season_calendar,
     url_event_if_concluded,
@@ -293,6 +294,11 @@ def sync_calendar(
         # Defensive repeat of the parser-level rule: tests and alternate callers
         # can supply snapshots directly. CAMP rows never reach counts or writes.
         full_calendar = [event for event in full_calendar if not is_ignored_calendar_entry(event)]
+        # A championship the planner must not guess about waits for a person;
+        # like an unannounced stub it never reaches counts or writes.
+        full_calendar, held_championships = partition_championships(
+            full_calendar, season.get("enum_european_event_type"), known_ids
+        )
     except RuntimeError as exc:
         if not dry_run:
             _record_calendar_scrape(
@@ -331,6 +337,25 @@ def sync_calendar(
             "(not an error — awaiting EVF announcement)"
         )
 
+    held_meta = [
+        {
+            "name": e.get("name"),
+            "evf_calendar_id": e.get("evf_calendar_id"),
+            "url": e.get("url"),
+            "reason": e.get("hold_reason"),
+        }
+        for e in held_championships
+    ]
+    for held in held_meta:
+        print(f"  Holding back {held['name']!r}: {held['reason']}")
+        if not dry_run:
+            _telegram(
+                bot_token,
+                chat_id,
+                f"⏸ <b>{held['name']}</b> held back from the EVF calendar — "
+                f"{held['reason']}. It stays out until a person decides what it is.",
+            )
+
     if not dry_run:
         _record_calendar_scrape(
             ref,
@@ -340,7 +365,11 @@ def sync_calendar(
             season_event_count,
             cancelled_count,
             "STARTED",
-            {"evf_calendar_ids": calendar_ids, "pending_weapons": pending_meta},
+            {
+                "evf_calendar_ids": calendar_ids,
+                "pending_weapons": pending_meta,
+                "held_championships": held_meta,
+            },
         )
 
     try:
@@ -353,6 +382,7 @@ def sync_calendar(
             full_calendar,
             dry_run,
             pending_weapons_count=len(pending_meta),
+            held_championships_count=len(held_meta),
         )
     except Exception as exc:
         if not dry_run:
@@ -368,6 +398,7 @@ def sync_calendar(
                     "error": str(exc)[:1000],
                     "evf_calendar_ids": calendar_ids,
                     "pending_weapons": pending_meta,
+                    "held_championships": held_meta,
                 },
             )
         _telegram(bot_token, chat_id, f"<b>EVF Calendar FAILED</b>\n<pre>{str(exc)[:500]}</pre>")
@@ -382,7 +413,11 @@ def sync_calendar(
             season_event_count,
             cancelled_count,
             "SUCCEEDED",
-            {"evf_calendar_ids": calendar_ids, "pending_weapons": pending_meta},
+            {
+                "evf_calendar_ids": calendar_ids,
+                "pending_weapons": pending_meta,
+                "held_championships": held_meta,
+            },
         )
     return result
 
@@ -396,6 +431,7 @@ def _sync_calendar_snapshot(
     full_calendar: list[dict],
     dry_run: bool,
     pending_weapons_count: int = 0,
+    held_championships_count: int = 0,
 ) -> list[dict]:
     """Apply one already-validated full-season EVF calendar snapshot."""
     season_event_count = len(full_calendar)
@@ -555,7 +591,8 @@ def _sync_calendar_snapshot(
                 f"<b>EVF Calendar</b>\n"
                 f"created={created}, slot_reused={slot_reused}, "
                 f"prior_matched={prior_match}, alerts={len(alerts)}, "
-                f"pending_weapons={pending_weapons_count}\n"
+                f"pending_weapons={pending_weapons_count}, "
+                f"held_championships={held_championships_count}\n"
                 f"URL fields: inv={inv} reg={reg} deadline={dln}",
             )
 
@@ -656,6 +693,17 @@ def _sync_calendar_snapshot(
         print(f"\n  [DRY RUN] {len(new)} new, {len(already)} already in CERT")
         for evt in new:
             print(f"  [DRY RUN] Would create: {evt.get('dt_start')} {evt.get('name')}")
+        # Every rename the plan would make, so a reflow can be reviewed before
+        # it is applied: the existing code against the planned one, per event.
+        current_codes = {
+            int(row["id_evf_calendar_event"]): row.get("txt_code")
+            for row in existing
+            if row.get("id_evf_calendar_event") is not None
+        }
+        for evt in code_plan:
+            current = current_codes.get(int(evt["evf_calendar_id"]))
+            if current and current != evt["desired_code"]:
+                print(f"  [DRY RUN] Would rename: {current} → {evt['desired_code']}  {evt['name']}")
 
     return cal_events
 

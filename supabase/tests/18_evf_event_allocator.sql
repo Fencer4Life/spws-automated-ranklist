@@ -106,12 +106,13 @@ SELECT is(
 
 
 -- =========================================================================
--- evf.29: classifier returns DMEW when team flag is set (overrides name)
+-- evf.29: classifier returns DMEW for the team European Championship
+--         (since 2026-10-06 the team flag alone is not enough: 107.9)
 -- =========================================================================
 SELECT is(
   fn_classify_evf_event('European Team Championships 2026 – Cognac', TRUE),
   'DMEW',
-  'evf.29: is_team=TRUE always → DMEW (team flag wins)'
+  'evf.29: team European Championship → DMEW'
 );
 
 

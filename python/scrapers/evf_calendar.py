@@ -92,6 +92,15 @@ _WEAPON_LETTERS = {"EPEE": "e", "FOIL": "f", "SABRE": "s"}
 # weapon.
 _DETAIL_WEAPON_RE = re.compile(r"\b(EPEE|FOIL|SABRE)\b", re.IGNORECASE)
 
+# A European Championship is a singleton per season, never a numbered circuit
+# event (ADR-043 amendment 2026-10-06): IMEW for the individual championship,
+# DMEW for the team one. Both words are required and matched whole, after
+# folding accents -- the same rule fn_classify_evf_event applies when the RPC
+# re-checks the plan. Any other entry naming a championship is held back.
+_EUROPEAN_RE = re.compile(r"\beuropean\b", re.IGNORECASE)
+_CHAMPIONSHIP_RE = re.compile(r"\bchampionships?\b", re.IGNORECASE)
+SINGLETON_KINDS = ("IMEW", "DMEW")
+
 # One-time historical fact from the approved 2026-2027 repair manifest: this
 # occurrence was already cancelled before its first authoritative import, but
 # buggy scrapes previously gave it a positive code.  Once repaired, PEW0 also
@@ -118,6 +127,77 @@ class CalendarIntegrityError(RuntimeError):
 def is_ignored_calendar_entry(event: dict) -> bool:
     """Return whether an EVF calendar row must be excluded from all processing."""
     return bool(_CAMP_WORD_RE.search(str(event.get("name") or "")))
+
+
+def classify_calendar_entry(event: dict) -> str:
+    """Return ``PEW``, ``IMEW``, ``DMEW`` or ``HOLD`` for one calendar entry.
+
+    A European Championship takes the season's singleton code and no PEW
+    number: DMEW for the team championship, IMEW otherwise. Any other entry
+    naming a championship is HOLD -- a world or national championship listed
+    on EVF's calendar is neither a circuit event nor European, so a person
+    decides what it is rather than the planner guessing.
+    """
+    name = _diacritic_fold(str(event.get("name") or ""))
+    if not _CHAMPIONSHIP_RE.search(name):
+        return "PEW"
+    if not _EUROPEAN_RE.search(name):
+        return "HOLD"
+    return "DMEW" if event.get("is_team") else "IMEW"
+
+
+def partition_championships(
+    events: list[dict],
+    season_european_type: str | None,
+    known_calendar_ids: set[int] | None = None,
+) -> tuple[list[dict], list[dict]]:
+    """Split a season snapshot into (ready, held) for its championship entries.
+
+    Held back, each carrying a ``hold_reason``:
+
+      * a championship that is not a European Championship;
+      * a European Championship of the kind the season does not expect
+        (``tbl_season.enum_european_event_type``);
+      * every new candidate for a singleton that has more than one candidate,
+        so the planner never guesses which of them is real.
+
+    Only that entry waits; the rest of the season syncs (the ADR-086 lesson:
+    one entry must not stop the whole calendar). An entry already imported is
+    never held back -- withdrawing it would leave its row on a code the reflow
+    is about to hand to another event. Two imported entries competing for one
+    singleton cannot be resolved here and are an integrity error.
+    """
+    known = known_calendar_ids or set()
+
+    def imported(evt: dict) -> bool:
+        calendar_id = evt.get("evf_calendar_id")
+        return calendar_id is not None and int(calendar_id) in known
+
+    kinds = [classify_calendar_entry(evt) for evt in events]
+    reasons: dict[int, str] = {}
+    for i, (evt, kind) in enumerate(zip(events, kinds, strict=True)):
+        if imported(evt):
+            continue
+        if kind == "HOLD":
+            reasons[i] = "a championship that is not a European Championship"
+        elif kind in SINGLETON_KINDS and season_european_type and kind != season_european_type:
+            reasons[i] = f"{kind} in a season that expects {season_european_type}"
+
+    for kind in SINGLETON_KINDS:
+        candidates = [i for i, k in enumerate(kinds) if k == kind and i not in reasons]
+        if len(candidates) < 2:
+            continue
+        imported_ones = [i for i in candidates if imported(events[i])]
+        if len(imported_ones) > 1:
+            names = ", ".join(repr(events[i].get("name")) for i in imported_ones)
+            raise CalendarIntegrityError(f"two imported entries compete for {kind}: {names}")
+        for i in candidates:
+            if i not in imported_ones:
+                reasons[i] = f"one of {len(candidates)} candidates for the season's {kind}"
+
+    ready = [evt for i, evt in enumerate(events) if i not in reasons]
+    held = [{**evt, "hold_reason": reasons[i]} for i, evt in enumerate(events) if i in reasons]
+    return ready, held
 
 
 def _weapon_suffix(event: dict) -> str:
@@ -174,6 +254,12 @@ def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: s
     a positive PEW number is a later cancellation: it remains in sequence and
     its base number must stay unchanged.  Equal dates are ordered by the stable
     public EVF calendar id.
+
+    A European Championship takes its season's singleton code (``IMEW-`` or
+    ``DMEW-{season}``) and no PEW number, so the positive sequence counts
+    circuit entries only.  ``partition_championships`` keeps a second
+    candidate for the same singleton out of the snapshot; meeting one here is
+    a broken contract, not a choice to make.
     """
     season_suffix = re.sub(r"^SPWS-", "", season_code)
     existing_by_calendar_id = {
@@ -188,7 +274,13 @@ def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: s
 
     positive: list[dict] = []
     zero: list[dict] = []
+    singles: list[dict] = []
     for event in ordered:
+        kind = classify_calendar_entry(event)
+        if kind in SINGLETON_KINDS:
+            event["desired_code"] = f"{kind}-{season_suffix}"
+            singles.append(event)
+            continue
         prior = existing_by_calendar_id.get(int(event["evf_calendar_id"]))
         prior_match = _PEW_NUMBER_RE.match(str(prior.get("txt_code") or "")) if prior else None
         prior_number = int(prior_match.group(1)) if prior_match else None
@@ -212,6 +304,13 @@ def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: s
             "multiple first-import cancellations would share code " + ", ".join(duplicates)
         )
 
+    single_codes = [event["desired_code"] for event in singles]
+    duplicates = sorted({code for code in single_codes if single_codes.count(code) > 1})
+    if duplicates:
+        raise CalendarIntegrityError(
+            "multiple calendar entries would share singleton code " + ", ".join(duplicates)
+        )
+
     for number, event in enumerate(positive, start=1):
         prior_number = event.pop("_prior_number", None)
         if event.get("is_cancelled") and prior_number not in (None, number):
@@ -230,7 +329,10 @@ def plan_calendar_codes(events: list[dict], existing: list[dict], season_code: s
             )
         event["desired_code"] = f"PEW{number}{_weapon_suffix(event)}-{season_suffix}"
 
-    return sorted(zero + positive, key=lambda event: (event["dt_start"], event["evf_calendar_id"]))
+    return sorted(
+        zero + positive + singles,
+        key=lambda event: (event["dt_start"], event["evf_calendar_id"]),
+    )
 
 
 # Country-name aliases used by EVF + seed data. Each canonical form below
@@ -390,6 +492,11 @@ def _tribe_event_end_date(article, dt_start: str) -> str:
     Tribe emits only one ``datetime`` attribute for list rows; multi-day end
     dates live in a text span such as ``22 August``.  Reuse the start year and
     roll into the following year only when the parsed month/day precedes start.
+
+    An event in another calendar year than today is printed as a full date
+    instead (``09/05/2027``), which already carries its year and is used as
+    written.  Before that form was read, every 2027 event collapsed to a single
+    day: its end fell back to its start.
     """
     start_text = dt_start[:10]
     try:
@@ -401,6 +508,10 @@ def _tribe_event_end_date(article, dt_start: str) -> str:
     if end_el is None:
         return start_text
     end_text = end_el.get_text(" ", strip=True)
+    try:
+        return datetime.strptime(end_text, "%d/%m/%Y").date().isoformat()
+    except ValueError:
+        pass
     for fmt in ("%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y"):
         try:
             end = datetime.strptime(f"{end_text} {start.year}", fmt).date()
@@ -797,8 +908,11 @@ def _weapons_from_text(text: str) -> list[str]:
 
     Whole-word matching only.  "EPEE +FOIL +SABRE" (written without spaces)
     reads correctly, while prose such as "three weapons" cannot invent one.
+    Accents are folded first: EVF's Skopje schedule writes "épée", which the
+    unfolded pattern skipped, so épée vanished from the event's code.
     """
-    return sorted({m.group(1).upper() for m in _DETAIL_WEAPON_RE.finditer(text or "")})
+    folded = _diacritic_fold(text or "")
+    return sorted({m.group(1).upper() for m in _DETAIL_WEAPON_RE.finditer(folded)})
 
 
 def _weapons_from_pdf_bytes(pdf_bytes: bytes) -> list[str]:

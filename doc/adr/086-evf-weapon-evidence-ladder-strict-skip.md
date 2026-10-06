@@ -1,6 +1,6 @@
 # ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering
 
-**Status:** Accepted (2026-08-28)
+**Status:** Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read)
 **Date:** 2026-08-28
 **Resolved:** Both open items closed on sign-off, 2026-08-28.
 **Amends:** [ADR-043](043-evf-event-allocator.md) §Amendment (2026-08-07) — "missing/unsupported weapon sets … are hard errors" and "A later cancellation keeps its positive code"; [ADR-046](046-pew-weapon-suffix.md) §Amendment (2026-08-07) — "If no authoritative weapon set can be established, the entire calendar write fails before mutation" and "An event cancelled later keeps its previously assigned positive code"
@@ -240,3 +240,21 @@ honour an empty string as a value. If blank should mean blank, it should mean it
 The top tier must keep overwriting: EVF moves dates and renames events, and freezing those would leave PROD stale and stop the moved-date pill firing, since it compares `dt_start` against `dt_start_first_published`.
 
 Pinned by `68_prod_mirror_field_ownership.sql`. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
+
+## Amendment (2026-10-06) — accents are folded, and a full-date end is read
+
+**Decision record:** `doc/plans/evf-skopje-european-championships-2026-10-06.html` (signed off 2026-10-06).
+
+**Context.** Skopje's list post carries no weapon categories and its detail page names none, so the
+ladder reached the schedule PDF, which writes "Women's épée V3". The whole-word pattern
+`\b(EPEE|FOIL|SABRE)\b` did not fold accents: `_weapons_from_pdf_bytes` read `FOIL, SABRE` and the
+event was coded `…fs`. Separately, for an event in another calendar year the list page prints a full
+end date (`05/05/2027 - 09/05/2027`). `_tribe_event_end_date` knew only day-and-month-name forms and
+fell back to the start, so all thirteen 2027 entries on 6 Oct 2026 were stored as one-day events.
+
+**Decision.** Weapon names are matched as whole words after folding accents (`_diacritic_fold`), so
+prose still cannot invent a weapon. A `dd/mm/yyyy` end date is read as written; it carries its own
+year, so no year roll applies.
+
+**Consequences.** The next run gives Skopje épée, foil and sabre and the thirteen 2027 entries their
+real end dates. Pinned by `python/tests/test_evf_calendar.py` evf.76–evf.78.
