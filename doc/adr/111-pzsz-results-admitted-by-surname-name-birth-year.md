@@ -107,10 +107,10 @@ When no starter matches, nothing is written, no empty tournament is created, and
 
 ## Open items
 
-Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. Each is put to the user, with a recommendation, in the plan's "Decide now" section.
+Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user decided both in chat the same day: D1 A and D2 A, as recommended.
 
-1. **D1 · the JavaScript check.** Recommendation: send `ingest <code>` again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.
-2. **D2 · an end date shorter than the listings.** PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays `IN_PROGRESS` under ADR-108 §7. Recommendation: correct the end date in Admin before the CERT ingest, and keep the PZSz sync from setting it back.
+1. **D1 · the JavaScript check — decided A.** Send `ingest <code>` again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.
+2. **D2 · an end date shorter than the listings — decided A.** PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays `IN_PROGRESS` under ADR-108 §7. The end date is corrected in Admin before the CERT ingest, and a follow-up task keeps the PZSz sync from setting it back.
 
 **Out of scope:**
 

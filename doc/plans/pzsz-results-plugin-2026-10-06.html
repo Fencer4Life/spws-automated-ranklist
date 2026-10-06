@@ -127,14 +127,14 @@
   <div class="meta">
     <span class="pill"><span class="dot"></span>Decided 6 Oct: Q1 = ingest for CERT, promote for PROD · Q2–Q4 = A</span>
     <span class="pill"><span class="dot"></span>Built test-first and rehearsed on LOCAL (6 Oct) · not pushed · CERT and PROD unchanged</span>
-    <span class="pill warn"><span class="dot"></span>Awaiting: D1 and D2 below, then your go to push</span>
+    <span class="pill"><span class="dot"></span>Decided 6 Oct: D1 = A, D2 = A · push approved</span>
   </div>
 
   <section id="decide-now">
     <p class="kicker">0 · Decide now · from the LOCAL run</p>
     <h2>Two questions before Poznań goes to CERT</h2>
 
-    <h3>D1 · pzszerm.pl refuses automated reads on some days</h3>
+    <h3>D1 · pzszerm.pl refuses automated reads on some days <span class="chip never">decided 6 Oct: A</span></h3>
     <p>A plain HTTP client gets pzszerm.pl's JavaScript check page instead of the start list. That happens from this Mac today. It also happens from GitHub Actions, where the Telegram <code>ingest</code> runs: the daily PZSz calendar sync read 0 events there on 30 September and on 3–6 October, but all 6 events on 1–2 October. A run that meets the check fails and writes nothing (ADR-111). Nothing tries to get past it.</p>
     <div class="tablewrap"><table>
       <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
@@ -145,7 +145,7 @@
       </tbody>
     </table></div>
 
-    <h3>D2 · Poznań's end date is one day short</h3>
+    <h3>D2 · Poznań's end date is one day short <span class="chip never">decided 6 Oct: A</span></h3>
     <p>Our event says 3 October only. PZSz publishes just a start date ("Data rozpoczęcia: 03.10.2026"), and FencingTimeLive dates one of the two listings 4 October. The lifecycle rule (ADR-108 §7) therefore leaves the event <code>IN_PROGRESS</code>, with the message "a listing is dated 2026-10-04, after the end date 2026-10-03: correct the event's dates". The LOCAL rehearsal ended exactly there.</p>
     <div class="tablewrap"><table>
       <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>

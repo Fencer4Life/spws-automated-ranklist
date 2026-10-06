@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="111-pzsz-results-admitted-by-surname-name-birth-year.md">
-<meta name="adr-source-sha256" content="2e35b76b2e926004033b447a993d939a59d6bae0790e75f283a1d89aab850ebf">
+<meta name="adr-source-sha256" content="32c77914f0016a9c67792f74eaf45cc95f3a7cd0267ca55196d09bf793cb4c9c">
 <title>ADR-111 · PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -104,10 +104,10 @@
 <p><strong>Risk:</strong> <code>pzszerm.pl</code> answers some requests with a JavaScript check: this Mac on 2026-10-06, and GitHub Actions on 30 September and 3–6 October, when the calendar sync read no event. If a start list cannot be read, the run fails and writes nothing; the run never tries to get past the check.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
-<p>Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. Each is put to the user, with a recommendation, in the plan's &quot;Decide now&quot; section.</p>
+<p>Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user decided both in chat the same day: D1 A and D2 A, as recommended.</p>
 <ol>
-<li><strong>D1 · the JavaScript check.</strong> Recommendation: send <code>ingest &lt;code&gt;</code> again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.</li>
-<li><strong>D2 · an end date shorter than the listings.</strong> PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays <code>IN_PROGRESS</code> under ADR-108 §7. Recommendation: correct the end date in Admin before the CERT ingest, and keep the PZSz sync from setting it back.</li>
+<li><strong>D1 · the JavaScript check — decided A.</strong> Send <code>ingest &lt;code&gt;</code> again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.</li>
+<li><strong>D2 · an end date shorter than the listings — decided A.</strong> PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays <code>IN_PROGRESS</code> under ADR-108 §7. The end date is corrected in Admin before the CERT ingest, and a follow-up task keeps the PZSz sync from setting it back.</li>
 </ol>
 <p><strong>Out of scope:</strong></p>
 <ul>
@@ -118,5 +118,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="110-ranking-entry-by-roster.html">← ADR-110: From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>2e35b76b2e926004033b447a993d939a59d6bae0790e75f283a1d89aab850ebf</code></footer>
+<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>32c77914f0016a9c67792f74eaf45cc95f3a7cd0267ca55196d09bf793cb4c9c</code></footer>
 </div></body></html>
