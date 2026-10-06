@@ -71,6 +71,31 @@ class TestPromoteCalendar:
         assert create["id_evf_calendar_event"] == 877
         assert update["id_evf_calendar_event"] == 877
 
+    def test_pzsz_identity_is_carried_in_cert_query_and_both_payloads(self):
+        """PZSZ.CAL.01 (plan §6 F2): id_pzsz_event reaches PROD like the EVF
+        identity. On 6 October 2026 PPS1s-2026-2027 held 4588 on CERT and
+        NULL on PROD."""
+        from python.pipeline.promote import (
+            _build_create_payload,
+            _build_update_payload,
+            _read_cert_promotable_events,
+        )
+
+        seen_sql: list[str] = []
+
+        def fake_query(sql: str):
+            seen_sql.append(sql)
+            return []
+
+        _read_cert_promotable_events(fake_query, 7)
+        assert "e.id_pzsz_event" in seen_sql[0]
+
+        evt = {"txt_code": "PPS1s-2026-2027", "id_pzsz_event": 4588}
+        assert _build_create_payload(evt, 7, 3, None)["id_pzsz_event"] == 4588
+        assert _build_update_payload(99, evt, 3)["id_pzsz_event"] == 4588
+        no_id = {"txt_code": "PPW1-2026-2027"}
+        assert _build_update_payload(99, no_id, 3)["id_pzsz_event"] is None
+
     def test_refuses_when_cert_and_prod_active_seasons_differ(self):
         """New (found via live CERT/PROD dry-run 2026-07-11): if CERT has
         rolled to a new season that PROD hasn't been bootstrapped onto yet,
