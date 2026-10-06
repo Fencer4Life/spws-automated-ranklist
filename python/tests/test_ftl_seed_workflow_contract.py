@@ -23,7 +23,7 @@ def test_ftl_seed_workflow_is_allowlisted_and_gated():
 
 def test_telegram_bot_does_not_offer_the_withdrawn_delivery():
     """FTLDEL-OPS-01: the bot no longer starts ftl-seed.yml (ADR-080 §5 withdrawn 2026-09-25)."""
-    source = (ROOT / "scripts/gas_email_ingestion.js").read_text()
+    source = (ROOT / "scripts/gas_telegram_bot.js").read_text()
     assert "case 'send':" not in source
     assert "send &lt;EVENT-CODE&gt; participants" not in source
     assert "'ftl-seed.yml'" not in source

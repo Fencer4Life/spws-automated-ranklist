@@ -163,7 +163,7 @@ When the plan touches:
   `dispatch-workflow` edge-fn allowlist if UI-triggerable.
 - A new env var or secret → add to the environment/release reference without recording the secret value.
 - A new Telegram-fired event → update GAS `/help` command in
-  [scripts/gas_email_ingestion.js](../../scripts/gas_email_ingestion.js).
+  [scripts/gas_telegram_bot.js](../../scripts/gas_telegram_bot.js).
 - A new operator command → add Telegram command case in GAS + document in
   `/help`. `python/tests/test_gas_bot.py` fails until the case and its help entry agree; then the file is pasted into the Apps Script project ([operator runbooks](../handbook/operations/operator-runbooks.html#telegram-bot), Change the Telegram bot).
 
