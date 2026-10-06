@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar drum: downward time and step arrows (plan)</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+  /* Plan-specific additions; the template block above is verbatim. */
+  pre.cmd{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:14px 18px;margin:16px 0;font-family:var(--mono);font-size:14.5px;line-height:1.65;color:var(--ink);white-space:pre}
+  .toc{columns:2 18rem;column-gap:2rem;font-size:17px}
+  .toc li{break-inside:avoid;margin:5px 0}
+  blockquote.adr{margin:16px 0;padding:6px 22px;border-left:5px solid var(--line-strong);background:var(--surface);border-radius:0 10px 10px 0}
+  blockquote.adr h3{margin-top:18px}
+  blockquote.adr p,blockquote.adr li{font-size:18px}
+  @media (max-width:600px){.wrap{padding:36px 16px 80px}body{font-size:18px}.dek{font-size:20px}}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Calendar · CalendarBarrel.svelte · Implementation plan · rev 2</p>
+  <h1>The calendar drum reads downward and shows how it turns</h1>
+  <p class="dek">The fencers asked for two things: <b>earlier months above and later months below</b>, and <b>floating ▲ ▼ buttons</b>. You added more: the calendar's <b>title is its menu name</b>, <b>no invisible keyboard stops</b>, <b>Polish screen-reader labels</b> and <b>tests that catch untranslated UI</b>. Everything else stays exactly as it is, which §12 proves. Every change below is <b>strict TDD</b>: its test is seen failing before any code is written.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Plan rev 2: approved 6 Oct 2026</span>
+    <span class="pill">branch <code>claude/calendar-drum-arrows</code></span>
+    <span class="pill">ADR-084 + ADR-090 amendments</span>
+    <span class="pill">FR-153, FR-154 new · FR-148 amended</span>
+    <span class="pill">frontend only: no database</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order: a new session starts at §14</p>
+    <ol class="toc">
+      <li><a href="#s00">00 · Decisions</a></li>
+      <li><a href="#s01">01 · The contract</a></li>
+      <li><a href="#s02">02 · Design, exactly</a></li>
+      <li><a href="#s03">03 · D7, D8, D9, one by one</a></li>
+      <li><a href="#s04">04 · Still open: D4 and D8</a></li>
+      <li><a href="#s05">05 · Translation tests (TR)</a></li>
+      <li><a href="#s06">06 · Strict TDD: every change and its red test</a></li>
+      <li><a href="#s07">07 · Walk-throughs</a></li>
+      <li><a href="#s08">08 · Order of work</a></li>
+      <li><a href="#s09">09 · ADR drafts</a></li>
+      <li><a href="#s10">10 · Requirements</a></li>
+      <li><a href="#s11">11 · Documentation gate and parity</a></li>
+      <li><a href="#s12">12 · Proof that nothing else changed</a></li>
+      <li><a href="#s13">13 · Definition of done</a></li>
+      <li><a href="#s14">14 · Handover to the development session</a></li>
+    </ol>
+    <p>Approved mock: <a href="kalendarz-beben-strzalki-mock-2026-10-06.html"><code>doc/plans/kalendarz-beben-strzalki-mock-2026-10-06.html</code></a> (the drum, the arrows and the mirrored pill, on the real event pool).</p>
+  </section>
+
+  <section id="s00">
+    <p class="kicker">00 · Locked</p>
+    <h2>Decisions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decision</th><th>Answer (6 Oct 2026)</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td>"Reverse the rotation": earlier months above, later below</td><td><span class="chip never">yes</span></td></tr>
+        <tr><td>D2</td><td>The arrows float beside the neighbouring months, right of their tiles</td><td><span class="chip never">A</span></td></tr>
+        <tr><td>D3</td><td>At the first or last competition, the arrow is hidden</td><td><span class="chip never">hide</span></td></tr>
+        <tr><td>D5</td><td>Title = menu name. It unfolds to „Znajdź zawody" / "Competition Finder" wherever it fits, and squeezes to „Zawody" / "Competitions" only for lack of room</td><td><span class="chip never">fit-based</span></td></tr>
+        <tr><td>D5-EN</td><td>English last step when even "Competitions" does not fit</td><td><span class="chip never">"Events"</span></td></tr>
+        <tr><td>D6</td><td>Invisible keyboard stops: (a) the drum's hidden months, (b) the closed drawer</td><td><span class="chip never">a + b</span></td></tr>
+        <tr><td>Rule</td><td>Nothing changes apart from what is listed here; the look and feel stays</td><td><span class="chip never">binding</span></td></tr>
+        <tr><td>Rule</td><td>Strict TDD for everything in this plan</td><td><span class="chip never">binding</span></td></tr>
+        <tr><td>Rule</td><td>Development happens in a new session, handed over by §14</td><td><span class="chip never">binding</span></td></tr>
+        <tr><td>D7</td><td>Screen-reader month labels in the reader's language</td><td><span class="chip never">as recommended, §03</span></td></tr>
+        <tr><td>D8</td><td>Keyboard ↑/↓, mouse wheel, swipe</td><td><span class="chip never">(a) keyboard only</span>: plan approved without another pick, so the §14 default applies; CB.51–52 are not built</td></tr>
+        <tr><td>D9</td><td>Months with 7 or more events beside the arrows</td><td><span class="chip never">as recommended, §03</span></td></tr>
+        <tr><td>Sign-off</td><td>The whole plan, including both ADR drafts (§09) and FR-153, FR-154 and FR-148 (§10)</td><td><span class="chip never">approved</span></td></tr>
+        <tr><td>D4</td><td>The card's left edge</td><td><span class="chip warn">needs your screenshot, §04</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="s01">
+    <p class="kicker">01 · The contract</p>
+    <h2>What changes, and what must not</h2>
+    <h3>Changes (all of them)</h3>
+    <ol>
+      <li><b>Direction:</b> earlier months above the focused month, later below (D1).</li>
+      <li><b>▲ ▼ buttons</b> exactly as in the approved mock (D2, D3).</li>
+      <li><b>"najbliższe zawody" follows the direction.</b> Its arrow always points to where the opening month is drawn (§2.4). Look, label and positions are unchanged.</li>
+      <li><b>The heavier season line</b> lands between seasons. This follows from the direction change, with no code of its own.</li>
+      <li><b>The calendar's title</b> unfolds or squeezes by fit, in both languages (D5).</li>
+      <li><b>No invisible keyboard stops</b>, in the drum's turned-away months or in the closed drawer (D6). No pixel changes.</li>
+      <li><b>Month labels for screen readers</b> follow the page's language (D7). No pixel changes.</li>
+      <li><b>Months with 7 or more events</b> stop their preview before the arrows (D9). Nothing changes until such a month exists.</li>
+      <li><b>Keyboard ↑/↓ (and only if you choose it, wheel or swipe)</b> (D8).</li>
+      <li><b>Translation tests</b> that fail on untranslated UI text (§05).</li>
+      <li><b>The card's left edge</b>, only once reproduced (D4).</li>
+    </ol>
+    <h3>Unchanged, and checked by §12</h3>
+    <ul>
+      <li>Tiles (sizes, colours, fonts, edges, ring, registration dot, overlap and fan), seams, the event card, the caret and the footer.</li>
+      <li>The SPWS bar's ☰, logo and language switch; the other three pages' bars and titles; the drawer's look.</li>
+      <li>The opening month, skipping empty months, taps on rows and tiles, and the 0.42 s turn.</li>
+      <li>The drum's geometry: 246 px tall, θ 26°, R 178 px, perspective 760 px.</li>
+    </ul>
+  </section>
+
+  <section id="s02">
+    <p class="kicker">02 · Design</p>
+    <h2>Exactly what is edited</h2>
+
+    <h3>2.1 Direction: two signs in <code>frontend/src/components/CalendarBarrel.svelte</code></h3>
+    <pre class="cmd">:41  drum  rotateX(${-active * ROW_ANGLE}deg)       →  rotateX(${active * ROW_ANGLE}deg)
+:52  row   rotateX(${qi * ROW_ANGLE}deg) translateZ  →  rotateX(${-qi * ROW_ANGLE}deg) translateZ</pre>
+    <ul>
+      <li>Write it as <code>${-qi * ROW_ANGLE}</code> so that row 0 renders <code>rotateX(0deg)</code>, not <code>-0deg</code>.</li>
+      <li>Nothing else reads the sign. These were checked: <code>rowOpacity</code>, the horizon, <code>backface-visibility</code>, the origins, <code>settleRow</code>, <code>rotateTo</code>, <code>pick</code>, <code>jumpToAnchor</code> and the opening frame.</li>
+      <li><code>rowState</code> stays index-based. <code>.up</code> (active − 1) is now really above.</li>
+    </ul>
+
+    <h3>2.2 The ▲ ▼ buttons</h3>
+    <ul>
+      <li><b>Markup:</b> <code>button.stp.prev</code> before <code>.drum</code> and <code>button.stp.next</code> after it, inside <code>.vp</code>, never inside a row.</li>
+      <li><b>Look:</b> the mock's look, unchanged:
+        <ul>
+          <li>a 36 × 36 hit box with a 30 px white disc;</li>
+          <li><code>1px solid rgba(0,0,0,.14)</code> border and <code>0 2px 7px rgba(0,0,0,.20)</code> shadow;</li>
+          <li>a chevron in <code>var(--accent,#185fa5)</code>, drawn as one path that is rotated for ▼.</li>
+        </ul></li>
+      <li><b>Position:</b> <code>left:min(calc(100% - 36px),300px)</code>, <code>top:38px</code> for ▲ and <code>top:177px</code> for ▼, <code>z-index:20</code>.</li>
+      <li><b>Labels:</b> new keys <code>calendar_step_prev</code> („Wcześniejsze zawody" / "Earlier competitions") and <code>calendar_step_next</code> („Późniejsze zawody" / "Later competitions").</li>
+      <li><b>At the ends:</b> a button is not rendered when nothing lies further that way. If it had focus, focus moves to the other button.</li>
+      <li><b>Class names:</b> none of these: <code>ln up dn p jmp arw</code>. Existing tests count them, and existing CSS sizes them.</li>
+    </ul>
+
+    <h3>2.3 The step: a new pure helper in <code>frontend/src/lib/calendarMonths.ts</code></h3>
+    <pre class="cmd">export function stepRow(rows: MonthRow[], from: number, direction: 1 | -1): number | null
+// the nearest month with events strictly beyond `from`, or null</pre>
+    <p>The buttons call <code>stepRow</code>, never <code>rotateTo(active ± 1)</code>: from an empty month with nothing ahead, <code>settleRow</code> would reverse. A step animates like a row tap and calls <code>selectDefault</code>.</p>
+
+    <h3>2.4 "najbliższe zawody": the arrow always points to the opening month</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where the focus is, relative to the opening month</th><th>Opening month is drawn</th><th>Pill position</th><th>Arrow</th></tr></thead>
+      <tbody>
+        <tr><td>Later (the drum went down into the future)</td><td>above</td><td>on the upper month's seam (in-row)</td><td><b>↑</b></td></tr>
+        <tr><td>Earlier by exactly one month</td><td>the row just below</td><td>pinned to the bottom edge</td><td><b>←</b> ("it is right here")</td></tr>
+        <tr><td>Earlier by two or more</td><td>below</td><td>pinned to the bottom edge</td><td><b>↓</b></td></tr>
+      </tbody>
+    </table></div>
+    <pre class="cmd">type JumpCue = { pinned: false; row: number; arrow: 'up' }
+             | { pinned: true;  arrow: 'left' | 'down' }
+anchorIndex &lt; active → { pinned: false, row: active - 1, arrow: 'up' }
+anchorIndex &gt; active → { pinned: true,  arrow: anchorIndex - active === 1 ? 'left' : 'down' }</pre>
+    <p>Today the same three cases exist with the sides swapped. Positions, look and label are unchanged, and the pinned case drops a row index nothing read. CB.47 asserts the rule geometrically for every distance −4…+4: the arrow is <code>up</code> exactly when the opening month's net angle puts it above the focus.</p>
+
+    <h3>2.5 Comments brought in line</h3>
+    <p><code>CalendarBarrel.svelte</code> lines <code>:1–3</code>, <code>:66–67</code>, <code>:127–140</code>, <code>:162–166</code>, <code>:204–212</code>, <code>:220–232</code>, <code>:328–329</code>, <code>:367–395</code> and <code>:408–412</code>. They say "earlier / later", never "ahead / behind".</p>
+
+    <h3>2.6 Geometry (measured)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Item</th><th>Vertical position in the 246 px window</th></tr></thead>
+      <tbody>
+        <tr><td>Row above · focused row · row below</td><td>13–82 · 82–164 · 164–233</td></tr>
+        <tr><td>Pill on the upper seam · pinned pill</td><td>11–31 · 219–242</td></tr>
+        <tr><td>▲ disc · ▼ disc</td><td>41–71 · 180–210 (at least 9 px clear of either pill)</td></tr>
+      </tbody>
+    </table></div>
+    <p>Drum widths: github.io 288 px at 320 and 343 px at 375; WordPress 300 px at 320 and 355 px at 375; desktop about 1,176 px.</p>
+
+    <h3>2.7 The title (D5)</h3>
+    <ul>
+      <li><code>pickTitle(widths, room)</code> in a new <code>frontend/src/lib/fitTitle.ts</code> returns the first candidate that fits, or the last one if none does.</li>
+      <li>The candidates are measured in hidden <code>aria-hidden</code> spans and re-measured on resize and on a language switch.</li>
+      <li>Candidates: Polish „Znajdź zawody", „Zawody"; English "Competition Finder", "Competitions", "Events".</li>
+      <li>It is used for the calendar's title in <code>SiteBar.svelte</code> (WordPress) and in the <code>App.svelte</code> header (github.io). Font, size and position are unchanged.</li>
+      <li>Locale changes:
+        <ul>
+          <li><code>site_title_short_calendar</code> becomes „Zawody" / "Competitions";</li>
+          <li><code>calendar_title</code> becomes „Znajdź zawody" / "Competition Finder", the same as <code>embed_page_title</code>;</li>
+          <li>new <code>site_title_tiny_calendar</code>: "Events" in English. Polish needs no third step, so the Polish entry is „Zawody" again, which keeps the files in parity.</li>
+        </ul></li>
+      <li>The other three pages keep their titles and the existing 430 px switch.</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Shown (measured on the live pages)</th><th>320</th><th>360</th><th>375</th><th>414</th><th>Desktop</th></tr></thead>
+      <tbody>
+        <tr><td>WordPress bar, PL · EN</td><td>Zawody · Events</td><td>Znajdź zawody · Competitions</td><td>Znajdź zawody · Competitions</td><td>Znajdź zawody · Competition Finder</td><td>full</td></tr>
+        <tr><td>github.io header, PL · EN</td><td>Zawody · Events</td><td>Zawody · Events</td><td>Znajdź zawody · Competitions</td><td>Znajdź zawody · Competition Finder</td><td>full</td></tr>
+      </tbody>
+    </table></div>
+    <p>On github.io at 320 px, today's „Kalendarz" already runs 15 px into the language flags. „Zawody" fits.</p>
+
+    <h3>2.8 No invisible keyboard stops (D6)</h3>
+    <ul>
+      <li><b>(a)</b> Months two or more rows from the focus get <code>inert</code>. They are already drawn faint or invisible and already ignore taps; Tab and screen readers now skip them too.</li>
+      <li><b>(b)</b> The drawer's <code>&lt;nav&gt;</code> gets <code>inert</code> while closed, in all three modes. When open, it is unchanged.</li>
+      <li>No pixel changes either way.</li>
+    </ul>
+    <p>Measured today on <code>/znajdz-zawody/</code> at 375 px:</p>
+    <ul>
+      <li>81 of 98 tiles are invisible yet reachable by Tab.</li>
+      <li>74 of them come before October.</li>
+      <li>51 of the first 60 Tab presses land on something invisible.</li>
+      <li>The closed drawer's 5 links are visited first.</li>
+    </ul>
+  </section>
+
+  <section id="s03">
+    <p class="kicker">03 · The three remaining items, one by one</p>
+    <h2>D7, D8, D9</h2>
+
+    <h3>D7 · Screen-reader month labels are English on the Polish page</h3>
+    <p><b>Evidence.</b> Measured on the live Polish page: 66 of 67 English labels are the drum's months ("January 2022" … "June 2027"). The row's <code>aria-label</code> comes from <code>monthLabel()</code> (<code>calendarMonths.ts:237</code>), which uses a hard-coded English <code>MONTH_NAMES</code>. The visible seam uses <code>seamLabel()</code>, which is localised: <code>month_N</code> + year. The 67th label is "Menu" on ☰ (<code>SiteBar.svelte:11</code>, <code>App.svelte:33</code>); it is correct Polish too, so it is allowlisted, not changed.</p>
+    <p><b>Fix.</b> <code>aria-label={seamLabel(row)}</code>. A screen reader then says exactly what the eye reads: „Październik 2026" in Polish, "October 2026" in English. <code>MonthRow.label</code> stays, because nothing else changes. No pixel changes.</p>
+    <div class="note good"><p class="lede"><span class="tick">D7</span> Recommendation: do it as above</p><p>A richer label, such as „Październik 2026, 5 zawodów", is possible with the existing Polish plural forms. But it adds words the eye does not see, so I'd leave it out.</p></div>
+
+    <h3>D8 · Keyboard ↑/↓, mouse wheel, swipe</h3>
+    <p><b>Background.</b> On 29 Aug you locked "taps only: no sliding, wheel, swipe or drag" for the drum. The ▲ ▼ buttons are taps, so they fit that rule. Keyboard keys don't conflict with anything. Wheel and swipe do: the drum is part of a scrolling page (ADR-084 §17), so a wheel or a swipe that starts over the drum would turn the drum <i>instead of scrolling the page</i>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What you get</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><b>(a) Keyboard only</b></td><td>With focus anywhere in the drum (▲, ▼, a month, a tile or the pill): ↑ steps earlier and ↓ later, exactly like the buttons. The page does not scroll for that key press.</td><td>none visible</td></tr>
+        <tr><td>(b) + wheel</td><td>On a desktop, one wheel notch over the drum turns one month (throttled).</td><td>Scrolling down the page with the pointer over the drum spins the calendar instead: a scroll trap.</td></tr>
+        <tr><td>(c) + swipe</td><td>On a phone, a vertical swipe on the drum turns it.</td><td>The same trap, worse: phones scroll by swiping, and the drum fills a third of the screen.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn"><p class="lede"><span class="tick">D8</span> Your choice. Recommendation: (a)</p><p>(a) adds keyboard control with no downside. (b) and (c) reverse your 29 Aug decision and trap page scrolling. The tests for (b) and (c) are listed in §06 in case you choose them.</p></div>
+
+    <h3>D9 · A month with 7 or more events reaches the buttons</h3>
+    <p><b>Evidence.</b> A receded month's tiles take 41 × n − 3 px. The buttons start at 252 px (github.io, 320), 264 px (WordPress, 320) and 300 px (wider screens). So a neighbouring month with 7 tiles (284 px) would run under them on a 320–360 px phone. The busiest month today is October 2026 with 5 events (PZSz PPS included).</p>
+    <p><b>Fix.</b> A receded month's tile strip stops 6 px before the buttons: <code>.up .rw, .dn .rw { max-width: min(calc(100% - 42px), 294px) }</code>. Receded months already hide what overflows, so only the cut-off point moves. A month still shows all its events once focused. Nothing changes until a month with 7 or more events exists.</p>
+    <div class="note good"><p class="lede"><span class="tick">D9</span> Recommendation: do it as above</p><p>The alternatives:</p>
+      <ul>
+        <li>Let the button cover the 7th tile's edge.</li>
+        <li>Fan the receded tiles like the focused row. That changes the look of every crowded preview.</li>
+      </ul></div>
+  </section>
+
+  <section id="s04">
+    <p class="kicker">04 · Open</p>
+    <h2>D4 needs a screenshot; D8 needs your pick</h2>
+    <p><b>D4, the card's left edge:</b> I could not reproduce it.</p>
+    <ul>
+      <li>Live PROD at 320/375/390/430 px with phone emulation, and github.io at 320/375 px, both show the card at the drum's exact width with equal gutters.</li>
+      <li>Pixel samples at the card's mid-height are mirror images: 248→230 on the left, 230→248 on the right.</li>
+      <li>The card's "frame" is a shadow about 26 px wide. The WordPress container's 10 px padding with <code>overflow-x:hidden</code> cuts it on both sides.</li>
+      <li>An iPhone in Safari is the likely difference, and WebKit is not available here.</li>
+    </ul>
+    <p><b>What I need:</b> which phone and browser you saw it on, ideally with a screenshot. The fix lands with its own red test, and §12 proves nothing else moved.</p>
+  </section>
+
+  <section id="s05">
+    <p class="kicker">05 · Your request: catch untranslated UI</p>
+    <h2>Translation tests (TR): new <code>frontend/tests/translation-completeness.test.ts</code></h2>
+    <p>Today's guard (<code>locale-parity.test.ts</code>) only checks that the two files have the same keys and no empty values. Text still goes untranslated three ways:</p>
+    <ul>
+      <li><code>t()</code> prints the raw key when a key is missing (<code>locale.svelte.ts:35</code>);</li>
+      <li>text is hard-coded outside the locale files (the drum's month labels);</li>
+      <li>a value is pasted identically into both files.</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Assertion</th><th>Red first</th></tr></thead>
+      <tbody>
+        <tr><td>TR.01</td><td>Every literal key in <code>t('…')</code> / <code>tIn(l,'…')</code> across <code>frontend/src</code> exists in both files (499 keys today)</td><td>by mutation: delete a used key, see red, restore</td></tr>
+        <tr><td>TR.02</td><td>Every key family built at runtime is complete for its whole domain. The 16 families today: <code>month_1–12</code>, <code>cal_month_1–12</code>, <code>cal_month_short_1–12</code>, <code>cal_dow_short_1–7</code>, <code>country_XX</code> for every code the flag set knows, <code>nav_&lt;AppView&gt;</code>, <code>legend_&lt;type&gt;</code>, <code>sr_band_/sr_best_&lt;plural&gt;</code>, <code>ftl_step&lt;n&gt;_b/_h</code>, <code>ftl_w_&lt;weapon&gt;</code>, <code>export_method_&lt;method&gt;</code> and <code>sc_rules_warn_pool_&lt;pool&gt;</code></td><td>by mutation, the same way</td></tr>
+        <tr><td>TR.03</td><td>A value identical in PL and EN is allowed only for keys on a reasoned allowlist: codes such as PPW, SPWS and EVF+; proper nouns; country names spelled the same; a language's own name; a word that is the same in both languages, such as "Status" or "Menu". There are 44 today. A new identical pair fails.</td><td>by mutation: add an identical pair</td></tr>
+        <tr><td>TR.04</td><td>Render the calendar page in <b>Polish</b>: the drum, the card, the footer, the SPWS bar, ▲ ▼ and the drawer, open and closed. No text, <code>aria-label</code>, <code>title</code> or <code>alt</code> contains an English UI word, and none looks like a raw key (<code>/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/</code>).</td><td><b>genuinely red today</b>: the 66 English month labels (D7)</td></tr>
+        <tr><td>TR.05</td><td>The same in <b>English</b>: no Polish UI word (month names, weekday abbreviations, interface words)</td><td>by mutation: hard-code a Polish label</td></tr>
+        <tr><td>TR.06</td><td>The same two-language sweep over the github.io shell's calendar view (<code>App.svelte</code> header and drawer)</td><td>by mutation</td></tr>
+      </tbody>
+    </table></div>
+    <p>Event data, such as city names and codes, is excluded by checking only interface words, not data. The word lists live in the test file, each with a comment.</p>
+  </section>
+
+  <section id="s06">
+    <p class="kicker">06 · Strict TDD</p>
+    <h2>Every change and the test that fails before it</h2>
+    <p>Each row follows the same order: write the test, run it, and <b>see it red for the stated reason</b>. Then write the minimum code, see it green, and run the full suite. A test that is green before its code exists is rewritten. A guard whose invariant already holds is proven by a recorded mutation run instead.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Change</th><th>Tests (file)</th><th>Red because</th></tr></thead>
+      <tbody>
+        <tr><td>stepRow</td><td>CM.40 forward skips empty months · CM.41 backward · CM.42 null at the ends and for [] · CM.43 equals a row tap's landing · CM.44 never reverses from an empty month (<code>calendarMonths.test.ts</code>)</td><td>the function does not exist</td></tr>
+        <tr><td>Direction</td><td>CB.3 transforms <code>rotateX(52deg)</code> / rows <code>0, -26, -52</code> · CB.35 the row drawn above is <code>rows[active−1]</code> · CB.36 the season line separates seasons (<code>CalendarBarrel.test.ts</code>)</td><td>old signs</td></tr>
+        <tr><td>Pill mirror (§2.4)</td><td>CB.26 (later → in-row on <code>.up</code>, ↑) · CB.27 (earlier ≥2 → pinned ↓) · CB.27b (earlier 1 → pinned ←) · CB.27c (end of drum → pinned ←) · CB.29 (the pill's click does not reach its row; proven by deleting <code>stopPropagation</code> once) · <b>CB.47</b> the arrow points to where the opening month is drawn, for every distance −4…+4</td><td>today's sides are swapped; CB.29 is vacuous today</td></tr>
+        <tr><td>▲ ▼</td><td>CB.37 structure, DOM order, labels ≠ key, forbidden classes · CB.38 ▼ steps later, one <code>onselect</code>, animated · CB.39 ▲ earlier · CB.40 ▼ = tap on the lower month · CB.41 hidden at the ends · CB.42 focus hand-off · CB.43 one pinned pill and two buttons after ▲</td><td>no buttons</td></tr>
+        <tr><td>D6 (a)</td><td>CB.44 nothing in a month two or more rows away is focusable or exposed; months within one row are</td><td>81 hidden tiles are focusable</td></tr>
+        <tr><td>D6 (b)</td><td>WP.NAV.04 the closed drawer holds no focusable element in any mode; the open one keeps all its links (<code>Sidebar.test.ts</code>)</td><td>5 links reachable while closed</td></tr>
+        <tr><td>D7</td><td>CB.45 a row's <code>aria-label</code> equals its seam text, in PL and EN, and follows a language switch · TR.04</td><td>English labels</td></tr>
+        <tr><td>D9</td><td>CB.46 receded <code>.rw</code> declares the max-width that stops before the buttons (CSS pin, like CV.W7) · CB.E4 (browser) with an 8-event month at 288/300 px, no tile reaches the button</td><td>no limit</td></tr>
+        <tr><td>D8 (a)</td><td>CB.48 ↓ with focus in the drum steps later, default prevented · CB.49 ↑ earlier · CB.50 arrow keys with focus outside the drum leave it alone</td><td>no key handler</td></tr>
+        <tr><td>D8 (b)/(c), only if chosen</td><td>CB.51 one wheel notch turns one month, throttled · CB.52 a vertical swipe past a threshold turns one month, a short or horizontal one does nothing</td><td>no handlers</td></tr>
+        <tr><td>Title (D5)</td><td>TITLE.01 <code>pickTitle</code> first fit, last fallback, exact boundary · TITLE.02 re-pick on language switch (<code>fitTitle.test.ts</code>) · WP.BAR.02 the calendar's candidates (<code>SiteChrome.test.ts</code>) · 8.34 the github.io header reads „Znajdź zawody" (<code>AppShell.test.ts</code>) · WP.BAR.03 amended and WP.BAR.05 new (browser: full name whenever it fits, never clipped, same font size, bar one row)</td><td>„Kalendarz"; no helper</td></tr>
+        <tr><td>Translations</td><td>TR.01–TR.06 (§05)</td><td>TR.04 genuinely; the rest by mutation</td></tr>
+        <tr><td>Browser checks</td><td>CB.E1 no overlap at 320/375/1280 in PL and EN with the pill in either place · CB.E2 earlier above, later below · CB.E3 ▼ then ▲ returns (new <code>frontend/e2e/calendar-barrel.spec.ts</code>, stubbing the calendar request with <code>page.route</code>)</td><td>no buttons; old direction</td></tr>
+        <tr><td>D4</td><td>written once reproduced</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <p>Comment-only updates: the CB.23 comment, the <code>mount()</code> docstring and the file header's ID range. Unchanged: CB.1, 2, 4–20, 24, 25, 28 and 30–34.</p>
+  </section>
+
+  <section id="s07">
+    <p class="kicker">07 · Walk-throughs</p>
+    <h2>Four people use it</h2>
+    <h3>A · A fencer on a phone, Polish, 6 Oct</h3>
+    <p>The bar reads „Znajdź zawody" („Zawody" on a 320 px phone). The drum opens on October 2026 with MSW Tbilisi, exactly as today; September is above and November below. ▼ turns the drum up to November, like scrolling a page. One more ▼ brings December, and the pill appears on the upper seam with ↑. Tapping it returns to October instantly.</p>
+    <h3>B · Last season's results</h3>
+    <p>▲ ▲: empty July and August are skipped, and the drum stops on June 2026. The pill is pinned at the bottom with ↓, or with ← after one step. At January 2022 there is no ▲.</p>
+    <h3>C · A keyboard or screen-reader user</h3>
+    <p>Tab goes ▲, then the upper month, the focused tiles, the lower month, then ▼. Turned-away months and the closed drawer are skipped (D6). The screen reader says „Październik 2026" (D7). With D8 (a), ↑ and ↓ turn the drum while focus is inside it. When ▲ disappears at the start of history, focus moves to ▼.</p>
+    <h3>D · An administrator on github.io (CERT)</h3>
+    <p>The same component and behaviour. The header reads „Znajdź zawody" from 375 px and „Zawody" below, which also removes today's overlap with the flags at 320 px.</p>
+  </section>
+
+  <section id="s08">
+    <p class="kicker">08 · Order of work (new session)</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li>Start per §14. Register <b>FR-153</b> and <b>FR-154</b> as <i>Planned</i> and amend FR-148 (§10). Set <code>EXPECTED=153</code> in <code>scripts/check-spec-sync.sh</code> with a dated comment.</li>
+      <li><b>Before captures</b> (§12) on the unchanged build.</li>
+      <li>TR.01–TR.06: TR.04 red now; record the mutation runs for the others.</li>
+      <li>CM.40–44 red → <code>stepRow</code> → green.</li>
+      <li>Direction and pill: CB.3, 26, 27, 27b, 27c, 29, 35, 36 and 47 red → flip the signs, the <code>JumpCue</code> union, the comments → green. Then the CB.29 mutation.</li>
+      <li>▲ ▼: CB.37–43 red → the locale keys, the buttons, their CSS, the step handler, the focus hand-off → green.</li>
+      <li>D6: CB.44 and WP.NAV.04 red → <code>inert</code> on turned-away months and on the closed drawer → green.</li>
+      <li>D7: CB.45 red (TR.04 already red) → <code>aria-label={seamLabel(row)}</code> → both green.</li>
+      <li>D9: CB.46 red → the max-width → green.</li>
+      <li>D8 per your choice: CB.48–50 (and CB.51–52) red → handlers → green.</li>
+      <li>Title: TITLE.01–02, WP.BAR.02 and 8.34 red → <code>fitTitle.ts</code>, <code>SiteBar.svelte</code>, the <code>App.svelte</code> header and the locale keys → green.</li>
+      <li><code>svelte-check</code>, then the full Vitest suite. Browser checks CB.E1–E4, WP.BAR.03 and WP.BAR.05 red → green (<code>npm run test:e2e</code>).</li>
+      <li><b>After captures</b> and the pixel comparison (§12). Send the before/after <code>.html</code> sheet to the user and <b>stop until they approve it</b>.</li>
+      <li>D4 if reproduced: its red test → the fix → the §12 comparison again.</li>
+      <li>Docs (§11): ADR-084 and ADR-090 amendments through the <code>new-adr</code> skill, with their HTML twins rendered; the spec's Appendix C rows in place; FR-153 and FR-154 to <i>Covered</i>; the handbook pages. Then <code>check_docs.py</code>, <code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code>.</li>
+      <li><code>scripts/preflight.sh</code> exits 0. Commit and release (§14): CERT, then PROD after the user approves it in GitHub. Verify live at 320 and 375 px in both languages.</li>
+    </ol>
+  </section>
+
+  <section id="s09">
+    <p class="kicker">09 · Drafts, for sign-off before they are written to disk</p>
+    <h2>ADR-084 amendment (2026-10-06)</h2>
+    <blockquote class="adr">
+      <h3>Amendment (2026-10-06) — time runs downward, and the drum shows how it turns</h3>
+      <p>Fencers reported the calendar as not intuitive. Source: <code>doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html</code>; mock: <code>doc/plans/kalendarz-beben-strzalki-mock-2026-10-06.html</code>.</p>
+      <h3>L · Time runs downward</h3>
+      <p><b>§C's direction sentence is superseded.</b> Earlier months sit above the focused row and later months below, so reading down the drum is reading forward in time. Rows sit at <code>rotateX(−i·θ) translateZ(R)</code> and the drum turns by <code>rotateX(+active·θ)</code>; the two signs flip together and nothing else reads them.</p>
+      <p>"Future above" was never chosen: it arrived with the cylinder's angle sign on 29 Aug. Reversing it restores §2's original orientation, puts the heavier season-boundary rule between two seasons, and makes DOM and tab order run top to bottom.</p>
+      <h3>M · Two floating step buttons</h3>
+      <p><b>§6 is refined.</b> The whole row stays the tap target, and two buttons make that visible:</p>
+      <ul>
+        <li><b>What they do:</b> ▲ moves to the nearest earlier month with competitions and ▼ to the nearest later one, as tapping the neighbouring row does (<code>stepRow()</code>).</li>
+        <li><b>Where they sit:</b> beside the neighbouring months, right of their left-aligned tiles, at most 300 px from the left edge.</li>
+        <li><b>How they render:</b> as siblings of the drum inside the viewport, at full opacity and never clipped.</li>
+        <li><b>At the ends:</b> a button is removed when nothing lies further that way, and focus passes to the other.</li>
+        <li><b>Crowded months:</b> a receded month's tiles stop 6 px before the buttons.</li>
+      </ul>
+      <p>Measured at 320, 375 and 1,180 px, the buttons cover no tile, seam label or jump control. Buttons centred on the top and bottom edges were rejected: they covered the jump control at 320 px. Wheel, swipe and drag stay out, unless D8 says otherwise.</p>
+      <h3>N · The jump control's arrow points to the opening month</h3>
+      <p>§J's positions and look are unchanged; the cases they serve follow the direction. When the opening month is drawn above, the control rides the adjacent upper seam with ↑. When it is below, the control pins to the lower edge with ↓, or ← when it is the adjacent row. The pinned case no longer carries a row index.</p>
+      <h3>O · What cannot be seen cannot be reached</h3>
+      <p>Months two or more rows from the focus are <code>inert</code>: they were already faint or invisible and untappable, and keyboard and screen readers now skip them too. A row's accessible name is its seam text in the page's language, not a hard-coded English month.</p>
+      <h3>P · Keyboard (if D8 (a))</h3>
+      <p>With focus inside the drum, ↑ and ↓ step like the buttons and do not scroll the page.</p>
+    </blockquote>
+
+    <h2>ADR-090 amendment (2026-10-06)</h2>
+    <blockquote class="adr">
+      <h3>Amendment (2026-10-06) — the calendar's title is its menu name; a closed drawer is inert</h3>
+      <p><b>§5's phone title for the calendar is superseded</b>, along with the 2026-10-03 amendment's „Kalendarz" / "Calendar".</p>
+      <ul>
+        <li>The calendar's title reads its drawer entry, „Znajdź zawody" / "Competition Finder", wherever that fits.</li>
+        <li>It squeezes to „Zawody" / "Competitions", and in English finally to "Events", only when the room the title actually has is too small. Fit is measured, not tied to a screen width.</li>
+        <li>The same applies to the github.io header. Font, size and the mark's 84 px are unchanged.</li>
+        <li>The other three pages keep §5's 430 px switch.</li>
+      </ul>
+      <p>The drawer is <code>inert</code> while closed in every mode, so its links are no longer reached by keyboard or screen reader while off-screen.</p>
+    </blockquote>
+  </section>
+
+  <section id="s10">
+    <p class="kicker">10 · Requirements: registered before code</p>
+    <h2>FR-153, FR-154 and FR-148</h2>
+    <pre class="cmd">| FR-153 | **The calendar drum reads downward in time and shows how it turns.** Earlier months above
+the focused month, later below; ▲/▼ step to the nearest earlier/later month with competitions, as a
+tap on the neighbouring month does, and disappear where nothing lies further; the "najbliższe zawody"
+arrow points to where the opening month is drawn; turned-away months are inert; month labels are in
+the page's language; crowded previews stop before the buttons[; ↑/↓ keys step]. | ADR-084 (amendment
+2026-10-06) | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50; CB.E1–CB.E4 | Planned |
+| FR-154 | **Every interface string and screen-reader label is in the reader's language.** Every key
+the code uses exists in both locales, runtime key families are complete, identical PL/EN values are
+allowlisted with a reason, and the calendar surfaces render no word of the other language. | ADR-005 |
+TR.01–TR.06 | Planned |</pre>
+    <p><b>FR-148</b> is amended in place. The calendar's title follows the fit rule, „Znajdź zawody" → „Zawody" ("Competition Finder" → "Competitions" → "Events"), and the closed drawer holds no keyboard stops. It adds WP.BAR.05 and WP.NAV.04.</p>
+    <p>Gate E becomes <code>EXPECTED=153</code>. The spec stays within its 1,620-line limit (1,610 today), because the Appendix C rows for ADR-084 and ADR-090 are edited in place. The ADR-084 row also fixes its stale "riding the receded row in the direction of travel".</p>
+  </section>
+
+  <section id="s11">
+    <p class="kicker">11 · Documentation and parity</p>
+    <h2>Coherence gate</h2>
+    <pre class="cmd">☐ Documentation coherence gate complete
+Impact: product | reference
+Canonical docs affected: doc/handbook/product/product-surfaces.html (Calendar card, bar titles, drawer;
+  last-verified); doc/adr/084-…md + twin; doc/adr/090-…md + twin; spec Appendix C rows (in place) + twin;
+  doc/requirements-traceability-matrix.md (FR-148, FR-153, FR-154) + twin; scripts/check-spec-sync.sh
+ADR impact: amend (ADR-084 §6, §C, §J; ADR-090 §5 calendar title, drawer)
+Operational impact: none
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: not applicable (ADR amendments append by convention)</pre>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT (github.io)</th><th>PROD (weteraniszermierki.pl)</th></tr></thead>
+      <tbody>
+        <tr><td>Code</td><td>the dev servers</td><td>Pages, after the release</td><td>the WordPress pages load <code>assets/main.ce.js</code>: no page edits, live within 10 minutes</td></tr>
+        <tr><td>Database, workflows, secrets</td><td colspan="3">no change</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="s12">
+    <p class="kicker">12 · Look and feel</p>
+    <h2>Proof that nothing else changed</h2>
+    <p>The custom-element build is captured twice, before the first change and after the last. Both use the same stubbed event pool, the same fixed date, and the same states: the opening month, two steps either way, the pill in both places, and the drawer open and closed. Each state is captured at 320, 375 and 1280 px in PL and EN, and the github.io shell at 320, 360, 375 and 414 px.</p>
+    <ul>
+      <li><b>Must be pixel-identical:</b> the focused row, the card, the caret, the footer, the bar's ☰, logo and switch, the drawer, and the other pages' bars.</li>
+      <li><b>Expected differences, and only these:</b> the buttons, the neighbouring rows swapping sides, the pill's edge and arrow, and the calendar title's word.</li>
+      <li>Anything else stops the work. The user approves the before/after <code>.html</code> sheet before anything is pushed.</li>
+    </ul>
+  </section>
+
+  <section id="s13">
+    <p class="kicker">13 · Done means</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li>Every test in §06 was observed red for its stated reason, then green. Guards have a recorded mutation red.</li>
+      <li>The §12 sheet shows only the expected differences, and the user approved it.</li>
+      <li>D4 is fixed with its test, or the user closed it. D8 is implemented as chosen.</li>
+      <li><code>scripts/preflight.sh</code> exits 0; the browser checks are green; the §11 gate is ticked.</li>
+      <li>CI and Release are green, the user approved PROD, and both hosts are verified at 320 and 375 px in PL and EN.</li>
+    </ul>
+  </section>
+
+  <section id="s14">
+    <p class="kicker">14 · Handover</p>
+    <h2>For the development session</h2>
+    <h3>How to start</h3>
+    <ol>
+      <li>Follow the session-start protocol: your own worktree, then <code>EnterWorktree</code>. Then <code>git merge origin/claude/calendar-drum-arrows</code>; that branch holds this plan and the mock. Work on your own branch and rename it <code>claude/calendar-drum-arrows-impl</code>.</li>
+      <li>Read this plan, then ADR-084 (amendment 2026-08-29, §A–K), ADR-090 (§5 and the 2026-10-03 amendment), then the mock.</li>
+      <li>Check §00 for D4 and D8. If D8 is still open, implement (a) and leave CB.51–52 out.</li>
+    </ol>
+    <h3>What this session learned (6 Oct 2026)</h3>
+    <ul>
+      <li><b>Docs search</b>: Meilisearch was down because Docker was not running. Start Docker, then <code>docker compose -f tools/docs-search/docker-compose.yml --env-file tools/docs-search/.env up -d</code> from the primary checkout. The <code>spws-docs</code> MCP may still fail to connect; query <code>http://127.0.0.1:7700/indexes/spws_docs/search</code> with the key from <code>tools/docs-search/.env</code>, and never print the key.</li>
+      <li><b>Fresh worktree</b>: run <code>npm ci</code> in <code>frontend/</code> before any test. Otherwise "Failed to resolve import xlsx / @supabase" looks like a regression.</li>
+      <li><b>Previewing worktree code</b>: <code>preview_start</code> reads the <i>primary</i> checkout's <code>launch.json</code> and serves the primary checkout. Instead, run <code>npm run dev -- --port 5200</code> in a Terminal tab (<code>run_in_terminal</code>) and stop it afterwards.</li>
+      <li><b>Playwright MCP</b>:
+        <ul>
+          <li>it blocks <code>file://</code>, so serve <code>doc/plans</code> with <code>python3 -m http.server</code> in a Terminal tab;</li>
+          <li><code>browser_run_code_unsafe</code> can open contexts with <code>deviceScaleFactor</code> and <code>isMobile</code> for phone emulation;</li>
+          <li>it has Chromium only, no WebKit.</li>
+        </ul></li>
+      <li><b>Demo mode loads no calendar events</b> (<code>App.svelte</code> returns early in <code>reloadCalendar</code>). Browser tests must stub the calendar request with <code>page.route</code>. The e2e harness builds the custom element and serves <code>/index.ce.html</code> on port 4174.</li>
+      <li><b>The live drum</b> renders correctly at <code>rotateX(-1482deg)</code> in Chromium; the "large angle dropped" note in older memory did not reproduce.</li>
+      <li><b>Measurements</b>: all the numbers in this plan were taken on 6 Oct on the live pages. The busiest month is October 2026 with 5 events.</li>
+      <li><b>Release path</b>:
+        <ol>
+          <li>push the branch;</li>
+          <li>in <code>/Users/aleks/coding/SPWSranklist-integration</code>, run <code>git merge --ff-only origin/main</code>, then <code>scripts/integrate-agent-branch.sh claude/&lt;task&gt;</code>;</li>
+          <li><code>git push origin integration/main:main</code>;</li>
+          <li>CI, then Release; the user approves <code>deploy-prod</code> in GitHub.</li>
+        </ol>
+        Announce every wait in chat and watch in the background.</li>
+      <li><b>The user's rules</b>:
+        <ul>
+          <li>strict TDD;</li>
+          <li>nothing beyond the plan;</li>
+          <li>every document is an <code>.html</code> file, ending the reply with the path, a blank line, then the <code>file:///</code> link;</li>
+          <li>questions go in the HTML, never AskUserQuestion;</li>
+          <li>never the Browser pane to present anything;</li>
+          <li>the before/after sheet is approved before any push.</li>
+        </ul></li>
+      <li><b>Context</b>: earlier today the drawer label „Kalendarz" → „Znajdź zawody" / "Competition Finder" shipped to PROD (<code>main</code> <code>ae2a7a1b</code>, Release 37421752831).</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan rev 2 · kalendarz-beben-strzalki · 2026-10-06 · CalendarBarrel.svelte, calendarMonths.ts, fitTitle.ts, SiteBar.svelte, App.svelte, Sidebar.svelte, locales · ADR-084 + ADR-090 amendments · FR-153, FR-154, FR-148</p>
+</div>
+</html>

@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar barrel: reversed drum and step arrows (mock)</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+  /* ===== Mock page chrome ================================================= */
+  .ctl{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;font-size:16px;margin:8px 0 0}
+  .ctl label{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .ctl .grp{display:flex;align-items:center;gap:10px}
+  .ctl input[type=range]{width:220px;accent-color:var(--accent)}
+  .ctl output{font-family:var(--mono);font-size:15px;font-weight:700;min-width:12ch}
+  .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:var(--surface)}
+  .seg button{font:600 15px var(--sans);padding:6px 12px;border:0;background:none;color:var(--muted);cursor:pointer}
+  .seg button+button{border-left:1px solid var(--line-strong)}
+  .seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+  .ctl .reset{font:600 15px var(--sans);padding:6px 14px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+
+  /* The stage breaks out of the reading column so two phones fit side by side. */
+  .stage{width:calc(100vw - 32px);margin:26px 0 10px calc(50% - 50vw + 16px);display:flex;flex-wrap:wrap;justify-content:center;gap:34px}
+  .dev{flex:0 0 auto;display:flex;flex-direction:column;gap:6px}
+  .dev .ttl{font-family:var(--mono);font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--accent);margin:0}
+  .dev .sub{font-size:15px;line-height:1.45;color:var(--muted);margin:0 0 6px;max-width:none}
+  .dev.now .ttl{color:var(--faint)}
+  /* The phone screen is always light: the shipped component has no dark theme. */
+  .scr{background:#fff;color:#1c1b19;border:1px solid var(--line-strong);border-radius:18px;padding:14px 16px 16px;box-shadow:0 8px 26px rgba(0,0,0,.10);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:normal}
+  .axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:#8a887f;margin:0 0 2px;letter-spacing:.04em}
+
+  /* ===== The barrel — mirrors CalendarBarrel.svelte (ADR-084 §C, §J) ======= */
+  .bar .vp{height:246px;overflow:hidden;perspective:760px;position:relative;margin-top:6px}
+  .bar .drum{position:absolute;inset:0;transform-style:preserve-3d}
+  .bar .drum.anim{transition:transform .42s cubic-bezier(.22,.61,.36,1)}
+  @media (prefers-reduced-motion:reduce){.bar .drum.anim{transition:none}}
+  .bar .ln{position:absolute;left:0;right:0;top:50%;margin-top:-41px;height:82px;backface-visibility:hidden;transition:opacity .3s linear;cursor:pointer;text-align:left}
+  .bar .ln.far{pointer-events:none}
+  .bar .ln.mid{cursor:default}
+  .bar .sm{display:flex;align-items:center;gap:5px;height:14px}
+  .bar .sm b{font-size:11px;font-weight:400;color:#8a887f;letter-spacing:.6px;white-space:nowrap}
+  .bar .ln.mid .sm b{color:#565550}
+  .bar .sm i{flex:1;height:1px;background:rgba(0,0,0,.13)}
+  .bar .sm em{font-size:11px;color:#8a887f;font-style:normal}
+  .bar .rw{display:flex;overflow-x:auto;scrollbar-width:none;padding-top:3px;padding-bottom:4px}
+  .bar .rw::-webkit-scrollbar{display:none}
+  .bar .rec .rw{overflow-x:hidden}
+  .bar .rwi{display:flex;gap:3px;margin:0;position:relative}
+  .bar .p{flex:0 0 68px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 1px;border-radius:6px;border:1px solid rgba(0,0,0,.13);border-top:3px solid var(--org,#6f7d8f);background:#fff;height:56px;position:relative;overflow:hidden;font:inherit;color:#1c1b19;cursor:pointer}
+  .bar .p.sel{flex-basis:78px;outline:2px solid #1c1b19;outline-offset:-1px}
+  .bar .rec .p{flex-basis:38px}
+  .bar .p.past{background:#efeee9;color:#8a887f}
+  .bar .p.fut{background:#eef5fc}
+  .bar .p.soon{background:#d3e5f8}
+  .bar .p.nx{box-shadow:0 0 0 2px #185fa5}
+  .bar .p.ppw{--org:#2e7d52} .bar .p.pew{--org:#1f6fb0} .bar .p.int{--org:#b1791d} .bar .p.pzs{--org:#c05555}
+  .bar .dd{font-size:15px;font-weight:600;line-height:1.1}
+  .bar .dm{font-size:11px;font-weight:700;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .bar .cdc{font-size:11px;font-weight:600;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .bar .cdc i{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-style:normal;font-size:10px;font-weight:700;margin-left:1px}
+  .bar .cty{font-size:9px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-top:1px}
+  .bar .rec .dm,.bar .rec .cty,.bar .far .dm,.bar .far .cty{display:none}
+  .bar .far .p{flex-basis:38px}
+  .bar .mt{font-size:11px;color:#8a887f;margin:0 auto;align-self:center}
+
+  /* §J jump control — unchanged look; only WHICH edge it uses is mirrored. */
+  .bar .jmp{position:absolute;right:0;top:-2px;z-index:10;display:inline-flex;align-items:center;gap:5px;font:600 11px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:5px 10px;border-radius:12px;border:1px solid #185fa5;background:#fff;color:#185fa5;cursor:pointer;white-space:nowrap}
+  .bar .jmp.pinned{top:auto;bottom:4px}
+  .bar .arw{width:11px;height:11px;flex:0 0 11px}
+  .bar .arw.up{transform:rotate(-90deg)} .bar .arw.down{transform:rotate(90deg)} .bar .arw.left{transform:rotate(180deg)}
+
+  /* ===== NEW: floating step arrows ========================================
+     Siblings of .drum inside .vp, so they sit at full opacity and are never
+     clipped — the lesson §J measured for the pinned jump control. */
+  .bar .stp{position:absolute;z-index:20;width:36px;height:36px;padding:0;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+  .bar .stp[hidden]{display:none}
+  .bar .stp span{width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.14);box-shadow:0 2px 7px rgba(0,0,0,.20);color:#185fa5;display:flex;align-items:center;justify-content:center;transition:transform .12s,background .12s}
+  .bar .stp:hover span{background:#f1f6fd}
+  .bar .stp:active span{transform:scale(.9)}
+  .bar .stp:focus-visible{outline:none}
+  .bar .stp:focus-visible span{outline:2px solid #185fa5;outline-offset:2px}
+  .bar .stp svg{width:14px;height:14px}
+  .bar .stp.down svg{transform:rotate(180deg)}
+  /* Placement A — beside the neighbouring months, next to the tiles. Rows are
+     left-aligned and a receded row's tiles are 38px, so its right side is empty;
+     capped at 300px so on a 1176px desktop drum the arrows stay by the tiles. */
+  .bar.pa .stp{left:min(calc(100% - 36px),300px)}
+  .bar.pa .stp.up{top:38px}
+  .bar.pa .stp.down{top:177px}
+  /* Placement B — centred on the drum's top and bottom edges. */
+  .bar.pb .stp{left:calc(50% - 18px)}
+  .bar.pb .stp.up{top:0}
+  .bar.pb .stp.down{bottom:0}
+
+  .bar .crw{height:8px;position:relative}
+  .bar .crt{position:absolute;top:0;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid var(--caret,#6f7d8f);transition:left .3s}
+  .bar .card{border:1px solid rgba(0,0,0,.13);border-top:3px solid var(--caret,#6f7d8f);border-radius:8px;padding:9px 12px 10px;box-shadow:0 2px 8px rgba(0,0,0,.08);min-height:62px}
+  .bar .card .dt{font-size:16px;font-weight:700;line-height:1.25}
+  .bar .card .nm{font-size:13px;color:#565550;line-height:1.35}
+  .bar .card .nm b{color:#1c1b19}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Calendar · CalendarBarrel.svelte · Mock for decision</p>
+  <h1>A drum that turns the way people expect</h1>
+  <p class="dek">Fencers told us the calendar is not intuitive. They asked for two changes: <b>reverse the rotation</b>, and <b>add floating ▲ ▼ arrows</b> so it is obvious how the drum moves. This page runs both on the real PROD event pool, beside today's drum, so you can feel the difference before anything is built.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Mock: not built</span>
+    <span class="pill">pool: 91 dated PROD events (snapshot 29 Aug 2026)</span>
+    <span class="pill">"today" fixed at 6 Oct 2026</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">01 · Try it</p>
+    <h2>Today's drum and the proposed one, side by side</h2>
+    <p>Tap a neighbouring month or a tile to turn the drum. On the right-hand phone, use ▲ and ▼ too. Turn a few months away from October and the "najbliższe zawody" pill appears; it brings you back. Drag the width down to 320 px to see the smallest phone.</p>
+
+    <div class="ctl" role="group" aria-label="Mock controls">
+      <div class="grp"><label for="w">Phone width</label><input id="w" type="range" min="320" max="1180" step="1" value="375"><output id="wo" for="w">375 px</output></div>
+      <div class="grp"><label>Arrows</label><span class="seg" id="place"><button type="button" data-v="a" aria-pressed="true">A · beside the tiles</button><button type="button" data-v="b" aria-pressed="false">B · centred on the edges</button></span></div>
+      <div class="grp"><label>Language</label><span class="seg" id="lang"><button type="button" data-v="pl" aria-pressed="true">PL</button><button type="button" data-v="en" aria-pressed="false">EN</button></span></div>
+      <button type="button" class="reset" id="reset">Back to October</button>
+    </div>
+  </section>
+</div>
+
+<div class="stage">
+  <div class="dev now">
+    <p class="ttl">Today — live on PROD</p>
+    <p class="sub">The future is <b>above</b>. Tap the upper month to go forward. No arrows.</p>
+    <div class="scr" id="scrNow"><div class="axis"><span>▲ <span data-t="later">later</span></span><span data-t="nowtag">as shipped</span></div><div class="bar" id="barNow"></div></div>
+  </div>
+  <div class="dev new">
+    <p class="ttl">Proposed</p>
+    <p class="sub">The past is <b>above</b>, the future <b>below</b>, like a list. ▲ ▼ step one month.</p>
+    <div class="scr" id="scrNew"><div class="axis"><span>▲ <span data-t="earlier">earlier</span></span><span data-t="newtag">proposed</span></div><div class="bar pa" id="barNew"></div></div>
+  </div>
+</div>
+
+<div class="wrap" style="padding-top:20px">
+
+  <section>
+    <p class="kicker">02 · What the proposed drum does</p>
+    <h2>Two changes, and one that follows from them</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Behaviour</th><th>Today</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>Where later months sit</td><td>Above the focused month</td><td><b>Below</b> it. Reading down the drum is reading forward in time, as in a list or a printed calendar.</td></tr>
+        <tr><td>Going forward one month</td><td>Tap the upper month; the drum turns <b>down</b></td><td>Tap the lower month, or <b>▼</b>; the drum turns <b>up</b>, like scrolling a page down</td></tr>
+        <tr><td>Step arrows</td><td>None. The only cue is the half-visible neighbouring months.</td><td><b>▲</b> and <b>▼</b> float over the drum at full strength, always visible. Each does exactly what tapping that neighbouring month does, and empty months are skipped. An arrow disappears when there is no earlier or later competition.</td></tr>
+        <tr><td>"najbliższe zawody" (the way back)</td><td>Rides the upper month when you have gone into the past; pins to the bottom edge when you have gone into the future</td><td><b>Mirrored.</b> It rides the upper month when you have gone into the <b>future</b> (the way back is up). It pins to the bottom edge when you have gone into the <b>past</b>. Same look, same two positions.</td></tr>
+        <tr><td>Keyboard and screen readers</td><td>The order of months in the page runs bottom-to-top on screen</td><td>Top-to-bottom, which matches the screen. The arrows are real buttons with labels: "Poprzedni miesiąc" / "Następny miesiąc".</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note accent">
+      <p class="lede">Why reversing is safe</p>
+      <p>The drum's direction is set by the sign of two angles, nowhere else. Skipping empty months, the opening month and the event card all work in time, not in screen direction, so they do not change. Reversing also restores the order the drum had before it became a cylinder on 29 Aug. Nobody chose "future above"; it came in with the sign of the cylinder's angle.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Decide this first</p>
+    <h2>Three questions, each with a recommendation</h2>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">D1</span> Is this what "reverse the rotation" means?</p>
+      <p>The drum only turns when you tap, so "reversing the rotation" can only mean <b>swapping which side the future is on</b>. Turning the other way on the same tap would push the month you tapped off screen.</p>
+      <p><b>Recommendation: yes, past above and future below</b>, as on the right-hand phone.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">D2</span> Where should the arrows float? (toggle "Arrows" above)</p>
+      <ul>
+        <li><b>A · beside the tiles</b>: on the right of the neighbouring months, where those rows are always empty because tiles start at the left. They cover nothing. On a desktop they stay next to the tiles instead of 900 px away at the far edge.</li>
+        <li><b>B · centred on the top and bottom edges</b>: the classic look, but they sit on the month line above and on the city line of the month below. On a desktop they drift to the middle of a 1,176 px drum.</li>
+      </ul>
+      <p><b>Measured in this mock</b> at 320, 375 and 1,180 px, both at the opening month and with the "najbliższe zawody" pill showing at the top and at the bottom:</p>
+      <ul>
+        <li><b>A</b> overlaps nothing at any of the three widths: no tile, no month label, no pill. The ▼ sits 9 px above the bottom pill.</li>
+        <li><b>B</b> overlaps the "najbliższe zawody" pill at 320 px, both when it is at the top and when it is at the bottom. On desktop the arrows sit at x ≈ 558, more than 400 px from the tiles.</li>
+      </ul>
+      <p><b>Recommendation: A.</b> It is the only placement that covers nothing at every width, and it keeps the arrows next to the months they move.</p>
+    </div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">D3</span> At the first or last competition, hide the arrow or grey it out?</p>
+      <p><b>Recommendation: hide it.</b> A greyed-out button is still a target someone will tap. A missing ▼ already says "nothing later". This applies only at the very ends of the history (January 2022 and June 2027 in this pool).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Next</p>
+    <h2>After your answers</h2>
+    <ol class="steps">
+      <li>I write the implementation plan: tests first; the drum, arrows and jump control in <code>CalendarBarrel.svelte</code>; a small helper in <code>calendarMonths.ts</code>; two locale keys each in PL and EN.</li>
+      <li>The plan includes an amendment to <b>ADR-084</b> (direction, arrows, the mirrored jump control) and a new requirement <b>FR-153</b>, for your sign-off before anything is written to disk.</li>
+      <li>Release goes CERT, then PROD, as usual. The WordPress pages pick it up from the shared bundle with no page edits.</li>
+    </ol>
+  </section>
+
+  <p class="foot">mock · kalendarz-beben-strzalki · 2026-10-06 · the drum code mirrors CalendarBarrel.svelte (θ 26°, R 178 px, viewport 246 px, perspective 760 px)</p>
+</div>
+
+<script>
+/* Real PROD pool, from doc/plans/kalendarz-mocki-2026-08-29.html (snapshot 29 Aug 2026):
+   [code, dt_start, location, status initial]. */
+const POOL=[["PEW2e-2023-2024","2022-01-08","","C"],["PEW16e-2023-2024","2022-02-25","","C"],["IMEW-2023-2024","2023-01-01","","C"],["PEW1e-2023-2024","2023-01-07","Guilford","C"],["GP1-2023-2024","2023-01-14","Pabianice","C"],["PEW17fs-2023-2024","2023-01-21","","C"],["PEW3s-2023-2024","2023-02-12","","C"],["PEW18e-2023-2024","2023-02-25","","C"],["GP2-2023-2024","2023-03-04","Toruń","C"],["PEW4f-2023-2024","2023-03-18","","C"],["PEW12f-2023-2024","2023-03-23","","C"],["PEW20s-2023-2024","2023-04-01","","C"],["PEW19e-2023-2024","2023-04-14","","C"],["GP3-2023-2024","2023-06-18","Niepołomice","C"],["VFC-2023-2024","2023-07-07","","C"],["PEW5efs-2023-2024","2023-09-16","Budapest","C"],["GP4-2023-2024","2023-09-23","Opole","C"],["PEW22e-2023-2024","2023-09-24","","C"],["PEW7s-2023-2024","2023-10-09","","C"],["GP5-2023-2024","2023-10-28","Gdańsk","C"],["PEW6efs-2023-2024","2023-11-11","","C"],["GP6-2023-2024","2023-11-18","Kraków","C"],["PEW23f-2023-2024","2023-12-09","","C"],["PEW8efs-2023-2024","2023-12-16","Terni","C"],["PEW25e-2023-2024","2024-01-06","","C"],["PEW10s-2023-2024","2024-01-20","","C"],["GP7-2023-2024","2024-01-27","Spała","C"],["PEW9ef-2023-2024","2024-02-24","Stockholm","C"],["MPW-2023-2024","2024-03-02","Warszawa","C"],["PEW13e-2023-2024","2024-04-06","","C"],["PEW14s-2023-2024","2024-04-06","","C"],["PEW15e-2023-2024","2024-04-27","","C"],["GP8-2023-2024","2024-06-22","Niepołomice","C"],["PEW1efs-2024-2025","2024-09-21","Budapest","C"],["PPW1-2024-2025","2024-09-28","Konin","C"],["PPW2-2024-2025","2024-10-26","Bytom","C"],["PEW2efs-2024-2025","2024-11-16","Madrid","C"],["PPW3-2024-2025","2024-11-30","Kraków","C"],["PEW3fs-2024-2025","2024-12-07","Munich","C"],["PEW4ef-2024-2025","2025-01-04","Guildford","C"],["PEW5s-2024-2025","2025-01-18","","C"],["PEW6efs-2024-2025","2025-02-01","Terni","C"],["PPW4-2024-2025","2025-02-22","Warszawa","C"],["PEW13e-2024-2025","2025-03-15","","C"],["PEW7es-2024-2025","2025-03-29","Jabłonna","C"],["PEW8f-2024-2025","2025-03-30","","C"],["PPW5-2024-2025","2025-04-26","Szczecin","C"],["PEW15f-2024-2025","2025-05-15","","C"],["IMEW-2024-2025","2025-05-28","Plovdiv","C"],["MPW-2024-2025","2025-06-07","Pabianice","C"],["PEW10efs-2024-2025","2025-07-05","Paris","C"],["PEW1efs-2025-2026","2025-09-20","Budapest","C"],["PPW1-2025-2026","2025-09-27","Opole","C"],["PPW2-2025-2026","2025-10-25","Poznań","C"],["PEW2efs-2025-2026","2025-11-01","Madrid","C"],["IMSW-2025-2026","2025-11-12","Manama","I"],["PEW3fs-2025-2026","2025-12-06","Munich","C"],["PPW3-2025-2026","2025-12-13","Warszawa-Łomianki","C"],["PEW62efs-2025-2026","2026-01-10","Guildford","C"],["PEW31fs-2025-2026","2026-02-07","Faches","C"],["PPW4-2025-2026","2026-02-21","Gdańsk","C"],["PEW4efs-2025-2026","2026-03-07","Napoli","C"],["PEW5ef-2025-2026","2026-03-14","Stockholm","C"],["PEW6efs-2025-2026","2026-03-28","Jabłonna","C"],["PPW5-2025-2026","2026-04-11","Gdańsk","C"],["PEW61s-2025-2026","2026-04-11","Liège","C"],["PEW7ef-2025-2026","2026-04-18","Salzburg","C"],["PEW8es-2025-2026","2026-05-02","Chania","P"],["DMEW-2025-2026","2026-05-14","Complexe Sportif Omnispo","P"],["PEW9efs-2025-2026","2026-05-30","Dublin","I"],["MPW-2025-2026","2026-06-20","Warszawa","C"],["PEW0efs-2026-2027","2026-09-12","Samorin","C"],["PEW1f-2026-2027","2026-09-19","Savoy Terrace - Buda Cas","P"],["PPW1-2026-2027","2026-09-26","Opole","P"],["MSW-2026-2027","2026-10-09","TBILISI","P"],["PEW2es-2026-2027","2026-10-31","POLIDEPORTIVO MUNICIPAL ","P"],["PEW3ef-2026-2027","2026-11-14","Budapeszt","P"],["PEW4fs-2026-2027","2026-11-28","Sporthalle der Städtisch","P"],["PEW5efs-2026-2027","2026-12-12","Łomianki","P"],["PEW6efs-2026-2027","2027-01-09","Guildford Spectrum","P"],["PEW7es-2026-2027","2027-01-23","","P"],["PEW8efs-2026-2027","2027-01-30","","P"],["PEW9fs-2026-2027","2027-02-06","Salle Jean Zay","P"],["PEW10e-2026-2027","2027-02-06","Vaudoise aréna - Lausann","P"],["PEW11efs-2026-2027","2027-03-06","Palavesuvio","P"],["PEW12ef-2026-2027","2027-03-13","Stora mossen IP idrottsh","C"],["PEW13s-2026-2027","2027-04-10","Liège","P"],["PEW14ef-2026-2027","2027-04-24","Sporthalle HAK 2 - Salzb","P"],["PEW15es-2026-2027","2027-05-22","Ateny","P"],["PEW16efs-2026-2027","2027-05-29","UCD Sport Center Dublin","P"],["PEW17efs-2026-2027","2027-06-18","Toronto","P"]];
+const TODAY='2026-10-06';
+
+const L={
+  pl:{nom:['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'],
+      gen:['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'],
+      sh:['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'],
+      empty:'brak zawodów',jump:'najbliższe zawody',prev:'Poprzedni miesiąc',next:'Następny miesiąc',
+      later:'później',earlier:'wcześniej',nowtag:'tak jest dziś',newtag:'propozycja',next_up:'najbliższe'},
+  en:{nom:['January','February','March','April','May','June','July','August','September','October','November','December'],
+      gen:['January','February','March','April','May','June','July','August','September','October','November','December'],
+      sh:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      empty:'no events',jump:'nearest competition',prev:'Previous month',next:'Next month',
+      later:'later',earlier:'earlier',nowtag:'as shipped',newtag:'proposed',next_up:'next up'}
+};
+let LANG='pl';
+const T=()=>L[LANG];
+
+const EV=POOL.map(([code,start,loc,st],i)=>({id:i,code,start,loc,st}));
+function typeOf(c){if(/^(PPW|MPW|GP)/.test(c))return'ppw';if(/^PEW/.test(c))return'pew';if(/^(PZS|PPS|MPS)/.test(c))return'pzs';return'int';}
+const ORG={ppw:'#2e7d52',pew:'#1f6fb0',int:'#b1791d',pzs:'#c05555'};
+function parts(code){const b=code.replace(/-\d{4}-\d{4}$/,'');const m=b.match(/^([A-Z]+)(\d*)/);return m?{a:m[1],n:m[2]}:{a:b,n:''};}
+function seasonOf(code){const m=code.match(/(\d{4})-(\d{4})$/);return m?m[1].slice(2)+'/'+m[2].slice(2):'';}
+function daysTo(d){return Math.round((Date.parse(d)-Date.parse(TODAY))/864e5);}
+function timeState(e){if(e.start<TODAY)return'past';return daysTo(e.start)<=7?'soon':'fut';}
+function cityOf(e){const v=(e.loc||'').trim();const p=v.split(/\s+-\s+/);if(p.length===2&&/^[A-ZŁŚŻŹĆÓĄĘŃ]\S*$/.test(p[1]))return p[1];return v;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+
+/* Month rows, chronological, every calendar month materialised (ADR-084 §A, §D). */
+const ROWS=(()=>{const s=EV.slice().sort((a,b)=>a.start.localeCompare(b.start));
+  let y=+s[0].start.slice(0,4),m=+s[0].start.slice(5,7);const ly=+s.at(-1).start.slice(0,4),lm=+s.at(-1).start.slice(5,7);const out=[];
+  while(y<ly||(y===ly&&m<=lm)){const k=y+'-'+String(m).padStart(2,'0');out.push({key:k,y,m,events:s.filter(e=>e.start.slice(0,7)===k)});m++;if(m>12){m=1;y++;}}
+  return out;})();
+const NEXT=EV.filter(e=>e.start>=TODAY).sort((a,b)=>a.start.localeCompare(b.start))[0];
+const ANCHOR=ROWS.findIndex(r=>r.key===NEXT.start.slice(0,7));
+
+/* settleRow(): never rest on an empty month; bounce at the ends of the drum. */
+function settle(i,dir){let j=Math.max(0,Math.min(ROWS.length-1,i));let g=0;
+  while(ROWS[j]&&!ROWS[j].events.length&&g++<ROWS.length){const n=j+dir;
+    if(n<0||n>=ROWS.length){let k=j;while(k>=0&&k<ROWS.length&&!ROWS[k].events.length)k-=dir;return(k>=0&&k<ROWS.length)?k:j;}
+    j=n;}
+  return j;}
+/* NEW helper: the month one step away in time, or null when there is none — so an
+   arrow can hide instead of letting settleRow bounce it back the other way. */
+function stepRow(active,dir){const t=settle(active+dir,dir);return (t-active)*dir>0?t:null;}
+
+const THETA=26,HORIZON=80,R=Math.round(41/Math.tan(13*Math.PI/180)),SPAN=Math.floor(HORIZON/THETA);
+const CHEV='<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 10.5 8 6l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ARW='<svg class="arw" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 8h10M8.75 4.25 12.5 8l-3.75 3.75" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function tile(e,j){const ty=typeOf(e.code),ts=timeState(e),p=parts(e.code);
+  return `<button type="button" class="p ${ty} ${ts==='past'?'past':'fut'}${ts==='soon'?' soon':''}${e===NEXT?' nx':''}" data-j="${j}"><span class="dd">${+e.start.slice(8,10)}</span><span class="dm" data-m="${+e.start.slice(5,7)}"></span><span class="cdc">${esc(p.a)}${p.n?`<i>${p.n}</i>`:''}</span>${cityOf(e)?`<span class="cty">${esc(cityOf(e))}</span>`:''}</button>`;}
+
+/* dir = +1: the shipped drum (later months above). dir = -1: proposed (later below). */
+function barrel(host,{dir,arrows}){
+  const S={active:ANCHOR,sel:0};
+  host.innerHTML=`<div class="vp"><div class="drum"></div>${arrows?`<button type="button" class="stp up">${'<span>'+CHEV+'</span>'}</button><button type="button" class="stp down"><span>${CHEV}</span></button>`:''}</div><div class="crw"><div class="crt"></div></div><div class="card"></div>`;
+  const vp=host.querySelector('.vp'),drum=host.querySelector('.drum');
+  /* Rows are built ONCE: a CSS transition cannot animate across replaced nodes. */
+  drum.innerHTML=ROWS.map((r,i)=>`<div class="ln" role="button" data-i="${i}" style="transform:rotateX(${dir*i*THETA}deg) translateZ(${R}px)"><div class="sm"><b></b><i></i><em></em></div><div class="rw">${r.events.length?`<div class="rwi">${r.events.map(tile).join('')}</div>`:'<span class="mt"></span>'}</div></div>`).join('');
+  const lines=[...drum.children];
+  const jmp=document.createElement('button');jmp.type='button';jmp.className='jmp';
+  jmp.addEventListener('click',e=>{e.stopPropagation();S.active=settle(ANCHOR,ANCHOR>S.active?1:-1);selDefault();render(true);});
+  const up=host.querySelector('.stp.up'),down=host.querySelector('.stp.down');
+  /* ▲ moves toward whatever sits above: later months today (dir +1), earlier ones proposed (dir -1). */
+  if(up)up.addEventListener('click',()=>step(dir));
+  if(down)down.addEventListener('click',()=>step(-dir));
+  function step(timeDir){const t=stepRow(S.active,timeDir);if(t==null)return;S.active=t;selDefault();render(false);}
+  function selDefault(){const ev=ROWS[S.active].events;const k=ev.indexOf(NEXT);S.sel=k>=0?k:0;}
+  function rotateTo(i){if(i===S.active)return;const t=settle(i,i>S.active?1:-1);if(t===S.active)return;S.active=t;selDefault();render(false);}
+  drum.addEventListener('click',ev=>{const ln=ev.target.closest('.ln');if(!ln)return;const i=+ln.dataset.i;const p=ev.target.closest('.p');
+    if(p&&i===S.active){S.sel=+p.dataset.j;render(false);return;}
+    if(Math.abs(i-S.active)!==1)return;
+    if(p){S.active=i;S.sel=+p.dataset.j;render(false);return;}
+    rotateTo(i);});
+  drum.addEventListener('keydown',ev=>{if(ev.key!=='Enter'&&ev.key!==' ')return;const ln=ev.target.closest('.ln');if(!ln||ev.target!==ln)return;ev.preventDefault();rotateTo(+ln.dataset.i);});
+
+  function text(){const t=T();
+    lines.forEach((ln,i)=>{const r=ROWS[i];ln.querySelector('.sm b').textContent=t.nom[r.m-1]+' '+r.y;ln.setAttribute('aria-label',t.nom[r.m-1]+' '+r.y);
+      const mt=ln.querySelector('.mt');if(mt)mt.textContent=t.empty;
+      ln.querySelectorAll('.dm').forEach(d=>d.textContent=t.sh[+d.dataset.m-1]);});
+    if(up){up.setAttribute('aria-label',dir>0?t.next:t.prev);down.setAttribute('aria-label',dir>0?t.prev:t.next);}
+    jmp.innerHTML=ARW+esc(t.jump);}
+
+  function render(instant){
+    if(instant)drum.classList.remove('anim');
+    drum.style.transform=`translateZ(${-R}px) rotateX(${-dir*S.active*THETA}deg)`;
+    lines.forEach((ln,i)=>{const d=i-S.active,ad=Math.abs(d);
+      ln.className='ln '+(d===0?'mid':ad===1?'rec':'far');
+      ln.style.opacity=ad*THETA>HORIZON?'0':(d===0?'1':Math.max(0,Math.cos(ad*THETA*Math.PI/180)*.9).toFixed(3));
+      if(ad===1)ln.tabIndex=0;else ln.removeAttribute('tabindex');
+      ln.querySelectorAll('.p').forEach((p,j)=>p.classList.toggle('sel',d===0&&j===S.sel));
+      const em=ln.querySelector('.sm em');em.textContent=d===0&&ROWS[i].events.length?seasonOf(ROWS[i].events[0].code):'';});
+    /* §J jump control. The anchor is "above" when it lies the way the screen's top points in time. */
+    jmp.remove();jmp.classList.remove('pinned');
+    if(ANCHOR!==S.active){
+      const above=(ANCHOR-S.active)*dir>0;
+      const a=jmp.querySelector('.arw');a.classList.remove('up','down','left');
+      if(above){a.classList.add('up');lines[S.active+dir].appendChild(jmp);}
+      else{a.classList.add(Math.abs(ANCHOR-S.active)===1?'left':'down');jmp.classList.add('pinned');vp.appendChild(jmp);}
+    }
+    if(up){up.hidden=stepRow(S.active,dir)==null;down.hidden=stepRow(S.active,-dir)==null;}
+    /* caret + card */
+    const ev=ROWS[S.active].events[S.sel];const mid=lines[S.active];const p=mid.querySelector('.p.sel');
+    const crt=host.querySelector('.crt'),card=host.querySelector('.card');
+    if(p&&ev){const rw=mid.querySelector('.rw');crt.style.display='';crt.style.left=(p.offsetLeft-rw.scrollLeft+p.offsetWidth/2-8)+'px';
+      const col=ORG[typeOf(ev.code)];crt.style.setProperty('--caret',col);card.style.setProperty('--caret',col);
+      const t=T(),m=+ev.start.slice(5,7);
+      card.innerHTML=`<div class="dt">${+ev.start.slice(8,10)} ${t.gen[m-1]} ${ev.start.slice(0,4)}</div><div class="nm"><b>${esc(ev.code)}</b>${cityOf(ev)?' · '+esc(cityOf(ev)):''}${ev===NEXT?' · '+t.next_up:''}</div>`;}
+    else{crt.style.display='none';card.innerHTML='';}
+    if(instant){void drum.offsetHeight;setTimeout(()=>drum.classList.add('anim'),0);}
+  }
+  text();selDefault();render(true);
+  return {text,render,reset(){S.active=ANCHOR;selDefault();render(true);},el:host};
+}
+
+const NOW=barrel(document.getElementById('barNow'),{dir:1,arrows:false});
+const NEW=barrel(document.getElementById('barNew'),{dir:-1,arrows:true});
+
+function axisText(){document.querySelectorAll('[data-t]').forEach(s=>s.textContent=T()[s.dataset.t]);}
+function setWidth(w){document.getElementById('wo').textContent=w+' px';
+  ['scrNow','scrNew'].forEach(id=>document.getElementById(id).style.width=w+'px');
+  NOW.render(true);NEW.render(true);}
+document.getElementById('w').addEventListener('input',e=>setWidth(+e.target.value));
+function seg(id,fn){const g=document.getElementById(id);g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));fn(b.dataset.v);});}
+seg('place',v=>{const b=document.getElementById('barNew');b.classList.toggle('pa',v==='a');b.classList.toggle('pb',v==='b');});
+seg('lang',v=>{LANG=v;NOW.text();NEW.text();NOW.render(true);NEW.render(true);axisText();});
+document.getElementById('reset').addEventListener('click',()=>{NOW.reset();NEW.reset();});
+axisText();setWidth(375);
+</script>
+</html>
