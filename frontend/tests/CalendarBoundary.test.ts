@@ -43,14 +43,14 @@ describe('App — a calendar that fails to render', () => {
 
   it('CBD.1: shows the calendar as failed instead of taking the page down', async () => {
     const { container, getByText } = renderApp()
-    await fireEvent.click([...container.querySelectorAll('button')].find((b) => /Kalendarz|Calendar/.test(b.textContent ?? ''))!)
+    await fireEvent.click([...container.querySelectorAll('button')].find((b) => /Znajdź zawody|Competition Finder/.test(b.textContent ?? ''))!)
     expect(container.querySelector('.calendar-failed')).not.toBeNull()
     expect(getByText(/calendar exploded/)).toBeTruthy()
   })
 
   it('CBD.2: leaves the rest of the application working', async () => {
     const { container } = renderApp()
-    await fireEvent.click([...container.querySelectorAll('button')].find((b) => /Kalendarz|Calendar/.test(b.textContent ?? ''))!)
+    await fireEvent.click([...container.querySelectorAll('button')].find((b) => /Znajdź zawody|Competition Finder/.test(b.textContent ?? ''))!)
     // The hamburger was the clearest symptom on PROD: dead alongside everything
     // else. It must still open the sidebar with the calendar broken.
     const hamburger = container.querySelector('.hamburger-btn') as HTMLElement

@@ -82,12 +82,12 @@ describe('App Shell (T8.4)', () => {
     expect(title?.textContent).toContain('Ranking')
     expect(title?.querySelector('.header-logo')).not.toBeNull()
 
-    // Open sidebar and click Kalendarz
+    // Open sidebar and click Znajdź zawody; the header keeps the view's title
     const hamburger = container.querySelector('.hamburger-btn')
     await fireEvent.click(hamburger!)
     const navItems = container.querySelectorAll('.nav-item')
     const calendarItem = Array.from(navItems).find((el) =>
-      el.textContent?.includes('Kalendarz'),
+      el.textContent?.includes('Znajdź zawody'),
     )
     await fireEvent.click(calendarItem!)
 
@@ -122,7 +122,7 @@ describe('App Shell (T8.4)', () => {
     await fireEvent.click(hamburger!)
     const navItems = container.querySelectorAll('.nav-item')
     const calendarItem = Array.from(navItems).find((el) =>
-      el.textContent?.includes('Kalendarz'),
+      el.textContent?.includes('Znajdź zawody'),
     )
     await fireEvent.click(calendarItem!)
     await tick()
