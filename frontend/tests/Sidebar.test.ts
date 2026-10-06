@@ -6,7 +6,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
 import Sidebar from '../src/components/Sidebar.svelte'
-import { getLocale } from '../src/lib/locale.svelte'
+import { getLocale, setLocale } from '../src/lib/locale.svelte'
 
 describe('Sidebar (T8.4)', () => {
   const defaultProps = {
@@ -34,7 +34,7 @@ describe('Sidebar (T8.4)', () => {
     expect(openSidebar).toBeNull()
   })
 
-  // 8.28 — Sidebar shows "SPWS" brand + Ranklista + Kalendarz items
+  // 8.28 — Sidebar shows "SPWS" brand + Ranking + Znajdź zawody items
   it('shows SPWS brand and navigation items', () => {
     const { container } = render(Sidebar, { props: defaultProps })
     const brand = container.querySelector('.sidebar-brand')
@@ -45,7 +45,7 @@ describe('Sidebar (T8.4)', () => {
     const navItems = container.querySelectorAll('.nav-item')
     const texts = Array.from(navItems).map((el) => el.textContent?.trim())
     expect(texts).toContain('Ranking')
-    expect(texts).toContain('Kalendarz')
+    expect(texts).toContain('Znajdź zawody')
   })
 
   // 8.29 — Clicking Ranklista → ranklist view, sidebar closes
@@ -65,8 +65,8 @@ describe('Sidebar (T8.4)', () => {
     expect(onclose).toHaveBeenCalled()
   })
 
-  // 8.30 — Clicking Kalendarz → calendar view, sidebar closes
-  it('emits navigate(calendar) and close when Kalendarz clicked', async () => {
+  // 8.30 — Clicking Znajdź zawody → calendar view, sidebar closes
+  it('emits navigate(calendar) and close when Znajdź zawody clicked', async () => {
     const onnavigate = vi.fn()
     const onclose = vi.fn()
     const { container } = render(Sidebar, {
@@ -74,7 +74,7 @@ describe('Sidebar (T8.4)', () => {
     })
     const navItems = container.querySelectorAll('.nav-item')
     const calendarItem = Array.from(navItems).find((el) =>
-      el.textContent?.includes('Kalendarz'),
+      el.textContent?.includes('Znajdź zawody'),
     )
     expect(calendarItem).not.toBeUndefined()
     await fireEvent.click(calendarItem!)
@@ -90,7 +90,7 @@ describe('Sidebar (T8.4)', () => {
     const texts = Array.from(container.querySelectorAll('.nav-list .nav-item')).map((el) =>
       el.textContent?.trim(),
     )
-    expect(texts).toEqual(['Ranking', 'Kalendarz', 'Kalkulator punktów', 'Tabela punktacji'])
+    expect(texts).toEqual(['Ranking', 'Znajdź zawody', 'Kalkulator punktów', 'Tabela punktacji'])
   })
 
   // 8.85 — Kalkulator to odnośnik do samodzielnej strony, nie widok aplikacji
@@ -273,11 +273,25 @@ describe('WP.NAV.01 — the drawer leads to the four public pages in the same ta
       '/ranking/', '/znajdz-zawody/', '/kalkulator-punktow/', '/tabela-punktacji/',
     ])
     expect(items.map((a) => a.textContent?.trim())).toEqual([
-      'Ranking', 'Kalendarz', 'Kalkulator punktów', 'Tabela punktacji',
+      'Ranking', 'Znajdź zawody', 'Kalkulator punktów', 'Tabela punktacji',
     ])
     for (const a of items) expect(a.hasAttribute('target')).toBe(false)
     expect(items[1].classList.contains('active')).toBe(true)
     expect(items[1].getAttribute('aria-current')).toBe('page')
+  })
+
+  // The calendar entry is named after its page, /znajdz-zawody/, in both languages.
+  it('names the entries in English when the page is in English', async () => {
+    setLocale('en')
+    try {
+      const { container } = render(Sidebar, { props: siteProps })
+      const items = Array.from(container.querySelectorAll('.nav-list .nav-item'))
+      expect(items.map((a) => a.textContent?.trim())).toEqual([
+        'Ranklist', 'Competition Finder', 'Points calculator', 'Points table',
+      ])
+    } finally {
+      setLocale('pl')
+    }
   })
 
   it('marks a document page as current', () => {
