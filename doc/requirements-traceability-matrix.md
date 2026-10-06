@@ -89,7 +89,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-78 | Telegram notifications for all pipeline events (13 use cases: routine, warnings, alerts, overdue) | ADR-025 | 9.173–9.190 | Covered |
 | FR-79 | Event-centric ingestion: match XML to existing event by date, create tournaments on-the-fly | ADR-025 | 10.8–10.12, 9.193 | Covered |
 | FR-80 | Event status lifecycle: PLANNED → IN_PROGRESS → COMPLETED with rollback | ADR-025 | 10.12–10.15 | Covered |
-| FR-81 | Telegram command interface: 21 admin commands for lifecycle, review, season, ingestion, EVF, PROD reads and seed; the bot's `help` is the command list and every entry names CERT or PROD | ADR-025 | 10.16–10.22; GAS.SRC.01–03, GAS.HELP.01–04 (`test_gas_bot.py`) | Covered |
+| FR-81 | Telegram command interface: 21 admin commands for lifecycle, review, season, ingestion, EVF, PROD reads and seed; the bot's `help` is the command list and every entry names CERT or PROD | ADR-025 | 10.16–10.22; GAS.SRC.01–04, GAS.HELP.01–04 (`test_gas_bot.py`) | Covered |
 | FR-82 | CERT → PROD promotion triggered from Telegram and Admin UI | ADR-026 | PPW4 E2E ✓ | Covered |
 | FR-83 | Batch summary notification after each ingestion run | ADR-025 | 9.197 | Covered |
 | FR-84 | ADR-024 compliance: flag PENDING for unknown DOB in combined categories | ADR-024/025 | 9.194–9.196 | Covered |
