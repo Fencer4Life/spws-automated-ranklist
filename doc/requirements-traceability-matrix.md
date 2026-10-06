@@ -443,7 +443,7 @@ Acceptance IDs for [ADR-111](adr/111-pzsz-results-admitted-by-surname-name-birth
 | Acceptance IDs | Contract | Layer | File | Status |
 |----------------|----------|-------|------|--------|
 | PZSZ.ADM.01 | Exactly one roster fencer matching surname, first name and the start-list birth year is stored, with its original place and the whole field's N. | pytest | `python/tests/test_pzsz_admission.py` | **Landed** (2026-10-06, LOCAL) |
-| PZSZ.ADM.02 | A namesake with another birth year is skipped and reported first (Poznań: Krochmalski Jakub 2008 against our 1976; Nowak Marta 2007 against our 1979). | pytest | `python/tests/test_pzsz_admission.py` | **Landed** (2026-10-06, LOCAL) |
+| PZSZ.ADM.02 | A namesake with another birth year is skipped and reported first (Poznań: two juniors named like our KROCHMALSKI Jakub, born 1976, and NOWAK Marta, born 1979). | pytest | `python/tests/test_pzsz_admission.py` | **Landed** (2026-10-06, LOCAL) |
 | PZSZ.ADM.03 | A row whose name is missing from the start list, or appears there twice, is skipped. | pytest | `python/tests/test_pzsz_admission.py` | **Landed** (2026-10-06, LOCAL) |
 | PZSZ.ADM.04 | Two roster fencers with the same surname, first name and birth year: the row is skipped. | pytest | `python/tests/test_pzsz_admission.py` | **Landed** (2026-10-06, LOCAL) |
 | PZSZ.ADM.05 | Polish letters and case are folded; an approved alias does not count; an estimated roster year is compared exactly and a mismatch is skipped and reported. | pytest | `python/tests/test_pzsz_admission.py` | **Landed** (2026-10-06, LOCAL) |

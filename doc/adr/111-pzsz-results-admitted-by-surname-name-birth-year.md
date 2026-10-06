@@ -10,7 +10,7 @@
 
 On 2026-10-06 `ingest PPS1s-2026-2027` (Poznań, the first PZSz Polish Cup of 2026/27, men's and women's sabre) ran the PPW flow. That flow is the only one the URL ingest knows: `ingest-event.yml` passes `--flow ingest_domestic`, and `ingest_cli.py` hard-codes `organizer_hint="SPWS"` for every listing. The PPW flow read the FencingTimeLive bracket name "Senior" as V0. It then matched place 18, "KROCHMALSKI Jakub", by name to our fencer id 156, born 1976, and refused the listing because 1976 is two categories away from V0 (run 37475365271). Nothing was written.
 
-The PZSz start list shows another person: Krochmalski Jakub, born 16 June 2008, DRAGON ŁÓDŹ. The women's list holds a second namesake: Nowak Marta, born 2007, 31st, against our NOWAK Marta, born 1979. Neither of the 99 starters matches a fencer of ours on surname, first name and birth year.
+The PZSz start list shows another person of the same name, a junior from another club. The women's list holds a second namesake, also a junior, 31st, against our NOWAK Marta, born 1979. Neither of the 99 starters matches a fencer of ours on surname, first name and birth year.
 
 ADR-100 built a PZSz flow (`Flow.INGEST_PZSZ_SENIOR`, `ingest_pzsz_senior_bracket_from_url`), but nothing calls it. Its matcher, `ResolveFencers` with the `PZSZ_SENIOR` intake, checks no birth year. It links a single same-named fencer whatever the year, links a confident fuzzy match, and queues the rest in `tbl_pzsz_match_review`. FencingTimeLive results carry no birth year at all (`ftl.parse_json` fills name, place, country and club only). Promote (ADR-108) refuses anything but the PPW flow.
 
@@ -72,7 +72,7 @@ When no starter matches, nothing is written, no empty tournament is created, and
 ## Alternatives considered
 
 1. **Run PZSz through the PPW flow with a senior category.** Rejected: PPS and MPS are not PPW. The PPW flow decodes age categories from bracket names and creates fencers, and it refused Poznań on a junior namesake.
-2. **Keep ADR-100's matcher (exact name or alias, then fuzzy, then review).** Rejected: it never checks the birth year, so it would link Krochmalski Jakub (2008) to our Krochmalski Jakub (1976).
+2. **Keep ADR-100's matcher (exact name or alias, then fuzzy, then review).** Rejected: it never checks the birth year, so it would link the junior of the same name to our Krochmalski Jakub (1976).
 3. **Share one admission module between EVF and PZSz, customized by a profile.** Rejected by the user: PZSz is a different, non-veteran organizer. A copy keeps each free to change without touching the other.
 4. **Take the birth year from FencingTimeLive.** Impossible: FencingTimeLive results carry none.
 5. **Ingest PZSz directly on PROD (`ingest <code> prod`).** Rejected: one route to PROD for every organizer — ingest for CERT, promote for PROD.
