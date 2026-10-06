@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="7f3e697bb40d206e8326128a44d529e05dbb8fa1a403dcb5f8977ac917f2b0e0">
+<meta name="doc-source-sha256" content="8257b868621c00f955f5beffcad527e2d09cb24c2eed4dbd2a324a02558e9dae">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>409 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>419 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -173,16 +173,16 @@
 </tr>
 <tr>
 <td>FR-21</td>
-<td>Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date (ADR-031)</td>
+<td>Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date, computed on every read with nothing stored or refreshed (ADR-031, amended 2026-10-06)</td>
 <td>UC7(a,b)</td>
-<td>1.13–1.14b, 9.40–9.46</td>
+<td>1.13–1.14b, 9.40–9.46 (9.41–9.46 amended 2026-10-06), 106.1–106.13, AS.UI.01, AS.PY.01</td>
 <td>Covered</td>
 </tr>
 <tr>
 <td>FR-22</td>
-<td>Single active season constraint (auto-derived, no overlapping dates)</td>
+<td>Single active season constraint (derived from the dates on read, no overlapping dates)</td>
 <td>UC7(c)</td>
-<td>1.7, 1.15, 9.41–9.46</td>
+<td>1.7, 1.15, 9.41–9.46, 106.4–106.7</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -2222,6 +2222,43 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="active-season-computed-on-read-as">Active season computed on read (AS.*)</h2>
+<p>Acceptance IDs for the <a href="adr/031-auto-active-season.html">ADR-031</a> amendment of 2026-10-06 and <a href="plans/active-season-computed-on-read-2026-10-06.html">doc/plans/active-season-computed-on-read-2026-10-06.html</a>. FR-21 and FR-22.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>106.1–106.13</td>
+<td><code>tbl_season</code> stores no <code>bool_active</code> (1); <code>fn_today()</code> returns <code>spws.today</code> when set and <code>CURRENT_DATE</code> otherwise (2–3); the computed <code>s.bool_active</code> marks the season containing today, else the nearest future one, else none (4–7); reading it writes no audit row (8); <code>fn_refresh_active_season()</code> and its trigger are gone (9–10); anon may execute <code>fn_today</code>, <code>fn_active_season_id</code> and <code>bool_active</code> (11); <code>fn_season_summary()</code> follows today and raises „No active season&quot; when there is none (12–13).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/106_active_season_computed.sql</code></td>
+<td><strong>Landed</strong> (2026-10-06, LOCAL)</td>
+</tr>
+<tr>
+<td>AS.UI.01</td>
+<td>A page load never calls <code>rpc('fn_refresh_active_season')</code>; the app only reads the computed flag.</td>
+<td>Vitest</td>
+<td><code>frontend/tests/ActiveSeasonRead.test.ts</code></td>
+<td><strong>Landed</strong> (2026-10-06, LOCAL)</td>
+</tr>
+<tr>
+<td>AS.PY.01</td>
+<td>No Python query names the season flag without a table alias (<code>FROM tbl_season WHERE bool_active</code>), because only <code>s.bool_active</code> resolves to the computed field.</td>
+<td>pytest</td>
+<td><code>python/tests/test_active_season_reads.py</code></td>
+<td><strong>Landed</strong> (2026-10-06, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -2232,5 +2269,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>7f3e697bb40d206e8326128a44d529e05dbb8fa1a403dcb5f8977ac917f2b0e0</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8257b868621c00f955f5beffcad527e2d09cb24c2eed4dbd2a324a02558e9dae</code></footer>
 </div></body></html>

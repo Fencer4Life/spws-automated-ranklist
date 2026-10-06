@@ -65,7 +65,7 @@ DECLARE
   v_fencer_h INT;  -- VW-ZERO-DOM    (V2 — domestic result with 0 score)
   v_fencer_i INT;  -- VW-FEMALE      (V2 F — female filter test)
 BEGIN
-  SELECT id_season INTO v_season FROM tbl_season WHERE bool_active = TRUE;
+  SELECT id_season INTO v_season FROM tbl_season s WHERE s.bool_active;
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
 
   -- The expectations below (best 4 PPW + MPW always; best 3 of the PEW/MEW
@@ -373,7 +373,7 @@ SELECT is(
 SELECT is(
   (SELECT COUNT(*)::INT
    FROM fn_ranking_ppw('EPEE', 'M', 'V2',
-     (SELECT id_season FROM tbl_season WHERE bool_active = TRUE))),
+     (SELECT id_season FROM tbl_season s WHERE s.bool_active))),
   3,
   '5.3 Explicit active-season parameter returns the same 3 V2 fencers as the default'
 );

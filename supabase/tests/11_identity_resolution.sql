@@ -29,7 +29,6 @@ BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'SPWS';
 
   -- Deactivate all seasons, create test season
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('IDENT-TEST', '2030-09-01', '2031-06-30');
 
   -- A season must be assigned a scoring engine before anything in it can be
@@ -41,7 +40,7 @@ BEGIN
   UPDATE tbl_season SET id_scoring_engine =
          (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
    WHERE id_season = v_season;
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_scoring_config (id_season)
   VALUES (v_season)

@@ -50,8 +50,8 @@ DO $m8_4_setup$
 DECLARE
   v_season INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-    VALUES ('ADR066-TEST-9999', '4999-09-01', '5000-06-30', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+    VALUES ('ADR066-TEST-9999', '4999-09-01', '5000-06-30')
     RETURNING id_season INTO v_season;
   -- tbl_scoring_config row is created automatically by the season-init
   -- trigger; nothing else required for this assertion.

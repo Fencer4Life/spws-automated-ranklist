@@ -28,9 +28,8 @@ DECLARE
   v_tour    INT;
   v_fencer  INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('VCATBRK-41', '2099-09-01', '2100-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_organizer (txt_code, txt_name)
        VALUES ('VCATORG41', 'V-cat bracket-label org')

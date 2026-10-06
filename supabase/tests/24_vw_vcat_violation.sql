@@ -47,9 +47,8 @@ DECLARE
   v_dirty   INT;
 BEGIN
   -- Isolated season: 2098-09-01 → 2099-06-30, end year 2099.
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('VW-VCAT-24', '2098-09-01', '2099-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_organizer (txt_code, txt_name)
        VALUES ('VW24ORG', 'VW Test 24 Org')

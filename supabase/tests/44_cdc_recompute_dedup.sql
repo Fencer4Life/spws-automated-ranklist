@@ -24,9 +24,8 @@ DECLARE
   v_fc     INT;  -- trigger subject
   v_rb     INT;  -- duplicate's result (for the match-candidate FK case)
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('CDC44', '2099-09-01', '2100-06-30');  -- end year 2100 (free range)
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_organizer (txt_code, txt_name) VALUES ('CDCORG44', 'CDC org 44')
   ON CONFLICT (txt_code) DO NOTHING;
