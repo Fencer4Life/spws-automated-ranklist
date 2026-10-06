@@ -111,6 +111,24 @@ class DbConnector:
             return resp.data[0]
         return None
 
+    def store_pzsz_start_list(self, payload: dict) -> bool:
+        """Store one start-list version (ADR-112 §1). The database appends it
+        only when it differs from the newest version for the same event,
+        weapon and gender; True when it did."""
+        resp = self._sb.rpc("fn_pzsz_start_list_store", {"p_list": payload}).execute()
+        return bool((resp.data or {}).get("stored"))
+
+    def fetch_pzsz_start_lists(self, id_pzsz_event: int) -> list[dict]:
+        """Every stored start-list version of a PZSz event; the ingest keeps
+        the newest per weapon and gender (ADR-112 §3)."""
+        resp = (
+            self._sb.table("tbl_pzsz_start_list")
+            .select("*")
+            .eq("id_pzsz_event", int(id_pzsz_event))
+            .execute()
+        )
+        return resp.data or []
+
     def mark_ftl_sent(self, event_code: str) -> str:
         """Stamp and return tbl_event.ts_ftl_sent after SMTP acceptance (FR-131)."""
         resp = self._sb.rpc("fn_mark_ftl_sent", {"p_event_code": event_code}).execute()

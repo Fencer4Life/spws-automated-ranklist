@@ -20,6 +20,8 @@ import pytest
 from python.pipeline.promotion import replay
 from python.pipeline.promotion.gate import Finding, GateResult
 from python.pipeline.promotion.plan import Plan, PlanRefused
+from python.pipeline.promotion.run_record import start_list_sha256
+from python.scrapers.pzsz_start_list import Starter
 
 CODE = "PPW1-2026-2027"
 COMMIT = "a" * 40
@@ -95,6 +97,7 @@ class FakeSide:
         )
         self.ids = over.pop("ids", {})
         self.fps = over.pop("fps", {})
+        self.stored = over.pop("stored", [])
         self.calls: list[str] = []
 
     def codes(self, text: str) -> tuple[bool, list[str]]:
@@ -115,6 +118,18 @@ class FakeSide:
 
     def fingerprints(self, codes: list[str]) -> dict[str, str]:
         return {c: self.fps.get(c, FP if c == CODE else "x") for c in codes}
+
+    def start_list(self, pzsz_event: int, weapon: str, gender: str, sha256: str) -> dict | None:
+        self.calls.append(f"start_list {weapon}/{gender}")
+        return next(
+            (
+                r
+                for r in self.stored
+                if (r["id_pzsz_event"], r["enum_weapon"], r["enum_gender"], r["txt_sha256"])
+                == (pzsz_event, weapon, gender, sha256)
+            ),
+            None,
+        )
 
 
 class FakeProdDb:
@@ -182,7 +197,17 @@ class _PlanFn:
         self.plan = plan
         self.calls: list[dict] = []
 
-    def __call__(self, code, season_end_year, prod_db, *, url_event, created, pzsz_event=None):
+    def __call__(
+        self,
+        code,
+        season_end_year,
+        prod_db,
+        *,
+        url_event,
+        created,
+        pzsz_event=None,
+        pzsz_start_lists=None,
+    ):
         self.calls.append(
             {
                 "code": code,
@@ -190,11 +215,42 @@ class _PlanFn:
                 "url": url_event,
                 "created": created,
                 "pzsz_event": pzsz_event,
+                "pzsz_start_lists": pzsz_start_lists,
             }
         )
         if isinstance(self.plan, Exception):
             raise self.plan
         return self.plan if self.plan is not None else _plan()
+
+
+_SL_HASH = start_list_sha256([Starter("Testowy Jan", 1971)])
+
+
+def _stored_row() -> dict:
+    return {
+        "id_pzsz_start_list": 1,
+        "id_pzsz_event": 4588,
+        "id_pzsz_tournament": 10628,
+        "enum_weapon": "SABRE",
+        "enum_gender": "M",
+        "txt_sha256": _SL_HASH,
+        "jsonb_starters": [["Testowy Jan", 1971]],
+        "txt_source": "pzszerm.pl",
+        "ts_captured": "2026-10-01T06:00:00+00:00",
+    }
+
+
+def _pzsz_listings() -> dict:
+    """A PZSz run's listings: one round, with the start list it used."""
+    listings = _listings(A="h1")
+    listings["rounds"][0].update(weapon="SABRE", gender="M", start_list_sha256=_SL_HASH)
+    listings["pzsz_event"] = 4588
+    return listings
+
+
+def _pzsz_cert(stored: list[dict]) -> FakeSide:
+    """CERT holding a PZSz run that used one start list, and what is stored."""
+    return FakeSide("cert", run=_run(jsonb_listings=_pzsz_listings()), stored=stored)
 
 
 def _plan_fn(plan: Plan | Exception | None = None) -> _PlanFn:
@@ -322,6 +378,7 @@ class TestPlanCompare:
                 "url": _run()["url_event"],
                 "created": _run()["jsonb_master_data"]["created"],
                 "pzsz_event": None,
+                "pzsz_start_lists": None,
             }
         ]
 
@@ -331,6 +388,61 @@ class TestPlanCompare:
         listings = {**_listings(A="h1", B="h2"), "pzsz_event": 4588}
         _, parts = _replay(cert=FakeSide("cert", run=_run(jsonb_listings=listings)))
         assert parts["plan_fn"].calls[0]["pzsz_event"] == 4588
+
+    def test_the_plan_is_given_the_stored_start_lists_the_cert_run_used(self):
+        """PROMO.REPLAY.29 (ADR-112 §4) — each round's start list is read from
+        CERT by the run's PZSz event, weapon, gender and hash, and handed to
+        the plan; promote never fetches pzszerm.pl."""
+        _, parts = _replay(
+            cert=_pzsz_cert(stored=[_stored_row()]),
+            plan_fn=_plan_fn(_plan(listings=_pzsz_listings())),
+        )
+        lists = parts["plan_fn"].calls[0]["pzsz_start_lists"]
+        assert set(lists) == {("SABRE", "M")}
+        assert lists[("SABRE", "M")].starters == (Starter("Testowy Jan", 1971),)
+        assert lists[("SABRE", "M")].sha256 == _SL_HASH
+
+    def test_a_start_list_not_stored_on_cert_refuses(self):
+        """PROMO.REPLAY.30 — the version the CERT run used is not on CERT."""
+        e, parts = _refused(cert=_pzsz_cert(stored=[]))
+        assert "not stored" in str(e)
+        assert parts["plan_fn"].calls == []
+
+    def test_a_stored_start_list_that_does_not_match_its_hash_refuses(self):
+        """PROMO.REPLAY.31 — a stored row whose starters no longer hash to its
+        recorded hash is never replayed."""
+        row = _stored_row()
+        row["jsonb_starters"] = [["Ktoś Inny", 1999]]
+        e, parts = _refused(cert=_pzsz_cert(stored=[row]))
+        assert "does not match its hash" in str(e)
+        assert parts["plan_fn"].calls == []
+
+    def test_the_sql_side_reads_a_start_list_by_all_four_keys(self):
+        """PROMO.REPLAY.29 — the CERT read names the event, weapon, gender and
+        hash, read-only; a key that is not one is refused before any SQL."""
+        seen: list[str] = []
+
+        class _T:
+            read_only = True
+
+            def fetch_json(self, sql: str):
+                seen.append(sql)
+                return None
+
+        side = replay.SqlSide("cert", _T())
+        assert side.start_list(4588, "SABRE", "M", _SL_HASH) is None
+        for needle in (
+            "id_pzsz_event = 4588",
+            "enum_weapon = 'SABRE'",
+            "enum_gender = 'M'",
+            _SL_HASH,
+        ):
+            assert needle in seen[0]
+        with pytest.raises(replay.PromoteRefused):
+            side.start_list(4588, "SABRE' OR 'x", "M", _SL_HASH)
+        with pytest.raises(replay.PromoteRefused):
+            side.start_list(4588, "SABRE", "M", "not-a-hash")
+        assert len(seen) == 1
 
     def test_source_differences(self):
         """PROMO.REPLAY.10 — a listing changed, added or gone since the CERT run, or a changed

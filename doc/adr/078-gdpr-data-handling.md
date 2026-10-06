@@ -1,6 +1,6 @@
 # ADR-078: GDPR Data Handling & Data-Subject Rights
 
-**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. **Amended 2026-08-28:** §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. **Amended 2026-09-13:** §1's club row corrected again — the club is now genuinely stored (`tbl_registration.txt_club`), closing [ADR-079](079-event-self-registration-identity.md) open item 2; `CONSENT_VERSION` bumped to `v1.1` and the RODO text corrected to match.
+**Status:** Proposed (consent capture — `ts_consent`/`txt_consent_version` stamped by `fn_create_registration` — and the RODO consent-gate step **implemented** 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) **Amended 2026-08-17:** §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. **Amended 2026-08-28:** §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. **Amended 2026-09-13:** §1's club row corrected again — the club is now genuinely stored (`tbl_registration.txt_club`), closing [ADR-079](079-event-self-registration-identity.md) open item 2; `CONSENT_VERSION` bumped to `v1.1` and the RODO text corrected to match. **Amended 2026-10-07** by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): §1 gains the PZSz start-list store on CERT.
 **Date:** 2026-07-04
 **Source:** Event Registration & Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080
 
@@ -12,6 +12,25 @@
 > go-live SPWS should obtain a one-time review by Polish counsel or a Data
 > Protection Officer, execute the Supabase Data Processing Agreement, and publish
 > the privacy notice (*informacja RODO*) and Record of Processing Activities.
+## Amendment (2026-10-07 — PZSz start lists are stored on CERT)
+
+[ADR-112](112-pzsz-start-lists-are-stored-inputs.md) stores the PZSz start
+lists that admit a PZSz result (ADR-111). §1 gains the row *PZSz start-list
+starters*:
+
+- **Data:** the printed name and birth **year** of every starter of a PZSz
+  tournament. Most of them are juniors who are not our members. The birth date
+  on the page is read only to check it is a real date, and is never stored.
+- **Source:** the start list pzszerm.pl publishes, not the fencer. Art. 14 is
+  therefore the information duty that applies; it is one of the points for the
+  counsel review this ADR's scope note asks for.
+- **Storage and access:** `tbl_pzsz_start_list` on CERT, `service_role` only.
+  The table exists on every environment and holds rows on CERT only. It is
+  never part of the PROD seed export, and no real start list enters the public
+  repository.
+- **Retention:** until the event's season is no longer active.
+  `fn_pzsz_start_list_purge()` runs at the start of every daily capture.
+
 ## Amendment (2026-09-02 — the English notice names the regulation GDPR)
 
 The consent step headed itself *Privacy notice and consent (RODO)* in both
@@ -135,7 +154,7 @@ below.
 
 ### 1. Personal-data inventory
 
-| Data element | Purpose | Lawful basis (Art. 6) | Storage | Retention | Status (2026-09-13) |
+| Data element | Purpose | Lawful basis (Art. 6) | Storage | Retention | Status (2026-10-07) |
 |---|---|---|---|---|---|
 | Surname, first name, gender, birth year | Ranking + age-category verification | Legitimate interest 6(1)(f) | `tbl_fencer` (durable), `tbl_registration` (ephemeral) | Ranking record durable; registration purged post-ingest | **Collected** |
 | Weapon + category selections | Register the fencer for the event | Contract 6(1)(b) | `tbl_registration` | Purged after results ingested + reconciled | **Collected** |
@@ -143,6 +162,7 @@ below.
 | Salted email **hash** + request timestamps | Abuse defence (repeat erase/register) | Legal claims 17(3)(e) | `tbl_registration` / abuse log | Minimal, bounded | **Not collected** — `txt_email_hash` exists and stays NULL |
 | Edit handle (random UUID) | Authorise a fencer to correct their own declaration (Art. 16) | Contract 6(1)(b) | `tbl_registration.uuid_edit_token` | Purged with the registration | **Not personal data** — random, unlinked to any person, never returned by a public projection |
 | Club (free text), optional | Organizer's FTL start files only | Contract 6(1)(b) | `tbl_registration.txt_club` (ephemeral) | Purged with the registration | **Collected** (2026-09-13) — read only by the token-gated `fn_ftl_export_entries`; `vw_registration_entry_list` and `fn_ftl_roster` are unchanged and never expose it. Closes ADR-079 open item 2; see [ADR-080](080-clean-roster-ftl-seeding.md) amendment (f) |
+| PZSz start-list starters: printed name, birth year | Tell a veteran from a namesake in a PZSz field (ADR-111) | Legitimate interest 6(1)(f) | `tbl_pzsz_start_list` on CERT, `service_role` only | Until the event's season is no longer active (`fn_pzsz_start_list_purge`) | **Collected** on CERT from the [ADR-112](112-pzsz-start-lists-are-stored-inputs.md) release — taken from pzszerm.pl, not from the fencer (Art. 14); the birth date is never stored |
 
 Birth **date** is not collected (year-only suffices for the age category); full
 DOB is an optional field used *only* to disambiguate a same-name-same-year

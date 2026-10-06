@@ -303,10 +303,13 @@ def plan_event(
     url_event: str,
     created: Iterable[Mapping[str, Any]],
     pzsz_event: int | None = None,
+    pzsz_start_lists: Mapping[tuple[str, str], Any] | None = None,
 ) -> Plan:
     """Plan the CERT run of `event_code` on PROD. `prod` is read only; `url_event`
     is the URL the CERT run ingested; `created` its created fencers; `pzsz_event`
-    the PZSz event whose start lists a PZSz run read (ADR-111 §6)."""
+    the PZSz event whose start lists a PZSz run read (ADR-111 §6), and
+    `pzsz_start_lists` the stored versions it used, read from CERT by their
+    hashes (ADR-112 §4). The plan never fetches pzszerm.pl."""
     from python.pipeline import ingest_cli
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
@@ -330,9 +333,10 @@ def plan_event(
             "Correct the URL on one of them and re-run the CERT ingestion.",
         )
     if _organizer_for_event(event) == "PZSz":
-        # The calendar promotion does not carry id_pzsz_event, so PROD's row may
-        # lack it: the plan then reads the start lists the CERT run read. Only
-        # the plan's copy of the event takes the id; nothing is written for it.
+        # PROD's row may lack id_pzsz_event (it reached PROD's calendar only
+        # with ADR-087's amendment of 2026-10-06): the plan then takes the CERT
+        # run's. Only the plan's copy of the event takes the id; nothing is
+        # written for it.
         on_prod = event.get("id_pzsz_event")
         if on_prod and pzsz_event and int(on_prod) != int(pzsz_event):
             raise PlanRefused(
@@ -349,6 +353,12 @@ def plan_event(
                 f"of {event_code}, so its start lists cannot be read.",
             )
         event["id_pzsz_event"] = int(chosen)
+        if not pzsz_start_lists:
+            raise PlanRefused(
+                "precondition",
+                f"The PZSz start lists the CERT run of {event_code} used were not given; "
+                "promote reads them from CERT by their hashes and never fetches pzszerm.pl.",
+            )
     log = ListingLog()
     contexts = ingest_cli._ingest_event_rounds(
         event,
@@ -363,6 +373,7 @@ def plan_event(
         md_target="local",
         run=log,
         post_run=False,
+        pzsz_start_lists=pzsz_start_lists,
     )
     listings = log.listings()
     end = event.get("dt_end") or event.get("dt_start")
