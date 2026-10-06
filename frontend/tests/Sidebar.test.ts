@@ -372,6 +372,44 @@ describe('WP.NAV.02 — the drawer closes on Esc, in every mode', () => {
   })
 })
 
+// WP.NAV.04 — ADR-090 amendment 2026-10-06; FR-148 as amended. The closed
+// drawer is slid off-screen, not removed, so its links stayed in the tab order:
+// on /znajdz-zawody/ the first five Tab presses landed on links nobody could
+// see. Closed, it is `inert`; open, it is unchanged. jsdom does not enforce
+// inert, so what is asserted is that every focusable element sits under it.
+// Svelte sets the `inert` PROPERTY, which a browser reflects to the attribute;
+// jsdom does not reflect it, so both are read.
+describe('WP.NAV.04 — the closed drawer holds no keyboard stop, in every mode', () => {
+  const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]'
+  const inertUnder = (el: Element) => {
+    for (let n: Element | null = el; n; n = n.parentElement) {
+      if ((n as HTMLElement).inert || n.hasAttribute('inert')) return true
+    }
+    return false
+  }
+  const MODES = [
+    { name: 'github.io', links: undefined, isAdmin: false },
+    { name: 'WordPress', links: SITE_LINKS, isAdmin: false },
+    { name: 'signed in', links: undefined, isAdmin: true },
+  ]
+  for (const mode of MODES) {
+    it(`${mode.name}: closed is inert, open keeps every entry reachable`, () => {
+      const props = { currentView: 'ranklist' as const, isAdmin: mode.isAdmin, links: mode.links, onnavigate: vi.fn(), onclose: vi.fn() }
+      const closed = render(Sidebar, { props: { ...props, open: false } })
+      const shut = [...closed.container.querySelectorAll('.sidebar')].flatMap((n) => [...n.querySelectorAll(FOCUSABLE)])
+      expect(shut.length).toBeGreaterThan(3)
+      expect(shut.filter((el) => !inertUnder(el)).map((el) => el.textContent?.trim())).toEqual([])
+      closed.unmount()
+
+      const open = render(Sidebar, { props: { ...props, open: true } })
+      const nav = open.container.querySelector('.sidebar')!
+      expect(inertUnder(nav)).toBe(false)
+      expect([...nav.querySelectorAll(FOCUSABLE)].length).toBe(shut.length)
+      open.unmount()
+    })
+  }
+})
+
 // A guard: W2 says there is never a sign-in entry in the drawer. Today no mode
 // has one, so this passes before the change; it is proven by mutation (adding
 // such an entry turns it red), and it keeps the rule once chrome="site" lands.

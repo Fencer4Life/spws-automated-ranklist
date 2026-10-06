@@ -945,7 +945,7 @@ def _compare_and_ingest(
             token,
             f"SELECT e.id_event, e.txt_code, e.txt_name, e.dt_start::TEXT "
             f"FROM tbl_event e "
-            f"WHERE e.id_season = (SELECT id_season FROM tbl_season WHERE bool_active = TRUE) "
+            f"WHERE e.id_season = (SELECT s.id_season FROM tbl_season s WHERE s.bool_active) "
             f"AND e.dt_start BETWEEN '{evf_date}'::DATE - INTERVAL '3 days' "
             f"AND '{evf_date}'::DATE + INTERVAL '3 days'",
         )
@@ -1088,7 +1088,7 @@ def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
     with the same allocated code already existed).
     """
     season = _management_query(
-        ref, token, "SELECT id_season FROM tbl_season WHERE bool_active = TRUE"
+        ref, token, "SELECT s.id_season FROM tbl_season s WHERE s.bool_active"
     )
     if not season:
         return None

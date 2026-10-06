@@ -6,6 +6,10 @@
 #   scripts/check-security-posture.sh        — the copy the deploy job asserts
 #                                              against the REAL CERT/PROD db
 #
+# Names are the fn_* functions plus bool_active, the computed field of
+# tbl_season (ADR-031 amendment 2026-10-06), whose name is fixed by the
+# column it replaced.
+#
 # They drifted on 2026-09-12: 52.7 gained the identity block and the FTL export
 # page, the deploy copy did not. pgTAP stayed green through the whole of CI,
 # because pgTAP only ever reads 52.7. The disagreement surfaced at deploy time,
@@ -18,7 +22,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 names() {  # every 'fn_...' quoted name in a file, one per line, sorted unique
-  grep -oE "'fn_[a-z0-9_]+'" "$1" | tr -d "'" | sort -u
+  grep -oE "'(fn_[a-z0-9_]+|bool_active)'" "$1" | tr -d "'" | sort -u
 }
 
 # 52.7's allowlist is the ARRAY[...] immediately preceding the assertion label
@@ -26,9 +30,9 @@ names() {  # every 'fn_...' quoted name in a file, one per line, sorted unique
 # Slice the file at that label and take the names from the tail above it, so
 # fn_ names used by OTHER assertions in the same file are not swept in.
 PGTAP=$(awk '/anon-EXECUTEable function set equals/{exit} {print}' \
-  supabase/tests/52_security_posture.sql | tail -140 | grep -oE "'fn_[a-z0-9_]+'" | tr -d "'" | sort -u)
+  supabase/tests/52_security_posture.sql | tail -140 | grep -oE "'(fn_[a-z0-9_]+|bool_active)'" | tr -d "'" | sort -u)
 DEPLOY=$(awk '/^read -r -d/,/^EOF$/' scripts/check-security-posture.sh \
-  | grep -oE "'fn_[a-z0-9_]+'" | tr -d "'" | sort -u)
+  | grep -oE "'(fn_[a-z0-9_]+|bool_active)'" | tr -d "'" | sort -u)
 
 if [ "$PGTAP" = "$DEPLOY" ]; then
   echo "  PASS: anon allowlist identical in 52.7 and check-security-posture.sh ($(echo "$PGTAP" | wc -l | tr -d ' ') names)"

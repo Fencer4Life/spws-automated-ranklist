@@ -1,0 +1,36 @@
+cmp-wp-1280-en-after-1-vs-after-2            wp-1280-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-after-2            wp-1280-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-after-2            wp-1280-en-table-bar buttons= 0 elsewhere= 1 moved=- gapRight=- box=1248,7,1248,7
+cmp-wp-1280-en-after-1-vs-fixed-1            wp-1280-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-fixed-1            wp-1280-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-fixed-1            wp-1280-en-table-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-fixed-2            wp-1280-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-fixed-2            wp-1280-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-1-vs-fixed-2            wp-1280-en-table-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-2-vs-fixed-1            wp-1280-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-2-vs-fixed-1            wp-1280-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-2-vs-fixed-1            wp-1280-en-table-bar buttons= 0 elsewhere= 1 moved=- gapRight=- box=1248,7,1248,7
+cmp-wp-1280-en-after-2-vs-fixed-2            wp-1280-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-2-vs-fixed-2            wp-1280-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-after-2-vs-fixed-2            wp-1280-en-table-bar buttons= 0 elsewhere= 1 moved=- gapRight=- box=1248,7,1248,7
+cmp-wp-1280-en-fixed-1-vs-fixed-2            wp-1280-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-fixed-1-vs-fixed-2            wp-1280-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-1280-en-fixed-1-vs-fixed-2            wp-1280-en-table-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-1-vs-after-2             wp-768-en-calculator-bar buttons= 0 elsewhere= 43 moved=- gapRight=- box=678,10,751,23
+cmp-wp-768-en-after-1-vs-after-2             wp-768-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-1-vs-after-2             wp-768-en-table-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-1-vs-fixed-1             wp-768-en-calculator-bar buttons= 0 elsewhere= 43 moved=- gapRight=- box=678,10,751,23
+cmp-wp-768-en-after-1-vs-fixed-1             wp-768-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-1-vs-fixed-1             wp-768-en-table-bar buttons= 0 elsewhere= 23 moved=- gapRight=- box=685,1,744,3
+cmp-wp-768-en-after-1-vs-fixed-2             wp-768-en-calculator-bar buttons= 0 elsewhere= 43 moved=- gapRight=- box=678,10,751,23
+cmp-wp-768-en-after-1-vs-fixed-2             wp-768-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-1-vs-fixed-2             wp-768-en-table-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-2-vs-fixed-1             wp-768-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-2-vs-fixed-1             wp-768-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-2-vs-fixed-1             wp-768-en-table-bar buttons= 0 elsewhere= 23 moved=- gapRight=- box=685,1,744,3
+cmp-wp-768-en-after-2-vs-fixed-2             wp-768-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-2-vs-fixed-2             wp-768-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-after-2-vs-fixed-2             wp-768-en-table-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-fixed-1-vs-fixed-2             wp-768-en-calculator-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-fixed-1-vs-fixed-2             wp-768-en-ranking-bar buttons= 0 elsewhere= 0 moved=- gapRight=-
+cmp-wp-768-en-fixed-1-vs-fixed-2             wp-768-en-table-bar buttons= 0 elsewhere= 23 moved=- gapRight=- box=685,1,744,3

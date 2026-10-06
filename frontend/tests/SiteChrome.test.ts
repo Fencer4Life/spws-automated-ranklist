@@ -14,7 +14,6 @@ import { tick, type ComponentProps } from 'svelte'
 
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
-  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
   fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),
@@ -138,12 +137,24 @@ describe('WP.BAR.02 — the long title and the short phone title', () => {
     expect(titles(container)).toEqual(['Ranklist', 'Ranklist'])
   })
 
-  it('the calendar page: Znajdź zawody / Kalendarz, and Competition Finder / Calendar', async () => {
+  // The calendar's title is its drawer entry, squeezed by measured fit rather
+  // than switched at 430 px (ADR-090 amendment 2026-10-06). The bar carries
+  // the candidates in aria-hidden copies to measure, and shows the first that
+  // fits; jsdom measures every width as 0, so that is the full name here.
+  it('the calendar page: its fit candidates, the first shown, in both languages', async () => {
     const { container } = render(App, { props: siteProps({ view: 'calendar' }) })
-    expect(titles(container)).toEqual(['Znajdź zawody', 'Kalendarz'])
+    const fit = (c: HTMLElement) => ({
+      candidates: [...c.querySelectorAll('header.site-bar .title-measure > span')].map((s) => s.textContent?.trim()),
+      shown: c.querySelector('header.site-bar .site-title-fit')?.textContent?.trim(),
+      hidden: c.querySelector('header.site-bar .title-measure')?.getAttribute('aria-hidden'),
+    })
+    expect(fit(container)).toEqual({ candidates: ['Znajdź zawody', 'Zawody'], shown: 'Znajdź zawody', hidden: 'true' })
+    expect(titles(container)).toEqual([undefined, undefined])
     setLocale('en')
     await tick()
-    expect(titles(container)).toEqual(['Competition Finder', 'Calendar'])
+    expect(fit(container)).toEqual({
+      candidates: ['Competition Finder', 'Competitions', 'Events'], shown: 'Competition Finder', hidden: 'true',
+    })
   })
 })
 

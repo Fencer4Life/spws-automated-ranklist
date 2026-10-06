@@ -26,10 +26,9 @@ BEGIN
   SELECT id_organizer INTO v_evf_org FROM tbl_organizer WHERE txt_code = 'EVF';
 
   -- Isolate from seed: deactivate, create two synthetic seasons
-  UPDATE tbl_season SET bool_active = FALSE;
   v_prior_id := fn_create_season('EVFP2-PRIOR', '2030-09-01', '2031-06-30');
   v_curr_id  := fn_create_season('EVFP2-CURR',  '2031-09-01', '2032-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_curr_id;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_curr_id), false);
   -- Generous carry window so seed-age tests aren't gated out (defensive)
   UPDATE tbl_season SET int_carryover_days = 9999
     WHERE id_season IN (v_prior_id, v_curr_id);

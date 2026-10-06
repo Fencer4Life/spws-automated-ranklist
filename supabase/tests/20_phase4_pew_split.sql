@@ -109,7 +109,7 @@ DECLARE
   v_alloc RECORD;
   v_seed_season INT;
 BEGIN
-  SELECT id_season INTO v_seed_season FROM tbl_season WHERE bool_active LIMIT 1;
+  SELECT id_season INTO v_seed_season FROM tbl_season s WHERE s.bool_active LIMIT 1;
   IF v_seed_season IS NULL THEN
     RAISE EXCEPTION 'ph4.10: no active season found in seed data';
   END IF;

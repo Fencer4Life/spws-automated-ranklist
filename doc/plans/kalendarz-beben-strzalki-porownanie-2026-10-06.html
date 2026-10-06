@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar drum: before and after (§12)</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+  .wide{width:calc(100vw - 32px);max-width:1180px;margin-left:50%;transform:translateX(-50%)}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 26px}
+  .grid3 figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px}
+  .grid3 img{width:100%;height:auto;display:block;border-radius:6px;border:1px solid var(--line)}
+  .grid3 figcaption{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  .state h3{margin-top:30px}
+  .state p.cap{font-size:16px;color:var(--muted);margin:0 0 6px;max-width:none}
+  table.res{font-size:14px;min-width:760px}
+  table.res td,table.res th{padding:8px 10px;text-align:center}
+  table.res td:first-child,table.res th:first-child{text-align:left;white-space:nowrap}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:15px;margin:8px 0 0}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .q{font-family:var(--mono);font-weight:800}
+  @media (max-width:700px){.grid3{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Calendar drum · plan §12 · approved 6 Oct · one release question open</p>
+  <h1>The drum changed, and nothing else moved</h1>
+  <p class="dek">I captured the same 102 screens on the build before the first change and on the build after the last, with the same events, date, states, widths and languages. <b>100 of 102</b> differ only where we agreed. Of the other two, one is capture noise that also appears when the old build is captured twice. The other is <b>one pixel, off by 1/255</b>. You approved this sheet on 6 Oct. The branch is pushed; <code>main</code> is not, and waits for Q6 below.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>branch claude/calendar-drum-arrows-impl pushed · <b>main not pushed</b></span>
+    <span class="pill"><span class="dot"></span>before: bb978576 · after: this branch</span>
+    <span class="pill"><span class="dot"></span>Vitest 1,224 green · Playwright 57 green</span>
+    <span class="pill warn"><span class="dot"></span>D4 still waits for your screenshot</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first · 6 Oct, after your approval</p>
+    <h2>Q6 · This release has no stop before PROD. Push anyway?</h2>
+
+    <div class="note danger">
+      <p class="lede"><span class="q">Q6</span> A correction to Q1, and the one question left</p>
+      <p><b>Q1 below said the release goes to CERT, and to PROD only after you approve it in GitHub. For this change that is wrong.</b> I checked <code>.github/workflows/release.yml</code> before pushing. <code>deploy-pages</code> (line 240) needs only <code>build</code>. Only <code>deploy-prod</code> (line 373) waits for your <code>production</code> approval, and it carries the PROD database and functions. This change touches neither.</p>
+      <p>So one push to <code>main</code> does this, in order:</p>
+      <ol class="steps">
+        <li>CI runs (about 1&frac12; minutes on the last three runs).</li>
+        <li>Release builds once. github.io (CERT) and the bundle <code>assets/main.ce.js</code> deploy together, about 2 minutes into Release on each of the last three runs.</li>
+        <li>Every WordPress page on weteraniszermierki.pl loads that bundle, so <b>PROD shows the new calendar within 10 minutes of the deploy</b> (Pages serves it with <code>max-age=600</code>).</li>
+        <li>Your approval of <code>deploy-prod</code> in GitHub comes after that. It has no migrations to apply here, so it changes nothing visible.</li>
+      </ol>
+      <p>The handbook says the same: Pages does not wait for the production approval (<code>doc/handbook/operations/<wbr>environments-and-release.html</code>). There is no stage where only CERT has the new calendar.</p>
+    </div>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What happens</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">a · push now</span></td><td>I push <code>main</code> from the integration checkout and watch CI and Release in the background. Once Pages has deployed, I check both hosts live at 320 and 375 px in Polish and English.</td><td>PROD changes with no second look. If something is wrong, a revert commit goes out the same way: about 4 minutes to deploy, then up to 10 minutes of cache.</td></tr>
+        <tr><td><span class="chip plain">b · push at a time you name</span></td><td>The same, at a time when you can watch.</td><td>Waiting only.</td></tr>
+        <tr><td><span class="chip over">c · a CERT-only stage first</span></td><td>Make Pages wait for an approval, or split the bundle per host.</td><td>A release-workflow change, outside this plan, with its own ADR.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Recommendation: (a).</b> What PROD will show is exactly what you approved on this sheet. 102 screens were compared, and the change is front-end only. <code>scripts/preflight.sh</code> exits 0 on the commit to be pushed.</p>
+    <p><b>Q1&ndash;Q5 were answered on 6 Oct: approved, every recommendation accepted.</b> The docs are done: the ADR-084 and ADR-090 amendments with their twins, the spec's Appendix C rows, FR-153 and FR-154 Covered, and the product-surfaces handbook page. Q5 is queued as its own task. D4 still waits for your screenshot.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · For you to decide (answered 6 Oct)</p>
+    <h2>One approval, four small questions</h2>
+
+    <div class="note good">
+      <p class="lede"><span class="q">Q1</span> Approve this sheet?</p>
+      <p>With your approval I finish the plan: the ADR-084 and ADR-090 amendments as signed off in §09, the handbook pages, FR-153 and FR-154 marked Covered, and <code>scripts/preflight.sh</code>. <span class="strike">Then the release goes to CERT, and to PROD only after you approve it in GitHub.</span> <b>Corrected in Q6 above:</b> for this change, PROD&rsquo;s pages update without a separate approval. <b>Recommendation: approve.</b></p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="q">Q2</span> One pixel, 1/255 lighter</p>
+      <p>WordPress, 1280 px, Polish, one step back (September): one pixel on the rounded corner of the „EVF+” button, where the card’s shadow falls, goes from 239.239.240 to 240.240.241. It is the same on every run, and the old build captured twice does not show it, so the change causes it. Most likely the compositor rounds the shadow differently now that more layers sit over the drum. Nothing visible moves. <b>Recommendation: accept.</b> Chasing it would mean changing how the browser stacks the page, which is outside the plan.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="q">Q3</span> github.io at 375 px in Polish reads „Zawody”, not „Znajdź zawody”</p>
+      <p>The plan’s §2.7 table predicted the full name there. Measured, the header leaves 113.8 px and „Znajdź zawody” needs 115.8 px. Showing it would push the language switch onto a second row. The rule you approved (the full name only where it fits) therefore gives „Zawody”. The other 19 cells of the table match the plan. This affects only the CERT site. <b>Recommendation: keep the measured rule.</b></p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="q">Q4</span> github.io at 320 px in Polish still wraps, as it does today</p>
+      <p>Today „Kalendarz” sends the switch to a second row. „Zawody” (61.2 px) still does not fit the 58.8 px, so the header wraps exactly as before, with the shorter word. In English, "Events" fits and that header becomes one row. Making Polish fit would need a smaller font or logo in the github.io header, which the plan rules out. <b>Recommendation: accept.</b> It is unchanged from today, and the site is CERT only.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="q">Q5</span> Found outside the scope: English left in the Polish admin UI</p>
+      <p>The new translation test TR.03 lists every value that is identical in Polish and English. Three are untranslated English in the admin screens: <code>sc_engine_opt_code</code> („…(legacy) prefix-string”), <code>sc_engine_legacy_tag</code> („(legacy)”) and <code>season_skel_pending</code> („— pending —”). I allowlisted them with that reason and did not fix them, because they are outside the plan. <b>Recommendation: translate them in a separate small change.</b> TR.03 then asks for their removal from the list.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">01 · How it was compared</p>
+    <h2>The same screens, twice, measured pixel by pixel</h2>
+    <ul>
+      <li><b>Builds.</b> Both the custom element WordPress loads (<code>assets/main.ce.js</code>) and the github.io shell, built from <code>bb978576</code> before the first change and from this branch after the last.</li>
+      <li><b>The same data and date.</b> The approved mock’s pool of 91 PROD events, served by stubbing the database requests, and the date fixed at 6 Oct 2026.</li>
+      <li><b>The same states.</b> The opening month; one and two steps either way, so the „najbliższe zawody” control appears in both places; and the drawer open. Each state is reached by tapping the neighbouring row in both builds, so before and after show the same month.</li>
+      <li><b>Widths and languages.</b> WordPress at 320, 375 and 1280 px, and github.io at 320, 360, 375 and 414 px, each in Polish and English. Phones are captured at device pixel ratio 2. The other three pages’ bars are captured on their own.</li>
+      <li><b>The noise floor first.</b> The old build captured twice is identical in 101 of 102 screens; the one exception is 24 px on a language switch caught mid-transition. The drawer is captured with its slide switched off in both builds, because its text otherwise lands on a run-dependent sub-pixel.</li>
+      <li><b>Every differing pixel is classified.</b> It counts as agreed in exactly two places: the drum outside the focused row (the neighbouring rows, ▲ ▼ and the control), and the title. Anything in the focused row or anywhere else counts against the change. The one page whose header changed height (github.io, 320 px, EN) is compared aligned on the drum below the header. Its fixed drawer is compared where it is.</li>
+    </ul>
+    <div class="legend"><span><span class="sw" style="background:#1e6ee6"></span>blue: an agreed change (drum, title)</span><span><span class="sw" style="background:#f09600"></span>orange: the header reflow (github.io 320 px EN)</span><span><span class="sw" style="background:#e61414"></span>red: anything else (there is none)</span></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · All 102 screens</p>
+    <h2>Only what we agreed differs</h2>
+    <p>✓ means every differing pixel is in the drum outside the focused row or in the title. The focused row, the caret, the card, the footer, the bar’s ☰, logo and switch, and the drawer are pixel-identical. Hover a cell for its counts.</p>
+  </section>
+</div>
+
+<div class="wide">
+<div class="tablewrap"><table class="res"><thead><tr><th>surface</th><th>opening month</th><th>▼ 1</th><th>▼ 2</th><th>▲ 1</th><th>▲ 2</th><th>drawer open</th><th>ranking bar</th><th>calculator bar</th><th>table bar</th></tr></thead><tbody>
+<tr><td>WordPress · 320 px · PL</td><td title="drum outside the focused row 39913 px · title 1998 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 55871 px · title 1998 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 41713 px · title 1998 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 62144 px · title 1998 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 76959 px · title 1998 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 8820 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 320 px · EN</td><td title="drum outside the focused row 39911 px · title 2038 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 56197 px · title 2038 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42185 px · title 2038 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 60304 px · title 2038 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 75386 px · title 2038 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 8820 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 375 px · PL</td><td title="drum outside the focused row 41675 px · title 3594 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 56953 px · title 3594 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42343 px · title 3594 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 63096 px · title 3594 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 78389 px · title 3594 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 10577 px · title 4 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 375 px · EN</td><td title="drum outside the focused row 41659 px · title 3106 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 57327 px · title 3106 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42820 px · title 3106 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 61092 px · title 3106 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 76505 px · title 3106 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 10577 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 1280 px · PL</td><td title="drum outside the focused row 15103 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 16459 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 10980 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 16132 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 1 px"><span class="chip warn">1 px · 1/255</span></td><td title="drum outside the focused row 20084 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 7565 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 1280 px · EN</td><td title="drum outside the focused row 15089 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 16503 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 11064 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 15652 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 19572 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 7494 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 24 px"><span class="chip plain">noise · 24 px</span></td><td title="drum outside the focused row 0 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">identical</span></td></tr>
+<tr><td>github.io · 320 px · PL</td><td title="drum outside the focused row 39550 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 55733 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 41591 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 62052 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 76511 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 8635 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 320 px · EN</td><td title="drum outside the focused row 39751 px · title 7394 px · header 26067 px · shadow strip 0 px · focused row 0 px · everything else 0 px · page below the header moved -40 px"><span class="chip warn">✓ header 1 row</span></td><td title="drum outside the focused row 56028 px · title 7394 px · header 32627 px · shadow strip 0 px · focused row 0 px · everything else 0 px · page below the header moved -40 px"><span class="chip warn">✓ header 1 row</span></td><td title="drum outside the focused row 42213 px · title 7394 px · header 30540 px · shadow strip 0 px · focused row 0 px · everything else 0 px · page below the header moved -40 px"><span class="chip warn">✓ header 1 row</span></td><td title="drum outside the focused row 60224 px · title 7394 px · header 22352 px · shadow strip 0 px · focused row 0 px · everything else 0 px · page below the header moved -40 px"><span class="chip warn">✓ header 1 row</span></td><td title="drum outside the focused row 75049 px · title 7394 px · header 31720 px · shadow strip 0 px · focused row 0 px · everything else 0 px · page below the header moved -40 px"><span class="chip warn">✓ header 1 row</span></td><td title="drum outside the focused row 6797 px · title 0 px · header 8970 px · shadow strip 10849 px · focused row 0 px · everything else 0 px · page below the header moved -40 px"><span class="chip warn">✓ header 1 row</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 360 px · PL</td><td title="drum outside the focused row 40384 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 56113 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 41605 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 62268 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 77512 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 9441 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 360 px · EN</td><td title="drum outside the focused row 40355 px · title 1928 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 56388 px · title 1928 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42061 px · title 1928 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 60380 px · title 1928 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 75679 px · title 1928 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 9441 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 375 px · PL</td><td title="drum outside the focused row 41213 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 56776 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42120 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 62867 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 78242 px · title 1927 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 10263 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 375 px · EN</td><td title="drum outside the focused row 41190 px · title 2554 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 57074 px · title 2554 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42552 px · title 2554 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 60956 px · title 2554 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 76395 px · title 2554 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 10263 px · title 0 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 414 px · PL</td><td title="drum outside the focused row 42137 px · title 3082 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 57073 px · title 3082 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42210 px · title 3082 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 63066 px · title 3082 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 78472 px · title 3082 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 11185 px · title 209 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 414 px · EN</td><td title="drum outside the focused row 42080 px · title 3651 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 57459 px · title 3651 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 42678 px · title 3651 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 61082 px · title 3651 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 76485 px · title 3651 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td title="drum outside the focused row 11185 px · title 1097 px · header 0 px · shadow strip 0 px · focused row 0 px · everything else 0 px"><span class="chip never">✓</span></td><td>—</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+</div>
+
+<div class="wrap" style="padding-top:10px">
+  <section>
+    <p class="kicker">03 · Look for yourself</p>
+    <h2>Before, after, and the differences marked</h2>
+    <p>Click any picture for the full size. The marked picture is the "after" screen, faded, with each differing pixel coloured.</p>
+  </section>
+</div>
+
+<div class="wide">
+<div class="state"><h3>WordPress · 375 px · PL · the opening month</h3><p class="cap">October 2026 opens as before. September is now above and November below, ▲ ▼ sit beside them, and the title reads „Znajdź zawody”. The focused row, the caret, the card and the footer are untouched.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-open.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-open.before.jpg" alt="WordPress · 375 px · PL · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-open.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-open.after.jpg" alt="WordPress · 375 px · PL · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-open.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-open.diff.jpg" alt="WordPress · 375 px · PL · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · ▼ once (November)</h3><p class="cap">The way back now rides the upper seam with ↑, because October is drawn above. Before, it was pinned to the bottom with ←.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later1.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later1.before.jpg" alt="WordPress · 375 px · PL · ▼ once (November), before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later1.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later1.after.jpg" alt="WordPress · 375 px · PL · ▼ once (November), after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later1.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later1.diff.jpg" alt="WordPress · 375 px · PL · ▼ once (November), differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · ▼ twice (December)</h3><p class="cap">The control is on the upper seam with ↑. Its old place, pinned at the bottom with ↓, is the other blue mark.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later2.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later2.before.jpg" alt="WordPress · 375 px · PL · ▼ twice (December), before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later2.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later2.after.jpg" alt="WordPress · 375 px · PL · ▼ twice (December), after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later2.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-later2.diff.jpg" alt="WordPress · 375 px · PL · ▼ twice (December), differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · ▲ once (September)</h3><p class="cap">October is the row just below, so the control pins to the lower edge with ← („it is right here”).</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier1.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier1.before.jpg" alt="WordPress · 375 px · PL · ▲ once (September), before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier1.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier1.after.jpg" alt="WordPress · 375 px · PL · ▲ once (September), after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier1.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier1.diff.jpg" alt="WordPress · 375 px · PL · ▲ once (September), differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · ▲ twice (June; July and August are empty)</h3><p class="cap">Pinned to the lower edge with ↓. The quiet summer months are skipped exactly as before.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier2.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier2.before.jpg" alt="WordPress · 375 px · PL · ▲ twice (June; July and August are empty), before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier2.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier2.after.jpg" alt="WordPress · 375 px · PL · ▲ twice (June; July and August are empty), after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier2.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-earlier2.diff.jpg" alt="WordPress · 375 px · PL · ▲ twice (June; July and August are empty), differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · the drawer open</h3><p class="cap">The drawer itself is pixel-identical. Behind its overlay, only the drum’s rows and the buttons differ.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-drawer.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-drawer.before.jpg" alt="WordPress · 375 px · PL · the drawer open, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-drawer.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-drawer.after.jpg" alt="WordPress · 375 px · PL · the drawer open, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-drawer.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-pl-calendar-drawer.diff.jpg" alt="WordPress · 375 px · PL · the drawer open, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 320 px · EN · the opening month</h3><p class="cap">At 320 px the title has 101.7 px of room: "Competition Finder" (153.3 px) and "Competitions" (107.2 px) do not fit, so it reads "Events".</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-open.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-open.before.jpg" alt="WordPress · 320 px · EN · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-open.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-open.after.jpg" alt="WordPress · 320 px · EN · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-open.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-open.diff.jpg" alt="WordPress · 320 px · EN · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 320 px · EN · ▼ twice</h3><p class="cap">The narrowest phone, with the control on the upper seam: ▲ and ▼ cover nothing.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-later2.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-later2.before.jpg" alt="WordPress · 320 px · EN · ▼ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-later2.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-later2.after.jpg" alt="WordPress · 320 px · EN · ▼ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-later2.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-later2.diff.jpg" alt="WordPress · 320 px · EN · ▼ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 320 px · EN · ▲ twice</h3><p class="cap">The pinned control at the bottom and ▼ above it: 9 px apart, as the plan measured.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-earlier2.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-earlier2.before.jpg" alt="WordPress · 320 px · EN · ▲ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-earlier2.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-earlier2.after.jpg" alt="WordPress · 320 px · EN · ▲ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-earlier2.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-en-calendar-earlier2.diff.jpg" alt="WordPress · 320 px · EN · ▲ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 1280 px · PL · the opening month</h3><p class="cap"><span class="strike">On a computer the buttons stay by the tiles, at most 300 px from the left, not at the far edge.</span> <b>Corrected 6 Oct:</b> that put them near the middle of the drum. They now sit on its right edge at every width; see <a href="kalendarz-strzalki-prawa-krawedz-2026-10-06.html">the arrows sheet</a>.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-calendar-open.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-calendar-open.before.jpg" alt="WordPress · 1280 px · PL · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-calendar-open.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-calendar-open.after.jpg" alt="WordPress · 1280 px · PL · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-calendar-open.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-calendar-open.diff.jpg" alt="WordPress · 1280 px · PL · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 1280 px · EN · ▼ twice</h3><p class="cap">Desktop, English, control on the upper seam.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-en-calendar-later2.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-en-calendar-later2.before.jpg" alt="WordPress · 1280 px · EN · ▼ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-en-calendar-later2.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-en-calendar-later2.after.jpg" alt="WordPress · 1280 px · EN · ▼ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-en-calendar-later2.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-en-calendar-later2.diff.jpg" alt="WordPress · 1280 px · EN · ▼ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 320 px · PL</h3><p class="cap">Even „Zawody” (61.2 px) does not fit the 58.8 px left on one row, so the header wraps exactly as it does today. Only the word changes (see question Q4).</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-pl-calendar-open.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-pl-calendar-open.before.jpg" alt="github.io · 320 px · PL, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-pl-calendar-open.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-pl-calendar-open.after.jpg" alt="github.io · 320 px · PL, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-pl-calendar-open.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-pl-calendar-open.diff.jpg" alt="github.io · 320 px · PL, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 320 px · EN</h3><p class="cap">"Events" (52.3 px) fits, so the header becomes one row and the page below moves up 40 px (orange). Aligned on the drum, everything below the header is identical outside the drum.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-en-calendar-open.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-en-calendar-open.before.jpg" alt="github.io · 320 px · EN, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-en-calendar-open.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-en-calendar-open.after.jpg" alt="github.io · 320 px · EN, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-en-calendar-open.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-320-en-calendar-open.diff.jpg" alt="github.io · 320 px · EN, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 375 px · PL</h3><p class="cap">„Znajdź zawody” needs 115.8 px and the header leaves 113.8 px, so it shows „Zawody”. The plan predicted the full name here (see question Q3).</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-375-pl-calendar-open.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-375-pl-calendar-open.before.jpg" alt="github.io · 375 px · PL, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-375-pl-calendar-open.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-375-pl-calendar-open.after.jpg" alt="github.io · 375 px · PL, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-375-pl-calendar-open.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-375-pl-calendar-open.diff.jpg" alt="github.io · 375 px · PL, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 414 px · EN · ▲ twice</h3><p class="cap">"Competition Finder" (148.7 px) fits the 152.8 px of room.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-414-en-calendar-earlier2.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-414-en-calendar-earlier2.before.jpg" alt="github.io · 414 px · EN · ▲ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-414-en-calendar-earlier2.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-414-en-calendar-earlier2.after.jpg" alt="github.io · 414 px · EN · ▲ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-414-en-calendar-earlier2.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/gh-414-en-calendar-earlier2.diff.jpg" alt="github.io · 414 px · EN · ▲ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>The ranking page’s bar · 320 px · PL</h3><p class="cap">Pixel-identical.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-pl-ranking-bar.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-pl-ranking-bar.before.jpg" alt="The ranking page’s bar · 320 px · PL, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-pl-ranking-bar.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-pl-ranking-bar.after.jpg" alt="The ranking page’s bar · 320 px · PL, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-pl-ranking-bar.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-320-pl-ranking-bar.diff.jpg" alt="The ranking page’s bar · 320 px · PL, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>The calculator page’s bar · 375 px · EN</h3><p class="cap">Pixel-identical.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-en-calculator-bar.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-en-calculator-bar.before.jpg" alt="The calculator page’s bar · 375 px · EN, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-en-calculator-bar.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-en-calculator-bar.after.jpg" alt="The calculator page’s bar · 375 px · EN, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-en-calculator-bar.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-375-en-calculator-bar.diff.jpg" alt="The calculator page’s bar · 375 px · EN, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>The table page’s bar · 1280 px · PL</h3><p class="cap">Pixel-identical.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-table-bar.before.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-table-bar.before.jpg" alt="The table page’s bar · 1280 px · PL, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-table-bar.after.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-table-bar.after.jpg" alt="The table page’s bar · 1280 px · PL, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-table-bar.diff.jpg"><img src="kalendarz-beben-strzalki-porownanie-2026-10-06/wp-1280-pl-table-bar.diff.jpg" alt="The table page’s bar · 1280 px · PL, differences" loading="lazy"></a></figure>
+</div></div>
+</div>
+
+<div class="wrap" style="padding-top:10px">
+  <section>
+    <p class="kicker">04 · The title, measured</p>
+    <h2>The full name wherever it fits</h2>
+    <p>Measured in Chromium by WP.BAR.05. The room is what the bar actually leaves the title. Widths are each candidate set in the title’s own font.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Surface</th><th>320</th><th>360</th><th>375</th><th>414</th><th>1280</th></tr></thead>
+      <tbody>
+        <tr><td>WordPress bar, PL</td><td>Zawody</td><td>Znajdź zawody</td><td>Znajdź zawody</td><td>Znajdź zawody</td><td>Znajdź zawody</td></tr>
+        <tr><td>WordPress bar, EN</td><td>Events</td><td>Competitions</td><td>Competitions</td><td>Competition Finder</td><td>Competition Finder</td></tr>
+        <tr><td>github.io header, PL</td><td>Zawody (wraps, as today)</td><td>Zawody</td><td><b>Zawody</b> (plan: Znajdź zawody; 2 px short)</td><td>Znajdź zawody</td><td>Znajdź zawody</td></tr>
+        <tr><td>github.io header, EN</td><td>Events</td><td>Events</td><td>Competitions</td><td>Competition Finder</td><td>Competition Finder</td></tr>
+        <tr><td>Room, WordPress / github.io</td><td>101.7 / 58.8 px</td><td>128.4 / 98.8 px</td><td>143.4 / 113.8 px</td><td>182.4 / 152.8 px</td><td>995.4 / 713.1 px</td></tr>
+      </tbody>
+    </table></div>
+    <p>The font, its size and the bar’s single row are asserted equal to the same bar on the ranking view at every width (WP.BAR.05). The other three pages keep their titles and the 430 px switch; their bars are pixel-identical above.</p>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Strict TDD, as recorded</p>
+    <h2>Every test seen red first</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Change</th><th>Tests</th><th>Seen red because</th></tr></thead>
+      <tbody>
+        <tr><td>requirements</td><td>FR-153, FR-154 Planned; FR-148 amended; Gate E 153</td><td>registered before any code (§08 step 1)</td></tr>
+        <tr><td>stepRow</td><td>CM.40–CM.44</td><td>“stepRow is not a function”</td></tr>
+        <tr><td>direction</td><td>CB.3, CB.35, CB.36</td><td>old signs; September drawn below; the season line between two months of 26/27</td></tr>
+        <tr><td>the jump control</td><td>CB.26, CB.27, CB.27b, CB.27c, CB.29</td><td>its sides were swapped. CB.29 now starts two rows from home, so a leaked tap would land one row short.</td></tr>
+        <tr><td>▲ ▼</td><td>CB.37–CB.43</td><td>no buttons</td></tr>
+        <tr><td>D6</td><td>CB.44, WP.NAV.04</td><td>far tiles focusable; 5 (WordPress) and 9 (signed in) links in the closed drawer</td></tr>
+        <tr><td>D7</td><td>CB.45, TR.04</td><td>“July 2026” announced under „Lipiec 2026”; every drum row English on the Polish page</td></tr>
+        <tr><td>D9</td><td>CB.46</td><td>no limit declared</td></tr>
+        <tr><td>D8 (a)</td><td>CB.48, CB.49</td><td>no key handler</td></tr>
+        <tr><td>title</td><td>TITLE.01–02, WP.BAR.02, 8.34</td><td>no helper; the bars read „Kalendarz” / no candidates</td></tr>
+        <tr><td>browser</td><td>CB.E1–CB.E4, WP.BAR.05</td><td>run against the old build: 20 of 20 red (no buttons, old direction, no candidates). WP.BAR.03 as amended passes on both builds; its one-row rule held before and still holds.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Guards, proven by a recorded mutation</b>, each restored byte for byte. Each line names the mutation, then the result.</p>
+    <ul>
+      <li><b>TR.01</b>, a used key removed from <code>pl.json</code>: red.</li>
+      <li><b>TR.02</b>, <code>cal_dow_short_7</code> removed: red.</li>
+      <li><b>TR.03</b>, an identical PL/EN pair added: red.</li>
+      <li><b>TR.05</b>, a Polish label hard-coded on the English page: red.</li>
+      <li><b>TR.06</b>, „Kalendarz” hard-coded in the github.io header: red, and only TR.06, after D7 made it green.</li>
+      <li><b>CB.29</b>, <code>stopPropagation</code> deleted: lands on April instead of March.</li>
+      <li><b>CB.47</b>, the signs flipped without mirroring the control: red at d = −4.</li>
+      <li><b>CB.50</b>, the keys taken from the whole page: red.</li>
+      <li><b>CB.E4</b>, the custom element built without the D9 limit: the 7th tile reaches 293 px, under ▲.</li>
+      <li><b>CB.44 and WP.NAV.04</b>, re-proven after a jsdom fix to their helpers: red without <code>inert</code>.</li>
+    </ul>
+    <p><b>Two deviations, stated plainly.</b></p>
+    <ul>
+      <li>TR.06 was <b>genuinely</b> red at first, for TR.04’s reason (the same drum on github.io), not only by mutation as the plan expected. Its header mutation was rerun once it was green.</li>
+      <li>CB.47 passed before the change, because today’s signs and today’s control agree with each other. It is a guard, so its proof is the mutation above.</li>
+    </ul>
+    <p>The logs are in <code>kalendarz-beben-strzalki-porownanie-2026-10-06/tools/</code>, with the capture kit, so this comparison can be repeated, for D4 for example.</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Still to do</p>
+    <h2>After your approval</h2>
+    <ol class="steps">
+      <li>D4: when your screenshot arrives, its red test, the fix, and this comparison again.</li>
+      <li>Docs (§11): the ADR-084 and ADR-090 amendments through the new-adr skill, with their HTML twins; Appendix C rows in place; FR-153 and FR-154 marked Covered; <code>product-surfaces.html</code>; check_docs, the docs index and the graph.</li>
+      <li><code>scripts/preflight.sh</code> exits 0. Then commit, push and release: CERT, then PROD after your approval in GitHub. Both hosts are verified at 320 and 375 px in PL and EN.</li>
+    </ol>
+  </section>
+
+  <p class="foot">§12 sheet · kalendarz-beben-strzalki · 2026-10-06 · plan doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html · captures 102 + 102 + noise floor 102 · Chromium (Playwright 1.58.2)</p>
+</div>
+</html>
