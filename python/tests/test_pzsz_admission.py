@@ -195,7 +195,9 @@ class TestPluginAndCommit:
         _, db = _run(parsed, ROSTER, START)
         db.find_or_create_tournament.assert_called_once()
         assert db.find_or_create_tournament.call_args.args[3] == "SENIOR"
-        db.set_tournament_participant_count.assert_called_once_with(501, 3)
+        # N travels with the rows (fn_ingest_tournament_results sets it), the
+        # one write promote can replay (ADR-111 §6).
+        db.set_tournament_participant_count.assert_not_called()
         (_, rows), kwargs = db.ingest_results.call_args
         assert [(r["id_fencer"], r["int_place"]) for r in rows] == [(101, 3)]
         assert kwargs["participant_count"] == 3

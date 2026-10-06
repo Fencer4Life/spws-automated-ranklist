@@ -41,6 +41,13 @@ def listing_sha256(name: str, uuid: str, has_de: bool, results: Sequence[ParsedR
     return _sha256({"name": name, "uuid": uuid, "has_de": has_de, "results": rows})
 
 
+def start_list_sha256(starters: Iterable[Any]) -> str:
+    """A PZSz start list as read: each starter's printed name and birth date,
+    in page order (ADR-111 §6). The birth years the admission compared come
+    from it, so promote refuses a start list that changed after the CERT run."""
+    return _sha256([[s.name, s.birth_date.isoformat()] for s in starters])
+
+
 def schedule_sha256(kept: Iterable[Mapping], skipped: Iterable[Mapping]) -> str:
     """The event schedule as parsed: the rounds kept and the rounds skipped, with why."""
     return _sha256(
@@ -167,6 +174,8 @@ class ListingLog:
             "committed_categories": list(decision.get("commit_cats") or []),
             "rows": [[r.place, r.fencer_name] for r in rec["_base"].results],
         }
+        if rec.get("start_list_sha256"):
+            entry["start_list_sha256"] = rec["start_list_sha256"]
         if ctx is not None:
             entry["outcome"] = _outcome(ctx)
             entry["identity"] = _identity(ctx)

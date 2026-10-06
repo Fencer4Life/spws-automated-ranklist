@@ -15,8 +15,8 @@ read correctly.
 Two invariants `Commit` does not need to enforce, because they never arise for
 a per-V-cat bracket:
   - `int_participant_count` is the FULL SOURCE FIELD SIZE (every competitor in
-    the parsed IR, matched or not) -- never the written-row count. Set
-    directly on the tournament, before its rows are written.
+    the parsed IR, matched or not) -- never the written-row count. It is sent
+    with the rows (`participant_count`), which the ingest RPC stores.
   - A matched veteran's `int_place` is their ORIGINAL scraped place, never
     renumbered -- the PER_CATEGORY_RENUMBER module is a per-V-cat-split
     concept and is never invoked here.
@@ -116,9 +116,9 @@ class CommitPzszSenior(BasePlugin):
         tournament_id = db.find_or_create_tournament(
             event_id, weapon, gender, "SENIOR", date, ttype, url_results=url_results
         )
-        # The full field size, before the rows: it does not depend on how
-        # matching turned out.
-        db.set_tournament_participant_count(tournament_id, full_n)
+        # The full field size travels with the rows: fn_ingest_tournament_results
+        # sets int_participant_count from it. It is the one write promote can
+        # replay (ADR-111 §6), and a tournament here always has rows.
         db.ingest_results(tournament_id, rows, participant_count=full_n)
 
         ctx.set(

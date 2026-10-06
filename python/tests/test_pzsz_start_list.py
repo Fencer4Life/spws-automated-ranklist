@@ -18,11 +18,13 @@ from pathlib import Path
 import pytest
 
 from python.scrapers.pzsz_start_list import (
+    PZSZ_EVENT_PAGE,
     PzszPageError,
     PzszTournament,
     Starter,
     parse_event_tournaments,
     parse_start_list,
+    read_event_start_lists,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -77,6 +79,48 @@ class TestEventTournaments:
                 "F",
             ),
         ]
+
+
+def _fetch(pages: dict[tuple[str, int], str]):
+    """A fetch over saved pages, keyed (page, id); it records every call."""
+    calls: list[tuple[str, dict]] = []
+
+    def fetch(url: str, params: dict) -> str:
+        calls.append((url, params))
+        kind = "event" if url == PZSZ_EVENT_PAGE else "tournament"
+        return pages[(kind, params["id"])]
+
+    fetch.calls = calls  # type: ignore[attr-defined]
+    return fetch
+
+
+POZNAN = {
+    ("event", 4588): "pzsz_event_poznan_tournaments.html",
+    ("tournament", 10628): "pzsz_start_list_sabre_men.html",
+    ("tournament", 10629): "pzsz_start_list_sabre_women.html",
+}
+
+
+class TestEventStartLists:
+    def test_reads_the_start_list_of_every_tournament_of_the_event(self):
+        """PZSZ.SL.01: the event page leads to each tournament's page; the
+        start lists come back keyed by weapon and gender."""
+        fetch = _fetch({k: _read(v) for k, v in POZNAN.items()})
+        lists = read_event_start_lists(4588, fetch)
+        assert set(lists) == {("SABRE", "M"), ("SABRE", "F")}
+        tournament, starters = lists[("SABRE", "M")]
+        assert tournament.id_pzsz_tournament == 10628
+        assert len(starters) == 53
+        assert len(lists[("SABRE", "F")][1]) == 46
+        assert fetch.calls[0] == (PZSZ_EVENT_PAGE, {"id": 4588})  # type: ignore[attr-defined]
+
+    def test_one_unreadable_tournament_page_refuses_the_whole_event(self):
+        """PZSZ.SL.02: the women's page answering with the JavaScript check
+        refuses the event; no start list is returned for the men either."""
+        pages = {k: _read(v) for k, v in POZNAN.items()}
+        pages[("tournament", 10629)] = _read("pzsz_js_check.html")
+        with pytest.raises(PzszPageError, match="JavaScript check"):
+            read_event_start_lists(4588, _fetch(pages))
 
 
 class TestUnreadablePage:

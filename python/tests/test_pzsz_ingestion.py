@@ -269,12 +269,13 @@ class TestCommitPzszSenior:
 
     def test_participant_count_is_full_source_field(self):
         """SS26.PZSZ.02/03 the 34-of-107 invariant: participant_count is the
-        full parsed field, set directly and unconditionally -- not the
-        written-row count."""
+        full parsed field -- not the written-row count. Since ADR-111 it is
+        sent with the rows only (fn_ingest_tournament_results sets it), the
+        write promote can replay; a tournament never exists without rows."""
         matches = [_match(101, 34, "KOWALSKI Jan", gby=1965)]
         db = _commit_db()
         _run_commit(_commit_ctx(matches, raw_pool_size=107), db)
-        db.set_tournament_participant_count.assert_called_once_with(501, 107)
+        db.set_tournament_participant_count.assert_not_called()
         _, kwargs = db.ingest_results.call_args
         assert kwargs["participant_count"] == 107
 

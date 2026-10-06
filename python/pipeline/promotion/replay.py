@@ -185,6 +185,9 @@ def source_differences(run: Mapping[str, Any], plan: Mapping[str, Any]) -> list[
             out.append(f"{b.get('name')}: found now, not read by the CERT run.")
         elif a.get("sha256") != b.get("sha256"):
             out.append(f"{a.get('name')}: the listing changed since the CERT run.")
+        elif a.get("start_list_sha256") != b.get("start_list_sha256"):
+            # ADR-111 §6: a PZSz listing's birth years come from its start list.
+            out.append(f"{a.get('name')}: the PZSz start list changed since the CERT run.")
     return out
 
 
