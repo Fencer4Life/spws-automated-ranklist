@@ -14,7 +14,6 @@ import { render, fireEvent } from '@testing-library/svelte'
 
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
-  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
   // SS26.LOCK.01/§05 (governance lock, 2026-09-19) — released scoring-engine
   // codes for ScoringConfigEditor's engine selectors, loaded once an admin signs in (SE27.UI.09).

@@ -25,8 +25,8 @@ DECLARE
   v_season INT;
   v_org    INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('SPWS-6300-6301', '6300-08-01', '6301-07-31', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('SPWS-6300-6301', '6300-08-01', '6301-07-31')
   ON CONFLICT (txt_code) DO NOTHING;
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-6300-6301';
   INSERT INTO tbl_organizer (txt_code, txt_name)

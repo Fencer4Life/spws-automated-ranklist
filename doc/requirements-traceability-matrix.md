@@ -30,8 +30,8 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-18 | Cross-category carryover (fencer ranked by birth-year category) | §8.5(2) | 5.14–5.15 | Covered |
 | FR-19 | JSONB bucket-based ranking rules | §8.6.6 | 5.4–5.7, 5.20–5.22, SS26.RANK.01–12, ADM27.RULES.01–14 | Covered (M6; **amended 2026-09-28, ADM27:** a change to original-shape rules is refused unless each bucket admits only its own pool's types, no type sits in two buckets and each bucket takes exactly one of best N ≥ 1 or all — in the Admin editor and in `fn_import_scoring_config`; an unchanged resend passes; **amended 2026-09-19, ADR-098:** `schema_version: 2` adds three independently-configured sections (SPWS/EVF-FIE/PZSz) aggregating into two display groups, read by `fn_ranking_rules_canonical` alongside the original `domestic`/`international` shape via a frozen legacy adapter; the original shape is unchanged and `fn_ranking_ppw`/`fn_ranking_kadra` are untouched) |
 | FR-20 | Legacy code path (NULL json_ranking_rules) | §8.6.6 | 5.23 | Covered |
-| FR-21 | Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date (ADR-031) | UC7(a,b) | 1.13–1.14b, 9.40–9.46 | Covered |
-| FR-22 | Single active season constraint (auto-derived, no overlapping dates) | UC7(c) | 1.7, 1.15, 9.41–9.46 | Covered |
+| FR-21 | Season lifecycle: create season, auto-create scoring config (inherits json_ranking_rules from previous season), auto-activate by date, computed on every read with nothing stored or refreshed (ADR-031, amended 2026-10-06) | UC7(a,b) | 1.13–1.14b, 9.40–9.46 (9.41–9.46 amended 2026-10-06), 106.1–106.13, AS.UI.01, AS.PY.01 | Covered |
+| FR-22 | Single active season constraint (derived from the dates on read, no overlapping dates) | UC7(c) | 1.7, 1.15, 9.41–9.46, 106.4–106.7 | Covered |
 | FR-23 | Event lifecycle state machine | UC10(a,b) | 1.20–1.24, 9.86–9.90 | Covered (M9, T9.9) |
 | FR-24 | Audit logging for status changes | UC10(c) | 1.22a–b | Covered |
 | FR-25 | Tournament multiplier auto-population (trigger) | UC9(c) | 1.19, 1.19c | Covered |
@@ -422,6 +422,16 @@ Acceptance IDs for the [ADR-084](adr/084-calendar-quarter-barrel-event-card.md) 
 | TR.01–TR.06 | Every literal key in `t('…')` / `tIn(l, '…')` exists in both locale files (01); every key family built at runtime is complete for its domain (02); a value identical in PL and EN is allowed only for an allowlisted key with a reason (03); the calendar page in Polish shows no English UI word and no raw key in text, `aria-label`, `title` or `alt` (04), in English no Polish UI word (05), and the same over the github.io shell's calendar view (06). | Vitest | `frontend/tests/translation-completeness.test.ts` | **Landed** (2026-10-06, LOCAL) |
 | TITLE.01–TITLE.02 | `pickTitle(widths, room)` returns the first candidate that fits, the last when none does, and fits at the exact boundary (01); the title is picked again on a language switch (02). | Vitest | `frontend/tests/fitTitle.test.ts` | **Landed** (2026-10-06, LOCAL) |
 | 8.34 (amended) | The github.io header's title follows the view; on the calendar it reads „Znajdź zawody” (EN “Competition Finder”), with its fit candidates, where it read „Kalendarz”. | Vitest | `frontend/tests/AppShell.test.ts` | Amendment **Landed** (2026-10-06, LOCAL) |
+
+## Active season computed on read (AS.*)
+
+Acceptance IDs for the [ADR-031](adr/031-auto-active-season.md) amendment of 2026-10-06 and [doc/plans/active-season-computed-on-read-2026-10-06.html](plans/active-season-computed-on-read-2026-10-06.html). FR-21 and FR-22.
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| 106.1–106.13 | `tbl_season` stores no `bool_active` (1); `fn_today()` returns `spws.today` when set and `CURRENT_DATE` otherwise (2–3); the computed `s.bool_active` marks the season containing today, else the nearest future one, else none (4–7); reading it writes no audit row (8); `fn_refresh_active_season()` and its trigger are gone (9–10); anon may execute `fn_today`, `fn_active_season_id` and `bool_active` (11); `fn_season_summary()` follows today and raises „No active season" when there is none (12–13). | pgTAP | `supabase/tests/106_active_season_computed.sql` | **Landed** (2026-10-06, LOCAL) |
+| AS.UI.01 | A page load never calls `rpc('fn_refresh_active_season')`; the app only reads the computed flag. | Vitest | `frontend/tests/ActiveSeasonRead.test.ts` | **Landed** (2026-10-06, LOCAL) |
+| AS.PY.01 | No Python query names the season flag without a table alias (`FROM tbl_season WHERE bool_active`), because only `s.bool_active` resolves to the computed field. | pytest | `python/tests/test_active_season_reads.py` | **Landed** (2026-10-06, LOCAL) |
 
 ## Cross-references
 

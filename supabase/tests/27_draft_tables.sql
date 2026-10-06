@@ -215,9 +215,8 @@ DECLARE
   v_f        INT;
   i          INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('VW-DRAFT-27', '2098-09-01', '2099-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_organizer (txt_code, txt_name)
        VALUES ('VW27ORG', 'VW Test 27 Org')

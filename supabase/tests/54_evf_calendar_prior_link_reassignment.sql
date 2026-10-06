@@ -15,7 +15,6 @@ DECLARE
   v_guildford_prior INT;
   v_chania_prior INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_prior_season := fn_create_season('EVFPRIOR-PRIOR', '2037-08-01', '2038-07-15');
   v_current_season := fn_create_season('EVFPRIOR-CURR', '2038-08-01', '2039-07-15');
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';

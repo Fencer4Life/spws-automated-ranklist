@@ -57,7 +57,8 @@ read -r -d '' ALLOWLIST <<'EOF' || true
 'fn_ranking_kadra_event_fk_matching','fn_ranking_ppw','fn_ranking_ppw_event_code_matching',
 'fn_ranking_ppw_event_fk_matching','fn_season_summary','fn_vcat_violation_msg',
 'fn_registration_identity_candidates','fn_confirm_registration_identity','fn_fold_name',
-'fn_ftl_export_entries','fn_ftl_export_events','fn_ftl_roster'
+'fn_ftl_export_entries','fn_ftl_export_events','fn_ftl_roster',
+'fn_today','fn_active_season_id','bool_active'
 EOF
 # The five names on the last two lines are the 2026-09-12 additions: the
 # identity block (ADR-093) and the public FTL export page (ADR-080 amendment).

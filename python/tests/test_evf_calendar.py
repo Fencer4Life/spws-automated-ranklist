@@ -2015,7 +2015,7 @@ class TestEvfPhase2Allocator:
         def fake_mgmt(ref, token, sql):
             sql_calls.append(sql)
             sl = sql.lower()
-            if "from tbl_season where bool_active" in sl:
+            if "from tbl_season s where s.bool_active" in sl:
                 return [
                     {
                         "txt_code": "SPWS-2025-2026",
@@ -2270,7 +2270,7 @@ class TestEvfPhase2Allocator:
 
         def fake_mgmt(ref, token, sql):
             sql_calls.append(sql)
-            if "FROM tbl_season WHERE bool_active" in sql:
+            if "FROM tbl_season s WHERE s.bool_active" in sql:
                 return [
                     {
                         "txt_code": "SPWS-2026-2027",
@@ -2373,7 +2373,7 @@ class TestEvfPhase2Allocator:
         def fake_mgmt(ref, token, sql):
             sql_calls.append(sql)
             sl = sql.lower()
-            if "from tbl_season where bool_active" in sl:
+            if "from tbl_season s where s.bool_active" in sl:
                 return [
                     {
                         "txt_code": "SPWS-2025-2026",
@@ -2514,7 +2514,7 @@ class TestFilterStale:
 
         def fake_mgmt(ref, token, sql):
             sl = sql.lower()
-            if "from tbl_season where bool_active" in sl:
+            if "from tbl_season s where s.bool_active" in sl:
                 return [
                     {
                         "id_season": 7,
@@ -2615,7 +2615,7 @@ class TestFilterStale:
 
         def fake_mgmt(ref, token, sql):
             sl = sql.lower()
-            if "from tbl_season where bool_active" in sl:
+            if "from tbl_season s where s.bool_active" in sl:
                 return [
                     {
                         "id_season": 7,

@@ -26,7 +26,6 @@ const { SEASONS, RULES } = vi.hoisted(() => ({
 
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
-  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue(SEASONS),
   fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),

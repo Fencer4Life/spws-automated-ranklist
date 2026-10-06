@@ -71,8 +71,8 @@ DECLARE
   v_season INT;
   v_org    INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('PZSZ70-A', '2126-07-01', '2127-06-30', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('PZSZ70-A', '2126-07-01', '2127-06-30')
   RETURNING id_season INTO v_season;
 
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'PZSz';
@@ -107,8 +107,8 @@ DO $othersesason$
 DECLARE
   v_season INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('PZSZ70-B', '2127-07-01', '2128-06-30', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('PZSZ70-B', '2127-07-01', '2128-06-30')
   RETURNING id_season INTO v_season;
 
   INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer,

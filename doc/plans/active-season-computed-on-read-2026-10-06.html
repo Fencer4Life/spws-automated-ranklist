@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active season, computed</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+  pre.sql{font-family:var(--mono);font-size:14px;line-height:1.55;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;white-space:pre;max-width:none}
+  .q{font-family:var(--mono);font-weight:800}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Active season · brainstorm · 6 Oct 2026 · supersedes the recommendation in active-season-401-2026-10-06.html</p>
+  <h1>Stop storing the active season. Compute it when it is read.</h1>
+  <p class="dek">&bdquo;Active&ldquo; is a pure function of the season dates and today. Today changes without anything being written, so <b>any stored flag needs a writer at midnight</b>. The 401, the daily job, the two audit rows per call and the stale-flag risk all come from that one fact. If the database computes the flag on every read instead, there is nothing to refresh, nobody needs write rights, and anonymous visitors only ever <i>read</i>.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>decided 6 Oct · V, tests set today · built on LOCAL</span>
+    <span class="pill"><span class="dot"></span>ADR-031 alternative 2, made cheap</span>
+    <span class="pill warn"><span class="dot"></span>counts measured on LOCAL, 6 Oct</span>
+  </div>
+
+  <div class="note good">
+    <p class="lede">Decided 6 Oct 2026: Q1 = V, Q2 = tests set today. Built on LOCAL.</p>
+    <p>Branch <code>claude/active-season-computed</code>, migration <code>20261006000001_active_season_computed.sql</code>. Tests were seen red first: pgTAP <code>106_active_season_computed.sql</code> (106.1&ndash;106.13), Vitest AS.UI.01 and pytest AS.PY.01. On a fresh <code>reset-dev.sh</code>, the full regression passed: pgTAP 107 files and 1,408 assertions, Vitest 1,170, pytest 1,800 and Playwright 37. As anon over REST, <code>bool_active</code> marks only 2026/27, the filter <code>bool_active=eq.true</code> works, and <code>rpc/fn_refresh_active_season</code> answers <code>404 PGRST202</code>. ADR-031 is amended, with ADR-083 &sect;4, RTM FR-21/FR-22 and the handbook. Where the build showed this page's inventory to be wrong, &sect;03 says so in place.</p>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · Decide this first</p>
+    <h2>Two questions</h2>
+    <div class="note accent">
+      <p class="lede"><span class="q">Q1</span> Which design?</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Option</th><th>In one line</th><th>Writers / schedule</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip fill">V · recommended</span></td><td><b>Computed on read, no stored flag.</b> One date rule in the database; <code>s.bool_active</code> keeps working everywhere as a computed value.</td><td>none</td><td>one migration; ~6 SQL bodies and 5 Python queries rewritten; the seed exporter; ~59 test fixture lines</td></tr>
+          <tr><td><span class="chip plain">R · cheaper</span></td><td>Anonymous reads get the computed value; the server keeps the stored flag, refreshed daily by <code>event-close.yml</code>.</td><td>one daily step</td><td>small; but two copies of the truth, up to 4 h apart once a year</td></tr>
+          <tr><td><span class="chip plain">D · the earlier note</span></td><td>Drop the browser call; refresh the stored flag daily.</td><td>one daily step</td><td>small; the stored flag and its writer stay</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Recommendation: V.</b> It removes the class of bug, not just this instance: the flag can never be stale, on any environment, at any minute, with no job to forget. Its cost is mostly mechanical test fixtures (§04), and the two things ADR-031 feared (19 rewritten references, high migration effort) mostly disappear because of how PostgreSQL resolves <code>s.bool_active</code> (§02).</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="q">Q2</span> How do tests pick &bdquo;the active season&ldquo;?</p>
+      <p>Today ~59 pgTAP lines <i>set</i> <code>bool_active</code> to make a season active. A computed value cannot be set. <b>Recommendation: tests set &bdquo;today&ldquo; instead</b>, inside their own transaction: <code>SELECT set_config('spws.today', '2025-03-01', true)</code>. The date rule reads that setting when present and <code>CURRENT_DATE</code> otherwise. The alternative, rewriting every fixture to real dates around the actual today, would break every year.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">01 · Today vs proposed</p>
+    <h2>Where the truth lives</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Today (stored flag)</th><th>V (computed on read)</th></tr></thead>
+      <tbody>
+        <tr><td>Who decides which season is active</td><td><code>fn_refresh_active_season()</code>, when someone calls it</td><td>the date rule, on every read</td></tr>
+        <tr><td>Right on the morning a season starts</td><td>only after a writer runs</td><td>always</td></tr>
+        <tr><td>What an anonymous visitor needs</td><td>write rights (revoked 23 Jul → 401)</td><td>read only (EXECUTE on a read-only function)</td></tr>
+        <tr><td>Writes per page view / per day</td><td>2 updates + 2 audit rows per successful call</td><td>none</td></tr>
+        <tr><td>Scheduled job</td><td>needed (D, R)</td><td>none</td></tr>
+        <tr><td>CERT and PROD agree</td><td>only if both writers ran</td><td>whenever their dates agree (promote still checks)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · How V works</p>
+    <h2>One rule, exposed as a column that is not stored</h2>
+    <pre class="sql">-- The date rule, read-only. Tests may set spws.today; everything else uses CURRENT_DATE.
+CREATE FUNCTION fn_today() RETURNS date STABLE LANGUAGE sql AS $$
+  SELECT COALESCE(NULLIF(current_setting('spws.today', true), '')::date, CURRENT_DATE)
+$$;
+
+CREATE FUNCTION fn_active_season_id() RETURNS integer STABLE LANGUAGE sql AS $$
+  SELECT COALESCE(
+    (SELECT id_season FROM tbl_season WHERE dt_start &lt;= fn_today() AND dt_end &gt;= fn_today() LIMIT 1),
+    (SELECT id_season FROM tbl_season WHERE dt_start &gt; fn_today() ORDER BY dt_start LIMIT 1))
+$$;
+
+-- "bool_active" becomes a computed field of tbl_season.
+ALTER TABLE tbl_season DROP COLUMN bool_active;
+CREATE FUNCTION bool_active(tbl_season) RETURNS boolean STABLE LANGUAGE sql AS $$
+  SELECT $1.id_season = fn_active_season_id()
+$$;
+
+DROP TRIGGER trg_season_refresh_active ON tbl_season;
+DROP FUNCTION fn_trg_refresh_active_season(), fn_refresh_active_season();
+GRANT EXECUTE ON FUNCTION fn_today(), fn_active_season_id(), bool_active(tbl_season) TO anon, authenticated;</pre>
+    <p><b>Why most code does not change.</b> Once the table has no <code>bool_active</code> column, PostgreSQL reads <code>s.bool_active</code> as the call <code>bool_active(s)</code> (&bdquo;attribute notation&ldquo; for functions taking the row type). PostgREST treats the same function as a <i>computed field</i>, so the frontend&rsquo;s <code>select=…,bool_active</code> and a filter <code>bool_active=eq.true</code> keep working. The rule is the same as today&rsquo;s function: current season by date, else the nearest future one, else none.</p>
+    <div class="note good"><p class="lede">Proven on LOCAL, 6 Oct (in a transaction, rolled back)</p><p>A throwaway table with seasons 1 (2025/26) and 2 (2026/27) and a <code>bool_active(row)</code> function, no column: <code>WHERE s.bool_active</code> returned <b>2</b>; with <code>spws.today = 2026-01-15</code> it returned <b>1</b>; unqualified <code>WHERE bool_active</code> failed with <i>column "bool_active" does not exist</i>, which is why the six unqualified functions and five Python queries are rewritten.</p></div>
+    <p><b>Deploy order is safe both ways.</b> Release deploys Pages before the database. The new page against the old database still finds a real <code>bool_active</code> column; the old page against the new database gets the computed value, and its leftover refresh call fails as it does today.</p>
+  </section>
+
+  <section>
+    <p class="kicker">03 · What V changes</p>
+    <h2>The inventory, measured on LOCAL</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Found</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td>SQL functions reading <code>s.bool_active</code></td><td>16: the nine ranking functions, the three rolling-score functions, <code>fn_complete_event</code>, <code>fn_find_event_by_date</code>, <code>fn_ftl_export_use_rolling</code>, <code>fn_public_scoring_params</code></td><td><b>none</b>: attribute notation</td></tr>
+        <tr><td>SQL functions naming it without a table alias</td><td>6: <code>_resolve_event_prefix</code>, <code>fn_category_ranking</code>, <code>fn_create_season</code>, <code>fn_delete_season_skeleton</code>, <code>fn_season_overview</code>, <code>fn_season_summary</code></td><td>rewritten in the migration (qualify, or drop the write in <code>fn_create_season</code>)</td></tr>
+        <tr><td>SQL functions that also touch the scoring tables&rsquo; own <code>bool_active</code></td><td>5: <code>fn_backfill_scoring_lock</code>, <code>fn_create_season_with_skeletons</code>, <code>fn_ensure_active_scoring_revision</code>, <code>fn_revise_and_rescore_season</code>, <code>fn_promote_gate_checks</code></td><td>checked one by one; those columns are untouched</td></tr>
+        <tr><td>Writers</td><td><code>fn_refresh_active_season</code>, its trigger, the browser call (<code>api.ts:59–61</code>, <code>App.svelte:744</code>)</td><td>deleted</td></tr>
+        <tr><td>Python</td><td>5 queries name it unqualified: <code>promote.py:76</code>, <code>_supabase.py:77</code>, <code>evf_sync.py:948</code> and <code>:1091</code>, <code>promote_cert_to_prod.py:130</code>. <s>Two staging tools write it into season rows: <code>populate_staging.py</code> (3), <code>staging_spreadsheet.py</code> (4).</s> <b>Corrected after the build:</b> those two tools write an ODS spreadsheet, not season rows, and need no change. The <code>s.bool_active</code> readers (<code>close.py</code>, <code>replay.py</code>, <code>audit_results.py</code>, the rest of <code>promote_cert_to_prod.py</code>) need nothing</td><td>qualify the 5 (done; AS.PY.01 pins it)</td></tr>
+        <tr><td>Frontend</td><td>6 places read <code>bool_active</code> from <code>fetchSeasons()</code>: <code>App.svelte</code>, <code>FilterBar</code>, <code>SeasonRulesModal</code>, <code>SeasonManager</code>, <code>EventManager</code>, <code>rolling.ts</code></td><td><b>none</b>; only the refresh call goes</td></tr>
+        <tr><td>Seed and exporter</td><td><code>seed_prod_latest.sql</code> inserts <code>bool_active</code> into <code>tbl_season</code> (12 lines); migrations run before the seed</td><td><b>Corrected after the build:</b> the committed seed holds 4 <code>tbl_season</code> INSERTs, not 12 lines. They were edited in place (the ADR-099 &sect;4 precedent). The exporter needs no change, because it reads the season columns from <code>information_schema.columns</code> (<code>export_seed.py:221</code>).</td></tr>
+        <tr><td>Tests</td><td>pgTAP: 43 files mention it, ~59 lines set it; pytest: 3 files; Vitest: 14 files mock seasons</td><td>pgTAP fixtures set <code>spws.today</code> (Q2); 9.41&ndash;9.46 rewritten. <b>Corrected:</b> 10 Vitest files drop the <code>refreshActiveSeason</code> mock, and the season mocks are unchanged.</td></tr>
+        <tr><td>ADR-083 allowlist</td><td>anonymous EXECUTE is deny-by-default</td><td>three read-only functions added to the allowlist</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Risks, and the tests that answer them</p>
+    <h2>Where V could go wrong</h2>
+    <ul>
+      <li><b>Rankings called without a season</b> fall back to the active one. Red first: pgTAP sets <code>spws.today</code> to a date in a chosen season and expects that season, then a date between seasons and expects the next one, then a date after the last season and expects none.</li>
+      <li><b>No season active at all</b> (after the last season ends) gives the same result as today&rsquo;s function, which also leaves none active. A pgTAP test pins it.</li>
+      <li><b>A fresh rebuild</b> (<code>reset-dev.sh</code>): run end to end after the seed is regenerated.</li>
+      <li><b>Promote&rsquo;s active-season check</b> compares the computed values on CERT and PROD; a pytest pins it.</li>
+      <li><b>The browser</b>: a Vitest proves the app never calls the refresh RPC (red first while the call exists).</li>
+      <li><b>Time zone</b>: unchanged. &bdquo;Today&ldquo; is the database&rsquo;s date (UTC), as in the current function.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Documents</p>
+    <h2>What gets amended</h2>
+    <ul>
+      <li><b>ADR-031</b>: amendment adopting its own alternative 2, with the reason the cost fell (attribute notation, computed fields) and the 23 Jul incident that broke the cached flag.</li>
+      <li><b>ADR-083</b>: relates; anonymous visitors only read.</li>
+      <li>RTM FR-21; spec Appendix C row for ADR-031; handbook pages for events and seasons, the workflow catalog (no new step) and the security posture (three read-only grants).</li>
+    </ul>
+  </section>
+
+  <p class="foot">active season · brainstorm · 2026-10-06 · counts from LOCAL pg_proc and the repo on branch claude/calendar-drum-arrows-impl · decided and built on LOCAL 6 Oct (claude/active-season-computed)</p>
+</div>
+</html>

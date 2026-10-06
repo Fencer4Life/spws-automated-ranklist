@@ -373,7 +373,6 @@
     updateFencerGender,
     updateFencerBirthYear,
     fetchFencerTournamentHistory,
-    refreshActiveSeason,
     listFencerAliases,
     transferFencerAlias,
     splitFencerFromAlias,
@@ -741,7 +740,8 @@
 
   async function init() {
     try {
-      await refreshActiveSeason().catch(() => {}) // best-effort: may fail for anon
+      // bool_active is computed by the database on every read (ADR-031
+      // amendment 2026-10-06), so the page only reads it.
       seasons = await fetchSeasons()
       const active = seasons.find((s) => s.bool_active)
       if (active) {
