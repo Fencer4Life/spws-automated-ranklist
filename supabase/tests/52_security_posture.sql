@@ -224,7 +224,16 @@ SELECT set_eq(
     -- for fencers who already have a public result in that weapon, which is
     -- strictly less than the ranklist shows about the same people, and no birth
     -- year or fencer id (77.2). Same capability token, same silent refusal.
-    'fn_ftl_roster'
+    'fn_ftl_roster',
+    -- The active season is computed on read (ADR-031 amendment 2026-10-06):
+    -- three STABLE, read-only functions over the season dates anon can
+    -- already SELECT. bool_active(tbl_season) is the computed field that
+    -- fetchSeasons() and every s.bool_active resolve to; none of the three
+    -- writes anything (106.8). They replace fn_refresh_active_season, a writer
+    -- anon was refused since 2026-07-23 (106.9).
+    'fn_today',
+    'fn_active_season_id',
+    'bool_active'
   ],
   '52.7: the anon-EXECUTEable function set equals the documented allowlist'
 );

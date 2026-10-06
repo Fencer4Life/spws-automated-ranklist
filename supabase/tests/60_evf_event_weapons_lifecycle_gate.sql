@@ -46,8 +46,8 @@ DECLARE
   v_season INT;
   v_org    INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('TEST-SEASON-6000', '2099-01-01', '2099-12-31', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('TEST-SEASON-6000', '2099-01-01', '2099-12-31')
   ON CONFLICT (txt_code) DO NOTHING;
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'TEST-SEASON-6000';
   SELECT id_organizer INTO v_org FROM tbl_organizer LIMIT 1;

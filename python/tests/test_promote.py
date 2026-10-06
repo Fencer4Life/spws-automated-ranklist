@@ -80,7 +80,7 @@ class TestPromoteCalendar:
         from python.pipeline.promote import promote_calendar
 
         def cert_query(sql: str):
-            assert "bool_active = TRUE" in sql, f"unexpected CERT query before season check: {sql}"
+            assert "s.bool_active" in sql, f"unexpected CERT query before season check: {sql}"
             return [
                 {
                     "txt_code": "SPWS-2026-2027",
@@ -91,7 +91,7 @@ class TestPromoteCalendar:
             ]
 
         def prod_query(sql: str):
-            assert "bool_active = TRUE" in sql, f"unexpected PROD query before season check: {sql}"
+            assert "s.bool_active" in sql, f"unexpected PROD query before season check: {sql}"
             return [_active_season_row(3)]
 
         with pytest.raises(RuntimeError, match="active season mismatch"):
@@ -105,7 +105,7 @@ class TestPromoteCalendar:
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             # _read_cert_promotable_events — no code-prefix filter
             return [
@@ -134,7 +134,7 @@ class TestPromoteCalendar:
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 # PROD has nothing matching yet
@@ -168,7 +168,7 @@ class TestPromoteCalendar:
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return [
                 {
@@ -196,7 +196,7 @@ class TestPromoteCalendar:
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]
@@ -240,7 +240,7 @@ class TestPromoteCalendar:
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return [
                 {
@@ -269,7 +269,7 @@ class TestPromoteCalendar:
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 # PROD still holds the event under its PREVIOUS code
@@ -312,7 +312,7 @@ class TestPromoteCalendar:
         from python.pipeline.promote import promote_calendar
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return [
                 {
@@ -340,7 +340,7 @@ class TestPromoteCalendar:
             ]
 
         def prod_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [
@@ -392,7 +392,7 @@ class TestPromoteCalendar:
         prod_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return [
                 {
@@ -426,7 +426,7 @@ class TestPromoteCalendar:
 
         def prod_query(sql: str):
             prod_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [
@@ -470,7 +470,7 @@ class TestPromoteCalendar:
         prod_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return [
                 {
@@ -504,7 +504,7 @@ class TestPromoteCalendar:
 
         def prod_query(sql: str):
             prod_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [
@@ -536,13 +536,13 @@ class TestPromoteCalendar:
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return []  # CERT has nothing this season — everything on PROD is orphaned
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 114, "txt_code": "PEW69-2026-2027"}]
@@ -569,12 +569,12 @@ class TestPromoteCalendar:
         from python.pipeline.promote import promote_calendar
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return []
 
         def prod_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 200, "txt_code": "PPW-COMPLETED-2025-2026"}]
@@ -598,7 +598,7 @@ class TestPromoteCalendar:
         from python.pipeline.promote import promote_calendar
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             if "to_jsonb(e)" in sql:  # _read_full_events (CERT snapshot)
                 return [
@@ -644,7 +644,7 @@ class TestPromoteCalendar:
         prod_snap_calls = [0]
 
         def prod_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 84, "txt_code": "MPW-2025-2026"}]
@@ -710,7 +710,7 @@ class TestPromoteCalendarMultiUrl:
         prod_query_calls: list[str] = []
 
         def cert_query(sql: str):
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(3)]
             return [
                 {
@@ -742,7 +742,7 @@ class TestPromoteCalendarMultiUrl:
 
         def prod_query(sql: str):
             prod_query_calls.append(sql)
-            if "bool_active = TRUE" in sql:
+            if "s.bool_active" in sql:
                 return [_active_season_row(5)]
             if "FROM tbl_event WHERE id_season" in sql:
                 return [{"id_event": 99, "txt_code": "PEW1-2025-2026"}]

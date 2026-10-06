@@ -16,7 +16,6 @@ DECLARE
   v_prior INT;
   v_curr INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_prior := fn_create_season('EVFCHRON-PRIOR', '2035-08-01', '2036-07-15');
   v_curr := fn_create_season('EVFCHRON-CURR', '2036-08-01', '2037-07-15');
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';

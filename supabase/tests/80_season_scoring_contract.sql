@@ -2010,7 +2010,7 @@ SELECT throws_like(
 CREATE FUNCTION pg_temp.publish06_unrelated_update_ok() RETURNS TEXT
 LANGUAGE plpgsql AS $p6$
 BEGIN
-  UPDATE tbl_season SET bool_active = bool_active
+  UPDATE tbl_season SET int_carryover_days = int_carryover_days
    WHERE txt_code = 'SS26-PUBLISH-FULL';
   RETURN 'OK';
 EXCEPTION WHEN OTHERS THEN

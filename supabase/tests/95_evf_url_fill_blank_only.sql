@@ -23,8 +23,8 @@ DECLARE
   v_season INT;
   v_org    INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('SPWS-9500-9501', '9500-08-01', '9501-07-31', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('SPWS-9500-9501', '9500-08-01', '9501-07-31')
   ON CONFLICT (txt_code) DO NOTHING;
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-9500-9501';
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';

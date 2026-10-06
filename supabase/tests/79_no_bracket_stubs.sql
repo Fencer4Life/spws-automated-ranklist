@@ -43,8 +43,8 @@ DECLARE
   v_season INT;
   v_org    INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('SPWS-9300-9301', '9300-08-01', '9301-07-31', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('SPWS-9300-9301', '9300-08-01', '9301-07-31')
   ON CONFLICT (txt_code) DO NOTHING;
   INSERT INTO tbl_organizer (txt_code, txt_name)
   VALUES ('EVF', 'European Veterans Fencing')
@@ -142,8 +142,8 @@ DECLARE
   v_beta   INT;
   v_gamma  INT;
 BEGIN
-  INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-  VALUES ('SPWS-9400-9401', '9400-08-01', '9401-07-31', FALSE)
+  INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+  VALUES ('SPWS-9400-9401', '9400-08-01', '9401-07-31')
   ON CONFLICT (txt_code) DO NOTHING;
   SELECT id_season INTO v_season FROM tbl_season WHERE txt_code = 'SPWS-9400-9401';
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';

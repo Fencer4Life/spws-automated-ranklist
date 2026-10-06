@@ -44,8 +44,8 @@ INSERT INTO tbl_organizer (txt_code, txt_name) VALUES ('TST-ORG', 'Test Organize
 
 -- One non-active season on the active results-based engine, with a cloned real
 -- scoring config (real json_ranking_rules so fn_ranking_ppw takes the JSONB path).
-INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active, enum_carryover_engine)
-VALUES ('TST-CG', '2091-09-01', '2092-08-31', FALSE, 'EVENT_CODE_MATCHING');
+INSERT INTO tbl_season (txt_code, dt_start, dt_end, enum_carryover_engine)
+VALUES ('TST-CG', '2091-09-01', '2092-08-31', 'EVENT_CODE_MATCHING');
 
 -- A season must be assigned a scoring engine before anything in it can be
 -- scored (2026-09-19, versioned season scoring). This is deliberate: nothing

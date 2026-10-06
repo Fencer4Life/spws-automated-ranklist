@@ -24,7 +24,6 @@ import type { CalendarEvent, EventStatus } from '../src/lib/types'
 
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
-  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
   fetchScoringEngines: vi.fn().mockResolvedValue([]),
   fetchRankingPpw: vi.fn().mockResolvedValue([]),

@@ -4,20 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="031-auto-active-season.md">
-<meta name="adr-source-sha256" content="57f281824a57b5980446177c519c5929831ab171b81c04e5cd8ec493c4c2e838">
+<meta name="adr-source-sha256" content="22a65bcfdd83a57324b318cc05d475adcbcb58cf3c73cac49389f7f2c7bda136">
 <title>ADR-031 · Auto-Active Season by Date</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 031</p><h1>Auto-Active Season by Date</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>031-auto-active-season.md</code></dd></div><div><dt>Length</dt><dd class="">57 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted
-<strong>Date:</strong> 2026-04-11</p>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted. <strong>Amended 2026-10-06:</strong> the active season is computed on read — this ADR's own alternative 2 is adopted. The stored <code>tbl_season.bool_active</code> column, the trigger <code>trg_season_refresh_active</code> and <code>fn_refresh_active_season()</code> are removed; the activation rules are unchanged.</dd></div><div><dt>Date</dt><dd class="">2026-04-11</dd></div><div><dt>Source</dt><dd class=""><code>031-auto-active-season.md</code></dd></div><div><dt>Length</dt><dd class="">118 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted. <strong>Amended 2026-10-06:</strong> the active season is computed on read — this ADR's own alternative 2 is adopted. The stored <code>tbl_season.bool_active</code> column, the trigger <code>trg_season_refresh_active</code> and <code>fn_refresh_active_season()</code> are removed; the activation rules are unchanged.
+<strong>Date:</strong> 2026-04-11
+<strong>Amends:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> §4 (three read-only functions join the anon allowlist; amended 2026-10-06)
+<strong>Source:</strong> <code>supabase/migrations/20261006000001_active_season_computed.sql</code>, <code>supabase/tests/106_active_season_computed.sql</code>, <code>doc/plans/active-season-computed-on-read-2026-10-06.html</code> (decision), <code>doc/plans/active-season-401-2026-10-06.html</code> (the incident)</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#activation-rules">Activation Rules</a></li><li class="depth-3"><a href="#implementation">Implementation</a></li><li class="depth-3"><a href="#bool-active-column-retained">`bool_active` column retained</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#activation-rules">Activation Rules</a></li><li class="depth-3"><a href="#implementation">Implementation</a></li><li class="depth-3"><a href="#bool-active-column-retained">`bool_active` column retained</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives Considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#related-adrs">Related ADRs</a></li><li class="depth-2"><a href="#amendment-2026-10-06-the-active-season-is-computed-on-read">Amendment (2026-10-06) — the active season is computed on read</a></li><li class="depth-3"><a href="#context-2">Context</a></li><li class="depth-3"><a href="#decision-2">Decision</a></li><li class="depth-3"><a href="#why-alternative-2-is-now-cheap">Why alternative 2 is now cheap</a></li><li class="depth-3"><a href="#alternatives-considered-2026-10-06">Alternatives considered (2026-10-06)</a></li><li class="depth-3"><a href="#consequences-2">Consequences</a></li><li class="depth-3"><a href="#verification">Verification</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>bool_active</code> on <code>tbl_season</code> was manually set — hardcoded in seed data or toggled by admin. This caused two problems:</p>
 <ol>
@@ -69,8 +71,64 @@
 <li><strong>ADR-025</strong> (Event-Centric Ingestion) — Telegram commands scope to active season, now auto-managed</li>
 <li><strong>ADR-027</strong> (Full-Season Seed Export) — seed export scope unchanged, season derived from event's <code>id_season</code></li>
 </ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-06-the-active-season-is-computed-on-read">Amendment (2026-10-06) — the active season is computed on read</h2>
+<h3 id="context-2">Context</h3>
+<p>The design above kept a stored flag and refreshed it from two places: the trigger, on any change to a season row, and the browser, on every page load, to catch a date that passes with nothing written. ADR-083 removed the second on 23 July 2026: <code>fn_refresh_active_season()</code> is a <code>SECURITY DEFINER</code> write that moves the whole system's active season, so anonymous <code>EXECUTE</code> was revoked (<code>20260723000001_adr083_deny_by_default_grants.sql:186</code>). <code>App.svelte</code> kept calling it in <code>init()</code> and discarded the failure, so every public page load since then logged a <code>401</code> in the browser console. This was observed on PROD, CERT and LOCAL on 6 October 2026. The refresh itself had stopped: nothing moved the flag when a season's first day arrived unless someone wrote a season row. On 16 July 2027 the flag would have stayed on the finished season on both environments.</p>
+<p>The flag is a function of the season dates and today. Today changes without a write, so a stored copy always needs a writer at midnight. That writer was the cause of the incident, the revoked grant and the stale-flag risk.</p>
+<h3 id="decision-2">Decision</h3>
+<ol>
+<li><strong><code>fn_today()</code></strong> (<code>STABLE</code>) returns the session setting <code>spws.today</code> when it is set, and <code>CURRENT_DATE</code> otherwise. It is the only clock the rules read.</li>
+<li><strong><code>fn_active_season_id()</code></strong> (<code>STABLE</code>) applies the activation rules above, unchanged: the season whose dates contain today, else the nearest future season, else none (<code>NULL</code>).</li>
+<li><strong><code>bool_active(tbl_season)</code></strong> is a computed field: it is true for the row whose id is <code>fn_active_season_id()</code>. With no stored column, PostgreSQL reads <code>s.bool_active</code> as the call <code>bool_active(s)</code> (attribute notation), and PostgREST exposes the function as a computed field. So <code>select=…,bool_active</code> and the filter <code>bool_active=eq.true</code> keep working unchanged for the frontend. An unqualified <code>bool_active</code> no longer resolves, so every reader names the table alias: <code>FROM tbl_season s WHERE s.bool_active</code>.</li>
+<li><strong>Removed:</strong> the column, the trigger <code>trg_season_refresh_active</code>, <code>fn_trg_refresh_active_season()</code>, <code>fn_refresh_active_season()</code> and the browser's <code>refreshActiveSeason()</code>. Nothing writes the active season any more.</li>
+<li><strong>Grants:</strong> the three functions are read-only and anon-callable, added to the ADR-083 §4 allowlist (pgTAP 52.7 and <code>scripts/check-security-posture.sh</code>).</li>
+<li><strong>Tests choose today.</strong> A fixture makes a season active by setting today, not the flag: <code>PERFORM set_config('spws.today', '&lt;a date inside the season&gt;', false)</code>. Fixtures do not depend on the calendar year.</li>
+</ol>
+<h3 id="why-alternative-2-is-now-cheap">Why alternative 2 is now cheap</h3>
+<p>Alternative 2 was rejected because it &quot;requires updating 19 function references&quot;. Attribute notation removes most of that cost: 16 functions already read <code>s.bool_active</code> and resolve to the computed field unchanged. The migration rewrites six bodies, taken from the live definitions:</p>
+<ul>
+<li><code>_resolve_event_prefix</code>, <code>fn_category_ranking</code>, <code>fn_season_overview</code> and <code>fn_season_summary</code> read <code>fn_active_season_id()</code>.</li>
+<li><code>fn_delete_season_skeleton</code> qualifies its read.</li>
+<li><code>fn_create_season</code> stops writing the column.</li>
+</ul>
+<p>Five Python queries are qualified. The seed's four <code>tbl_season</code> INSERTs lose the column. The exporter needs no change, because it discovers columns from <code>information_schema.columns</code>.</p>
+<p><code>bool_active</code> remains a column of <code>tbl_scoring_config_revision</code> and <code>tbl_scoring_engine</code>. Those are different tables, and they are untouched.</p>
+<h3 id="alternatives-considered-2026-10-06">Alternatives considered (2026-10-06)</h3>
+<ol>
+<li><strong>Re-grant anon <code>EXECUTE</code> on the refresh.</strong> Rejected. It reverses an ADR-083 finding that names this function, and every public page view would again write two <code>tbl_season</code> updates and two audit rows.</li>
+<li><strong>Call the refresh only for a signed-in admin.</strong> Rejected. A roll-over would wait for an admin to sign in on each environment, and a sign-in on only one makes CERT and PROD disagree, which <code>promote_calendar</code> refuses.</li>
+<li><strong>Drop the browser call and refresh daily on the server</strong> (option D of the 401 note). Rejected in favour of this amendment. It fixes the incident but keeps a stored copy and a scheduled writer to forget, and the roll-over lands hours after midnight.</li>
+<li><strong>Serve anon the computed value but keep the stored flag</strong> for the server (option R). Rejected. It creates two copies of the truth, which disagree for hours once a year.</li>
+</ol>
+<h3 id="consequences-2">Consequences</h3>
+<ul>
+<li>The active season is right at every minute on every environment, with no job, no visitor and no admin action. ADR-031's &quot;zero admin overhead&quot; holds again.</li>
+<li>Anonymous visitors only read. No public call writes <code>tbl_season</code>, and the <code>401</code> is gone. A call to the removed RPC returns <code>404 PGRST202</code>.</li>
+<li>CERT and PROD agree whenever their season dates agree. <code>promote_calendar</code>'s active-season check compares the computed values.</li>
+<li>&quot;Today&quot; is the database's date (UTC), as before.</li>
+<li><code>bool_active(s)</code> evaluates <code>fn_active_season_id()</code> for each row it reads. <code>tbl_season</code> holds one row per season, so the cost is negligible. A filter on it cannot use an index, which does not matter at this size.</li>
+<li><strong>Deploy order is safe both ways.</strong> The new page against the old database still finds the stored column. The old page against the new database reads the computed value; its leftover refresh call fails (<code>404</code> instead of <code>401</code>) and is discarded, as before. The qualified Python queries read the stored column and the computed field alike.</li>
+</ul>
+<h3 id="verification">Verification</h3>
+<ul>
+<li>pgTAP <code>106_active_season_computed.sql</code>:
+<ul>
+<li>106.1: the column is gone.</li>
+<li>106.2–106.3: <code>fn_today()</code> with and without the setting.</li>
+<li>106.4–106.7: the three rules, and the computed field marking one season.</li>
+<li>106.8: no audit rows.</li>
+<li>106.9–106.10: the refresh function and the trigger are gone.</li>
+<li>106.11: anon may execute the three functions.</li>
+<li>106.12–106.13: <code>fn_season_summary()</code> follows today, and raises when no season is active.</li>
+</ul>
+</li>
+<li>pgTAP 9.41–9.46, rewritten to read the computed field and to set today.</li>
+<li>Vitest AS.UI.01: the app never calls the removed RPC.</li>
+<li>pytest AS.PY.01: no Python query names the flag without a table alias.</li>
+</ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="030-event-registration-url-deadline.html">← ADR-030: Event Registration URL + Deadline</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="032-drilldown-mobile-card-layout.html">→ ADR-032: Drilldown Mobile Card Layout</a></nav>
-<footer class="foot">Generated from <code>031-auto-active-season.md</code> · source SHA-256 <code>57f281824a57b5980446177c519c5929831ab171b81c04e5cd8ec493c4c2e838</code></footer>
+<footer class="foot">Generated from <code>031-auto-active-season.md</code> · source SHA-256 <code>22a65bcfdd83a57324b318cc05d475adcbcb58cf3c73cac49389f7f2c7bda136</code></footer>
 </div></body></html>
