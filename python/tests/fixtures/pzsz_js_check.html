@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Polski Związek Szermierczy</title>
+<style>body{font-family:Arial,sans-serif;color:#333;text-align:center;padding:60px 16px}</style>
+</head>
+<body>
+<p id="pzs-m">Wczytywanie danych…</p>
+<noscript><p>Do wyświetlenia danych potrzebna jest włączona obsługa JavaScript.</p></noscript>
+<script>
+(function () {
+    var m = document.getElementById('pzs-m'), key = 'pzs_js_try', tries = 0, done = false;
+    function fail(text) {
+        if (done) { return; }
+        done = true;
+        try { sessionStorage.removeItem(key); } catch (e) {}
+        m.innerHTML = text + ' <a href="' + location.pathname + location.search + '">Spróbuj ponownie</a>.';
+    }
+    document.cookie = 'pzs_t=1; path=/; max-age=60; SameSite=Lax';
+    if (document.cookie.indexOf('pzs_t=1') === -1) {
+        m.textContent = 'Do wyświetlenia danych potrzebna jest włączona obsługa plików cookie.';
+        return;
+    }
+    try { tries = parseInt(sessionStorage.getItem(key), 10) || 0; sessionStorage.setItem(key, tries + 1); } catch (e) {}
+    if (tries >= 2) {
+        fail('Nie udało się wczytać strony.');
+        return;
+    }
+    var img = new Image();
+    img.onload = function () {
+        if (done) { return; }
+        done = true;
+        if (tries === 1) {
+            var u = new URL(location.href);
+            u.searchParams.set('pzs_r', Date.now());
+            location.replace(u.toString());
+        } else {
+            location.reload();
+        }
+    };
+    img.onerror = function () { fail('Nie udało się wczytać strony.'); };
+    setTimeout(function () { fail('Wczytywanie trwa zbyt długo.'); }, 15000);
+    img.src = location.pathname + '?pzs_px=' + Date.now() + Math.random().toString(36).slice(2);
+})();
+</script>
+</body>
+</html>

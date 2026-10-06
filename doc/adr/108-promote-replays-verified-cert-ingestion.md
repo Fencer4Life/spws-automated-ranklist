@@ -1,6 +1,6 @@
 # ADR-108: Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids
 
-**Status:** Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day)
+**Status:** Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md): one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs
 **Date:** 2026-10-03
 **Supersedes:** [ADR-026](026-cert-prod-promotion.md) — the per-event mode (`promote.py --mode event`): the row copy, the per-tournament "continue on failure", the forced `COMPLETED` and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
 **Amends:** [ADR-025](025-event-centric-ingestion-telegram.md) (N15: `ingest … prod` is refused for a domestic event; `promote` and `complete` take an exact event code), [ADR-036](036-prod-export-local-mirror.md) (the seed carries PROD's fencer ids; CERT's master data is refreshed from PROD), [ADR-042](042-carryover-engine-dispatcher.md) and [ADR-018](018-rolling-score.md) (the FK engine stops a carry on results, per weapon and gender), [ADR-072](072-cdc-recompute-debounce.md) (the CERT drain joins the new `cert-write` group), [ADR-077](077-event-lifecycle-season-skeletons.md) (§1: who sets IN_PROGRESS and COMPLETED, and when; §5: results are replayed, not copied, and fencer ids are identical)
@@ -328,3 +328,11 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 
 - `evf_sync._heal_future_completed` carries a stale comment claiming the validator forbids leaving COMPLETED; it is corrected in the lifecycle build step.
 - LOCAL's 3 results that fail the V-category condition are LOCAL data, and they disappear with the seed reload that keeps PROD's ids.
+
+## Amendment (2026-10-06) — ingest for CERT, promote for PROD, for every organizer
+
+[ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md) makes this ADR's route the only route to PROD, for every organizer. `ingest <code>` runs the ingestion on CERT. `promote <code>` runs the same ingestion on PROD — the same flow and the same plugins — and applies it only when the result equals the verified CERT run. `ingest <code> prod` stays refused for every event.
+
+- **PPW:** unchanged.
+- **PZSz:** from ADR-111 on. `plan_event` picks the flow from the event's organizer, and the run record also keeps the hash of the PZSz start lists it read.
+- **EVF:** moves onto this route in the plan after ADR-111. Today its results reach each environment through runs of their own.

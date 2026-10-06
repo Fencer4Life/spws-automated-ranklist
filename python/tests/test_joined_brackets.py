@@ -392,8 +392,9 @@ class TestPlaceMedalRemoved:
         assert [f.name for f in dataclasses.fields(RowPlan)] == ["place"]
 
     def test_pzsz_rows_and_queue_carry_no_k_m_b(self):
-        """JB27.CLEAN.05 a senior bracket writes its rows and queues its
-        uncertain matches without K, m or b; the queue takes five values."""
+        """JB27.CLEAN.05 a senior bracket writes its rows without K, m or b.
+        Since ADR-111 nothing is queued for review: a match without a fencer
+        writes nothing at all."""
         parsed = _parsed(range(1, 13))
         parsed.gender = "M"
         ctx = _ctx({}, parsed, ttype_code="PPS1e-2026-2027")
@@ -410,7 +411,7 @@ class TestPlaceMedalRemoved:
         assert kwargs["participant_count"] == 12
         assert rows[0]["int_place"] == 3
         assert not RETIRED_KEYS & rows[0].keys()
-        db.queue_pzsz_match_review.assert_called_once_with(601, "Uncertain Name", 7, 55, 100.0)
+        db.queue_pzsz_match_review.assert_not_called()
 
     def test_queue_rpc_sends_five_parameters(self):
         """JB27.CLEAN.05 the review-queue RPC is called with the five

@@ -15,25 +15,20 @@ read correctly.
 Two invariants `Commit` does not need to enforce, because they never arise for
 a per-V-cat bracket:
   - `int_participant_count` is the FULL SOURCE FIELD SIZE (every competitor in
-    the parsed IR, matched or not) -- never the written-row count. Set
-    directly, since a bracket with zero initially auto-matched rows (everyone
-    queued for review) never calls `db.ingest_results` at all.
+    the parsed IR, matched or not) -- never the written-row count. It is sent
+    with the rows (`participant_count`), which the ingest RPC stores.
   - A matched veteran's `int_place` is their ORIGINAL scraped place, never
     renumbered -- the PER_CATEGORY_RENUMBER module is a per-V-cat-split
     concept and is never invoked here.
   - The senior field is ONE category (ADR-103 §4): K = the full field, m =
     the original place, and b = the fencers of the full field with a strictly
     worse place. They are written whatever the engine -- EVF classic, which
-    scores PPS and MPS in 2026/2027, does not read them -- and b is kept on a
-    queued review, since the unmatched field is never stored and could not be
-    recounted at approval.
+    scores PPS and MPS in 2026/2027, does not read them.
 
-A `PENDING` match (ResolveFencers's PZSZ_SENIOR intake: a fuzzy candidate
-found but too uncertain to auto-link) writes NO `tbl_result` row here --
-`tbl_result.id_fencer` is a real, NOT NULL foreign key, and a still-uncertain
-candidate is not yet known to be that person. It is queued for Admin review
-instead (`fn_queue_pzsz_match_review`); an `EXCLUDED` match (no candidate at
-all) is dropped, exactly like `Commit` already drops one.
+The matches come from `AdmitPzszRoster` (ADR-111): a row is stored on
+surname, first name and the start list's birth year, or skipped. A skipped
+row (no fencer) writes nothing, and nothing is queued for review. When nobody
+matched, no tournament is created and nothing is written at all (ADR-111 §5).
 """
 
 from __future__ import annotations
@@ -83,15 +78,7 @@ class CommitPzszSenior(BasePlugin):
         url_results = _url_results_for(parsed)
         full_n = len(parsed.results)
 
-        tournament_id = db.find_or_create_tournament(
-            event_id, weapon, gender, "SENIOR", date, ttype, url_results=url_results
-        )
-        # Set unconditionally, before any row is written: the full field size
-        # does not depend on how matching turned out.
-        db.set_tournament_participant_count(tournament_id, full_n)
-
         rows: list[dict] = []
-        queued: list[dict] = []
         for m in matches:
             if m.id_fencer is not None:
                 vcat = (
@@ -109,29 +96,30 @@ class CommitPzszSenior(BasePlugin):
                         "enum_source_age_category": vcat,
                     }
                 )
-            elif m.method == "PENDING":
-                candidate = m.alternatives[0] if m.alternatives else {}
-                queued.append(
-                    {
-                        "txt_scraped_name": m.scraped_name,
-                        "int_place": m.place,
-                        "id_candidate_fencer": candidate.get("id_fencer"),
-                        "num_confidence": m.confidence,
-                    }
-                )
-            # else: EXCLUDED (no candidate at all) — dropped, nothing written.
+            # else: skipped by the admission — nothing written, nothing queued.
 
-        if rows:
-            db.ingest_results(tournament_id, rows, participant_count=full_n)
-
-        for q in queued:
-            db.queue_pzsz_match_review(
-                tournament_id,
-                q["txt_scraped_name"],
-                q["int_place"],
-                q["id_candidate_fencer"],
-                q["num_confidence"],
+        if not rows:
+            # ADR-111 §5: nobody matched — no tournament, no N, no result.
+            ctx.set(
+                "committed",
+                {
+                    "skipped": False,
+                    "persisted": False,
+                    "tournaments": [],
+                    "vcat_groups": [],
+                    "nobody_matched": True,
+                },
             )
+            self.report(ctx, "COMMIT", **ctx.get("committed"))
+            return
+
+        tournament_id = db.find_or_create_tournament(
+            event_id, weapon, gender, "SENIOR", date, ttype, url_results=url_results
+        )
+        # The full field size travels with the rows: fn_ingest_tournament_results
+        # sets int_participant_count from it. It is the one write promote can
+        # replay (ADR-111 §6), and a tournament here always has rows.
+        db.ingest_results(tournament_id, rows, participant_count=full_n)
 
         ctx.set(
             "committed",
@@ -148,7 +136,6 @@ class CommitPzszSenior(BasePlugin):
                     }
                 ],
                 "vcat_groups": ["SENIOR"],
-                "queued_for_review": len(queued),
                 "emitted": "live.committed",
             },
         )

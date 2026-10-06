@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="111-pzsz-results-admitted-by-surname-name-birth-year.md">
+<meta name="adr-source-sha256" content="32c77914f0016a9c67792f74eaf45cc95f3a7cd0267ca55196d09bf793cb4c9c">
+<title>ADR-111 · PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 111</p><h1>PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 &quot;ingest for CERT, promote for PROD — the same thing&quot;, Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (<code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §5a); not yet on CERT or PROD.</dd></div><div><dt>Date</dt><dd class="">2026-10-06</dd></div><div><dt>Source</dt><dd class=""><code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code></dd></div><div><dt>Length</dt><dd class="">119 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 &quot;ingest for CERT, promote for PROD — the same thing&quot;, Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (<code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §5a); not yet on CERT or PROD.
+<strong>Date:</strong> 2026-10-06
+<strong>Amends:</strong> <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (the matching rule for a PZSz bracket, the review queue no longer written, the source of the birth year), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (promote replays a PZSz run too; one route to PROD for every organizer)
+<strong>Relates to:</strong> <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> (the EVF admission that is copied, left unchanged), <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (the whole field's N and the original place), <a href="110-ranking-entry-by-roster.html">ADR-110</a> (the fencer table is the ranking entry), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (the PZSz calendar and <code>id_pzsz_event</code>), <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> and <a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a> (PPS and MPS stay on EVF classic, unchanged), <a href="025-event-centric-ingestion-telegram.html">ADR-025</a> (the <code>ingest</code> and <code>promote</code> commands, unchanged)
+<strong>Source:</strong> <code>doc/plans/pzsz-results-plugin-2026-10-06.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-pps-and-mps-are-not-ppw-they-are-imported-similarly-to-evf-not-exactly-like-it">1 · PPS and MPS are not PPW; they are imported similarly to EVF, not exactly like it</a></li><li class="depth-3"><a href="#2-a-result-is-kept-only-on-surname-first-name-and-birth-year">2 · A result is kept only on surname, first name and birth year</a></li><li class="depth-3"><a href="#3-the-birth-year-comes-from-the-pzsz-start-list">3 · The birth year comes from the PZSz start list</a></li><li class="depth-3"><a href="#4-a-pzsz-plugin-started-as-a-copy-of-the-evf-admission">4 · A PZSz plugin, started as a copy of the EVF admission</a></li><li class="depth-3"><a href="#5-nobody-matched-the-event-is-closed-and-that-is-all-q2-a">5 · Nobody matched: the event is closed, and that is all (Q2 A)</a></li><li class="depth-3"><a href="#6-ingest-for-cert-promote-for-prod-the-same-thing-for-every-organizer-q1">6 · Ingest for CERT, promote for PROD — the same thing — for every organizer (Q1)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>On 2026-10-06 <code>ingest PPS1s-2026-2027</code> (Poznań, the first PZSz Polish Cup of 2026/27, men's and women's sabre) ran the PPW flow. That flow is the only one the URL ingest knows: <code>ingest-event.yml</code> passes <code>--flow ingest_domestic</code>, and <code>ingest_cli.py</code> hard-codes <code>organizer_hint=&quot;SPWS&quot;</code> for every listing. The PPW flow read the FencingTimeLive bracket name &quot;Senior&quot; as V0. It then matched place 18, &quot;KROCHMALSKI Jakub&quot;, by name to our fencer id 156, born 1976, and refused the listing because 1976 is two categories away from V0 (run 37475365271). Nothing was written.</p>
+<p>The PZSz start list shows another person: Krochmalski Jakub, born 16 June 2008, DRAGON ŁÓDŹ. The women's list holds a second namesake: Nowak Marta, born 2007, 31st, against our NOWAK Marta, born 1979. Neither of the 99 starters matches a fencer of ours on surname, first name and birth year.</p>
+<p>ADR-100 built a PZSz flow (<code>Flow.INGEST_PZSZ_SENIOR</code>, <code>ingest_pzsz_senior_bracket_from_url</code>), but nothing calls it. Its matcher, <code>ResolveFencers</code> with the <code>PZSZ_SENIOR</code> intake, checks no birth year. It links a single same-named fencer whatever the year, links a confident fuzzy match, and queues the rest in <code>tbl_pzsz_match_review</code>. FencingTimeLive results carry no birth year at all (<code>ftl.parse_json</code> fills name, place, country and club only). Promote (ADR-108) refuses anything but the PPW flow.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-pps-and-mps-are-not-ppw-they-are-imported-similarly-to-evf-not-exactly-like-it">1 · PPS and MPS are not PPW; they are imported similarly to EVF, not exactly like it</h3>
+<p>A PZSz field is a senior competition, open to every age. It is not a veterans' event, and PZSz is not a veterans' organizer. A PZSz event never goes through the PPW flow.</p>
+<h3 id="2-a-result-is-kept-only-on-surname-first-name-and-birth-year">2 · A result is kept only on surname, first name and birth year</h3>
+<p>A row is stored only when <strong>exactly one fencer in the fencer table</strong> matches on all three:</p>
+<ul>
+<li>the surname;</li>
+<li>the first name;</li>
+<li>the birth year.</li>
+</ul>
+<p>Polish letters are folded and case is ignored. <strong>Everything else is skipped:</strong> a name missing from the start list, a name twice on the start list, no fencer of ours, a fencer of ours with the same name and another birth year, or two fencers of ours matching. Nothing creates a fencer, writes an alias, changes a birth year or queues a review.</p>
+<p>Three further rules, decided in chat:</p>
+<ul>
+<li><strong>No PPW or MPW start is required</strong> (unlike EVF, ADR-106). Being in the fencer table is enough.</li>
+<li><strong>An estimated birth year of ours is still compared exactly (Q3 A).</strong> A mismatch is skipped and shown first in the report; the administrator confirms the year in Admin and ingests again.</li>
+<li><strong>Only our canonical surname and first name count (Q4 A).</strong> Approved aliases are not used.</li>
+</ul>
+<h3 id="3-the-birth-year-comes-from-the-pzsz-start-list">3 · The birth year comes from the PZSz start list</h3>
+<p>FencingTimeLive gives the places. The PZSz tournament page (<code>pzszerm.pl/zawody/kalendarium-zawodow/turniej/?id=N</code>, column <em>Data urodzenia</em>) gives each starter's birth date, and its year is the birth year. The event's stored <code>id_pzsz_event</code> leads to the event page, which lists its tournaments. A row is paired with its start-list entry by the folded name.</p>
+<h3 id="4-a-pzsz-plugin-started-as-a-copy-of-the-evf-admission">4 · A PZSz plugin, started as a copy of the EVF admission</h3>
+<p><code>AdmitPzszRoster</code> (<code>python/pipeline/plugins/pzsz_admission.py</code>) is first committed as a plain copy of <code>python/pipeline/international_admission.py</code>, the EVF admission, and is then changed for PZSz:</p>
+<ul>
+<li>the exact birth year instead of the category band;</li>
+<li>no starter gate;</li>
+<li>no PENDING outcome, so a row is either stored or skipped with its reason;</li>
+<li>a plugin step instead of a called module.</li>
+</ul>
+<p>Nothing is shared with the EVF module, so a later change on either side cannot alter the other. The plugin replaces <code>ResolveFencers</code> in <code>Flow.INGEST_PZSZ_SENIOR</code>. <code>CommitPzszSenior</code> keeps writing one <code>SENIOR</code> tournament per weapon and gender, with the whole field's N and each fencer's original place (ADR-100, ADR-105).</p>
+<h3 id="5-nobody-matched-the-event-is-closed-and-that-is-all-q2-a">5 · Nobody matched: the event is closed, and that is all (Q2 A)</h3>
+<p>When no starter matches, nothing is written, no empty tournament is created, and the event is set to <code>COMPLETED</code>. The run report lists every skipped starter with the reason, namesakes first.</p>
+<h3 id="6-ingest-for-cert-promote-for-prod-the-same-thing-for-every-organizer-q1">6 · Ingest for CERT, promote for PROD — the same thing — for every organizer (Q1)</h3>
+<p><code>ingest &lt;code&gt;</code> runs the ingestion on CERT. <code>promote &lt;code&gt;</code> runs the <strong>same</strong> ingestion on PROD — the same flow, the same plugins — and applies it only when the result equals the verified CERT run (ADR-108). This holds for every organizer:</p>
+<ul>
+<li>PPW works this way today;</li>
+<li>PZSz does from this ADR on;</li>
+<li>EVF moves onto it in the next plan.</li>
+</ul>
+<p><code>ingest &lt;code&gt; prod</code> stays refused for every event. For PZSz, promote's <code>plan_event</code> picks the flow from the event's organizer, as <code>ingest_cli</code> does; the replay reads the start lists too, and the run record keeps their hash beside the FTL schedule's. With nobody matched, nothing is written, so promote's apply needs no new step.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Run PZSz through the PPW flow with a senior category.</strong> Rejected: PPS and MPS are not PPW. The PPW flow decodes age categories from bracket names and creates fencers, and it refused Poznań on a junior namesake.</li>
+<li><strong>Keep ADR-100's matcher (exact name or alias, then fuzzy, then review).</strong> Rejected: it never checks the birth year, so it would link Krochmalski Jakub (2008) to our Krochmalski Jakub (1976).</li>
+<li><strong>Share one admission module between EVF and PZSz, customized by a profile.</strong> Rejected by the user: PZSz is a different, non-veteran organizer. A copy keeps each free to change without touching the other.</li>
+<li><strong>Take the birth year from FencingTimeLive.</strong> Impossible: FencingTimeLive results carry none.</li>
+<li><strong>Ingest PZSz directly on PROD (<code>ingest &lt;code&gt; prod</code>).</strong> Rejected: one route to PROD for every organizer — ingest for CERT, promote for PROD.</li>
+<li><strong>Create empty SENIOR tournaments when nobody matched (Q2 B).</strong> Rejected: two empty result lists on the card, for no gain.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New:</strong></p>
+<ul>
+<li><code>python/pipeline/plugins/pzsz_admission.py</code>, first committed as a copy of <code>international_admission.py</code>, then changed (<code>AdmitPzszRoster</code>, <code>admit</code>, <code>start_list_years</code>);</li>
+<li><code>python/scrapers/pzsz_start_list.py</code>, a pure reader of a PZSz event page and its tournament pages, which refuses the JavaScript check page (<code>read_event_start_lists</code> is given the fetch);</li>
+<li>test fixtures with the markup of Poznań's pages and synthetic people, because the repository is public and the real start lists are of young fencers; the event page's tournament table is verbatim.</li>
+</ul>
+<p><strong>Changed:</strong></p>
+<ul>
+<li><code>engine/rulebook.py</code>: the PZSz flow uses the new plugin in place of <code>ResolveFencers</code>;</li>
+<li><code>ingest_cli._ingest_event_rounds</code>, which <code>ingest</code> and promote's plan both call, sends a PZSz event to <code>_ingest_pzsz_event_rounds</code>. The listing name gives weapon and gender only, never an age category. Every page is read before anything is written. The keep-rule is the domestic one, with one category, <code>SENIOR</code>;</li>
+<li>the run record keeps each PZSz listing's start-list hash and the PZSz event it read; promote refuses a changed start list, and reads the CERT run's PZSz event when PROD's row has none (the calendar promotion does not carry <code>id_pzsz_event</code>; PPS1s-2026-2027 has none on PROD);</li>
+<li><code>CommitPzszSenior</code> writes nothing when nobody matched, never queues a review row, and sends N with the rows only (<code>ingest_results</code>), the one write promote's recorder replays;</li>
+<li><code>DbConnector.find_event_by_code</code> returns <code>id_pzsz_event</code>;</li>
+<li>the automation report lists a PZSz field's stored rows and every skipped starter with the start-list birth year, the reason and our namesake, namesakes first.</li>
+</ul>
+<p><strong>Removed:</strong> <code>ingest_cli.ingest_pzsz_senior_bracket_from_url</code> (ADR-100), which nothing called and which had no start list.</p>
+<p><strong>Unchanged:</strong></p>
+<ul>
+<li>the PPW flow;</li>
+<li>the EVF admission and the EVF sync;</li>
+<li><code>CommitPzszSenior</code>'s storage (one <code>SENIOR</code> tournament per weapon and gender, the whole field's N, the original place);</li>
+<li>PPS and MPS scoring;</li>
+<li>the bot and <code>ingest-event.yml</code>.</li>
+</ul>
+<p><strong>Left in place, unused:</strong> <code>tbl_pzsz_match_review</code> and its approve and reject functions, and the <code>PZSZ_SENIOR</code> intake of <code>ResolveFencers</code>. Nothing writes the review queue any more.</p>
+<p><strong>Risk:</strong> <code>pzszerm.pl</code> answers some requests with a JavaScript check: this Mac on 2026-10-06, and GitHub Actions on 30 September and 3–6 October, when the calendar sync read no event. If a start list cannot be read, the run fails and writes nothing; the run never tries to get past the check.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<p>Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user decided both in chat the same day: D1 A and D2 A, as recommended.</p>
+<ol>
+<li><strong>D1 · the JavaScript check — decided A.</strong> Send <code>ingest &lt;code&gt;</code> again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.</li>
+<li><strong>D2 · an end date shorter than the listings — decided A.</strong> PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays <code>IN_PROGRESS</code> under ADR-108 §7. The end date is corrected in Admin before the CERT ingest, and a follow-up task keeps the PZSz sync from setting it back.</li>
+</ol>
+<p><strong>Out of scope:</strong></p>
+<ul>
+<li>EVF on ingest and promote (the next plan);</li>
+<li>an automatic daily close for PZSz and EVF events;</li>
+<li>team results.</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="110-ranking-entry-by-roster.html">← ADR-110: From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>32c77914f0016a9c67792f74eaf45cc95f3a7cd0267ca55196d09bf793cb4c9c</code></footer>
+</div></body></html>

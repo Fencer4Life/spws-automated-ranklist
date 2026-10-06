@@ -269,12 +269,13 @@ class TestCommitPzszSenior:
 
     def test_participant_count_is_full_source_field(self):
         """SS26.PZSZ.02/03 the 34-of-107 invariant: participant_count is the
-        full parsed field, set directly and unconditionally -- not the
-        written-row count."""
+        full parsed field -- not the written-row count. Since ADR-111 it is
+        sent with the rows only (fn_ingest_tournament_results sets it), the
+        write promote can replay; a tournament never exists without rows."""
         matches = [_match(101, 34, "KOWALSKI Jan", gby=1965)]
         db = _commit_db()
         _run_commit(_commit_ctx(matches, raw_pool_size=107), db)
-        db.set_tournament_participant_count.assert_called_once_with(501, 107)
+        db.set_tournament_participant_count.assert_not_called()
         _, kwargs = db.ingest_results.call_args
         assert kwargs["participant_count"] == 107
 
@@ -297,29 +298,24 @@ class TestCommitPzszSenior:
         (_, rows), _ = db.ingest_results.call_args
         assert rows[0]["enum_source_age_category"] == "V3"
 
-    def test_participant_count_set_even_with_zero_matched_rows(self):
-        """A bracket where every row is PENDING/EXCLUDED still needs its full
-        field size recorded -- fn_ingest_tournament_results refuses an empty
-        results array, so ingest_results must never be the only place
-        participant_count gets set."""
-        matches = [
-            _match(
-                None,
-                1,
-                "Uncertain Name",
-                method="PENDING",
-                alternatives=[{"id_fencer": 9, "name": "X", "confidence": 60.0}],
-            )
-        ]
+    def test_a_bracket_with_no_stored_row_writes_nothing(self):
+        """Reversed by ADR-111 §5 (PZSZ.ADM.07): a bracket where nobody was
+        stored creates no tournament and records no field size. ADR-100 used
+        to create the tournament and set its N anyway."""
+        matches = [_match(None, 1, "Nobody Known", method="EXCLUDED")]
         db = _commit_db()
-        _run_commit(_commit_ctx(matches, raw_pool_size=107), db)
-        db.set_tournament_participant_count.assert_called_once_with(501, 107)
+        ctx = _run_commit(_commit_ctx(matches, raw_pool_size=107), db)
+        db.find_or_create_tournament.assert_not_called()
+        db.set_tournament_participant_count.assert_not_called()
         db.ingest_results.assert_not_called()
+        assert ctx.get("committed")["nobody_matched"] is True
 
-    def test_pending_match_is_queued_not_written(self):
-        """SS26.PZSZ.05 a PENDING match writes no tbl_result row -- it is
-        queued for review with its candidate and confidence carried over."""
+    def test_a_match_without_a_fencer_is_never_queued(self):
+        """Reversed by ADR-111 (SS26.PZSZ.05 retired): the review queue is no
+        longer written. Even a PENDING match, which the PZSz flow no longer
+        produces, writes no result and no review row."""
         matches = [
+            _match(101, 3, "KOWALSKI Jan", gby=1965),
             _match(
                 None,
                 12,
@@ -327,12 +323,13 @@ class TestCommitPzszSenior:
                 method="PENDING",
                 conf=62.5,
                 alternatives=[{"id_fencer": 55, "name": "REAL Name", "confidence": 62.5}],
-            )
+            ),
         ]
         db = _commit_db()
         _run_commit(_commit_ctx(matches, raw_pool_size=107), db)
-        db.queue_pzsz_match_review.assert_called_once_with(501, "Uncertain Name", 12, 55, 62.5)
-        db.ingest_results.assert_not_called()
+        db.queue_pzsz_match_review.assert_not_called()
+        (_, rows), _ = db.ingest_results.call_args
+        assert [r["id_fencer"] for r in rows] == [101]
 
     def test_excluded_match_is_dropped_entirely(self):
         """A genuine non-match (EXCLUDED) is neither written nor queued."""
@@ -357,11 +354,12 @@ class TestPzszFlowRegistration:
         from python.pipeline.engine.rulebook import PLUGINS, RULEBOOK
 
         plan = RuleEngine(RULEBOOK, PLUGINS).plan(FlowParams(Flow.INGEST_PZSZ_SENIOR))
+        # ADR-111 §4: AdmitPzszRoster replaces ResolveFencers as the identity step.
         assert plan.names == [
             "ParseSource",
             "ValidateIR",
             "ResolveEvent",
-            "ResolveFencers",
+            "AdmitPzszRoster",
             "ValidateCounts",
             "CommitPzszSenior",
         ]
