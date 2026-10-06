@@ -17,8 +17,11 @@ Plan test IDs pzsz.25-pzsz.34:
   pzsz.32  url_registration and dt_registration_deadline are never written
   pzsz.33  --dry-run issues no write whatsoever
   pzsz.34  a create carries the PZSz organizer, the source id and country PL
+  pzsz.41-pzsz.43  the JavaScript check fails the run (plan §6 F1)
+  pzsz.44-pzsz.48  the dates of an event that has started stay as they are (plan §7, Q6 A)
 """
 
+import datetime as dt
 from pathlib import Path
 from unittest.mock import patch
 
@@ -35,6 +38,10 @@ SEASON = {
     "dt_end": "2027-07-15",
     "id_season": 4,
 }
+
+# pzsz.25-pzsz.34 were written in September, before any PZSz event of the
+# season had started, so every date still follows the source there.
+BEFORE_THE_SEASON = dt.date(2026, 9, 1)
 
 
 def _scraped(**overrides) -> dict:
@@ -77,14 +84,14 @@ class TestDiff:
 
     def test_an_unseen_event_is_a_create(self):
         """pzsz.25."""
-        plan = pzsz_sync.diff_against_cert([_scraped()], [])
+        plan = pzsz_sync.diff_against_cert([_scraped()], [], today=BEFORE_THE_SEASON)
 
         assert [row["desired_code"] for row in plan.creates] == ["PPS1s-2026-2027"]
         assert plan.updates == []
 
     def test_an_unchanged_event_produces_no_write(self):
         """pzsz.26: the daily cron must be a no-op on a settled calendar."""
-        plan = pzsz_sync.diff_against_cert([_scraped()], [_existing()])
+        plan = pzsz_sync.diff_against_cert([_scraped()], [_existing()], today=BEFORE_THE_SEASON)
 
         assert plan.creates == []
         assert plan.updates == []
@@ -100,7 +107,7 @@ class TestDiff:
             dt_start="2026-11-07",
             dt_end="2026-11-07",
         )
-        plan = pzsz_sync.diff_against_cert([scraped], [_existing()])
+        plan = pzsz_sync.diff_against_cert([scraped], [_existing()], today=BEFORE_THE_SEASON)
 
         assert plan.creates == []
         assert len(plan.updates) == 1
@@ -112,7 +119,9 @@ class TestDiff:
     def test_a_row_without_a_source_id_is_adopted_by_code(self):
         """pzsz.28: an event an admin entered by hand before the scraper existed
         is adopted rather than duplicated, and gains the source id."""
-        plan = pzsz_sync.diff_against_cert([_scraped()], [_existing(id_pzsz_event=None)])
+        plan = pzsz_sync.diff_against_cert(
+            [_scraped()], [_existing(id_pzsz_event=None)], today=BEFORE_THE_SEASON
+        )
 
         assert plan.creates == []
         assert len(plan.updates) == 1
@@ -123,7 +132,9 @@ class TestDiff:
         a cancellation or a re-key. Deleting it would take any registrations with
         it, so the scraper reports and leaves it for a human."""
         gone = _existing(id_event=777, txt_code="PPS3e-2026-2027", id_pzsz_event=4999)
-        plan = pzsz_sync.diff_against_cert([_scraped()], [_existing(), gone])
+        plan = pzsz_sync.diff_against_cert(
+            [_scraped()], [_existing(), gone], today=BEFORE_THE_SEASON
+        )
 
         assert [row["id_event"] for row in plan.vanished] == [777]
         assert plan.creates == []
@@ -139,7 +150,7 @@ class TestFieldOwnership:
         scraped = _scraped(url_invitation="https://pzszerm.pl/test/fileDownload.php?fileId=abc")
         existing = _existing(url_invitation="https://example.org/admin-put-this-here.pdf")
 
-        plan = pzsz_sync.diff_against_cert([scraped], [existing])
+        plan = pzsz_sync.diff_against_cert([scraped], [existing], today=BEFORE_THE_SEASON)
 
         assert plan.updates == []
 
@@ -151,7 +162,7 @@ class TestFieldOwnership:
             url_invitation="https://pzszerm.pl/test/fileDownload.php?fileId=abc",
             txt_venue_address="ul. Siennicka 40B",
         )
-        plan = pzsz_sync.diff_against_cert([scraped], [_existing()])
+        plan = pzsz_sync.diff_against_cert([scraped], [_existing()], today=BEFORE_THE_SEASON)
 
         assert len(plan.updates) == 1
         fields = plan.updates[0]["fields"]
@@ -170,7 +181,7 @@ class TestFieldOwnership:
             url_registration="https://pzszerm.pl/logowanie/",
             dt_registration_deadline="2026-09-25",
         )
-        plan = pzsz_sync.diff_against_cert([scraped], [_existing()])
+        plan = pzsz_sync.diff_against_cert([scraped], [_existing()], today=BEFORE_THE_SEASON)
 
         assert plan.updates == []
         assert "url_registration" not in pzsz_sync.SOURCE_OWNED_FIELDS
@@ -178,7 +189,7 @@ class TestFieldOwnership:
         assert "dt_registration_deadline" not in pzsz_sync.SOURCE_OWNED_FIELDS
         assert "dt_registration_deadline" not in pzsz_sync.FILL_BLANK_FIELDS
 
-        create_plan = pzsz_sync.diff_against_cert([scraped], [])
+        create_plan = pzsz_sync.diff_against_cert([scraped], [], today=BEFORE_THE_SEASON)
         statement = pzsz_sync.build_insert_sql(create_plan.creates[0], SEASON)
         assert "url_registration" not in statement
         assert "dt_registration_deadline" not in statement
@@ -214,7 +225,7 @@ class TestWriting:
         """pzsz.34: the organizer is resolved by code, exactly as promote.py
         resolves it onto PROD -- so a missing PZSz organizer row fails loudly
         here rather than producing an event nobody owns."""
-        plan = pzsz_sync.diff_against_cert([_scraped()], [])
+        plan = pzsz_sync.diff_against_cert([_scraped()], [], today=BEFORE_THE_SEASON)
         statement = pzsz_sync.build_insert_sql(plan.creates[0], SEASON)
 
         assert "tbl_organizer WHERE txt_code = 'PZSz'" in statement
@@ -228,7 +239,7 @@ class TestWriting:
     def test_an_apostrophe_in_a_name_cannot_break_the_statement(self):
         """pzsz.34: PZSz names are free text from a WordPress form."""
         plan = pzsz_sync.diff_against_cert(
-            [_scraped(name="I Puchar Polski seniorów - Poznań's hall")], []
+            [_scraped(name="I Puchar Polski seniorów - Poznań's hall")], [], today=BEFORE_THE_SEASON
         )
         statement = pzsz_sync.build_insert_sql(plan.creates[0], SEASON)
 
@@ -324,3 +335,74 @@ class TestTheJavaScriptCheck:
 
         assert enriched == rows
         assert "JavaScript check" in capsys.readouterr().out
+
+
+# The day the plan §7 decision was taken: Poznań (3-4 October) has started.
+TODAY = dt.date(2026, 10, 7)
+
+
+class TestStartedEventDates:
+    """pzsz.44-pzsz.48: the sync stops changing dt_start and dt_end once an
+    event has started, meaning CERT's start date is before today in Warsaw
+    (plan §7, Q6 A). pzszerm.pl's listing prints Poznań as 3-3 October while
+    one FencingTimeLive listing is dated the 4th; the admin's 4 October must survive every
+    later sync. Future events still follow every PZSz reschedule."""
+
+    def test_a_started_events_corrected_end_date_survives(self):
+        """pzsz.44: Poznań. CERT holds 3-4 October, the listing says 3-3."""
+        plan = pzsz_sync.diff_against_cert(
+            [_scraped()], [_existing(dt_end="2026-10-04")], today=TODAY
+        )
+
+        assert plan.updates == []
+
+    def test_a_started_event_still_takes_its_other_source_fields(self):
+        """pzsz.45: only the dates stay; a renamed event is still renamed."""
+        renamed = "I Puchar Polski seniorów w szabli - Poznań 2026/2027"
+        scraped = _scraped(name=renamed, dt_start="2026-10-02")
+        plan = pzsz_sync.diff_against_cert([scraped], [_existing(dt_end="2026-10-04")], today=TODAY)
+
+        assert plan.updates == [{"id_event": 501, "fields": {"txt_name": renamed}}]
+
+    def test_a_future_event_still_follows_a_reschedule(self):
+        """pzsz.46: PZSz moves an event that has not started; the calendar follows."""
+        scraped = _scraped(dt_start="2026-11-28", dt_end="2026-11-29")
+        existing = _existing(dt_start="2026-11-21", dt_end="2026-11-21")
+        plan = pzsz_sync.diff_against_cert([scraped], [existing], today=TODAY)
+
+        assert plan.updates == [
+            {"id_event": 501, "fields": {"dt_start": "2026-11-28", "dt_end": "2026-11-29"}}
+        ]
+
+    def test_an_event_starting_today_still_follows(self):
+        """pzsz.47: the boundary. Started means a start date BEFORE today."""
+        scraped = _scraped(dt_start="2026-10-07", dt_end="2026-10-08")
+        existing = _existing(dt_start="2026-10-07", dt_end="2026-10-07")
+        plan = pzsz_sync.diff_against_cert([scraped], [existing], today=TODAY)
+
+        assert plan.updates == [{"id_event": 501, "fields": {"dt_end": "2026-10-08"}}]
+
+    def test_the_sync_judges_started_by_todays_date_in_warsaw(self):
+        """pzsz.48: sync_calendar passes Warsaw's today, so a run on 7 October
+        writes nothing to Poznań's corrected end date."""
+        statements: list[str] = []
+
+        def fake_query(ref, token, sql):
+            statements.append(sql)
+            if "tbl_season" in sql:
+                return [SEASON]
+            if sql.lstrip().upper().startswith("SELECT"):
+                return [_existing(dt_end="2026-10-04")]
+            return []
+
+        with (
+            patch.object(pzsz_sync, "_management_query", side_effect=fake_query),
+            patch.object(pzsz_sync, "_telegram"),
+            patch.object(pzsz_sync, "collect_season_candidates", return_value=[_scraped()]),
+            patch.object(pzsz_sync, "enrich_events", side_effect=lambda rows: rows),
+            patch.object(pzsz_sync, "plan_event_codes", side_effect=lambda rows, code: rows),
+            patch.object(pzsz_sync, "warsaw_today", return_value=TODAY),
+        ):
+            pzsz_sync.sync_calendar("ref", "tok", "bot", "chat", dry_run=False)
+
+        assert not [s for s in statements if s.lstrip().upper().startswith("UPDATE")]

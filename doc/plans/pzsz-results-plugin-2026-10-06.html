@@ -438,8 +438,79 @@
     <p><b>Documents:</b> ADR-087 amendment; the workflow catalog; the events page (the PZSz lane and the implementation map); the field-ownership table on the event-lifecycle page; the promotion contracts; the codebase map; RTM FR-135, PZSZ.JS.01, PZSZ.CAL.01 and PZSZ.CAL.02; and the specification's ADR-087 entry.</p>
   </section>
 
+  <section id="ingest-blocked">
+    <p class="kicker">7 · Added to the plan · 6 October, evening</p>
+    <h2>The Poznań ingest stops on the JavaScript check: what can be fixed</h2>
+    <p>Where things stand:</p>
+    <ul>
+      <li>F1 and F2 are released and verified on PROD; all six PZSz ids now equal CERT's.</li>
+      <li>Poznań's end date is 4 Oct on CERT and on PROD.</li>
+      <li>The CERT ingest (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37536127297">run 37536127297</a>) stopped at its first page on pzszerm.pl's JavaScript check. Run record 3 is <code>FAILED</code>, and nothing was written: the event is still <code>PLANNED</code>, with 0 tournaments and 373 fencers.</li>
+    </ul>
+
+    <div class="note warn">
+      <p class="lede">The check itself is not ours to fix</p>
+      <p>It is pzszerm.pl's bot check. Getting past it is out of bounds: no cookie, no pixel request, no headless browser, no browser-like headers. That is your rule from F1. The run did what it should: it stopped with nothing written. The answer is to send it again later.</p>
+    </div>
+
+    <h3>What does break, and can be fixed: Poznań's end date</h3>
+    <ul>
+      <li><b>The listing is wrong.</b> pzszerm.pl's listing prints Poznań (4588) as 3 Oct to 3 Oct, but one of its two FencingTimeLive listings is dated 4 Oct.</li>
+      <li><b>The sync will undo the correction.</b> The PZSz sync owns <code>dt_end</code> (<code>pzsz_sync.py:65</code>, <code>diff_against_cert</code>). So the first sync that gets past the check resets the end date to 3 Oct on CERT, and the calendar promotion copies it to PROD. An ingest after that leaves the event <code>IN_PROGRESS</code> under ADR-108 §7, not <code>COMPLETED</code>.</li>
+      <li><b>One correction to D2.</b> D2 said PZSz publishes only a start date. That is true of the event page ("Data rozpoczęcia"), but the listing the sync reads also prints an end date (Gdańsk 24–25 Oct, Wrocław 5–6 Dec). For Poznań, that end date is simply wrong.</li>
+    </ul>
+
+    <h3>Q6 · How the sync treats the dates of an event that has already started <span class="chip never">decided A, 7 Oct</span></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>The sync stops changing <code>dt_start</code> and <code>dt_end</code> once an event has started, meaning its start date is before today in Warsaw. Future events still follow every PZSz reschedule.</td><td>A started event cannot be rescheduled; its dates are history. An admin correction like Poznań's then survives every sync. The cost: if PZSz fixes a typo in a past event's dates, the sync does not follow, and Admin fixes it instead.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Never shorten: keep CERT's end date when it is later than the listing's and the start date is unchanged.</td><td>Covers Poznań, but if PZSz genuinely shortens a future two-day event, the change never reaches the calendar.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>No code change. Before each resend I check the end date and correct it again.</td><td>Nothing to build, but the race comes back every time the check clears.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>The resend</h3>
+    <ul>
+      <li>I send the same dispatch the bot makes, <code>ingest PPS1s-2026-2027</code>, once each morning until it passes, checking the end date first.</li>
+      <li>Not more often than that. Repeated requests against a bot check look like an attempt to get past it.</li>
+      <li>If the check holds for a week, D1's fallback becomes its own plan: an Admin upload of the pages saved from your own browser.</li>
+      <li>When the ingest passes, I verify CERT: 99 starters skipped with the namesakes first, nothing written, <code>COMPLETED</code>. Then <code>promote PPS1s-2026-2027</code> on your go.</li>
+    </ul>
+
+    <h3>Order, with Q6 A</h3>
+    <ol class="steps">
+      <li>Your sign-off of Q6, in chat.</li>
+      <li><b>Tests first, seen RED.</b> A started event's dates are left alone. A future event's reschedule still applies. Every other source-owned field is unchanged.</li>
+      <li><b>The change.</b> <code>diff_against_cert</code> takes today's Warsaw date. Documents: ADR-087 amendment; ADR-111's D2 wording corrected; the workflow catalog; the events page; the RTM.</li>
+      <li><code>scripts/preflight.sh</code> exits 0, then the push on your go. It is code only, with no migration. Ideally it lands tonight, before tomorrow's scheduled sync.</li>
+      <li>Resend the ingest each morning as above.</li>
+    </ol>
+
+    <h3>Built · 7 October <span class="chip never">signed off with Q6 A</span></h3>
+    <ul>
+      <li><b>The rule.</b> <code>diff_against_cert</code> takes <code>today</code> as a required keyword and skips <code>dt_start</code> and <code>dt_end</code> when CERT's start date is before it.</li>
+      <li><b>Where today comes from.</b> <code>sync_calendar</code> passes <code>warsaw_today()</code>, the date the lifecycle rule uses.</li>
+      <li><b>The older tests.</b> pzsz.25–34 pass <code>today=BEFORE_THE_SEASON</code> (1 September) and keep their meaning.</li>
+    </ul>
+    <p><b>Tests:</b></p>
+    <ul>
+      <li>pzsz.44–48 failed first, then passed. pzsz.48 failed on behaviour: the run planned <code>UPDATE … dt_end = '2026-10-03'</code>.</li>
+      <li>With the rule switched off, pzsz.44, .45 and .48 fail. pzsz.46 and .47 cover the path that still follows PZSz, and keep passing.</li>
+      <li>Full pytest: 1876 passed, 14 skipped. Ruff and basedpyright are clean.</li>
+    </ul>
+    <p><b>Documents:</b></p>
+    <ul style="margin-bottom:0">
+      <li>ADR-087, amendment of 7 October.</li>
+      <li>ADR-111: the D2 wording corrected, and its status now says released.</li>
+      <li>The events page, the workflow catalog and the operator runbook.</li>
+      <li>RTM: FR-135 and PZSZ.DATE.01.</li>
+      <li>The specification's ADR-087 and ADR-111 rows.</li>
+    </ul>
+  </section>
+
   <section id="out">
-    <p class="kicker">7 · Not in this plan</p>
+    <p class="kicker">8 · Not in this plan</p>
     <h2>Left for later</h2>
     <ul>
       <li><b>EVF onto ingest and promote</b>, the next plan, under the same rule. Today EVF results reach each environment through separate runs.</li>
