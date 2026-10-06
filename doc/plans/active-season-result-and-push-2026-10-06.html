@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active season result</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Active season · result · 6 Oct 2026 · your decision: push to main</p>
+  <h1>The active season is computed on read. The refresh RPC is gone.</h1>
+  <p class="dek">Every public page load on PROD, CERT and LOCAL logged a <b>401</b> for <code>fn_refresh_active_season</code>. Now the database works out the active season from the season dates on every read. <b>Nothing stores it and nothing refreshes it.</b> The RPC, its trigger, the stored column and the browser call are deleted. The full regression passes on its own and together with the drum arrows. <b>main is not pushed.</b></p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>V built · committed <code>32726416</code></span>
+    <span class="pill"><span class="dot"></span>preflight exit 0</span>
+    <span class="pill"><span class="dot"></span>your answer 6 Oct: push A</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">00 · Decide this first</p>
+    <h2>Push to main?</h2>
+    <p>Two finished branches are waiting. You approved the arrows on 6 Oct and then said &bdquo;no. stop&ldquo; before the push. You decided V (&bdquo;go with V, tests set today&ldquo;). I have pushed neither to <code>main</code>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What goes to main</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip fill">A · recommended</span></td><td>Both, in one push: <code>claude/arrows-and-active-season</code> <code>d4c69bad</code>. That is the arrows (<code>dd3d27d6</code>) plus V (<code>32726416</code>), with the doc conflicts resolved.</td><td>One release run and one approval click for the PROD database. The combination is proven by its own preflight (&sect;02).</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>V only: <code>claude/active-season-computed</code>, which merges cleanly onto <code>origin/main</code> <code>ae2a7a1b</code></td><td>The 401 goes; the arrows stay on LOCAL. Integrating the arrows later needs this merge again.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>Arrows only: <code>claude/calendar-drum-arrows-impl</code></td><td>The arrows go live; the 401 stays.</td></tr>
+        <tr><td><span class="chip plain">D</span></td><td>Nothing</td><td>Both stay on their branches, which are pushed to origin.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Recommendation: A</p>
+      <p>Both changes are finished and signed off, and they were proven together, not only one by one. One push means one release, one CERT migration and one approval for PROD's database. Reply &bdquo;push A&ldquo; (or B, C, D) in chat.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede">Your answer, 6 Oct 2026: &bdquo;push A&ldquo;</p>
+      <p>Both changes go to <code>main</code> in one push, from <code>claude/arrows-and-active-season</code>, through the integration checkout.</p>
+    </div>
+
+    <h3>What happens after &bdquo;go&ldquo;</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Step</th><th>When</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td>In <code>SPWSranklist-integration</code>: <code>git merge --ff-only origin/main</code>, then <code>scripts/integrate-agent-branch.sh</code> on the chosen branch, then <code>git push origin integration/main:main</code></td><td>on your go</td><td>your word in chat</td></tr>
+        <tr><td><code>deploy-pages</code>: the github.io app (CERT) and the custom-element assets the <b>PROD WordPress pages</b> load</td><td>minutes after the push</td><td><b>none</b>: the PROD front end changes without a further approval</td></tr>
+        <tr><td><code>deploy-cert</code>: CERT migration <code>20261006000001</code>, the schema fingerprint check, then the posture check against the 33-name allowlist</td><td>automatically, after the build</td><td>none</td></tr>
+        <tr><td><code>deploy-prod</code>: PROD migration, fingerprint check and posture check</td><td>after you approve</td><td>your approval of the <code>production</code> environment in GitHub</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Between the Pages deploy and your PROD approval</b>, the new page runs against the old PROD database. It reads the stored column, which is still there, and it no longer calls the refresh, so the 401 is already gone. The reverse case is also safe: an old page against the new database reads the computed value, and its leftover refresh call gets <code>404</code> and is discarded. Python reads <code>s.bool_active</code>, which works on the stored column and on the computed field alike.</p>
+  </section>
+
+  <section id="what">
+    <p class="kicker">01 · What changed</p>
+    <h2>One date rule, read everywhere</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td>Database</td><td>
+          <ul>
+            <li>New: <code>fn_today()</code> (the <code>spws.today</code> setting, else <code>CURRENT_DATE</code>), <code>fn_active_season_id()</code> (the unchanged ADR-031 rules) and <code>bool_active(tbl_season)</code> (a computed field, so <code>s.bool_active</code> and PostgREST&rsquo;s <code>bool_active</code> keep working).</li>
+            <li>Six function bodies rewritten.</li>
+            <li>Dropped: the column, <code>trg_season_refresh_active</code>, <code>fn_trg_refresh_active_season()</code> and <code>fn_refresh_active_season()</code>.</li>
+          </ul>
+        </td></tr>
+        <tr><td>Frontend</td><td><code>refreshActiveSeason()</code> deleted from <code>api.ts</code>, and its call from <code>App.svelte</code>&rsquo;s <code>init()</code>. The six components that show the active season are unchanged.</td></tr>
+        <tr><td>Python</td><td>Five queries now name the alias (<code>FROM tbl_season s WHERE s.bool_active</code>): <code>promote.py</code>, <code>_supabase.py</code>, <code>evf_sync.py</code> (2) and <code>promote_cert_to_prod.py</code>.</td></tr>
+        <tr><td>Seed</td><td>The four <code>tbl_season</code> INSERTs lose the column. The exporter needs no change, because it reads the columns from <code>information_schema</code>.</td></tr>
+        <tr><td>Tests</td><td>
+          <ul>
+            <li>New: pgTAP 106.1&ndash;106.13, Vitest AS.UI.01 and pytest AS.PY.01.</li>
+            <li>Rewritten: pgTAP 9.41&ndash;9.46.</li>
+            <li>40 pgTAP files now choose the active season with <code>set_config('spws.today', …)</code>, and 10 Vitest files lose the refresh mock (12 with the arrows' two new ones).</li>
+          </ul>
+        </td></tr>
+        <tr><td>Security</td><td>The three read-only functions join the ADR-083 allowlist in pgTAP 52.7 and <code>check-security-posture.sh</code>. The sync script now matches <code>bool_active</code>, which has no <code>fn_</code> prefix.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="proof">
+    <p class="kicker">02 · Proof</p>
+    <h2>Red first, then green everywhere</h2>
+    <h3>Seen red before the code</h3>
+    <ul>
+      <li>pgTAP 106.1 failed because the column existed; then 106.2 failed because <code>fn_today</code> did not exist.</li>
+      <li>AS.UI.01 failed while <code>App.svelte</code> still called the RPC.</li>
+      <li>AS.PY.01 found the five unqualified queries.</li>
+    </ul>
+    <h3>On LOCAL, after a fresh <code>./scripts/reset-dev.sh</code></h3>
+    <ul>
+      <li>Migrations and seed loaded. The post-backfill scored 827 tournaments with 0 errors.</li>
+      <li><code>fn_active_season_id()</code> returns 4, SPWS-2026-2027, on 6 Oct 2026.</li>
+      <li>As anon over REST:
+        <ul>
+          <li><code>select=txt_code,bool_active</code> marks only 2026-2027.</li>
+          <li><code>bool_active=eq.true</code> works.</li>
+          <li><code>rpc/fn_active_season_id</code> returns 200 with 4.</li>
+          <li><code>rpc/fn_refresh_active_season</code> returns <b>404 PGRST202</b>.</li>
+        </ul>
+      </li>
+    </ul>
+    <h3>Regression</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Suite</th><th>V alone (<code>32726416</code>)</th><th>Arrows + V (<code>d4c69bad</code>)</th></tr></thead>
+      <tbody>
+        <tr><td><code>scripts/preflight.sh</code></td><td>exit 0</td><td>exit 0</td></tr>
+        <tr><td>pgTAP</td><td>107 files, 1,408 assertions</td><td>107 files, 1,408 assertions</td></tr>
+        <tr><td>Vitest</td><td>67 files, 1,170 tests</td><td>69 files, 1,226 tests (the arrows&rsquo; 1,225 + AS.UI.01)</td></tr>
+        <tr><td>pytest</td><td>1,800 passed</td><td>1,800 passed</td></tr>
+        <tr><td>Playwright</td><td>37 passed</td><td>62 passed (CB.E1&ndash;CB.E5 included)</td></tr>
+        <tr><td>svelte-check, ruff, basedpyright, doc gates, allowlist sync</td><td>pass</td><td>pass</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Checks against hidden damage</h3>
+    <ul>
+      <li><b>No LOCAL drift baked into the migration.</b> Each of the six rewritten bodies was diffed against its latest earlier migration. Only the season lines differ.</li>
+      <li><b>Nothing else names the column.</b> The Telegram bot, the workflows, the edge functions and the static pages do not use it.</li>
+      <li><b>The remaining <code>bool_active</code> mentions in SQL belong to other tables.</b> <code>tbl_scoring_config_revision</code> and <code>tbl_scoring_engine</code> have their own columns of that name. They are untouched.</li>
+      <li><b>postgrestools</b> reports two warnings on the migration, both accepted:
+        <ul>
+          <li><code>banDropColumn</code>: intended.</li>
+          <li>The COMMIT-line lock warning: the same as the <code>20260913000001</code> precedent.</li>
+        </ul>
+        Its test-file errors are pgTAP functions (<code>plan</code>, <code>is</code>, <code>ok</code>), which exist only during a test run. An untouched file shows the same class.</li>
+    </ul>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">03 · Documents</p>
+    <h2>What now says &bdquo;computed on read&ldquo;</h2>
+    <ul>
+      <li><b>ADR-031</b>: an amendment adopting its own alternative 2. It explains why that alternative became cheap (attribute notation, computed fields) and records the 23 Jul incident and the <code>spws.today</code> seam. <b>ADR-083 &sect;4</b>: a dated paragraph adds the three read-only functions.</li>
+      <li><b>Specification</b>:
+        <ul>
+          <li>Appendix C rows for ADR-031 and ADR-083.</li>
+          <li>The pgTAP total is 1,408.</li>
+          <li>The data model no longer shows the partial index <code>idx_season_active</code>. It had been stale since April, when ADR-031 dropped that index; the model now shows the exclusion constraint.</li>
+        </ul>
+      </li>
+      <li><b>RTM</b>: FR-21 and FR-22, and a new AS.* section.</li>
+      <li><b>Handbook</b>:
+        <ul>
+          <li>Glossary: a new entry, &bdquo;Active season&ldquo;.</li>
+          <li>Security posture: 33 functions and an &bdquo;Active season&ldquo; group. <code>fn_fold_name</code> was already missing from that page; it is added.</li>
+          <li>Operator runbooks: the active-season mismatch.</li>
+          <li>Tests and traceability: a third fixture rule, &bdquo;choose the active season by setting today&ldquo;.</li>
+          <li>Containers and data: the Season row.</li>
+        </ul>
+      </li>
+      <li><b>Plans</b>: <a href="active-season-401-2026-10-06.html">the 401 note</a> is marked superseded. <a href="active-season-computed-on-read-2026-10-06.html">The brainstorm</a> records your decision and corrects its inventory. The staging tools write a spreadsheet, not season rows, and the seed exporter needs no change.</li>
+      <li><code>check_docs.py</code> is valid, with 14 advisory ownership warnings. I read each page: the text still holds.</li>
+    </ul>
+  </section>
+
+  <section id="unproven">
+    <p class="kicker">04 · Limits</p>
+    <h2>What this does not prove</h2>
+    <ul>
+      <li><b>CERT and PROD are untouched.</b> The migration has run only on LOCAL, twice: once incrementally and once on a fresh reset. CERT runs it on the push.</li>
+      <li><b>No real midnight was watched.</b> The roll-over is proven by setting today (106.4&ndash;106.7, 9.45&ndash;9.46). It is not proven by waiting for a season to start.</li>
+      <li><b>&bdquo;Today&ldquo; is the database&rsquo;s UTC date, as before.</b> A season starting on 1 August becomes active at 00:00 UTC, which is 02:00 in Warsaw.</li>
+      <li><b>One deploy order was reasoned, not run:</b> an old page against the new database. Its refresh call would get 404 instead of 401, and the page discards either one.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">Other threads, unchanged</p>
+      <p>Drum D4 (the card edge) still needs your screenshot. The Q5 translation task chip is still open.</p>
+    </div>
+  </section>
+
+  <p class="foot">active season · result · 2026-10-06 · branches claude/active-season-computed (32726416), claude/arrows-and-active-season (d4c69bad) · answer: push A</p>
+</div>
