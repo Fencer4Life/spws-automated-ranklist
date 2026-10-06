@@ -69,6 +69,37 @@ jobs:
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="PZSz calendar sync FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+  # ADR-112: store the start lists of PZSz events around today while
+  # pzszerm.pl serves them, so an ingest does not depend on its JavaScript
+  # gate being off at that moment. Runs after the calendar (which may have
+  # created an event) and also when the calendar failed; never on a dry run.
+  # CERT only, so no prod-write group. A gated day fails this job without a
+  # second Telegram message: the calendar job already reported the gate.
+  capture:
+    name: PZSz start lists → CERT
+    needs: sync
+    if: ${{ !cancelled() && !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4
+
+      - name: Capture PZSz start lists → CERT
+        run: python -m python.scrapers.pzsz_sync --capture-start-lists
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
   promote-calendar:
     name: Promote calendar → PROD
     needs: sync

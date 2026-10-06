@@ -406,3 +406,173 @@ class TestStartedEventDates:
             pzsz_sync.sync_calendar("ref", "tok", "bot", "chat", dry_run=False)
 
         assert not [s for s in statements if s.lstrip().upper().startswith("UPDATE")]
+
+
+CODE_POZNAN = "PPS1s-2026-2027"
+FIXTURES = Path(__file__).parent / "fixtures"
+START_LIST_PAGES = {
+    "event": FIXTURES / "pzsz_event_poznan_tournaments.html",
+    10628: FIXTURES / "pzsz_start_list_sabre_men.html",
+    10629: FIXTURES / "pzsz_start_list_sabre_women.html",
+}
+
+
+def _start_list_fetch(url: str, params: dict) -> str:
+    """Every PZSz event page as Poznań's, every tournament page as its own."""
+    from python.scrapers.pzsz_start_list import PZSZ_EVENT_PAGE
+
+    key = "event" if url == PZSZ_EVENT_PAGE else int(params["id"])
+    return START_LIST_PAGES[key].read_text(encoding="utf-8")
+
+
+def _calendar_row(code: str, id_pzsz: int | None, start: str, end: str, **over) -> dict:
+    row = {
+        "txt_code": code,
+        "id_pzsz_event": id_pzsz,
+        "dt_start": start,
+        "dt_end": end,
+        "enum_status": "PLANNED",
+        "url_event": "https://www.fencingtimelive.com/tournaments/eventSchedule/X",
+        "has_cert_run": False,
+    }
+    row.update(over)
+    return row
+
+
+def _capture_query(rows: list[dict], stored: bool = True, statements: list[str] | None = None):
+    """CERT for the capture: the active season, the purge, the PZSz events of
+    the season, and the store's answer."""
+
+    def fake_query(ref, token, sql):
+        if statements is not None:
+            statements.append(sql)
+        if "tbl_season" in sql:
+            return [SEASON]
+        if "fn_pzsz_start_list_purge" in sql:
+            return [{"n": 0}]
+        if "fn_pzsz_start_list_store" in sql:
+            return [{"r": {"stored": stored}}]
+        return rows
+
+    return fake_query
+
+
+class TestStartListCapture:
+    """pzsz.49-pzsz.53: the daily capture stores the start lists of PZSz
+    events around today while pzszerm.pl serves them (ADR-112 §2, §5, §7)."""
+
+    def test_the_capture_window(self):
+        """pzsz.49: events with a PZSz id, not COMPLETED or CANCELLED, starting
+        within 14 days either side of today in Warsaw."""
+        rows = [
+            _calendar_row("IN-PAST", 1, "2026-09-23", "2026-09-23"),
+            _calendar_row("IN-FUTURE", 2, "2026-10-21", "2026-10-22"),
+            _calendar_row("TOO-OLD", 3, "2026-09-22", "2026-09-22"),
+            _calendar_row("TOO-FAR", 4, "2026-10-22", "2026-10-22"),
+            _calendar_row("DONE", 5, "2026-10-03", "2026-10-04", enum_status="COMPLETED"),
+            _calendar_row("OFF", 6, "2026-10-03", "2026-10-04", enum_status="CANCELLED"),
+            _calendar_row("NO-ID", None, "2026-10-03", "2026-10-04"),
+            _calendar_row("RUNNING", 7, "2026-10-07", "2026-10-08", enum_status="IN_PROGRESS"),
+        ]
+        chosen = pzsz_sync.select_capture_events(rows, TODAY)
+        assert [r["txt_code"] for r in chosen] == ["IN-PAST", "IN-FUTURE", "RUNNING"]
+
+    def test_retention_runs_first_even_on_a_gated_day(self):
+        """pzsz.50: the purge of lists outside the active season is the first
+        write, and it runs although pzszerm.pl then answers with its gate."""
+        statements: list[str] = []
+        rows = [_calendar_row(CODE_POZNAN, 4588, "2026-10-03", "2026-10-04")]
+        with (
+            patch.object(
+                pzsz_sync,
+                "_management_query",
+                side_effect=_capture_query(rows, statements=statements),
+            ),
+            patch.object(pzsz_sync, "_telegram"),
+        ):
+            with pytest.raises(PzszPageError, match="JavaScript check"):
+                pzsz_sync.capture_start_lists(
+                    "ref", "tok", "bot", "chat", today=TODAY, fetch=lambda url, params: CHECK_PAGE
+                )
+        writes = [s for s in statements if "fn_pzsz_start_list" in s]
+        assert writes and "fn_pzsz_start_list_purge" in writes[0]
+        assert not [s for s in statements if "fn_pzsz_start_list_store" in s]
+
+    def test_telegram_names_the_ingest_only_for_an_event_waiting_for_it(self):
+        """pzsz.51 (Q8 A): a new version stored for an event that has ended, has
+        an FTL URL and no FINISHED CERT run: Telegram names the ingest. An event
+        already ingested, one still ahead, and one without a URL get nothing."""
+        sent: list[str] = []
+        rows = [
+            _calendar_row(CODE_POZNAN, 4588, "2026-10-03", "2026-10-04"),
+            _calendar_row("PPS0s-2026-2027", 4500, "2026-09-26", "2026-09-27", has_cert_run=True),
+            _calendar_row("PPS1f-2026-2027", 4581, "2026-10-20", "2026-10-21"),
+            _calendar_row("PPS0e-2026-2027", 4501, "2026-09-27", "2026-09-28", url_event=None),
+        ]
+        with (
+            patch.object(pzsz_sync, "_management_query", side_effect=_capture_query(rows)),
+            patch.object(pzsz_sync, "_telegram", side_effect=lambda b, c, text: sent.append(text)),
+        ):
+            pzsz_sync.capture_start_lists(
+                "ref", "tok", "bot", "chat", today=TODAY, fetch=_start_list_fetch
+            )
+        assert len(sent) == 1
+        assert CODE_POZNAN in sent[0] and f"ingest {CODE_POZNAN}" in sent[0]
+
+    def test_no_telegram_when_nothing_new_was_stored(self):
+        """pzsz.51: the same lists again store nothing, so nothing is said."""
+        sent: list[str] = []
+        rows = [_calendar_row(CODE_POZNAN, 4588, "2026-10-03", "2026-10-04")]
+        with (
+            patch.object(
+                pzsz_sync, "_management_query", side_effect=_capture_query(rows, stored=False)
+            ),
+            patch.object(pzsz_sync, "_telegram", side_effect=lambda b, c, text: sent.append(text)),
+        ):
+            pzsz_sync.capture_start_lists(
+                "ref", "tok", "bot", "chat", today=TODAY, fetch=_start_list_fetch
+            )
+        assert sent == []
+
+    def test_the_workflow_runs_the_capture_after_the_calendar(self):
+        """pzsz.52: a job after the calendar job, also when that failed, never
+        on a dry run, reading the repository only, and running the capture."""
+        import yaml
+
+        workflow = yaml.safe_load(
+            (Path(__file__).parents[2] / ".github" / "workflows" / "pzsz-sync.yml").read_text()
+        )
+        job = workflow["jobs"]["capture"]
+        assert job["needs"] == "sync"
+        assert "!cancelled()" in job["if"] and "dry_run" in job["if"]
+        assert job["permissions"] == {"contents": "read"}
+        runs = " ".join(str(step.get("run", "")) for step in job["steps"])
+        assert "python -m python.scrapers.pzsz_sync --capture-start-lists" in runs
+
+    def test_a_gated_capture_fails_without_a_second_telegram(self):
+        """pzsz.53: the gate stops the capture at the first page, the job
+        exits 1, and Telegram is not told again (the calendar job said it)."""
+        sent: list[str] = []
+        fetched: list[str] = []
+        rows = [
+            _calendar_row(CODE_POZNAN, 4588, "2026-10-03", "2026-10-04"),
+            _calendar_row("PPS1f-2026-2027", 4581, "2026-10-20", "2026-10-21"),
+        ]
+
+        def gated(url, params):
+            fetched.append(url)
+            return CHECK_PAGE
+
+        env = {"SUPABASE_CERT_REF": "ref", "SUPABASE_ACCESS_TOKEN": "tok"}
+        with (
+            patch.dict("os.environ", env),
+            patch("sys.argv", ["pzsz_sync", "--capture-start-lists"]),
+            patch.object(pzsz_sync, "_management_query", side_effect=_capture_query(rows)),
+            patch.object(pzsz_sync, "_telegram", side_effect=lambda b, c, text: sent.append(text)),
+            patch.object(pzsz_sync, "fetch_page", side_effect=gated, create=True),
+        ):
+            with pytest.raises(SystemExit) as exit_info:
+                pzsz_sync.main()
+        assert exit_info.value.code == 1
+        assert sent == []
+        assert len(fetched) == 1

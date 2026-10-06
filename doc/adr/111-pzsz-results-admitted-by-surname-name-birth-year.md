@@ -1,6 +1,6 @@
 # ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer
 
-**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a), and released to CERT and PROD the same day (main `2bc34500`). The first CERT ingest, of `PPS1s-2026-2027`, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later.
+**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a), and released to CERT and PROD the same day (main `2bc34500`). The first CERT ingest, of `PPS1s-2026-2027`, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): the start list is a stored input. The CERT ingest reads the newest stored version on a gated day, and promote reads the lists CERT used from CERT by their hashes and never contacts pzszerm.pl (§6). D1's "send it again later" applies only while no list of the event has ever been stored.
 **Date:** 2026-10-06
 **Amends:** [ADR-100](100-pzsz-senior-result-ingestion.md) (the matching rule for a PZSz bracket, the review queue no longer written, the source of the birth year), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays a PZSz run too; one route to PROD for every organizer)
 **Relates to:** [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (the EVF admission that is copied, left unchanged), [ADR-105](105-international-results-keep-source-bracket.md) (the whole field's N and the original place), [ADR-110](110-ranking-entry-by-roster.md) (the fencer table is the ranking entry), [ADR-087](087-pzsz-senior-calendar-source.md) (the PZSz calendar and `id_pzsz_event`), [ADR-103](103-spws-place-medal-engine-per-type.md) and [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (PPS and MPS stay on EVF classic, unchanged), [ADR-025](025-event-centric-ingestion-telegram.md) (the `ingest` and `promote` commands, unchanged)
@@ -40,6 +40,8 @@ Three further rules, decided in chat:
 
 FencingTimeLive gives the places. The PZSz tournament page (`pzszerm.pl/zawody/kalendarium-zawodow/turniej/?id=N`, column *Data urodzenia*) gives each starter's birth date, and its year is the birth year. The event's stored `id_pzsz_event` leads to the event page, which lists its tournaments. A row is paired with its start-list entry by the folded name.
 
+*Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md):* the list is captured on a day pzszerm.pl serves it and stored on CERT as printed name and birth year; the ingest reads the newest stored version.
+
 ### 4 · A PZSz plugin, started as a copy of the EVF admission
 
 `AdmitPzszRoster` (`python/pipeline/plugins/pzsz_admission.py`) is first committed as a plain copy of `python/pipeline/international_admission.py`, the EVF admission, and is then changed for PZSz:
@@ -64,6 +66,8 @@ When no starter matches, nothing is written, no empty tournament is created, and
 - EVF moves onto it in the next plan.
 
 `ingest <code> prod` stays refused for every event. For PZSz, promote's `plan_event` picks the flow from the event's organizer, as `ingest_cli` does; the replay reads the start lists too, and the run record keeps their hash beside the FTL schedule's. With nobody matched, nothing is written, so promote's apply needs no new step.
+
+*Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md):* the replay no longer reads pzszerm.pl. It reads the lists the CERT run used from CERT's store, by the run record's hashes, and refuses when one is missing or does not match its hash.
 
 ## Alternatives considered
 
@@ -109,7 +113,7 @@ When no starter matches, nothing is written, no empty tournament is created, and
 
 Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user decided both in chat the same day: D1 A and D2 A, as recommended.
 
-1. **D1 · the JavaScript check — decided A.** Send `ingest <code>` again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.
+1. **D1 · the JavaScript check — decided A.** Send `ingest <code>` again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week. *Superseded 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md):* a list stored on an open day carries the ingest through a gated day; the saved-page `store` command covers a gate that lasts the whole capture window.
 2. **D2 · an end date shorter than the listings — decided A.** The calendar sync sets the end date from pzszerm.pl's listing. The event page shows only a start date, but the listing prints an end date as well, and for Poznań that date is wrong: 3–3 October, while one of its FencingTimeLive listings is dated the 4th. With that end date the event stays `IN_PROGRESS` under ADR-108 §7. The end date is corrected in Admin before the CERT ingest. Since 2026-10-07 the sync no longer sets it back: it leaves the dates of an event that has started as they are ([ADR-087](087-pzsz-senior-calendar-source.md), amendment of 2026-10-07, plan §7 Q6 A).
 
 **Out of scope:**

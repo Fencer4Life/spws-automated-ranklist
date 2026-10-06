@@ -1,0 +1,348 @@
+<meta charset="utf-8">
+<title>PZSz Start Lists Stored</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Ingestion · PZSz (PPS, MPS) · Plan</p>
+  <h1>Store each PZSz start list while pzszerm.pl serves it</h1>
+  <p class="dek">pzszerm.pl puts a JavaScript gate in front of its pages and switches it on and off. Today the start list is fetched <b>at the moment of the ingest</b>, so the ingest only works on days the gate happens to be off. The fix is to treat the start list as <b>a captured input, not a live dependency</b>. The daily sync stores it whenever pzszerm.pl serves pages. The CERT ingest and the PROD promote then read the stored copy, and PROD never contacts pzszerm.pl at all.</p>
+  <div class="meta">
+    <span class="pill danger"><span class="dot"></span>Root cause: a JavaScript cookie gate; our client runs no JavaScript</span>
+    <span class="pill"><span class="dot"></span>No bypass: no faked cookie, no browser driven by me</span>
+    <span class="pill"><span class="dot"></span>Decided 7 Oct in chat: Q7–Q10 all A</span>
+    <span class="pill warn"><span class="dot"></span>Built and rehearsed on LOCAL 7 Oct · not pushed</span>
+  </div>
+
+  <section id="cause">
+    <p class="kicker">1 · Root cause</p>
+    <h2>A gate that pzszerm.pl switches on and off</h2>
+    <p>Every request that reaches the gate gets a page saying "Wczytywanie danych… Do wyświetlenia danych potrzebna jest włączona obsługa JavaScript". The page carries a script that sets a cookie (<code>pzs_t=1</code>, valid 60 seconds) and reloads; the script's design shows that only a request carrying that cookie gets the real page. A browser runs the script. Our httpx client does not, so <b>while the gate is on, every request from us is refused</b>. Since F1, <code>refuse_js_check()</code> recognises the gate page and stops the run before anything is written.</p>
+    <p>The logs of every PZSz sync since 3 September show the gate's history. Before F1, a gated run still ended green, but it read 0 events.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Days</th><th>Events read</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td>3–9 Sep</td><td>6</td><td><span class="chip never">off</span></td></tr>
+        <tr><td>11–16 Sep</td><td>0</td><td><span class="chip over">on</span></td></tr>
+        <tr><td>17–29 Sep</td><td>6</td><td><span class="chip never">off</span></td></tr>
+        <tr><td>30 Sep</td><td>0</td><td><span class="chip over">on</span></td></tr>
+        <tr><td>1–2 Oct</td><td>6</td><td><span class="chip never">off</span></td></tr>
+        <tr><td>3 Oct → now</td><td>0, then F1's refusals</td><td><span class="chip over">on</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Poznań was fenced on 3–4 October, the first day of the current gated stretch. A start list exists before the event, because it is the list of entries. If the start list had been stored when pzszerm.pl last served pages on 1–2 October, the gate would not matter today. (That assumes PZSz had published the list by then, which is likely but not checked.)</p>
+  </section>
+
+  <section id="design">
+    <p class="kicker">2 · The design</p>
+    <h2>Capture when readable, read the capture everywhere</h2>
+    <ol class="steps">
+      <li><b>One store, on CERT.</b> A new table <code>tbl_pzsz_start_list</code> holds one row per version of each tournament's start list: the PZSz event and tournament, weapon, gender, and the starters as printed name plus <b>birth year only</b> (ADR-078: the year suffices, the date is never kept), in page order, with its hash, its source (<code>pzszerm.pl</code> or <code>saved page</code>) and when it was captured. Rows are insert-only. A new version is appended only when the list differs from the newest one, and "newest" is the highest row id. It is <code>service_role</code> only, like <code>tbl_ingest_run</code>.</li>
+      <li><b>The daily capture.</b> A new job in <code>pzsz-sync.yml</code>, after the calendar job, reads the start lists of every PZSz event of the active season that starts within 14 days either side of today in Warsaw and is not <code>COMPLETED</code> or <code>CANCELLED</code>. On a gated day it stores nothing, says so, and fails only that job. On an open day it stores whatever changed. That is about ten requests a day, the same order as the calendar sync.</li>
+      <li><b>The CERT ingest</b> first tries a fresh capture, then reads the newest stored version for each weapon and gender. On a gated day it therefore still runs, from the stored list. Only when nothing has ever been stored does it stop, with nothing written: "no start list stored yet for PPS1s-2026-2027; it is stored on the next day pzszerm.pl serves its pages". The run's log shows each list's capture time and source.</li>
+      <li><b>The PROD promote never fetches pzszerm.pl.</b> The CERT run already records the PZSz event and each round's start-list hash. Promote reads the stored rows by event, weapon, gender and hash from CERT, over the read-only connection it already uses for the run record, and hands them to the plan. A missing row, or a row whose content does not match its hash, refuses the promote. This is ADR-108's rule applied to one more input: promote replays exactly what CERT used.</li>
+      <li><b>A Telegram line when a start list is stored</b> for an event that has ended and has no successful CERT run: "PZSz start list stored for PPS1s-2026-2027 — send <code>ingest PPS1s-2026-2027</code>". That turns "send it again later" into a message at the right moment.</li>
+      <li><b>A saved-page path for a long gate.</b> If the gate stays on for a whole window, you save the event page and its tournament pages from your own browser, and one command stores them, through the same parsers (a saved gate page is refused). No Admin UI is needed.</li>
+      <li><b>Retention.</b> The daily job deletes start lists of events outside the active season. Closed seasons are never re-ingested, so those lists have no further use.</li>
+    </ol>
+    <div class="note accent">
+      <p class="lede">What this buys</p>
+      <p>The gate only matters if it stays on for the entire window between the start list's publication and the ingest. Even then, the remedy is a single saved page, not a resend loop. Promote, the step that writes PROD, no longer depends on pzszerm.pl at all.</p>
+    </div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">3 · Decide</p>
+    <h2>Four questions, each with a recommendation</h2>
+
+    <h3>Q7 · The approach <span class="chip never">decided A, 7 Oct</span></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>§2 in full: store, daily capture, ingest and promote read the store.</td><td>Removes the timing dependency instead of retrying around it. PROD stops touching pzszerm.pl.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Keep the live reads; add only the saved-page path.</td><td>Smaller, but every gated day still needs a person to save pages.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>Keep things as they are; resend until the gate opens.</td><td>No build. Gated stretches have lasted up to six days so far.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q8 · When a start list is stored for an event waiting for its results <span class="chip never">decided A, 7 Oct</span></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Telegram says the start list is stored and which <code>ingest</code> to send.</td><td>ADR-108 §2 puts the master-data refresh from PROD before every CERT ingest, run by the operator. An automatic ingest would skip it, and promote's gate would then refuse whenever the rosters had drifted.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>The sync starts the CERT ingest itself.</td><td>Hands-off, but it needs ADR-108 §2 changed (an automatic refresh first) and a token allowed to start workflows in a job that parses pzszerm.pl's HTML.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q9 · What is stored, and for how long <span class="chip never">decided A, 7 Oct</span></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Printed name and birth year only, in page order. CERT only, <code>service_role</code> only, never in the PROD seed export. Deleted once the event's season is no longer active. ADR-078's data inventory gains a row: purpose, legal basis (legitimate interest) and this retention.</td><td>Most starters are juniors who are not our members. Keep the least that admission needs, for no longer than it can be used.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Keep every version indefinitely.</td><td>A longer audit trail, for data that is never read again once a season closes.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q10 · Poznań <span class="chip never">decided A, 7 Oct</span></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Nothing manual. Once this is released, the first day pzszerm.pl serves pages, the capture stores Poznań's lists (its start date is inside the window) and Telegram tells you to send <code>ingest PPS1s-2026-2027</code>. Then I verify CERT, and the promote waits for your go.</td><td>The new design doing exactly what it is for.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Today: you save three pages from your own browser (the event page and the men's and women's sabre start lists). I store them and send the ingest.</td><td>Done the same day, at the cost of three page saves.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="changes">
+    <p class="kicker">4 · What changes</p>
+    <h2>Files, with the reuse they rely on</h2>
+    <div class="tablewrap code-map"><table>
+      <thead><tr><th>Where</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/migrations/20261007000001_pzsz_start_list.sql</code></td><td>The table (insert-only; <code>enum_weapon_type</code>, the gender enum and a source CHECK) and an index on event, weapon, gender and id. <code>fn_pzsz_start_list_store(jsonb)</code> appends only when the list differs from the newest version. RLS is on; the table and function are revoked from <code>PUBLIC</code>, anon and authenticated, with service_role getting only SELECT, INSERT and DELETE. The grant pattern is copied from <code>20261003000014_ingest_run.sql</code>. The table stays out of <code>fn_event_input_fingerprint</code>.</td></tr>
+        <tr><td><code>python/scrapers/pzsz_start_list.py</code></td><td><code>Starter</code> keeps the birth year only; the date is still validated while parsing. The module stays pure: it parses and never stores.</td></tr>
+        <tr><td><code>python/scrapers/pzsz_start_list_store.py</code> (new)</td><td><code>capture_event_start_lists</code>, <code>newest</code> and <code>rows_to_start_lists</code>, which recomputes and checks each hash. Two commands: <code>capture</code>, the daily job, and <code>store</code>, for saved pages. <code>store</code> reuses <code>read_event_start_lists</code> with a fetch that reads files.</td></tr>
+        <tr><td><code>python/pipeline/promotion/run_record.py</code></td><td><code>start_list_sha256</code> hashes name and birth year. No CERT run carries an old hash: Poznań's runs failed before hashing. A read-only query confirms this before the change.</td></tr>
+        <tr><td><code>python/pipeline/ingest_cli.py</code></td><td><code>_ingest_pzsz_event_rounds</code> takes the start lists as an argument. When it is called without them (the CERT ingest), it captures, then reads the newest stored version through two new DbConnector reads. The bare <code>ValueError</code> for an unmatched weapon or gender becomes <code>PlanRefused</code> in plan mode.</td></tr>
+        <tr><td><code>python/pipeline/promotion/plan.py</code>, <code>replay.py</code></td><td><code>plan_event</code> gains <code>pzsz_start_lists</code>, and a PZSz plan without them is refused. <code>SqlSide</code> gains <code>start_lists</code>, read by the run's event, weapon, gender and hash. The existing start-list check in <code>source_differences</code> stays as a tamper check. <code>RecordingConnector</code>'s pass-through list is unchanged.</td></tr>
+        <tr><td><code>.github/workflows/pzsz-sync.yml</code>, <code>python/scrapers/pzsz_sync.py</code></td><td>New job <code>capture</code>: <code>needs: sync</code>, runs unless cancelled and is skipped on a dry run, <code>contents: read</code>. It captures, applies retention and sends the Telegram line for events waiting for their results.</td></tr>
+        <tr><td>Documents</td><td>A new ADR (start lists are stored inputs) amending ADR-111 (§6, D1), ADR-108 (promote reads the stored lists), ADR-087 (§4) and ADR-078 (the inventory row). Also: the ingestion page, the workflow catalog, the operator runbook (the saved-page path), the security-posture page, the codebase map, the RTM, the spec registry and memory.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">5 · Tests first</p>
+    <h2>Each seen RED before its code</h2>
+    <ul>
+      <li><b>pgTAP <code>109_pzsz_start_list.sql</code></b>
+        <ul>
+          <li>109.1: RLS is on, and anon and authenticated get nothing.</li>
+          <li>109.2: service_role has no UPDATE.</li>
+          <li>109.3: storing A then A leaves one row; A, B, A leaves three rows with the newest A.</li>
+          <li>109.4: the store function cannot be run by anon.</li>
+          <li>109.5: the enums and the source check.</li>
+        </ul>
+      </li>
+      <li><b>Start list</b>
+        <ul>
+          <li>PZSZ.SL.03: <code>Starter</code> holds the year only.</li>
+          <li>PZSZ.SL.04: the hash is of name and year.</li>
+        </ul>
+      </li>
+      <li><b>Capture</b>
+        <ul>
+          <li>PZSZ.CAP.01: a new version is stored.</li>
+          <li>PZSZ.CAP.02: the same version is a no-op.</li>
+          <li>PZSZ.CAP.03: A, B, A ends with the newest A.</li>
+          <li>PZSZ.CAP.04: a gated page writes nothing.</li>
+          <li>PZSZ.CAP.05: saved pages are stored as <code>saved page</code>, and a saved gate page or a missing tournament page is refused.</li>
+        </ul>
+      </li>
+      <li><b>Ingest</b>
+        <ul>
+          <li>PZSZ.ROUTE.04: on a gated day with a stored list, the ingest runs.</li>
+          <li>PZSZ.ROUTE.05: on a gated day with nothing stored, it stops, writes nothing and says why.</li>
+          <li>PZSZ.ROUTE.06: the PROD plan never calls the fetch.</li>
+          <li>PZSZ.ROUTE.07: a PZSz plan without start lists is refused.</li>
+        </ul>
+      </li>
+      <li><b>Promote</b>
+        <ul>
+          <li>PROMO.REPLAY.29: the stored lists are passed in by the run's hashes.</li>
+          <li>PROMO.REPLAY.30: a missing row refuses.</li>
+          <li>PROMO.REPLAY.31: a content and hash mismatch refuses.</li>
+        </ul>
+      </li>
+      <li><b>Sync</b>
+        <ul>
+          <li>pzsz.49: the capture window (Warsaw date, ±14 days, not <code>COMPLETED</code> or <code>CANCELLED</code>, only events with an id).</li>
+          <li>pzsz.50: retention deletes only rows outside the active season.</li>
+          <li>pzsz.51: the Telegram line goes out only for an event that has ended and has no successful CERT run.</li>
+          <li>pzsz.52: the workflow job (<code>needs</code>, <code>if</code>, permissions).</li>
+        </ul>
+      </li>
+    </ul>
+    <p>Existing tests that change shape: <code>test_pzsz_start_list.py</code>, <code>test_pzsz_admission.py</code> (year-only <code>Starter</code>), <code>test_pzsz_routing.py</code> (a store on the in-memory database; the plan receives lists instead of patching the fetch), and <code>test_promotion_replay.py</code> (the new argument and <code>FakeSide.start_lists</code>).</p>
+  </section>
+
+  <section id="order">
+    <p class="kicker">6 · Order of work</p>
+    <h2>After your answers</h2>
+    <ol class="steps">
+      <li>The new ADR as a draft, then the tests above, each RED first.</li>
+      <li>The migration, the store module, the ingest and promote changes, and the capture job; <code>postgrestools</code> on every SQL file.</li>
+      <li>A LOCAL rehearsal with synthetic pages: store, ingest, then <code>promote --prod-target local</code>, with the fetch made to fail throughout, which proves PROD never needs pzszerm.pl.</li>
+      <li>The documents, the docs index and the graph. <code>scripts/preflight.sh</code> exits 0.</li>
+      <li>Push on your go. The migration reaches CERT, then PROD on your approval.</li>
+      <li>Poznań as decided in Q10.</li>
+    </ol>
+  </section>
+
+  <section id="built">
+    <p class="kicker">6a · Built, 7 October</p>
+    <h2>Steps 1–3 are done; step 4 is the commit</h2>
+    <div class="note good">
+      <p>ADR-112 records the decision. The migration, the store module, the ingest and promote changes and the capture job are built, and none of it is pushed.</p>
+    </div>
+    <h3>Tests</h3>
+    <ul>
+      <li>pgTAP <code>109_pzsz_start_list.sql</code>: 20 assertions, all passing (the total becomes 1451).</li>
+      <li>pytest: PZSZ.SL.03–04, PZSZ.CAP.01–05, PZSZ.ROUTE.04–07, PROMO.REPLAY.29–31 and pzsz.49–53 pass; the whole suite passes (1904 passed, 14 skipped).</li>
+      <li>basedpyright reports 0 errors. <code>postgrestools</code> on <code>109_pzsz_start_list.sql</code> reports only the pgTAP-function findings every test file shows.</li>
+    </ul>
+    <h3>LOCAL rehearsal, with the synthetic pages from the test fixtures</h3>
+    <p>Every request to pzszerm.pl was answered with the gate page throughout.</p>
+    <ol class="steps">
+      <li><b>Saved pages.</b> The <code>store</code> path stored 2 versions; storing the same pages again stored 0.</li>
+      <li><b>CERT ingest of <code>PPS1s-2026-2027</code>.</b> It made one request, met the gate, logged "not read from pzszerm.pl now" and ran from the stored lists. The run finished with both start-list hashes recorded; the event is <code>COMPLETED</code> with no tournament, because the synthetic starters match nobody.</li>
+      <li><b>Promote's side.</b> Promote's CERT reader, over a read-only connection, read both lists back by the run's hashes (53 and 46 starters). <code>plan_event</code> then ran with every fetch made to fail: 1 operation, status <code>COMPLETED</code>, no source difference. This is promote's read and plan, run directly, not the whole <code>promote</code> command.</li>
+    </ol>
+    <h3>What the documents now say</h3>
+    <ul>
+      <li>ADR-111, ADR-108, ADR-087 and ADR-078 carry "amended by ADR-112". ADR-078's inventory gains the start-list row: name and birth year, taken from pzszerm.pl, CERT only, kept while the season is active.</li>
+      <li>Handbook: ingestion, the operator runbook (the saved-page <code>store</code> command), the workflow catalog (the <code>capture</code> job), the security posture and the codebase map.</li>
+      <li>RTM: FR-157 and its acceptance rows. Specification: the ADR-112 registry row and the pgTAP total.</li>
+    </ul>
+    <div class="note warn">
+      <p>Poznań's capture window closes on 17 October, 14 days after its start. If the gate stays on until then, the CERT ingest's own capture, or saved pages, still store its lists.</p>
+    </div>
+  </section>
+
+  <section id="admission">
+    <p class="kicker">7 · On the record</p>
+    <h2>What I did on 6 October that I will not do again</h2>
+    <div class="note danger">
+      <p>For the LOCAL rehearsal, I drove the in-app browser to Poznań's two tournament pages and copied the start lists. The browser ran the gate's script for me. That got past pzszerm.pl's bot protection by automation, which is exactly what the rule forbids. Those copies stayed out of every environment, and were deleted on 7 October as the first step of this work. From now on, a start list reaches us only through our own client on a day pzszerm.pl serves it, or through pages you save yourself.</p>
+    </div>
+  </section>
+
+  <section id="out">
+    <p class="kicker">8 · Not in this plan</p>
+    <h2>Left for later</h2>
+    <ul>
+      <li>Asking PZSz for access for our client, or for a feed of the start lists. It is worth doing, but it is your call and outside the code.</li>
+      <li>An Admin upload page for saved pages. The command is enough while gated windows remain rare.</li>
+      <li>Carrying the calendar listing through gated stretches. The calendar catches up on the next open day, and events are published weeks ahead.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · pzsz-start-lists-stored · 2026-10-07</p>
+</div>

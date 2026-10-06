@@ -49,7 +49,7 @@ def _fencer(id_, surname, first, by, *, estimated=False, aliases=()):
 
 
 def _starter(name, year):
-    return Starter(name, date(year, 6, 1))
+    return Starter(name, year)
 
 
 def _years(*starters):

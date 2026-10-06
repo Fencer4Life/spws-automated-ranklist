@@ -7,6 +7,11 @@ that decides what to write.
 
     python -m python.scrapers.pzsz_sync --dry-run
     python -m python.scrapers.pzsz_sync
+    python -m python.scrapers.pzsz_sync --capture-start-lists
+
+The last form is the daily start-list capture (ADR-112): the start lists of
+PZSz events around today are stored on CERT while pzszerm.pl serves them, so
+an ingest does not depend on pzszerm.pl being readable at that moment.
 
 WHAT THIS WRITES, AND WHAT IT DOES NOT.
 
@@ -57,9 +62,20 @@ from python.scrapers.pzsz_calendar import (
     parse_event_detail_html,
     plan_event_codes,
 )
-from python.scrapers.pzsz_start_list import refuse_js_check
+from python.scrapers.pzsz_start_list import PzszGateError, PzszPageError, refuse_js_check
+from python.scrapers.pzsz_start_list_store import (
+    ManagementStore,
+    capture_event_start_lists,
+    fetch_page,
+)
 
 ORGANIZER_CODE = "PZSz"
+
+# The start-list capture window (ADR-112 §2): a start list exists before its
+# event and can change until it starts; after the event it is what the ingest
+# needs. Fourteen days either side of today covers both.
+CAPTURE_DAYS = 14
+_NOT_CAPTURED = ("COMPLETED", "CANCELLED")
 
 # Identity and schedule: the source owns these outright and changes are pushed
 # onto the existing row, because a reschedule or a renamed round has to reach
@@ -364,12 +380,97 @@ def sync_calendar(
     return plan
 
 
+def select_capture_events(rows: list[dict], today: dt.date) -> list[dict]:
+    """The PZSz events whose start lists the daily capture reads: with a PZSz
+    id, not COMPLETED or CANCELLED, starting within CAPTURE_DAYS either side
+    of today in Warsaw. Pure."""
+    low = today - dt.timedelta(days=CAPTURE_DAYS)
+    high = today + dt.timedelta(days=CAPTURE_DAYS)
+    chosen = []
+    for row in rows:
+        if row.get("id_pzsz_event") is None or row.get("enum_status") in _NOT_CAPTURED:
+            continue
+        if _blank(row.get("dt_start")):
+            continue
+        if low <= dt.date.fromisoformat(str(row["dt_start"])[:10]) <= high:
+            chosen.append(row)
+    return chosen
+
+
+def _awaits_ingest(row: dict, today: dt.date) -> bool:
+    """The event has ended, has its FencingTimeLive URL and no FINISHED CERT
+    run: its ingest is what is left to do."""
+    end = row.get("dt_end") or row.get("dt_start")
+    return (
+        not _blank(row.get("url_event"))
+        and not row.get("has_cert_run")
+        and dt.date.fromisoformat(str(end)[:10]) < today
+    )
+
+
+def capture_start_lists(
+    ref: str, token: str, bot_token: str, chat_id: str, *, today: dt.date, fetch=None
+) -> int:
+    """Store the start lists of the PZSz events around today (ADR-112 §2).
+
+    Retention runs first, so it runs on a gated day too. A gated page stops
+    the capture at once (PzszGateError): repeated requests against a bot check
+    would look like an attempt to get past it. Any other unreadable page skips
+    its event only. When a new version is stored for an event waiting for its
+    ingest, Telegram names the command (Q8 A); the ingest itself is the
+    operator's (ADR-108 §2). Returns how many versions were stored."""
+    fetch = fetch or fetch_page
+    season = _get_active_season(ref, token)
+    if season is None:
+        raise RuntimeError("No active season on CERT: nothing to capture start lists for.")
+    store = ManagementStore(ref, token, query=_management_query)
+    purged = store.purge()
+    print(f"PZSz start lists — season {season['txt_code']}: {purged} outside it deleted")
+
+    rows = _management_query(
+        ref,
+        token,
+        "SELECT e.txt_code, e.id_pzsz_event, e.dt_start::TEXT, e.dt_end::TEXT, "
+        "e.enum_status::TEXT AS enum_status, e.url_event, "
+        "EXISTS (SELECT 1 FROM tbl_ingest_run r WHERE r.txt_event_code = e.txt_code "
+        "AND r.txt_environment = 'cert' AND r.txt_status = 'FINISHED') AS has_cert_run "
+        "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
+        f"WHERE e.id_season = {int(season['id_season'])} AND o.txt_code = '{ORGANIZER_CODE}' "
+        "AND e.id_pzsz_event IS NOT NULL ORDER BY e.dt_start, e.txt_code",
+    )
+    total = 0
+    for row in select_capture_events(rows, today):
+        code = row["txt_code"]
+        try:
+            stored = capture_event_start_lists(int(row["id_pzsz_event"]), fetch, store.store)
+        except PzszGateError:
+            raise
+        except (PzszPageError, httpx.HTTPError) as exc:
+            print(f"  ! {code}: start lists not captured — {exc}")
+            continue
+        total += stored
+        print(f"  {code}: {stored} new start-list version(s)")
+        if stored and _awaits_ingest(row, today):
+            _telegram(
+                bot_token,
+                chat_id,
+                f"📋 <b>PZSz start list stored</b> for <code>{code}</code>\n"
+                f"Send <code>ingest {code}</code>",
+            )
+    return total
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="PZSz senior calendar sync")
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Plan and print the statements without sending any write.",
+    )
+    parser.add_argument(
+        "--capture-start-lists",
+        action="store_true",
+        help="Store the start lists of PZSz events around today on CERT (ADR-112).",
     )
     args = parser.parse_args()
 
@@ -381,6 +482,21 @@ def main() -> None:
     if not ref or not token:
         print("ERROR: SUPABASE_CERT_REF and SUPABASE_ACCESS_TOKEN required", file=sys.stderr)
         raise SystemExit(2)
+
+    if args.capture_start_lists:
+        try:
+            capture_start_lists(ref, token, bot_token, chat_id, today=warsaw_today())
+        except PzszGateError as exc:
+            # The calendar job met the same gate this morning and said so on
+            # Telegram; the capture only fails its own job.
+            print(f"PZSz start lists not captured: {exc}", file=sys.stderr)
+            raise SystemExit(1) from exc
+        except Exception as exc:
+            print(f"ERROR: PZSz start-list capture failed: {exc}", file=sys.stderr)
+            traceback.print_exc()
+            _telegram(bot_token, chat_id, f"❌ <b>PZSz start lists</b> failed\n{exc}")
+            raise SystemExit(1) from exc
+        return
 
     try:
         sync_calendar(ref, token, bot_token, chat_id, args.dry_run)

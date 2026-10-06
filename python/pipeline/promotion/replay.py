@@ -50,6 +50,9 @@ from urllib.parse import urlparse
 from python.tools._backends import CERT_REF, PROD_REF
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]+$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_WEAPONS = ("EPEE", "FOIL", "SABRE")
+_GENDERS = ("M", "F")
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 PROMOTABLE = ("PLANNED", "IN_PROGRESS", "COMPLETED")
 DRY_RUN_OK = "PROMOTE_DRY_RUN_OK "
@@ -97,6 +100,8 @@ class Side(Protocol):
     def codes_of(self, ids: list[int]) -> list[str]: ...
 
     def fingerprints(self, codes: list[str]) -> dict[str, str]: ...
+
+    def start_list(self, pzsz_event: int, weapon: str, gender: str, sha256: str) -> dict | None: ...
 
 
 class Applier(Protocol):
@@ -189,6 +194,36 @@ def source_differences(run: Mapping[str, Any], plan: Mapping[str, Any]) -> list[
             # ADR-111 §6: a PZSz listing's birth years come from its start list.
             out.append(f"{a.get('name')}: the PZSz start list changed since the CERT run.")
     return out
+
+
+def stored_start_lists(cert: Side, code: str, listings: Mapping[str, Any]) -> dict | None:
+    """The PZSz start lists the CERT run used, read back from CERT by its PZSz
+    event and each round's weapon, gender and hash (ADR-112 §4). None for a
+    run that read no start list. Promote never fetches pzszerm.pl: a version
+    that is not stored, or no longer matches its hash, refuses."""
+    from python.scrapers.pzsz_start_list_store import StoredStartListError, from_row
+
+    pzsz_event = listings.get("pzsz_event")
+    if pzsz_event is None:
+        return None
+    lists: dict[tuple[str, str], Any] = {}
+    for r in listings.get("rounds") or []:
+        sha = r.get("start_list_sha256")
+        if not sha:
+            continue
+        key = (str(r.get("weapon")), str(r.get("gender")))
+        row = cert.start_list(int(pzsz_event), key[0], key[1], str(sha))
+        if row is None:
+            raise PromoteRefused(
+                f"The PZSz start list the CERT run of {code} used for {r.get('name')} "
+                f"({key[0]}/{key[1]}, {str(sha)[:12]}) is not stored on CERT. Re-ingest CERT "
+                "and promote again."
+            )
+        try:
+            lists[key] = from_row(row)
+        except StoredStartListError as e:
+            raise PromoteRefused(f"{e} Re-ingest CERT and promote again.") from e
+    return lists
 
 
 def _text(v: Any) -> str:
@@ -311,6 +346,8 @@ def replay(
     )
 
     master = run.get("jsonb_master_data") or {}
+    listings = run.get("jsonb_listings") or {}
+    pzsz_lists = stored_start_lists(cert, code, listings)
     try:
         plan = plan_call(
             code,
@@ -318,7 +355,8 @@ def replay(
             prod_db,
             url_event=run["url_event"],
             created=master.get("created") or [],
-            pzsz_event=(run.get("jsonb_listings") or {}).get("pzsz_event"),
+            pzsz_event=listings.get("pzsz_event"),
+            pzsz_start_lists=pzsz_lists,
         )
     except PlanRefused as e:
         raise PromoteRefused(f"[{e.kind}] {e}") from e
@@ -468,6 +506,18 @@ class SqlSide:
             "SELECT to_jsonb(r) AS j FROM tbl_ingest_run r "
             f"WHERE r.txt_event_code = '{self._code(code)}' AND r.txt_environment = 'cert' "
             "ORDER BY r.id_ingest_run DESC LIMIT 1"
+        )
+
+    def start_list(self, pzsz_event: int, weapon: str, gender: str, sha256: str) -> dict | None:
+        if weapon not in _WEAPONS or gender not in _GENDERS or not _SHA256.match(sha256 or ""):
+            raise PromoteRefused(
+                f"not a start-list key: {weapon!r}/{gender!r}/{str(sha256)[:16]!r}"
+            )
+        return self.transport.fetch_json(
+            "SELECT to_jsonb(l) AS j FROM tbl_pzsz_start_list l "
+            f"WHERE l.id_pzsz_event = {int(pzsz_event)} AND l.enum_weapon = '{weapon}' "
+            f"AND l.enum_gender = '{gender}' AND l.txt_sha256 = '{sha256}' "
+            "ORDER BY l.id_pzsz_start_list DESC LIMIT 1"
         )
 
     def earlier_fingerprints(self, code: str, before: int) -> list[str]:

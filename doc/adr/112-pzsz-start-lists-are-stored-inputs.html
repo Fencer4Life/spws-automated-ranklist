@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="112-pzsz-start-lists-are-stored-inputs.md">
+<meta name="adr-source-sha256" content="5e4573021870116677c7d945563b05e7c0a03d3b5c78492f16b18025d69c403c">
+<title>ADR-112 · PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 112</p><h1>PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code>, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07; not yet released to CERT or PROD.</dd></div><div><dt>Date</dt><dd class="">2026-10-07</dd></div><div><dt>Source</dt><dd class=""><code>112-pzsz-start-lists-are-stored-inputs.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code>, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07; not yet released to CERT or PROD.
+<strong>Date:</strong> 2026-10-07
+<strong>Amends:</strong> <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> (§6: the replay no longer reads pzszerm.pl; D1's &quot;send it again later&quot; becomes a stored list), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (promote replays one more recorded input, the start list), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (§4: the JavaScript check no longer blocks an ingest once a list is stored), <a href="078-gdpr-data-handling.html">ADR-078</a> (§1: a new personal-data store, with its purpose and retention)
+<strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (the store is <code>service_role</code> only), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (FencingTimeLive carries no birth year)
+<strong>Source:</strong> <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-start-list-is-a-captured-input-stored-on-cert">1 · A start list is a captured input, stored on CERT</a></li><li class="depth-3"><a href="#2-the-daily-capture">2 · The daily capture</a></li><li class="depth-3"><a href="#3-the-cert-ingest-reads-the-store">3 · The CERT ingest reads the store</a></li><li class="depth-3"><a href="#4-the-prod-promote-never-contacts-pzszerm-pl">4 · The PROD promote never contacts pzszerm.pl</a></li><li class="depth-3"><a href="#5-telegram-names-the-moment-to-ingest-q8-a">5 · Telegram names the moment to ingest (Q8 A)</a></li><li class="depth-3"><a href="#6-saved-pages-for-a-gate-that-covers-a-whole-window">6 · Saved pages, for a gate that covers a whole window</a></li><li class="depth-3"><a href="#7-retention-and-data-inventory-q9-a">7 · Retention and data inventory (Q9 A)</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>ADR-111 admits a PZSz result only when the surname, first name and birth year match exactly one fencer in the fencer table. FencingTimeLive gives the places but no birth year. The year comes from the PZSz start list (<code>pzszerm.pl/zawody/kalendarium-zawodow/turniej/?id=N</code>, column <em>Data urodzenia</em>).</p>
+<p>The CERT ingest read that list from pzszerm.pl at the moment of the ingest. The PROD promote read it a second time and compared hashes.</p>
+<p>pzszerm.pl puts a JavaScript cookie gate in front of its pages and switches it on and off. Our HTTP client runs no JavaScript, so while the gate is on, every request is refused. Since ADR-087's amendment of 2026-10-06, <code>refuse_js_check()</code> recognises the gate page and the run stops with nothing written.</p>
+<p>The logs of every PZSz sync since 3 September 2026 show the gate's history:</p>
+<ul>
+<li><strong>Off:</strong> 3–9 September, 17–29 September, 1–2 October.</li>
+<li><strong>On:</strong> 11–16 September, 30 September, and from 3 October.</li>
+</ul>
+<p>Poznań (<code>PPS1s-2026-2027</code>) was fenced on 3–4 October, inside the current gated stretch. Its CERT ingest failed twice on 6 October (run records 3 and 4), with nothing written.</p>
+<p>Getting past the gate is out of bounds: no faked cookie, no browser driven by automation.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-a-start-list-is-a-captured-input-stored-on-cert">1 · A start list is a captured input, stored on CERT</h3>
+<p><code>tbl_pzsz_start_list</code> holds one row per version of each tournament's start list:</p>
+<ul>
+<li>the PZSz event and tournament, the weapon and the gender;</li>
+<li>the starters as <code>[printed name, birth year]</code> in page order — <strong>the year only, never the birth date</strong> (ADR-078 §1);</li>
+<li>the hash of that list, the source (<code>pzszerm.pl</code> or <code>saved page</code>) and when it was captured.</li>
+</ul>
+<p>The rows are insert-only. A version is appended only when it differs from the newest version for the same event, weapon and gender. &quot;Newest&quot; is the highest row id, so a list that changes A → B → A ends on A.</p>
+<p><code>fn_pzsz_start_list_store(jsonb)</code> holds that rule, so every writer shares it. The table is <code>service_role</code> only (ADR-083). It exists on every environment for schema parity, and is filled on CERT only. It stays out of <code>fn_event_input_fingerprint</code>, because PROD's copy is always empty.</p>
+<p><code>start_list_sha256</code> (<code>python/pipeline/promotion/run_record.py</code>) now hashes name and birth year, the stored form. <code>Starter</code> holds the birth year only; the parser still validates the whole printed date.</p>
+<h3 id="2-the-daily-capture">2 · The daily capture</h3>
+<p>A <code>capture</code> job in <code>pzsz-sync.yml</code> runs after the calendar job, unless the run is cancelled or is a dry run. It reads the start lists of every PZSz event of the active season that:</p>
+<ul>
+<li>has an <code>id_pzsz_event</code>;</li>
+<li>is not <code>COMPLETED</code> or <code>CANCELLED</code>;</li>
+<li>starts within 14 days either side of today in Warsaw.</li>
+</ul>
+<p>Whatever changed is stored. If any page is the gate page, the capture stops at once: repeated requests against a bot check would look like an attempt to get past it. The job then fails without a second Telegram message, because the calendar job reports the gate the same morning.</p>
+<p>The same job deletes the start lists of events outside the active season (§4).</p>
+<h3 id="3-the-cert-ingest-reads-the-store">3 · The CERT ingest reads the store</h3>
+<p>The CERT ingest first tries a capture, then reads the newest stored version for each weapon and gender. On a gated day, it therefore runs from the stored list.</p>
+<p>Only when nothing has ever been stored does it stop, with nothing written. Its message says the list is stored on the next day pzszerm.pl serves its pages. The run's log shows each list's source and capture time.</p>
+<h3 id="4-the-prod-promote-never-contacts-pzszerm-pl">4 · The PROD promote never contacts pzszerm.pl</h3>
+<p>The CERT run record already keeps the PZSz event and each round's start-list hash. Promote reads the stored rows by event, weapon, gender and hash, from CERT, over the read-only connection it already uses for the run record. It recomputes each hash and hands the lists to <code>plan_event</code>.</p>
+<p>Promote refuses in three cases:</p>
+<ul>
+<li>a stored row is missing;</li>
+<li>a row's content does not match its hash;</li>
+<li>a PZSz plan is given no lists.</li>
+</ul>
+<p>This is ADR-108's rule applied to one more input: promote replays exactly what CERT used. <code>source_differences</code> keeps its start-list comparison as a tamper check.</p>
+<h3 id="5-telegram-names-the-moment-to-ingest-q8-a">5 · Telegram names the moment to ingest (Q8 A)</h3>
+<p>When the capture stores a new version for an event that has ended, has an <code>url_event</code>, and has no FINISHED CERT run, Telegram says so and names the command:</p>
+<blockquote>
+<p>📋 <strong>PZSz start list stored</strong> for <code>PPS1s-2026-2027</code>
+Send <code>ingest PPS1s-2026-2027</code></p>
+</blockquote>
+<p>The ingest is not started automatically. ADR-108 §2 puts the master-data refresh from PROD before every CERT ingest, under the operator.</p>
+<h3 id="6-saved-pages-for-a-gate-that-covers-a-whole-window">6 · Saved pages, for a gate that covers a whole window</h3>
+<p><code>python -m python.scrapers.pzsz_start_list_store store &lt;EVENT-CODE&gt; --event-page FILE --tournament ID=FILE …</code> stores pages a person saved from their own browser.</p>
+<ul>
+<li>It uses the same parsers, so a saved gate page is refused.</li>
+<li>Every individual tournament the event page lists needs its file.</li>
+<li>The rows are stored with source <code>saved page</code>.</li>
+</ul>
+<p>The files are kept outside the repository.</p>
+<h3 id="7-retention-and-data-inventory-q9-a">7 · Retention and data inventory (Q9 A)</h3>
+<p>A start list is used only to admit rows of its event. Closed seasons are never re-ingested. So the daily job deletes the lists of events outside the active season (<code>fn_pzsz_start_list_purge()</code>).</p>
+<p>ADR-078's inventory gains this store:</p>
+<ul>
+<li><strong>Purpose:</strong> telling a veteran from a namesake in a PZSz field.</li>
+<li><strong>Legal basis:</strong> Art. 6(1)(f), legitimate interest.</li>
+<li><strong>Data:</strong> printed name and birth year of every starter, most of them juniors who are not our members.</li>
+<li><strong>Retention:</strong> until the event's season is no longer active.</li>
+<li><strong>Access:</strong> <code>service_role</code> only.</li>
+</ul>
+<p>The store is never part of the PROD seed export, and no real start list enters the public repository.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep the live reads and resend until the gate opens.</strong> Rejected: gated stretches have lasted up to six days, and every one needs a person to resend.</li>
+<li><strong>Keep the live reads and add only the saved-page path.</strong> Rejected: every gated day would still need a person to save pages, while a daily capture on open days makes that rare.</li>
+<li><strong>Start the CERT ingest automatically after a capture.</strong> Rejected for now (Q8 B):
+<ul>
+<li>it would skip ADR-108 §2's operator-run refresh from PROD;</li>
+<li>it would need a token allowed to start workflows in a job that parses pzszerm.pl's HTML.</li>
+</ul>
+</li>
+<li><strong>Take the birth year from FencingTimeLive.</strong> Not possible: its live data carries no birth year (ADR-100). Only an uploaded FencingTime XML sometimes does.</li>
+<li><strong>Get past the gate</strong> with a set cookie or a driven browser. Out of bounds. On 2026-10-06, the in-app browser was driven to two Poznań tournament pages for the LOCAL rehearsal, which did exactly that. Those copies never reached an environment, and they were deleted on 2026-10-07.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New:</strong></p>
+<ul>
+<li><code>supabase/migrations/20261007000001_pzsz_start_list.sql</code>: the table, <code>fn_pzsz_start_list_store</code>, <code>fn_pzsz_start_list_purge</code>.</li>
+<li><code>supabase/tests/109_pzsz_start_list.sql</code>.</li>
+<li><code>python/scrapers/pzsz_start_list_store.py</code>: capture, the stored form, the Management API store, the <code>store</code> command.</li>
+<li>The <code>capture</code> job in <code>pzsz-sync.yml</code>.</li>
+</ul>
+<p><strong>Changed:</strong></p>
+<ul>
+<li><code>Starter</code> is year-only; <code>start_list_sha256</code> hashes name and year.</li>
+<li><code>ingest_cli._ingest_pzsz_event_rounds</code> captures, then reads the store, or takes the lists it is given.</li>
+<li><code>promotion/plan.plan_event</code> and <code>promotion/replay</code> pass the stored lists.</li>
+<li><code>pzsz_sync</code> gains <code>--capture-start-lists</code>.</li>
+<li><code>DbConnector</code> gains <code>store_pzsz_start_list</code> and <code>fetch_pzsz_start_lists</code>.</li>
+</ul>
+<p><strong>Not changed:</strong> ADR-111's admission rule, the bot, and <code>ingest-event.yml</code>.</p>
+<p><strong>Tests:</strong> pgTAP 109.1–109.6 (20 assertions); pytest PZSZ.SL.03–04, PZSZ.CAP.01–05, PZSZ.ROUTE.04–07, PROMO.REPLAY.29–31 and pzsz.49–53.</p>
+<p><strong>LOCAL rehearsal (2026-10-07), with synthetic pages and every pzszerm.pl request answered by the gate page:</strong></p>
+<ul>
+<li>the saved pages stored 2 versions, and a second store 0;</li>
+<li>the ingest of <code>PPS1s-2026-2027</code> made one request, met the gate and ran from the store; the run finished with both start-list hashes recorded;</li>
+<li>promote's read-only CERT side read both lists back by their hashes, and the plan made no request and showed no source difference.</li>
+</ul>
+<p><strong>Poznań (Q10 A):</strong> the first day pzszerm.pl serves pages after the release, the capture stores its lists and Telegram names the ingest. No pages are saved by hand. The capture window for Poznań closes on 17 October (14 days after its start). After that, the CERT ingest's own capture, or saved pages, still store its lists.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="111-pzsz-results-admitted-by-surname-name-birth-year.html">← ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>112-pzsz-start-lists-are-stored-inputs.md</code> · source SHA-256 <code>5e4573021870116677c7d945563b05e7c0a03d3b5c78492f16b18025d69c403c</code></footer>
+</div></body></html>
