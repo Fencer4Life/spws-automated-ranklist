@@ -100,6 +100,8 @@ def _bracket_model(report) -> dict:
         "reconciled": ident.get("reconciled", []),
         "conflicts": ident.get("conflicts", []),
         "alias_writebacks": ident.get("alias_writebacks", []),
+        # ADR-111: only the PZSz admission reports its skipped rows; None elsewhere.
+        "pzsz_skipped": ident.get("skipped"),
         "committed": committed,
         "pool_round": pool_round,
         "count": count,
@@ -513,6 +515,9 @@ def _render_source_split(m) -> str:
 
     out: list[str] = []
     for b in m["brackets"]:
+        if b.get("pzsz_skipped") is not None:
+            out += _render_pzsz_field(b)
+            continue
         by_vcat: dict = defaultdict(list)
         for mm in b["matches"]:
             by_vcat[_vcat_of(mm.get("governed_birth_year"), b.get("season_end"))].append(mm)
@@ -540,6 +545,42 @@ def _render_source_split(m) -> str:
             out.append(f"| {v or '—'} | {mark} | {fencers} |")
         out.append("")
     return "\n".join(out)
+
+
+def _render_pzsz_field(b) -> list[str]:
+    """ADR-111: a PZSz senior field is one competition, never split by
+    category. Its rows are the stored veterans, then every skipped starter
+    with the start list's birth year and the reason — namesakes first, as the
+    admission ordered them."""
+    name = b.get("source_name") or b["label"]
+    link = f" — [↗ FTL]({b['source_url']})" if b.get("source_url") else ""
+    stored = [mm for mm in b["matches"] if mm.get("id_fencer") is not None]
+    skipped = b["pzsz_skipped"]
+    out = [
+        f"### {name} — {b['weapon']}·{b['gender']} — PZSz senior field{link}",
+        "",
+        f"Stored **{len(stored)}**, skipped **{len(skipped)}** (surname, first name and the "
+        "start list's birth year must match one fencer of ours).",
+        "",
+        "| Place | Name | Start-list BY | Outcome | Ours |",
+        "|---|---|---|---|---|",
+    ]
+    for mm in stored:
+        out.append(
+            f"| {mm.get('place')} | {mm.get('scraped_name')} | {mm.get('governed_birth_year')} "
+            f"| ✅ stored | #{mm.get('id_fencer')} |"
+        )
+    for s in skipped:
+        ours = ", ".join(
+            f"#{n.get('id_fencer')} born {n.get('birth_year') or '—'}"
+            for n in s.get("namesakes") or []
+        )
+        out.append(
+            f"| {s.get('place')} | {s.get('scraped_name')} | "
+            f"{s.get('start_list_birth_year') or '—'} | {s.get('reason')} | {ours or '—'} |"
+        )
+    out.append("")
+    return out
 
 
 def _vcat_of(birth_year, season_end):

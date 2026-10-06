@@ -213,6 +213,24 @@ class TestPluginAndCommit:
         assert skipped[0]["namesakes"] == [{"id_fencer": 156, "birth_year": 1976}]
         assert skipped[0]["start_list_birth_year"] == 2008
 
+    def test_the_staging_report_shows_why_each_starter_was_skipped(self):
+        """PZSZ.ADM.02: the automation report lists the PZSz field's rows with
+        the start list's birth year and the reason, namesakes first — not the
+        domestic category split, which read every skipped row as 'no birth
+        year' on the first LOCAL run (6 Oct 2026)."""
+        from python.pipeline.plugins.staging_formatter import render_staging_md
+
+        parsed = _parsed([("SZYBKI Adam", 1), ("PRÓBNY Jakub", 2), ("WZORCOWY Jan", 3)])
+        ctx, _ = _run(parsed, ROSTER, START)
+        md = render_staging_md("PPS1s-2026-2027", None, [ctx.report], [], "stamp")
+        section = md.split("## Category split per source listing", 1)[1]
+        assert "PZSz senior field" in section
+        assert "no birth year" not in section
+        assert section.index("PRÓBNY Jakub") < section.index("SZYBKI Adam")
+        assert "namesake, another birth year" in section
+        assert "#156 born 1976" in section
+        assert "| 2 | PRÓBNY Jakub | 2008 |" in section
+
     def test_nothing_is_created_linked_changed_or_queued(self):
         """PZSZ.ADM.06: no fencer, alias, birth-year change or review row,
         whatever the rows."""
