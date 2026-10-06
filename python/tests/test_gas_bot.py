@@ -1,6 +1,6 @@
 """GAS.SRC / GAS.HELP: the Telegram bot has one Apps Script source, and its help matches it.
 
-The live Apps Script project runs `scripts/gas_email_ingestion.js` verbatim (pasted
+The live Apps Script project runs `scripts/gas_telegram_bot.js` verbatim (pasted
 over the project's Code.gs). These checks keep the help a true list of what the bot
 does: every command documented once, every documented command handled, every
 workflow it starts declaring the inputs it sends, and every line naming where it acts.
@@ -14,7 +14,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-BOT = ROOT / "scripts" / "gas_email_ingestion.js"
+BOT = ROOT / "scripts" / "gas_telegram_bot.js"
 WORKFLOWS = ROOT / ".github" / "workflows"
 SKIP_DIRS = {".git", "node_modules", ".venv", "graphify-out", "archive", "dist", ".svelte-kit"}
 
@@ -74,7 +74,7 @@ def _apps_script_sources() -> list[Path]:
 
 
 def test_one_apps_script_source():
-    """GAS.SRC.01: scripts/gas_email_ingestion.js is the only Apps Script source."""
+    """GAS.SRC.01: scripts/gas_telegram_bot.js is the only Apps Script source."""
     assert BOT.exists()
     assert _apps_script_sources() == [BOT]
 

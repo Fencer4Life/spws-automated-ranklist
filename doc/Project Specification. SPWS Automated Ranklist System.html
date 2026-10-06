@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="18d861359010f6e37c458fc10dd7724ff530e3dcfc04fe2fed1890916f06f665">
+<meta name="doc-source-sha256" content="977be9e85b41ace6e9e8e0070b67dac046ccb8589eba2056f965763d9e00db19">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2604,7 +2604,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/025-event-centric-ingestion-telegram.html">ADR-025</a></td>
-<td>Event-Centric Ingestion + Telegram Admin. <strong>Amended 2026-10-03 by <a href="adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a>:</strong> <code>ingest … prod</code> is refused for a domestic event; <code>promote</code> and <code>complete</code> take an exact event code. <strong>Amended 2026-10-03 (b):</strong> one bot source (<code>scripts/gas_email_ingestion.js</code>); its <code>help</code> is the command list, kept in step by GAS.HELP tests; the Telegram <code>delete</code> command was never built.</td>
+<td>Event-Centric Ingestion + Telegram Admin. <strong>Amended 2026-10-03 by <a href="adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a>:</strong> <code>ingest … prod</code> is refused for a domestic event; <code>promote</code> and <code>complete</code> take an exact event code. <strong>Amended 2026-10-03 (b):</strong> one bot source (<code>scripts/gas_telegram_bot.js</code>); its <code>help</code> is the command list, kept in step by GAS.HELP tests; the Telegram <code>delete</code> command was never built. <strong>Amended 2026-10-06:</strong> <code>ingest</code> takes the event code only — the URL is the event's own, set in Admin, and a typed URL is refused (GAS.SRC.04); the bot source is renamed <code>scripts/gas_telegram_bot.js</code>.</td>
 <td>FR-79–85, ADR-022/023/024, ADR-108</td>
 </tr>
 <tr>
@@ -3106,5 +3106,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>18d861359010f6e37c458fc10dd7724ff530e3dcfc04fe2fed1890916f06f665</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>977be9e85b41ace6e9e8e0070b67dac046ccb8589eba2056f965763d9e00db19</code></footer>
 </div></body></html>
