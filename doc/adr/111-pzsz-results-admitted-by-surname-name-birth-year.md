@@ -1,6 +1,6 @@
 # ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer
 
-**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Not yet implemented; built under `doc/plans/pzsz-results-plugin-2026-10-06.html`.
+**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a); not yet on CERT or PROD.
 **Date:** 2026-10-06
 **Amends:** [ADR-100](100-pzsz-senior-result-ingestion.md) (the matching rule for a PZSz bracket, the review queue no longer written, the source of the birth year), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays a PZSz run too; one route to PROD for every organizer)
 **Relates to:** [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (the EVF admission that is copied, left unchanged), [ADR-105](105-international-results-keep-source-bracket.md) (the whole field's N and the original place), [ADR-110](110-ranking-entry-by-roster.md) (the fencer table is the ranking entry), [ADR-087](087-pzsz-senior-calendar-source.md) (the PZSz calendar and `id_pzsz_event`), [ADR-103](103-spws-place-medal-engine-per-type.md) and [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (PPS and MPS stay on EVF classic, unchanged), [ADR-025](025-event-centric-ingestion-telegram.md) (the `ingest` and `promote` commands, unchanged)
@@ -78,27 +78,39 @@ When no starter matches, nothing is written, no empty tournament is created, and
 
 **New:**
 
-- `python/pipeline/plugins/pzsz_admission.py`, first committed as a copy of `international_admission.py`;
-- `python/scrapers/pzsz_start_list.py`, a pure reader of a PZSz tournament page;
-- saved copies of Poznań's two PZSz pages as test fixtures.
+- `python/pipeline/plugins/pzsz_admission.py`, first committed as a copy of `international_admission.py`, then changed (`AdmitPzszRoster`, `admit`, `start_list_years`);
+- `python/scrapers/pzsz_start_list.py`, a pure reader of a PZSz event page and its tournament pages, which refuses the JavaScript check page (`read_event_start_lists` is given the fetch);
+- test fixtures with the markup of Poznań's pages and synthetic people, because the repository is public and the real start lists are of young fencers; the event page's tournament table is verbatim.
 
 **Changed:**
 
 - `engine/rulebook.py`: the PZSz flow uses the new plugin in place of `ResolveFencers`;
-- `ingest_cli.py`: a PZSz event takes the PZSz path, and the bracket name is never decoded into an age category;
-- `promotion/plan.py` and the run record: the PZSz path in promote, and the start-list hash.
+- `ingest_cli._ingest_event_rounds`, which `ingest` and promote's plan both call, sends a PZSz event to `_ingest_pzsz_event_rounds`. The listing name gives weapon and gender only, never an age category. Every page is read before anything is written. The keep-rule is the domestic one, with one category, `SENIOR`;
+- the run record keeps each PZSz listing's start-list hash and the PZSz event it read; promote refuses a changed start list, and reads the CERT run's PZSz event when PROD's row has none (the calendar promotion does not carry `id_pzsz_event`; PPS1s-2026-2027 has none on PROD);
+- `CommitPzszSenior` writes nothing when nobody matched, never queues a review row, and sends N with the rows only (`ingest_results`), the one write promote's recorder replays;
+- `DbConnector.find_event_by_code` returns `id_pzsz_event`;
+- the automation report lists a PZSz field's stored rows and every skipped starter with the start-list birth year, the reason and our namesake, namesakes first.
+
+**Removed:** `ingest_cli.ingest_pzsz_senior_bracket_from_url` (ADR-100), which nothing called and which had no start list.
 
 **Unchanged:**
 
 - the PPW flow;
 - the EVF admission and the EVF sync;
-- `CommitPzszSenior`'s storage;
+- `CommitPzszSenior`'s storage (one `SENIOR` tournament per weapon and gender, the whole field's N, the original place);
 - PPS and MPS scoring;
 - the bot and `ingest-event.yml`.
 
-**Left in place, unused:** `tbl_pzsz_match_review` and its approve and reject functions. Nothing writes the review queue any more.
+**Left in place, unused:** `tbl_pzsz_match_review` and its approve and reject functions, and the `PZSZ_SENIOR` intake of `ResolveFencers`. Nothing writes the review queue any more.
 
-**Risk:** `pzszerm.pl` answers some networks with a JavaScript check. The PZSz calendar sync reads it from GitHub Actions today. If a start list cannot be read, the run fails and writes nothing; the run never tries to get past the check.
+**Risk:** `pzszerm.pl` answers some requests with a JavaScript check: this Mac on 2026-10-06, and GitHub Actions on 30 September and 3–6 October, when the calendar sync read no event. If a start list cannot be read, the run fails and writes nothing; the run never tries to get past the check.
+
+## Open items
+
+Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. Each is put to the user, with a recommendation, in the plan's "Decide now" section.
+
+1. **D1 · the JavaScript check.** Recommendation: send `ingest <code>` again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.
+2. **D2 · an end date shorter than the listings.** PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays `IN_PROGRESS` under ADR-108 §7. Recommendation: correct the end date in Admin before the CERT ingest, and keep the PZSz sync from setting it back.
 
 **Out of scope:**
 

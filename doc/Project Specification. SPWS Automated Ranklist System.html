@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="b3e6726e0822532e08e3558504a2f1d179ab0d034e393d092c89b26ea24da213">
+<meta name="doc-source-sha256" content="fb29a90563ba7440c0779c9a7234eb61c7ec962eefb55a09e9d62002b4406e49">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2954,7 +2954,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a></td>
-<td><strong>Accepted (decided by the user in chat 2026-10-06; not yet implemented).</strong> PPS and MPS are not PPW: a PZSz result is imported similarly to EVF, not exactly like it. A row is kept only when exactly one fencer in the fencer table matches its surname, first name and birth year — the year of the birth date on the PZSz start list, as FencingTimeLive carries none; everything else is skipped (no fencer, alias, birth-year change or review row). The matcher is <code>AdmitPzszRoster</code>, first a copy of the EVF admission, then changed; it replaces <code>ResolveFencers</code> in the PZSz flow. Nobody matched → nothing is written and the event is closed. One route to PROD for every organizer: ingest for CERT, promote for PROD, the same ingestion.</td>
+<td><strong>Accepted (decided by the user in chat 2026-10-06); implemented and rehearsed on LOCAL 2026-10-06, not yet on CERT or PROD.</strong> PPS and MPS are not PPW: a PZSz result is imported similarly to EVF, not exactly like it. A row is kept only when exactly one fencer in the fencer table matches its surname, first name and birth year — the year of the birth date on the PZSz start list, as FencingTimeLive carries none; everything else is skipped (no fencer, alias, birth-year change or review row). The matcher is <code>AdmitPzszRoster</code>, first a copy of the EVF admission, then changed; it replaces <code>ResolveFencers</code> in the PZSz flow. Nobody matched → nothing is written and the event is closed. One route to PROD for every organizer: ingest for CERT, promote for PROD, the same ingestion.</td>
 <td>ADR-100, ADR-108, ADR-106, ADR-105, ADR-110, ADR-087</td>
 </tr>
 <tr>
@@ -3111,5 +3111,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>b3e6726e0822532e08e3558504a2f1d179ab0d034e393d092c89b26ea24da213</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>fb29a90563ba7440c0779c9a7234eb61c7ec962eefb55a09e9d62002b4406e49</code></footer>
 </div></body></html>

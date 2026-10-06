@@ -126,9 +126,38 @@
   <p class="dek">PPS and MPS are not PPW. Their results are imported <b>similarly to EVF, not exactly like it</b>. A result is kept only for a fencer already in our fencer table, matched on <b>surname, first name and birth year</b>. The birth year is the year of the birth date on the <b>PZSz start list</b>. Every other row is skipped. The matching is a new <b>PZSz plugin, started as a copy of the EVF admission and then changed</b>. PZSz is a different organizer, and it is not a veterans' organizer.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>Decided 6 Oct: Q1 = ingest for CERT, promote for PROD · Q2–Q4 = A</span>
-    <span class="pill warn"><span class="dot"></span>Awaiting: sign-off of this revision</span>
-    <span class="pill"><span class="dot"></span>Nothing built yet · CERT and PROD unchanged</span>
+    <span class="pill"><span class="dot"></span>Built test-first and rehearsed on LOCAL (6 Oct) · not pushed · CERT and PROD unchanged</span>
+    <span class="pill warn"><span class="dot"></span>Awaiting: D1 and D2 below, then your go to push</span>
   </div>
+
+  <section id="decide-now">
+    <p class="kicker">0 · Decide now · from the LOCAL run</p>
+    <h2>Two questions before Poznań goes to CERT</h2>
+
+    <h3>D1 · pzszerm.pl refuses automated reads on some days</h3>
+    <p>A plain HTTP client gets pzszerm.pl's JavaScript check page instead of the start list. That happens from this Mac today. It also happens from GitHub Actions, where the Telegram <code>ingest</code> runs: the daily PZSz calendar sync read 0 events there on 30 September and on 3–6 October, but all 6 events on 1–2 October. A run that meets the check fails and writes nothing (ADR-111). Nothing tries to get past it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>After the push, send <code>ingest PPS1s-2026-2027</code>. If Telegram reports the JavaScript check, send it again later.</td><td>The check comes and goes, and a refused run changes nothing.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>If the check holds for a week, plan an Admin upload of a saved PZSz page, read in place of pzszerm.pl.</td><td>A new feature, with its own plan; only worth it if the check stays.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>Close Poznań by hand (<code>fn_complete_event</code>) on CERT and PROD.</td><td>Same end state, verified on LOCAL today. But there would be no recorded CERT run, and you asked for the ingestion first.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>D2 · Poznań's end date is one day short</h3>
+    <p>Our event says 3 October only. PZSz publishes just a start date ("Data rozpoczęcia: 03.10.2026"), and FencingTimeLive dates one of the two listings 4 October. The lifecycle rule (ADR-108 §7) therefore leaves the event <code>IN_PROGRESS</code>, with the message "a listing is dated 2026-10-04, after the end date 2026-10-03: correct the event's dates". The LOCAL rehearsal ended exactly there.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Before the CERT ingest, set the end date to 4 October in Admin on CERT; the calendar promotion copies it to PROD before the promote. Then the ingest and the promote both close the event. A follow-up task stops the PZSz calendar sync from setting the end date back to the start date.</td><td>The rule asks for exactly this. The sync owns the dates and sets the end to the start whenever it can read PZSz; that would not reopen a closed event, but the card would show 3 October again.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>For PZSz events, take the latest FTL listing day as the end date.</td><td>It changes the lifecycle rule for one organizer.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>Leave it <code>IN_PROGRESS</code> after the ingest and close it by hand.</td><td>It works, by hand.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <hr class="rule">
 
   <div class="note accent">
     <p class="lede"><span class="tick">▸</span> In short · 6 October</p>
@@ -220,8 +249,8 @@
       <li>The run report, which already comes back to Telegram, lists every skipped starter with the reason. Same-name fencers with a different birth year are shown first.</li>
     </ul>
     <div class="note warn">
-      <p class="lede">pzszerm.pl answers some networks with a JavaScript check</p>
-      <p>A plain request from this machine gets a "Wczytywanie danych…" page. The daily PZSz calendar sync reads the same site from GitHub Actions without trouble. If a start list cannot be read, the run fails and writes nothing. The plan does not try to get past the check.</p>
+      <p class="lede">pzszerm.pl answers some requests with a JavaScript check</p>
+      <p>A plain request gets a "Wczytywanie danych…" page on some days. That happens from this machine, and from GitHub Actions on 30 September and 3–6 October. (This note first said Actions read the site without trouble; the sync logs show otherwise, see D1.) If a start list cannot be read, the run fails and writes nothing. The plan does not try to get past the check.</p>
     </div>
   </section>
 
@@ -295,6 +324,37 @@
     </ol>
   </section>
 
+  <section id="built">
+    <p class="kicker">5a · Built and rehearsed · 6 October</p>
+    <h2>What exists now, on branch <code>claude/evf-skopje-imew-fix</code>, not pushed</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Commit</th><th>What</th></tr></thead>
+      <tbody>
+        <tr><td><code>56346365</code></td><td>ADR-111; ADR-100 and ADR-108 amended; handbook, glossary, runbook; RTM FR-155 and FR-156.</td></tr>
+        <tr><td><code>21469122</code></td><td>The plain, unchanged copy of the EVF admission as <code>plugins/pzsz_admission.py</code>.</td></tr>
+        <tr><td><code>6c6e8dfc</code></td><td><code>AdmitPzszRoster</code>, changed from the copy. Also the start-list reader <code>python/scrapers/pzsz_start_list.py</code>, and the PZSz flow using the plugin. <code>CommitPzszSenior</code> writes nothing when nobody matched and never queues a review.</td></tr>
+        <tr><td><code>f784e532</code></td><td><code>ingest</code> (CERT) and <code>promote</code> (PROD) both route a PZSz event to the PZSz path. Every page is read before any write. The run record keeps each start list's hash. N travels with the rows only, the one write promote replays.</td></tr>
+        <tr><td><code>c96db6eb</code></td><td>Promote reads the start lists the CERT run read. PROD's calendar row has no <code>id_pzsz_event</code> today, because the calendar promotion does not carry it; that is a separate task.</td></tr>
+        <tr><td><code>be023eb8</code></td><td>Two gaps found by the LOCAL run: the event lookup did not return <code>id_pzsz_event</code>, and the report did not say why each starter was skipped.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Tests:</b> PZSZ.ADM.01–08, PZSZ.SL.01–02 and PZSZ.ROUTE.01–03, each seen RED first. The whole Python suite passes: 1865 passed, 14 skipped. With the organizer dispatch switched off, 9 of the 10 routing tests fail, so the tests really exercise the routing. The start-list fixtures keep Poznań's markup with synthetic people, because the repository is public and the real lists are of young fencers.</p>
+    <h3>LOCAL rehearsal on Poznań's real start lists and live FencingTimeLive</h3>
+    <p>The start lists were copied from the in-app browser into a scratch folder, never the repository, because pzszerm.pl refused this Mac (D1). Everything else ran as <code>ingest-event.yml</code> runs it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>Expected</th><th>LOCAL</th></tr></thead>
+      <tbody>
+        <tr><td>FTL listings</td><td>men's and women's sabre, never V0</td><td>"Senior Men's Saber" → SABRE·M, "Senior Women's Saber" → SABRE·F, PZSz senior field</td></tr>
+        <tr><td>Starters skipped</td><td>99</td><td>99 (53 + 46), each paired with its start-list entry</td></tr>
+        <tr><td>First in the report</td><td>the two namesakes</td><td>KROCHMALSKI Jakub, 18th, born 2008: ours #156 born 1976. NOWAK Marta, 31st, born 2007: ours #205 born 1979</td></tr>
+        <tr><td>Fencers created, aliases, birth years moved, review rows</td><td>0</td><td>0 (373 fencers, roster hash unchanged)</td></tr>
+        <tr><td>Tournaments and results written</td><td>0</td><td>0</td></tr>
+        <tr><td>Event status</td><td><code>COMPLETED</code></td><td><code>IN_PROGRESS</code>, held by the end date (D2)</td></tr>
+      </tbody>
+    </table></div>
+    <p>The report files of the rehearsal named real young fencers and were deleted.</p>
+  </section>
+
   <section id="out">
     <p class="kicker">6 · Not in this plan</p>
     <h2>Left for later</h2>
@@ -303,6 +363,7 @@
       <li>Team results (your question of 6 October, deferred).</li>
       <li>An automatic close for PZSz and international events. Today's daily close covers PPW and MPW only.</li>
       <li>Retiring the ADR-100 review table and its two functions. They stay in place, unused, and the new ADR says so.</li>
+      <li>Two defects found on the way, offered as separate tasks: the PZSz calendar sync reads the JavaScript check page as "every event vanished" and stays green; the calendar promotion does not carry <code>id_pzsz_event</code> to PROD.</li>
     </ul>
   </section>
 
