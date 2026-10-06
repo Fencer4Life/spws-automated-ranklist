@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="089-event-weapons-and-card-header.md">
-<meta name="adr-source-sha256" content="a364fc94f1eda5929a498fcb22566a5ff97ddf3b1bf578dd2716922d59a15712">
+<meta name="adr-source-sha256" content="0a3358f418a25ed4d7e23392fa85280d1de7048d214abb545debf24abdac7e2a">
 <title>ADR-089 · The event&#x27;s weapons live on the event, and the card header carries identity</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 089</p><h1>The event's weapons live on the event, and the card header carries identity</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>089-event-weapons-and-card-header.md</code></dd></div><div><dt>Length</dt><dd class="">214 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-04</dd></div><div><dt>Source</dt><dd class=""><code>089-event-weapons-and-card-header.md</code></dd></div><div><dt>Length</dt><dd class="">230 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-04, accepted 2026-09-04). Implemented and released to CERT and PROD.
 <strong>Date:</strong> 2026-09-04
 <strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §8 and its registry-from-code assumption (the card's field order and its registry chip), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the resolved weapon set now reaches <code>arr_weapons</code>, not only the event code)
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#a-fill-blank-guard-that-could-never-fire">A fill-blank guard that could never fire</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-drop-the-default-the-guard-is-fine">1 · Drop the default; the guard is fine</a></li><li class="depth-3"><a href="#2-the-card-reads-the-field-not-the-code">2 · The card reads the field, not the code</a></li><li class="depth-3"><a href="#3-close-the-create-then-refresh-gap">3 · Close the create-then-refresh gap</a></li><li class="depth-3"><a href="#4-the-header-carries-identity-the-date-gets-its-own-row">4 · The header carries identity; the date gets its own row</a></li><li class="depth-3"><a href="#5-the-organizer-is-read-from-the-row-not-inferred-from-the-code">5 · The organizer is read from the row, not inferred from the code</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#a-fill-blank-guard-that-could-never-fire">A fill-blank guard that could never fire</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-drop-the-default-the-guard-is-fine">1 · Drop the default; the guard is fine</a></li><li class="depth-3"><a href="#2-the-card-reads-the-field-not-the-code">2 · The card reads the field, not the code</a></li><li class="depth-3"><a href="#3-close-the-create-then-refresh-gap">3 · Close the create-then-refresh gap</a></li><li class="depth-3"><a href="#4-the-header-carries-identity-the-date-gets-its-own-row">4 · The header carries identity; the date gets its own row</a></li><li class="depth-3"><a href="#5-the-organizer-is-read-from-the-row-not-inferred-from-the-code">5 · The organizer is read from the row, not inferred from the code</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-10-06-the-calendar-ingest-writes-the-weapons-with-the-code">Amendment (2026-10-06) — the calendar ingest writes the weapons with the code</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The weapon pills were missing from the upcoming <code>PPW1-2026-2027</code> card. Not
 obscured — never rendered.</p>
@@ -194,9 +194,8 @@ because both halves read correctly on their own.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ol>
-<li><strong><code>fn_ingest_evf_calendar</code> still does not set <code>arr_weapons</code> at creation.</strong>
-The roster re-read makes this invisible. <strong>Recommendation:</strong> fold it in when
-that function is next edited for another reason, rather than replacing it now.</li>
+<li><s><strong><code>fn_ingest_evf_calendar</code> still does not set <code>arr_weapons</code> at creation.</strong></s>
+<strong>Resolved 2026-10-06</strong> — see the amendment below.</li>
 <li><strong>EVF and PZSz ship cropped raster.</strong> Both were extracted from wider lockups —
 EVF from the site banner, PZSz from a 224×100 horizontal logo.
 <strong>Recommendation:</strong> ask both federations for vector versions; FIE's SVG shows
@@ -205,8 +204,21 @@ what that buys.</li>
 Left as-is. <strong>Recommendation:</strong> a judgement call for the association, not one
 to make in code.</li>
 </ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-06-the-calendar-ingest-writes-the-weapons-with-the-code">Amendment (2026-10-06) — the calendar ingest writes the weapons with the code</h2>
+<p><strong>Decision record:</strong> <code>doc/plans/evf-skopje-european-championships-2026-10-06.html</code> (signed off 2026-10-06).</p>
+<p><strong>Context.</strong> Open item 1 was invisible only while the weapon set never changed. When EVF changed
+Madrid's weapons, <code>fn_ingest_evf_calendar_identity_v1</code> renamed the code to <code>PEW2efs-2026-2027</code> while
+the fill-blank refresh left <code>arr_weapons</code> at <code>{EPEE,SABRE}</code> on CERT and PROD — the invariant &quot;where an
+event code carries a weapon suffix, this column agrees with it&quot; broken by the writer meant to keep it.</p>
+<p><strong>Decision.</strong> The calendar ingest writes <code>arr_weapons</code> from the scraped weapons, in canonical order,
+whenever it writes the code: on insert and on rename. A European Championship's code carries no
+suffix (ADR-043 amendment 2026-10-06), so its weapons live in this column alone.</p>
+<p><strong>Consequences.</strong> Madrid self-heals on the next run; a weapon change upstream moves the suffix and
+the column together. Pinned by pgTAP 107.3. See
+<a href="../../supabase/migrations/20261006000002_evf_singleton_championships.sql"><code>20261006000002_evf_singleton_championships.sql</code></a>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="088-calendar-location-contract.html">← ADR-088: One location contract for every calendar scraper — city, venue and address</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="090-prod-surface-as-wordpress-menu-item.html">→ ADR-090: Publishing a PROD surface as a full-screen WordPress menu item</a></nav>
-<footer class="foot">Generated from <code>089-event-weapons-and-card-header.md</code> · source SHA-256 <code>a364fc94f1eda5929a498fcb22566a5ff97ddf3b1bf578dd2716922d59a15712</code></footer>
+<footer class="foot">Generated from <code>089-event-weapons-and-card-header.md</code> · source SHA-256 <code>0a3358f418a25ed4d7e23392fa85280d1de7048d214abb545debf24abdac7e2a</code></footer>
 </div></body></html>

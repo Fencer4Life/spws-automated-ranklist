@@ -202,9 +202,8 @@ because both halves read correctly on their own.
 
 ## Open items
 
-1. **`fn_ingest_evf_calendar` still does not set `arr_weapons` at creation.**
-   The roster re-read makes this invisible. **Recommendation:** fold it in when
-   that function is next edited for another reason, rather than replacing it now.
+1. ~~**`fn_ingest_evf_calendar` still does not set `arr_weapons` at creation.**~~
+   **Resolved 2026-10-06** — see the amendment below.
 2. **EVF and PZSz ship cropped raster.** Both were extracted from wider lockups —
    EVF from the site banner, PZSz from a 224×100 horizontal logo.
    **Recommendation:** ask both federations for vector versions; FIE's SVG shows
@@ -212,3 +211,20 @@ because both halves read correctly on their own.
 3. **SPWS brand red sits beside the SPWS organizer edge, which is green.**
    Left as-is. **Recommendation:** a judgement call for the association, not one
    to make in code.
+
+## Amendment (2026-10-06) — the calendar ingest writes the weapons with the code
+
+**Decision record:** `doc/plans/evf-skopje-european-championships-2026-10-06.html` (signed off 2026-10-06).
+
+**Context.** Open item 1 was invisible only while the weapon set never changed. When EVF changed
+Madrid's weapons, `fn_ingest_evf_calendar_identity_v1` renamed the code to `PEW2efs-2026-2027` while
+the fill-blank refresh left `arr_weapons` at `{EPEE,SABRE}` on CERT and PROD — the invariant "where an
+event code carries a weapon suffix, this column agrees with it" broken by the writer meant to keep it.
+
+**Decision.** The calendar ingest writes `arr_weapons` from the scraped weapons, in canonical order,
+whenever it writes the code: on insert and on rename. A European Championship's code carries no
+suffix (ADR-043 amendment 2026-10-06), so its weapons live in this column alone.
+
+**Consequences.** Madrid self-heals on the next run; a weapon change upstream moves the suffix and
+the column together. Pinned by pgTAP 107.3. See
+[`20261006000002_evf_singleton_championships.sql`](../../supabase/migrations/20261006000002_evf_singleton_championships.sql).

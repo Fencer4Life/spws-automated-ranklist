@@ -1,0 +1,499 @@
+<meta charset="utf-8">
+<title>Skopje 2027 is a European Championship, not PEW16</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">EVF calendar sync · LOCAL · CERT · PROD · Analysis and fix plan</p>
+  <h1>Skopje 2027 is a European Championship, not PEW16</h1>
+  <p class="dek">The EVF calendar sync stored the <b>2027 Individual European Veterans Championships</b> (Skopje, 5–9 May 2027) as an ordinary circuit event, <code>PEW16fs-2026-2027</code>, with foil and sabre only and a one-day span. It is the same row on <b>LOCAL, CERT and PROD</b>. Four separate defects produced it. This page shows the evidence for each one, proposes one fix that repairs all three environments through the existing sync, and lists the five decisions it needs from you.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Decided 6 Oct: Q1–Q5 = A</span>
+    <span class="pill"><span class="dot"></span>Built · LOCAL done</span>
+    <span class="pill"><span class="dot"></span>ADRs signed off · go CERT (6 Oct)</span>
+    <span class="pill">branch <code>claude/evf-skopje-imew-fix</code></span>
+  </div>
+
+  <div class="note accent">
+    <p class="lede"><span class="tick">▸</span> Where this stands · 6 October</p>
+    <ul style="margin-bottom:0">
+      <li><b>Built, test first.</b> 20 pytest cases (evf.76–evf.83) and 9 pgTAP assertions (107.1–107.9) were each seen RED, then GREEN. Migration <code>20261006000002_evf_singleton_championships.sql</code>: postgrestools clean. <code>scripts/preflight.sh</code> exits 0 with all 15 gates passing (pytest 1820, Vitest 1226, pgTAP 1417 in 108 files).</li>
+      <li><b>LOCAL done</b> (<a href="#local">§9a</a>). The real sync ran against live EVF data, and LOCAL matches the end-state table. A second dry run plans no rename.</li>
+      <li><b>Signed off 6 October:</b> the four ADR amendments (now on disk with their registry rows) and the go for CERT. <b>PROD waits for its own go.</b> Note: once CERT holds the fix, the next scheduled promote (06:00 UTC, in <code>evf-sync.yml</code> and <code>pzsz-sync.yml</code>) carries it to PROD by itself, so the PROD go is due before then.</li>
+    </ul>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order</p>
+    <h2>What is on this page</h2>
+    <ol>
+      <li><a href="#now">What the environments hold today</a></li>
+      <li><a href="#why">Why it happened: four defects, with evidence</a></li>
+      <li><a href="#harm">What it would have done in May 2027</a></li>
+      <li><a href="#decide">Decide this first: five questions</a></li>
+      <li><a href="#fix">The fix, layer by layer</a></li>
+      <li><a href="#end">End state on every environment</a></li>
+      <li><a href="#walk">Scenario walk-throughs</a></li>
+      <li><a href="#tests">Tests first (RED before GREEN)</a></li>
+      <li><a href="#rollout">Rollout: LOCAL, then CERT, then PROD</a> · <a href="#local">LOCAL result</a></li>
+      <li><a href="#docs">Documentation coherence gate</a> · <a href="#adr">ADR drafts for sign-off</a></li>
+      <li><a href="#aside">Found on the way, not part of this fix</a></li>
+      <li><a href="#done">Definition of done</a></li>
+    </ol>
+  </section>
+
+  <section id="now">
+    <p class="kicker">1 · Today</p>
+    <h2>The same wrong row on all three environments</h2>
+    <p>Read on 6 October 2026: CERT and PROD through <code>scripts/cloud-sql.sh</code>, LOCAL through <code>psql</code> in the database container. EVF's column comes from its own calendar page and its published schedule (<code>SCHEDULES-SKOPJE-2027-V3.pdf</code>).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Field</th><th>EVF publishes</th><th>LOCAL (id 97)</th><th>CERT (id 153)</th><th>PROD (id 151)</th></tr></thead>
+      <tbody>
+        <tr><td>Event code</td><td>Individual European Championships</td><td><code>PEW16fs-2026-2027</code></td><td><code>PEW16fs-2026-2027</code></td><td><code>PEW16fs-2026-2027</code></td></tr>
+        <tr><td>Weapons</td><td>épée, foil, sabre (schedule lists all three)</td><td>FOIL, SABRE</td><td>FOIL, SABRE</td><td>FOIL, SABRE</td></tr>
+        <tr><td>Dates</td><td>5–9 May 2027</td><td>5 May – 5 May</td><td>5 May – 5 May</td><td>5 May – 5 May</td></tr>
+        <tr><td>Previous edition link (<code>id_prior_event</code>)</td><td>Individual Europeans 2025</td><td>none</td><td>none</td><td>none</td></tr>
+        <tr><td>Created</td><td>EVF calendar post 5407</td><td>seed of 6 Oct</td><td>by the sync</td><td>15 Sep 2026 11:25 UTC</td></tr>
+      </tbody>
+    </table></div>
+    <p>The wrong slot also pushes the two events after it down. Dublin is <code>PEW17efs</code> and Toronto <code>PEW18efs</code>; without Skopje they are PEW16 and PEW17. Season 2026/27 carries <code>enum_european_event_type = IMEW</code>, so the season itself says it expects an individual European Championship.</p>
+  </section>
+
+  <section id="why">
+    <p class="kicker">2 · Root cause</p>
+    <h2>Four defects, each proven against live data</h2>
+    <p>The two symptoms you saw come from two separate defects (1 and 2). Tracing them exposed two more that touch the same row (3 and 4). The probes ran the repository's own scraper functions against EVF's live pages; nothing was written anywhere.</p>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">1 ×</span> The code planner turns every calendar entry into a PEW</p>
+      <p><code>plan_calendar_codes</code> (<code>python/scrapers/evf_calendar.py:169–233</code>) gives every retained entry the next chronological <code>PEW{n}{weapons}</code> code (line 231). There is no championship branch. The database re-checks that plan in <code>fn_ingest_evf_calendar_identity_v1</code> (latest definition <code>supabase/migrations/20260913000002_no_bracket_stubs.sql:258</code>), whose expected code is also PEW-only (lines 434–448). Any other code is refused as <code>code plan mismatch</code> (line 450).</p>
+      <p>The classifier still exists: <code>fn_classify_evf_event</code> returns <code>IMEW</code> for this name (<code>20260427000001_event_code_allocator.sql:107–123</code>; pgTAP evf.28 checks exactly that). The insert branch even calls it (line 518), but uses the result only to look up a previous-season link. The row is then inserted under the PEW code (line 533). The previous-season lookup finds nothing, because 2025/26 held the team championship (DMEW), not an individual one.</p>
+      <p style="margin-bottom:0"><b>How it got this way:</b> the 7 Aug 2026 amendment to ADR-043 replaced the allocator with complete-snapshot numbering: "every remaining competition receives a positive chronological PEW code". The championship case was never carried into the new design. On 6 Sep, ADR-091 removed the <code>IMEW-2026-2027</code> season skeleton because the sync would discover the event. It did discover it, on 15 Sep, but numbered it as a circuit event.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">2 ×</span> "épée" with accents is not read as a weapon</p>
+      <p>EVF's list-page post for Skopje carries no weapon categories, and the detail page names no weapon. The evidence ladder (ADR-086, <code>repair_missing_weapons</code>, lines 849–916) therefore falls through to the schedule PDF. That PDF writes <i>"Women's épée V3"</i>, <i>"Men's foil V1"</i>, <i>"Men's sabre V2"</i>. The matcher <code>_DETAIL_WEAPON_RE = \b(EPEE|FOIL|SABRE)\b</code> (line 93) does not fold accents, so <i>épée</i> never matches.</p>
+      <pre class="trace">_weapons_from_pdf_bytes(SCHEDULES-SKOPJE-2027-V3.pdf) → <b>['FOIL', 'SABRE']</b>
+_weapons_from_text("Women's épée V3")             → <b>[]</b></pre>
+      <p style="margin-bottom:0">The resulting <code>fs</code> suffix became part of the code, and <code>arr_weapons</code> was filled with foil and sabre. A <code>_diacritic_fold</code> helper already exists in the same module (line 1539) but is used only for name matching.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">3 ×</span> Every 2027 event lost its end date <span style="font-weight:600;color:var(--muted)">— found while tracing the one-day span</span></p>
+      <p>For events in a different calendar year, EVF's list writes full dates: <code>05/05/2027 - 09/05/2027</code>. For the current year it writes <code>31 October - 1 November</code>. <code>_tribe_event_end_date</code> (lines 387–412) tries only the day-and-month-name formats (line 404) and otherwise falls back to the start date.</p>
+      <p style="margin-bottom:0">Run against today's live list, <b>13 of the 17 upcoming entries</b> come back with end = start. That is every entry dated 2027: Guildford, Tampere, Levi, Fâches-Thumesnil, Lausanne, Naples, Stockholm, Athens, Salzburg, Liège, Skopje, Dublin and Toronto (18–20 June stored as 18–18). The identity sync (<code>fn_sync_evf_event_fields</code>, <code>evf_sync.py:585–617</code>) writes the wrong date to CERT, and the reconciler carries it to PROD.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">4 ~</span> The weapons column does not follow the code</p>
+      <p>When EVF changes an event's weapons, the ingest renames the code (new suffix) but leaves <code>arr_weapons</code> alone. The rename's <code>UPDATE</code> (<code>20260913000002:507–516</code>) has no weapons column, and the URL refresh fills the column only when it is blank (<code>20260904000001:12–14</code>). Madrid shows it today. EVF lists épée, foil and sabre, and the code is <code>PEW2efs</code>, but CERT and PROD hold <code>{EPEE,SABRE}</code>; the 3 Oct review flagged this and left it unchanged. This breaks the invariant on the events handbook page: "where an event code carries a weapon suffix, the suffix is authoritative and this column agrees with it."</p>
+      <p style="margin-bottom:0">It matters here because Skopje's corrected code, <code>IMEW-2026-2027</code>, has no suffix. Without this fix its <code>arr_weapons</code> would stay foil and sabre. ADR-089 already records this as open item 1: <i>"fold it in when that function is next edited"</i>.</p>
+    </div>
+
+    <h3>Why no test caught it</h3>
+    <ul>
+      <li>The planner tests contain no championship entry. The only championship fixture, Cognac 2026, is used for city resolution (evf.66). The classifier's own pgTAP tests (evf.27–29) pass, because the classifier is correct; its result just never reaches the code.</li>
+      <li>The list-page fixture has only the <code>22 August</code> end-date shape (<code>test_evf_calendar.py:102</code>). The EVF markup for another calendar year never appears.</li>
+      <li>No weapon fixture contains an accented <i>épée</i>.</li>
+    </ul>
+  </section>
+
+  <section id="harm">
+    <p class="kicker">3 · Consequences</p>
+    <h2>What it would have done when the results arrive</h2>
+    <ul>
+      <li><b>Scored as a circuit event.</b> A tournament's type is derived from its event code. Skopje's results would be typed PEW and scored and ranked as a circuit event, not as the European Championships (MEW).</li>
+      <li><b>No series link.</b> With no <code>id_prior_event</code>, the FK engine sees no previous edition. (No ranking effect today; §11 explains why.)</li>
+      <li><b>Wrong on the public calendar now.</b> The card shows it in the circuit colour, with two weapon pills and a one-day date. Every 2027 event shows as a single day.</li>
+      <li><b>Nothing scored, nothing entered.</b> No tournaments and no registrations exist on any environment. Skopje, Dublin and Toronto can therefore still be renamed safely (the <code>_is_safe_to_renumber</code> conditions: future, no registrations, no results).</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">4 · Decided</p>
+    <h2>Five questions, each with a recommendation</h2>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Decided 6 October: all five A, as recommended</p>
+      <p style="margin-bottom:0">Your words: &ldquo;all recommended, go&rdquo;. The options stay below for the record.</p>
+    </div>
+
+    <h3>Q1 · Which calendar entries are a European Championship?</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Rule</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>The name contains the words <b>European</b> and <b>Championship(s)</b> (diacritic-folded, whole words). A team entry is <code>DMEW-{season}</code>; otherwise <code>IMEW-{season}</code>. Any other entry naming a championship is held back with an alert. Everything else goes into the PEW sequence.</td><td>Skopje becomes IMEW. A "World Veterans Championships" listing would no longer be numbered as a circuit event or mislabelled as European; it would wait for you.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>ADR-043's existing rule: any name containing <i>championship</i> is IMEW (or DMEW when team).</td><td>Simplest. A world or national championship on EVF's list would become a second IMEW.</td></tr>
+        <tr><td><span class="chip plain">C</span></td><td>No rule: a hand-maintained list of EVF calendar ids, like <code>_KNOWN_WEAPON_OVERRIDES</code>.</td><td>Needs a code change every two years. If the list is late, the event is mis-numbered again.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q2 · What happens when the snapshot is inconsistent?</h3>
+    <p>Examples: two individual European Championships in one season, a team championship in a season typed <code>IMEW</code>, or a held-back non-European championship.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Behaviour</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>Hold back only that entry, report it on Telegram and in the run log, and sync the rest of the season.</td><td>The ADR-086 lesson: one untagged post in January 2027 once stopped the whole season, and results with it, for nine days.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Fail the whole calendar run (<code>CalendarIntegrityError</code>).</td><td>Strictest, but it repeats the Tampere outage pattern.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q3 · Should IMEW 2026/27 link to the 2025 Individual Europeans?</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Link</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>When a European singleton has no link, set <code>id_prior_event</code> to the latest earlier event of the same kind: <code>IMEW-2024-2025</code>, or for DMEW, <code>DMEW-2025-2026</code>. An existing link is never overwritten.</td><td>Records the series the way ADR-021 and ADR-043 describe it. <b>No ranking change today</b>: the 2026/27 carry window is 366 days, and the 2025 championships' window ended on 2 Jun 2026.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Leave it empty.</td><td>Matches today's behaviour, but leaves the series unrecorded.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q4 · How much of this goes into one change?</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Scope</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>All four defects in one change.</td><td>Skopje is repaired completely in one sync run: code, weapons, dates and link. The 10 other 2027 events get their real end dates, and Madrid's weapons match its code.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Defects 1 and 2 only; 3 and 4 separately.</td><td>Skopje keeps its one-day span and its foil-and-sabre column until the second change.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Q5 · How does the fix reach CERT and PROD?</h3>
+    <p>Pushing to <code>main</code> releases the scraper code. From then on, the next daily <code>evf-sync.yml</code> run (06:00 UTC) applies the fix to CERT and promotes it to PROD in the same run.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>Sequence</th><th>Stop points</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">A · recommended</span></td><td>LOCAL rehearsal → push just after a 06:00 run → from the workstation, a dry run against CERT and then a real run against CERT, with the same code as <code>main</code> → verify CERT → dispatch <code>evf-sync.yml</code>, whose promote carries the fix to PROD.</td><td>Your go for CERT, then a separate go for PROD, both before the next 06:00 run.</td></tr>
+        <tr><td><span class="chip plain">B</span></td><td>Push, then one dispatched <code>evf-sync.yml</code> run updates CERT and PROD together.</td><td>One go after the LOCAL rehearsal.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="fix">
+    <p class="kicker">5 · Design</p>
+    <h2>The fix, layer by layer</h2>
+    <p>This plan adds no data migration. The corrected sync rewrites the rows the same way it writes any EVF change, so CERT, PROD and LOCAL reach the same state through one path, the reflow logic that already exists (ADR-086 §4b). The one SQL migration changes only functions.</p>
+
+    <div class="op">
+      <span class="op-tag u">PYTHON</span><span class="set">python/scrapers/evf_calendar.py</span>
+      <ul>
+        <li><b>Accents.</b> <code>_weapons_from_text</code> matches against <code>_diacritic_fold(text)</code>, so <i>épée</i>, <i>ÉPÉE</i> and <i>Epee</i> all read as EPEE. Whole-word matching is unchanged, so prose still cannot invent a weapon.</li>
+        <li><b>Dates.</b> <code>_tribe_event_end_date</code> also accepts <code>dd/mm/yyyy</code>. That form already carries the year, so it is used as is, with no year roll.</li>
+        <li><b>Classification.</b> A new <code>classify_calendar_entry(event)</code> returns <code>PEW</code>, <code>IMEW</code>, <code>DMEW</code> or <code>HOLD</code>, using the Q1 rule. <code>HOLD</code> entries leave the snapshot before validation, exactly as <code>partition_unweaponed</code> holds back weaponless entries, and are counted in the digest.</li>
+        <li><b>Planning.</b> <code>plan_calendar_codes</code> gives singletons <code>IMEW-{season}</code> / <code>DMEW-{season}</code> outside the PEW sequence. The positive PEW numbers stay exactly <code>{1..N}</code> over circuit entries only. A second singleton of the same kind follows Q2.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">PYTHON</span><span class="set">python/scrapers/evf_sync.py</span>
+      <ul>
+        <li>The payload's <code>desired_code</code> comes from the new plan; no new field is needed. Held-back championships are listed beside <code>pending_weapons</code> in the scrape-run record and in the Telegram digest.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag c">MIGRATION</span><span class="set">supabase/migrations/2026100600000N_evf_singleton_championships.sql</span>
+      <ul>
+        <li><code>fn_classify_evf_event</code>: tightened to the Q1 rule (both words). evf.27–29 keep passing; their names already follow it.</li>
+        <li><code>fn_ingest_evf_calendar_identity_v1</code>: the expected code classifies first. A singleton must be <code>IMEW-/DMEW-{season}</code> and does not advance the PEW counter. Everything else is unchanged, including the cancellation rules and the guard against renumbering scored events.</li>
+        <li>Rename/update branch: also writes <code>arr_weapons</code> from the payload's weapons (defect 4; closes ADR-089 open item 1).</li>
+        <li>Insert branch: inserts under the planned code, which is now correct for singletons, and writes <code>arr_weapons</code> at creation.</li>
+        <li>The three-argument wrapper <code>fn_ingest_evf_calendar(jsonb, int, int)</code> owns <code>id_prior_event</code>. After the delegate runs, it writes every event's link from a series key. That key carries the year ("europeanchampionships2027"), so it can never find a previous edition, and a link set anywhere else would be wiped on the same run. The singleton link (Q3 A) is therefore resolved there: the latest earlier event of the same kind, by season end, unless the target already has a link.</li>
+        <li>Both functions are reproduced from their live definitions (LOCAL <code>pg_get_functiondef</code>, identical to <code>20260913000002</code> and <code>20260808000002</code>). The edits are applied by exact-match replacement, so nothing else in them changes.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag">NO CHANGE</span><span class="set">reconciler, frontend</span>
+      <ul>
+        <li><code>promote --mode calendar</code> already matches on <code>id_evf_calendar_event</code> when a code has moved, so the rename reaches PROD as an UPDATE (ADR-086 §4b). It carries code, weapons, dates and the prior link, resolved by business code.</li>
+        <li>The calendar card takes its colour group from the code prefix (<code>IMEW</code> → <code>int</code>), its organiser from the row and its weapon pills from <code>arr_weapons</code>. All three are correct once the data is.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="end">
+    <p class="kicker">6 · Result</p>
+    <h2>End state, identical on LOCAL, CERT and PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event (EVF id)</th><th>Field</th><th>Today</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="4">Skopje (5407)</td><td>code</td><td><code>PEW16fs-2026-2027</code></td><td><code>IMEW-2026-2027</code></td></tr>
+        <tr><td>weapons</td><td>FOIL, SABRE</td><td>EPEE, FOIL, SABRE</td></tr>
+        <tr><td>dates</td><td>5–5 May 2027</td><td>5–9 May 2027</td></tr>
+        <tr><td>previous edition</td><td>none</td><td><code>IMEW-2024-2025</code> (Q3 A)</td></tr>
+        <tr><td rowspan="2">Dublin (4594)</td><td>code</td><td><code>PEW17efs-2026-2027</code></td><td><code>PEW16efs-2026-2027</code></td></tr>
+        <tr><td>dates</td><td>29–29 May</td><td>29–30 May</td></tr>
+        <tr><td rowspan="2">Toronto (5070)</td><td>code</td><td><code>PEW18efs-2026-2027</code></td><td><code>PEW17efs-2026-2027</code></td></tr>
+        <tr><td>dates</td><td>18–18 June</td><td>18–20 June</td></tr>
+        <tr><td>Madrid (877)</td><td>weapons</td><td>EPEE, SABRE (CERT, PROD)</td><td>EPEE, FOIL, SABRE (Q4 A)</td></tr>
+        <tr><td>10 other 2027 events</td><td>end date</td><td>equal to start</td><td>as EVF lists it (Q4 A)</td></tr>
+      </tbody>
+    </table></div>
+    <p>The season window (13 Jul 2026 – 15 Jul 2027) contains every corrected end date. The last one is Toronto, 20 June, so no entry crosses the boundary check.</p>
+  </section>
+
+  <section id="walk">
+    <p class="kicker">7 · Scenarios</p>
+    <h2>Walk-throughs</h2>
+    <h3>a · The first run after the release</h3>
+    <ol class="steps">
+      <li>The list page yields Skopje with no weapons and an end of 9 May. The ladder reads the PDF and now returns all three weapons.</li>
+      <li>The classifier marks it IMEW. Samorin keeps <code>PEW0</code> (cancelled at first import). The other 17 circuit entries are numbered PEW1 to PEW17 with no gap: Dublin is 16 and Toronto 17. Skopje is <code>IMEW-2026-2027</code>, outside the sequence.</li>
+      <li>The RPC finds the existing row by calendar id 5407. Nothing anchors the old code: no results, no registrations, and the event is in the future. It parks the codes that change, renames the three rows, and writes weapons, dates and the prior link.</li>
+      <li>The identity sync writes the corrected end dates on the other 10 rows. The promote matches each row on PROD by calendar id and updates it.</li>
+      <li>A second run changes nothing: created 0, changed 0.</li>
+    </ol>
+    <h3>b · May 2027: Skopje's results arrive</h3>
+    <p>The results half finds the event by calendar id or slug and gets <code>IMEW-2026-2027</code>. Brackets are coded <code>IMEW-V2-M-EPEE-2026-2027</code> and the like, typed MEW, and scored as the European Championships. The FK link makes <code>IMEW-2024-2025</code> the previous edition; its carry window has already closed.</p>
+    <h3>c · Season 2027/28: the team championship</h3>
+    <p>"European Team Championships 2028" is a team entry, so it becomes <code>DMEW-2027-2028</code>, linked to <code>DMEW-2025-2026</code>. It uses no PEW number. SPWS does not record team results (ADR-021), so it gets no brackets.</p>
+    <h3>d · EVF lists a world or national championship</h3>
+    <p>Under Q1 A and Q2 A, the entry is held back and reported on Telegram. The rest of the season syncs. It reaches the calendar only after you decide what it is.</p>
+    <h3>e · EVF adds weapon tags to the Skopje post later</h3>
+    <p>The list page then states the weapons directly and the ladder is not needed. The code has no suffix, so it does not change. <code>arr_weapons</code> follows the tags.</p>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">8 · Tests first</p>
+    <h2>Plan-test IDs: all seen RED, all GREEN</h2>
+    <p>Each test below failed first for the intended reason: a missing function, Skopje planned as <code>PEW16efs</code>, a collapsed end date, a dropped épée, or <code>code plan mismatch … expected PEW2efs</code>. Each passes now. The two "check" rows in the first draft would have passed before any change, so they were left out. Promote already matches a renamed row by calendar id, and existing tests pin that.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Where</th><th>Asserts</th><th>RED → GREEN</th></tr></thead>
+      <tbody>
+        <tr><td>evf.76</td><td><code>test_evf_calendar.py</code></td><td>"Women's épée V3" → EPEE; "ÉPÉE + SABRE" → EPEE, SABRE; "three weapons" → none</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.77</td><td><code>test_evf_calendar.py</code></td><td>A PDF with the Skopje schedule's shape (synthetic text) yields EPEE, FOIL, SABRE</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.78</td><td><code>test_evf_calendar.py</code></td><td><code>05/05/2027 - 09/05/2027</code> ends 9 May; <code>30/12/2026 - 02/01/2027</code> ends 2 Jan 2027</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.79</td><td><code>test_evf_calendar.py</code></td><td>Seven names: European Championships → IMEW, team → DMEW, circuits → PEW, world and national championships → HOLD</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.80</td><td><code>test_evf_calendar.py</code></td><td>The live 2026/27 snapshot plans Skopje <code>IMEW-2026-2027</code>, Dublin <code>PEW16efs</code>, Toronto <code>PEW17efs</code>; PEW numbers exactly 1..17</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.81</td><td><code>test_evf_calendar.py</code></td><td>Six hold-back cases: two new candidates are both held; an imported one keeps its place; a new world championship waits, an imported one stays; a team championship in an IMEW season waits; two imported candidates are an integrity error</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.82</td><td><code>test_evf_calendar.py</code></td><td>The sync's payload carries <code>IMEW-2026-2027</code>; a held championship is outside the count, named in the scrape-run record and on Telegram, and counted as <code>held_championships=1</code></td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>evf.83</td><td><code>test_evf_calendar.py</code></td><td>A dry run prints <code>PEW16fs-2026-2027 → IMEW-2026-2027</code> and writes nothing</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>107.1–107.4</td><td><code>107_evf_singleton_championships.sql</code></td><td>IMEW/DMEW accepted outside the PEW sequence; codes 1..N close the gap; weapons written with the code (the Skopje and Madrid cases, and a new row); each singleton linked to the latest earlier edition of its kind</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>107.5</td><td><code>107_…</code></td><td>A PEW code for a European Championship is a <code>code plan mismatch</code></td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>107.6–107.7</td><td><code>107_…</code></td><td>A second run is accepted, and a link already on the singleton survives it</td><td><span class="chip never">✓</span></td></tr>
+        <tr><td>107.8–107.9</td><td><code>107_…</code></td><td>A world championship is not IMEW; a team event that is not a European Championship is not DMEW</td><td><span class="chip never">✓</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>Still green: <code>18_evf_event_allocator</code>, <code>53</code>, <code>54</code>, <code>62</code>, <code>74</code>, <code>79</code> (55 assertions), and the whole <code>test_evf_calendar.py</code>, <code>test_evf_sync_heal.py</code> and <code>test_promote.py</code> (143 passed). evf.29's description now says what it tests: the team <i>European Championship</i> → DMEW; its assertion is unchanged. The pgTAP total in spec Appendix D is 1417 (1408 + 9), and <code>check-coherence.sh</code> passes.</p>
+  </section>
+
+  <section id="rollout">
+    <p class="kicker">9 · Rollout</p>
+    <h2>LOCAL, then CERT, then PROD: each one checked before the next</h2>
+    <ol class="steps">
+      <li><b>Tests RED, then GREEN</b>; postgrestools clean on the migration. <span class="chip never">done</span></li>
+      <li><b>LOCAL rehearsal</b>: the result is below. <span class="chip never">done</span></li>
+      <li><b>Your sign-off on the ADR drafts</b> (§10a), which then go to disk with their registry rows. <span class="chip never">signed off 6 Oct</span> <code>scripts/preflight.sh</code> exits 0, then the graph and docs index are refreshed. <span class="chip warn">waiting</span></li>
+      <li><b>Push</b> through the integration checkout (<code>integration/main:main</code>), just after a 06:00 UTC run. CI and the release run in the background, and I report when they finish. The release applies the migration to CERT and PROD; it changes functions only, no data.</li>
+      <li><b>CERT</b>, on your go: a dry run of <code>evf_sync</code> against CERT, which must list exactly the three renames, then the real calendar run. Verify the end-state table on CERT.</li>
+      <li><b>PROD</b>, on your go: dispatch <code>evf-sync.yml</code> (calendar). Its pre-scrape promote carries CERT's state to PROD. Verify the same table on PROD, and through the public calendar.</li>
+      <li><b>Idempotence:</b> the next scheduled run reports no rename and no change.</li>
+    </ol>
+
+    <h3 id="local">9a · LOCAL result, 6 October</h3>
+    <p>The real <code>evf_sync.sync_calendar</code> ran against live EVF data with only its two transport seams redirected: SQL to LOCAL's database and Telegram to the console. LOCAL's events were backed up first. The dry run listed exactly three renames: <code>PEW16fs → IMEW-2026-2027</code>, <code>PEW17efs → PEW16efs</code> and <code>PEW18efs → PEW17efs</code>. The run then applied them.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check on LOCAL, read through <code>vw_calendar</code></th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Skopje</td><td><code>IMEW-2026-2027</code> · 5–9 May 2027 · EPEE, FOIL, SABRE · previous edition <code>IMEW-2024-2025</code> <span class="chip never">✓</span></td></tr>
+        <tr><td>Dublin, Toronto</td><td><code>PEW16efs</code> 29–30 May · <code>PEW17efs</code> 18–20 June <span class="chip never">✓</span></td></tr>
+        <tr><td>Other 2027 events</td><td>Each ends on the day after it starts, as EVF lists it <span class="chip never">✓</span></td></tr>
+        <tr><td>Code suffix against <code>arr_weapons</code>, active season</td><td>0 disagreements (CERT and PROD each have 1 today: Madrid) <span class="chip never">✓</span></td></tr>
+        <tr><td>Second dry run</td><td>0 renames <span class="chip never">✓</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Five fields restored on LOCAL afterwards</p>
+      <p style="margin-bottom:0">LOCAL is a copy of PROD, but the sync writes with CERT's semantics. The existing series-key rule in the wrapper cleared two prior links that CERT already holds as NULL: Łomianki 2026 → Jabłonna, and Stockholm 2027 → Stockholm 2026. The identity sync cleared three Polish country names that exist only on PROD (Finlandia, Grecja, Kanada). PROD keeps all five through the reconciler, whose update is <code>COALESCE(new, old)</code>. This change does not cause them, and they feed LOCAL's rolling score. They were restored from the backup with one scoped update that returned the five rows. Everything else that changed on LOCAL is the daily sync's normal enrichment (invitation PDFs, Tampere's venue and fee), which CERT already has or receives tomorrow.</p>
+    </div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">10 · Documentation</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p class="lede">☑ Documentation coherence gate complete</p>
+      <ul style="margin-bottom:0">
+        <li><b>Impact:</b> architecture, operations, reference.</li>
+        <li><b>Canonical docs affected:</b> <code>doc/handbook/subsystems/events-and-registration.html</code> (done: list-page dates; accents in the weapon ladder; the singleton rule and the hold-back; the PLANNED guard named precisely as a circuit-code guard, since IMEW is outside it; the stale "defaults to all three" sentence replaced; the <code>arr_weapons</code> invariant). <code>doc/handbook/reference/workflow-catalog.html</code> (done: <code>held_championships</code> in the digest). <code>doc/requirements-traceability-matrix.md</code> FR-58 (done). Spec Appendix D total (done). The seven ownership warnings from <code>check_docs.py</code> were reviewed: none of those pages states the numbering or weapon rules, so none changes.</li>
+        <li><b>ADR impact: amend</b> ADR-043, ADR-086, ADR-089 and ADR-091 (drafts in §10a), plus their Appendix C rows.</li>
+        <li><b>Operational impact:</b> the digest line, done above.</li>
+        <li><b>Source-map / last-verified updated:</b> yes, 2026-10-06 on both handbook pages.</li>
+        <li><b>Validation:</b> <code>check_docs.py --changed-from origin/main</code> → "Documentation valid"; <code>check-coherence.sh</code> → PASS.</li>
+        <li><b>Superseded prose archived rather than appended:</b> yes; the stale sentence was replaced, not appended to.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">10a · For your sign-off</p>
+    <h2>ADR amendment drafts</h2>
+    <p><b>Signed off 6 October and written to disk</b> as dated amendment sections, with their Appendix C rows; <code>render_adrs.py --check</code>, <code>check_docs.py</code>, <code>check-coherence.sh</code> and <code>check-spec-sync.sh</code> pass. The text below is the approved draft.</p>
+
+    <h3>ADR-043 · Amendment (2026-10-06) — a European Championship is a singleton in the snapshot plan</h3>
+    <p><b>Context.</b> The 2026-08-07 amendment numbered every retained calendar entry chronologically as <code>PEW{n}</code>. The 2027 Individual European Championships (Skopje, calendar post 5407) therefore became <code>PEW16fs-2026-2027</code>, and Dublin and Toronto moved down to make room. <code>fn_classify_evf_event</code> still returned IMEW, but the insert branch used that answer only for a prior-season lookup.</p>
+    <p><b>Decision.</b> (1) An entry whose name carries both whole words <i>European</i> and <i>Championship(s)</i>, accents folded, is its season's singleton: <code>DMEW-{season}</code> for the team championship, <code>IMEW-{season}</code> otherwise. The team flag alone no longer makes a DMEW. (2) A singleton takes no PEW number, so the positive bases are exactly <code>{1..N}</code> over circuit entries. The RPC re-checks the plan: a PEW code for a European Championship is a code plan mismatch. (3) Held back and reported, never guessed: any other championship; every new candidate when a singleton has more than one; and a singleton of the kind <code>tbl_season.enum_european_event_type</code> does not expect. An entry already imported is never withdrawn, and two imported candidates for one singleton are an integrity error. (4) An unlinked singleton links to the latest earlier edition of its kind (ADR-021's biennial series); a link already present is kept.</p>
+    <p><b>Consequences.</b> The next calendar run renames <code>PEW16fs-2026-2027</code> to <code>IMEW-2026-2027</code> and closes the gap (Dublin <code>PEW16efs</code>, Toronto <code>PEW17efs</code>). Nothing is anchored to the old codes. Skopje's results, in May 2027, will be typed MEW. Migration <code>20261006000002</code>; pgTAP 107.1–107.9; pytest evf.79–evf.83.</p>
+
+    <h3>ADR-086 · Amendment (2026-10-06) — accents and full-date ends</h3>
+    <p><b>Decision.</b> The ladder matches weapon names with accents folded: Skopje's schedule writes "épée", which the unfolded whole-word pattern skipped, so the event was coded foil and sabre. The list page's end date is also read as a full <code>dd/mm/yyyy</code> date, the form EVF prints for another calendar year. Without that, every 2027 event's end fell back to its start.</p>
+    <p><b>Consequences.</b> Thirteen 2027 entries get their real end dates on the next run. Prose still cannot invent a weapon. pytest evf.76–evf.78.</p>
+
+    <h3>ADR-089 · Amendment (2026-10-06) — open item 1 closed</h3>
+    <p><b>Decision.</b> The calendar ingest writes <code>arr_weapons</code> from the scraped weapons whenever it writes the code, on insert and on rename. When EVF changed Madrid's weapons, the suffix moved to <code>efs</code> while the column kept <code>{EPEE,SABRE}</code> on CERT and PROD.</p>
+    <p><b>Consequences.</b> Madrid self-heals on the next run. A singleton's code carries no suffix, and its weapons live in the column alone. pgTAP 107.3.</p>
+
+    <h3>ADR-091 · Amendment (2026-10-06) — the European singleton is discovered and coded</h3>
+    <p><b>Decision.</b> No change to the rule. The prune of <code>IMEW-2026-2027</code> relied on the sync discovering the event. It did (15 Sep 2026), but coded it as a circuit event until the ADR-043 amendment of the same date. Season skeletons stay limited to events nobody discovers for us.</p>
+  </section>
+
+  <section id="aside">
+    <p class="kicker">11 · Out of scope</p>
+    <h2>Found on the way, not part of this fix</h2>
+    <div class="note warn">
+      <p class="lede">The 2025 Individual Europeans do not carry into 2026/27</p>
+      <p style="margin-bottom:0">The 1 Oct repair plan says "the 2026/27 ranking reads the 2025/26 editions plus the biennial IMEW 2024/25". On PROD, <code>vw_eligible_event</code> carries nothing from <code>IMEW-2024-2025</code> into 2026/27. It ended on 1 Jun 2025, and the 366-day window closed on 2 Jun 2026, before the season began. Whether a biennial championship should carry for two years is a domain rule (ADR-021). This fix neither depends on it nor changes it. It is a separate question for you.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Closed seasons hold the same collapsed end dates</p>
+      <p style="margin-bottom:0">Example: <code>DMEW-2025-2026</code> holds 14 May 2026; EVF lists 14–17 May. The sync only touches the active season, and closed seasons are never re-ingested, so these stay as they are unless you want a scoped date correction.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Session worktrees have no <code>.env</code></p>
+      <p style="margin-bottom:0"><code>scripts/cloud-sql.sh</code> reads <code>.env</code> next to itself. Run from a session worktree, it sends no token and gets HTTP 401. For this analysis, the primary checkout's copy ran the read-only queries. The session-start protocol could link <code>.env</code> into each worktree.</p>
+    </div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">12 · Done means</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li><span class="chip never">✓</span> Every new test was seen RED and is GREEN. postgrestools is clean on the migration.</li>
+      <li><span class="chip never">✓</span> LOCAL matches the end-state table, read through <code>vw_calendar</code>; no suffix/weapons disagreement; a second dry run plans no rename.</li>
+      <li><span class="chip never">✓</span> <code>scripts/preflight.sh</code> exits 0. The first run failed three gates on this session's own setup, not on the change: a scrape-run row the LOCAL rehearsal recorded blocked the fixtures of pgTAP suites 19 and 74 (row removed), and the worktree's frontend install was partial (reinstalled from the identical lockfile).</li>
+      <li><span class="chip never">✓</span> ADR amendments signed off, written and registered.</li>
+      <li><span class="chip warn">open</span> CERT, then PROD, each match the end-state table, with no suffix/weapons disagreement and every 2027 end date as EVF lists it.</li>
+      <li><span class="chip warn">open</span> The next scheduled <code>evf-sync.yml</code> run is green and reports no change.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · evf-skopje-european-championships · 2026-10-06 · branch claude/evf-skopje-imew-fix</p>
+</div>
