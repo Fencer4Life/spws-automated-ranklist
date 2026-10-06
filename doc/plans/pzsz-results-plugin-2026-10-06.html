@@ -380,7 +380,7 @@
       <li><b>Documents:</b> the promotion contracts (environments and release), the events page's implementation map, ADR-087 (amendment) and the RTM.</li>
     </ul>
 
-    <h3>Q5 · PROD already has a PZSz id and CERT sends another</h3>
+    <h3>Q5 · PROD already has a PZSz id and CERT sends another <span class="chip never">decided A, 6 Oct</span></h3>
     <div class="tablewrap"><table>
       <thead><tr><th></th><th>What</th><th>Why</th></tr></thead>
       <tbody>
@@ -397,6 +397,45 @@
       <li><code>scripts/preflight.sh</code> exits 0. The push happens on your go; the migration reaches CERT and PROD only through the release.</li>
       <li>Verify: a dry run of the PZSz sync on LOCAL against the check-page fixture fails red, and PROD's six PZSz rows carry their ids after the next calendar promotion.</li>
     </ol>
+
+    <h3>Built on LOCAL · 6 October <span class="chip never">signed off with Q5 A</span></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fix</th><th>What exists now</th><th>Tests</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td><td><code>refuse_js_check()</code> in <code>pzsz_start_list.py</code>, the one rule for the check page. <code>pzsz_calendar.fetch_series</code> calls it before parsing, and <code>pzsz_sync.enrich_events</code> calls it on each detail page.</td><td>pzsz.39–pzsz.43, RED first. With <code>refuse_js_check</code> made a no-op, 4 of them fail on behaviour.</td></tr>
+        <tr><td>F2</td><td>
+          <code>promote.py</code> reads <code>e.id_pzsz_event</code> and carries it in both payloads. Migration <code>20261006000003_prod_mirror_pzsz_identity.sql</code> redefines the mirror from LOCAL's live body (identical to <code>20260902000002</code>), with three additions:
+          <ul style="margin-bottom:0">
+            <li>the INSERT column;</li>
+            <li>the UPDATE line under the Q5 A rule;</li>
+            <li>a release step.</li>
+          </ul>
+        </td><td>
+          <ul style="margin-bottom:0">
+            <li>PZSZ.CAL.01 (pytest).</li>
+            <li>pgTAP 108.1–108.7 (14 assertions), RED first.</li>
+            <li>The ten pgTAP files that call the mirror pass: 83 assertions.</li>
+          </ul>
+        </td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede">One addition the plan did not name: the release step</p>
+      <p>With Q5 A, CERT's id can overwrite PROD's. <code>id_pzsz_event</code> has a per-season unique index (<code>idx_tbl_event_pzsz_season</code>), so a re-key on CERT that swaps two ids would fail mid-loop. That is the collision the <code>id_prior_event</code> swap hit before it got the same step.</p>
+      <p>The migration therefore clears an id before the loops when another element of the same payload claims it:</p>
+      <ul>
+        <li>an update naming a different event;</li>
+        <li>or a create whose code PROD does not hold yet.</li>
+      </ul>
+      <p>A payload that says nothing clears nothing. Each part is mutation-checked:</p>
+      <ul style="margin-bottom:0">
+        <li>without the step, the swap test dies on the unique index;</li>
+        <li>without the create half, the create test dies on the unique index;</li>
+        <li>without the skipped-create guard, a skipped create takes another row's id.</li>
+      </ul>
+    </div>
+    <p><b>Postgrestools:</b> the migration is clean. The test file shows only the pgTAP functions (<code>plan</code>, <code>is</code>, <code>lives_ok</code>, <code>finish</code>), which the checker's database does not have, the same baseline as the other mirror tests.</p>
+    <p><b>Documents:</b> ADR-087 amendment; the workflow catalog; the events page (the PZSz lane and the implementation map); the field-ownership table on the event-lifecycle page; the promotion contracts; the codebase map; RTM FR-135, PZSZ.JS.01, PZSZ.CAL.01 and PZSZ.CAL.02; and the specification's ADR-087 entry.</p>
   </section>
 
   <section id="out">

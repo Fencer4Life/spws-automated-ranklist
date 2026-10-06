@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
-<meta name="adr-source-sha256" content="12a557abfdf2008f39289f1976e61d1a5ce3cc1fbaaf92811923bb494df9204f">
+<meta name="adr-source-sha256" content="05814b8f299a9580114913d7f9e05fa9a5c877114e4b104768b5ab45b6779d41">
 <title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 087</p><h1>PZSz as a fourth event source — Polish national senior events on the calendar</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">424 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), built on LOCAL.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">482 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), built on LOCAL.
 <strong>Date:</strong> 2026-09-03
 <strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §F and §11 (<code>registryOf()</code> widens from three registries to four; a fourth hue enters the organizer channel; <code>PanelType</code> gains a fifth member)
 <strong>Relates to:</strong> <a href="046-pew-weapon-suffix.html">ADR-046</a> (the event-code shape this extends with a gender letter), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (childless CREATE, field ownership, code-keyed reconcile), <a href="028-evf-calendar-results-import.html">ADR-028</a> (the calendar-source precedent this deliberately does not generalise), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the partially-published-season lesson applied before it bit), <a href="083-server-enforced-authorization.html">ADR-083</a> (grants are table-level, so the new column needs none)
@@ -21,7 +21,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#the-source-measured">The source, measured</a></li><li class="depth-3"><a href="#the-finding-that-shapes-the-whole-scraper">The finding that shapes the whole scraper</a></li><li class="depth-3"><a href="#source-data-quality">Source data quality</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-pzsz-is-a-fourth-organizer-inserted-by-migration">1 · PZSz is a fourth organizer, inserted by migration</a></li><li class="depth-3"><a href="#2-tbl-event-id-pzsz-event-is-the-durable-identity">2 · `tbl_event.id_pzsz_event` is the durable identity</a></li><li class="depth-3"><a href="#3-our-season-window-decides-membership-theirs-is-pagination">3 · Our season window decides membership; theirs is pagination</a></li><li class="depth-3"><a href="#4-any-response-of-exactly-the-cap-is-presumed-truncated-and-raises">4 · Any response of exactly the cap is presumed truncated and raises</a></li><li class="depth-3"><a href="#5-event-codes-follow-adr-046-with-an-uppercase-gender-letter">5 · Event codes follow ADR-046, with an uppercase gender letter</a></li><li class="depth-3"><a href="#6-events-are-created-childless-no-tournament-rows">6 · Events are created childless — no tournament rows</a></li><li class="depth-3"><a href="#7-what-pzsz-publishes-per-event-and-what-it-does-not">7 · What PZSz publishes per event, and what it does not</a></li><li class="depth-3"><a href="#8-a-fifth-panel-type-and-a-fourth-registry-amending-adr-084">8 · A fifth panel type and a fourth registry — amending ADR-084</a></li><li class="depth-3"><a href="#9-a-separate-workflow-the-same-cron-and-queue-max-across-prod-write">9 · A separate workflow, the same cron, and `queue: max` across `prod-write`</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-3"><a href="#the-source-measured">The source, measured</a></li><li class="depth-3"><a href="#the-finding-that-shapes-the-whole-scraper">The finding that shapes the whole scraper</a></li><li class="depth-3"><a href="#source-data-quality">Source data quality</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-pzsz-is-a-fourth-organizer-inserted-by-migration">1 · PZSz is a fourth organizer, inserted by migration</a></li><li class="depth-3"><a href="#2-tbl-event-id-pzsz-event-is-the-durable-identity">2 · `tbl_event.id_pzsz_event` is the durable identity</a></li><li class="depth-3"><a href="#3-our-season-window-decides-membership-theirs-is-pagination">3 · Our season window decides membership; theirs is pagination</a></li><li class="depth-3"><a href="#4-any-response-of-exactly-the-cap-is-presumed-truncated-and-raises">4 · Any response of exactly the cap is presumed truncated and raises</a></li><li class="depth-3"><a href="#5-event-codes-follow-adr-046-with-an-uppercase-gender-letter">5 · Event codes follow ADR-046, with an uppercase gender letter</a></li><li class="depth-3"><a href="#6-events-are-created-childless-no-tournament-rows">6 · Events are created childless — no tournament rows</a></li><li class="depth-3"><a href="#7-what-pzsz-publishes-per-event-and-what-it-does-not">7 · What PZSz publishes per event, and what it does not</a></li><li class="depth-3"><a href="#8-a-fifth-panel-type-and-a-fourth-registry-amending-adr-084">8 · A fifth panel type and a fourth registry — amending ADR-084</a></li><li class="depth-3"><a href="#9-a-separate-workflow-the-same-cron-and-queue-max-across-prod-write">9 · A separate workflow, the same cron, and `queue: max` across `prod-write`</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#amendment-2026-10-06-the-javascript-check-fails-the-run-the-pzsz-id-reaches-prod">Amendment (2026-10-06) — the JavaScript check fails the run; the PZSz id reaches PROD</a></li><li class="depth-3"><a href="#4-gains-a-second-refusal-pzszerm-pl-s-javascript-check">§4 gains a second refusal: pzszerm.pl&#x27;s JavaScript check</a></li><li class="depth-3"><a href="#2-s-identity-now-reaches-prod">§2&#x27;s identity now reaches PROD</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>Polish veterans also enter senior national competitions, fencing the same pools as
 people half their age. The calendar carried SPWS (PPW/MPW), EVF (PEW) and FIE
@@ -522,8 +522,69 @@ the plan did not mention surfaced in the documentation and was checked before sh
 All eight members are on <code>cancel-in-progress: false</code>, so none is affected. The
 15-minute stagger fallback is not needed.</li>
 </ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-06-the-javascript-check-fails-the-run-the-pzsz-id-reaches-prod">Amendment (2026-10-06) — the JavaScript check fails the run; the PZSz id reaches PROD</h2>
+<p>Two defects surfaced while rehearsing <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>
+on LOCAL. The user added both to <code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §6 and
+signed it off on 6 October 2026, with Q5 decided A.</p>
+<h3 id="4-gains-a-second-refusal-pzszerm-pl-s-javascript-check">§4 gains a second refusal: pzszerm.pl's JavaScript check</h3>
+<p>pzszerm.pl sometimes answers with a JavaScript check page (<code>&lt;p id=&quot;pzs-m&quot;&gt;</code> and no table)
+instead of the listing. <code>fetch_series</code> parsed that page as an empty listing. The sync then
+read 0 events, reported all six as <em>no longer listed</em>, and the run ended green. This
+happened on 30 September and on 3–6 October 2026 (runs 36708978089, 37117508293,
+37198815901, 37312830202 and 37462676901).</p>
+<ul>
+<li><strong>Detection.</strong> <code>refuse_js_check()</code> in <code>python/scrapers/pzsz_start_list.py</code> raises
+<code>PzszPageError</code> on the check page. The start-list reader of ADR-111 and the calendar
+listing fetch (<code>pzsz_calendar.fetch_series</code>) both call it, so the rule exists once.</li>
+<li><strong>What the sync does.</strong>
+<ul>
+<li>It stops before any CERT write and reports nothing as no longer listed.</li>
+<li><code>main()</code> exits 1 with one Telegram message: <em>PZSz Calendar failed</em>, with the reason
+that pzszerm.pl answered with its JavaScript check and the instruction to run again
+later.</li>
+<li>The promote job still runs (<code>if: ${{ !cancelled() }}</code>, §9) and reconciles PROD with
+CERT's unchanged calendar.</li>
+</ul>
+</li>
+<li><strong>Enrichment.</strong> Detail-page enrichment stays best-effort. It names the check page in its
+log and leaves the row unchanged.</li>
+<li><strong>Nothing tries to get past the check.</strong> That means no cookie, no pixel request and no
+headless browser. Getting past bot detection is out of bounds; the answer is to fail and
+run again later.</li>
+<li><strong>Unchanged and tested.</strong> The 70-row assertion of §4 is unchanged. Tests: pzsz.39–pzsz.43.</li>
+</ul>
+<h3 id="2-s-identity-now-reaches-prod">§2's identity now reaches PROD</h3>
+<p><code>promote.py --mode calendar</code> and <code>fn_mirror_events_to_prod</code> carried <code>id_evf_event</code>,
+<code>id_evf_calendar_event</code> and <code>txt_evf_slug</code>, but not <code>id_pzsz_event</code>. None of PROD's PZSz
+events held an id; <code>PPS1s-2026-2027</code> held 4588 on CERT. ADR-111's promote reads the start
+lists through that id, and fell back to the CERT run's PZSz event.</p>
+<ul>
+<li><strong>The carry.</strong> The CERT read and both payloads carry the column. Migration
+<code>20261006000003_prod_mirror_pzsz_identity.sql</code> redefines the mirror from its live body
+and adds it to the INSERT and the UPDATE.</li>
+<li><strong>Ownership (Q5 A).</strong> The rule is the one <code>id_evf_event</code> follows. CERT's id wins when CERT
+sends one, and PROD keeps its own when CERT sends none. CERT owns the calendar identity,
+so a re-key on CERT reaches PROD.</li>
+<li><strong>The release step.</strong> CERT's id can now overwrite PROD's, so the unique index
+<code>idx_tbl_event_pzsz_season</code> gets the release step the <code>id_prior_event</code> swap needed
+(<a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a>). Before the loops assign ids,
+an id that another element of the payload claims is cleared. &quot;Another element&quot; means an
+update naming a different <code>id_event</code>, or a create whose code PROD does not hold yet. A
+payload that says nothing releases nothing.</li>
+<li><strong>Tests.</strong>
+<ul>
+<li>pgTAP 108.1–108.7: a create carries the id; an update fills an empty id; CERT's id
+wins; a silent payload keeps PROD's id; a swap in one batch; a create taking a held
+id; a skipped create taking nothing.</li>
+<li>pytest PZSZ.CAL.01: the CERT read and both payloads.</li>
+</ul>
+</li>
+<li><strong>Kept on purpose.</strong> Promote's fallback to the CERT run's PZSz event stays, and is unused
+once the calendar carries the id.</li>
+</ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="088-calendar-location-contract.html">→ ADR-088: One location contract for every calendar scraper — city, venue and address</a></nav>
-<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>12a557abfdf2008f39289f1976e61d1a5ce3cc1fbaaf92811923bb494df9204f</code></footer>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>05814b8f299a9580114913d7f9e05fa9a5c877114e4b104768b5ab45b6779d41</code></footer>
 </div></body></html>
