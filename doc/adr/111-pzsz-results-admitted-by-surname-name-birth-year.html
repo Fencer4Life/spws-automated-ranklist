@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="111-pzsz-results-admitted-by-surname-name-birth-year.md">
-<meta name="adr-source-sha256" content="32c77914f0016a9c67792f74eaf45cc95f3a7cd0267ca55196d09bf793cb4c9c">
+<meta name="adr-source-sha256" content="e0a7086d1a16c4949d901958ab6ea541c9496ad46252ccc7844fa157fa944908">
 <title>ADR-111 · PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 111</p><h1>PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 &quot;ingest for CERT, promote for PROD — the same thing&quot;, Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (<code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §5a); not yet on CERT or PROD.</dd></div><div><dt>Date</dt><dd class="">2026-10-06</dd></div><div><dt>Source</dt><dd class=""><code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code></dd></div><div><dt>Length</dt><dd class="">119 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 &quot;ingest for CERT, promote for PROD — the same thing&quot;, Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (<code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §5a); not yet on CERT or PROD.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 &quot;ingest for CERT, promote for PROD — the same thing&quot;, Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (<code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §5a), and released to CERT and PROD the same day (main <code>2bc34500</code>). The first CERT ingest, of <code>PPS1s-2026-2027</code>, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later.</dd></div><div><dt>Date</dt><dd class="">2026-10-06</dd></div><div><dt>Source</dt><dd class=""><code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code></dd></div><div><dt>Length</dt><dd class="">119 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 &quot;ingest for CERT, promote for PROD — the same thing&quot;, Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (<code>doc/plans/pzsz-results-plugin-2026-10-06.html</code> §5a), and released to CERT and PROD the same day (main <code>2bc34500</code>). The first CERT ingest, of <code>PPS1s-2026-2027</code>, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later.
 <strong>Date:</strong> 2026-10-06
 <strong>Amends:</strong> <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (the matching rule for a PZSz bracket, the review queue no longer written, the source of the birth year), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (promote replays a PZSz run too; one route to PROD for every organizer)
 <strong>Relates to:</strong> <a href="106-international-intake-by-identity-nationality-per-season.html">ADR-106</a> (the EVF admission that is copied, left unchanged), <a href="105-international-results-keep-source-bracket.html">ADR-105</a> (the whole field's N and the original place), <a href="110-ranking-entry-by-roster.html">ADR-110</a> (the fencer table is the ranking entry), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (the PZSz calendar and <code>id_pzsz_event</code>), <a href="103-spws-place-medal-engine-per-type.html">ADR-103</a> and <a href="104-spws-evf-joined-engine-replaces-place-medal.html">ADR-104</a> (PPS and MPS stay on EVF classic, unchanged), <a href="025-event-centric-ingestion-telegram.html">ADR-025</a> (the <code>ingest</code> and <code>promote</code> commands, unchanged)
@@ -107,7 +107,7 @@
 <p>Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user decided both in chat the same day: D1 A and D2 A, as recommended.</p>
 <ol>
 <li><strong>D1 · the JavaScript check — decided A.</strong> Send <code>ingest &lt;code&gt;</code> again later when Telegram reports the check. Plan an Admin upload of a saved page only if the check holds for a week.</li>
-<li><strong>D2 · an end date shorter than the listings — decided A.</strong> PZSz publishes only a start date, so the calendar sync sets the end date to the start date. A two-day PPS then stays <code>IN_PROGRESS</code> under ADR-108 §7. The end date is corrected in Admin before the CERT ingest, and a follow-up task keeps the PZSz sync from setting it back.</li>
+<li><strong>D2 · an end date shorter than the listings — decided A.</strong> The calendar sync sets the end date from pzszerm.pl's listing. The event page shows only a start date, but the listing prints an end date as well, and for Poznań that date is wrong: 3–3 October, while one of its FencingTimeLive listings is dated the 4th. With that end date the event stays <code>IN_PROGRESS</code> under ADR-108 §7. The end date is corrected in Admin before the CERT ingest. Since 2026-10-07 the sync no longer sets it back: it leaves the dates of an event that has started as they are (<a href="087-pzsz-senior-calendar-source.html">ADR-087</a>, amendment of 2026-10-07, plan §7 Q6 A).</li>
 </ol>
 <p><strong>Out of scope:</strong></p>
 <ul>
@@ -118,5 +118,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="110-ranking-entry-by-roster.html">← ADR-110: From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>32c77914f0016a9c67792f74eaf45cc95f3a7cd0267ca55196d09bf793cb4c9c</code></footer>
+<footer class="foot">Generated from <code>111-pzsz-results-admitted-by-surname-name-birth-year.md</code> · source SHA-256 <code>e0a7086d1a16c4949d901958ab6ea541c9496ad46252ccc7844fa157fa944908</code></footer>
 </div></body></html>
