@@ -101,7 +101,8 @@ class DbConnector:
                 "dt_start, dt_end, enum_status, id_season, "
                 "id_organizer, txt_location, json_source_overrides, "
                 "arr_weapons, txt_organizer_email, ts_ftl_sent, "
-                "dt_registration_deadline, bool_use_spws_registration"
+                "dt_registration_deadline, bool_use_spws_registration, "
+                "id_pzsz_event"
             )
             .eq("txt_code", event_code)
             .execute()
