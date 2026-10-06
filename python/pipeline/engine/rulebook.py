@@ -65,6 +65,7 @@ def _build_plugins() -> dict[str, object]:
         ValidateIR,
     )
     from python.pipeline.plugins.post_commit import Notify, ParticipantCount
+    from python.pipeline.plugins.pzsz_admission import AdmitPzszRoster
     from python.pipeline.plugins.pzsz_commit import CommitPzszSenior
     from python.pipeline.plugins.recompute import LoadCommitted
     from python.pipeline.plugins.resolve_fencers import ResolveFencers
@@ -82,6 +83,7 @@ def _build_plugins() -> dict[str, object]:
         DetectPoolRound(),
         AssignFinalVcat(),
         Commit(),
+        AdmitPzszRoster(),
         CommitPzszSenior(),
         LoadCommitted(),
         ParticipantCount(),
@@ -177,17 +179,18 @@ RULEBOOK: dict[Flow, Rule] = {
     #    ValidateCounts is reused unchanged: it already does the URL->data
     #    validation §07 item 2 requires, plus the fail-closed min-
     #    participants gate against the season's PPS/MPS configuration.
+    #    ADR-111: the identity step is AdmitPzszRoster, not ResolveFencers.
     Flow.INGEST_PZSZ_SENIOR: Rule(
         Flow.INGEST_PZSZ_SENIOR,
-        "Ingest a PZSz PPS/MPS senior bracket: exact/alias match only, no "
-        "auto-create, an uncertain candidate queues for Admin review instead "
-        "of linking or dropping, original places and the full source field "
-        "size are preserved. Never halts.",
+        "Ingest a PZSz PPS/MPS senior bracket: a row is kept only on surname, "
+        "first name and the PZSz start list's birth year, everything else is "
+        "skipped; nothing is created, linked or queued; original places and "
+        "the full source field size are preserved. Never halts.",
         steps=(
             Step("ParseSource"),
             Step("ValidateIR"),
             Step("ResolveEvent"),
-            Step("ResolveFencers", params={"intake": "PZSZ_SENIOR"}),
+            Step("AdmitPzszRoster"),
             Step("ValidateCounts"),
             Step("CommitPzszSenior"),
         ),
