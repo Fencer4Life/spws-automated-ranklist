@@ -211,3 +211,14 @@ definition and implies PEW skeletons were never created at all.
    those rows remain. They are outside this decision — they are quarantined
    collisions, not unclaimed skeletons, and the prune deliberately does not match
    them. *Recommendation:* audit them separately before the next season roll.
+
+## Amendment (2026-10-06) — the European singleton is discovered and coded
+
+**Decision record:** `doc/plans/evf-skopje-european-championships-2026-10-06.html` (signed off 2026-10-06).
+
+The rule is unchanged. Pruning `IMEW-2026-2027` relied on the calendar sync discovering the 2027
+Individual European Championships. It did, on 15 Sep 2026, but numbered them as a circuit event
+(`PEW16fs-2026-2027`), because the 2026-08-07 snapshot plan gave every entry a PEW code. Since the
+ADR-043 amendment of 2026-10-06 the sync codes a European Championship as its season's `IMEW-` or
+`DMEW-` singleton, so the premise this ADR rests on holds. Season skeletons stay limited to the events
+nobody discovers for us.

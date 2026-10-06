@@ -73,7 +73,8 @@ def _get_active_season(
     rows = (query or _management_query)(
         ref,
         token,
-        "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
+        "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season, "
+        "enum_european_event_type::TEXT AS enum_european_event_type "
         "FROM tbl_season s WHERE s.bool_active",
     )
     return rows[0] if rows else None

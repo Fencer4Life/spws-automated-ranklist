@@ -2758,3 +2758,356 @@ class TestLocationContract:
 )
 def test_parse_fee_and_currency(cost_text, expected):
     assert parse_fee_and_currency(cost_text) == expected
+
+
+# =============================================================================
+# evf.76–evf.83: the 2027 Individual European Championships (Skopje) were
+# stored as PEW16fs -- an ordinary circuit event, foil and sabre only, one day.
+# Plan: doc/plans/evf-skopje-european-championships-2026-10-06.html
+# =============================================================================
+
+
+class TestAccentedWeaponEvidence:
+    """evf.76–evf.77: an accented "épée" is still épée.
+
+    Skopje's schedule PDF writes "Women's épée V3"; the whole-word matcher read
+    foil and sabre and silently dropped épée, so the code became ...fs.
+    """
+
+    def test_weapons_from_text_folds_accents(self):
+        """evf.76: accents never hide a weapon, and prose still invents none."""
+        from python.scrapers.evf_calendar import _weapons_from_text
+
+        assert _weapons_from_text("Women's épée V3") == ["EPEE"]
+        assert _weapons_from_text("ÉPÉE + SABRE") == ["EPEE", "SABRE"]
+        assert _weapons_from_text("Two genders, three weapons, four days.") == []
+
+    def test_schedule_pdf_with_accented_epee_yields_all_three(self, monkeypatch):
+        """evf.77: the Skopje schedule shape names all three weapons."""
+        import pypdf
+
+        from python.scrapers.evf_calendar import _weapons_from_pdf_bytes
+
+        schedule = (
+            "INDIVIDUAL EUROPEAN CHAMPIONSHIPS SKOPJE "
+            "Thursday, 06/05/27 09:00 Women's épée V3 09:00 Men's sabre V2 "
+            "11:30 Women's foil V1 Friday, 07/05/27 09:00 Men's épée V2 (poules)"
+        )
+
+        class FakePage:
+            def extract_text(self):
+                return schedule
+
+        class FakeReader:
+            def __init__(self, _stream):
+                self.pages = [FakePage()]
+
+        monkeypatch.setattr(pypdf, "PdfReader", FakeReader)
+
+        assert _weapons_from_pdf_bytes(b"%PDF-synthetic") == ["EPEE", "FOIL", "SABRE"]
+
+
+class TestFullDateEndOfRange:
+    """evf.78: the list page writes a full dd/mm/yyyy date for another year.
+
+    "05/05/2027 - 09/05/2027" fell through every day-month-name format and the
+    end collapsed onto the start: every 2027 event became a one-day event.
+    """
+
+    @staticmethod
+    def _article(start_iso: str, start_text: str, end_text: str) -> str:
+        return f"""
+        <article class="tribe-events-calendar-list__event post-5407">
+          <time class="tribe-events-calendar-list__event-datetime" datetime="{start_iso}">
+            <span class="tribe-event-date-start">{start_text}</span> -
+            <span class="tribe-event-date-end">{end_text}</span>
+          </time>
+          <h4 class="tribe-events-calendar-list__event-title">
+            <a href="https://www.veteransfencing.eu/event/x/">European Championships 2027</a>
+          </h4>
+        </article>
+        """
+
+    def test_full_date_end_is_read(self):
+        """evf.78: 05/05/2027 - 09/05/2027 ends on 9 May, not on 5 May."""
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        events = parse_evf_calendar_html(self._article("2027-05-05", "05/05/2027", "09/05/2027"))
+
+        assert events[0]["dt_start"] == "2027-05-05"
+        assert events[0]["dt_end"] == "2027-05-09"
+
+    def test_full_date_end_carries_its_own_year(self):
+        """evf.78: a full date is used as written -- no year roll is applied."""
+        from python.scrapers.evf_calendar import parse_evf_calendar_html
+
+        events = parse_evf_calendar_html(self._article("2026-12-30", "30/12/2026", "02/01/2027"))
+
+        assert events[0]["dt_end"] == "2027-01-02"
+
+
+class TestEuropeanChampionshipClassification:
+    """evf.79–evf.81: a European Championship is a singleton, not a PEW."""
+
+    @pytest.mark.parametrize(
+        ("name", "is_team", "kind"),
+        [
+            ("European Championships 2027", False, "IMEW"),
+            ("European Veterans Championships 2025", False, "IMEW"),
+            ("European Team Championships 2026 – Cognac", True, "DMEW"),
+            ("EVF Circuit – Madrid (ESP)", False, "PEW"),
+            ("International Veterans Cup – Toronto (CAN)", False, "PEW"),
+            ("World Veterans Championships 2027", False, "HOLD"),
+            ("Hungarian Open Championship", False, "HOLD"),
+        ],
+    )
+    def test_classify_calendar_entry(self, name, is_team, kind):
+        """evf.79: European + Championship -> IMEW/DMEW; other championships wait."""
+        from python.scrapers.evf_calendar import classify_calendar_entry
+
+        assert classify_calendar_entry({"name": name, "is_team": is_team}) == kind
+
+    # The live 2026/27 EVF snapshot as of 6 Oct 2026, weapons after the accent fix.
+    LIVE_2026_2027 = [
+        (5074, "2026-09-12", "efs", True, "EVF Circuit – Samorin (SVK) – Cancelled"),
+        (5363, "2026-09-19", "f", False, "FOIL CELEBRATION IN BUDA CASTLE – Budapest (HUN)"),
+        (877, "2026-10-31", "efs", False, "EVF Circuit – Madrid (ESP)"),
+        (873, "2026-11-14", "ef", False, "EVF Circuit – Budapest (HUN)"),
+        (879, "2026-11-28", "fs", False, "EVF Circuit Memoriam Max Geuter – Munich (GER)"),
+        (892, "2026-12-12", "efs", False, "EVF Circuit – Łomianki (POL)"),
+        (2113, "2027-01-09", "efs", False, "EVF Circuit – Guildford (GBR)"),
+        (5379, "2027-01-23", "es", False, "EVF Circuit – Tampere (FIN)"),
+        (4855, "2027-01-30", "efs", False, "Levi Open (FIN)"),
+        (882, "2027-02-06", "fs", False, "EVF Circuit – Fâches-Thumesnil (FRA)"),
+        (5087, "2027-02-06", "e", False, "EVF Circuit – Lausanne (SUI)"),
+        (886, "2027-03-06", "efs", False, "EVF Circuit – Naples (ITA)"),
+        (3444, "2027-03-13", "ef", True, "EVF Circuit – Stockholm (SWE) – Cancelled"),
+        (3438, "2027-03-27", "es", False, "EVF Circuit – Athens (GRE)"),
+        (4523, "2027-04-10", "ef", False, "EVF Circuit – Salzburg (AUT)"),
+        (890, "2027-04-10", "s", False, "EVF Circuit – Liège (BEL)"),
+        (5407, "2027-05-05", "efs", False, "European Championships 2027"),
+        (4594, "2027-05-29", "efs", False, "EVF Circuit – Dublin (IRL)"),
+        (5070, "2027-06-18", "efs", False, "International Veterans Cup – Toronto (CAN)"),
+    ]
+
+    def test_live_snapshot_plans_skopje_as_imew(self):
+        """evf.80: Skopje is IMEW-2026-2027; Dublin and Toronto close the gap."""
+        from python.scrapers.evf_calendar import plan_calendar_codes
+
+        letters = {"e": "EPEE", "f": "FOIL", "s": "SABRE"}
+        events = [
+            {
+                "name": name,
+                "dt_start": start,
+                "evf_calendar_id": calendar_id,
+                "weapons": [letters[c] for c in suffix],
+                "is_cancelled": cancelled,
+                "is_team": False,
+            }
+            for calendar_id, start, suffix, cancelled, name in self.LIVE_2026_2027
+        ]
+        existing = [
+            {
+                "id_event": 132,
+                "id_evf_calendar_event": 3444,
+                "txt_code": "PEW12ef-2026-2027",
+                "dt_start": "2027-03-13",
+                "num_registrations": 0,
+                "num_results": 0,
+            }
+        ]
+
+        planned = plan_calendar_codes(events, existing, "SPWS-2026-2027")
+
+        by_id = {e["evf_calendar_id"]: e["desired_code"] for e in planned}
+        assert by_id[5407] == "IMEW-2026-2027"
+        assert by_id[4594] == "PEW16efs-2026-2027"
+        assert by_id[5070] == "PEW17efs-2026-2027"
+        positive = sorted(
+            int(code[3:].split("-")[0].rstrip("efs"))
+            for code in by_id.values()
+            if code.startswith("PEW") and not code.startswith("PEW0")
+        )
+        assert positive == list(range(1, 18)), "the PEW sequence is exactly 1..17"
+
+    def test_two_new_individual_championships_are_both_held_back(self):
+        """evf.81: two candidates for one singleton -- neither is guessed."""
+        from python.scrapers.evf_calendar import partition_championships
+
+        events = [
+            {"name": "EVF Circuit – Madrid (ESP)", "evf_calendar_id": 877, "is_team": False},
+            {"name": "European Championships 2027", "evf_calendar_id": 5407, "is_team": False},
+            {"name": "European Championships 2027 bis", "evf_calendar_id": 5408, "is_team": False},
+        ]
+
+        ready, held = partition_championships(events, "IMEW", set())
+
+        assert [e["evf_calendar_id"] for e in ready] == [877]
+        assert sorted(e["evf_calendar_id"] for e in held) == [5407, 5408]
+        assert all("IMEW" in e["hold_reason"] for e in held)
+
+    def test_an_imported_championship_keeps_its_place_against_a_new_rival(self):
+        """evf.81: already imported is never withdrawn; only the newcomer waits."""
+        from python.scrapers.evf_calendar import partition_championships
+
+        events = [
+            {"name": "European Championships 2027", "evf_calendar_id": 5407, "is_team": False},
+            {"name": "European Championships 2027 bis", "evf_calendar_id": 5408, "is_team": False},
+        ]
+
+        ready, held = partition_championships(events, "IMEW", {5407})
+
+        assert [e["evf_calendar_id"] for e in ready] == [5407]
+        assert [e["evf_calendar_id"] for e in held] == [5408]
+
+    def test_new_non_european_championship_is_held_back(self):
+        """evf.81: a world or national championship waits for a decision."""
+        from python.scrapers.evf_calendar import partition_championships
+
+        events = [{"name": "World Veterans Championships 2027", "evf_calendar_id": 6001}]
+
+        ready, held = partition_championships(events, "IMEW", set())
+
+        assert ready == []
+        assert [e["evf_calendar_id"] for e in held] == [6001]
+        assert "not a European Championship" in held[0]["hold_reason"]
+
+    def test_imported_non_european_championship_stays(self):
+        """evf.81: withdrawing an imported row would break the reflow; it stays."""
+        from python.scrapers.evf_calendar import partition_championships
+
+        events = [{"name": "World Veterans Championships 2027", "evf_calendar_id": 6001}]
+
+        ready, held = partition_championships(events, "IMEW", {6001})
+
+        assert [e["evf_calendar_id"] for e in ready] == [6001]
+        assert held == []
+
+    def test_singleton_of_the_other_kind_is_held_back(self):
+        """evf.81: a team championship in a season typed IMEW waits."""
+        from python.scrapers.evf_calendar import partition_championships
+
+        events = [
+            {
+                "name": "European Team Championships 2027",
+                "evf_calendar_id": 6002,
+                "is_team": True,
+            }
+        ]
+
+        ready, held = partition_championships(events, "IMEW", set())
+
+        assert ready == []
+        assert "IMEW" in held[0]["hold_reason"]
+
+    def test_two_imported_singletons_of_one_kind_is_an_integrity_error(self):
+        """evf.81: two imported rows cannot both become IMEW -- a human decides."""
+        from python.scrapers.evf_calendar import CalendarIntegrityError, partition_championships
+
+        events = [
+            {"name": "European Championships 2027", "evf_calendar_id": 5407},
+            {"name": "European Championships 2027 bis", "evf_calendar_id": 5408},
+        ]
+
+        with pytest.raises(CalendarIntegrityError, match="IMEW"):
+            partition_championships(events, "IMEW", {5407, 5408})
+
+
+class TestChampionshipSyncWiring:
+    """evf.82–evf.83: the sync sends the singleton code and reports what waits."""
+
+    SEASON = {
+        "txt_code": "SPWS-2026-2027",
+        "dt_start": "2026-07-13",
+        "dt_end": "2027-07-15",
+        "id_season": 4,
+        "enum_european_event_type": "IMEW",
+    }
+
+    def _patch(self, monkeypatch, scraped, roster=()):
+        from python.scrapers import evf_sync
+
+        sql_calls: list[str] = []
+        sent: list[str] = []
+
+        def fake_mgmt(ref, token, sql):
+            sql_calls.append(sql)
+            sl = sql.lower()
+            if "from tbl_season s where s.bool_active" in sl:
+                return [dict(self.SEASON)]
+            if "fn_ingest_evf_calendar" in sl:
+                return [{"r": json.dumps({"created": 0, "slot_reused": 0, "prior_matched": 0})}]
+            if "num_registrations" in sl:
+                return [dict(row) for row in roster]
+            return []
+
+        monkeypatch.setattr(evf_sync, "_management_query", fake_mgmt)
+        monkeypatch.setattr(evf_sync, "_telegram", lambda b, c, msg: sent.append(msg))
+        monkeypatch.setattr(evf_sync, "scrape_full_season_calendar", lambda s, e, **k: scraped)
+        return evf_sync, sql_calls, sent
+
+    @staticmethod
+    def _event(calendar_id, name, start):
+        return {
+            "name": name,
+            "dt_start": start,
+            "dt_end": start,
+            "location": "",
+            "country": "",
+            "weapons": ["EPEE", "FOIL", "SABRE"],
+            "is_team": False,
+            "url": "",
+            "evf_calendar_id": calendar_id,
+            "is_cancelled": False,
+            "fee": None,
+            "fee_currency": "",
+        }
+
+    def test_payload_codes_skopje_and_reports_the_held_championship(self, monkeypatch):
+        """evf.82: IMEW code in the payload; the held entry is counted and named."""
+        scraped = [
+            self._event(4594, "EVF Circuit – Dublin (IRL)", "2027-05-29"),
+            self._event(5407, "European Championships 2027", "2027-05-05"),
+            self._event(6001, "World Veterans Championships 2027", "2027-06-01"),
+        ]
+        evf_sync, sql_calls, sent = self._patch(monkeypatch, scraped)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=False)
+
+        ingest = next(s for s in sql_calls if "fn_ingest_evf_calendar" in s)
+        start = ingest.find("'[")
+        payload = json.loads(ingest[start + 1 : ingest.find("]'", start) + 1].replace("''", "'"))
+        codes = {e["evf_calendar_id"]: e["desired_code"] for e in payload}
+        assert codes == {5407: "IMEW-2026-2027", 4594: "PEW1efs-2026-2027"}
+        assert ", 4, 2) AS r" in ingest, "the held entry is not in the retained count"
+
+        ledger = [s for s in sql_calls if "fn_record_evf_calendar_scrape" in s]
+        assert ledger and all("held_championships" in s for s in ledger)
+        assert any("World Veterans Championships 2027" in s for s in ledger)
+        assert any("World Veterans Championships 2027" in m for m in sent)
+        assert any("held_championships=1" in m for m in sent)
+
+    def test_dry_run_prints_each_code_change(self, monkeypatch, capsys):
+        """evf.83: a dry run shows every rename it would make, before any write."""
+        scraped = [self._event(5407, "European Championships 2027", "2027-05-05")]
+        roster = [
+            {
+                "id_event": 151,
+                "txt_code": "PEW16fs-2026-2027",
+                "txt_name": "European Championships 2027",
+                "dt_start": "2027-05-05",
+                "dt_end": "2027-05-05",
+                "id_evf_calendar_event": 5407,
+                "txt_evf_slug": "european-championships-2027",
+                "enum_status": "PLANNED",
+                "num_registrations": 0,
+                "num_results": 0,
+            }
+        ]
+        evf_sync, sql_calls, _ = self._patch(monkeypatch, scraped, roster)
+
+        evf_sync.sync_calendar("ref", "token", "bot", "chat", dry_run=True)
+
+        out = capsys.readouterr().out
+        assert "PEW16fs-2026-2027 → IMEW-2026-2027" in out
+        assert not any("fn_ingest_evf_calendar" in s for s in sql_calls)
