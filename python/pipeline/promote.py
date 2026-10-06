@@ -73,7 +73,7 @@ def _get_active_season(query_fn) -> dict | None:
     """Read active season row via the given query function."""
     rows = query_fn(
         "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
-        "FROM tbl_season WHERE bool_active = TRUE"
+        "FROM tbl_season s WHERE s.bool_active"
     )
     return rows[0] if rows else None
 

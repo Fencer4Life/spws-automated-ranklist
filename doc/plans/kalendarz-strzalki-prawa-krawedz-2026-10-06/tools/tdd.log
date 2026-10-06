@@ -1,0 +1,21 @@
+CB.53 (Vitest) before the fix — npx vitest run tests/CalendarBarrel.test.ts -t "CB.53"
+ FAIL  tests/CalendarBarrel.test.ts > CalendarBarrel — step buttons on the right edge > CB.53: ▲ and ▼ are anchored to the right edge, not offset from the left
+AssertionError: .stp.prev right: expected [ '0', '0px' ] to include ''
+      Tests  1 failed | 55 skipped (56)
+
+CB.E5 (Playwright) before the fix — npx playwright test e2e/calendar-barrel.spec.ts -g "CB.E5"
+  320 px: passed (the buttons were already flush on a 300 px drum)
+  375 px: Error: right edge 346 vs drum 365
+  414 px: Error: right edge 346 vs drum 404
+  768 px: Error: right edge 348 vs drum 756
+  1280 px: Error: right edge 348 vs drum 1268
+  4 failed
+
+The fix: CalendarBarrel.svelte .stp — left: min(calc(100% - 36px), 300px) -> right: 0
+
+After the fix:
+  npx vitest run tests/CalendarBarrel.test.ts            Tests  56 passed (56)
+  npx playwright test e2e/calendar-barrel.spec.ts        15 passed
+  npx vitest run                                          Test Files 68 passed (68) · Tests 1225 passed (1225)
+  npx playwright test                                     62 passed
+  npm run check                                           0 ERRORS 21 WARNINGS (all in untouched files)

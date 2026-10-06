@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar arrows: right edge</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+<style>
+  .wide{width:calc(100vw - 32px);max-width:1180px;margin-left:50%;transform:translateX(-50%)}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 26px}
+  .grid3 figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px}
+  .grid3 img{width:100%;height:auto;display:block;border-radius:6px;border:1px solid var(--line)}
+  .grid3 figcaption{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  .state h3{margin-top:30px}
+  .state p.cap{font-size:16px;color:var(--muted);margin:0 0 6px;max-width:none}
+  table.res{font-size:14px;min-width:760px}
+  table.res td,table.res th{padding:8px 10px;text-align:center}
+  table.res td:first-child,table.res th:first-child{text-align:left;white-space:nowrap}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:15px;margin:8px 0 0}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .q{font-family:var(--mono);font-weight:800}
+  pre.log{font-family:var(--mono);font-size:13px;line-height:1.5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;white-space:pre}
+  @media (max-width:700px){.grid3{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Calendar drum · ▲ ▼ to the right edge · approved 6 Oct · push held</p>
+  <h1>The arrows sit on the right edge, and only the arrows moved</h1>
+  <p class="dek">On a computer ▲ and ▼ stood near the middle of the drum. They now sit on its right edge at every width. I captured <b>132 screens</b> on the build you approved and on the build with this one change. <b>72</b> differ only at the arrows and <b>58</b> are pixel-identical. The other <b>2</b> are the table page’s bar, where the English switch rasterises differently from one capture to the next of the <em>same</em> build (§04). <b>0</b> differ because of the change. Nothing is pushed.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>branch claude/calendar-drum-arrows-impl · committed · <b>main not pushed</b></span>
+    <span class="pill"><span class="dot"></span>CSS: <code>left: min(100% − 36px, 300px)</code> → <code>right: 0</code></span>
+    <span class="pill"><span class="dot"></span>Vitest 1,225 green · Playwright 62 green · svelte-check 0 errors</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · For you to decide</p>
+    <h2>Two answers, then I commit and push</h2>
+    <p><b>6 Oct: Q7 approved (&bdquo;approve the arrows&ldquo;). Q6: you said &bdquo;push to main&ldquo;, then &bdquo;stop&ldquo; before the push; it is held until you say so.</b></p>
+
+    <div class="note good">
+      <p class="lede"><span class="q">Q7</span> Approve the arrows on the right edge?</p>
+      <p>With your approval I commit this change with its tests and the corrected docs. <b>Recommendation: approve.</b> Every calendar screen differs only at ▲ ▼ or not at all. The two bar screens that differ elsewhere differ the same way between two captures of one build, so the change does not cause them.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="q">Q6</span> Still open: push to <code>main</code>, knowing PROD’s pages change without a second approval?</p>
+      <p>Unchanged from the first sheet. A push to <code>main</code> deploys the front end to github.io and to every WordPress page about 4 minutes later, plus up to 10 minutes of cache. Your GitHub approval comes afterwards and covers only the PROD database, which this change does not touch. <b>Recommendation: (a) push now</b>, then I check both hosts live at 320 and 375 px in PL and EN, and at 1280 px for the arrows. Details: <a href="kalendarz-beben-strzalki-porownanie-2026-10-06.html">the first sheet, Q6</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">01 · What was wrong</p>
+    <h2>Flush right only on the narrowest phones</h2>
+    <p>The approved mock placed the buttons at <code>left: min(100% − 36px, 300px)</code>. That puts them at the right edge only while the drum is at most 336 px wide. On anything wider they stopped 300 px from the left. The first sheet even said so (“at most 300 px from the left”), and I did not flag it against your rule: the right side. No test pinned the horizontal position, so nothing caught it.</p>
+    <p>Measured on the captures, where ▲ ▼ ended before and after:</p>
+    <div class="tablewrap"><table><thead><tr><th>Surface and width</th><th>Drum</th><th>▲ ▼ before: distance to the right edge</th><th>after</th></tr></thead><tbody>
+<tr><td>WordPress · 320 px</td><td>300 px</td><td>0 px</td><td>0 px</td></tr>
+<tr><td>github.io · 360 px</td><td>324 px</td><td>0 px</td><td>0 px</td></tr>
+<tr><td>github.io · 375 px</td><td>339 px</td><td><b>3 px</b></td><td>0 px</td></tr>
+<tr><td>WordPress · 375 px</td><td>355 px</td><td><b>19 px</b></td><td>0 px</td></tr>
+<tr><td>github.io · 414 px</td><td>378 px</td><td><b>42 px</b></td><td>0 px</td></tr>
+<tr><td>WordPress · 768 px</td><td>744 px</td><td><b>408 px</b></td><td>0 px</td></tr>
+<tr><td>github.io · 1280 px</td><td>960 px</td><td><b>624 px</b></td><td>0 px</td></tr>
+<tr><td>WordPress · 1280 px</td><td>1256 px</td><td><b>920 px</b></td><td>0 px</td></tr>
+</tbody></table></div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Strict TDD</p>
+    <h2>Two tests, seen red first</h2>
+    <ol class="steps">
+      <li><b>CB.53</b> (Vitest, runs in CI): the buttons declare <code>right: 0</code> and no <code>left</code>. Red before the fix: <code>.stp.prev right: expected [ '0', '0px' ] to include ''</code>.</li>
+      <li><b>CB.E5</b> (Playwright, the WordPress element at 320, 375, 414, 768 and 1280 px): each button’s right edge meets the drum’s right edge within 0.5 px. Red before the fix at four widths: 346 vs 365 at 375, 346 vs 404 at 414, 348 vs 756 at 768, 348 vs 1268 at 1280. 320 px passed, because there the buttons were already flush.</li>
+      <li>The fix: one declaration in <code>CalendarBarrel.svelte</code>, <code>left: min(calc(100% - 36px), 300px)</code> → <code>right: 0</code>.</li>
+      <li>Green after the fix: CB.53 and the whole CalendarBarrel suite (56); CB.E1–CB.E5 (15), so the move covers no tile, seam label or „najbliższe zawody” control at 320, 375 and 1280 px in PL and EN; the full Vitest suite (1,225), the full Playwright suite (62) and svelte-check (0 errors).</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">03 · How it was compared</p>
+    <h2>The approved build against this one change</h2>
+    <p><b>Before</b> is the build you approved on the first sheet; <b>after</b> differs from it only by the declaration above (both bundles were read to confirm it). The pool, the date (6 Oct 2026) and the states are the first sheet’s: the opening month, one and two steps either way, and the drawer open. Widths: WordPress at 320, 375, <b>768</b> and 1280 px, github.io at 320, 360, 375, 414 and <b>1280</b> px, each in PL and EN; the two new widths are where the arrows moved most.</p>
+    <p><b>The rule is stricter than the first sheet’s.</b> A differing pixel is allowed only inside ▲ or ▼, before or after the move, widened by 10 px for the disc’s shadow. A difference anywhere else, on a tile, a seam, the „najbliższe zawody” control, the card, the title, the bar or the drawer, counts as a failure.</p>
+    <div class="legend"><span><span class="sw" style="background:#185fa5"></span>differs at ▲ ▼</span><span><span class="sw" style="background:#dc1e1e"></span>differs anywhere else (none)</span></div>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Every screen</p>
+    <h2>132 screens: 72 differ at the arrows only, 58 identical, 2 switch noise, 0 changed elsewhere</h2>
+    <p>Each cell is one screen; hover it for the pixel counts. “▲▼ +n px” is how far the buttons moved right.</p>
+    <div class="tablewrap"><table class="res"><thead><tr><th>surface</th><th>opening month</th><th>▼ 1</th><th>▼ 2</th><th>▲ 1</th><th>▲ 2</th><th>drawer open</th><th>ranking bar</th><th>calculator bar</th><th>table bar</th></tr></thead><tbody>
+<tr><td>WordPress · 320 px · PL</td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 320 px · EN</td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 375 px · PL</td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12602 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 375 px · EN</td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12654 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 12602 · pixels elsewhere 0"><span class="chip fill">▲▼ +19 px</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 768 px · PL</td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 768 px · EN</td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +408 px</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 23"><span class="chip plain">switch noise · 23 px</span></td></tr>
+<tr><td>WordPress · 1280 px · PL</td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td></tr>
+<tr><td>WordPress · 1280 px · EN</td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +920 px</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 1"><span class="chip plain">switch noise · 1 px</span></td></tr>
+<tr><td>github.io · 320 px · PL</td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 320 px · EN</td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 360 px · PL</td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 360 px · EN</td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td title="pixels at ▲▼ 0 · pixels elsewhere 0"><span class="chip never">identical</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 375 px · PL</td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8264 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 375 px · EN</td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8540 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td title="pixels at ▲▼ 8264 · pixels elsewhere 0"><span class="chip fill">▲▼ +3 px</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 414 px · PL</td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14018 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 414 px · EN</td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14060 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td title="pixels at ▲▼ 14018 · pixels elsewhere 0"><span class="chip fill">▲▼ +42 px</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 1280 px · PL</td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td>—</td><td>—</td><td>—</td></tr>
+<tr><td>github.io · 1280 px · EN</td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td title="pixels at ▲▼ 4016 · pixels elsewhere 0"><span class="chip fill">▲▼ +624 px</span></td><td>—</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+    <p>The noise floor: the approved build captured twice differs on 0 of 132 screens.</p>
+    <div class="note warn">
+      <p class="lede">Two bar screens, explained</p>
+      <p>The table page’s bar in English differs at 768 px (23 px) and at 1280 px (1 px), always on the English flag of the language switch, which animates when it is clicked just before the bar is captured. Neither page draws the drum, and this change touches only the drum’s CSS. To be sure, I captured those two widths again, twice per build, and compared every pair:</p>
+      <div class="tablewrap"><table><thead><tr><th>Pair of captures</th><th>768 px · table bar</th><th>768 px · calculator bar</th><th>1280 px · table bar</th></tr></thead><tbody>
+<tr><td>approved #1 vs approved #2</td><td><span class="chip never">0 px</span></td><td><span class="chip plain">43 px</span></td><td><span class="chip plain">1 px</span></td></tr>
+<tr><td>fixed #1 vs fixed #2</td><td><span class="chip plain">23 px</span></td><td><span class="chip never">0 px</span></td><td><span class="chip never">0 px</span></td></tr>
+<tr><td>approved #1 vs fixed #1</td><td><span class="chip plain">23 px</span></td><td><span class="chip plain">43 px</span></td><td><span class="chip never">0 px</span></td></tr>
+<tr><td>approved #2 vs fixed #2</td><td><span class="chip never">0 px</span></td><td><span class="chip never">0 px</span></td><td><span class="chip plain">1 px</span></td></tr>
+<tr><td>approved #1 vs fixed #2</td><td><span class="chip never">0 px</span></td><td><span class="chip plain">43 px</span></td><td><span class="chip never">0 px</span></td></tr>
+<tr><td>approved #2 vs fixed #1</td><td><span class="chip plain">23 px</span></td><td><span class="chip never">0 px</span></td><td><span class="chip plain">1 px</span></td></tr>
+      </tbody></table></div>
+      <p><b>The differences follow a capture, not a build:</b> the same 23 px appear between two captures of the fixed build, and the same 1 px between two captures of the approved build. The calculator bar flickers the same way (43 px), once, in an approved capture. Across all of these reruns no calendar screen differs anywhere but at ▲ ▼. The first sheet recorded the same switch noise on the calculator bar (24 px).</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · Look for yourself</p>
+    <h2>Before, after, and the differences marked</h2>
+    <p>Click any picture for the full size. The marked picture is the “after” screen, faded, with each differing pixel coloured.</p>
+    <div class="wide">
+<div class="state"><h3>WordPress · 1280 px · PL · the opening month</h3><p class="cap">What you saw: ▲ ▼ near the middle of the drum. They now sit on its right edge, 920 px further right. Nothing else on the page differs.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-calendar-open.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-calendar-open.before.jpg" alt="WordPress · 1280 px · PL · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-calendar-open.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-calendar-open.after.jpg" alt="WordPress · 1280 px · PL · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-calendar-open.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-calendar-open.diff.jpg" alt="WordPress · 1280 px · PL · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 1280 px · EN · ▼ twice</h3><p class="cap">The „najbliższe zawody” control rides the upper seam at the right edge; ▲ sits below it, clear of it.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-en-calendar-later2.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-en-calendar-later2.before.jpg" alt="WordPress · 1280 px · EN · ▼ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-en-calendar-later2.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-en-calendar-later2.after.jpg" alt="WordPress · 1280 px · EN · ▼ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-en-calendar-later2.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-en-calendar-later2.diff.jpg" alt="WordPress · 1280 px · EN · ▼ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 768 px · PL · ▲ once</h3><p class="cap">The control is pinned to the bottom right with ←, and ▼ sits above it, as at 320 px.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-768-pl-calendar-earlier1.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-768-pl-calendar-earlier1.before.jpg" alt="WordPress · 768 px · PL · ▲ once, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-768-pl-calendar-earlier1.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-768-pl-calendar-earlier1.after.jpg" alt="WordPress · 768 px · PL · ▲ once, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-768-pl-calendar-earlier1.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-768-pl-calendar-earlier1.diff.jpg" alt="WordPress · 768 px · PL · ▲ once, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · the opening month</h3><p class="cap">On a phone the move is small: 19 px, from 19 px short of the edge to the edge.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-open.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-open.before.jpg" alt="WordPress · 375 px · PL · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-open.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-open.after.jpg" alt="WordPress · 375 px · PL · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-open.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-open.diff.jpg" alt="WordPress · 375 px · PL · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · ▲ twice</h3><p class="cap">Pinned control with ↓ at the bottom right, ▼ above it.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-earlier2.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-earlier2.before.jpg" alt="WordPress · 375 px · PL · ▲ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-earlier2.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-earlier2.after.jpg" alt="WordPress · 375 px · PL · ▲ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-earlier2.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-earlier2.diff.jpg" alt="WordPress · 375 px · PL · ▲ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 375 px · PL · the drawer open</h3><p class="cap">Behind the overlay only the buttons differ; the drawer is pixel-identical.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-drawer.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-drawer.before.jpg" alt="WordPress · 375 px · PL · the drawer open, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-drawer.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-drawer.after.jpg" alt="WordPress · 375 px · PL · the drawer open, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-drawer.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-375-pl-calendar-drawer.diff.jpg" alt="WordPress · 375 px · PL · the drawer open, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>WordPress · 320 px · EN · the opening month</h3><p class="cap">Pixel-identical: on a 300 px drum the buttons were already at the right edge.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-320-en-calendar-open.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-320-en-calendar-open.before.jpg" alt="WordPress · 320 px · EN · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-320-en-calendar-open.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-320-en-calendar-open.after.jpg" alt="WordPress · 320 px · EN · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-320-en-calendar-open.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-320-en-calendar-open.diff.jpg" alt="WordPress · 320 px · EN · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 1280 px · PL · the opening month</h3><p class="cap">The same on github.io: 624 px to the right edge.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-1280-pl-calendar-open.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-1280-pl-calendar-open.before.jpg" alt="github.io · 1280 px · PL · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-1280-pl-calendar-open.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-1280-pl-calendar-open.after.jpg" alt="github.io · 1280 px · PL · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-1280-pl-calendar-open.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-1280-pl-calendar-open.diff.jpg" alt="github.io · 1280 px · PL · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 414 px · EN · ▲ twice</h3><p class="cap">Pinned control and ▼, both at the right edge.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-414-en-calendar-earlier2.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-414-en-calendar-earlier2.before.jpg" alt="github.io · 414 px · EN · ▲ twice, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-414-en-calendar-earlier2.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-414-en-calendar-earlier2.after.jpg" alt="github.io · 414 px · EN · ▲ twice, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-414-en-calendar-earlier2.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-414-en-calendar-earlier2.diff.jpg" alt="github.io · 414 px · EN · ▲ twice, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>github.io · 360 px · PL · the opening month</h3><p class="cap">Pixel-identical: a 328 px drum, already flush.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-360-pl-calendar-open.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-360-pl-calendar-open.before.jpg" alt="github.io · 360 px · PL · the opening month, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-360-pl-calendar-open.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-360-pl-calendar-open.after.jpg" alt="github.io · 360 px · PL · the opening month, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-360-pl-calendar-open.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/gh-360-pl-calendar-open.diff.jpg" alt="github.io · 360 px · PL · the opening month, differences" loading="lazy"></a></figure>
+</div></div>
+<div class="state"><h3>The table page’s bar · 1280 px · PL</h3><p class="cap">Pixel-identical.</p><div class="grid3">
+<figure><figcaption>before</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-table-bar.before.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-table-bar.before.jpg" alt="The table page’s bar · 1280 px · PL, before" loading="lazy"></a></figure>
+<figure><figcaption>after</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-table-bar.after.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-table-bar.after.jpg" alt="The table page’s bar · 1280 px · PL, after" loading="lazy"></a></figure>
+<figure><figcaption>differences marked</figcaption><a href="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-table-bar.diff.jpg"><img src="kalendarz-strzalki-prawa-krawedz-2026-10-06/wp-1280-pl-table-bar.diff.jpg" alt="The table page’s bar · 1280 px · PL, differences" loading="lazy"></a></figure>
+</div></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Docs corrected</p>
+    <h2>Everything that said “300 px from the left”</h2>
+    <ul>
+      <li><b>ADR-084</b>, the 2026-10-06 amendment, §M: the buttons sit against the drum’s right edge at every width, with a dated correction note; as-built and verification updated (CB.53, CB.E5). HTML twin re-rendered.</li>
+      <li><b>Specification, Appendix C</b>, the ADR-084 row: “against the drum’s right edge at every width”.</li>
+      <li><b>RTM</b>: FR-153 names the right edge and cites CB.53 and CB.E5; a new acceptance row for both, Landed.</li>
+      <li><b>Handbook</b>, product surfaces: “two buttons at the drum’s right edge”.</li>
+      <li>The receded rows’ 294 px cap (D9) is <b>unchanged</b>: it now stops further from the buttons on screens wider than 356 px. No month today has enough events to reach it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">07 · Then</p>
+    <h2>After your answers</h2>
+    <ol class="steps">
+      <li>Commit this change (tests, the fix, the docs, this sheet and its tools), with the graph and the docs index refreshed.</li>
+      <li>On Q6 (a): <code>main</code> from the integration checkout, CI and Release watched in the background, then both hosts checked live.</li>
+      <li>D4 still waits for your screenshot.</li>
+    </ol>
+  </section>
+
+  <p class="foot">arrows to the right edge · kalendarz-beben-strzalki · 2026-10-06 · captures 132 + 132 + noise floor 132 · tools in kalendarz-strzalki-prawa-krawedz-2026-10-06/tools/ · Chromium (Playwright)</p>
+</div>
+</html>

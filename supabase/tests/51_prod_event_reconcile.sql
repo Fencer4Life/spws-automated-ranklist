@@ -21,10 +21,9 @@ DECLARE
   v_prior_season INT;
   v_season       INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_prior_season := fn_create_season('RECON-PRIOR', '2033-09-01', '2034-06-30');
   v_season       := fn_create_season('RECON-TEST',  '2034-09-01', '2035-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_event (
     txt_code, txt_name, id_season, id_organizer,

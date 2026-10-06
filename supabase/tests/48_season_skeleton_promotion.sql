@@ -24,7 +24,6 @@ SELECT jsonb_build_object(
     'txt_code', 'SPWS-2099-2100',
     'dt_start', '2099-08-01',
     'dt_end', '2100-07-15',
-    'bool_active', FALSE,
     'enum_carryover_engine', 'EVENT_FK_MATCHING',
     'int_carryover_days', 366,
     'enum_european_event_type', 'IMEW'

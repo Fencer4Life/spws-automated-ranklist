@@ -74,6 +74,6 @@ def _get_active_season(
         ref,
         token,
         "SELECT txt_code, dt_start::TEXT, dt_end::TEXT, id_season "
-        "FROM tbl_season WHERE bool_active = TRUE",
+        "FROM tbl_season s WHERE s.bool_active",
     )
     return rows[0] if rows else None

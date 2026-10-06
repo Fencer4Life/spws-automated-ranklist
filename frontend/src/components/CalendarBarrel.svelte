@@ -1,6 +1,7 @@
-<!-- One definition, rendered from two places: inside a receded row when the
-     anchor is BEHIND the focus, and pinned to the viewport when it is AHEAD.
-     See the `{#if}` sites below for why the two cases cannot share a parent.
+<!-- One definition, rendered from two places: inside the upper receded row
+     when the opening month is EARLIER than the focus (drawn above), and pinned
+     to the viewport when it is LATER (drawn below). See the `{#if}` sites below
+     for why the two cases cannot share a parent.
 
      The arrow is an aria-hidden SVG, not a character in the translated string.
      A screen reader announces the button by its label alone, which is the
@@ -34,28 +35,61 @@
   >{t('calendar_jump_to_next')}</button>
 {/snippet}
 
+<!-- The ▲ ▼ step buttons (ADR-084 amendment 2026-10-06, §M). Siblings of the
+     drum inside the viewport, never inside a row, so they sit at full opacity
+     and are never clipped — the lesson the pinned jump control measured. A
+     button is not rendered where nothing lies further that way.
+
+     The chevron is ONE path, rotated for ▼, and aria-hidden: the button's name
+     is its translated label alone. -->
+{#snippet stepButton(direction: 1 | -1)}
+  <button
+    class="stp"
+    class:prev={direction === -1}
+    class:next={direction === 1}
+    type="button"
+    aria-label={t(direction === 1 ? 'calendar_step_next' : 'calendar_step_prev')}
+    onclick={(e) => step(direction, e.currentTarget)}
+  ><span><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"
+    ><path
+      d="M3.5 10.5 8 6l4.5 4.5"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    /></svg
+  ></span></button>
+{/snippet}
+
 <div class="vp" bind:this={viewportEl}>
+  {#if prevRow !== null}
+    {@render stepButton(-1)}
+  {/if}
   <div
     class="drum"
     class:anim={animate}
-    style:transform={`translateZ(${-DRUM_R}px) rotateX(${-active * ROW_ANGLE}deg)`}
+    style:transform={`translateZ(${-DRUM_R}px) rotateX(${active * ROW_ANGLE}deg)`}
   >
     {#each rows as row, qi (row.key)}
       {@const state = rowState(qi)}
       {@const layout = qi === active ? midLayout : null}
       <!-- Only a receded row is a control: tapping it rotates it to centre.
            The focused row is not interactive as a whole — its panels are — so it
-           carries neither a role nor a tab stop. -->
+           carries neither a role nor a tab stop. A month two or more rows away
+           is drawn faint or not at all and ignores taps, so it is inert too:
+           keyboard and screen readers skip it (ADR-084 amendment 2026-10-06, §O). -->
       {@const rotatable = state === 'up' || state === 'dn'}
       <div
         class="ln {state}"
-        style:transform={`rotateX(${qi * ROW_ANGLE}deg) translateZ(${DRUM_R}px)`}
+        style:transform={`rotateX(${-qi * ROW_ANGLE}deg) translateZ(${DRUM_R}px)`}
         style:opacity={rowOpacity(qi)}
         style:pointer-events={Math.abs(qi - active) * ROW_ANGLE > HORIZON ? 'none' : null}
         role="button"
         tabindex={rotatable ? 0 : undefined}
         aria-disabled={rotatable ? undefined : 'true'}
-        aria-label={row.label}
+        inert={Math.abs(qi - active) >= 2}
+        aria-label={seamLabel(row)}
         onclick={() => rotateTo(qi)}
         onkeydown={(e) => onRowKey(e, qi)}
       >
@@ -63,9 +97,10 @@
              The code shows on the focused row and permanently on a season
              boundary, whose rule is also drawn heavier — this is where the
              deleted season dropdown's information went. -->
-        <!-- Anchor BEHIND the focus: the control rides the adjacent upper seam,
-             which is on screen at 0.81 opacity and needs no special handling. -->
-        {#if jumpCue?.row === qi && !jumpCue.pinned}
+        <!-- Opening month EARLIER than the focus, so drawn above: the control
+             rides the adjacent upper seam (`up`, active - 1), which is on screen
+             at 0.81 opacity and needs no special handling. -->
+        {#if jumpCue && !jumpCue.pinned && jumpCue.row === qi}
           {@render jumpControl(jumpCue.arrow, false)}
         {/if}
         <div class="sm" class:bd={row.isSeasonBoundary}>
@@ -123,21 +158,24 @@
       </div>
     {/each}
   </div>
+  {#if nextRow !== null}
+    {@render stepButton(1)}
+  {/if}
 
-  <!-- Anchor AHEAD of the focus: pinned to the viewport's lower edge rather
-       than parented to the lowest seam's row.
+  <!-- Opening month LATER than the focus, so drawn below: pinned to the
+       viewport's lower edge rather than parented to the lowest seam's row.
 
        Parenting it there was tried and is not viable, for two compounding
-       reasons measured on screen. That row sits at d = -3, so it inherits
-       `rowOpacity` = cos(78°) x 0.9 = 0.19, and opacity applies to the whole
-       subtree, so a child cannot opt out. Worse, the row projects to y = 269 in
-       a 246px-tall viewport — about 23px PAST the bottom edge — where
-       `.vp { overflow: hidden }` clips it away completely. The control was not
-       merely faint, it was absent.
+       reasons measured on screen. That row sits three rows below the focus, at
+       -78°, so it inherits `rowOpacity` = cos(78°) x 0.9 = 0.19, and opacity
+       applies to the whole subtree, so a child cannot opt out. Worse, the row
+       projects to y = 269 in a 246px-tall viewport — about 23px PAST the bottom
+       edge — where `.vp { overflow: hidden }` clips it away completely. The
+       control was not merely faint, it was absent.
 
        Pinned here it holds the same visual position the lowest seam occupies,
        at full opacity, and it no longer depends on a row existing three below
-       the focus — which it does not, near the start of the drum. -->
+       the focus — which it does not, near the end of the drum. -->
   {#if jumpCue?.pinned}
     {@render jumpControl(jumpCue.arrow, true)}
   {/if}
@@ -162,9 +200,11 @@
   //   fill → completed
   //   ring → next upcoming
   //
-  // Rotation is a translateY on the drum; the per-row facing angle is a
-  // rotateX. The DOM never re-renders on rotate — only classes change.
+  // The drum is a cylinder that turns by a rotateX; each row holds a fixed
+  // angle on its surface, earlier months above and later months below. The DOM
+  // never re-renders on rotate — only classes change.
 
+  import { tick } from 'svelte'
   import type { CalendarEvent } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import {
@@ -175,6 +215,7 @@
     panelType,
     seasonShortCode,
     settleRow,
+    stepRow,
     eventTimeState,
     isRegistrationOpen,
     splitLocation,
@@ -201,27 +242,22 @@
 
      θ = 26° puts seven rows inside the 80° horizon (5 at 34°, 9 at 18°).
 
-     Time runs UPWARD: the future sits above the focused row and the past below
-     it. A point at angle θ on the cylinder is at y = -R·sin θ, so a positive
-     angle lifts a row up the screen, and rows are laid out in chronological
-     index order — which puts later months higher.
-
-     This inverts the flat drum, where `.ln.up` was `active - 1` and the past
-     sat above. It is deliberate: you rotate a physical drum forward to bring
-     what is coming toward you, and the events that matter are ahead, so the
-     drum surfaces them by turning up rather than down. */
+     Time runs DOWNWARD: earlier months sit above the focused row and later
+     months below it, so reading down the drum is reading forward in time, as
+     in a list (ADR-084 amendment 2026-10-06, §L). A point at angle θ on the
+     cylinder is at y = -R·sin θ, so a positive angle lifts a row up the
+     screen. Row i sits at rotateX(-i·θ) and the drum turns by rotateX(+active·θ),
+     which leaves row active - 1 at +θ, above the focus. The two signs flip
+     together and nothing else reads them; `.ln.up` (active - 1) is above. */
   const ROW_ANGLE = 26
   const HORIZON = 80
   const DRUM_R = Math.round(ROW_H / 2 / Math.tan((ROW_ANGLE / 2) * (Math.PI / 180)))
-  /* Rows still on screen each side of the focus — derived, not written as `3`,
-     so it follows the geometry if either angle is ever retuned. */
-  const VISIBLE_SPAN = Math.floor(HORIZON / ROW_ANGLE)
 
   /**
    * The drum must ARRIVE at its opening angle, not travel to it.
    *
-   * Rotation is `-active × θ`, so opening on row 56 of 66 is
-   * `rotateX(-1456deg)` — four complete turns. With the transition live from
+   * Rotation is `active × θ`, so opening on row 56 of 66 is
+   * `rotateX(1456deg)` — four complete turns. With the transition live from
    * the first paint the drum spins through every one of them before settling,
    * which looks broken. Animation is therefore enabled only after the opening
    * frame; from then on a step between adjacent rows is 26deg and animates
@@ -325,9 +361,9 @@
     return d === -1 ? 'up' : d === 0 ? 'mid' : d === 1 ? 'dn' : 'far'
   }
 
-  /** Tapping a receded row rotates it to centre; the whole row is the target. */
   /**
-   * Rotate to a row, skipping quiet months.
+   * Rotate to a row, skipping quiet months. Tapping a receded row rotates it
+   * to centre; the whole row is the target.
    *
    * Monthly seams materialise a row for every calendar month, so the drum now
    * meets long runs of empty ones — 18 of 66 on the current PROD pool, against
@@ -343,6 +379,47 @@
     active = settled
     selectDefault(settled)
   }
+
+  /** Where ▲ and ▼ would land, or null where the button is not drawn. */
+  const prevRow = $derived(stepRow(rows, active, -1))
+  const nextRow = $derived(stepRow(rows, active, 1))
+
+  /**
+   * A ▲ or ▼ step: the nearest month with events that way, animated and
+   * selected like a tap on the neighbouring row. Never `rotateTo(active ± 1)`:
+   * from a quiet month with nothing beyond it, settleRow would reverse.
+   *
+   * At the ends of the drum the pressed button disappears. If it had focus,
+   * focus passes to the other button rather than dropping onto the page.
+   */
+  async function step(direction: 1 | -1, pressed?: HTMLElement): Promise<void> {
+    const target = stepRow(rows, active, direction)
+    if (target === null) return
+    const hadFocus = pressed?.matches(':focus') ?? false
+    active = target
+    selectDefault(target)
+    if (hadFocus && stepRow(rows, target, direction) === null) {
+      await tick()
+      viewportEl?.querySelector<HTMLElement>(direction === 1 ? '.stp.prev' : '.stp.next')?.focus()
+    }
+  }
+
+  // ↑ and ↓ step like the buttons while focus is anywhere in the drum — ▲, ▼,
+  // a month, a tile or the jump control — and the page does not scroll for
+  // that key press (ADR-084 amendment 2026-10-06, §P; D8 (a)). Keys only:
+  // wheel and swipe would turn the drum when someone meant to scroll the page.
+  // Listened for on the viewport, so focus outside the drum is never taken.
+  $effect(() => {
+    const el = viewportEl
+    if (!el) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+      event.preventDefault()
+      void step(event.key === 'ArrowDown' ? 1 : -1, event.target as HTMLElement)
+    }
+    el.addEventListener('keydown', onKey)
+    return () => el.removeEventListener('keydown', onKey)
+  })
 
   function onRowKey(event: KeyboardEvent, qi: number): void {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -366,47 +443,46 @@
    */
   /**
    * Where the jump control sits and which way its arrow points, or null when
-   * the drum is already where it opens.
+   * the drum is already where it opens. The arrow always points to where the
+   * opening month is DRAWN (ADR-084 amendment 2026-10-06, §N).
    *
-   * Index order is chronological, and the cylinder puts LATER months higher up
-   * the screen — so `dn` (active + 1) renders above and `up` (active - 1)
+   * Index order is chronological, and the cylinder puts EARLIER months higher
+   * up the screen — so `up` (active - 1) renders above and `dn` (active + 1)
    * below.
    *
    * The arrow carries DIRECTION AND DISTANCE, which a fixed right arrow could
    * not: the drum travels vertically, so a rightward glyph pointed at nothing.
-   *   - past (anchor ahead, above)      -> up
-   *   - future by exactly one row       -> left, the anchor is adjacent
-   *   - future by two rows or more      -> down
+   *   - focus later than the anchor (anchor earlier, above)  -> up
+   *   - focus earlier by exactly one row                     -> left, the anchor is adjacent
+   *   - focus earlier by two rows or more                    -> down
    *
-   * Going forward the control also stops tracking the focus and settles at the
-   * LOWEST visible seam, so it holds one position instead of drifting with
-   * every step. `max(0, ...)` covers the start of the drum, where there is no
-   * row three below. Going back it stays on the adjacent upper seam: that is
-   * already the shortest possible hop and there is nothing to steady.
+   * When the anchor is drawn below, the control stops tracking the focus and
+   * pins to the viewport's lower edge, so it holds one position instead of
+   * drifting with every step; it needs no row for that. When the anchor is
+   * drawn above, it rides the adjacent upper seam: that is already the
+   * shortest possible hop and there is nothing to steady.
    *
-   * This carries a row INDEX rather than a `rowState`, because `rowState`
-   * collapses everything at |d| >= 2 to 'far' — matching on the state would
-   * paint the button onto every far row at once.
+   * The in-row case carries a row INDEX rather than a `rowState`, because
+   * `rowState` collapses everything at |d| >= 2 to 'far' — matching on the
+   * state would paint the button onto every far row at once.
    *
    * The destination is `anchorIndex`, NOT the month containing today: today's
    * month is frequently empty — August 2026 holds no events at all — and the
    * drum never rests on an empty row, so a literal "jump to today" would land
    * somewhere it immediately rolls off.
    */
-  const jumpCue = $derived.by(
-    (): { row: number; arrow: 'up' | 'left' | 'down'; pinned: boolean } | null => {
-      if (!rows[anchorIndex] || anchorIndex === active) return null
-      if (anchorIndex > active) return { row: active + 1, arrow: 'up', pinned: false }
-      return {
-        row: Math.max(0, active - VISIBLE_SPAN),
-        arrow: active - anchorIndex === 1 ? 'left' : 'down',
-        pinned: true,
-      }
-    },
-  )
+  type JumpCue =
+    | { pinned: false; row: number; arrow: 'up' }
+    | { pinned: true; arrow: 'left' | 'down' }
+
+  const jumpCue = $derived.by((): JumpCue | null => {
+    if (!rows[anchorIndex] || anchorIndex === active) return null
+    if (anchorIndex < active) return { pinned: false, row: active - 1, arrow: 'up' }
+    return { pinned: true, arrow: anchorIndex - active === 1 ? 'left' : 'down' }
+  })
 
   /**
-   * Instant, not animated. Rotation is `-active × θ`, so crossing forty rows is
+   * Instant, not animated. Rotation is `active × θ`, so crossing forty rows is
    * over a thousand degrees — nearly three full turns of spinning before it
    * settles, the same failure the opening frame has to avoid.
    */
@@ -689,10 +765,14 @@
   .rw::-webkit-scrollbar {
     display: none;
   }
-  /* Receded rows are not tap targets for their panels, so they clip instead. */
+  /* Receded rows are not tap targets for their panels, so they clip instead —
+     and stop 6px before the ▲ ▼ buttons (36px wide, at most 300px from the
+     left), so a crowded month never runs under them. A focused month still
+     shows every event. */
   .up .rw,
   .dn .rw {
     overflow-x: hidden;
+    max-width: min(calc(100% - 42px), 294px);
   }
   /* `margin: 0 auto`, not `justify-content: center`: auto margins absorb only
      POSITIVE free space, so a row that fits is centred and one that overflows
@@ -991,6 +1071,70 @@
   .jmp.pinned {
     top: auto;
     bottom: 4px;
+  }
+  /* ▲ ▼ — the approved mock's look (plan kalendarz-beben-strzalki §2.2): a
+     36px hit box around a 30px white disc, beside the neighbouring months.
+     Anchored to the drum's RIGHT edge at every width (the user, 6 Oct 2026;
+     CB.53, CB.E5): the mock's 300px cap held them 300px from the left on a
+     wide drum, which read as centred. Above the jump control's z-index, and
+     measured clear of it: ▲ 41-71px and ▼ 180-210px against the pill at
+     11-31px or 219-242px. */
+  .stp {
+    position: absolute;
+    z-index: 20;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stp.prev {
+    top: 38px;
+  }
+  .stp.next {
+    top: 177px;
+  }
+  .stp span {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--surface-2, #fff);
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.2);
+    color: var(--accent, #185fa5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      transform 0.12s,
+      background 0.12s;
+  }
+  .stp:hover span {
+    background: #f1f6fd;
+  }
+  .stp:active span {
+    transform: scale(0.9);
+  }
+  .stp:focus-visible {
+    outline: none;
+  }
+  .stp:focus-visible span {
+    outline: 2px solid var(--accent, #185fa5);
+    outline-offset: 2px;
+  }
+  .stp svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* ONE chevron path, pointing up; ▼ is the same path turned over. */
+  .stp.next svg {
+    transform: rotate(180deg);
   }
   .mt {
     font-size: 11px;

@@ -283,8 +283,8 @@ SELECT is(
 -- 1.13  Create season
 -- ---------------------------------------------------------------------------
 SELECT lives_ok(
-  'INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-   VALUES (''TEST-SEASON-9999'', ''2099-08-01'', ''2100-07-15'', FALSE)',
+  'INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+   VALUES (''TEST-SEASON-9999'', ''2099-08-01'', ''2100-07-15'')',
   '1.13 Can create a season with txt_code, dt_start, dt_end'
 );
 
@@ -322,8 +322,8 @@ SELECT ok(
 -- 1.15  Enforce no overlapping season dates (ADR-031)
 -- ---------------------------------------------------------------------------
 SELECT throws_ok(
-  'INSERT INTO tbl_season (txt_code, dt_start, dt_end, bool_active)
-   VALUES (''OVERLAP-SEASON'', ''2025-09-01'', ''2026-06-30'', FALSE)',
+  'INSERT INTO tbl_season (txt_code, dt_start, dt_end)
+   VALUES (''OVERLAP-SEASON'', ''2025-09-01'', ''2026-06-30'')',
   '23P01',
   NULL,
   '1.15 Overlapping season dates rejected by exclusion constraint'

@@ -17,9 +17,8 @@ DO $setup$
 DECLARE
   v_season INT;
 BEGIN
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season := fn_create_season('EVFSLUG-TEST', '2034-09-01', '2035-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
   INSERT INTO tbl_organizer (txt_code, txt_name)
     VALUES ('EVF', 'European Veterans Fencing')
@@ -326,10 +325,9 @@ DECLARE
 BEGIN
   SELECT id_organizer INTO v_org FROM tbl_organizer WHERE txt_code = 'EVF';
 
-  UPDATE tbl_season SET bool_active = FALSE;
   v_season_a := fn_create_season('EVFSLUG-TEST-A', '2036-09-01', '2037-06-30');
   v_season_b := fn_create_season('EVFSLUG-TEST-B', '2037-09-01', '2038-06-30');
-  UPDATE tbl_season SET bool_active = TRUE WHERE id_season = v_season_b;
+  PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season_b), false);
 
   v_id_a := fn_create_event(
     'EVFSLUG-EV-50-8A', 'Cross-season slug A', v_season_a, v_org,

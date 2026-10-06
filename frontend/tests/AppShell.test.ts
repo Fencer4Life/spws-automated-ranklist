@@ -10,7 +10,6 @@ import type { Season } from '../src/lib/types'
 // Mock the api module before importing App
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
-  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([]),
   // SS26.LOCK.01/§05 (governance lock, 2026-09-19) — released scoring-engine
   // codes for ScoringConfigEditor's engine selectors, loaded once an admin signs in (SE27.UI.09).
@@ -91,8 +90,12 @@ describe('App Shell (T8.4)', () => {
     )
     await fireEvent.click(calendarItem!)
 
-    // Title should change
-    expect(title?.textContent).toContain('Kalendarz')
+    // Title should change. The calendar's title is its drawer entry, with its
+    // fit candidates (ADR-090 amendment 2026-10-06); jsdom measures every
+    // width as 0, so the full name is the one shown.
+    expect(title?.querySelector('.app-title-fit')?.textContent?.trim()).toBe('Znajdź zawody')
+    expect([...title!.querySelectorAll('.title-measure > span')].map((s) => s.textContent?.trim()))
+      .toEqual(['Znajdź zawody', 'Zawody'])
     expect(title?.querySelector('.header-logo')).not.toBeNull()
   })
 

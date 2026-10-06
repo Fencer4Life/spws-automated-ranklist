@@ -42,7 +42,6 @@ const { carriedRow } = vi.hoisted(() => ({
 
 vi.mock('../src/lib/api', () => ({
   initClient: vi.fn(),
-  refreshActiveSeason: vi.fn().mockResolvedValue(undefined),
   fetchSeasons: vi.fn().mockResolvedValue([
     { id_season: 4, txt_code: 'SPWS-2026-2027', dt_start: '2026-07-13', dt_end: '2027-07-15', bool_active: true, enum_ranking_publication: 'FULL' },
     { id_season: 3, txt_code: 'SPWS-2025-2026', dt_start: '2025-07-01', dt_end: '2026-07-12', bool_active: false, enum_ranking_publication: 'FULL' },

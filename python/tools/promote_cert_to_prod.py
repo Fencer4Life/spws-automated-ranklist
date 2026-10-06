@@ -127,7 +127,7 @@ def sync_events(dry_run: bool) -> int:
                     {vals["txt_country"]}, {vals["dt_start"]}, {vals["dt_end"]},
                     {vals["enum_status"]}, {vals["url_invitation"]}, {vals["num_entry_fee"]},
                     {vals["txt_entry_fee_currency"]},
-                    (SELECT id_season FROM tbl_season WHERE bool_active),
+                    (SELECT s.id_season FROM tbl_season s WHERE s.bool_active),
                     (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS'))
                 """,
                 )

@@ -1,6 +1,6 @@
 # ADR-090: Publishing a PROD surface as a full-screen WordPress menu item
 
-**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (`chrome="site"`), and §3 is amended so that `/ranking/?admin=1` opens the PROD sign-in; see [ADR-109](109-environments-split-by-host.md) for the environment split.)
+**Status:** Accepted (proposed 2026-09-05; revised 2026-09-05 after live review; accepted 2026-09-05. Amended 2026-09-12: capability links protect a public surface without reversing §3's no-sign-in rule. Amended 2026-09-16: §7's full-screen treatment now also carries the FTL export page, and §5's mandatory mark now binds `FtlExport.svelte` as well as the calendar embed. Amended 2026-10-03: every public WordPress page carries the site's navigation (`chrome="site"`), and §3 is amended so that `/ranking/?admin=1` opens the PROD sign-in; see [ADR-109](109-environments-split-by-host.md) for the environment split. Amended 2026-10-06: the calendar's title is its menu name, „Znajdź zawody" / "Competition Finder", shortened only where the measured room is too small; the closed drawer is `inert`.)
 **Date:** 2026-09-05
 **Amends:** [ADR-007](007-shadow-dom-deferred.md) (the anticipated WordPress embed is now built, and the element gains a `view`/`chrome` interface), [ADR-009](009-cert-prod-runtime-toggle.md) (GitHub Pages is no longer the only publication target, and the environment a surface opens on is now derived from the credentials it holds rather than fixed at `CERT`)
 **Relates to:** [ADR-011](011-artifact-release-pipeline.md) (the bundle ships through the existing release pipeline), [ADR-083](083-server-enforced-authorization.md) (the exposure argument rests on the anon grants), [ADR-079](079-event-self-registration-identity.md) (self-registration becomes reachable from the association's own menu), [ADR-084](084-calendar-quarter-barrel-event-card.md) (the calendar is the first surface through the pattern), [ADR-085](085-points-calculator-temporary-static-page.md) (the calculator will reuse the presentation, not the build)
@@ -431,3 +431,41 @@ The menu item (the live weteraniszermierki.pl menu, with "Ranking" added in the 
 - **A framed document's link to the annex leaves the frame.** Followed inside the frame, it would open the annex under a bar that names the calculator. The `embed/` copy asks `<spws-document>` to open the page's own `href-table` in the same tab, and the element accepts the request only from the asset base's origin (WP.DOC.04).
 - **The calculator follows the chosen mock.** The calculator comes first. The premium table, the simulator and „W skrócie" are folded below it, closed. The full rules are a pill to the annex (WP.CALC.02).
 - **The publishing script posts a reference copy without its opening note and final newline**, which the live page does not carry, so republishing an unchanged copy changes nothing on the page (WP.PAGE.02).
+
+## Amendment (2026-10-06) — the calendar's title is its menu name; a closed drawer is inert
+
+**Status:** Accepted (drafted in the plan's §09 and signed off by the user with plan rev 2, 2026-10-06; the before/after comparison approved 2026-10-06).
+**Development plan:** [`doc/plans/kalendarz-beben-strzalki-plan-2026-10-06.html`](../plans/kalendarz-beben-strzalki-plan-2026-10-06.html); before/after comparison: [`doc/plans/kalendarz-beben-strzalki-porownanie-2026-10-06.html`](../plans/kalendarz-beben-strzalki-porownanie-2026-10-06.html).
+**Relates to:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (the same day's amendment to the drum)
+
+### Decision
+
+**§5's phone title for the calendar is superseded**, along with the 2026-10-03 amendment's „Kalendarz" / "Calendar".
+
+- The calendar's title reads its drawer entry, „Znajdź zawody" / "Competition Finder", wherever that fits.
+- It squeezes to „Zawody" / "Competitions", and in English finally to "Events", only when the room the title actually has is too small. Fit is measured, not tied to a screen width.
+- The same applies to the github.io header. Font, size and the mark's 84 px are unchanged.
+- The other three pages keep §5's 430 px switch.
+
+The drawer is `inert` while closed in every mode, so its links are no longer reached by keyboard or screen reader while off-screen.
+
+### As built (2026-10-06)
+
+- **`lib/fitTitle.ts`** picks the first candidate whose measured width fits the room, or the last one when none does. `titleCandidates()` drops a candidate equal to the one before it, so Polish has two („Zawody" is both the short and the tiny name) and English three.
+- **The candidates are measured, not guessed.** Each is set once in an `aria-hidden` copy inside a zero-size, clipped box, in the title's own font. A `ResizeObserver` measures again when the room changes, so a language switch or a rotated phone picks again.
+- **The room** on the WordPress bar is the title's own box, which takes the bar's slack. In the github.io header it is the header's width less the ☰, the language switch, the logo and the gaps between them.
+- **Measured in Chromium (WP.BAR.05):**
+
+| Surface | 320 px | 360 px | 375 px | 414 px | 1,280 px |
+| --- | --- | --- | --- | --- | --- |
+| WordPress bar, PL | Zawody | Znajdź zawody | Znajdź zawody | Znajdź zawody | Znajdź zawody |
+| WordPress bar, EN | Events | Competitions | Competitions | Competition Finder | Competition Finder |
+| github.io header, PL | Zawody (wraps) | Zawody | Zawody | Znajdź zawody | Znajdź zawody |
+| github.io header, EN | Events | Events | Competitions | Competition Finder | Competition Finder |
+
+- **Two github.io cells differ from the plan's prediction, and the user accepted both** (comparison Q3 and Q4). At 375 px Polish shows „Zawody", because „Znajdź zawody" needs 115.8 px and the header leaves 113.8 px. At 320 px even „Zawody" (61.2 px) does not fit the 58.8 px, so that header still wraps onto a second row, as it did with „Kalendarz". The rule holds either way: the full name only where it fits, and no smaller font or logo. github.io is CERT only (ADR-109).
+
+### Consequences
+
+- **Tests:** TITLE.01–TITLE.02, WP.BAR.02 and WP.BAR.03 (amended), WP.BAR.05, WP.NAV.04, AppShell 8.34 (amended).
+- **No WordPress page changes.** The pages load `assets/main.ce.js`, so the title changes with the release.

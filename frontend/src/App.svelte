@@ -26,14 +26,24 @@
       homeHref={siteLinks?.home ?? ''}
       longTitle={siteTitles.long}
       shortTitle={siteTitles.short}
+      fitTitles={currentView === 'calendar' ? calendarTitles : undefined}
       onmenu={() => { sidebarOpen = true }}
     />
   {:else if !embedded}
-    <header class="app-header">
+    <header class="app-header" bind:this={appHeaderEl}>
       <button class="hamburger-btn" onclick={() => { sidebarOpen = true }} aria-label="Menu">&#9776;</button>
       <h2 class="app-title">
         <img src={assetUrl('SPWS-logo.png')} alt="SPWS" class="header-logo" />
-        {currentView === 'ranklist' ? t('app_title') : currentView === 'calendar' ? t('calendar_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_fencers' ? t('nav_admin_fencers') : t('app_title')}
+        {#if currentView === 'calendar'}
+          <!-- The calendar's title is its drawer entry, fitted to the room the
+               header leaves it (ADR-090 amendment 2026-10-06). -->
+          <span class="app-title-fit">{calendarTitles[appTitlePick] ?? calendarTitles[0]}</span><span
+            class="title-measure"
+            aria-hidden="true"
+            bind:this={appMeasureEl}>{#each calendarTitles as name, i (i)}<span>{name}</span>{/each}</span>
+        {:else}
+          {currentView === 'ranklist' ? t('app_title') : currentView === 'admin_seasons' ? t('nav_admin_seasons') : currentView === 'admin_events' ? t('nav_admin_events') : currentView === 'admin_fencers' ? t('nav_admin_fencers') : t('app_title')}
+        {/if}
       </h2>
       <div class="header-right">
         <LangToggle />
@@ -363,7 +373,6 @@
     updateFencerGender,
     updateFencerBirthYear,
     fetchFencerTournamentHistory,
-    refreshActiveSeason,
     listFencerAliases,
     transferFencerAlias,
     splitFencerFromAlias,
@@ -390,6 +399,7 @@
   import { t } from './lib/locale.svelte'
   import Sidebar from './components/Sidebar.svelte'
   import SiteBar from './components/SiteBar.svelte'
+  import { fitIndex, titleCandidates } from './lib/fitTitle'
   import CalendarView from './components/CalendarView.svelte'
   import FilterBar from './components/FilterBar.svelte'
   import LangToggle from './components/LangToggle.svelte'
@@ -485,6 +495,42 @@
         return { long: name, short: name }
       }
     }
+  })
+
+  // The calendar's title, in both bars: its drawer entry wherever that fits,
+  // shorter names only for lack of room (ADR-090 amendment 2026-10-06). The
+  // WordPress bar fits it itself (SiteBar); the github.io header below.
+  const calendarTitles = $derived(
+    titleCandidates([t('calendar_title'), t('site_title_short_calendar'), t('site_title_tiny_calendar')]),
+  )
+
+  // github.io: the header does not stretch its title, so the room is what the
+  // header leaves it with everything on one row — its width less the other
+  // items, the logo beside the title and the gaps, all measured. Watched on
+  // the header, the switch and the logo, which has no width until it loads.
+  let appHeaderEl = $state<HTMLElement | null>(null)
+  let appMeasureEl = $state<HTMLElement | null>(null)
+  let appTitlePick = $state(0)
+  $effect(() => {
+    void calendarTitles
+    const header = appHeaderEl
+    const copies = appMeasureEl
+    const title = copies?.parentElement ?? null
+    if (!header || !copies || !title) return
+    const width = (el: Element | null) => el?.getBoundingClientRect().width ?? 0
+    const gap = (el: Element) => parseFloat(getComputedStyle(el).columnGap) || 0
+    const burger = header.querySelector('.hamburger-btn')
+    const right = header.querySelector('.header-right')
+    const logo = title.querySelector('.header-logo')
+    const fit = () => {
+      const room = width(header) - width(burger) - width(right) - 2 * gap(header) - width(logo) - gap(title)
+      appTitlePick = fitIndex(copies.children, room)
+    }
+    fit()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(fit)
+    for (const el of [header, right, logo]) if (el) ro.observe(el)
+    return () => ro.disconnect()
   })
 
   // The one-shot capture is the point: `view` is the STARTING view, and
@@ -694,7 +740,8 @@
 
   async function init() {
     try {
-      await refreshActiveSeason().catch(() => {}) // best-effort: may fail for anon
+      // bool_active is computed by the database on every read (ADR-031
+      // amendment 2026-10-06), so the page only reads it.
       seasons = await fetchSeasons()
       const active = seasons.find((s) => s.bool_active)
       if (active) {
@@ -1832,6 +1879,19 @@
   .header-logo {
     height: 22px;
     width: auto;
+  }
+  /* The calendar title's measuring copies: in the title's font, out of the
+     flow, and taking no room and no scroll width. */
+  .title-measure {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+  .title-measure > span {
+    position: absolute;
+    white-space: nowrap;
   }
   .header-right {
     display: flex;
