@@ -221,8 +221,8 @@
     "schema_fingerprint": "2c23e811af875ebed05ed9f777db0d09"
   },
   "prod": {
-    "last_updated": "2026-10-06T21:40:07Z",
-    "last_sha": "c1baf51caf30d9518f50e94a196fc2698156dd8e",
+    "last_updated": "2026-10-07T02:33:51Z",
+    "last_sha": "9c6e05d278aef61e404abf5719657f3890e04221",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -436,8 +436,9 @@
       "20261003000019_complete_event_exact_code.sql",
       "20261006000001_active_season_computed.sql",
       "20261006000002_evf_singleton_championships.sql",
-      "20261006000003_prod_mirror_pzsz_identity.sql"
+      "20261006000003_prod_mirror_pzsz_identity.sql",
+      "20261007000001_pzsz_start_list.sql"
     ],
-    "schema_fingerprint": "65dcd28bbfd8c1280ea06b901b0513c4"
+    "schema_fingerprint": "2c23e811af875ebed05ed9f777db0d09"
   }
 }
