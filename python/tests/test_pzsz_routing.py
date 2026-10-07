@@ -1,11 +1,12 @@
-"""PZSz events on ingest for CERT and promote for PROD (ADR-111 §6).
+"""PZSz events on ingest for CERT and promote for PROD (ADR-111 §6, ADR-112).
 
-RTM PZSZ.ROUTE.01–03. `ingest <code>` and `promote <code>` run the same
+RTM PZSZ.ROUTE.01–07. `ingest <code>` and `promote <code>` run the same
 ingestion: both reach `ingest_cli._ingest_event_rounds`, which sends a PZSz
 event (PPS, MPS) to the PZSz flow. The bracket name gives weapon and gender
-only, never an age category. The birth years come from the PZSz start lists,
-read before anything is written; promote records their hash beside the
-listing's, so a start list changed after the CERT run is refused.
+only, never an age category. The birth years come from the PZSz start lists.
+The CERT ingest captures them when pzszerm.pl serves them, then reads the
+newest stored version, so a gated day does not stop it once a list is stored.
+Promote is given the stored lists the CERT run used and never fetches.
 
 The harness is the plan tests' (in-memory database, fake FTL); the PZSz pages
 are the saved fixtures, with synthetic people.
@@ -25,6 +26,7 @@ from python.pipeline.promotion import plan as pl
 from python.pipeline.promotion.replay import source_differences
 from python.pipeline.promotion.run_record import start_list_sha256
 from python.scrapers.pzsz_start_list import PZSZ_EVENT_PAGE, PzszPageError, parse_start_list
+from python.scrapers.pzsz_start_list_store import capture_event_start_lists, newest_by_series
 from python.tests.test_promotion_plan import (
     SCHEDULE,
     MemoryDb,
@@ -35,6 +37,7 @@ from python.tests.test_promotion_plan import (
     _Ftl,
     _ReadOnly,
 )
+from python.tests.test_pzsz_start_list_store import MemoryStore
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PAGES = {
@@ -73,11 +76,26 @@ def _pages(js_check_for: int | None = None):
     return fetch
 
 
-def _pzsz_db(roster=None) -> MemoryDb:
+class PzszMemoryDb(MemoryDb):
+    """CERT's database with tbl_pzsz_start_list. The stored lists are inputs,
+    not results, so `state()` leaves them out."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.start_lists = MemoryStore()
+
+    def store_pzsz_start_list(self, payload):
+        return self.start_lists.store(payload)
+
+    def fetch_pzsz_start_lists(self, id_pzsz_event):
+        return [r for r in self.start_lists.rows if r["id_pzsz_event"] == int(id_pzsz_event)]
+
+
+def _pzsz_db(roster=None) -> PzszMemoryDb:
     event = _event(9, CODE, "2026-10-04", 2)
     event["dt_end"] = "2026-10-05"
     event["id_pzsz_event"] = 4588
-    return MemoryDb(
+    return PzszMemoryDb(
         roster
         if roster is not None
         else [
@@ -87,6 +105,22 @@ def _pzsz_db(roster=None) -> MemoryDb:
         ],
         [event],
     )
+
+
+def _gated(url: str, params: dict) -> str:
+    """pzszerm.pl with its JavaScript gate on, for every page."""
+    return (FIXTURES / "pzsz_js_check.html").read_text(encoding="utf-8")
+
+
+def _refuse_fetch(url: str, params: dict) -> str:
+    raise AssertionError(f"promote fetched {url}")
+
+
+def _stored_lists():
+    """The start lists a CERT run used, as promote reads them back from CERT."""
+    store = MemoryStore()
+    capture_event_start_lists(4588, _pages(), store.store)
+    return newest_by_series(store.rows)
 
 
 def _with_pages(fetch, fn, *args, **kwargs):
@@ -104,9 +138,14 @@ def _live(db: MemoryDb, fetch=None):
     )
 
 
-def _plan(db: MemoryDb, fetch=None, pzsz_event=None) -> pl.Plan:
+_GIVEN = object()
+
+
+def _plan(db: MemoryDb, pzsz_event=None, lists=_GIVEN) -> pl.Plan:
+    """Promote's plan, given the CERT run's stored lists. Any fetch fails the
+    test: promote never contacts pzszerm.pl (ADR-112 §4)."""
     plan, _, _ = _with_pages(
-        fetch or _pages(),
+        _refuse_fetch,
         pl.plan_event,
         CODE,
         2027,
@@ -114,6 +153,7 @@ def _plan(db: MemoryDb, fetch=None, pzsz_event=None) -> pl.Plan:
         url_event=SCHEDULE,
         created=[],
         pzsz_event=pzsz_event,
+        pzsz_start_lists=_stored_lists() if lists is _GIVEN else lists,
     )
     return plan
 
@@ -163,13 +203,43 @@ class TestIngestRoutesPzsz:
         assert db.events[9]["enum_status"] == "COMPLETED"
 
     def test_an_unreadable_start_list_writes_nothing(self):
-        """PZSZ.ROUTE.01: the JavaScript check on one PZSz page fails the run
-        before any write."""
+        """PZSZ.ROUTE.01: the JavaScript check on one PZSz page, with nothing
+        stored, fails the run before any write."""
         db = _pzsz_db()
         before = db.state()
         with pytest.raises(PzszPageError):
             _live(db, _pages(js_check_for=10629))
         assert db.state() == before
+
+    def test_the_ingest_stores_the_version_it_uses(self):
+        """PZSZ.ROUTE.04: on a day pzszerm.pl serves its pages, the ingest
+        stores both start lists and admits from them."""
+        db = _pzsz_db()
+        _live(db)
+        assert {(r["enum_weapon"], r["enum_gender"]) for r in db.start_lists.rows} == {
+            ("SABRE", "M"),
+            ("SABRE", "F"),
+        }
+
+    def test_a_gated_day_runs_from_the_stored_list(self):
+        """PZSZ.ROUTE.04: the gate on for every page, the lists stored
+        earlier: the ingest runs and admits exactly as on an open day."""
+        open_day = _pzsz_db()
+        _live(open_day)
+        db = _pzsz_db()
+        capture_event_start_lists(4588, _pages(), db.store_pzsz_start_list)
+        _live(db, _gated)
+        assert db.state() == open_day.state()
+
+    def test_a_gated_day_with_nothing_stored_stops_and_says_why(self):
+        """PZSZ.ROUTE.05: nothing stored and the gate on: the run stops with
+        nothing written and says the list is stored on the next open day."""
+        db = _pzsz_db()
+        before = db.state()
+        with pytest.raises(PzszPageError, match="No PZSz start list is stored"):
+            _live(db, _gated)
+        assert db.state() == before
+        assert db.start_lists.rows == []
 
     def test_the_event_lookup_returns_the_pzsz_event_id(self):
         """PZSZ.ROUTE.01: the database connector's event row carries
@@ -184,6 +254,26 @@ class TestIngestRoutesPzsz:
         DbConnector(sb).find_event_by_code(CODE)
         (columns,), _ = sb.table.return_value.select.call_args
         assert "id_pzsz_event" in [c.strip() for c in columns.split(",")]
+
+    def test_the_connector_stores_and_reads_start_lists(self):
+        """PZSZ.ROUTE.04: the CERT ingest stores through fn_pzsz_start_list_store
+        (the append-if-changed rule lives in the database) and reads every
+        stored version of the event, which the ingest narrows to the newest."""
+        from unittest.mock import MagicMock
+
+        from python.pipeline.db_connector import DbConnector
+
+        sb = MagicMock()
+        sb.rpc.return_value.execute.return_value.data = {"stored": True}
+        db = DbConnector(sb)
+        assert db.store_pzsz_start_list({"id_pzsz_event": 4588}) is True
+        sb.rpc.assert_called_with("fn_pzsz_start_list_store", {"p_list": {"id_pzsz_event": 4588}})
+
+        query = sb.table.return_value.select.return_value.eq.return_value
+        query.execute.return_value.data = [{"id_pzsz_start_list": 1}]
+        assert db.fetch_pzsz_start_lists(4588) == [{"id_pzsz_start_list": 1}]
+        sb.table.assert_called_with("tbl_pzsz_start_list")
+        sb.table.return_value.select.return_value.eq.assert_called_with("id_pzsz_event", 4588)
 
     def test_a_ppw_event_never_reads_pzsz_pages(self):
         """PZSZ.ROUTE.01: the PPW flow is unchanged and reads no start list."""
@@ -205,6 +295,18 @@ class TestIngestRoutesPzsz:
 
 
 class TestPromoteRoutesPzsz:
+    def test_the_plan_never_fetches_pzszerm(self):
+        """PZSZ.ROUTE.06: given the CERT run's stored lists, promote's plan
+        admits from them; `_plan` fails the test on any fetch."""
+        plan = _plan(_pzsz_db())
+        assert [o["op"] for o in plan.ops if o["op"] == "ingest_results"] == ["ingest_results"]
+
+    def test_a_pzsz_plan_without_start_lists_is_refused(self):
+        """PZSZ.ROUTE.07: promote reads the lists from CERT; a PZSz plan given
+        none is refused rather than fetching."""
+        with pytest.raises(pl.PlanRefused, match="start lists"):
+            _plan(_pzsz_db(), lists=None)
+
     def test_the_plan_records_each_start_lists_hash(self):
         """PZSZ.ROUTE.02: promote's plan takes the PZSz flow and keeps the
         start list's hash beside the listing's."""

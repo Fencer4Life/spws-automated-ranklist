@@ -701,6 +701,7 @@ def _ingest_event_rounds(
     md_target,
     run,
     post_run=True,
+    pzsz_start_lists=None,
 ) -> list:
     """`ingest_event_from_url` from its first write on. `run` is the open run
     record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
@@ -708,7 +709,8 @@ def _ingest_event_rounds(
     joining check and Telegram run after promote's apply commits (ADR-108 §6).
 
     Ingest (CERT) and promote's plan (PROD) both come through here, so a PZSz
-    event takes its own path on both: the same ingestion (ADR-111 §6)."""
+    event takes its own path on both: the same ingestion (ADR-111 §6). Plan
+    mode passes the CERT run's stored start lists (ADR-112 §4)."""
     from python.pipeline.stages import _organizer_for_event
 
     if _organizer_for_event(event) == "PZSz":
@@ -725,6 +727,7 @@ def _ingest_event_rounds(
             md_target=md_target,
             run=run,
             post_run=post_run,
+            pzsz_start_lists=pzsz_start_lists,
         )
     from datetime import date as _date
 
@@ -874,12 +877,42 @@ def _ingest_event_rounds(
 def _pzsz_fetch(url: str, params: dict) -> str:
     """One pzszerm.pl page as served. A JavaScript check page comes back as it
     is; the start-list reader refuses it (ADR-111)."""
+    from python.scrapers.pzsz_start_list_store import fetch_page
+
+    return fetch_page(url, params)
+
+
+def _pzsz_start_lists_for_cert(id_pzsz: int, event_code: str, db) -> dict:
+    """The CERT ingest's start lists (ADR-112 §3): a capture first, so a list
+    pzszerm.pl serves today is stored, then the newest stored version for
+    each weapon and gender. A gated day therefore runs from the stored list;
+    only when none was ever stored does the run stop, with nothing written."""
     import httpx
 
-    with httpx.Client(timeout=30.0, follow_redirects=True) as http:
-        resp = http.get(url, params=params)
-        resp.raise_for_status()
-        return resp.text
+    from python.scrapers.pzsz_start_list import PzszPageError
+    from python.scrapers.pzsz_start_list_store import capture_event_start_lists, newest_by_series
+
+    try:
+        stored = capture_event_start_lists(id_pzsz, _pzsz_fetch, db.store_pzsz_start_list)
+        print(
+            f"PZSz start lists of event {id_pzsz}: read from pzszerm.pl, {stored} new version(s) stored"
+        )
+    except (PzszPageError, httpx.HTTPError) as e:
+        print(f"PZSz start lists of event {id_pzsz}: not read from pzszerm.pl now ({e})")
+    lists = newest_by_series(db.fetch_pzsz_start_lists(id_pzsz))
+    if not lists:
+        raise PzszPageError(
+            f"No PZSz start list is stored for {event_code} (PZSz event {id_pzsz}), and "
+            "pzszerm.pl did not serve one now. The daily PZSz capture stores it on the next "
+            "day pzszerm.pl serves its pages; pages saved in a browser can be stored with "
+            "`python -m python.scrapers.pzsz_start_list_store store`. Nothing was written."
+        )
+    for (weapon, gender), sl in sorted(lists.items()):
+        print(
+            f"  {weapon}/{gender}: {len(sl.starters)} starters, stored {sl.captured} "
+            f"from {sl.source}"
+        )
+    return lists
 
 
 def _pzsz_weapon_gender(name: str) -> tuple[str, str] | None:
@@ -909,13 +942,17 @@ def _ingest_pzsz_event_rounds(
     md_target,
     run,
     post_run=True,
+    pzsz_start_lists=None,
 ) -> list:
     """A PZSz event (PPS, MPS), ADR-111: the places from the event's FTL schedule,
     the birth years from the PZSz start lists, every kept listing through
-    `Flow.INGEST_PZSZ_SENIOR`. Every page is read before anything is written,
-    so a page that cannot be read (pzszerm.pl's JavaScript check among them)
-    fails the run with nothing written. The keep-rule is the domestic one, with
-    one category per listing, SENIOR."""
+    `Flow.INGEST_PZSZ_SENIOR`. The keep-rule is the domestic one, with one
+    category per listing, SENIOR.
+
+    The start lists are stored inputs (ADR-112): the CERT ingest captures,
+    then reads the newest stored version; promote's plan is given the
+    versions the CERT run used (`pzsz_start_lists`) and never fetches.
+    Everything is read before anything is written."""
     from datetime import date as _date
 
     from python.pipeline.engine.flows import Flow
@@ -925,7 +962,6 @@ def _ingest_pzsz_event_rounds(
     from python.pipeline.promotion.run_record import start_list_sha256
     from python.scrapers import ftl
     from python.scrapers.ftl_auth import get_authed_ftl_client, normalize_ftl_url
-    from python.scrapers.pzsz_start_list import read_event_start_lists
     from python.tools.scrape_ftl_event_urls import parse_event_schedule
 
     id_pzsz = event.get("id_pzsz_event")
@@ -933,7 +969,10 @@ def _ingest_pzsz_event_rounds(
         raise ValueError(
             f"Event {event_code!r} has no id_pzsz_event, so its PZSz start lists cannot be found."
         )
-    start_lists = read_event_start_lists(int(id_pzsz), _pzsz_fetch)
+    if pzsz_start_lists is None:
+        start_lists = _pzsz_start_lists_for_cert(int(id_pzsz), event_code, db)
+    else:
+        start_lists = pzsz_start_lists
     if run is not None:
         run.add_pzsz_event(int(id_pzsz))
 
@@ -969,16 +1008,21 @@ def _ingest_pzsz_event_rounds(
                 continue
             weapon, gender = wg
             if (weapon, gender) not in start_lists:
-                raise ValueError(
+                message = (
                     f"{b['name']!r} is {weapon}/{gender}, and PZSz event {id_pzsz} has no "
-                    "such tournament: without its start list no birth year can be compared."
+                    "such start list: without it no birth year can be compared."
                 )
+                if pzsz_start_lists is not None:
+                    from python.pipeline.promotion.plan import PlanRefused
+
+                    raise PlanRefused("precondition", message)
+                raise ValueError(message)
             url = f"{_FTL_RESULTS}{b['uuid']}"
             has_de = _ftl_has_direct_elimination(client, b["uuid"])
             resp = client.get(f"{_FTL_DATA}{b['uuid']}")
             resp.raise_for_status()
             base = ftl.parse_json(resp.json(), source_url=url)
-            starters = start_lists[(weapon, gender)][1]
+            starters = start_lists[(weapon, gender)].starters
             round_recs.append(
                 dict(
                     name=b["name"],

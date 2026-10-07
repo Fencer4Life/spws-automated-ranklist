@@ -42,10 +42,10 @@ def listing_sha256(name: str, uuid: str, has_de: bool, results: Sequence[ParsedR
 
 
 def start_list_sha256(starters: Iterable[Any]) -> str:
-    """A PZSz start list as read: each starter's printed name and birth date,
-    in page order (ADR-111 §6). The birth years the admission compared come
-    from it, so promote refuses a start list that changed after the CERT run."""
-    return _sha256([[s.name, s.birth_date.isoformat()] for s in starters])
+    """A PZSz start list in its stored form: each starter's printed name and
+    birth year, in page order (ADR-111 §6, ADR-112 §1). It identifies the
+    stored version the CERT run used, which promote reads back and checks."""
+    return _sha256([[s.name, s.birth_year] for s in starters])
 
 
 def schedule_sha256(kept: Iterable[Mapping], skipped: Iterable[Mapping]) -> str:

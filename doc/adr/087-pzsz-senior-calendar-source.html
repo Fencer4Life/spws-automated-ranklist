@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
-<meta name="adr-source-sha256" content="f30ab84a77062ce59ea42d486f6cdf4bd999baedbb1203d813de3657c214ad5a">
+<meta name="adr-source-sha256" content="4dc6f021f34048638fee193ccf09bc91e904f3bbf3d54cf79bc80e2ab2f910e0">
 <title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 087</p><h1>PZSz as a fourth event source — Polish national senior events on the calendar</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started).</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">523 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started).
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started). Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: the daily job also captures start lists, and the JavaScript check no longer blocks an ingest once a list is stored.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">523 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started). Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: the daily job also captures start lists, and the JavaScript check no longer blocks an ingest once a list is stored.
 <strong>Date:</strong> 2026-09-03
 <strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §F and §11 (<code>registryOf()</code> widens from three registries to four; a fourth hue enters the organizer channel; <code>PanelType</code> gains a fifth member)
 <strong>Relates to:</strong> <a href="046-pew-weapon-suffix.html">ADR-046</a> (the event-code shape this extends with a gender letter), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (childless CREATE, field ownership, code-keyed reconcile), <a href="028-evf-calendar-results-import.html">ADR-028</a> (the calendar-source precedent this deliberately does not generalise), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the partially-published-season lesson applied before it bit), <a href="083-server-enforced-authorization.html">ADR-083</a> (grants are table-level, so the new column needs none)
@@ -641,5 +641,5 @@ clears.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="088-calendar-location-contract.html">→ ADR-088: One location contract for every calendar scraper — city, venue and address</a></nav>
-<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>f30ab84a77062ce59ea42d486f6cdf4bd999baedbb1203d813de3657c214ad5a</code></footer>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>4dc6f021f34048638fee193ccf09bc91e904f3bbf3d54cf79bc80e2ab2f910e0</code></footer>
 </div></body></html>
