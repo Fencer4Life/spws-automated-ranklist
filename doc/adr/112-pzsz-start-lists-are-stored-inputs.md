@@ -1,6 +1,6 @@
 # ADR-112: PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them
 
-**Status:** Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of `doc/plans/pzsz-start-lists-stored-2026-10-07.html`, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07; not yet released to CERT or PROD.
+**Status:** Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of `doc/plans/pzsz-start-lists-stored-2026-10-07.html`, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07, and released to CERT and PROD the same day (main `9c6e05d2`, Release 37562304356); the table, its grants and both functions were verified on both environments, with no rows yet.
 **Date:** 2026-10-07
 **Amends:** [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md) (§6: the replay no longer reads pzszerm.pl; D1's "send it again later" becomes a stored list), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays one more recorded input, the start list), [ADR-087](087-pzsz-senior-calendar-source.md) (§4: the JavaScript check no longer blocks an ingest once a list is stored), [ADR-078](078-gdpr-data-handling.md) (§1: a new personal-data store, with its purpose and retention)
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (the store is `service_role` only), [ADR-100](100-pzsz-senior-result-ingestion.md) (FencingTimeLive carries no birth year)
