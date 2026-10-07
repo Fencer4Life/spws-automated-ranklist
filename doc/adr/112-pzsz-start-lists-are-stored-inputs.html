@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="112-pzsz-start-lists-are-stored-inputs.md">
-<meta name="adr-source-sha256" content="5e4573021870116677c7d945563b05e7c0a03d3b5c78492f16b18025d69c403c">
+<meta name="adr-source-sha256" content="08d192d988ce0c1ee187f2a025a0dda7a4226bc75de4672ecc9c1d31e7901c05">
 <title>ADR-112 · PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 112</p><h1>PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code>, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07; not yet released to CERT or PROD.</dd></div><div><dt>Date</dt><dd class="">2026-10-07</dd></div><div><dt>Source</dt><dd class=""><code>112-pzsz-start-lists-are-stored-inputs.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code>, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07; not yet released to CERT or PROD.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code>, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07, and released to CERT and PROD the same day (main <code>9c6e05d2</code>, Release 37562304356); the table, its grants and both functions were verified on both environments, with no rows yet.</dd></div><div><dt>Date</dt><dd class="">2026-10-07</dd></div><div><dt>Source</dt><dd class=""><code>112-pzsz-start-lists-are-stored-inputs.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of <code>doc/plans/pzsz-start-lists-stored-2026-10-07.html</code>, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07, and released to CERT and PROD the same day (main <code>9c6e05d2</code>, Release 37562304356); the table, its grants and both functions were verified on both environments, with no rows yet.
 <strong>Date:</strong> 2026-10-07
 <strong>Amends:</strong> <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> (§6: the replay no longer reads pzszerm.pl; D1's &quot;send it again later&quot; becomes a stored list), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (promote replays one more recorded input, the start list), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (§4: the JavaScript check no longer blocks an ingest once a list is stored), <a href="078-gdpr-data-handling.html">ADR-078</a> (§1: a new personal-data store, with its purpose and retention)
 <strong>Relates to:</strong> <a href="083-server-enforced-authorization.html">ADR-083</a> (the store is <code>service_role</code> only), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (FencingTimeLive carries no birth year)
@@ -134,5 +134,5 @@ Send <code>ingest PPS1s-2026-2027</code></p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="111-pzsz-results-admitted-by-surname-name-birth-year.html">← ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>112-pzsz-start-lists-are-stored-inputs.md</code> · source SHA-256 <code>5e4573021870116677c7d945563b05e7c0a03d3b5c78492f16b18025d69c403c</code></footer>
+<footer class="foot">Generated from <code>112-pzsz-start-lists-are-stored-inputs.md</code> · source SHA-256 <code>08d192d988ce0c1ee187f2a025a0dda7a4226bc75de4672ecc9c1d31e7901c05</code></footer>
 </div></body></html>
