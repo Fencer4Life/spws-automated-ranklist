@@ -128,7 +128,7 @@
     <span class="pill danger"><span class="dot"></span>Root cause: a JavaScript cookie gate; our client runs no JavaScript</span>
     <span class="pill"><span class="dot"></span>No bypass: no faked cookie, no browser driven by me</span>
     <span class="pill"><span class="dot"></span>Decided 7 Oct in chat: Q7–Q10 all A</span>
-    <span class="pill warn"><span class="dot"></span>Built and rehearsed on LOCAL 7 Oct · not pushed</span>
+    <span class="pill"><span class="dot"></span>Released 7 Oct · main 9c6e05d2 · verified on CERT and PROD</span>
   </div>
 
   <section id="cause">
@@ -298,9 +298,9 @@
 
   <section id="built">
     <p class="kicker">6a · Built, 7 October</p>
-    <h2>Steps 1–3 are done; step 4 is the commit</h2>
+    <h2>Steps 1–5 are done; step 6, Poznań, waits for an open day</h2>
     <div class="note good">
-      <p>ADR-112 records the decision. The migration, the store module, the ingest and promote changes and the capture job are built, and none of it is pushed.</p>
+      <p>ADR-112 records the decision. The migration, the store module, the ingest and promote changes and the capture job are built and released: main <code>9c6e05d2</code>, CI 37562186662 and Release 37562304356 green, deploy-prod approved by you. On CERT and PROD the table has RLS on, <code>service_role</code> holds only <code>SELECT</code>, <code>INSERT</code> and <code>DELETE</code>, both functions are <code>service_role</code> only, and no row is stored yet. The first live capture is the 06:00 UTC PZSz sync.</p>
     </div>
     <h3>Tests</h3>
     <ul>
