@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="078-gdpr-data-handling.md">
-<meta name="adr-source-sha256" content="f2709ba2575ec6227d62f3cce812c562cbb3163684917ff44b0c04534ed1a980">
+<meta name="adr-source-sha256" content="be05d9885ec1671f29129fd9cce16282e6ddbd44a61a6fd4767cc0d1ed986247">
 <title>ADR-078 · GDPR Data Handling &amp; Data-Subject Rights</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 078</p><h1>GDPR Data Handling &amp; Data-Subject Rights</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. <strong>Amended 2026-08-28:</strong> §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. <strong>Amended 2026-09-13:</strong> §1's club row corrected again — the club is now genuinely stored (<code>tbl_registration.txt_club</code>), closing <a href="079-event-self-registration-identity.html">ADR-079</a> open item 2; <code>CONSENT_VERSION</code> bumped to <code>v1.1</code> and the RODO text corrected to match.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">294 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. <strong>Amended 2026-08-28:</strong> §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. <strong>Amended 2026-09-13:</strong> §1's club row corrected again — the club is now genuinely stored (<code>tbl_registration.txt_club</code>), closing <a href="079-event-self-registration-identity.html">ADR-079</a> open item 2; <code>CONSENT_VERSION</code> bumped to <code>v1.1</code> and the RODO text corrected to match.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="implemented">Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. <strong>Amended 2026-08-28:</strong> §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. <strong>Amended 2026-09-13:</strong> §1's club row corrected again — the club is now genuinely stored (<code>tbl_registration.txt_club</code>), closing <a href="079-event-self-registration-identity.html">ADR-079</a> open item 2; <code>CONSENT_VERSION</code> bumped to <code>v1.1</code> and the RODO text corrected to match. <strong>Amended 2026-10-07</strong> by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: §1 gains the PZSz start-list store on CERT.</dd></div><div><dt>Date</dt><dd class="">2026-07-04</dd></div><div><dt>Source</dt><dd class=""><code>078-gdpr-data-handling.md</code></dd></div><div><dt>Length</dt><dd class="">314 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Proposed (consent capture — <code>ts_consent</code>/<code>txt_consent_version</code> stamped by <code>fn_create_registration</code> — and the RODO consent-gate step <strong>implemented</strong> 2026-07-05 as part of ADR-079 Phase 2 UI; the wider ROPA/DPA/erasure/anonymise-and-keep program in this document remains pending) <strong>Amended 2026-08-17:</strong> §1 inventory corrected — payment-status row removed (never collected); email/email-hash marked provisioned-not-collected; club row corrected. <strong>Amended 2026-08-28:</strong> §1 gains the edit handle (not personal data); the Art. 16 rectification row now records self-service correction before the event, not only reconciliation at ingestion. <strong>Amended 2026-09-13:</strong> §1's club row corrected again — the club is now genuinely stored (<code>tbl_registration.txt_club</code>), closing <a href="079-event-self-registration-identity.html">ADR-079</a> open item 2; <code>CONSENT_VERSION</code> bumped to <code>v1.1</code> and the RODO text corrected to match. <strong>Amended 2026-10-07</strong> by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: §1 gains the PZSz start-list store on CERT.
 <strong>Date:</strong> 2026-07-04
 <strong>Source:</strong> Event Registration &amp; Clean-Roster Seeding subsystem (spec §5.2); ADR-079, ADR-080</p>
 <blockquote>
@@ -28,8 +28,27 @@ the privacy notice (<em>informacja RODO</em>) and Record of Processing Activitie
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-09-02-the-english-notice-names-the-regulation-gdpr">Amendment (2026-09-02 — the English notice names the regulation GDPR)</a></li><li class="depth-2"><a href="#amendment-2026-08-17-the-inventory-listed-processing-that-does-not-happen">Amendment (2026-08-17 — the inventory listed processing that does not happen)</a></li><li class="depth-3"><a href="#what-did-not-change">What did not change</a></li><li class="depth-3"><a href="#corpus-audit">Corpus audit</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-personal-data-inventory">1. Personal-data inventory</a></li><li class="depth-3"><a href="#2-controller-processor">2. Controller / processor</a></li><li class="depth-3"><a href="#3-data-subject-rights-art-12-22">3. Data-subject rights (Art. 12–22)</a></li><li class="depth-3"><a href="#4-right-to-erasure-anonymise-and-keep-art-17">4. Right to erasure — anonymise-and-keep (Art. 17)</a></li><li class="depth-3"><a href="#5-abuse-defence-art-12-5-art-17-3-e">5. Abuse defence (Art. 12(5), Art. 17(3)(e))</a></li><li class="depth-3"><a href="#6-security-art-32">6. Security (Art. 32)</a></li><li class="depth-3"><a href="#7-records-of-processing-art-30-breach-art-33-34-consent-art-7">7. Records of processing (Art. 30), breach (Art. 33/34), consent (Art. 7)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
-  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-02-the-english-notice-names-the-regulation-gdpr">Amendment (2026-09-02 — the English notice names the regulation GDPR)</h2>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#amendment-2026-10-07-pzsz-start-lists-are-stored-on-cert">Amendment (2026-10-07 — PZSz start lists are stored on CERT)</a></li><li class="depth-2"><a href="#amendment-2026-09-02-the-english-notice-names-the-regulation-gdpr">Amendment (2026-09-02 — the English notice names the regulation GDPR)</a></li><li class="depth-2"><a href="#amendment-2026-08-17-the-inventory-listed-processing-that-does-not-happen">Amendment (2026-08-17 — the inventory listed processing that does not happen)</a></li><li class="depth-3"><a href="#what-did-not-change">What did not change</a></li><li class="depth-3"><a href="#corpus-audit">Corpus audit</a></li><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-personal-data-inventory">1. Personal-data inventory</a></li><li class="depth-3"><a href="#2-controller-processor">2. Controller / processor</a></li><li class="depth-3"><a href="#3-data-subject-rights-art-12-22">3. Data-subject rights (Art. 12–22)</a></li><li class="depth-3"><a href="#4-right-to-erasure-anonymise-and-keep-art-17">4. Right to erasure — anonymise-and-keep (Art. 17)</a></li><li class="depth-3"><a href="#5-abuse-defence-art-12-5-art-17-3-e">5. Abuse defence (Art. 12(5), Art. 17(3)(e))</a></li><li class="depth-3"><a href="#6-security-art-32">6. Security (Art. 32)</a></li><li class="depth-3"><a href="#7-records-of-processing-art-30-breach-art-33-34-consent-art-7">7. Records of processing (Art. 30), breach (Art. 33/34), consent (Art. 7)</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#references">References</a></li></ol></nav>
+  <main><section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-07-pzsz-start-lists-are-stored-on-cert">Amendment (2026-10-07 — PZSz start lists are stored on CERT)</h2>
+<p><a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a> stores the PZSz start
+lists that admit a PZSz result (ADR-111). §1 gains the row <em>PZSz start-list
+starters</em>:</p>
+<ul>
+<li><strong>Data:</strong> the printed name and birth <strong>year</strong> of every starter of a PZSz
+tournament. Most of them are juniors who are not our members. The birth date
+on the page is read only to check it is a real date, and is never stored.</li>
+<li><strong>Source:</strong> the start list pzszerm.pl publishes, not the fencer. Art. 14 is
+therefore the information duty that applies; it is one of the points for the
+counsel review this ADR's scope note asks for.</li>
+<li><strong>Storage and access:</strong> <code>tbl_pzsz_start_list</code> on CERT, <code>service_role</code> only.
+The table exists on every environment and holds rows on CERT only. It is
+never part of the PROD seed export, and no real start list enters the public
+repository.</li>
+<li><strong>Retention:</strong> until the event's season is no longer active.
+<code>fn_pzsz_start_list_purge()</code> runs at the start of every daily capture.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-09-02-the-english-notice-names-the-regulation-gdpr">Amendment (2026-09-02 — the English notice names the regulation GDPR)</h2>
 <p>The consent step headed itself <em>Privacy notice and consent (RODO)</em> in both
 locales. RODO is the Polish name for the regulation and GDPR is the English one,
 and this is the one screen a fencer is asked to read before agreeing to
@@ -143,7 +162,7 @@ below.</p>
 <th>Lawful basis (Art. 6)</th>
 <th>Storage</th>
 <th>Retention</th>
-<th>Status (2026-09-13)</th>
+<th>Status (2026-10-07)</th>
 </tr>
 </thead>
 <tbody>
@@ -194,6 +213,14 @@ below.</p>
 <td><code>tbl_registration.txt_club</code> (ephemeral)</td>
 <td>Purged with the registration</td>
 <td><strong>Collected</strong> (2026-09-13) — read only by the token-gated <code>fn_ftl_export_entries</code>; <code>vw_registration_entry_list</code> and <code>fn_ftl_roster</code> are unchanged and never expose it. Closes ADR-079 open item 2; see <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> amendment (f)</td>
+</tr>
+<tr>
+<td>PZSz start-list starters: printed name, birth year</td>
+<td>Tell a veteran from a namesake in a PZSz field (ADR-111)</td>
+<td>Legitimate interest 6(1)(f)</td>
+<td><code>tbl_pzsz_start_list</code> on CERT, <code>service_role</code> only</td>
+<td>Until the event's season is no longer active (<code>fn_pzsz_start_list_purge</code>)</td>
+<td><strong>Collected</strong> on CERT from the <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a> release — taken from pzszerm.pl, not from the fencer (Art. 14); the birth date is never stored</td>
 </tr>
 </tbody>
 </table></div>
@@ -375,5 +402,5 @@ erasure, retention, consent).</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="077-event-lifecycle-season-skeletons.html">← ADR-077: Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="079-event-self-registration-identity.html">→ ADR-079: Event Self-Registration &amp; Identity Resolution</a></nav>
-<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>f2709ba2575ec6227d62f3cce812c562cbb3163684917ff44b0c04534ed1a980</code></footer>
+<footer class="foot">Generated from <code>078-gdpr-data-handling.md</code> · source SHA-256 <code>be05d9885ec1671f29129fd9cce16282e6ddbd44a61a6fd4767cc0d1ed986247</code></footer>
 </div></body></html>

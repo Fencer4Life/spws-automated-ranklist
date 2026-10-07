@@ -1,4 +1,4 @@
-"""The PZSz start-list reader (ADR-111 §3; RTM PZSZ.SL.01–02).
+"""The PZSz start-list reader (ADR-111 §3, ADR-112 §1; RTM PZSZ.SL.01–04).
 
 FencingTimeLive gives a PZSz field's places but no birth year. The PZSz
 tournament page lists every starter with a birth date, and its year is the
@@ -12,7 +12,6 @@ repository is public. The event-page fixture is verbatim.
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 import pytest
@@ -46,11 +45,10 @@ class TestStartList:
         dd.mm.yyyy birth date; the birth year is that date's year."""
         men = parse_start_list(_read("pzsz_start_list_sabre_men.html"))
         by_name = {s.name: s for s in men}
-        assert by_name["Wzorcowy Jakub"] == Starter("Wzorcowy Jakub", date(2008, 6, 16))
-        assert by_name["Wzorcowy Jakub"].birth_year == 2008
-        assert by_name["Przykładowy Jan"].birth_date == date(1971, 2, 15)
+        assert by_name["Wzorcowy Jakub"] == Starter("Wzorcowy Jakub", 2008)
+        assert by_name["Przykładowy Jan"].birth_year == 1971
         women = parse_start_list(_read("pzsz_start_list_sabre_women.html"))
-        assert Starter("TESTOWSKA Marta", date(2007, 7, 26)) in women
+        assert Starter("TESTOWSKA Marta", 2007) in women
         assert all(s.name == s.name.strip() for s in men + women)
 
     def test_letter_case_is_kept_as_printed(self):
@@ -145,3 +143,37 @@ class TestUnreadablePage:
         html = _read("pzsz_start_list_sabre_men.html").replace("16.06.2008", "2008-06-16")
         with pytest.raises(PzszPageError, match="birth date"):
             parse_start_list(html)
+
+
+class TestYearOnly:
+    """PZSZ.SL.03-04 (ADR-112 §1, ADR-078 §1): a start list is kept as
+    printed name and birth year. The birth date is read only to check it is
+    a date; it is never kept, and the stored hash is of name and year."""
+
+    def test_a_starter_holds_the_year_only(self):
+        """PZSZ.SL.03: no birth date survives the parse."""
+        men = parse_start_list(_read("pzsz_start_list_sabre_men.html"))
+        assert all(set(vars(s)) == {"name", "birth_year"} for s in men)
+
+    def test_an_impossible_date_is_still_refused(self):
+        """PZSZ.SL.03: 31 February is not a birth date, so the year beside it
+        is not trusted either."""
+        html = _read("pzsz_start_list_sabre_men.html").replace("16.06.2008", "31.02.2008")
+        with pytest.raises(PzszPageError, match="birth date"):
+            parse_start_list(html)
+
+    def test_the_hash_is_of_name_and_year(self):
+        """PZSZ.SL.04: the run record's start-list hash is the stored form's."""
+        import hashlib
+        import json
+
+        from python.pipeline.promotion.run_record import start_list_sha256
+
+        starters = [Starter("Testowy Jan", 1971), Starter("Wzorcowa Anna", 2009)]
+        text = json.dumps(
+            [["Testowy Jan", 1971], ["Wzorcowa Anna", 2009]],
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        assert start_list_sha256(starters) == hashlib.sha256(text.encode()).hexdigest()

@@ -38,16 +38,20 @@ class PzszPageError(RuntimeError):
     """The page is not the one expected, so nothing on it is used."""
 
 
+class PzszGateError(PzszPageError):
+    """pzszerm.pl answered with its JavaScript gate. It is on for every page
+    while it is on, so a reader stops at the first one (ADR-112 §2)."""
+
+
 @dataclass(frozen=True)
 class Starter:
-    """One start-list entry: the name as printed and the birth date."""
+    """One start-list entry: the name as printed and the birth year. The
+    birth date is read only to check it is a date and is never kept: the
+    year is what the admission compares and all that is stored (ADR-112 §1,
+    ADR-078 §1)."""
 
     name: str
-    birth_date: date
-
-    @property
-    def birth_year(self) -> int:
-        return self.birth_date.year
+    birth_year: int
 
 
 @dataclass(frozen=True)
@@ -79,7 +83,7 @@ def refuse_js_check(html: str) -> None:
     listing. Nothing tries to get past the check."""
     soup = BeautifulSoup(html, "html.parser")
     if soup.find(id="pzs-m") is not None and soup.find("table") is None:
-        raise PzszPageError(
+        raise PzszGateError(
             "pzszerm.pl answered with its JavaScript check instead of the page; "
             "nothing was read. Run it again later."
         )
@@ -125,7 +129,13 @@ def parse_start_list(html: str) -> list[Starter]:
                 f"The start list has no readable birth date for {name or '(no name)'}: {born!r}."
             )
         day, month, year = (int(g) for g in match.groups())
-        starters.append(Starter(name, date(year, month, day)))
+        try:
+            date(year, month, day)
+        except ValueError:
+            raise PzszPageError(
+                f"The start list has no readable birth date for {name}: {born!r}."
+            ) from None
+        starters.append(Starter(name, year))
     if not starters:
         raise PzszPageError("The PZSz page has no start list (Lista startowa).")
     return starters
