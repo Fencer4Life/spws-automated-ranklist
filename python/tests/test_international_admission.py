@@ -330,13 +330,15 @@ def test_ADM_ID_12_a_named_override_links_each_environment_s_own_fencer():
 # ADM.FIE — FIE events (MSW, PSW, the IMSW code): ADR-106 amendment, 17 Oct 2026
 # ---------------------------------------------------------------------------
 # A row printed POL that is exactly one roster fencer is stored without a PPW
-# or MPW start; a recorded, unrevoked alias counts as identity. EVF events
-# (PEW, MEW, IMEW) keep ADR-106 §1 unchanged (ADM_ID_04 above).
+# or MPW start; a user-confirmed, unrevoked alias counts as identity (D9 A: a
+# merely recorded alias does not, because the stage-time flush records every
+# pair). EVF events (PEW, MEW, IMEW) keep ADR-106 §1 unchanged (ADM_ID_04 above).
 
 
-def _fa(fid, sur, first, by, aliases=None, revoked=None):
+def _fa(fid, sur, first, by, aliases=None, confirmed=None, revoked=None):
     f = _f(fid, sur, first, by)
     f["json_name_aliases"] = aliases
+    f["json_user_confirmed_aliases"] = confirmed or []
     f["json_revoked_aliases"] = revoked or []
     return f
 
@@ -344,13 +346,22 @@ def _fa(fid, sur, first, by, aliases=None, revoked=None):
 # V1, season 2026/27: born 1977–1987 fits (the season's end year or the year before).
 FIE_ROSTER = [
     _fa(367, "SZUMIELEWICZ", "Paweł", 1986),  # added by an admin migration, no SPWS start
-    _fa(174, "LYNCH", "Pat", 1980, aliases=["LYNCH Patrick"]),  # SPWS starter
-    _fa(76, "GERTSMAN", "Alex", 1980, aliases=["GERTSMAN Alexandr"], revoked=["GERTSMAN Alexandr"]),
+    _fa(174, "LYNCH", "Pat", 1980, aliases=["LYNCH Patrick"], confirmed=["LYNCH Patrick"]),
+    _fa(76, "GERTSMAN", "Alex", 1980, aliases=["GERTSMAN Alexandr"]),  # recorded, not confirmed
+    _fa(
+        77,
+        "KARMAN",
+        "Irene",
+        1980,
+        aliases=["KARMAN Iren"],
+        confirmed=["KARMAN Iren"],
+        revoked=["KARMAN Iren"],
+    ),
     _fa(8, "GOLA", "Maciej", 1983),  # no SPWS start
     _fa(30, "NOWAK", "Jan", 1980),
     _fa(31, "NOWAK", "Jan", 1984),
 ]
-FIE_STARTERS = {174, 76}
+FIE_STARTERS = {174, 76, 77}
 
 
 def _admit_fie(name, country, ttype="MSW", category="V1"):
@@ -422,18 +433,62 @@ def test_ADM_FIE_06_a_foreign_flag_still_needs_an_spws_start():
     assert _admit_fie("GOLA Maciej", "CZE").decision == "REJECTED"
 
 
-def test_ADM_FIE_07_a_recorded_alias_is_identity_at_an_fie_event_only():
-    """ADM.FIE.07 "LYNCH Patrick" (IRL) is the recorded alias of LYNCH Pat, an
-    SPWS starter born 1980: stored at the Worlds; at an EVF event the alias does
-    not count and the row is rejected."""
+def test_ADM_FIE_07_a_user_confirmed_alias_is_identity_at_an_fie_event_only():
+    """ADM.FIE.07 "LYNCH Patrick" (IRL) is the user-confirmed alias of LYNCH
+    Pat, an SPWS starter born 1980: stored at the Worlds; at an EVF event the
+    alias does not count and the row is rejected."""
     a = _admit_fie("LYNCH Patrick", "IRL")
     assert (a.decision, a.id_fencer, a.entered_for) == ("STORED", 174, "IRL")
     assert _admit_fie("LYNCH Patrick", "IRL", ttype="PEW").decision == "REJECTED"
 
 
-def test_ADM_FIE_08_a_revoked_alias_is_never_identity():
-    """ADM.FIE.08 "GERTSMAN Alexandr" is recorded and revoked: rejected."""
+def test_ADM_FIE_08_a_merely_recorded_or_a_revoked_alias_is_never_identity():
+    """ADM.FIE.08 "GERTSMAN Alexandr" is recorded but not user-confirmed, and
+    "KARMAN Iren" is confirmed but revoked: both rejected (D9 A)."""
     assert _admit_fie("GERTSMAN Alexandr", "ISR").decision == "REJECTED"
+    assert _admit_fie("KARMAN Iren", "HUN").decision == "REJECTED"
+
+
+def test_ADM_FIE_11_an_override_linked_pair_is_recorded_as_user_confirmed_at_sign_off():
+    """ADM.FIE.11 at sign-off each alias pair the event's override file links
+    (an identity entry naming that fencer) is recorded as the fencer's
+    user-confirmed alias, so later FIE events match it without an override; a
+    pair the file does not link, or links to another fencer, is not (D9 A)."""
+    from python.pipeline.alias_writeback import PendingAlias
+    from python.pipeline.types import IdentityOverride, Overrides
+    from python.tools.phase5_runner import _confirm_override_linked_pairs
+
+    overrides = Overrides(
+        identity=[
+            IdentityOverride("LYNCH Patrick", id_fencer=174),
+            IdentityOverride("KARMAN Iren", id_fencer=119),
+            IdentityOverride("GERTSMAN Alexandr", id_fencer=999),
+        ]
+    )
+    pending = [
+        PendingAlias(174, "LYNCH Patrick", "LYNCH Pat", "✓", "different first names"),
+        PendingAlias(119, "KARMAN Iren", "KARMAN Irene", "✓", "typo"),
+        PendingAlias(76, "GERTSMAN Alexandr", "GERTSMAN Alex", "❌", "different first names"),
+        PendingAlias(5, "SEKOWSKI Maciej", "SĘKOWSKI Maciej", "✓", "diacritic fold"),
+    ]
+    db = MagicMock()
+    assert _confirm_override_linked_pairs(db, pending, overrides) == 2
+    assert [c.args for c in db.confirm_fencer_alias.call_args_list] == [
+        (174, "LYNCH Patrick"),
+        (119, "KARMAN Iren"),
+    ]
+
+
+def test_ADM_FIE_12_the_pipeline_roster_carries_the_confirmed_and_revoked_aliases():
+    """ADM.FIE.12 the roster every ingestion path reads (fetch_fencer_db) holds
+    json_user_confirmed_aliases and json_revoked_aliases, which the FIE alias
+    identity needs."""
+    from python.pipeline.db_connector import DbConnector
+
+    sb = MagicMock()
+    DbConnector(sb).fetch_fencer_db()
+    cols = sb.table.return_value.select.call_args.args[0]
+    assert "json_user_confirmed_aliases" in cols and "json_revoked_aliases" in cols
 
 
 FIE_CASES = [

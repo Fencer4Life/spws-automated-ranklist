@@ -20,7 +20,9 @@ EVF sync. The rule, decided by the user on 2 October 2026:
 At an FIE event (MSW, PSW, the IMSW code; amendment of 17 October 2026) a
 national federation enters its fencers, so two things change: a row printed
 POL that is exactly one roster fencer is stored without an SPWS start, and a
-recorded, unrevoked alias counts as identity. EVF events are unchanged.
+user-confirmed, unrevoked alias counts as identity. A merely recorded alias
+does not: the stage-time flush records every pair it writes, the doubtful ones
+too. EVF events are unchanged.
 
 The federation the source printed is the result's evidence
 (``tbl_result.txt_entered_for``), folded to three letters.
@@ -125,14 +127,15 @@ def _alias_list(value: object) -> list[str]:
 def alias_matches(
     name: str, category: str | None, season_end_year: int, roster: Iterable[dict]
 ) -> list[int]:
-    """The roster fencers one of whose recorded, unrevoked aliases is this
-    source row's name (whole words, Polish letters folded, a further given
-    name in the source dropped), with a birth year in the bracket's category."""
+    """The roster fencers one of whose user-confirmed, unrevoked aliases is
+    this source row's name (whole words, Polish letters folded, a further
+    given name in the source dropped), with a birth year in the bracket's
+    category."""
     words = _words(name)
     hits: list[int] = []
     for f in roster:
         revoked = {tuple(_words(a)) for a in _alias_list(f.get("json_revoked_aliases"))}
-        for alias in _alias_list(f.get("json_name_aliases")):
+        for alias in _alias_list(f.get("json_user_confirmed_aliases")):
             aw = _words(alias)
             if len(aw) < 2 or tuple(aw) in revoked or words[: len(aw)] != aw:
                 continue

@@ -227,6 +227,21 @@ def _confirmed_by_overrides(pending: list, overrides) -> list:
     return out
 
 
+def _confirm_override_linked_pairs(db, pending: list, overrides) -> int:
+    """Record each sign-off pair the event's override file links (an identity
+    entry naming that fencer) as the fencer's user-confirmed alias: a person
+    decided the link, so a later FIE event matches the name without an
+    override file. Returns the number of pairs confirmed. ADM.FIE.11."""
+    confirmed = 0
+    for p in pending:
+        entry = overrides.identity_for(p.scraped_name)
+        if entry is None or entry.id_fencer != p.id_fencer:
+            continue
+        db.confirm_fencer_alias(p.id_fencer, p.scraped_name)
+        confirmed += 1
+    return confirmed
+
+
 def _flush_source_matches(matches: list, *, international: bool) -> list:
     """The matches the stage-time alias flush derives pairs from. For an
     international event only AUTO_MATCHED rows: a PENDING row's fencer is a
@@ -448,6 +463,7 @@ def main() -> int:
             return 2
 
         pending = derive_pending_from_run_id(db, args.commit_run_id)
+        event_overrides = None
         if args.event_code != "REQUIRED":
             from python.pipeline.overrides import load_for_event, resolve_fencer_keys
 
@@ -483,6 +499,13 @@ def main() -> int:
             for fid, alias, msg in flush_result["errors"]:
                 print(
                     f"    ⚠ alias write FAILED id_fencer={fid} alias={alias!r}: {msg}",
+                    file=sys.stderr,
+                )
+        if event_overrides is not None:
+            n_confirmed = _confirm_override_linked_pairs(db, pending, event_overrides)
+            if n_confirmed:
+                print(
+                    f"  aliases confirmed from the override file: {n_confirmed}",
                     file=sys.stderr,
                 )
 
