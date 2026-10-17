@@ -30,7 +30,7 @@ This was enabled by ADR-006 (JSONB bucket rules) — no schema migration was nee
 
 ## Consequences
 
-- MSW results scored with 2.0 multiplier appear in Kadra ranking automatically
+- MSW results scored with the season's MSW multiplier (`tbl_scoring_config.num_msw_multiplier`; 2.0 when this ADR was written) appear in Kadra ranking automatically
 - The combined pool means PEW, MEW, and MSW results compete for the same best-J slots
 - PSW can be activated per-season by adding it to `json_ranking_rules` when FIE starts the World Cup
 - No change to `fn_ranking_kadra` SQL — the JSONB bucket path handles arbitrary type lists

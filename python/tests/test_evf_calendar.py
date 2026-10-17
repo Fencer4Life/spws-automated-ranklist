@@ -2348,8 +2348,19 @@ class TestEvfPhase2Allocator:
         (identity-sync: name/dates/location/country/evf_id/evf_slug) for a
         matched pair, dispatched before the existing fn_refresh_evf_event_urls
         fill-blank-only call.
+
+        The Samorin row is an upcoming event, so the clock is pinned before
+        it: from 12 Oct 2026 the 30-day stale gate (``is_in_scope``,
+        STALE_WINDOW_DAYS) would age the fixture out of the matched pairs and
+        the test would fail on the date alone.
         """
+        from datetime import date
+        from functools import partial
+
         from python.scrapers import evf_sync
+        from python.scrapers.evf_calendar import is_in_scope
+
+        monkeypatch.setattr(evf_sync, "is_in_scope", partial(is_in_scope, today=date(2026, 9, 1)))
 
         scraped = [
             {

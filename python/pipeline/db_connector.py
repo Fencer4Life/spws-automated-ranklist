@@ -34,17 +34,29 @@ class DbConnector:
         selected so s0_reconcile_roster can run its high-precision exact dedup
         (nationality belt-and-suspenders) and decide estimated vs confirmed
         reconciliation. Harmless extra columns for the matcher.
+
+        ADR-106 FIE amendment: json_user_confirmed_aliases and
+        json_revoked_aliases carry the aliases international admission
+        accepts as identity at an FIE event.
         """
         resp = (
             self._sb.table("tbl_fencer")
             .select(
                 "id_fencer, txt_surname, txt_first_name, int_birth_year, "
                 "json_name_aliases, enum_gender, txt_nationality, "
-                "bool_birth_year_estimated"
+                "bool_birth_year_estimated, json_user_confirmed_aliases, "
+                "json_revoked_aliases"
             )
             .execute()
         )
         return resp.data
+
+    def confirm_fencer_alias(self, id_fencer: int, alias: str) -> None:
+        """Record ``alias`` as a user-confirmed alias of the fencer
+        (``fn_confirm_fencer_alias``; idempotent, case-insensitive)."""
+        self._sb.rpc(
+            "fn_confirm_fencer_alias", {"p_id_fencer": id_fencer, "p_alias": alias}
+        ).execute()
 
     def fetch_registration_birth_years(self, event_code: str) -> list[dict]:
         """Return this event's declared birth years, for s0_reconcile_roster.

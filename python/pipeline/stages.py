@@ -107,6 +107,10 @@ def _admit_international_rows(
     """
     if not _is_international_intake(ctx.event):
         return [(cat, r, None) for cat, r in rows]
+    from python.pipeline.db_connector import derive_tourn_type_from_event_code
+
+    # The FIE amendment keys on the type: the IMSW code derives to MSW.
+    ttype = derive_tourn_type_from_event_code((ctx.event or {}).get("txt_code") or "")
     starters = set(db.fetch_spws_starter_ids())
     kept: list[tuple[Any, Any, Any]] = []
     for cat, r in rows:
@@ -122,6 +126,7 @@ def _admit_international_rows(
             season_end_year=ctx.season_end_year,
             roster=fencer_db,
             spws_starters=starters,
+            tournament_type=ttype,
         )
         if a.decision == REJECTED:
             ctx.rejected.append(

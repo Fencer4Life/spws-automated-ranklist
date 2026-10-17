@@ -324,3 +324,253 @@ def test_ADM_ID_12_a_named_override_links_each_environment_s_own_fencer():
 
     assert run(284) == (284, "IRL")
     assert run(174) == (174, "IRL")
+
+
+# ---------------------------------------------------------------------------
+# ADM.FIE — FIE events (MSW, PSW, the IMSW code): ADR-106 amendment, 17 Oct 2026
+# ---------------------------------------------------------------------------
+# A row printed POL that is exactly one roster fencer is stored without a PPW
+# or MPW start; a user-confirmed, unrevoked alias counts as identity (D9 A: a
+# merely recorded alias does not, because the stage-time flush records every
+# pair). EVF events (PEW, MEW, IMEW) keep ADR-106 §1 unchanged (ADM_ID_04 above).
+
+
+def _fa(fid, sur, first, by, aliases=None, confirmed=None, revoked=None):
+    f = _f(fid, sur, first, by)
+    f["json_name_aliases"] = aliases
+    f["json_user_confirmed_aliases"] = confirmed or []
+    f["json_revoked_aliases"] = revoked or []
+    return f
+
+
+# V1, season 2026/27: born 1977–1987 fits (the season's end year or the year before).
+FIE_ROSTER = [
+    _fa(367, "SZUMIELEWICZ", "Paweł", 1986),  # added by an admin migration, no SPWS start
+    _fa(174, "LYNCH", "Pat", 1980, aliases=["LYNCH Patrick"], confirmed=["LYNCH Patrick"]),
+    _fa(76, "GERTSMAN", "Alex", 1980, aliases=["GERTSMAN Alexandr"]),  # recorded, not confirmed
+    _fa(
+        77,
+        "KARMAN",
+        "Irene",
+        1980,
+        aliases=["KARMAN Iren"],
+        confirmed=["KARMAN Iren"],
+        revoked=["KARMAN Iren"],
+    ),
+    _fa(8, "GOLA", "Maciej", 1983),  # no SPWS start
+    _fa(30, "NOWAK", "Jan", 1980),
+    _fa(31, "NOWAK", "Jan", 1984),
+]
+FIE_STARTERS = {174, 76, 77}
+
+
+def _admit_fie(name, country, ttype="MSW", category="V1"):
+    from python.pipeline.international_admission import admit
+
+    return admit(
+        name,
+        country,
+        category=category,
+        season_end_year=2027,
+        roster=FIE_ROSTER,
+        spws_starters=FIE_STARTERS,
+        tournament_type=ttype,
+    )
+
+
+def test_ADM_FIE_01_a_pole_in_the_fencer_table_is_stored_at_the_worlds_without_an_spws_start():
+    """ADM.FIE.01 SZUMIELEWICZ Paweł, printed POL at the Worlds, is exactly one
+    roster fencer and has no PPW or MPW result: stored."""
+    a = _admit_fie("SZUMIELEWICZ Pawel", "POL")
+    assert (a.decision, a.id_fencer, a.entered_for, a.reason) == (
+        "STORED",
+        367,
+        "POL",
+        "identity, entered by POL at an FIE event",
+    )
+
+
+@pytest.mark.parametrize(
+    "ttype, expected",
+    [
+        ("MSW", "STORED"),
+        ("PSW", "STORED"),
+        ("PEW", "PENDING"),
+        ("MEW", "PENDING"),
+        (None, "PENDING"),
+    ],
+)
+def test_ADM_FIE_02_only_fie_types_store_a_pole_without_an_spws_start(ttype, expected):
+    """ADM.FIE.02 MSW and PSW store the row; the EVF types keep ADM_ID_04
+    (PENDING), and so does a call that names no type."""
+    assert _admit_fie("SZUMIELEWICZ Pawel", "POL", ttype=ttype).decision == expected
+
+
+def test_ADM_FIE_03_a_pole_not_in_the_fencer_table_stays_pending():
+    """ADM.FIE.03 printed POL, no identity: PENDING, never stored (D2 A). With
+    no near name it carries no candidate; near a roster name it carries the
+    matcher's guess, still PENDING."""
+    a = _admit_fie("ZIELINSKI Bartosz", "POL")
+    assert (a.decision, a.id_fencer) == ("PENDING", None)
+    near = _admit_fie("NOWAK Szymon", "POL")
+    assert (near.decision, near.id_fencer) == ("PENDING", 30)
+
+
+def test_ADM_FIE_04_a_birth_year_outside_the_category_stays_pending():
+    """ADM.FIE.04 SZUMIELEWICZ (1986) in a V3 bracket fits neither year: PENDING."""
+    assert _admit_fie("SZUMIELEWICZ Pawel", "POL", category="V3").decision == "PENDING"
+
+
+def test_ADM_FIE_05_two_namesakes_who_fit_stay_pending():
+    """ADM.FIE.05 two roster fencers NOWAK Jan both fit V1: PENDING."""
+    a = _admit_fie("NOWAK Jan", "POL")
+    assert (a.decision, a.reason) == ("PENDING", "two roster fencers fit")
+
+
+def test_ADM_FIE_06_a_foreign_flag_still_needs_an_spws_start():
+    """ADM.FIE.06 GOLA Maciej matches by identity, has no SPWS start and is
+    printed CZE: rejected, as under ADR-106 §1."""
+    assert _admit_fie("GOLA Maciej", "CZE").decision == "REJECTED"
+
+
+def test_ADM_FIE_07_a_user_confirmed_alias_is_identity_at_an_fie_event_only():
+    """ADM.FIE.07 "LYNCH Patrick" (IRL) is the user-confirmed alias of LYNCH
+    Pat, an SPWS starter born 1980: stored at the Worlds; at an EVF event the
+    alias does not count and the row is rejected."""
+    a = _admit_fie("LYNCH Patrick", "IRL")
+    assert (a.decision, a.id_fencer, a.entered_for) == ("STORED", 174, "IRL")
+    assert _admit_fie("LYNCH Patrick", "IRL", ttype="PEW").decision == "REJECTED"
+
+
+def test_ADM_FIE_08_a_merely_recorded_or_a_revoked_alias_is_never_identity():
+    """ADM.FIE.08 "GERTSMAN Alexandr" is recorded but not user-confirmed, and
+    "KARMAN Iren" is confirmed but revoked: both rejected (D9 A)."""
+    assert _admit_fie("GERTSMAN Alexandr", "ISR").decision == "REJECTED"
+    assert _admit_fie("KARMAN Iren", "HUN").decision == "REJECTED"
+
+
+def test_ADM_FIE_11_an_override_linked_pair_is_recorded_as_user_confirmed_at_sign_off():
+    """ADM.FIE.11 at sign-off each alias pair the event's override file links
+    (an identity entry naming that fencer) is recorded as the fencer's
+    user-confirmed alias, so later FIE events match it without an override; a
+    pair the file does not link, or links to another fencer, is not (D9 A)."""
+    from python.pipeline.alias_writeback import PendingAlias
+    from python.pipeline.types import IdentityOverride, Overrides
+    from python.tools.phase5_runner import _confirm_override_linked_pairs
+
+    overrides = Overrides(
+        identity=[
+            IdentityOverride("LYNCH Patrick", id_fencer=174),
+            IdentityOverride("KARMAN Iren", id_fencer=119),
+            IdentityOverride("GERTSMAN Alexandr", id_fencer=999),
+        ]
+    )
+    pending = [
+        PendingAlias(174, "LYNCH Patrick", "LYNCH Pat", "✓", "different first names"),
+        PendingAlias(119, "KARMAN Iren", "KARMAN Irene", "✓", "typo"),
+        PendingAlias(76, "GERTSMAN Alexandr", "GERTSMAN Alex", "❌", "different first names"),
+        PendingAlias(5, "SEKOWSKI Maciej", "SĘKOWSKI Maciej", "✓", "diacritic fold"),
+    ]
+    db = MagicMock()
+    assert _confirm_override_linked_pairs(db, pending, overrides) == 2
+    assert [c.args for c in db.confirm_fencer_alias.call_args_list] == [
+        (174, "LYNCH Patrick"),
+        (119, "KARMAN Iren"),
+    ]
+
+
+def test_ADM_FIE_12_the_pipeline_roster_carries_the_confirmed_and_revoked_aliases():
+    """ADM.FIE.12 the roster every ingestion path reads (fetch_fencer_db) holds
+    json_user_confirmed_aliases and json_revoked_aliases, which the FIE alias
+    identity needs."""
+    from python.pipeline.db_connector import DbConnector
+
+    sb = MagicMock()
+    DbConnector(sb).fetch_fencer_db()
+    cols = sb.table.return_value.select.call_args.args[0]
+    assert "json_user_confirmed_aliases" in cols and "json_revoked_aliases" in cols
+
+
+FIE_CASES = [
+    ("SZUMIELEWICZ Pawel", "POL"),
+    ("LYNCH Patrick", "IRL"),
+    ("ZIELINSKI Bartosz", "POL"),
+    ("GOLA Maciej", "CZE"),
+]
+FIE_EXPECTED = {
+    "SZUMIELEWICZ Pawel": ("STORED", 367),
+    "LYNCH Patrick": ("STORED", 174),
+    "ZIELINSKI Bartosz": ("PENDING", None),
+}
+
+
+def _fie_pctx(code):
+    parsed = ParsedTournament(
+        source_kind=SourceKind.FTL,
+        results=[
+            ParsedResult(source_row_id=f"f:{n}", fencer_name=n, place=i, fencer_country=c)
+            for i, (n, c) in enumerate(FIE_CASES, start=1)
+        ],
+        raw_pool_size=62,
+        weapon="FOIL",
+        gender="M",
+        category_hint="V1",
+        season_end_year=2027,
+    )
+    ctx = PipelineContext(parsed=parsed, overrides=Overrides(), season_end_year=2027)
+    ctx.event = {"id_event": 77, "txt_code": code}
+    return ctx
+
+
+def _fie_db():
+    db = MagicMock()
+    db.fetch_fencer_db.return_value = FIE_ROSTER
+    db.fetch_spws_starter_ids.return_value = FIE_STARTERS
+    return db
+
+
+@pytest.mark.parametrize("code", ["MSW-2026-2027", "IMSW-2026-2027"])
+def test_ADM_FIE_09_every_path_decides_an_fie_row_the_same(code):
+    """ADM.FIE.09 s6_resolve_identity, ResolveFencers and
+    resolve_tournament_results decide an MSW row identically (the IMSW code
+    too), and none creates a fencer."""
+    from python.matcher.pipeline import resolve_tournament_results
+    from python.pipeline.core.contract import Context, Services
+    from python.pipeline.plugins.bridge import LEGACY
+    from python.pipeline.plugins.resolve_fencers import ResolveFencers
+    from python.pipeline.stages import s6_resolve_identity
+
+    ctx = _fie_pctx(code)
+    db = _fie_db()
+    s6_resolve_identity(ctx, db)
+    assert _decisions_from_ctx(ctx) == (FIE_EXPECTED, {"GOLA Maciej"})
+    db.insert_fencer.assert_not_called()
+
+    pctx = _fie_pctx(code)
+    pc = Context()
+    pc.data[LEGACY] = pctx
+    pc.data["parsed"] = pctx.parsed
+    pc.data["event"] = pctx.event
+    db = _fie_db()
+    plugin = ResolveFencers()
+    pc._begin(plugin)
+    plugin.run(pc, Services(db=db))
+    pc._end()
+    assert _decisions_from_ctx(pctx) == (FIE_EXPECTED, {"GOLA Maciej"})
+    db.insert_fencer.assert_not_called()
+
+    res = resolve_tournament_results(
+        [n for n, _c in FIE_CASES],
+        FIE_ROSTER,
+        "MSW",
+        "V1",
+        2027,
+        scraped_countries=[c for _n, c in FIE_CASES],
+        spws_starters=FIE_STARTERS,
+    )
+    got = {
+        m.scraped_name: ("STORED" if m.status == "AUTO_MATCHED" else m.status, m.id_fencer)
+        for m in res.matched
+    }
+    assert (got, set(res.skipped)) == (FIE_EXPECTED, {"GOLA Maciej"})
+    assert res.auto_created == []
