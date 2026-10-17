@@ -14,7 +14,7 @@ compares matches + rejected with the source bracket size.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -299,21 +299,29 @@ class TestDraftWriter:
 
 
 # ---------------------------------------------------------------------------
-# INTL.URL — the new pipeline's event URL path refuses international events
+# INTL.URL — the new pipeline's event URL path takes an international event
+# through its own driver (ADR-113; it refused one until then, ADR-105 §5.6)
 # ---------------------------------------------------------------------------
 
 
 class TestEventUrlPath:
     @pytest.mark.parametrize("code", ["PEW3-2025-2026", "IMSW-2025-2026", "MEW-2026-2027"])
-    def test_an_international_event_is_refused_before_any_write(self, code):
-        """INTL.URL.01 ingest_event_from_url treats every event as domestic, so
-        it refuses an international one and names the Phase 5 runner. Nothing
-        is written, not even the URL override, and no source is fetched."""
+    def test_an_international_event_reads_its_brackets_before_any_write(self, code):
+        """INTL.URL.01 (amended by ADR-113) ingest_event_from_url reads every
+        bracket of an international event before anything is written: a
+        source that cannot be read leaves nothing written, not even the URL
+        override. ROUTE.INTL.01 covers the ingestion itself."""
         from python.pipeline.ingest_cli import ingest_event_from_url
 
         db = MagicMock()
         db.find_event_by_code.return_value = {"id_event": 1, "txt_code": code}
-        with pytest.raises(ValueError, match="phase5"):
+        with (
+            patch(
+                "python.pipeline.international_sources.read_brackets",
+                side_effect=ValueError("unreadable"),
+            ),
+            pytest.raises(ValueError, match="unreadable"),
+        ):
             ingest_event_from_url(code, 2026, db=db, url_event_override="https://example.test/e")
         db.set_event_url_event.assert_not_called()
 

@@ -136,7 +136,7 @@
 <p class="kicker">Everything else</p>
 <h2>Manual changes</h2>
 <p>Any transition not listed as automated above is made by an administrator, through the event editor in the admin UI. The dropdown offers only destinations the validator accepts from the event's current status, so an offered option always saves.</p>
-<p>For a domestic event <code>COMPLETED</code> follows the lifecycle rule (<a href="../../adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7): the ingestion, promote and the daily close set it once every listing is final and read and the end date has passed. The Telegram <code>complete &lt;exact code&gt;</code> command remains a manual close, which does not check the end date.</p>
+<p>For an event of any organizer (SPWS, PZSz, EVF, FIE; <a href="../../adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>) <code>COMPLETED</code> follows the lifecycle rule (<a href="../../adr/108-promote-replays-verified-cert-ingestion.html">ADR-108</a> §7): the ingestion, promote and the daily close set it once every listing is final and read and the end date has passed. The Telegram <code>complete &lt;exact code&gt;</code> command remains a manual close, which does not check the end date.</p>
 </section>
 
 <section id="moved-pill">

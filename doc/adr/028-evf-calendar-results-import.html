@@ -4,18 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="028-evf-calendar-results-import.md">
-<meta name="adr-source-sha256" content="18da0a573019966c514c87fbbb5358746d5be56633444d7878b522b3fdc66320">
+<meta name="adr-source-sha256" content="5501a6d844c1b0d6bea49e28c02d44372d9f2060ef094fb494d412f4f5b0c637">
 <title>ADR-028 · EVF Calendar + Results Import</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 028</p><h1>EVF Calendar + Results Import</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields). <strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (closes the <code>txt_location</code> venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only). <strong>Amended by:</strong> <a href="096-no-bracket-stubs-before-results.html">ADR-096</a> (§Calendar Scraping's &quot;Creates <code>tbl_event</code> ... + child <code>tbl_tournament</code> ... via <code>fn_import_evf_events</code>&quot; no longer holds: the calendar ingest creates event-level facts only, and a bracket is created by results ingestion instead).</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">252 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)</dd></div><div><dt>Date</dt><dd class="">2026-04-06 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier) <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields). <strong>Amended by:</strong> <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> (Results Scraping and <code>evf-results-import</code>: the sync imports no result; <code>ingest</code> reads EVF's results for an event without a result URL, and <code>promote</code> carries them to PROD). <strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (closes the <code>txt_location</code> venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only). <strong>Amended by:</strong> <a href="096-no-bracket-stubs-before-results.html">ADR-096</a> (§Calendar Scraping's &quot;Creates <code>tbl_event</code> ... + child <code>tbl_tournament</code> ... via <code>fn_import_evf_events</code>&quot; no longer holds: the calendar ingest creates event-level facts only, and a bracket is created by results ingestion instead).</dd></div><div><dt>Source</dt><dd class=""><code>028-evf-calendar-results-import.md</code></dd></div><div><dt>Length</dt><dd class="">255 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (revised 2026-08-08 rev 8 — source-verified historical fragment repair)
 <strong>Date:</strong> 2026-04-06
 <strong>Relates to:</strong> FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (<code>url_event</code>), ADR-030 (<code>url_registration</code>/<code>dt_registration_deadline</code>), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
 <strong>Amended by:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> (carves out one-time curated enrichment of calendar-facing fields).
+<strong>Amended by:</strong> <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> (Results Scraping and <code>evf-results-import</code>: the sync imports no result; <code>ingest</code> reads EVF's results for an event without a result URL, and <code>promote</code> carries them to PROD).
 <strong>Amended by:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (closes the <code>txt_location</code> venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only).
 <strong>Amended by:</strong> <a href="096-no-bracket-stubs-before-results.html">ADR-096</a> (§Calendar Scraping's &quot;Creates <code>tbl_event</code> ... + child <code>tbl_tournament</code> ... via <code>fn_import_evf_events</code>&quot; no longer holds: the calendar ingest creates event-level facts only, and a bracket is created by results ingestion instead).</p>
 </div>
@@ -63,6 +64,7 @@
 <li>Only Polish fencers ingested via fuzzy matcher (international rules from ADR-025).</li>
 <li><strong>PDF fallback:</strong> Legacy <code>parse_evf_result_pdf()</code> retained for older championships that only have PDFs.</li>
 </ul>
+<p><em>Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>:</em> the sync imports no result. EVF's API results are read by <code>ingest &lt;code&gt;</code> when the event has no result URL (ADR-105 §1.5), and reach PROD through <code>promote &lt;code&gt;</code>. The sync compares EVF's results with CERT and tells the operator when an event has results to load.</p>
 <h3 id="refresh-semantics-amendment-2026-04-20-rev-2">Refresh Semantics (amendment, 2026-04-20 rev 2)</h3>
 <p>The original &quot;create-only, idempotent-by-code&quot; import contract is <strong>preserved</strong> for <code>fn_import_evf_events</code>: a re-run with a payload whose <code>txt_code</code> already exists still skips the row. That contract remains for callers that rely on it (seeding, manual backfills, administrator imports).</p>
 <p>A companion RPC <code>fn_refresh_evf_event_urls(p_updates JSONB)</code> handles the case where the scraper re-discovers an event that was already imported (or seeded) and has fresh URL/enrichment data to contribute. The Python side pairs each scraped event with its matched <code>tbl_event</code> row via <code>match_scraped_to_existing()</code> (same date±7d + RapidFuzz ≥ 80 rule used for dedup) and sends the <code>id_event</code> list to the refresh RPC.</p>
@@ -84,7 +86,7 @@
 <h3 id="telegram-commands">Telegram Commands</h3>
 <ul>
 <li><code>evf-cal-import</code> — manual calendar scrape (bypass 3-day schedule)</li>
-<li><code>evf-results-import &lt;event&gt;</code> — manual result fetch + import for specific event</li>
+<li><code>evf-results-import &lt;event&gt;</code> — manual result fetch + import for specific event (<em>since <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>, 2026-10-17: compares the event's EVF results with CERT and writes nothing</em>)</li>
 <li><code>evf-status</code> — show past international events missing results (dt_end &lt; today, result_count = 0)</li>
 </ul>
 </section>
@@ -247,5 +249,5 @@ and <a href="../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql">
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="027-full-season-seed-export.html">← ADR-027: Full-Season Seed Export</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="029-tournament-url-auto-population.html">→ ADR-029: Tournament URL Auto-Population + Admin CRUD</a></nav>
-<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>18da0a573019966c514c87fbbb5358746d5be56633444d7878b522b3fdc66320</code></footer>
+<footer class="foot">Generated from <code>028-evf-calendar-results-import.md</code> · source SHA-256 <code>5501a6d844c1b0d6bea49e28c02d44372d9f2060ef094fb494d412f4f5b0c637</code></footer>
 </div></body></html>

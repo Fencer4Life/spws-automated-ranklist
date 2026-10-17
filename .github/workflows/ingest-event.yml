@@ -10,11 +10,12 @@ name: Ingest event (NEW pipeline, from URL)
 #   * Admin UI "Re-ingest event" button → dispatch-workflow edge fn (allowlisted)
 #   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=cert
 #
-# ADR-108 §9: this path ingests domestic events only (an international event is
-# refused by ingest_cli, ADR-105), and a domestic event reaches PROD only through
-# promote, so target prod is refused. The run is recorded in tbl_ingest_run for
-# promote. It shares `cert-write` with the CERT recompute drain and the refresh,
-# so CERT's result never mixes two states.
+# ADR-113: this path ingests every organizer's event (SPWS, PZSz, EVF, FIE);
+# an international event reads each result URL slot, or its EVF results
+# (ADR-105 rules). Every event reaches PROD only through promote, so target
+# prod is refused. The run is recorded in tbl_ingest_run for promote. It shares
+# `cert-write` with the CERT recompute drain and the refresh, so CERT's result
+# never mixes two states.
 #
 # Security: all user-controlled inputs validated before shell interpolation.
 
@@ -73,7 +74,7 @@ jobs:
             exit 1
           fi
           if [[ "$TARGET_ENV" == "prod" ]]; then
-            echo "::error::target prod is refused: a domestic event reaches PROD only through promote (promote <exact code>), which replays the verified CERT run (ADR-108)"
+            echo "::error::target prod is refused: an event reaches PROD only through promote (promote <exact code>), which replays the verified CERT run (ADR-108, ADR-113)"
             exit 1
           fi
           if [[ "$TARGET_ENV" != "cert" ]]; then
@@ -85,6 +86,21 @@ jobs:
             echo "::error::invalid url_event (must be empty or an http(s) URL)"
             exit 1
           fi
+
+      # ADR-113 (Q4 A): CERT takes PROD's fencers before it ingests, so the run
+      # promote replays was resolved against the roster PROD holds. --auto
+      # applies only a refresh that renumbers nobody and leaves nobody
+      # unpaired; anything else stops here with the report (ADR-108 §2).
+      - name: Refresh CERT master data from PROD
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+        run: |
+          python -m python.pipeline.promotion.refresh --target cert --mode apply \
+            --event "$EVENT_CODE" --auto \
+            --snapshot "$RUNNER_TEMP/refresh-$EVENT_CODE-$GITHUB_RUN_ID.json" \
+            --report "$RUNNER_TEMP/refresh-report.md"
 
       - name: Re-ingest event from URL (keep-rule + source overrides)
         env:
@@ -115,6 +131,12 @@ jobs:
           RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
           MSG="❌ ingest-event.yml failed for ${EVENT_CODE} (${TARGET_ENV}). Check: ${RUN_URL}"
+          REFRESH="$RUNNER_TEMP/refresh-report.md"
+          if [[ -f "$REFRESH" ]] && grep -q '^status: stopped_' "$REFRESH"; then
+            STATUS=$(grep -m1 '^status:' "$REFRESH")
+            COUNTS=$(grep -m1 '^counts:' "$REFRESH")
+            MSG="⏸ ingest ${EVENT_CODE} stopped before ingesting: the PROD→CERT refresh needs the administrator (${STATUS}; ${COUNTS}). Nothing was written. Report: ${RUN_URL}"
+          fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MSG}" > /dev/null

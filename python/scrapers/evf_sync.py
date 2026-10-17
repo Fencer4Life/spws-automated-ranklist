@@ -843,10 +843,11 @@ def sync_results(
                     chat_id,
                     f"<b>EVF results: PENDING, not stored</b>\n<pre>{evf_evt['name']}\n"
                     + "\n".join(lines)
-                    + "</pre>\nResolve through the Phase 5 runner.",
+                    + "</pre>\nDecide each in the event's override file (doc/overrides/), "
+                    "then send <code>ingest</code> with the event's code.",
                 )
 
-            # Compare with CERT data and optionally ingest (pass all_results for participant count)
+            # Compare with CERT data and report the gap; the sync writes no result (ADR-113)
             _compare_and_ingest(
                 ref,
                 token,
@@ -931,7 +932,13 @@ def _compare_and_ingest(
     cert_events_pool: list[dict] | None = None,
     season_end_year: int | None = None,
 ) -> None:
-    """Compare EVF-matched SPWS results with CERT data, ingest missing.
+    """Compare EVF-matched SPWS results with CERT data and report the gap.
+
+    ADR-113 (Q1 A): the sync writes no result. EVF and FIE results reach CERT
+    through Telegram `ingest <code>` and PROD through `promote <code>`, like
+    every other organizer's, so a result the sync finds missing on CERT is
+    reported with those two commands. The calendar side still creates an
+    event EVF lists and CERT lacks.
 
     Uses the shared `_find_existing_match` (ADR-039) when `cert_events_pool`
     is provided — same dedup ladder as the calendar path. Match candidates
@@ -1029,17 +1036,14 @@ def _compare_and_ingest(
             ref, token, f"SELECT txt_code FROM tbl_event WHERE id_event = {cert_event_id}"
         )[0]["txt_code"]
         print(f"  Created event: {cert_code} (id={cert_event_id})")
-
-        # Ingest all SPWS results (pass all_results for correct participant count)
-        _ingest_evf_results(
-            ref, token, cert_event_id, spws_results, evf_date, all_results=all_results
-        )
         _telegram(
             bot_token,
             chat_id,
-            f"<b>EVF Import</b>\n<pre>{cert_code}</pre>\n"
+            f"<b>EVF event created</b>\n<pre>{cert_code}</pre>\n"
             f"{evf_evt['name']}\n"
-            f"Created event + <b>{len(spws_results)}</b> results ingested",
+            f"EVF lists <b>{len(spws_results)}</b> results of ours. Set the organiser's results "
+            f"URL in Admin, then send <code>ingest {cert_code}</code> (CERT) and "
+            f"<code>promote {cert_code}</code> (PROD).",
         )
         return
 
@@ -1103,24 +1107,17 @@ def _compare_and_ingest(
                 f"    {r['int_place']:>3} {r['txt_surname']:<20} {r['enum_age_category']} {r['enum_gender']} {r['enum_weapon']}"
             )
 
-    # Ingest EVF-only results
-    ingested = 0
-    if evf_only and not dry_run:
-        cert_event_id = cert_events[0]["id_event"]
-        evf_only_results = [evf_details[k] for k in evf_only]
-        ingested = _ingest_evf_results(
-            ref, token, cert_event_id, evf_only_results, evf_date, all_results=all_results
-        )
-        print(f"\n  Ingested {ingested} EVF-only results to CERT")
-
     summary = (
         f"<b>EVF vs CERT: {evf_evt['name']}</b>\n"
         f"<pre>{cert_code}</pre>\n"
         f"EVF SPWS: <b>{len(spws_results)}</b>  |  CERT: <b>{len(cert_results)}</b>\n"
         f"Match: <b>{len(both)}</b>  |  EVF-only: <b>{len(evf_only)}</b>  |  CERT-only: <b>{len(cert_only)}</b>"
     )
-    if evf_only and not dry_run:
-        summary += f"\n<b>{ingested}</b> new results ingested"
+    if evf_only:
+        summary += (
+            f"\nSend <code>ingest {cert_code}</code> (CERT), then "
+            f"<code>promote {cert_code}</code> (PROD)."
+        )
     if not dry_run:
         _telegram(bot_token, chat_id, summary)
     else:
@@ -1159,94 +1156,6 @@ def _create_cert_event(ref: str, token: str, evf_evt: dict) -> int | None:
     if result:
         return result[0]["id_event"]
     return None
-
-
-def _ingest_evf_results(
-    ref: str,
-    token: str,
-    event_id: int,
-    results: list[dict],
-    event_date: str,
-    all_results: list[dict] | None = None,
-) -> int:
-    """Ingest EVF results into CERT via fn_find_or_create_tournament + fn_ingest_tournament_results.
-
-    Args:
-        all_results: Full scraped results (all fencers, not just SPWS matches).
-                     Used to compute correct int_participant_count per tournament.
-    """
-    ingested = 0
-
-    # Group SPWS-matched results by weapon+gender+category
-    groups: dict[tuple, list[dict]] = {}
-    for r in results:
-        key = (r["weapon"], r["gender"], r["category"])
-        groups.setdefault(key, []).append(r)
-
-    # Group ALL results for total participant count + EVF competition id
-    total_counts: dict[tuple, int] = {}
-    comp_ids: dict[tuple, int] = {}
-    if all_results:
-        for r in all_results:
-            key = (r["weapon"], r["gender"], r["category"])
-            total_counts[key] = total_counts.get(key, 0) + 1
-            cid = r.get("competition_id")
-            if cid and key not in comp_ids:
-                comp_ids[key] = int(cid)
-
-    for (weapon, gender, category), group_results in groups.items():
-        # Find or create tournament; pass EVF competition id when known so
-        # the FK is set/backfilled at ingest time.
-        comp_id = comp_ids.get((weapon, gender, category))
-        comp_id_sql = f"{int(comp_id)}" if comp_id else "NULL"
-        tourn_result = _management_query(
-            ref,
-            token,
-            f"SELECT fn_find_or_create_tournament("
-            f"{event_id}, '{weapon}', '{gender}', '{category}', "
-            f"'{event_date}'::DATE, 'PEW', {comp_id_sql})",
-        )
-        if not tourn_result:
-            print(f"    ERROR: Could not create tournament {weapon} {gender} {category}")
-            continue
-
-        tourn_id = list(tourn_result[0].values())[0]
-
-        # Build results JSON for fn_ingest_tournament_results
-        results_json = []
-        for r in group_results:
-            results_json.append(
-                {
-                    "id_fencer": r["spws_id"],
-                    "int_place": r["place"],
-                    "txt_scraped_name": r["fencer_name"],
-                    "num_confidence": r["match_confidence"],
-                    "enum_match_status": "AUTO_MATCHED",
-                    "txt_entered_for": r.get("entered_for"),
-                }
-            )
-
-        json_str = json.dumps(results_json).replace("'", "''")
-
-        # Total participant count for this tournament (all fencers, not just SPWS)
-        total_count = total_counts.get((weapon, gender, category))
-        count_param = f", {total_count}" if total_count else ""
-
-        try:
-            _management_query(
-                ref,
-                token,
-                f"SELECT fn_ingest_tournament_results({tourn_id}, '{json_str}'::JSONB{count_param})",
-            )
-            ingested += len(group_results)
-            count_info = f" (N={total_count})" if total_count else ""
-            print(
-                f"    {weapon} {gender} {category}: {len(group_results)} results ingested{count_info}"
-            )
-        except Exception as e:
-            print(f"    ERROR {weapon} {gender} {category}: {e}")
-
-    return ingested
 
 
 def _parse_date(s: str):

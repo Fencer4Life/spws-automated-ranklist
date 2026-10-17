@@ -639,14 +639,12 @@ class TestPlanEvent:
             )
         assert e.value.kind == "precondition"
 
-    def test_an_unknown_or_international_event_refuses(self):
-        """PROMO.PLAN.12"""
+    def test_an_unknown_event_refuses(self):
+        """PROMO.PLAN.12 (amended by ADR-113: an international event is planned,
+        ROUTE.PLAN.01)"""
         db = _classic_db()
         with pytest.raises(pl.PlanRefused, match="PPW9-2025-2026"):
             pl.plan_event("PPW9-2025-2026", 2026, _ReadOnly(db), url_event=SCHEDULE, created=[])
-        db.events[9] = _event(9, "PEW3-2025-2026", "2026-03-14", 1)
-        with pytest.raises(pl.PlanRefused, match="international"):
-            pl.plan_event("PEW3-2025-2026", 2026, _ReadOnly(db), url_event=SCHEDULE, created=[])
 
     def test_the_local_check_reports_a_failed_live_run_and_exits_3(self, tmp_path, monkeypatch):
         """PROMO.PLAN.13 — an event whose live run failed has nothing to compare:

@@ -611,7 +611,8 @@ def check_drain_target(target: str, supabase_url: str) -> None:
 
 @dataclass(frozen=True)
 class RefreshOutcome:
-    status: str  # "stopped_unpaired" | "planned" | "dry_run" | "applied"
+    # "stopped_unpaired" | "stopped_renumbering" | "planned" | "dry_run" | "applied"
+    status: str
     plan: AlignmentPlan
     report: Report
     align_summary: dict[str, Any] | None = None
@@ -627,11 +628,16 @@ def run_refresh(
     recorded: Iterable[RecordedPair] = (),
     drain: Callable[[], list[int]] | None = None,
     snapshot: Callable[[dict[str, Any]], None] | None = None,
+    refuse_renumbering: bool = False,
 ) -> RefreshOutcome:
     """plan: pair and report. dry-run: also the database dry run. apply: write.
 
     Before the real alignment, `snapshot` receives the restore point: the
     target's roster as it was and the pairing, which `run_restore` reverses.
+
+    `refuse_renumbering` is the automatic refresh `ingest` runs first
+    (ADR-113): a plan that moves any id stops before the first write, so a
+    renumbering still waits for the administrator's reading of the report.
     """
     if mode not in ("plan", "dry-run", "apply"):
         raise RefreshError(f"unknown mode {mode!r}")
@@ -641,6 +647,8 @@ def run_refresh(
     report = describe(plan, target_rows, prod_rows)
     if not plan.ready:
         return RefreshOutcome("stopped_unpaired", plan, report)
+    if refuse_renumbering and plan.renumbered:
+        return RefreshOutcome("stopped_renumbering", plan, report)
     if mode == "plan":
         return RefreshOutcome("planned", plan, report)
 
@@ -798,6 +806,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="restore point: written before an apply (a new file), read by a restore",
     )
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="the refresh ingest runs first (ADR-113): stop, exit 3, if any id would move",
+    )
     args = parser.parse_args(argv)
 
     if args.mode in ("apply", "restore") and args.snapshot is None:
@@ -880,6 +893,7 @@ def main(argv: list[str] | None = None) -> int:
             recorded=load_recorded_pairs(args.recorded),
             drain=drain,
             snapshot=save_point if args.mode == "apply" else None,
+            refuse_renumbering=args.auto,
         )
     except RefreshError as e:
         print(f"REFRESH STOPPED: {e}", file=sys.stderr)
@@ -902,7 +916,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(text + "\n")
-    return 2 if out.status == "stopped_unpaired" else 0
+    return {"stopped_unpaired": 2, "stopped_renumbering": 3}.get(out.status, 0)
 
 
 if __name__ == "__main__":

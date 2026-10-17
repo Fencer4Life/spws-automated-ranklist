@@ -102,10 +102,11 @@ function handleCommand(props, command, arg) {
 
     case 'promote':
       // ADR-108 §6: an exact event code; promote.yml answers a prefix with the matching codes.
+      // ADR-113: every organizer's event (SPWS, PZSz, EVF, FIE) is promoted this way.
       triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'promote.yml', { event_code: arg });
       return '<b>Promotion Triggered</b>\n'
         + '<pre>' + arg + '</pre>\n'
-        + '<i>The verified CERT run will be replayed on PROD.\nWatch for the result notification.</i>';
+        + '<i>The verified CERT run (SPWS, PZSz, EVF or FIE) will be replayed on PROD.\nWatch for the result notification.</i>';
 
     // --- Review ---
     case 'results':
@@ -185,6 +186,7 @@ function handleCommand(props, command, arg) {
       // staging report (full + diff) comes back to this chat when the run finishes.
       // The bot never sends a URL: a blank url_event input makes the workflow read the
       // stored one. ADR-108: PROD is refused; promote <exact code> replays the CERT run.
+      // ADR-113: every organizer's event; the workflow refreshes CERT from PROD first.
       var iParts = arg ? arg.split(/\s+/) : [];
       var iUsage = '<b>Usage</b>\n<pre>ingest &lt;EVENT-CODE&gt;</pre>\n'
                  + '<i>Use the full event code, e.g. PPW5-2025-2026</i>';
@@ -197,7 +199,7 @@ function handleCommand(props, command, arg) {
       var iYm = iEvent.match(/-(\d{4})-(\d{4})$/);             // season-end year = 2nd group
       if (!iYm) return iUsage;
       if (iTarget === 'prod') {
-        return '<b>Not on PROD</b>\n<i>A domestic event reaches PROD only through promote, which replays the verified CERT run. '
+        return '<b>Not on PROD</b>\n<i>An event reaches PROD only through promote, which replays the verified CERT run. '
              + 'Ingest on CERT, then send</i> <pre>promote ' + iEvent + '</pre>';
       }
       if (iTarget !== 'cert') {
@@ -210,7 +212,7 @@ function handleCommand(props, command, arg) {
       return '<b>Event Re-ingest Triggered</b>\n'
         + '<pre>' + iEvent + '</pre>\n'
         + 'Target: <b>' + iTarget + '</b>\n'
-        + '<i>Re-ingesting from the event\'s own URL.\n'
+        + '<i>Refreshing CERT from PROD, then re-ingesting from the event\'s own URL (SPWS, PZSz, EVF or FIE).\n'
         + 'Staging report (full + diff) will arrive here when done (~1 min).</i>';
 
     case 't-scrape':
@@ -232,7 +234,7 @@ function handleCommand(props, command, arg) {
 
     case 'evf-results-import':
       triggerGitHubWorkflow(props.getProperty('GITHUB_PAT'), props.getProperty('GITHUB_REPO'), 'evf-sync.yml', { mode: 'results', event_code: arg });
-      return '<b>EVF Results Import (CERT)</b>\n<pre>' + arg + '</pre>\n<i>Fetching results from EVF API. Watch for notification.</i>';
+      return '<b>EVF Results Check (CERT)</b>\n<pre>' + arg + '</pre>\n<i>Comparing the EVF results with CERT; nothing is written. Results come through</i> <pre>ingest ' + arg + '</pre>';
 
     case 'evf-status':
       var evfEvents = callRpc('fn_season_overview', {});
@@ -309,7 +311,7 @@ function handleCommand(props, command, arg) {
         'Delete the event results and tournaments on CERT, back to PLANNED (active season)',
         '',
         '<pre>promote &lt;exact code&gt;</pre>',
-        'Replay the verified CERT run on PROD; a prefix gets the matching codes · <code>promote PPW1-2026-2027</code>',
+        'Replay the verified CERT run on PROD, for an SPWS, PZSz, EVF or FIE event; a prefix gets the matching codes · <code>promote PPW1-2026-2027</code>',
         '',
         '<b><u>Review</u></b>',
         '',
@@ -331,10 +333,10 @@ function handleCommand(props, command, arg) {
         '<b><u>Ingestion</u></b>',
         '',
         '<pre>ingest &lt;EVENT-CODE&gt;</pre>',
-        'Re-ingest one event on CERT from the event\'s own URL (set in Admin) as a recorded run; the report comes here. Full code, e.g. PPW1-2026-2027. PROD gets it through promote',
+        'Refresh CERT from PROD, then re-ingest one SPWS, PZSz, EVF or FIE event on CERT from the event\'s own URLs (set in Admin) as a recorded run; the report comes here. Full code, e.g. MSW-2026-2027. PROD gets it through promote',
         '',
         '<pre>t-scrape &lt;tournament_code&gt;</pre>',
-        'Scrape one international tournament into CERT; a domestic event goes through ingest',
+        'Scrape one tournament into CERT (never PROD); a whole event goes through ingest',
         '',
         '<pre>populate-urls &lt;event&gt;</pre>',
         'Find the tournament result URLs of an event on CERT',
@@ -348,7 +350,7 @@ function handleCommand(props, command, arg) {
         'Scrape the EVF calendar into CERT, then promote the calendar to PROD (also runs daily)',
         '',
         '<pre>evf-results-import &lt;event&gt;</pre>',
-        'Import one event results from the EVF API into CERT',
+        'Compare one event\'s EVF results with CERT; nothing is written, results come through ingest',
         '',
         '<pre>evf-status</pre>',
         'Past PEW/MEW/MSW events with no results, on CERT',

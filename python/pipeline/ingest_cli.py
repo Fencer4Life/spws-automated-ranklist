@@ -444,6 +444,19 @@ def _fire_staging_report(
     ctx = Context()
     ctx.data["_bracket_reports"] = [c.report for c in contexts]
     ctx.data["event"] = event
+    # ADR-113: an EVF or FIE event's report shows each bracket's source N,
+    # what was stored and its flags, as the Phase 5 summary did.
+    from python.pipeline.international_report import section_lines
+    from python.pipeline.plugins import bridge
+
+    pairs = []
+    for c in contexts:
+        pctx = bridge.get_pctx(c)
+        if pctx is not None:
+            pairs.append((getattr(pctx, "parsed", None), pctx))
+    international = section_lines(event.get("txt_code") or "", pairs)
+    if international:
+        ctx.data["_international_section"] = international
     if schedule_skips:
         ctx.data["_schedule_skips"] = schedule_skips
     if source_decisions:
@@ -622,20 +635,12 @@ def ingest_event_from_url(
     event = db.find_event_by_code(event_code)
     if event is None:
         raise ValueError(f"Event {event_code!r} not found in tbl_event.")
-    # ADR-105 §5.6 (D2 = A): this path ingests every event as SPWS domestic
-    # (INGEST_DOMESTIC, organizer_hint="SPWS"), which would recount and renumber
-    # an international bracket. Refuse before anything is written or fetched.
+    # ADR-113: an EVF or FIE event takes its own driver below (every result URL,
+    # or EVF's results when it has none), so it needs no url_event.
     from python.pipeline.stages import _is_international_intake
 
-    if _is_international_intake(event):
-        raise ValueError(
-            f"Event {event_code!r} is international (PEW/MEW/MSW/PSW). This path ingests "
-            "domestic events only; stage it with the Phase 5 runner "
-            "(python -m python.tools.phase5_runner, or phase5-event-runner.yml), which keeps "
-            "the whole source bracket as N and each fencer's own place (ADR-105)."
-        )
     url_event = url_event_override or event.get("url_event") or event.get("url_results")
-    if not url_event:
+    if not url_event and not _is_international_intake(event):
         raise ValueError(f"Event {event_code!r} has no url_event populated.")
 
     # ADR-108 §4: the run record opens before anything is written, so its input
@@ -649,7 +654,7 @@ def ingest_event_from_url(
             event_code=event_code,
             environment=record_run,
             season_end_year=season_end_year,
-            url_event=url_event,
+            url_event=url_event or "",
         )
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
@@ -702,6 +707,7 @@ def _ingest_event_rounds(
     run,
     post_run=True,
     pzsz_start_lists=None,
+    sources=None,
 ) -> list:
     """`ingest_event_from_url` from its first write on. `run` is the open run
     record (ADR-108 §4), a ListingLog, or None; it receives the schedule and
@@ -710,9 +716,26 @@ def _ingest_event_rounds(
 
     Ingest (CERT) and promote's plan (PROD) both come through here, so a PZSz
     event takes its own path on both: the same ingestion (ADR-111 §6). Plan
-    mode passes the CERT run's stored start lists (ADR-112 §4)."""
-    from python.pipeline.stages import _organizer_for_event
+    mode passes the CERT run's stored start lists (ADR-112 §4). An EVF or FIE
+    event does too (ADR-113); plan mode passes the result slots and URLs the
+    CERT run read (`sources`)."""
+    from python.pipeline.stages import _is_international_intake, _organizer_for_event
 
+    if _is_international_intake(event):
+        return _ingest_international_event_rounds(
+            event,
+            event_code,
+            season_end_year,
+            url_event_override,
+            db=db,
+            notifier=notifier,
+            replace=replace,
+            send_telegram=send_telegram,
+            md_target=md_target,
+            run=run,
+            post_run=post_run,
+            sources=sources,
+        )
     if _organizer_for_event(event) == "PZSz":
         return _ingest_pzsz_event_rounds(
             event,
@@ -850,6 +873,148 @@ def _ingest_event_rounds(
                 run.add_round(r, d, ctx)
 
     # 4) persist the discovered rounds + status for the event accordion (N13.4)
+    sources = _ingest_source_records(decisions, skipped)
+    if hasattr(db, "set_event_ingest_sources"):
+        try:
+            db.set_event_ingest_sources(event["id_event"], sources)
+        except Exception as e:  # never fail an ingest on the display-data write
+            print(f"  (ingest-sources persist skipped: {e})")
+
+    if not post_run:
+        return contexts
+    post = _fire_staging_report(
+        event,
+        contexts,
+        db,
+        schedule_skips=skipped,
+        source_decisions=sources,
+        notifier=notifier,
+        md_target=md_target,
+    )  # ADR-075
+    if send_telegram:
+        _send_staging_via_telegram(notifier, event_code, post, n_tournaments=len(contexts))
+    _after_event_run(event, db, notifier)
+    return contexts
+
+
+NO_FENCER_OF_OURS = "no fencer of ours"
+
+
+def _no_fencer_of_ours(ctx) -> bool:
+    """An international bracket whose commit was skipped because no row
+    resolved to one of our fencers: ValidateCounts counted 0 participants. A
+    PENDING row still counts, and Commit refuses it (ADR-106 §1)."""
+    from python.pipeline.core.contract import FaultKind
+
+    committed = ctx.get("committed") or {}
+    return bool(committed.get("skipped")) and any(
+        f.kind == FaultKind.BELOW_MIN and str(f.detail).startswith("0<") for f in ctx.faults
+    )
+
+
+def _ingest_international_event_rounds(
+    event,
+    event_code,
+    season_end_year,
+    url_event_override,
+    *,
+    db,
+    notifier,
+    replace,
+    send_telegram,
+    md_target,
+    run,
+    post_run=True,
+    sources=None,
+) -> list:
+    """An EVF or FIE event (PEW, MEW, MSW, PSW, the IMEW and IMSW codes),
+    ADR-113: every bracket of every result URL the event holds, or of EVF's
+    results when it holds none (`international_sources`), each through
+    `Flow.INGEST_INTERNATIONAL`. Every bracket is read and checked before
+    anything is written; one bracket is one tournament with the source N and
+    each fencer's source place (ADR-105), and the rows are decided by
+    identity (ADR-106). Promote's plan passes the slots and URLs the CERT run
+    read (`sources`), so PROD reads exactly them; the run records them."""
+    from dataclasses import replace as _replace
+    from datetime import date as _date
+
+    from python.pipeline import international_sources
+    from python.pipeline.db_connector import derive_tourn_type_from_event_code
+    from python.pipeline.engine.flows import Flow
+    from python.pipeline.international_admission import is_fie_type
+    from python.pipeline.overrides import load_for_event
+
+    if sources is None:
+        sources = international_sources.event_sources(event, url_event_override)
+    recs, kept, skipped = international_sources.read_brackets(event, [s["url"] for s in sources])
+    # A finished FTL bracket whose name is not understood is recorded as not
+    # read, as the domestic driver does, so the event stays IN_PROGRESS.
+    unparseable = [s for s in skipped if s.get("reason") == international_sources.UNPARSEABLE]
+    skipped = [s for s in skipped if s.get("reason") != international_sources.UNPARSEABLE]
+    print(f"discovered {len(recs)} bracket(s), {len(skipped)} skipped")
+    for s in [*skipped, *unparseable]:
+        print(f"  skip {s['name']!r}: {s['reason']}")
+    if run is not None:
+        run.add_sources(sources)
+        run.add_schedule(kept, skipped)
+        for u in unparseable:
+            run.add_unparseable(u["name"], u["uuid"])
+
+    if url_event_override:
+        if hasattr(db, "set_event_url_event"):
+            db.set_event_url_event(event["id_event"], url_event_override)
+        event["url_event"] = url_event_override
+    if replace:
+        nr, nt = _wipe_event_live(db, event["id_event"])
+        print(f"replace: deleted {nr} results + {nt} tournaments\n")
+
+    ttype = derive_tourn_type_from_event_code(event_code)
+    organizer = "FIE" if is_fie_type(ttype) else "EVF"
+    overrides = load_for_event(event_code)
+    dt = str(event.get("dt_start") or "")[:10]
+    event_date = _date.fromisoformat(dt) if dt else None
+    contexts = []
+    decisions = []
+    for r in recs:
+        category = r["cats"][0]
+        parsed = _replace(
+            r["_base"],
+            parsed_date=r["_base"].parsed_date or event_date,
+            season_end_year=season_end_year,
+            organizer_hint=organizer,
+        )
+        decision = {
+            "name": r["name"],
+            "url": r["url"],
+            "uuid": r["uuid"],
+            "weapon": r["weapon"],
+            "gender": r["gender"],
+            "cats": r["cats"],
+            "count": r["count"],
+            "status": "committed",
+            "reason": "",
+            "commit_cats": [category],
+        }
+        decisions.append(decision)
+        if run is not None:
+            run.begin(r)
+        ctx = _run_parsed_through_flow(
+            parsed,
+            event_code,
+            season_end_year,
+            overrides,
+            db,
+            label=f"{r['name']} [{r['weapon']}/{r['gender']} {category}, {organizer}]",
+            flow=Flow.INGEST_INTERNATIONAL,
+        )
+        contexts.append(ctx)
+        if _no_fencer_of_ours(ctx):
+            # ADR-105: only our fencers' rows are stored, so a bracket none of
+            # them fenced stores nothing. That is not a failed commit (gate).
+            decision.update(status="dropped", reason=NO_FENCER_OF_OURS, commit_cats=[])
+        if run is not None:
+            run.add_round(r, decision, ctx)
+
     sources = _ingest_source_records(decisions, skipped)
     if hasattr(db, "set_event_ingest_sources"):
         try:

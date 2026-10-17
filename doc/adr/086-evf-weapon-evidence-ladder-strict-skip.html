@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="25f70cf2fca271ab68ea63def1e5a4843b2da25306ba4486004dfd8d152607da">
+<meta name="adr-source-sha256" content="555b85d870b88f508a1313bf4bf1b52ca538974ce935bdfb90171bea255b4927">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 086</p><h1>EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">260 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read; amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> — §5's results pass writes no result)</dd></div><div><dt>Date</dt><dd class="">2026-08-28</dd></div><div><dt>Source</dt><dd class=""><code>086-evf-weapon-evidence-ladder-strict-skip.md</code></dd></div><div><dt>Length</dt><dd class="">262 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read; amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> — §5's results pass writes no result)
 <strong>Date:</strong> 2026-08-28
 <strong>Resolved:</strong> Both open items closed on sign-off, 2026-08-28.
 <strong>Amends:</strong> <a href="043-evf-event-allocator.html">ADR-043</a> §Amendment (2026-08-07) — &quot;missing/unsupported weapon sets … are hard errors&quot; and &quot;A later cancellation keeps its positive code&quot;; <a href="046-pew-weapon-suffix.html">ADR-046</a> §Amendment (2026-08-07) — &quot;If no authoritative weapon set can be established, the entire calendar write fails before mutation&quot; and &quot;An event cancelled later keeps its previously assigned positive code&quot;
@@ -111,6 +111,7 @@ Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
 <h3 id="5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</h3>
 <p>Calendar sync enters <em>future</em> events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.</p>
 <p>The two share no data dependency, so <code>sync_results</code> now runs even when <code>sync_calendar</code> fails (<a href="../../python/scrapers/evf_sync.py"><code>evf_sync.py:1235</code></a>). The Telegram alert and the <code>FAILED</code> scrape-ledger row are unchanged, and the process still exits non-zero so CI stays red. The coupling was incidental — a shared <code>main()</code> — never a decision.</p>
+<p><em>Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §8:</em> the results pass attaches no result. It compares EVF's results with CERT and, for an event with results to load, tells the operator to send <code>ingest &lt;code&gt;</code> and then <code>promote &lt;code&gt;</code>. It still runs when the calendar pass fails.</p>
 </section>
 <section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
 <ol>
@@ -231,5 +232,5 @@ real end dates. Pinned by <code>python/tests/test_evf_calendar.py</code> evf.76�
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="087-pzsz-senior-calendar-source.html">→ ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar</a></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>25f70cf2fca271ab68ea63def1e5a4843b2da25306ba4486004dfd8d152607da</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>555b85d870b88f508a1313bf4bf1b52ca538974ce935bdfb90171bea255b4927</code></footer>
 </div></body></html>

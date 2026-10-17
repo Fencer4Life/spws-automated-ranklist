@@ -2,7 +2,7 @@
 
 The last promote of an event usually runs on its final day, before the end date
 has passed, so the event stays IN_PROGRESS. Every morning `event-close.yml` (in
-`prod-write`) takes each domestic event of the active season that is still
+`prod-write`) takes each event of the active season, of every organizer (ADR-113), that is still
 IN_PROGRESS on CERT or PROD and whose end date has passed, re-reads the
 organiser's schedule, and completes the event on CERT and then on PROD when:
 
@@ -34,7 +34,9 @@ from python.pipeline.promotion import lifecycle
 from python.pipeline.promotion.run_record import schedule_sha256
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]+$")
-_DOMESTIC = r"^(PPW|MPW)[0-9]*-"
+# ADR-113: every organizer's events: SPWS (PPW, MPW), PZSz (PPS, MPS), EVF
+# (PEW, MEW, the IMEW code) and FIE (MSW, PSW, the IMSW code).
+ROUTE_CODES = r"^(PPW|MPW|PPS|MPS|PEW|MEW|IMEW|MSW|PSW|IMSW)[0-9A-Za-z]*-"
 Schedule = tuple[list[dict], list[dict]]
 
 
@@ -78,8 +80,11 @@ def check(
     prod: Env,
     read_schedule: Callable[[str], Schedule],
     today: dt.date,
+    read_sources: Callable[[list[str]], Schedule] | None = None,
 ) -> list[str]:
-    """Why the event cannot be closed today; empty when it can."""
+    """Why the event cannot be closed today; empty when it can. An
+    international run is checked against the result slots it read
+    (`read_sources`, ADR-113); every other run against its FTL schedule."""
     cert_event, prod_event = cert.event(code), prod.event(code)
     if prod_event is None or cert_event is None:
         return [f"the event is missing on {'PROD' if prod_event is None else 'CERT'}"]
@@ -93,7 +98,15 @@ def check(
     if run is None:
         return [*reasons, "CERT has no finished run of it: ingest CERT, then promote"]
 
-    kept, skipped = read_schedule(run["url_event"])
+    listings = run.get("listings") or {}
+    if listings.get("sources") is not None:
+        if read_sources is None:
+            from python.pipeline.international_sources import read_schedule as _read_sources
+
+            read_sources = _read_sources
+        kept, skipped = read_sources([s["url"] for s in listings["sources"]])
+    else:
+        kept, skipped = read_schedule(run["url_event"])
     kept, not_final = lifecycle.split_final(kept)
     skipped = [*skipped, *not_final]
     if not_final:
@@ -104,7 +117,6 @@ def check(
             f"a listing is dated {late}, after the end date {end.isoformat()}: "
             "correct the event's dates"
         )
-    listings = run.get("listings") or {}
     if schedule_sha256(kept, skipped) != (listings.get("schedule") or {}).get("sha256"):
         reasons.append(
             "the schedule changed since the CERT run (a listing was added, removed, renamed "
@@ -129,6 +141,7 @@ def close_events(
     notifier: Notifier | None,
     today: dt.date,
     write: bool = True,
+    read_sources: Callable[[list[str]], Schedule] | None = None,
 ) -> list[Outcome]:
     """Close every event that can be closed; report the others."""
     codes = sorted({*cert.events_to_close(today), *prod.events_to_close(today)})
@@ -136,7 +149,7 @@ def close_events(
     failures: list[str] = []
     for code in codes:
         try:
-            reasons = check(code, cert, prod, read_schedule, today)
+            reasons = check(code, cert, prod, read_schedule, today, read_sources)
         except Exception as e:  # one event's failure does not stop the others
             failures.append(f"{code}: {type(e).__name__}: {e}")
             continue
@@ -199,7 +212,7 @@ class SqlEnv:
             self.transport.fetch_json(
                 "SELECT coalesce(jsonb_agg(e.txt_code ORDER BY e.txt_code), '[]'::jsonb) AS j "
                 "FROM tbl_event e JOIN tbl_season s ON s.id_season = e.id_season "
-                f"WHERE s.bool_active AND e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{_DOMESTIC}' "
+                f"WHERE s.bool_active AND e.enum_status = 'IN_PROGRESS' AND e.txt_code ~ '{ROUTE_CODES}' "
                 f"AND e.dt_end < DATE '{today.isoformat()}'"
             )
             or []

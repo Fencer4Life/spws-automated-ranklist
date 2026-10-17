@@ -238,6 +238,12 @@ class RecordingConnector:
         self.ops.append({"op": "set_event_url_event", "id_event": id_event, "url_event": url_event})
         self._events.setdefault(id_event, {})["url_event"] = url_event
 
+    def set_event_source_url(self, id_event: int, slot: str, url: str) -> None:
+        self.ops.append(
+            {"op": "set_event_source_url", "id_event": id_event, "slot": slot, "url_event": url}
+        )
+        self._events.setdefault(id_event, {})[slot] = url
+
     def set_event_ingest_sources(self, id_event: int, sources: list) -> None:
         self.ops.append(
             {
@@ -248,11 +254,11 @@ class RecordingConnector:
         )
         self._events.setdefault(id_event, {})["json_ingest_sources"] = copy.deepcopy(sources)
 
-    # -- writes a domestic ingestion never makes ------------------------------
+    # -- writes an ingestion never makes --------------------------------------
 
     def _refuse(self, what: str) -> None:
         raise PlanRefused(
-            "precondition", f"{what} is not part of a domestic ingestion; plan mode refuses it."
+            "precondition", f"{what} is not part of an ingestion; plan mode refuses it."
         )
 
     def merge_fencers(self, survivor_id: int, duplicate_id: int) -> None:
@@ -304,12 +310,15 @@ def plan_event(
     created: Iterable[Mapping[str, Any]],
     pzsz_event: int | None = None,
     pzsz_start_lists: Mapping[tuple[str, str], Any] | None = None,
+    sources: Sequence[Mapping[str, Any]] | None = None,
 ) -> Plan:
     """Plan the CERT run of `event_code` on PROD. `prod` is read only; `url_event`
     is the URL the CERT run ingested; `created` its created fencers; `pzsz_event`
     the PZSz event whose start lists a PZSz run read (ADR-111 §6), and
     `pzsz_start_lists` the stored versions it used, read from CERT by their
-    hashes (ADR-112 §4). The plan never fetches pzszerm.pl."""
+    hashes (ADR-112 §4). The plan never fetches pzszerm.pl. `sources` are the
+    result slots and URLs an international run read (ADR-113): the plan reads
+    exactly them, and a blank PROD slot takes the run's URL."""
     from python.pipeline import ingest_cli
     from python.pipeline.promotion import lifecycle
     from python.pipeline.promotion.run_record import ListingLog
@@ -319,11 +328,9 @@ def plan_event(
     event = recorder.find_event_by_code(event_code)
     if event is None:
         raise PlanRefused("precondition", f"Event {event_code} does not exist on PROD.")
-    if _is_international_intake(event):
-        raise PlanRefused(
-            "precondition",
-            f"Event {event_code} is international; promote replays domestic events only.",
-        )
+    international = _is_international_intake(event)
+    if international and sources is None:
+        sources = [{"slot": "url_event", "url": url_event}] if url_event else []
     # ADR-086's fill-blank tier: PROD takes the CERT run's URL when it has none.
     current = (event.get("url_event") or "").strip()
     if current and current != url_event:
@@ -359,13 +366,15 @@ def plan_event(
                 f"The PZSz start lists the CERT run of {event_code} used were not given; "
                 "promote reads them from CERT by their hashes and never fetches pzszerm.pl.",
             )
+    if international:
+        _fill_blank_slots(recorder, event, event_code, sources or [])
     log = ListingLog()
     contexts = ingest_cli._ingest_event_rounds(
         event,
         event_code,
         season_end_year,
         url_event,
-        None if current else url_event,
+        None if current or not url_event else url_event,
         db=recorder,
         notifier=None,
         replace=False,
@@ -374,6 +383,7 @@ def plan_event(
         run=log,
         post_run=False,
         pzsz_start_lists=pzsz_start_lists,
+        sources=sources if international else None,
     )
     listings = log.listings()
     end = event.get("dt_end") or event.get("dt_start")
@@ -387,6 +397,34 @@ def plan_event(
     return Plan(
         event_code, url_event, recorder.ops, recorder.created, listings, status, list(contexts)
     )
+
+
+def _fill_blank_slots(
+    recorder: RecordingConnector,
+    event: Mapping[str, Any],
+    event_code: str,
+    sources: Sequence[Mapping[str, Any]],
+) -> None:
+    """ADR-086's fill-blank tier for result slots 2-5 of an international event
+    (ADR-113): a blank PROD slot takes the CERT run's URL, an equal one stays,
+    and a different one refuses. `url_event` is handled with every event's."""
+    from python.pipeline.international_sources import SLOTS
+
+    for s in sources:
+        slot, url = s["slot"], s["url"]
+        if slot in ("url_event", "evf"):
+            continue
+        if slot not in SLOTS:
+            raise PlanRefused("precondition", f"{slot!r} is not a result slot.")
+        current = (event.get(slot) or "").strip()
+        if not current:
+            recorder.set_event_source_url(event["id_event"], slot, url)
+        elif current != url:
+            raise PlanRefused(
+                "precondition",
+                f"PROD's {slot} for {event_code} is {current}; the CERT run read {url}. "
+                "Correct the URL on one of them and re-run the CERT ingestion.",
+            )
 
 
 def apply_plan(
@@ -438,6 +476,8 @@ def apply_plan(
             )
         elif kind == "set_event_url_event":
             db.set_event_url_event(op["id_event"], op["url_event"])
+        elif kind == "set_event_source_url":
+            db.set_event_source_url(op["id_event"], op["slot"], op["url_event"])
         elif kind == "set_event_ingest_sources":
             db.set_event_ingest_sources(op["id_event"], op["sources"])
         else:
