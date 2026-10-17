@@ -1,6 +1,6 @@
 # ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer
 
-**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a), and released to CERT and PROD the same day (main `2bc34500`). The first CERT ingest, of `PPS1s-2026-2027`, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): the start list is a stored input. The CERT ingest reads the newest stored version on a gated day, and promote reads the lists CERT used from CERT by their hashes and never contacts pzszerm.pl (§6). D1's "send it again later" applies only while no list of the event has ever been stored.
+**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a), and released to CERT and PROD the same day (main `2bc34500`). The first CERT ingest, of `PPS1s-2026-2027`, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): the start list is a stored input. The CERT ingest reads the newest stored version on a gated day, and promote reads the lists CERT used from CERT by their hashes and never contacts pzszerm.pl (§6). D1's "send it again later" applies only while no list of the event has ever been stored. Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md): EVF and FIE are on the route (§6), and the daily close covers PZSz, EVF and FIE events.
 **Date:** 2026-10-06
 **Amends:** [ADR-100](100-pzsz-senior-result-ingestion.md) (the matching rule for a PZSz bracket, the review queue no longer written, the source of the birth year), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays a PZSz run too; one route to PROD for every organizer)
 **Relates to:** [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (the EVF admission that is copied, left unchanged), [ADR-105](105-international-results-keep-source-bracket.md) (the whole field's N and the original place), [ADR-110](110-ranking-entry-by-roster.md) (the fencer table is the ranking entry), [ADR-087](087-pzsz-senior-calendar-source.md) (the PZSz calendar and `id_pzsz_event`), [ADR-103](103-spws-place-medal-engine-per-type.md) and [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (PPS and MPS stay on EVF classic, unchanged), [ADR-025](025-event-centric-ingestion-telegram.md) (the `ingest` and `promote` commands, unchanged)
@@ -69,6 +69,8 @@ When no starter matches, nothing is written, no empty tournament is created, and
 
 *Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md):* the replay no longer reads pzszerm.pl. It reads the lists the CERT run used from CERT's store, by the run record's hashes, and refuses when one is missing or does not match its hash.
 
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* EVF is on the route, and FIE with it, through `ingest_cli._ingest_international_event_rounds`, which `ingest` and promote's plan both call.
+
 ## Alternatives considered
 
 1. **Run PZSz through the PPW flow with a senior category.** Rejected: PPS and MPS are not PPW. The PPW flow decodes age categories from bracket names and creates fencers, and it refused Poznań on a junior namesake.
@@ -121,3 +123,5 @@ Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user d
 - EVF on ingest and promote (the next plan);
 - an automatic daily close for PZSz and EVF events;
 - team results.
+
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* the first two are done. Team results remain out of scope.

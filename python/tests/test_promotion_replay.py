@@ -207,6 +207,7 @@ class _PlanFn:
         created,
         pzsz_event=None,
         pzsz_start_lists=None,
+        sources=None,
     ):
         self.calls.append(
             {
@@ -216,6 +217,7 @@ class _PlanFn:
                 "created": created,
                 "pzsz_event": pzsz_event,
                 "pzsz_start_lists": pzsz_start_lists,
+                "sources": sources,
             }
         )
         if isinstance(self.plan, Exception):
@@ -379,8 +381,20 @@ class TestPlanCompare:
                 "created": _run()["jsonb_master_data"]["created"],
                 "pzsz_event": None,
                 "pzsz_start_lists": None,
+                "sources": None,
             }
         ]
+
+    def test_the_plan_reads_the_sources_an_international_run_read(self):
+        """ROUTE.PLAN.06 (ADR-113) — an international run records its result
+        slots and URLs; the plan reads exactly them on PROD."""
+        sources = [
+            {"slot": "url_event", "url": "https://a.example/s"},
+            {"slot": "url_event_2", "url": "https://b.example/e"},
+        ]
+        listings = {**_listings(A="h1", B="h2"), "sources": sources}
+        _, parts = _replay(cert=FakeSide("cert", run=_run(jsonb_listings=listings)))
+        assert parts["plan_fn"].calls[0]["sources"] == sources
 
     def test_the_plan_gets_the_pzsz_event_the_cert_run_read(self):
         """PZSZ.ROUTE.02 — a PZSz run records the PZSz event whose start lists

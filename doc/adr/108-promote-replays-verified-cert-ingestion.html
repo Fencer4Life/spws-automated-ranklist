@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="108-promote-replays-verified-cert-ingestion.md">
-<meta name="adr-source-sha256" content="9f0404781149e2adaab63d4d8a26ef8e3009e0d37d6935ba30d6acab3e25058e">
+<meta name="adr-source-sha256" content="02957ae474cfa899c17c89c80ffd1df58a71981c633149de2632b8351b4f5504">
 <title>ADR-108 · Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD&#x27;s Master Data With Identical Fencer Ids</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 108</p><h1>Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>: one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs. Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: promote replays one more recorded input, the PZSz start lists, read from CERT by the run record's hashes.</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">338 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>: one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs. Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: promote replays one more recorded input, the PZSz start lists, read from CERT by the run record's hashes.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>: one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs. Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: promote replays one more recorded input, the PZSz start lists, read from CERT by the run record's hashes. Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>: EVF and FIE events are on the route too, and <code>ingest</code> runs the refresh from PROD itself (§2, §9).</dd></div><div><dt>Date</dt><dd class="">2026-10-03</dd></div><div><dt>Source</dt><dd class=""><code>108-promote-replays-verified-cert-ingestion.md</code></dd></div><div><dt>Length</dt><dd class="">344 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>: one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs. Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: promote replays one more recorded input, the PZSz start lists, read from CERT by the run record's hashes. Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>: EVF and FIE events are on the route too, and <code>ingest</code> runs the refresh from PROD itself (§2, §9).
 <strong>Date:</strong> 2026-10-03
 <strong>Supersedes:</strong> <a href="026-cert-prod-promotion.html">ADR-026</a> — the per-event mode (<code>promote.py --mode event</code>): the row copy, the per-tournament &quot;continue on failure&quot;, the forced <code>COMPLETED</code> and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
 <strong>Amends:</strong> <a href="025-event-centric-ingestion-telegram.html">ADR-025</a> (N15: <code>ingest … prod</code> is refused for a domestic event; <code>promote</code> and <code>complete</code> take an exact event code), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the seed carries PROD's fencer ids; CERT's master data is refreshed from PROD), <a href="042-carryover-engine-dispatcher.html">ADR-042</a> and <a href="018-rolling-score.html">ADR-018</a> (the FK engine stops a carry on results, per weapon and gender), <a href="072-cdc-recompute-debounce.html">ADR-072</a> (the CERT drain joins the new <code>cert-write</code> group), <a href="077-event-lifecycle-season-skeletons.html">ADR-077</a> (§1: who sets IN_PROGRESS and COMPLETED, and when; §5: results are replayed, not copied, and fencer ids are identical)
@@ -98,6 +98,7 @@
 </ul>
 <p>Any difference refuses. An <strong>input fingerprint</strong>, a hash of these inputs normalised by identity and never by id, is recorded for both environments.</p>
 <p>Every refresh first runs dry and lists every change. The first refresh, and any later refresh that renumbers a fencer, waits for the administrator's sign-off.</p>
+<p><em>Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §7:</em> <code>ingest-event.yml</code> runs the refresh before every CERT ingest, with <code>--auto</code>. It applies a refresh that renumbers nobody and leaves nobody unpaired; any other refresh stops before its first write and Telegram reports it, so a renumbering still waits for the sign-off.</p>
 <h3 id="3-fencer-ids-are-identical-on-local-cert-and-prod">3 · Fencer ids are identical on LOCAL, CERT and PROD</h3>
 <p>The administrator's rule: <strong>the fencer id is the same everywhere, and nothing is guessed.</strong></p>
 <p><strong>Matching</strong>, per folded surname and first name:</p>
@@ -351,6 +352,7 @@
 <li><strong><code>prod-write</code>:</strong> promote, the PROD drain, the daily close and the existing calendar and season promotions.</li>
 <li><strong><code>ingest-event.yml</code></strong> refuses <code>target: prod</code> for a domestic event. International events keep the Phase 5 runner on each environment (ADR-105), and promote refuses them by name.</li>
 </ul>
+<p><em>Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>:</em> <code>ingest-event.yml</code> refuses <code>target: prod</code> for every event, and nothing refuses an international event: ingest and promote carry SPWS, PZSz, EVF and FIE events. The Phase 5 runner is kept for LOCAL work and past-season repairs. The refresh joins the ingest job, inside <code>cert-write</code>.</p>
 </section>
 <section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
 <ol>
@@ -423,8 +425,9 @@
 <li><strong>PZSz:</strong> from ADR-111 on. <code>plan_event</code> picks the flow from the event's organizer, and the run record also keeps the hash of the PZSz start lists it read.</li>
 <li><strong>EVF:</strong> moves onto this route in the plan after ADR-111. Today its results reach each environment through runs of their own.</li>
 </ul>
+<p><em>Amended 2026-10-17 by <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>:</em> EVF is on the route, and FIE with it. The EVF sync writes no result; it tells the operator to send <code>ingest</code> and then <code>promote</code>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="106-international-intake-by-identity-nationality-per-season.html">← ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="109-environments-split-by-host.html">→ ADR-109: The Environments Are Split by Host — github.io Is CERT, weteraniszermierki.pl Is PROD</a></nav>
-<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>9f0404781149e2adaab63d4d8a26ef8e3009e0d37d6935ba30d6acab3e25058e</code></footer>
+<footer class="foot">Generated from <code>108-promote-replays-verified-cert-ingestion.md</code> · source SHA-256 <code>02957ae474cfa899c17c89c80ffd1df58a71981c633149de2632b8351b4f5504</code></footer>
 </div></body></html>

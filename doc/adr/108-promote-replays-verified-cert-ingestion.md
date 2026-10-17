@@ -1,6 +1,6 @@
 # ADR-108: Promote Replays a Verified CERT Ingestion on PROD; CERT Starts From PROD's Master Data With Identical Fencer Ids
 
-**Status:** Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md): one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): promote replays one more recorded input, the PZSz start lists, read from CERT by the run record's hashes.
+**Status:** Accepted (2026-10-03; signed off with the plan, and decision P6 taken the same day). Amended 2026-10-06 by [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md): one route to PROD for every organizer — ingest for CERT, promote for PROD — and promote replays PZSz runs. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): promote replays one more recorded input, the PZSz start lists, read from CERT by the run record's hashes. Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md): EVF and FIE events are on the route too, and `ingest` runs the refresh from PROD itself (§2, §9).
 **Date:** 2026-10-03
 **Supersedes:** [ADR-026](026-cert-prod-promotion.md) — the per-event mode (`promote.py --mode event`): the row copy, the per-tournament "continue on failure", the forced `COMPLETED` and the seed export inside the promote job. The calendar mode (amendment 2026-04-20) is untouched.
 **Amends:** [ADR-025](025-event-centric-ingestion-telegram.md) (N15: `ingest … prod` is refused for a domestic event; `promote` and `complete` take an exact event code), [ADR-036](036-prod-export-local-mirror.md) (the seed carries PROD's fencer ids; CERT's master data is refreshed from PROD), [ADR-042](042-carryover-engine-dispatcher.md) and [ADR-018](018-rolling-score.md) (the FK engine stops a carry on results, per weapon and gender), [ADR-072](072-cdc-recompute-debounce.md) (the CERT drain joins the new `cert-write` group), [ADR-077](077-event-lifecycle-season-skeletons.md) (§1: who sets IN_PROGRESS and COMPLETED, and when; §5: results are replayed, not copied, and fencer ids are identical)
@@ -64,6 +64,8 @@ The refresh also compares, without copying:
 Any difference refuses. An **input fingerprint**, a hash of these inputs normalised by identity and never by id, is recorded for both environments.
 
 Every refresh first runs dry and lists every change. The first refresh, and any later refresh that renumbers a fencer, waits for the administrator's sign-off.
+
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md) §7:* `ingest-event.yml` runs the refresh before every CERT ingest, with `--auto`. It applies a refresh that renumbers nobody and leaves nobody unpaired; any other refresh stops before its first write and Telegram reports it, so a renumbering still waits for the sign-off.
 
 ### 3 · Fencer ids are identical on LOCAL, CERT and PROD
 
@@ -267,6 +269,8 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 - **`prod-write`:** promote, the PROD drain, the daily close and the existing calendar and season promotions.
 - **`ingest-event.yml`** refuses `target: prod` for a domestic event. International events keep the Phase 5 runner on each environment (ADR-105), and promote refuses them by name.
 
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* `ingest-event.yml` refuses `target: prod` for every event, and nothing refuses an international event: ingest and promote carry SPWS, PZSz, EVF and FIE events. The Phase 5 runner is kept for LOCAL work and past-season repairs. The refresh joins the ingest job, inside `cert-write`.
+
 ## Alternatives considered
 
 1. **Keep copying rows and translate ids by name at promote time.** Rejected. CERT's identity decisions would still be copied without being re-derived on PROD, master-data drift between the environments would land silently, and nothing would prove that PROD's inputs equal CERT's.
@@ -336,3 +340,5 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 - **PPW:** unchanged.
 - **PZSz:** from ADR-111 on. `plan_event` picks the flow from the event's organizer, and the run record also keeps the hash of the PZSz start lists it read.
 - **EVF:** moves onto this route in the plan after ADR-111. Today its results reach each environment through runs of their own.
+
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* EVF is on the route, and FIE with it. The EVF sync writes no result; it tells the operator to send `ingest` and then `promote`.

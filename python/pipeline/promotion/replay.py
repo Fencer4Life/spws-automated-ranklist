@@ -348,6 +348,9 @@ def replay(
     master = run.get("jsonb_master_data") or {}
     listings = run.get("jsonb_listings") or {}
     pzsz_lists = stored_start_lists(cert, code, listings)
+    # ADR-113: an international run's result slots and URLs, which the plan
+    # reads exactly; a domestic run records none.
+    extra = {"sources": listings["sources"]} if listings.get("sources") is not None else {}
     try:
         plan = plan_call(
             code,
@@ -357,6 +360,7 @@ def replay(
             created=master.get("created") or [],
             pzsz_event=listings.get("pzsz_event"),
             pzsz_start_lists=pzsz_lists,
+            **extra,
         )
     except PlanRefused as e:
         raise PromoteRefused(f"[{e.kind}] {e}") from e
