@@ -1,0 +1,297 @@
+<meta charset="utf-8">
+<title>Ingest and promote for every organizer</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Plan · ingestion route · 17 October 2026</p>
+  <h1>Ingest and promote for every organizer</h1>
+  <p class="dek">In Telegram, <code>ingest &lt;code&gt;</code> writes CERT, and <code>promote &lt;code&gt;</code> runs the same ingestion on PROD. Under this plan both work for <b>SPWS, PZSz, EVF and FIE</b>. Today they refuse EVF and FIE.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Approved 17 Oct · built and rehearsed on LOCAL (ADR-113) · release needs your OK (R1)</span>
+    <span class="pill">first event through it: MSW-2026-2027 (Tbilisi)</span>
+    <span class="pill"><span class="dot"></span>Q1–Q5: A (you, in chat, 17 Oct)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="asked">
+    <p class="kicker">What you asked · locked</p>
+    <h2>One route for every event</h2>
+    <ol>
+      <li>Telegram <code>ingest &lt;code&gt;</code> ingests the event on CERT.</li>
+      <li>Telegram <code>promote &lt;code&gt;</code> does the same on PROD.</li>
+      <li>This holds for every organizer: SPWS, FIE, EVF and PZSz.</li>
+    </ol>
+    <div class="note danger">
+      <p class="lede">Why it does not work: my miss</p>
+      <p>You decided this on 6 October (ADR-111 §6, Q1, recorded in ADR-108’s amendment of that day). PZSz was moved onto the route. EVF was written down as “moves onto it in the next plan”, and I never wrote that plan. FIE was never named at all. On 17 October I built the Tbilisi rules on the Phase 5 runner instead of on this route.</p>
+    </div>
+  </section>
+
+  <section id="today">
+    <p class="kicker">Today, from the code</p>
+    <h2>What each organizer gets</h2>
+    <table>
+      <thead><tr><th>Organizer (types)</th><th><code>ingest</code> → CERT</th><th><code>promote</code> → PROD</th><th>Other writers</th></tr></thead>
+      <tbody>
+        <tr><td>SPWS (PPW, MPW)</td><td>✓</td><td>✓</td><td>none</td></tr>
+        <tr><td>PZSz (PPS, MPS)</td><td>✓ (ADR-111)</td><td>✓ (ADR-111, 112)</td><td>The daily close skips PZSz (<code>close.py:37</code> matches only <code>PPW|MPW</code>)</td></tr>
+        <tr><td>EVF (PEW, MEW, the IMEW code)</td><td>✗ refused, <code>ingest_cli.py:630</code></td><td>✗ refused, <code>promotion/plan.py:322</code></td><td>The daily EVF sync writes results into CERT, typed PEW, with no run record (<code>evf-sync.yml</code>, <code>evf_sync.py:1172</code>)</td></tr>
+        <tr><td>FIE (MSW, PSW, the IMSW code)</td><td>✗ refused, <code>ingest_cli.py:630</code></td><td>✗ refused, <code>promotion/plan.py:322</code></td><td>none</td></tr>
+        <tr><td>Any (per tournament)</td><td colspan="2"><code>scrape-tournament.yml</code> accepts <code>target=prod</code> and writes PROD directly</td><td>a way round promote</td></tr>
+      </tbody>
+    </table>
+    <p>Most of the international logic already exists in the pipeline that ingest and promote run:</p>
+    <ul>
+      <li><code>ResolveFencers</code> decides an international row by ADR-106 identity, with the FIE amendment (<code>plugins/resolve_fencers.py:95</code>).</li>
+      <li><code>Commit</code> keeps the whole source bracket as N and the source place (<code>SOURCE_FIELD_PLACE</code>, <code>plugins/ingest.py:410</code>) and refuses a PENDING row.</li>
+      <li>Promote’s recording connector already passes <code>fetch_spws_starter_ids</code> through.</li>
+    </ul>
+    <p>What is missing is the event driver, which reads the brackets, and the flow rule. They were left for “design §12” (ADR-105 §5.6, <code>engine/flows.py:25</code>).</p>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">Decided</p>
+    <h2>Five decisions: all A, approved by you in chat on 17 October</h2>
+
+    <div class="note warn">
+      <p class="lede">Q1 · The daily EVF results sync</p>
+      <p>Today it writes EVF results into CERT outside any run record. Promote then has no CERT run to replay, and the next sync can overwrite what <code>ingest</code> wrote.</p>
+      <p><strong>A (recommended):</strong> the sync keeps the calendar and stops writing results. When EVF has results for an event of ours, it sends Telegram “results available: <code>ingest &lt;code&gt;</code>”.</p>
+      <p><strong>B:</strong> keep it writing CERT as today.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede">Q2 · Per-tournament scrape to PROD</p>
+      <p><strong>A (recommended):</strong> <code>scrape-tournament.yml</code> refuses <code>target=prod</code>, as <code>ingest … prod</code> already does, so PROD gets results only through promote.</p>
+      <p><strong>B:</strong> keep it.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede">Q3 · Where an EVF event’s results come from</p>
+      <p>ADR-105 §1.5: the organiser’s results first (FTL, Engarde, 4fence, Ophardt, d’Artagnan), then EVF’s own results only when nothing else exists.</p>
+      <p><strong>A (recommended):</strong> <code>ingest</code> reads every result URL of the event (<code>url_event</code> … <code>url_event_5</code>). When none is set, it reads the EVF results.</p>
+      <p><strong>B:</strong> refuse until a URL is set.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede">Q4 · CERT starts from PROD’s master data</p>
+      <p>Promote refuses when PROD’s inputs (roster, aliases, season settings) differ from what the CERT run started from (ADR-108 §5). Today the refresh from PROD is a manual runbook step, and Telegram <code>ingest</code> does not run it.</p>
+      <p><strong>A (recommended):</strong> <code>ingest</code> runs the refresh first. A refresh that renumbers nobody and leaves nobody unpaired is applied automatically. Anything else stops the ingest with the refresh report, as ADR-108 §2 requires.</p>
+      <p><strong>B:</strong> keep the refresh manual.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede">Q5 · The Phase 5 runner</p>
+      <p><strong>A (recommended):</strong> keep it for LOCAL work and for repairing a past-season event on your explicit request. New events of any organizer use <code>ingest</code> and <code>promote</code> only.</p>
+      <p><strong>B:</strong> remove it.</p>
+    </div>
+  </section>
+
+  <section id="design">
+    <p class="kicker">Design</p>
+    <h2>What gets built</h2>
+    <ol class="steps">
+      <li><span class="op-tag u">DRIVER</span> <code>_ingest_international_event_rounds</code> in <code>ingest_cli.py</code>, chosen in <code>_ingest_event_rounds</code> by <code>_is_international_intake</code>, in the place PZSz’s driver is chosen. Ingest on CERT and promote’s plan on PROD both call <code>_ingest_event_rounds</code>, so both run it, as ADR-111 §6 requires. It reads every source URL through <code>Fetcher.fetch_event_url_with_skips</code> (<code>review_cli.py:277</code>), which already reads FTL schedules, Engarde, 4fence, Ophardt and d’Artagnan, plus the EVF fallback under Q3. It skips team brackets and FTL listings that are not finished (<code>lifecycle.split_final</code>). It refuses a bracket without one V-category, and two sources for one bracket.</li>
+      <li><span class="op-tag u">FLOW</span> A new <code>Flow.INGEST_INTERNATIONAL</code> in <code>engine/flows.py</code> and <code>engine/rulebook.py</code>: ParseSource, ValidateIR, ResolveEvent, ResolveFencers, ValidateCounts, AssignFinalVcat and Commit. It drops the domestic split, combined-pool and joint-pool steps, which recount and renumber. organizer_hint is EVF or FIE.</li>
+      <li><span class="op-tag u">REFUSALS</span> Remove <code>ingest_cli.py:630</code> and <code>promotion/plan.py:322</code>. Extend the run record and promote’s source check to listings that are not on FTL: hash by source URL, record all five URL slots, and fill a blank slot on PROD from CERT (ADR-086’s fill-blank tier, today <code>url_event</code> only).</li>
+      <li><span class="op-tag u">LIFECYCLE</span> A listing from a source with no “Finished” flag counts as final once its results are published. The daily close (<code>event-close.yml</code>) covers every organizer of the active season, PZSz included.</li>
+      <li><span class="op-tag u">REPORT</span> Port Phase 5’s international section (<code>phase5_runner.py:1851</code>) into the staging report <code>ingest</code> sends: per bracket the source N, the stored rows, foreign rows, PENDING with candidates, and the FIE flag for more than 4 rows of one federation.</li>
+      <li><span class="op-tag u">WRITERS</span> Q1, Q2, Q4 and Q5 as decided. The Telegram <code>ingest</code> and <code>promote</code> texts and <code>/help</code> name every organizer.</li>
+      <li><span class="op-tag">DOCS</span> A new ADR-113, “Ingest and promote carry every organizer”. It amends ADR-108 §9 and its 2026-10-06 amendment, ADR-105 §5.6 (the international flow now exists), ADR-111 §6 (EVF done) and ADR-106 (the paths). The spec registry, the RTM, and the handbook’s ingestion page, runbooks and workflow catalog change in present tense.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Tests, red first</p>
+    <h2>What proves it</h2>
+    <ul>
+      <li><b>Flipped:</b> INTL.URL.01 (<code>test_international_intake.py:308</code>) now expects an international event to be ingested, not refused. <code>test_promotion_plan.py:642</code> keeps the unknown-event refusal and drops the international one.</li>
+      <li><b>ROUTE.INTL.*</b>:
+        <ul>
+          <li>each source kind (FTL schedule, Engarde, 4fence, Ophardt, d’Artagnan, EVF fallback) gives one tournament per bracket, with source N and source place;</li>
+          <li>team, not-final, uncategorised and duplicate brackets are handled as in Phase 5;</li>
+          <li>FIE and EVF admission run through the new flow;</li>
+          <li>a PENDING row refuses the listing.</li>
+        </ul>
+      </li>
+      <li><b>ROUTE.PLAN.*</b>: <code>plan_event</code> on an international event equals the CERT run’s operations and result fingerprint; a changed listing refuses; a blank PROD URL slot is filled and a different one refuses.</li>
+      <li><b>ROUTE.LIFE.*</b> and <b>ROUTE.CLOSE.*</b>: the final rule for sources without a Finished flag; the daily close for PZSz, EVF and FIE.</li>
+      <li><b>ROUTE.WRITERS.*</b>: the EVF sync writes no result (Q1 A); <code>scrape-tournament</code> refuses PROD (Q2 A).</li>
+    </ul>
+  </section>
+
+  <section id="verify">
+    <p class="kicker">Verification</p>
+    <h2>How I show it works before release</h2>
+    <ol class="steps">
+      <li><span class="op-tag u">LOCAL</span> <code>ingest_cli --from-url --record-run local</code> on MSW-2026-2027. It must equal the Phase 5 result row for row: 65 results in 21 tournaments, 2,175.53 points.</li>
+      <li><span class="op-tag u">LOCAL as PROD</span> The promote rehearsal ADR-108 defines: <code>replay</code> against LOCAL standing in for PROD, plan, compare, dry apply and apply. Its fingerprint must equal the run’s.</li>
+      <li><span class="op-tag">GATES</span> <code>scripts/preflight.sh</code> exits 0, then integration and the push to main, with CI and the Release watched until green.</li>
+      <li><span class="op-tag">YOU</span> Then you, in Telegram: <code>ingest MSW-2026-2027</code>, read the report, then <code>promote MSW-2026-2027</code>. I check CERT and PROD through what the site reads.</li>
+    </ol>
+    <p>No closed season is re-ingested anywhere, LOCAL included. EVF and 4fence are therefore proved by fixtures, and live on the first 2026/27 EVF event.</p>
+  </section>
+
+  <section id="result">
+    <p class="kicker">Built · 17 October</p>
+    <h2>What the LOCAL proof showed</h2>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>CERT refresh from PROD, read-only plan</td><td>373 of 373 fencers paired, <b>0 renumbered</b>, 0 unpaired, 5 alias values to copy. <code>ingest MSW-2026-2027</code> passes the automatic refresh.</td></tr>
+        <tr><td>LOCAL refreshed from PROD with <code>--auto</code></td><td>Applied; LOCAL equals PROD id for id.</td></tr>
+        <tr><td>Ingest on LOCAL with the workflow’s own arguments (run 150)</td><td>24 brackets read: 21 committed, 3 dropped with no fencer of ours. <b>65 results, 21 tournaments, 2,175.53 points</b>, identical row for row to the expected table but for the two corrected names.</td></tr>
+        <tr><td>Promote rehearsal: LOCAL rolled back to PROD’s state, run 150 replayed through the real gate, plan and apply</td><td>Gate passed; 43 writes; status IN_PROGRESS (the end date is today; the daily close completes it); <b>the apply ended on the run’s fingerprint</b>; the promoted rows equal the ingested ones.</td></tr>
+        <tr><td><code>scripts/preflight.sh</code></td><td>Exit 0, all 15 gates (pytest 1,973, vitest 1,226, pgTAP 1,456 assertions).</td></tr>
+      </tbody>
+    </table>
+    <div class="note danger">
+      <p class="lede">The rehearsal found a defect, fixed before commit</p>
+      <p>The first rehearsal recorded the three brackets with no fencer of ours (Vet-70 women’s sabre, Vet-60 and Vet-40 women’s foil) as committed listings that had not committed, and the promote gate refused. <code>promote MSW-2026-2027</code> would have stopped on PROD. Such a bracket is now recorded as dropped, “no fencer of ours” (ROUTE.INTL.04), and the second rehearsal passed.</p>
+    </div>
+    <p>Commit <code>0634876c</code> on <code>claude/ingest-promote-every-organizer</code>: code, migration <code>20261017000003</code>, ADR-113 with its amendments, the spec, the RTM and the handbook. Not integrated and not pushed.</p>
+  </section>
+
+  <section id="release">
+    <p class="kicker">Decide this first</p>
+    <h2>Release to CERT and PROD</h2>
+    <p>The push to main runs CI and the Release. The Release applies migration <code>20261017000003</code> (promote fills a blank result slot) to CERT, then PROD, and deploys the workflows. The front end does not change. Nothing writes Tbilisi’s results until you send <code>ingest</code>.</p>
+    <div class="note warn">
+      <p class="lede">R1 · Release now?</p>
+      <p><strong>A (recommended):</strong> integrate and push to main now; I watch CI and the Release to green and verify CERT and PROD. Then you send <code>ingest MSW-2026-2027</code> in Telegram, read the report, and send <code>promote MSW-2026-2027</code>. I check both environments through what the site reads.</p>
+      <p><strong>B:</strong> hold the release.</p>
+    </div>
+    <p>The Telegram bot works unchanged: it dispatches the same workflows with the same inputs. Its new <code>/help</code> and reply texts reach the phone when <code>scripts/gas_telegram_bot.js</code> is pasted over the Apps Script <code>Code.gs</code>; that can wait.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Out of scope</p>
+    <h2>Not in this plan</h2>
+    <ul>
+      <li>Team events.</li>
+      <li>Re-ingesting any past-season event.</li>
+      <li>Any write to CERT or PROD before your OK on the release.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Sources. ADR-108 §6, §9 and amendment 2026-10-06; ADR-111 §6; ADR-105 §1.5, §5.6; ADR-106 and its amendment of 2026-10-17. Code: python/pipeline/ingest_cli.py:592–1100, python/pipeline/promotion/plan.py:32–392, promotion/replay.py:169–199, promotion/close.py:37, engine/flows.py, engine/rulebook.py, plugins/resolve_fencers.py, plugins/ingest.py, review_cli.py:277–551, scrapers/evf_sync.py, .github/workflows/ingest-event.yml, evf-sync.yml, scrape-tournament.yml, scripts/gas_telegram_bot.js:103, 182.</p>
+</div>

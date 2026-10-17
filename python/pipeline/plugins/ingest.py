@@ -312,6 +312,39 @@ class AssignFinalVcat(BasePlugin):
             self.report(ctx, "STRUCTURE", final_vcats={k: len(v) for k, v in fv.items()})
 
 
+_SOURCE_CATEGORIES = ("V0", "V1", "V2", "V3", "V4")
+
+
+class AssignSourceVcat(BasePlugin):
+    """File every row of an international bracket under the bracket's own
+    category (ADR-105 with the ADR-056 revision): the stored tournament is the
+    bracket the fencer fenced, whatever category his birth year gives in our
+    season. A bracket without one V0-V4 source category is refused; no
+    category is derived from birth years (ADR-105 §5.3). ADR-113."""
+
+    name = "AssignSourceVcat"
+    kind = PluginKind.TRANSFORM
+    reads = frozenset({"matches"})
+    writes = frozenset({"final_vcats"})
+
+    def run(self, ctx: Context, svc: Services) -> None:
+        pctx = get_pctx(ctx)
+        parsed = getattr(pctx, "parsed", None) if pctx is not None else None
+        hint = getattr(parsed, "category_hint", None)
+        if hint not in _SOURCE_CATEGORIES:
+            raise ValueError(
+                f"International bracket {getattr(parsed, 'source_url', None)!r} has no single "
+                f"source category (category_hint={hint!r}); its results are filed under the "
+                "bracket's own category and none is derived from birth years (ADR-105)."
+            )
+        matches = list(ctx.get("matches") or [])
+        fv = {hint: matches}
+        if pctx is not None:
+            pctx.vcat_groups = fv
+        ctx.set("final_vcats", fv)
+        self.report(ctx, "STRUCTURE", final_vcats={hint: len(matches)})
+
+
 class Commit(BasePlugin):
     """Atomic delete-old + insert + score -> live, per V-cat bracket (ADR-014/022).
 
@@ -455,7 +488,11 @@ class Commit(BasePlugin):
             if not kept:
                 continue
             plan = module.plan_category([m.place for m in kept], [m.place for m in members], field)
-            rows = [self._row(m, r) for m, r in zip(kept, plan.rows, strict=True)]
+            rows = self._source_category_rows(
+                [self._row(m, r) for m, r in zip(kept, plan.rows, strict=True)],
+                module.name,
+                vcat,
+            )
             if commit_cats is not None and vcat not in commit_cats:
                 held.append(vcat)  # set aside — owned by another listing
                 continue
@@ -725,6 +762,16 @@ class Commit(BasePlugin):
             if t.get("enum_type"):
                 return t["enum_type"]
         return None
+
+    @staticmethod
+    def _source_category_rows(rows: list[dict], module_name: str, vcat: str) -> list[dict]:
+        """An international bracket's rows carry the bracket's category as
+        their source category (ADR-105 with the ADR-056 revision), so the
+        V-category guard trusts it over a birth year that points elsewhere.
+        Other modules' rows are returned as they are. ROUTE.FLOW.04."""
+        if module_name != SOURCE_FIELD_PLACE:
+            return rows
+        return [{**row, "enum_source_age_category": vcat} for row in rows]
 
     def _row(self, m, plan: RowPlan) -> dict:
         # `plan.place` is what the module decided to store: the bracket-relative

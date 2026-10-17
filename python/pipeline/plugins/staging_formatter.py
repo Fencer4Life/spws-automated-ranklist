@@ -742,11 +742,21 @@ def _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions=
 
 
 def render_staging_md(
-    event_code, db, bracket_reports, schedule_skips, stamp, source_decisions=None
+    event_code,
+    db,
+    bracket_reports,
+    schedule_skips,
+    stamp,
+    source_decisions=None,
+    extra_sections=None,
 ) -> str:
+    """The report. `extra_sections` are lines rendered before the footer: an
+    EVF or FIE event's international section (ADR-113)."""
     m = _assemble(event_code, db, bracket_reports, schedule_skips, source_decisions)
     lines = [f"# Automation report — {event_code}", "", f"_Generated {stamp} (UTC)_", ""]
     for heading, renderer in STAGING_TEMPLATE:
+        if not heading and extra_sections:
+            lines += [*extra_sections, ""]
         if heading:
             lines += [heading, ""]
         lines += [renderer(m), ""]
@@ -788,6 +798,7 @@ class StagingFormatter(BasePlugin):
             ctx.get("_schedule_skips"),
             stamp,
             source_decisions=ctx.get("_source_decisions"),
+            extra_sections=ctx.get("_international_section"),
         )
         write_for_event(
             event_code,

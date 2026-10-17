@@ -198,6 +198,15 @@ class DbConnector:
             .execute()
         )
 
+    def set_event_source_url(self, id_event: int, slot: str, url: str) -> None:
+        """Write one result slot (`url_event` … `url_event_5`); promote's
+        reference apply fills a blank PROD slot this way (ADR-113)."""
+        from python.pipeline.international_sources import SLOTS
+
+        if slot not in SLOTS:
+            raise ValueError(f"{slot!r} is not a result slot")
+        self._sb.table("tbl_event").update({slot: url}).eq("id_event", id_event).execute()
+
     def set_event_ingest_sources(self, id_event: int, sources: list) -> None:
         """Persist the from-URL ingest's discovered rounds + status for the event
         accordion (N13.4). Display-only JSONB; never enters scored tables."""

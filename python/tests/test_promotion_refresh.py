@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -445,6 +446,64 @@ class TestRun:
         )
         with pytest.raises(rf.RefreshError, match="int_birth_year"):
             rf.run_refresh(prod, target, mode="apply", drain=lambda: [])
+
+    def test_the_automatic_refresh_stops_before_renumbering_anyone(self):
+        """ROUTE.REFRESH.01 (ADR-113 Q4 A) `ingest` runs the refresh first and
+        applies it on its own only when nobody is renumbered; a renumbering
+        waits for the administrator's sign-off (ADR-108 §2), nothing written."""
+        prod, target, t = _world(
+            [_f(37, "CHUDY", "Tomasz", 1980)], [_f(38, "CHUDY", "Tomasz", 1977)]
+        )
+        out = rf.run_refresh(
+            prod, target, mode="apply", event_code="MSW-2026-2027", refuse_renumbering=True
+        )
+        assert out.status == "stopped_renumbering"
+        assert not any("fn_align_fencers_to" in s or "fn_replace_event" in s for s in t.sql)
+
+    def test_the_automatic_refresh_applies_values_without_renumbering(self):
+        """ROUTE.REFRESH.02 the same ids on both sides: PROD's values are
+        copied and the event's registrations replaced, as a manual apply does."""
+        prod, target, t = _world(
+            [_f(38, "CHUDY", "Tomasz", 1980)], [_f(38, "CHUDY", "Tomasz", 1977)]
+        )
+        out = rf.run_refresh(
+            prod,
+            target,
+            mode="apply",
+            event_code="MSW-2026-2027",
+            drain=lambda: [],
+            refuse_renumbering=True,
+        )
+        assert out.status == "applied"
+        assert any("p_dry_run => false" in s for s in t.sql)
+
+    def test_the_cli_auto_flag_exits_3_on_a_renumbering(self, monkeypatch, tmp_path):
+        """ROUTE.REFRESH.03 `--auto` is the flag ingest-event.yml passes."""
+        out = rf.RefreshOutcome("stopped_renumbering", MagicMock(), rf.Report({}, []))
+        seen = {}
+
+        def fake_run(*a, **k):
+            seen.update(k)
+            return out
+
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "x")
+        monkeypatch.setenv("SUPABASE_URL", f"https://{rf.CERT_REF}.supabase.co")
+        monkeypatch.setattr(rf, "run_refresh", fake_run)
+        monkeypatch.setattr(rf, "ManagementTransport", MagicMock())
+        code = rf.main(
+            [
+                "--target",
+                "cert",
+                "--mode",
+                "apply",
+                "--event",
+                "MSW-2026-2027",
+                "--snapshot",
+                str(tmp_path / "s.json"),
+                "--auto",
+            ]
+        )
+        assert code == 3 and seen["refuse_renumbering"] is True
 
 
 class TestRestore:
