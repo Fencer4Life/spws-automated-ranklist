@@ -4,10 +4,12 @@
 # IMEW-2024-2025 R2: A — KÁRMÁN Irén → KARMAN Irene 1970
 # IMEW-2024-2025 R3: A — UIJTING Henk → UIJTING Henh 1954
 # IMEW-2024-2025 R4: A — LYNCH Patrick → LYNCH Pat 1930
+# 2026-10-17: migration 20261017000001 corrects the roster name UIJTING Henh → Henk,
+# so the key below names Henk (the same fencer).
 identity:
 - scraped_name: KÁRMÁN Irén
   fencer: {surname: KARMAN, first_name: Irene, birth_year: 1970}
 - scraped_name: UIJTING Henk
-  fencer: {surname: UIJTING, first_name: Henh, birth_year: 1954}
+  fencer: {surname: UIJTING, first_name: Henk, birth_year: 1954}
 - scraped_name: LYNCH Patrick
   fencer: {surname: LYNCH, first_name: Pat, birth_year: 1930}

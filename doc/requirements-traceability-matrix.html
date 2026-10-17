@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="8884ecf97b0937d046a3954d42f399771501fb40cffc8b67c810afa4176a0fbf">
+<meta name="doc-source-sha256" content="68969109d06b1eab89d6976d655c5c1e035bd99cc64bba4905c28bc2d7db0e9d">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>479 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>481 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -89,9 +89,9 @@
 </tr>
 <tr>
 <td>FR-09</td>
-<td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created. At an FIE event (MSW, PSW, the IMSW code) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a recorded, unrevoked alias counts as identity (ADR-106 amendment of 2026-10-17).</td>
+<td><strong>International intake by identity</strong> (ADR-106 §1): each row of a PEW, MEW, MSW or PSW source is decided once. It is stored when it is exactly one roster fencer by SURNAME, first given name and a birth year fitting the bracket's category, and that fencer has a PPW or MPW result in any season, whatever country is printed. Otherwise a row printed POL is PENDING and blocks sign-off until the event's override file resolves it. Every other row is rejected. No fencer is ever created. At an FIE event (MSW, PSW, the IMSW code) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a user-confirmed, unrevoked alias counts as identity (ADR-106 amendment of 2026-10-17, D9 A).</td>
 <td>§8.5, ADR-106</td>
-<td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–10, INTL.POL.01–06</td>
+<td>4.15–4.18, 4.61–4.68, ADM.ID.01–08, ADM.ID.10, ADM.FIE.01–12, INTL.POL.01–06</td>
 <td>Covered (amended 2026-10-17, ADR-106)</td>
 </tr>
 <tr>
@@ -2014,7 +2014,7 @@
 </tr>
 <tr>
 <td>ADM.FIE.01–08</td>
-<td><code>international_admission.admit</code> with <code>tournament_type</code> (ADR-106 amendment of 2026-10-17): at MSW and PSW a row printed POL that is exactly one roster fencer is stored without an SPWS start (01: SZUMIELEWICZ Paweł); PEW, MEW and a call naming no type keep it PENDING (02); a Pole not in the fencer table (03), a birth year outside the category (04) and two namesakes who fit (05) stay PENDING; a row not printed POL still needs an SPWS start (06); a recorded alias is identity at an FIE event only (07: &quot;LYNCH Patrick&quot;); a revoked alias never is (08).</td>
+<td><code>international_admission.admit</code> with <code>tournament_type</code> (ADR-106 amendment of 2026-10-17): at MSW and PSW a row printed POL that is exactly one roster fencer is stored without an SPWS start (01: SZUMIELEWICZ Paweł); PEW, MEW and a call naming no type keep it PENDING (02); a Pole not in the fencer table (03), a birth year outside the category (04) and two namesakes who fit (05) stay PENDING; a row not printed POL still needs an SPWS start (06); a user-confirmed alias is identity at an FIE event only (07: &quot;LYNCH Patrick&quot;); a merely recorded alias and a revoked one never are (08: &quot;GERTSMAN Alexandr&quot;, &quot;KARMAN Iren&quot;; D9 A).</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_admission.py</code></td>
 <td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
@@ -2022,6 +2022,20 @@
 <tr>
 <td>ADM.FIE.09</td>
 <td><code>s6_resolve_identity</code>, <code>ResolveFencers</code> and <code>resolve_tournament_results</code> decide an MSW row identically, for the MSW and the IMSW code, and none creates a fencer.</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ADM.FIE.11</td>
+<td>At Phase 5 sign-off each alias pair the event's override file links to that fencer is recorded as the fencer's user-confirmed alias (<code>fn_confirm_fencer_alias</code>); a pair the file does not link, or links to another fencer, is not (ADR-106 amendment, decision 6, D9 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_international_admission.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ADM.FIE.12</td>
+<td>The roster every ingestion path reads (<code>fetch_fencer_db</code>) carries <code>json_user_confirmed_aliases</code> and <code>json_revoked_aliases</code>, which FIE alias identity needs.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_admission.py</code></td>
 <td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
@@ -2593,5 +2607,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>8884ecf97b0937d046a3954d42f399771501fb40cffc8b67c810afa4176a0fbf</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>68969109d06b1eab89d6976d655c5c1e035bd99cc64bba4905c28bc2d7db0e9d</code></footer>
 </div></body></html>
