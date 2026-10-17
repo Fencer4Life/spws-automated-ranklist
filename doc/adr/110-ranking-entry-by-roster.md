@@ -1,6 +1,6 @@
 # ADR-110: From 2026/2027 the Fencer Table Is the Ranking Entry; Everyone in It with Points in the Window Is Ranked
 
-**Status:** Accepted (signed off 2026-10-04 with D1 A, D2 A, D3 A, D4 A and the audit reason as proposed); implemented 2026-10-04: the audited revision ran on CERT (revision 8) and PROD (revision 10)
+**Status:** Accepted (signed off 2026-10-04 with D1 A, D2 A, D3 A, D4 A and the audit reason as proposed); implemented 2026-10-04: the audited revision ran on CERT (revision 8) and PROD (revision 10). Amended 2026-10-17 (§1: an administrator may also add a fencer; see Amendment)
 **Date:** 2026-10-04
 **Supersedes:** [ADR-103](103-spws-place-medal-engine-per-type.md) §6 (ranking entry through PPW or MPW in the ranking's window; FR-141). The gate mechanism stays, unused.
 **Relates to:** [ADR-020](020-seed-generator-domestic-auto-create.md) and [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (who enters the fencer table), [ADR-100](100-pzsz-senior-result-ingestion.md) (PZSz results never create a fencer), [ADR-097](097-scoring-governance-lock-and-privileged-revision.md) (the audited revision of a locked season), [ADR-091](091-no-season-skeletons-for-scraped-events.md) and [ADR-108](108-promote-replays-verified-cert-ingestion.md) (carry-over and the CERT/PROD result fingerprint)
@@ -62,3 +62,7 @@ The season is locked (ADR-097), so the change ran through `fn_revise_and_rescore
 - **Tests.** `85_spws_evf_joined_engine.sql`: SE27.RANK.01–05 set `entry_types` themselves and keep testing the gate; ROSTER.01–04 pin this decision. `84_admin_ranking_rules_validation.sql`: ADM27.RULES.14 pins the new 2026/2027 rules.
 - **Requirements.** FR-141 is superseded by FR-152.
 - **Not changed.** The engines, the buckets, the carry-over rule, international intake, and every season up to 2025/2026.
+
+## Amendment (2026-10-17) — an administrator may also add a fencer
+
+§1 says a fencer enters the fencer table only through a PPW or MPW result. An administrator may also add one with a confirmed birth year, through the add-fencer migration route (`20260719000001` KOSZYK Agnieszka, `20260729000001` CISZEWSKA Barbara and SZUMIELEWICZ Paweł), as the Context's legacy rows show. Since [ADR-106](106-international-intake-by-identity-nationality-per-season.md)'s amendment of the same day, a World Championships result printed for Poland is stored for such a fencer, and §2 ranks them. International and PZSz results still never create a fencer.

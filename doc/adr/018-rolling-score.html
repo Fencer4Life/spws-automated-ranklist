@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="018-rolling-score.md">
-<meta name="adr-source-sha256" content="3135248059081bd3b35a301de7abfcca5de87eaa69377bdcb0af92d3c95128d3">
+<meta name="adr-source-sha256" content="abbbd9cab6fc8154a5b5990dc28a56a4590eaa3936746134af6a08ddbb4f2600">
 <title>ADR-018 · Rolling Score for the Active Season</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -113,7 +113,7 @@
 <li><strong>Stored points.</strong> A carried result keeps the <code>num_final_score</code> it was given under its own season's rules. Nothing is re-scored.</li>
 <li><strong>Category from the current season.</strong> A carried result goes into the category given by the birth year against the current season's later calendar year (<code>fn_age_category(birth_year, v_season_end_yr)</code>, <code>20260930000001_remove_place_medal_engine.sql:571, 609</code>; ADR-010). Someone born in 1977 is V1 in 2025/26 and V2 in 2026/27, and their 2025/26 results count in V2.</li>
 <li><strong>Effective gender</strong> as for every ranking (ADR-034).</li>
-<li><strong>Ranking entry.</strong> In Ranking mode a fencer appears only with a PPW or MPW result in the ranked season or, when rolling, anywhere in the previous season, in any weapon (<code>20260928000001_spws_place_medal_engine.sql:1312-1324</code>, ADR-103 §6). This check reads the whole previous season, not the window.</li>
+<li><strong>Ranking entry.</strong> From 2026/2027 everyone in the fencer table with points in the window is ranked (<a href="110-ranking-entry-by-roster.html">ADR-110</a>, which superseded ADR-103 §6). <code>fn_ranking_full</code> still applies the season rules' <code>entry_types</code> when a season sets it (a PPW or MPW result in the ranked season or, when rolling, anywhere in the previous season), and no season sets it from 2026/2027.</li>
 </ul>
 <div class="tablewrap"><table>
 <thead>
@@ -299,5 +299,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="017-season-configurable-evf-toggle.html">← ADR-017: Season-Configurable EVF Toggle</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="019-domestic-only-fencer-seed.html">→ ADR-019: Domestic-Only Fencer Seed</a></nav>
-<footer class="foot">Generated from <code>018-rolling-score.md</code> · source SHA-256 <code>3135248059081bd3b35a301de7abfcca5de87eaa69377bdcb0af92d3c95128d3</code></footer>
+<footer class="foot">Generated from <code>018-rolling-score.md</code> · source SHA-256 <code>abbbd9cab6fc8154a5b5990dc28a56a4590eaa3936746134af6a08ddbb4f2600</code></footer>
 </div></body></html>

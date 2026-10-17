@@ -68,7 +68,7 @@ The window is inclusive: the result still counts on its end date plus 366 days. 
 - **Stored points.** A carried result keeps the `num_final_score` it was given under its own season's rules. Nothing is re-scored.
 - **Category from the current season.** A carried result goes into the category given by the birth year against the current season's later calendar year (`fn_age_category(birth_year, v_season_end_yr)`, `20260930000001_remove_place_medal_engine.sql:571, 609`; ADR-010). Someone born in 1977 is V1 in 2025/26 and V2 in 2026/27, and their 2025/26 results count in V2.
 - **Effective gender** as for every ranking (ADR-034).
-- **Ranking entry.** In Ranking mode a fencer appears only with a PPW or MPW result in the ranked season or, when rolling, anywhere in the previous season, in any weapon (`20260928000001_spws_place_medal_engine.sql:1312-1324`, ADR-103 §6). This check reads the whole previous season, not the window.
+- **Ranking entry.** From 2026/2027 everyone in the fencer table with points in the window is ranked ([ADR-110](110-ranking-entry-by-roster.md), which superseded ADR-103 §6). `fn_ranking_full` still applies the season rules' `entry_types` when a season sets it (a PPW or MPW result in the ranked season or, when rolling, anywhere in the previous season), and no season sets it from 2026/2027.
 
 | Function | UI | Carried rows count when |
 |---|---|---|

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="008-psw-msw-international-pool.md">
-<meta name="adr-source-sha256" content="c4fd80c15b0b651897bf42c9e692823059f6edbaffd8868989936cfa1b52ac53">
+<meta name="adr-source-sha256" content="1fb356b333e67623df6c5e1f3b0f24945abea4497dc3356ac07d5b71f452bc17">
 <title>ADR-008 · PSW and MSW in International Ranking Pool</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -41,7 +41,7 @@
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
 <ul>
-<li>MSW results scored with 2.0 multiplier appear in Kadra ranking automatically</li>
+<li>MSW results scored with the season's MSW multiplier (<code>tbl_scoring_config.num_msw_multiplier</code>; 2.0 when this ADR was written) appear in Kadra ranking automatically</li>
 <li>The combined pool means PEW, MEW, and MSW results compete for the same best-J slots</li>
 <li>PSW can be activated per-season by adding it to <code>json_ranking_rules</code> when FIE starts the World Cup</li>
 <li>No change to <code>fn_ranking_kadra</code> SQL — the JSONB bucket path handles arbitrary type lists</li>
@@ -51,5 +51,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="007-shadow-dom-deferred.html">← ADR-007: Shadow DOM (Implemented M8)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="009-cert-prod-runtime-toggle.html">→ ADR-009: CERT/PROD Runtime Toggle (Single GitHub Pages Site)</a></nav>
-<footer class="foot">Generated from <code>008-psw-msw-international-pool.md</code> · source SHA-256 <code>c4fd80c15b0b651897bf42c9e692823059f6edbaffd8868989936cfa1b52ac53</code></footer>
+<footer class="foot">Generated from <code>008-psw-msw-international-pool.md</code> · source SHA-256 <code>1fb356b333e67623df6c5e1f3b0f24945abea4497dc3356ac07d5b71f452bc17</code></footer>
 </div></body></html>

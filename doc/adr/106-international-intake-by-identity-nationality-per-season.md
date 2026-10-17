@@ -1,6 +1,6 @@
 # ADR-106: International Results Are Admitted by Identity and SPWS Participation; Nationality Is Recorded per Season and Fixed for the Season
 
-**Status:** Accepted (2026-10-02: every decision made by the user in chat: the admission rule, identity as SURNAME, first name and age category, decision B, the nationality model N with the season lock, P A and O1 A). Implemented on LOCAL 2026-10-02 (migration `20261003000001_identity_intake_season_nationality.sql`); O2–O4 remain open. Amended 2026-10-03: the stated reason for accepting the year before the season's end year is corrected (see Amendment).
+**Status:** Accepted (2026-10-02: every decision made by the user in chat: the admission rule, identity as SURNAME, first name and age category, decision B, the nationality model N with the season lock, P A and O1 A). Implemented on LOCAL 2026-10-02 (migration `20261003000001_identity_intake_season_nationality.sql`); O2–O4 remain open. Amended 2026-10-03: the stated reason for accepting the year before the season's end year is corrected (see Amendment). Amended 2026-10-17 (accepted by the user in chat the same day): at an FIE event (MSW, PSW) a row printed POL that is exactly one roster fencer is stored without an SPWS start, and a recorded alias counts as identity (see Amendment of 2026-10-17).
 **Date:** 2026-10-02
 **Supersedes:** [ADR-038](038-evf-intake-polish-only.md) — the country gate before matching (Decision, points 2 and 4) and its rejection of alternative 1. Its other consequences stand: an international event never auto-creates a fencer, and a foreign row never reaches the identity queue.
 **Amends:** [ADR-105](105-international-results-keep-source-bracket.md) §1.1 and §5.1 (only POL rows reach the matcher → the three-step admission below; N and the place are unchanged)
@@ -87,3 +87,34 @@ O1 (the override file's nationality section) and P (how a PENDING row is resolve
 - **The World Championships followed the event's calendar year.** At the championships of 12–16 November 2025, the same two fencers were in V1, at 49 in 2025.
 
 The accepted year therefore covers events that count age by their own calendar year, as the World Championships did. The category check now accepts the same year for a result carrying its source's label (ADR-047 amendment), so the identity rule and the check agree.
+
+## Amendment (2026-10-17) — FIE events: a fencer entered by Poland counts without an SPWS start
+
+**Accepted by the user in chat on 2026-10-17**, with decisions D1–D8 as recommended on `doc/plans/adr-106-amendment-fie-worlds-and-tbilisi-ingest-2026-10-17.html`. The user's words: if someone represents Poland at a World Championships, in a veteran category, and we have them in the database, their result counts toward their record, without a PPW or MPW entry and without a push from an operator. Relates to [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md), which already admits a PZSz result for a fencer in the fencer table without an SPWS start, and to [ADR-110](110-ranking-entry-by-roster.md) §2, which then ranks the fencer.
+
+### Context
+
+At an FIE event each national federation enters its own fencers, at most 4 per individual bracket. At the Tbilisi World Championships (9–17 October 2026, FTL schedule `CD17BF3AC4CC47BC800AB3D2A503099C`), no federation had more than 4 in any of the 24 individual brackets, and all 1,386 rows printed a federation. A row printed POL at an FIE event is a fencer the Polish federation entered. Under §1 such a fencer with no PPW or MPW result is PENDING, and at Tbilisi that held back SZUMIELEWICZ Paweł (2nd of 62, Foil M V1) and KOSZYK Agnieszka (12th of 45, Sabre W V1). Both are in the fencer table, added by administrator migrations (`20260729000001`, `20260719000001`). A completeness check of the same 1,386 rows found four SPWS starters rejected only because FIE prints their first name in another form, which our roster already records as their alias: KÁRMÁN Irén ("KARMAN Iren"), LYNCH Pat ("LYNCH Patrick"), GERTSMAN Alex ("GERTSMAN Alexandr") and UIJTING Henk. It also found one whose roster row was reversed ("ANNA-LISE Mion", recorded under Consequences above as found and not fixed).
+
+### Decision
+
+1. **Scope.** Tournament types MSW and PSW, the FIE's, including the IMSW code, which derives to MSW (D1 A). PEW, MEW and IMEW (EVF) keep §1 unchanged.
+2. **A row printed POL is stored by identity alone.** At an FIE event, a row printed POL that is exactly one roster fencer by §1's identity (surname, first given name, a birth year fitting the category in the season's end year or the year before) is stored, whether or not the fencer has a PPW or MPW result.
+3. **A recorded alias counts (D3 A).** At an FIE event, identity also accepts a recorded alias (`tbl_fencer.json_name_aliases`, less `json_revoked_aliases`), whole words with Polish letters folded, in place of the canonical surname and first name. The birth year must still fit, and a row not printed POL still needs an SPWS start.
+4. **Everything else as §1.** A POL row that is not exactly one roster fencer is PENDING, and no fencer is created (ADR-020; D2 A). A row not printed POL needs an SPWS start. The rest is rejected.
+5. **At most 4 per federation (D5 A).** The Phase 5 staging summary flags an FIE bracket in which one federation has more than 4 rows, as a likely parse error. It still stages the bracket.
+
+### Alternatives considered
+
+1. **An override entry per event for each such fencer.** Rejected: an operator would have to push every one, which is what the user ruled out.
+2. **Create a fencer for any row printed POL.** Rejected: FTL publishes no birth year, so the veteran category cannot be confirmed, and ADR-020 and ADR-110 forbid an international result creating a fencer. A Pole not in the fencer table is added by an administrator with a confirmed birth year, and the event is re-staged.
+3. **Drop the SPWS-start condition at every international event, EVF included.** Rejected: not asked for. EVF entries are not made by federations, and the printed country proved unreliable there (Context, the Budapest Cup). This amendment trusts POL only where a federation entered the fencer. A page that prints no country falls back to §1.
+4. **Choose the rule by organizer rather than tournament type.** Not chosen. Every caller of `admit()` has the type, while the organizer is not to hand there, and `_organizer_for_event` reports the IMSW code as UNKNOWN (ADR-105 §5.2). The FIE runs exactly MSW and PSW (ADR-008).
+
+### Consequences
+
+- **Code.** `python/pipeline/international_admission.py` gains `FIE_TYPES` (`:53`), `alias_matches` (`:125`) and `is_fie_type` (`:145`). `admit()` (`:150`) takes `tournament_type`, and without one decides as at an EVF event, so a caller that names no type never stores more than §1. `stages._admit_international_rows` (`python/pipeline/stages.py:92`) derives the type from the event code, and `resolve_tournament_results` (`python/matcher/pipeline.py:223`) passes its own. The EVF sync (`python/scrapers/evf_sync.py:897`) handles EVF types only and is unchanged. `_format_international_section` (`python/tools/phase5_runner.py:1828`) adds the 4-per-federation flag.
+- **Tests.** ADM.FIE.01–09 (`python/tests/test_international_admission.py`) and ADM.FIE.10 (`python/tests/test_international_intake.py`). ADM_ID_04 stays: at an EVF event a POL row without an SPWS start is PENDING. INTL.INV.02's IMSW bracket of 58 rows printed ITA now carries the flag.
+- **Data.** Migration `20261017000001_fencer_name_fixes_mion_uijting.sql` corrects "ANNA-LISE Mion" to MION Annalise and "UIJTING Henh" to UIJTING Henk, and keeps each old form as an alias. It is keyed by name and birth year, because ids differ per environment.
+- **Tbilisi 2026.** Under this rule the 24 individual brackets give 65 results: 52 printed POL from 50 fencers, and 13 from 12 SPWS starters entered for other federations. These figures come from a read-only dry run on LOCAL on 2026-10-17. Points come from the active season's scoring configuration.
+- **Related records corrected.** ADR-110's Context and §1 now say that an administrator may also add a fencer. ADR-018's Ranking entry line now follows ADR-110.
