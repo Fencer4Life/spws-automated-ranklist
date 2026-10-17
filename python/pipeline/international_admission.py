@@ -17,12 +17,18 @@ EVF sync. The rule, decided by the user on 2 October 2026:
 3. **Rejected.** Everything else, never PENDING. No fencer is ever created
    for an international event (ADR-020).
 
+At an FIE event (MSW, PSW, the IMSW code; amendment of 17 October 2026) a
+national federation enters its fencers, so two things change: a row printed
+POL that is exactly one roster fencer is stored without an SPWS start, and a
+recorded, unrevoked alias counts as identity. EVF events are unchanged.
+
 The federation the source printed is the result's evidence
 (``tbl_result.txt_entered_for``), folded to three letters.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -40,6 +46,12 @@ REJECTED = "REJECTED"
 
 _FEDERATION_FOLD = {"PL": "POL"}
 _FEDERATION = re.compile(r"[A-Z]{3}")
+
+# The FIE's tournament types: the World Championships (the IMSW code derives
+# to MSW) and the Veterans World Cup (ADR-008). Their entries come from the
+# national federations, at most 4 per individual bracket.
+FIE_TYPES = frozenset({"MSW", "PSW"})
+FIE_MAX_PER_FEDERATION = 4
 
 
 @dataclass(frozen=True)
@@ -99,6 +111,42 @@ def identity_matches(
     return hits
 
 
+def _alias_list(value: object) -> list[str]:
+    """A fencer's alias column as a list of names (JSONB arrives as a list, a
+    JSON string or nothing)."""
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return []
+    return [a for a in value if isinstance(a, str)] if isinstance(value, list) else []
+
+
+def alias_matches(
+    name: str, category: str | None, season_end_year: int, roster: Iterable[dict]
+) -> list[int]:
+    """The roster fencers one of whose recorded, unrevoked aliases is this
+    source row's name (whole words, Polish letters folded, a further given
+    name in the source dropped), with a birth year in the bracket's category."""
+    words = _words(name)
+    hits: list[int] = []
+    for f in roster:
+        revoked = {tuple(_words(a)) for a in _alias_list(f.get("json_revoked_aliases"))}
+        for alias in _alias_list(f.get("json_name_aliases")):
+            aw = _words(alias)
+            if len(aw) < 2 or tuple(aw) in revoked or words[: len(aw)] != aw:
+                continue
+            if _fits(f.get("int_birth_year"), category, season_end_year):
+                hits.append(f["id_fencer"])
+            break
+    return hits
+
+
+def is_fie_type(tournament_type: str | None) -> bool:
+    """True for the FIE's tournament types (MSW, PSW)."""
+    return (tournament_type or "").upper() in FIE_TYPES
+
+
 def admit(
     name: str,
     printed_country: str | None,
@@ -107,12 +155,24 @@ def admit(
     season_end_year: int,
     roster: list[dict],
     spws_starters: set[int] | frozenset[int],
+    tournament_type: str | None = None,
 ) -> Admission:
-    """Decide one international row (ADR-106 §1)."""
+    """Decide one international row (ADR-106 §1, and its FIE amendment).
+
+    ``tournament_type`` is the event's type (the IMSW code derives to MSW).
+    Without one the row is decided as at an EVF event, which never stores
+    more than ADR-106 §1 does."""
     entered_for = fold_federation(printed_country)
+    fie = is_fie_type(tournament_type)
     hits = identity_matches(name, category, season_end_year, roster)
+    if fie:
+        hits += [h for h in alias_matches(name, category, season_end_year, roster) if h not in hits]
     if len(hits) == 1 and hits[0] in spws_starters:
         return Admission(STORED, hits[0], 100.0, entered_for, "identity, SPWS start")
+    if fie and len(hits) == 1 and entered_for == "POL":
+        return Admission(
+            STORED, hits[0], 100.0, entered_for, "identity, entered by POL at an FIE event"
+        )
     if len(hits) == 1:
         reason = "identity, no SPWS start"
     elif len(hits) > 1:

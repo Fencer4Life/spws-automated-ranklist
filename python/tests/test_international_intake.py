@@ -413,7 +413,12 @@ class TestStagingSummary:
             ],
         )
         text = "\n".join(lines)
-        assert "| V2 | EPEE | M | 60 | 60 | 0 | 0 | 2 | 58 | ✓ |" in text
+        # IMSW is an FIE event: 58 rows of one federation (ITA) is also flagged
+        # (ADR-106 FIE amendment, ADM.FIE.10).
+        assert (
+            "| V2 | EPEE | M | 60 | 60 | 0 | 0 | 2 | 58 | ⚠ more than 4 fencers of one "
+            "federation (ITA 58): the FIE enters 4 at most, check the parse |"
+        ) in text
         assert "N equals the rows printed POL" in text
         assert "the source has no country" in text
 
@@ -437,6 +442,33 @@ class TestStagingSummary:
         from python.tools.phase5_runner import _format_international_section
 
         assert _format_international_section("PPW3-2025-2026", []) == []
+
+    def test_ADM_FIE_10_an_fie_bracket_with_more_than_4_of_one_federation_is_flagged(self):
+        """ADM.FIE.10 at an FIE event a federation enters at most 4 fencers per
+        individual bracket (ADR-106 amendment of 17 Oct 2026, D5 A): a bracket
+        with 5 rows printed ITA is flagged as a likely parse error and still
+        staged; 4 is not flagged, and an EVF event is never checked."""
+        from python.tools.phase5_runner import _format_international_section
+
+        five = self._ctx(9, {1}, code="MSW-2026-2027")  # place 1 POL, places 2–9 ITA
+        for r in five[0].results[6:]:
+            r.fencer_country = "FRA"  # places 7–9 FRA → ITA holds places 2–6: 5 rows
+        four = self._ctx(5, {1}, code="MSW-2026-2027")  # place 1 POL, places 2–5 ITA
+        flagged = "\n".join(
+            _format_international_section("MSW-2026-2027", [(1, five[0], five[1], None)])
+        )
+        assert "more than 4 fencers of one federation (ITA 5)" in flagged
+        assert "| V2 | EPEE | M | 9 |" in flagged
+        clean = "\n".join(
+            _format_international_section("MSW-2026-2027", [(1, four[0], four[1], None)])
+        )
+        assert "more than 4" not in clean
+        assert "| V2 | EPEE | M | 5 | 5 | 0 | 0 | 1 | 4 | ✓ |" in clean
+        evf = self._ctx(9, {1}, code="PEW6efs-2025-2026")
+        evf_text = "\n".join(
+            _format_international_section("PEW6efs-2025-2026", [(1, evf[0], evf[1], None)])
+        )
+        assert "more than 4" not in evf_text
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,490 @@
+<meta charset="utf-8">
+<title>ADR-106 FIE amendment</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">ADR-106 amendment · FIE World Championships · then the Tbilisi ingest on LOCAL · Plan</p>
+  <h1>Every Pole at the Worlds who is in our fencer table counts</h1>
+  <p class="dek">An FIE World Championships result printed <b>POL</b> is stored and ranked when the fencer is in our fencer table with a birth year that fits the veteran category. <b>No PPW or MPW entry is needed</b>, and nobody has to push it. The Tbilisi 2026 individual brackets are then ingested on LOCAL under the new rule: <b>65 results worth 2,175.53 points</b>.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Accepted 17 Oct · Part A built · Part B waits for “OK MSW-2026-2027”</span>
+    <span class="pill">amends ADR-106 §1</span>
+    <span class="pill">event <code>MSW-2026-2027</code></span>
+    <span class="pill warn"><span class="dot"></span>8 decisions</span>
+  </div>
+
+  <div class="note good">
+    <p class="lede">Status, 17 Oct 2026</p>
+    <p>You approved the plan with D1–D8 as recommended. <strong>Part A is built</strong> on branch <code>claude/adr-106-fie-worlds-amendment</code>: the code, ADM.FIE.01–10 (seen red, now green), the roster migration applied on LOCAL, and the ADR, specification, RTM and handbook updates. A read-only dry run with the new code stores all 65 Tbilisi results with none PENDING. Preflight passes every gate except <code>test_evf_calendar.py::…fn_sync_evf_event_fields_before_refresh</code>, which fails identically on the unmodified base commit and is unrelated. <strong>Part B</strong> (the Tbilisi ingest on LOCAL) is next.</p>
+  </div>
+
+  <div class="note accent">
+    <p class="lede">Read in this order</p>
+    <ol>
+      <li><a href="#asked">What you decided in chat</a>: locked</li>
+      <li><a href="#decide">Decide this first</a>: D1–D8, each with a recommendation</li>
+      <li><a href="#adr-check">ADR contradiction check</a></li>
+      <li><a href="#draft">Draft amendment to ADR-106</a></li>
+      <li><a href="#tbilisi">Effect on Tbilisi 2026</a>: all 65 results with points</li>
+      <li><a href="#scenarios">Scenarios</a> · <a href="#tests">Acceptance tests</a> · <a href="#steps">Steps</a> · <a href="#parity">Parity</a> · <a href="#done">Definition of done</a></li>
+    </ol>
+  </div>
+
+  <hr class="rule">
+
+  <section id="asked">
+    <p class="kicker">Locked · from chat, 17 Oct 2026</p>
+    <h2>What you decided</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decision</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">L1</td><td>Only the individual brackets are ingested. Team events are ignored, and the FTL schedule parser already skips them.</td></tr>
+        <tr><td class="mono">L2</td><td>FIE gets its own rules, separate from EVF. Rule 1: a federation enters at most 4 fencers per individual bracket.</td></tr>
+        <tr><td class="mono">L3</td><td>Anyone representing Poland at a World Championships who is in our database counts, with no PPW or MPW entry needed and no push from you. This applies to SZUMIELEWICZ Paweł, the only Polish silver medallist, and equally to KOSZYK Agnieszka.</td></tr>
+        <tr><td class="mono">L4</td><td>The Worlds results of our foreign ranklist fencers are reflected in their records too.</td></tr>
+        <tr><td class="mono">L5</td><td>Points are computed with the <strong>active season’s</strong> scoring parameters, read from that season’s configuration when the result is scored: the engine, the MSW multiplier, the place value and the podium factors. Nothing is hard-coded. Next season’s Worlds will use next season’s settings. The scoring reads the parameters of the event’s own season (<code>fn_resolve_scoring_params</code>), and for an event ingested in its own season that is the active season. Tbilisi falls in the active season, 2026/27, where MSW is ×1.4.</td></tr>
+        <tr><td class="mono">L6</td><td>A result counts in the fencer’s SPWS category for the season (TECŁAW Robert: fenced V1, ranked V2). The live ranking already does this, through <code>fn_age_category(birth year, season end year)</code> in <code>fn_ranking_full_event_fk_matching</code>.</td></tr>
+        <tr><td class="mono">L7</td><td>This is a change to ADR-106, made as an amendment, not as a new ADR.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">Decide this first</p>
+    <h2>Eight decisions, each with a recommendation</h2>
+    <p>Reply “accept all” to take every recommendation, or name the ones you want differently.</p>
+
+    <div class="note accent">
+      <p class="lede">D1 · Which events the rule covers</p>
+      <p><strong>A (recommended):</strong> FIE events, meaning tournament types <code>MSW</code> (World Championships, including the <code>IMSW</code> code) and <code>PSW</code> (the FIE Veterans World Cup, reserved and never held). At both, entries come from the national federations.</p>
+      <p><strong>B:</strong> <code>MSW</code> only.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede">D2 · A fencer printed POL who is not in our fencer table</p>
+      <p>Tbilisi had none: all 52 POL rows are in the table. A future event may have one.</p>
+      <p><strong>A (recommended):</strong> the row is PENDING, as today. An administrator supplies the confirmed birth year, the fencer is added through the add-fencer migration route, and the event is re-staged. FTL publishes no birth year, so nothing else could tell us the veteran category. ADR-020 and ADR-110 also forbid creating a fencer from an international result.</p>
+      <p><strong>B:</strong> create the fencer automatically. This contradicts ADR-020 and ADR-110 and leaves the birth year unknown.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede">D3 · Our foreign fencers whose name FIE prints in another form</p>
+      <p>Four of our ranklist fencers, with 5 results, were rejected only because FIE prints their first name differently. The printed form is already recorded as each one’s alias in <code>tbl_fencer.json_name_aliases</code>. It is not in <code>json_user_confirmed_aliases</code>, and none is revoked.</p>
+      <ul>
+        <li>KÁRMÁN Irén (HUN): printed “KARMAN Iren”, roster “KARMAN Irene” (1970)</li>
+        <li>LYNCH Pat (IRL): printed “LYNCH Patrick” (1930)</li>
+        <li>GERTSMAN Alex (ISR): printed “GERTSMAN Alexandr” (1976)</li>
+        <li>UIJTING Henk (NED): printed “UIJTING Henk”; the roster has the typo “Henh” (1954)</li>
+      </ul>
+      <p><strong>A (recommended):</strong> at FIE events, identity also accepts a recorded, unrevoked alias. The birth year must still fit, and a row not printed POL still needs an SPWS start. All four are then stored automatically.</p>
+      <p><strong>B:</strong> accept only user-confirmed aliases. You confirm these 4 pairs once in the alias manager, and every later event matches them automatically.</p>
+      <p><strong>C:</strong> no alias rule. Each event needs override entries, which means a push from you every time.</p>
+      <p>Whichever you pick, I also recommend correcting the roster typo “UIJTING Henh” to “Henk”. That goes through the same migration route as D4.</p>
+    </div>
+
+    <div class="note warn">
+      <p class="lede">D4 · MION Annalise (IRL), stored with her name swapped</p>
+      <p>Our roster holds her as surname “ANNA-LISE”, first name “Mion” (1975, one PPW result). FIE prints “MION Annalise”. No rule can match a swapped name, so the roster row has to be corrected.</p>
+      <p><strong>A (recommended):</strong> surname <code>MION</code>, first name <code>Annalise</code> (as her federation registers her), with “ANNA-LISE Mion” kept as an alias so domestic listings still match. Done on LOCAL in this plan, and on CERT and PROD with your approval.</p>
+      <p><strong>B:</strong> surname <code>MION</code>, first name <code>Anna-Lise</code>, with the alias “MION Annalise”.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede">D5 · What FIE rule 1 (4 per federation) does</p>
+      <p><strong>A (recommended):</strong> the staging summary flags an FIE bracket where one federation has more than 4 rows, as a sign of a parse error. It does not refuse the bracket. At Tbilisi no bracket would be flagged.</p>
+      <p><strong>B:</strong> refuse the bracket.</p>
+      <p><strong>C:</strong> no check.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede">D6 · Commit only after your sign-off</p>
+      <p><strong>A (recommended):</strong> I stage, check that the staged rows equal the table below, and commit to LOCAL after you reply “OK MSW-2026-2027”.</p>
+      <p><strong>B:</strong> stage and commit in one pass.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede">D7 · Event status after the commit</p>
+      <p>Committing leaves the status untouched, so the event would stay <code>PLANNED</code>.</p>
+      <p><strong>A (recommended):</strong> set <code>COMPLETED</code> on LOCAL through the transition validator.</p>
+      <p><strong>B:</strong> leave it <code>PLANNED</code>.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede">D8 · The event’s end date</p>
+      <p>Our row says 9–13 Oct. The FIE invitation letter says 9–17 Oct.</p>
+      <p><strong>A (recommended):</strong> correct it to 17 Oct on all three environments as a separate task, with approval for CERT and PROD. The ingest does not need it.</p>
+      <p><strong>B:</strong> correct LOCAL now.</p>
+    </div>
+  </section>
+
+  <section id="adr-check">
+    <p class="kicker">ADR contradiction check</p>
+    <h2>Two ADR-106 passages conflict; ADR-110 and ADR-018 already need correcting</h2>
+    <p>The search covered the documentation index (ADRs, handbook, governance) for “SPWS start”, “PPW or MPW”, “aliases” and “fencer table entry”, with each hit confirmed in its file.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>What it says</th><th>Verdict</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><strong>ADR-106 §1, step 1</strong></td><td>A row is stored when it is one roster fencer “<em>and</em> that fencer has at least one stored result in a tournament typed PPW or MPW”.</td><td><span class="chip over">contradicts L3</span></td><td>Amend: at FIE events a row printed POL needs no PPW/MPW result.</td></tr>
+        <tr><td><strong>ADR-106 §1, step 2</strong></td><td>Otherwise a POL row is PENDING and is never stored automatically.</td><td><span class="chip over">contradicts L3</span></td><td>Amend: at FIE events, PENDING only when the row is not exactly one roster fencer.</td></tr>
+        <tr><td><strong>ADR-106 §1</strong></td><td>“Name aliases are not used.”</td><td><span class="chip warn">contradicts D3 A</span></td><td>Amend for FIE events if D3 A or B is chosen.</td></tr>
+        <tr><td>ADR-106, Context</td><td>The printed country is an unreliable gate: Budapest printed a club where the country belongs.</td><td><span class="chip warn">tension</span></td><td>Addressed in the amendment’s Context. At FIE events federations make the entries, and every Tbilisi row prints one. A page without a country falls back to ADR-106 unchanged.</td></tr>
+        <tr><td>ADR-106, Alternative 2</td><td>Identity alone is rejected because foreign fencers enter our ranklist only through SPWS participation.</td><td><span class="chip never">consistent</span></td><td>None. A row not printed POL still needs an SPWS start.</td></tr>
+        <tr><td><strong>ADR-110</strong>, Context and §1</td><td>“A fencer enters the fencer table only through a PPW or MPW result”. Also: “International intake stores a row only for an existing fencer with a PPW/MPW start (ADR-106)”.</td><td><span class="chip warn">already inaccurate</span></td><td>Administrator migrations also add fencers: KOSZYK (<code>20260719000001</code>), SZUMIELEWICZ and CISZEWSKA (<code>20260729000001</code>), and the master-list batch <code>20260714000003</code>. Correct both sentences. §2, which ranks everyone in the table with points, is what makes this amendment work.</td></tr>
+        <tr><td>ADR-110 §2</td><td>Everyone in the fencer table with points in the window is ranked, EVF+ included.</td><td><span class="chip never">consistent</span></td><td>None. LOCAL 2026/27 rules carry no <code>entry_types</code> (checked).</td></tr>
+        <tr><td>ADR-111</td><td>“No PPW or MPW start is required (unlike EVF, ADR-106). Being in the fencer table is enough.”</td><td><span class="chip never">precedent</span></td><td>None. The amendment gives FIE what PZSz already has. ADR-111 does not use aliases (Q4 A), but that rule is for PZSz only.</td></tr>
+        <tr><td>ADR-020</td><td>International results never create a fencer.</td><td><span class="chip never">consistent</span></td><td>None, under D2 A.</td></tr>
+        <tr><td>ADR-105</td><td>N is the whole source bracket and the place is the source place. The international intake is decided by tournament type (§5.2).</td><td><span class="chip never">consistent</span></td><td>None. The amendment keys FIE on type too.</td></tr>
+        <tr><td>ADR-018, line 71</td><td>“In Ranking mode a fencer appears only with a PPW or MPW result …” (ADR-103 §6).</td><td><span class="chip warn">stale since ADR-110</span></td><td>Correct the sentence to ADR-110 in the same pass. Otherwise it says SZUMIELEWICZ is not ranked.</td></tr>
+        <tr><td>ADR-008</td><td>“MSW results scored with 2.0 multiplier.”</td><td><span class="chip plain">stale, unrelated</span></td><td>One-line note: the multiplier is read from each season’s configuration, never fixed in the ADR. Optional.</td></tr>
+        <tr><td>ADR-097</td><td>The scoring configuration locks on first score.</td><td><span class="chip never">consistent</span></td><td>None. No configuration changes.</td></tr>
+        <tr><td>RTM FR-09, FR-152, INTL.POL.01–06</td><td>These restate ADR-106 §1 and ADR-110 §1.</td><td><span class="chip warn">to amend</span></td><td>Update with the amendment, and add the ADM.FIE IDs below.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="draft">
+    <p class="kicker">Draft · Status: Proposed</p>
+    <h2>Amendment to ADR-106 (2026-10-17): FIE events, a fencer entered by Poland counts without an SPWS start</h2>
+    <h3>Context</h3>
+    <p>At an FIE event each national federation enters its fencers, at most 4 per individual bracket. At Tbilisi 2026 no federation exceeded 4 in any of the 24 brackets, and all 1,386 rows printed a federation. A row printed POL at an FIE event is therefore a fencer the Polish federation entered. Under §1 such a fencer with no PPW or MPW result is PENDING. At Tbilisi that held back SZUMIELEWICZ Paweł (2nd of 62, Foil M V1) and KOSZYK Agnieszka (12th of 45, Sabre W V1). Both are in the fencer table through administrator migrations. The PZSz admission already counts a fencer who is in the table without an SPWS start (ADR-111).</p>
+    <h3>Decision</h3>
+    <ol>
+      <li><strong>Scope.</strong> Tournament types MSW and PSW, including the IMSW code (D1). PEW, MEW and IMEW (EVF) keep §1 unchanged.</li>
+      <li><strong>A POL row is stored by identity alone.</strong> At an FIE event, a row printed POL that is exactly one roster fencer by §1’s identity (surname, first given name, a birth year fitting the category in the season’s end year or the year before) is stored, whether or not the fencer has a PPW or MPW result. Through ADR-110 §2 the fencer is then ranked.</li>
+      <li><strong>Recorded aliases count (D3 A).</strong> At an FIE event, identity also accepts a recorded, unrevoked alias (<code>json_name_aliases</code> minus <code>json_revoked_aliases</code>) in place of the canonical surname and first name. The birth year must still fit, and a row not printed POL still needs an SPWS start.</li>
+      <li><strong>Everything else as §1.</strong> A POL row that is not exactly one roster fencer is PENDING, and no fencer is created (ADR-020, D2 A). A row not printed POL needs an SPWS start. Everything else is rejected.</li>
+      <li><strong>Rule 1 (D5 A).</strong> The staging summary flags an FIE bracket where one federation has more than 4 rows. It does not refuse it.</li>
+    </ol>
+    <h3>Alternatives considered</h3>
+    <ul>
+      <li><strong>Override entries per event.</strong> Rejected: you would have to push every one.</li>
+      <li><strong>Create a fencer for any POL row.</strong> Rejected: FTL publishes no birth year, so the category cannot be confirmed, and ADR-020 and ADR-110 forbid it.</li>
+      <li><strong>Drop the SPWS-start condition for every international event, EVF included.</strong> Rejected: not asked for. EVF entries are not federation entries, and the country column has proven unreliable there.</li>
+      <li><strong>Select the rule by organizer rather than type.</strong> Not chosen. Every caller of <code>admit()</code> already has the type, while the organizer is not available there, and <code>_organizer_for_event</code> reports IMSW as UNKNOWN (ADR-105 §5.2). FIE runs exactly MSW and PSW (ADR-008), and on LOCAL the FIE organizer row (id 3) holds only IMSW and MSW events.</li>
+    </ul>
+    <h3>Consequences</h3>
+    <ul>
+      <li><code>international_admission.admit()</code> takes the tournament type. Its three callers pass it: <code>stages._admit_international_rows</code> (<code>python/pipeline/stages.py:118</code>), <code>resolve_tournament_results</code> (<code>python/matcher/pipeline.py:216</code>) and the EVF sync (<code>python/scrapers/evf_sync.py:897</code>, which only ever sees EVF types).</li>
+      <li><code>ADM_ID_04</code> (POL without an SPWS start is PENDING) stays true for EVF events. New tests ADM.FIE.01–10 cover FIE.</li>
+      <li>Documentation updates: ADR-110 Context and §1 wording; ADR-018 line 71; RTM FR-09, FR-152 and INTL.POL; spec §8.5 and Appendix C; the handbook pages <code>subsystems/ingestion.html</code>, <code>domain/competition-and-ranking.html</code> and <code>operations/operator-runbooks.html</code>, plus <code>subsystems/identity-and-recompute.html</code> after a passage check.</li>
+    </ul>
+  </section>
+
+  <section id="tbilisi">
+    <p class="kicker">Effect on Tbilisi 2026 · read-only dry run</p>
+    <h2>65 results, 2,175.53 points</h2>
+    <p>The verdicts come from the runner’s own fetcher and <code>admit()</code>, run against the LOCAL roster. The points come from <code>fn_score_by_engine</code>, called inside a read-only transaction with the parameters read from the active season’s configuration (L5). For the active season, 2026/27, those are engine <code>EVF_CLASSIC_V1_2025_2026</code> (<code>fn_get_type_engine</code>), MSW multiplier 1.4 (<code>fn_assert_type_configured</code>), place value 50, DE bonus 10 per round won, and podium 3/2/1 × 3·∛N. A roster-wide check, both by surname and with the fuzzy matcher, found no other fencer of ours in the 1,386 rows. The other fuzzy candidates are different people (other surname, birth year outside the bracket).</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Group</th><th>Results</th><th>Fencers</th><th>Points</th><th>Stored by</th></tr></thead>
+      <tbody>
+        <tr><td>Printed POL, stored today</td><td class="mono">50</td><td class="mono">48</td><td class="mono">1,708.49</td><td>ADR-106 as it stands</td></tr>
+        <tr><td>Printed POL, in our table, no PPW/MPW</td><td class="mono">2</td><td class="mono">2</td><td class="mono">214.95</td><td>this amendment (L3)</td></tr>
+        <tr><td>Our foreign fencers, exact name</td><td class="mono">7</td><td class="mono">7</td><td class="mono">137.45</td><td>ADR-106 as it stands</td></tr>
+        <tr><td>Our foreign fencers, recorded alias</td><td class="mono">5</td><td class="mono">4</td><td class="mono">91.68</td><td>D3</td></tr>
+        <tr><td>MION Annalise, swapped name</td><td class="mono">1</td><td class="mono">1</td><td class="mono">22.96</td><td>D4</td></tr>
+        <tr><td><b>Total</b></td><td class="mono"><b>65</b></td><td class="mono"><b>62</b></td><td class="mono"><b>2,175.53</b></td><td></td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede">Two roster facts worth a look</p>
+      <p><strong>TECŁAW Robert (1977)</strong> fenced V1 and ranks in V2 (L6). His birth year is confirmed (not estimated), and his results from 2023/24 to 2026/27 agree with it. <strong>LYNCH Pat</strong> is born 1930 on our roster, which makes him 96 at the event. That fits V4 either way, but it is worth confirming.</p>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>#</th><th>Fencer (born)</th><th>Flag</th><th>Bracket</th><th>Place / N</th><th>Place pts</th><th>DE bonus</th><th>Podium</th><th>Points ×1.4</th><th>Status</th></tr></thead><tbody>
+<tr><td class="mono">1</td><td><strong>SZUMIELEWICZ Paweł</strong> <span class="mono">(1986)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V1</td><td class="mono">2 / 62 🥈</td><td class="mono">41.77</td><td class="mono">50.00</td><td class="mono">23.75</td><td class="mono"><strong>161.73</strong></td><td><span class="chip fill">amendment · POL in our table</span></td></tr>
+<tr><td class="mono">2</td><td><strong>KORONA Przemysław</strong> <span class="mono">(1976)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V2</td><td class="mono">5 / 109</td><td class="mono">33.19</td><td class="mono">40.00</td><td class="mono">—</td><td class="mono"><strong>102.47</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">3</td><td><strong>ZABŁOCKI Michał</strong> <span class="mono">(1964)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V3</td><td class="mono">5 / 62</td><td class="mono">30.89</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>85.25</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">4</td><td><strong>KOSTRZEWA Ireneusz</strong> <span class="mono">(1965)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V3</td><td class="mono">9 / 95</td><td class="mono">26.36</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>78.90</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">5</td><td><strong>SĘKOWSKI Maciej</strong> <span class="mono">(1981)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V1</td><td class="mono">9 / 86</td><td class="mono">25.83</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>78.16</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">6</td><td><strong>CISZEWSKA Barbara</strong> <span class="mono">(1974)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V2</td><td class="mono">10 / 83</td><td class="mono">24.47</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>76.25</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">7</td><td><strong>SOMERS Jan</strong> <span class="mono">(1964)</span></td><td><span class="chip fill">NED</span></td><td>Épée M V3</td><td class="mono">13 / 95</td><td class="mono">22.40</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>73.36</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">8</td><td><strong>ZAWROTNIAK Przemysław</strong> <span class="mono">(1974)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V2</td><td class="mono">13 / 71</td><td class="mono">20.52</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>70.72</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">9</td><td><strong>SZCZĘSNY Jacek</strong> <span class="mono">(1956)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V4</td><td class="mono">16 / 74</td><td class="mono">18.44</td><td class="mono">30.00</td><td class="mono">—</td><td class="mono"><strong>67.81</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">10</td><td><strong>GAJDA Leszek</strong> <span class="mono">(1965)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V3</td><td class="mono">13 / 62</td><td class="mono">19.55</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>55.37</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">11</td><td><strong>JENDRYŚ Marek</strong> <span class="mono">(1974)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V2</td><td class="mono">19 / 109</td><td class="mono">19.25</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>54.94</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">12</td><td><strong>MOCEK Sławomir</strong> <span class="mono">(1976)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V2</td><td class="mono">14 / 63</td><td class="mono">18.79</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>54.30</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">13</td><td><strong>KOSZYK Agnieszka</strong> <span class="mono">(1980)</span></td><td><span class="chip plain">POL</span></td><td>Sabre W V1</td><td class="mono">12 / 45</td><td class="mono">18.01</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>53.22</strong></td><td><span class="chip fill">amendment · POL in our table</span></td></tr>
+<tr><td class="mono">14</td><td><strong>GANSZCZYK Marcin</strong> <span class="mono">(1974)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V2</td><td class="mono">17 / 71</td><td class="mono">17.43</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>52.40</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">15</td><td><strong>NOWICKI Robert</strong> <span class="mono">(1970)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V2</td><td class="mono">18 / 71</td><td class="mono">16.77</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>51.48</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">16</td><td><strong>KOWALEWSKI Rafał</strong> <span class="mono">(1979)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V1</td><td class="mono">22 / 66</td><td class="mono">13.85</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>47.39</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">17</td><td><strong>UIJTING Henh</strong> <span class="mono">(1954)</span></td><td><span class="chip fill">NED</span></td><td>Épée M V4</td><td class="mono">24 / 74</td><td class="mono">13.82</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>47.35</strong></td><td><span class="chip warn">D3 · recorded alias</span></td></tr>
+<tr><td class="mono">18</td><td><strong>GANSZCZYK Anna</strong> <span class="mono">(1972)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V2</td><td class="mono">31 / 83</td><td class="mono">11.92</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>44.69</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">19</td><td><strong>KOSIŃSKI Łukasz</strong> <span class="mono">(1983)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V1</td><td class="mono">29 / 66</td><td class="mono">10.62</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>42.87</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">20</td><td><strong>TECŁAW Robert</strong> <span class="mono">(1977)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V1 <span class="chip warn">SPWS V2</span></td><td class="mono">31 / 66</td><td class="mono">9.84</td><td class="mono">20.00</td><td class="mono">—</td><td class="mono"><strong>41.77</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">21</td><td><strong>CIEPŁY Tomasz</strong> <span class="mono">(1980)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V1</td><td class="mono">18 / 62</td><td class="mono">15.68</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>35.96</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">22</td><td><strong>ATANASSOW Aleksander</strong> <span class="mono">(1969)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V2</td><td class="mono">33 / 109</td><td class="mono">13.48</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>32.87</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">23</td><td><strong>PRZYSTAJKO Daniel</strong> <span class="mono">(1985)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V1</td><td class="mono">22 / 62</td><td class="mono">13.30</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>32.62</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">24</td><td><strong>KRZEMIŃSKI Mariusz</strong> <span class="mono">(1962)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V3</td><td class="mono">35 / 95</td><td class="mono">11.74</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>30.44</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">25</td><td><strong>PRĘGOWSKI Jerzy</strong> <span class="mono">(1947)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V4</td><td class="mono">18 / 40</td><td class="mono">11.61</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>30.25</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">26</td><td><strong>BOBUSIA Jarosław</strong> <span class="mono">(1985)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V1</td><td class="mono">33 / 86</td><td class="mono">11.54</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>30.15</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">27</td><td><strong>MŁYNEK Janusz</strong> <span class="mono">(1951)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V4</td><td class="mono">19 / 40</td><td class="mono">10.89</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>29.24</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">28</td><td><strong>WASILCZUK Beata</strong> <span class="mono">(1971)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V2</td><td class="mono">35 / 83</td><td class="mono">10.58</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>28.81</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">29</td><td><strong>KUZMICHOVA Svitlana</strong> <span class="mono">(1971)</span></td><td><span class="chip fill">UKR</span></td><td>Épée W V2</td><td class="mono">36 / 83</td><td class="mono">10.26</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>28.37</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">30</td><td><strong>KOŃCZYŁO Tomasz</strong> <span class="mono">(1973)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V2</td><td class="mono">29 / 63</td><td class="mono">10.18</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>28.25</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">31</td><td><strong>SZMIDT Grzegorz</strong> <span class="mono">(1969)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V2</td><td class="mono">31 / 63</td><td class="mono">9.39</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>27.14</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">32</td><td><strong>STAŃCZYK Agnieszka</strong> <span class="mono">(1971)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V2</td><td class="mono">40 / 83</td><td class="mono">9.09</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>26.73</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">33</td><td><strong>KAMIŃSKA Gabriela</strong> <span class="mono">(1979)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V1</td><td class="mono">32 / 63</td><td class="mono">9.01</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>26.62</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">34</td><td><strong>MALINOWSKI Piotr</strong> <span class="mono">(1980)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V1</td><td class="mono">32 / 62</td><td class="mono">8.85</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>26.39</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">35</td><td><strong>JASIŃSKI Tomasz</strong> <span class="mono">(1961)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V3</td><td class="mono">32 / 62</td><td class="mono">8.85</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>26.39</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">36</td><td><strong>BORKOWSKI Andrzej</strong> <span class="mono">(1950)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V4</td><td class="mono">24 / 43</td><td class="mono">8.60</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>26.04</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">37</td><td><strong>MAZIK Aleksander</strong> <span class="mono">(1970)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V2</td><td class="mono">40 / 71</td><td class="mono">7.60</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>24.63</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">38</td><td><strong>FUHRMANN Ulrike</strong> <span class="mono">(1963)</span></td><td><span class="chip plain">POL</span></td><td>Sabre W V3</td><td class="mono">22 / 35</td><td class="mono">7.40</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>24.36</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">39</td><td><strong>SOBIERAJ Wojciech</strong> <span class="mono">(1955)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V4</td><td class="mono">44 / 74</td><td class="mono">6.92</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>23.69</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">40</td><td><strong>JASZCZAK Piotr</strong> <span class="mono">(1973)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V2</td><td class="mono">62 / 109</td><td class="mono">6.89</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>23.65</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">41</td><td><strong>STOCKI Piotr</strong> <span class="mono">(1982)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V1</td><td class="mono">51 / 86</td><td class="mono">6.75</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>23.45</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">42</td><td><strong>JUSZKIEWICZ Piotr</strong> <span class="mono">(1954)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V4</td><td class="mono">26 / 40</td><td class="mono">6.72</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>23.41</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">43</td><td><strong>ANNA-LISE Mion</strong> <span class="mono">(1975)</span></td><td><span class="chip fill">IRL</span></td><td>Épée W V2</td><td class="mono">51 / 83</td><td class="mono">6.40</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>22.96</strong></td><td><span class="chip warn">D4 · roster name fix</span></td></tr>
+<tr><td class="mono">44</td><td><strong>DWORAKOWSKA-BANAŚ Agnieszka</strong> <span class="mono">(1971)</span></td><td><span class="chip plain">POL</span></td><td>Sabre W V2</td><td class="mono">32 / 46</td><td class="mono">5.64</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>21.90</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">45</td><td><strong>PRAHA-TSAREHRADSKA Nadiia</strong> <span class="mono">(1970)</span></td><td><span class="chip fill">UKR</span></td><td>Épée W V2</td><td class="mono">56 / 83</td><td class="mono">5.36</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>21.51</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">46</td><td><strong>MAINKA Andrzej</strong> <span class="mono">(1949)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V4</td><td class="mono">29 / 40</td><td class="mono">5.27</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>21.38</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">47</td><td><strong>KARMAN Irene</strong> <span class="mono">(1970)</span></td><td><span class="chip fill">HUN</span></td><td>Épée W V2</td><td class="mono">60 / 83</td><td class="mono">4.60</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>20.44</strong></td><td><span class="chip warn">D3 · recorded alias</span></td></tr>
+<tr><td class="mono">48</td><td><strong>KORNAŚ Jarosław</strong> <span class="mono">(1985)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V1</td><td class="mono">63 / 86</td><td class="mono">4.42</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>20.19</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">49</td><td><strong>BORKOWSKI Andrzej</strong> <span class="mono">(1950)</span></td><td><span class="chip plain">POL</span></td><td>Épée M V4</td><td class="mono">62 / 74</td><td class="mono">3.01</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>18.22</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">50</td><td><strong>LYNCH Pat</strong> <span class="mono">(1930)</span></td><td><span class="chip fill">IRL</span></td><td>Épée M V4</td><td class="mono">63 / 74</td><td class="mono">2.83</td><td class="mono">10.00</td><td class="mono">—</td><td class="mono"><strong>17.96</strong></td><td><span class="chip warn">D3 · recorded alias</span></td></tr>
+<tr><td class="mono">51</td><td><strong>OSSOWSKI Wojciech</strong> <span class="mono">(1961)</span></td><td><span class="chip plain">POL</span></td><td>Sabre M V3</td><td class="mono">34 / 62</td><td class="mono">8.13</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>11.39</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">52</td><td><strong>BAZAK Jacek</strong> <span class="mono">(1974)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V2</td><td class="mono">45 / 63</td><td class="mono">4.98</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>6.97</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">53</td><td><strong>SOKOL Vratislav</strong> <span class="mono">(1976)</span></td><td><span class="chip fill">CZE</span></td><td>Épée M V2</td><td class="mono">78 / 109</td><td class="mono">4.50</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>6.29</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">54</td><td><strong>GAWLE Katarzyna</strong> <span class="mono">(1980)</span></td><td><span class="chip plain">POL</span></td><td>Sabre W V1</td><td class="mono">36 / 45</td><td class="mono">3.87</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>5.42</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">55</td><td><strong>BUJKO Paulina</strong> <span class="mono">(1982)</span></td><td><span class="chip plain">POL</span></td><td>Sabre W V1</td><td class="mono">37 / 45</td><td class="mono">3.52</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>4.93</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">56</td><td><strong>GERTSMAN Alex</strong> <span class="mono">(1976)</span></td><td><span class="chip fill">ISR</span></td><td>Épée M V2</td><td class="mono">88 / 109</td><td class="mono">3.24</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>4.53</strong></td><td><span class="chip warn">D3 · recorded alias</span></td></tr>
+<tr><td class="mono">57</td><td><strong>MCGINNITY Marie</strong> <span class="mono">(1960)</span></td><td><span class="chip fill">IRL</span></td><td>Épée W V3</td><td class="mono">54 / 62</td><td class="mono">2.64</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>3.70</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">58</td><td><strong>BORKOWSKA Halina</strong> <span class="mono">(1956)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V4</td><td class="mono">36 / 40</td><td class="mono">2.40</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>3.36</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">59</td><td><strong>JABŁOŃSKA Ewa</strong> <span class="mono">(1971)</span></td><td><span class="chip plain">POL</span></td><td>Foil W V2</td><td class="mono">44 / 49</td><td class="mono">2.36</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>3.30</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">60</td><td><strong>QUEVRAIN Michel</strong> <span class="mono">(1964)</span></td><td><span class="chip fill">BEL</span></td><td>Épée M V3</td><td class="mono">88 / 95</td><td class="mono">1.82</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>2.55</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">61</td><td><strong>PYZIK Zdzisław</strong> <span class="mono">(1960)</span></td><td><span class="chip plain">POL</span></td><td>Foil M V3</td><td class="mono">58 / 61</td><td class="mono">1.60</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>2.24</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">62</td><td><strong>CHMIELEWSKA Emilia</strong> <span class="mono">(1986)</span></td><td><span class="chip plain">POL</span></td><td>Épée W V1</td><td class="mono">61 / 63</td><td class="mono">1.38</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>1.93</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">63</td><td><strong>ALCSER Norbert</strong> <span class="mono">(1985)</span></td><td><span class="chip fill">HUN</span></td><td>Foil M V1</td><td class="mono">61 / 62</td><td class="mono">1.19</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>1.67</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">64</td><td><strong>BORKOWSKA Halina</strong> <span class="mono">(1956)</span></td><td><span class="chip plain">POL</span></td><td>Foil W V4</td><td class="mono">30 / 30</td><td class="mono">1.00</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>1.40</strong></td><td><span class="chip never">stored today</span></td></tr>
+<tr><td class="mono">65</td><td><strong>KARMAN Irene</strong> <span class="mono">(1970)</span></td><td><span class="chip fill">HUN</span></td><td>Sabre W V2</td><td class="mono">46 / 46</td><td class="mono">1.00</td><td class="mono">0.00</td><td class="mono">—</td><td class="mono"><strong>1.40</strong></td><td><span class="chip warn">D3 · recorded alias</span></td></tr>
+</tbody></table></div>
+    <h3>Per bracket</h3>
+    <div class="tablewrap"><table><thead><tr><th>Bracket</th><th>Cat</th><th>N (FTL)</th><th>Printed POL</th><th>Would be stored</th><th>PENDING</th></tr></thead><tbody>
+<tr><td>Épée Men</td><td class="mono">V1</td><td class="mono">86</td><td class="mono">4</td><td class="mono">4</td><td class="mono">—</td></tr>
+<tr><td>Épée Men</td><td class="mono">V2</td><td class="mono">109</td><td class="mono">4</td><td class="mono">5</td><td class="mono">—</td></tr>
+<tr><td>Épée Men</td><td class="mono">V3</td><td class="mono">95</td><td class="mono">2</td><td class="mono">4</td><td class="mono">—</td></tr>
+<tr><td>Épée Men</td><td class="mono">V4</td><td class="mono">74</td><td class="mono">3</td><td class="mono">3</td><td class="mono">—</td></tr>
+<tr><td>Épée Women</td><td class="mono">V1</td><td class="mono">63</td><td class="mono">2</td><td class="mono">2</td><td class="mono">—</td></tr>
+<tr><td>Épée Women</td><td class="mono">V2</td><td class="mono">83</td><td class="mono">4</td><td class="mono">6</td><td class="mono">—</td></tr>
+<tr><td>Épée Women</td><td class="mono">V3</td><td class="mono">62</td><td class="mono">0</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Épée Women</td><td class="mono">V4</td><td class="mono">40</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Foil Men</td><td class="mono">V1</td><td class="mono">62</td><td class="mono">4</td><td class="mono">4</td><td class="mono">1</td></tr>
+<tr><td>Foil Men</td><td class="mono">V2</td><td class="mono">63</td><td class="mono">4</td><td class="mono">4</td><td class="mono">—</td></tr>
+<tr><td>Foil Men</td><td class="mono">V3</td><td class="mono">61</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Foil Men</td><td class="mono">V4</td><td class="mono">43</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Foil Women</td><td class="mono">V1</td><td class="mono">41</td><td class="mono">0</td><td class="mono">0</td><td class="mono">—</td></tr>
+<tr><td>Foil Women</td><td class="mono">V2</td><td class="mono">49</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Foil Women</td><td class="mono">V3</td><td class="mono">36</td><td class="mono">0</td><td class="mono">0</td><td class="mono">—</td></tr>
+<tr><td>Foil Women</td><td class="mono">V4</td><td class="mono">30</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Sabre Men</td><td class="mono">V1</td><td class="mono">66</td><td class="mono">3</td><td class="mono">3</td><td class="mono">—</td></tr>
+<tr><td>Sabre Men</td><td class="mono">V2</td><td class="mono">71</td><td class="mono">4</td><td class="mono">4</td><td class="mono">—</td></tr>
+<tr><td>Sabre Men</td><td class="mono">V3</td><td class="mono">62</td><td class="mono">4</td><td class="mono">4</td><td class="mono">—</td></tr>
+<tr><td>Sabre Men</td><td class="mono">V4</td><td class="mono">40</td><td class="mono">4</td><td class="mono">4</td><td class="mono">—</td></tr>
+<tr><td>Sabre Women</td><td class="mono">V1</td><td class="mono">45</td><td class="mono">3</td><td class="mono">2</td><td class="mono">1</td></tr>
+<tr><td>Sabre Women</td><td class="mono">V2</td><td class="mono">46</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Sabre Women</td><td class="mono">V3</td><td class="mono">35</td><td class="mono">1</td><td class="mono">1</td><td class="mono">—</td></tr>
+<tr><td>Sabre Women</td><td class="mono">V4</td><td class="mono">24</td><td class="mono">0</td><td class="mono">0</td><td class="mono">—</td></tr>
+<tr><td><b>Total, 24 brackets</b></td><td></td><td class="mono"><b>1386</b></td><td class="mono"><b>52</b></td><td class="mono"><b>57</b></td><td class="mono"><b>2</b></td></tr>
+</tbody></table></div>
+  </section>
+
+  <section id="scenarios">
+    <p class="kicker">Scenarios</p>
+    <h2>Walked through end to end</h2>
+    <ol>
+      <li><strong>SZUMIELEWICZ at Tbilisi.</strong> Printed POL. He is in the table (migration of 29 Jul, birth year 1986 confirmed), and 1986 fits V1, so he is stored at 2nd of 62 with 161.73 points. <code>fn_ranking_full</code> for Foil M V1 in 2026/27 lists him with 161.73 EVF+ points and 0 SPWS points (ADR-110 §2).</li>
+      <li><strong>A Pole not in our table at a future Worlds.</strong> Printed POL with no identity, so the row is PENDING and the staging summary lists it with the matcher’s candidate. An administrator supplies the birth year, an add-fencer migration adds the fencer, and the event is re-staged and stored. Nothing is created automatically (D2 A).</li>
+      <li><strong>The same Pole at an EVF circuit (PEW).</strong> Nothing changes: ADR-106 §1 applies and the row is PENDING without an SPWS start.</li>
+      <li><strong>KÁRMÁN Irén at Tbilisi.</strong> Printed “KARMAN Iren” for HUN. The alias is recorded, she has an SPWS start, and 1970 fits V2, so both her results (Sabre W V2, Épée W V2) are stored under D3 A.</li>
+      <li><strong>TECŁAW at Tbilisi.</strong> Matched in the V1 bracket because the year before the season’s end is accepted. Ranked in V2, because <code>fn_age_category(1977, 2027)</code> is V2.</li>
+      <li><strong>An FIE page that prints no country.</strong> No row is POL, so ADR-106 §1 decides as today. A Pole with an SPWS start is still stored. One without an SPWS start would be rejected, which is a known limit. Tbilisi printed every country.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">Acceptance tests · written first, seen red</p>
+    <h2>ADM.FIE.01–10</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Assertion</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ADM.FIE.01</td><td>MSW: printed POL, exactly one roster fencer, no SPWS start → STORED, reason “identity, entered by POL at an FIE event”.</td><td><code>python/tests/test_international_admission.py</code></td></tr>
+        <tr><td class="mono">ADM.FIE.02</td><td>The IMSW code and PSW decide like MSW. PEW, MEW and IMEW keep ADM_ID_04 (PENDING).</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.03</td><td>MSW: printed POL, no identity → PENDING with a candidate. No fencer is created.</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.04</td><td>MSW: printed POL, birth year fits neither year → PENDING.</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.05</td><td>MSW: printed POL, two roster namesakes fit → PENDING.</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.06</td><td>MSW: foreign flag, identity, no SPWS start → REJECTED (unchanged).</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.07</td><td>MSW: printed name equals a recorded alias, birth year fits, SPWS start → STORED. The same row at PEW → REJECTED (D3 A).</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.08</td><td>A revoked alias is never used.</td><td>same</td></tr>
+        <tr><td class="mono">ADM.FIE.09</td><td><code>s6_resolve_identity</code>, <code>ResolveFencers</code> and <code>resolve_tournament_results</code> decide an MSW row identically.</td><td><code>python/tests/test_international_admission.py</code> (as ADM_ID_07)</td></tr>
+        <tr><td class="mono">ADM.FIE.10</td><td>The staging summary flags an FIE bracket with more than 4 rows of one federation and still stages it (D5 A).</td><td><code>python/tests/test_international_intake.py</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="steps">
+    <p class="kicker">Steps</p>
+    <h2>Amendment first, then the Tbilisi ingest, all on LOCAL</h2>
+    <h3>Part A · the amendment</h3>
+    <ol class="steps">
+      <li><span class="op-tag">GIT</span> Rename the branch to <code>claude/adr-106-fie-worlds-amendment</code>.</li>
+      <li><span class="op-tag d">RED</span> Write ADM.FIE.01–10 with plan-test-ID comments. Run them and confirm they fail.</li>
+      <li><span class="op-tag c">GREEN</span> In <code>python/pipeline/international_admission.py</code>, <code>admit()</code> gets a keyword-only <code>tournament_type</code> and an <code>FIE_TYPES = {"MSW", "PSW"}</code> set, plus the alias identity (D3). Pass the type from the three callers. Add the staging flag in the Phase 5 summary (D5). Run the tests and see them pass.</li>
+      <li><span class="op-tag">CHECK</span> Ruff, basedpyright, the full pytest suite, and <code>scripts/preflight.sh</code> exiting 0.</li>
+      <li><span class="op-tag u">DOCS</span> Write the ADR-106 amendment (Accepted after your sign-off) and its HTML twin through <code>scripts/render_adrs.py</code>. Correct the ADR-110 and ADR-018 sentences. Update spec §8.5 and Appendix C, RTM FR-09, FR-152 and INTL.POL plus the new ADM.FIE rows, and the test counts (Appendix D and <code>doc/claude/testing.md</code>). Update the handbook pages. Then run <code>scripts/check-coherence.sh</code>, <code>scripts/refresh-graph.sh</code> and <code>python3 tools/docs-search/ingest.py</code>.</li>
+      <li><span class="op-tag u">LOCAL WRITE</span> Roster fixes (D4, plus the UIJTING typo) through one guarded, self-verifying migration keyed by name and birth year, because ids differ between environments.</li>
+    </ol>
+    <h3>Part B · Tbilisi on LOCAL, under the new rule</h3>
+    <ol class="steps">
+      <li><span class="op-tag">READ</span> <code>python -m python.tools.set_event_source_urls --event-code MSW-2026-2027 --check-only &lt;FTL schedule URL&gt;</code>, adding <code>--name-confirmed-by</code> only if the Polish event name is the sole failure.</li>
+      <li><span class="op-tag u">LOCAL WRITE</span> Store the URL with the same command, without <code>--check-only</code>.</li>
+      <li><span class="op-tag u">LOCAL WRITE · drafts</span> <code>python -m python.tools.phase5_runner --event-code MSW-2026-2027 --season-end-year 2027</code>. No override file is needed.</li>
+      <li><span class="op-tag">READ</span> The staged rows must equal the 65 above. Then I stop for your “OK MSW-2026-2027” (D6).</li>
+      <li><span class="op-tag u">LOCAL WRITE</span> <code>python -m python.tools.phase5_runner --commit-run-id &lt;run&gt; --event-code MSW-2026-2027 --replace-event</code>, then the status per D7.</li>
+      <li><span class="op-tag">READ</span> Verify through what the UI reads. <code>num_final_score</code> must equal the table to the cent. <code>fn_ranking_full</code> must list SZUMIELEWICZ in Foil M V1 and KOSZYK in Sabre W V1 with their MSW points, and TECŁAW in Sabre M V2.</li>
+    </ol>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">LOCAL, CERT and PROD</p>
+    <h2>What changes where</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Admission code</td><td>Runs from this worktree</td><td colspan="2">Unchanged until a release, which needs your approval (a push to main deploys)</td></tr>
+        <tr><td>Roster fixes (D4, UIJTING)</td><td>Migration applied</td><td colspan="2">Same migration, with your approval</td></tr>
+        <tr><td>Tbilisi results</td><td>Ingested (Part B)</td><td colspan="2"><code>phase5-event-runner.yml</code>, run per environment with approval</td></tr>
+        <tr><td>EVF events</td><td colspan="3">Unchanged everywhere</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">Definition of done</p>
+    <h2>Binary</h2>
+    <ul>
+      <li>ADM.FIE.01–10 were seen red and are now green. Every existing ADM_ID and INTL test is still green. <code>scripts/preflight.sh</code> exits 0.</li>
+      <li>The ADR-106 amendment and its HTML twin are on disk. Appendix C, the RTM rows and the test counts are updated. <code>scripts/check-coherence.sh</code> passes.</li>
+      <li>LOCAL <code>MSW-2026-2027</code> holds 24 tournaments and 65 results (fewer if D3 or D4 differ), with no PENDING row, and each <code>num_final_score</code> equals the table.</li>
+      <li><code>fn_ranking_full</code> shows SZUMIELEWICZ and KOSZYK with their MSW points.</li>
+      <li>No git commit, push or cloud write has happened without your word.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Sources. ADR-008, ADR-018, ADR-020, ADR-097, ADR-105, ADR-106, ADR-110, ADR-111. RTM FR-09, FR-152, INTL.POL.01–06. Handbook: subsystems/ingestion.html, domain/competition-and-ranking.html, operations/operator-runbooks.html. Code: python/pipeline/international_admission.py (admit, identity_matches, _fits), python/pipeline/stages.py:78 and :118, python/matcher/pipeline.py:216, python/scrapers/evf_sync.py:897, python/tests/test_international_admission.py. DB (LOCAL): fn_ranking_full_event_fk_matching, fn_score_by_engine, fn_score_podium_bonus, fn_age_category, tbl_fencer aliases. Migrations 20260719000001 and 20260729000001. FTL schedule CD17BF3AC4CC47BC800AB3D2A503099C and the FIE invitation letter, read 2026-10-17. The spws-docs MCP server did not connect in this session, so the same Meilisearch index was queried over HTTP.</p>
+</div>

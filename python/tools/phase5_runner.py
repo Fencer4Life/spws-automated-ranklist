@@ -1835,14 +1835,27 @@ def _format_international_section(event_code: str, ctxs: list) -> list[str]:
     bracket whose source prints no country at all (an Engarde page headed
     Club, ENG.NAT.01), where only identity can store a row.
 
+    At an FIE event (MSW, PSW) a federation enters at most 4 fencers per
+    individual bracket, so a bracket with more of one federation is flagged
+    as a likely parse error; it is still staged (ADR-106 amendment, D5 A).
+
     Every PENDING row is listed below the table with its candidate: sign-off
     refuses until the event's override file resolves it (decision P A).
     """
+    from collections import Counter
+
+    from python.pipeline.db_connector import derive_tourn_type_from_event_code
+    from python.pipeline.international_admission import (
+        FIE_MAX_PER_FEDERATION,
+        fold_federation,
+        is_fie_type,
+    )
     from python.pipeline.joined_brackets import BracketField
     from python.pipeline.types import StageMatchResult
 
     if not _is_international_intake({"txt_code": event_code}):
         return []
+    fie = is_fie_type(derive_tourn_type_from_event_code(event_code))
     lines = [
         "## International brackets — source size and admission (ADR-105, ADR-106)",
         "",
@@ -1859,12 +1872,27 @@ def _format_international_section(event_code: str, ctxs: list) -> list[str]:
         stored = [m for m in ctx.matches if m.method not in ("EXCLUDED", "PENDING")]
         held = [m for m in ctx.matches if m.method == "PENDING"]
         printed_pol = sum(1 for r in parsed.results if r.fencer_country == "POL")
+        flags: list[str] = []
         if places and all(r.fencer_country is None for r in parsed.results):
-            check = "⚠ the source has no country: only an identity match is stored"
+            flags.append("⚠ the source has no country: only an identity match is stored")
         elif printed_pol and n == printed_pol:
-            check = "⚠ N equals the rows printed POL: confirm the source lists the whole bracket"
-        else:
-            check = "✓"
+            flags.append(
+                "⚠ N equals the rows printed POL: confirm the source lists the whole bracket"
+            )
+        if fie:
+            per_federation = Counter(fold_federation(r.fencer_country) for r in parsed.results)
+            over = sorted(
+                (code, k)
+                for code, k in per_federation.items()
+                if code and k > FIE_MAX_PER_FEDERATION
+            )
+            if over:
+                flags.append(
+                    f"⚠ more than {FIE_MAX_PER_FEDERATION} fencers of one federation ("
+                    + ", ".join(f"{code} {k}" for code, k in over)
+                    + "): the FIE enters 4 at most, check the parse"
+                )
+        check = "; ".join(flags) or "✓"
         name = (
             getattr(parsed, "_ftl_source_name", None) or getattr(parsed, "source_url", None) or "?"
         )
@@ -1881,9 +1909,10 @@ def _format_international_section(event_code: str, ctxs: list) -> list[str]:
         lines += [
             f"### PENDING — resolve in doc/overrides/{event_code}.yaml before sign-off",
             "",
-            "Printed POL, no identity match to a fencer with an SPWS start. For each row add "
-            "an identity entry (scraped name → id_fencer) or a match_method entry EXCLUDED, "
-            "then re-stage.",
+            "Printed POL and not stored: no identity match to exactly one fencer"
+            + ("" if fie else " with an SPWS start")
+            + ". For each row add an identity entry (scraped name → id_fencer) or a "
+            "match_method entry EXCLUDED, then re-stage.",
             "",
             "| Bracket | Place | Name | Candidate |",
             "|---|---:|---|---|",
