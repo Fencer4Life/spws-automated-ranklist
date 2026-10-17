@@ -4,6 +4,7 @@
 **Date:** 2026-04-06
 **Relates to:** FR-58, ADR-025 (Event-Centric Ingestion), ADR-029 (`url_event`), ADR-030 (`url_registration`/`dt_registration_deadline`), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-043 (event code allocator + classifier)
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (carves out one-time curated enrichment of calendar-facing fields).
+**Amended by:** [ADR-113](113-ingest-and-promote-carry-every-organizer.md) (Results Scraping and `evf-results-import`: the sync imports no result; `ingest` reads EVF's results for an event without a result URL, and `promote` carries them to PROD).
 **Amended by:** [ADR-088](088-calendar-location-contract.md) (closes the `txt_location` venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only).
 **Amended by:** [ADR-096](096-no-bracket-stubs-before-results.md) (§Calendar Scraping's "Creates `tbl_event` ... + child `tbl_tournament` ... via `fn_import_evf_events`" no longer holds: the calendar ingest creates event-level facts only, and a bracket is created by results ingestion instead).
 
@@ -52,6 +53,8 @@ Two data sources from veteransfencing.eu. Current season only (2025-2026). Categ
 - Only Polish fencers ingested via fuzzy matcher (international rules from ADR-025).
 - **PDF fallback:** Legacy `parse_evf_result_pdf()` retained for older championships that only have PDFs.
 
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* the sync imports no result. EVF's API results are read by `ingest <code>` when the event has no result URL (ADR-105 §1.5), and reach PROD through `promote <code>`. The sync compares EVF's results with CERT and tells the operator when an event has results to load.
+
 ### Refresh Semantics (amendment, 2026-04-20 rev 2)
 
 The original "create-only, idempotent-by-code" import contract is **preserved** for `fn_import_evf_events`: a re-run with a payload whose `txt_code` already exists still skips the row. That contract remains for callers that rely on it (seeding, manual backfills, administrator imports).
@@ -76,7 +79,7 @@ The `dt_registration_deadline` regex heuristic had a 0/13 hit rate on live EVF d
 
 ### Telegram Commands
 - `evf-cal-import` — manual calendar scrape (bypass 3-day schedule)
-- `evf-results-import <event>` — manual result fetch + import for specific event
+- `evf-results-import <event>` — manual result fetch + import for specific event (*since [ADR-113](113-ingest-and-promote-carry-every-organizer.md), 2026-10-17: compares the event's EVF results with CERT and writes nothing*)
 - `evf-status` — show past international events missing results (dt_end < today, result_count = 0)
 
 ## Alternatives Considered

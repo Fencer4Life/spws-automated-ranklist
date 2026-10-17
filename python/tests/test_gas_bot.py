@@ -83,7 +83,7 @@ def test_source_keeps_the_live_behaviour():
     """GAS.SRC.02: re-ingest on CERT, the PROD refusal naming promote, exact codes."""
     src = _source()
     assert "'ingest-event.yml'" in src
-    assert "A domestic event reaches PROD only through promote" in src
+    assert "An event reaches PROD only through promote" in src
     assert "'promote.yml'" in src
     for entry in (
         "ingest &lt;EVENT-CODE&gt;</pre>",
@@ -171,3 +171,14 @@ def test_help_fits_one_telegram_message():
     text = "\n".join(line.replace("\\'", "'") for line in _help_lines(_source()))
     assert "message.substring(0, 4000)" in _source()
     assert len(text) < 4000, len(text)
+
+
+def test_ingest_and_promote_name_every_organizer():
+    """ROUTE.BOT.01 (ADR-113) `ingest` and `promote` carry every organizer's
+    event, and the bot says so; the EVF results command no longer claims to
+    write results (Q1 A: the sync compares, `ingest` writes)."""
+    src = _source()
+    assert "SPWS, PZSz, EVF or FIE" in src
+    assert "domestic event" not in src
+    assert "Import one event results from the EVF API" not in src
+    assert "EVF results with CERT; nothing is written" in src

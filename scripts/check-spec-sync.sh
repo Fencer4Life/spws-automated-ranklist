@@ -102,7 +102,9 @@ if [ -f "$RTM" ]; then
   #   every organizer); ADR-111. Registered as Planned before code.
   # 156 since 2026-10-07: +FR-157 (PZSz start lists are stored inputs,
   #   captured while pzszerm.pl serves them; ADR-112).
-  EXPECTED=156
+  # 157 since 2026-10-17: +FR-158 (ingest starts from PROD's master data, and
+  #   only ingest and promote write results; ADR-113).
+  EXPECTED=157
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else

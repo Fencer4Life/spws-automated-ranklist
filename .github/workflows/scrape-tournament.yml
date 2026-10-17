@@ -7,7 +7,7 @@ on:
         description: 'Tournament code (e.g. PPW4-V2-M-EPEE-2025-2026)'
         required: true
       target:
-        description: 'Target environment: cert or prod'
+        description: 'Target environment: cert (PROD gets results only through promote, ADR-113)'
         default: 'cert'
 
 # ADR-083: least-privilege GITHUB_TOKEN. Default repo scope is far wider than
@@ -20,6 +20,18 @@ jobs:
     name: Scrape & Ingest (${{ github.event.inputs.target }})
     runs-on: ubuntu-latest
     steps:
+      # ADR-113 (Q2 A): results reach PROD only through promote, which replays
+      # a verified CERT run. This workflow holds no PROD secret and refuses a
+      # PROD target, so the per-tournament scrape is a CERT tool only.
+      - name: Validate inputs
+        env:
+          TARGET_ENV: ${{ github.event.inputs.target }}
+        run: |
+          if [[ "$TARGET_ENV" != "cert" ]]; then
+            echo "::error::scrape-tournament writes CERT only. PROD gets results through promote: send 'ingest <event code>' (CERT), then 'promote <event code>' (PROD)."
+            exit 1
+          fi
+
       - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v6
@@ -31,8 +43,8 @@ jobs:
 
       - name: Scrape tournament results
         env:
-          SUPABASE_URL: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_URL || secrets.SUPABASE_CERT_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
         run: |

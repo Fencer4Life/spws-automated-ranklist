@@ -54,6 +54,7 @@ def _build_plugins() -> dict[str, object]:
     """
     from python.pipeline.plugins.ingest import (
         AssignFinalVcat,
+        AssignSourceVcat,
         Commit,
         DetectCombinedPool,
         DetectJointPool,
@@ -82,6 +83,7 @@ def _build_plugins() -> dict[str, object]:
         ValidateCounts(),
         DetectPoolRound(),
         AssignFinalVcat(),
+        AssignSourceVcat(),
         Commit(),
         AdmitPzszRoster(),
         CommitPzszSenior(),
@@ -193,6 +195,29 @@ RULEBOOK: dict[Flow, Rule] = {
             Step("AdmitPzszRoster"),
             Step("ValidateCounts"),
             Step("CommitPzszSenior"),
+        ),
+        seeds=frozenset(),
+    ),
+    # 6. EVF and FIE result flow (ADR-113): the steps INGEST_DOMESTIC uses to
+    #    parse, find the event, decide identity (ResolveFencers takes ADR-106's
+    #    international branch by the event's type), count and commit, without
+    #    the three steps that split or renumber a bracket. AssignSourceVcat
+    #    files every admitted fencer under the bracket's own category, and
+    #    Commit keeps the whole source bracket as N and the source place
+    #    (ADR-105). Ingest on CERT and promote's plan on PROD both run it.
+    Flow.INGEST_INTERNATIONAL: Rule(
+        Flow.INGEST_INTERNATIONAL,
+        "Ingest one bracket of an EVF or FIE event: rows decided by identity "
+        "(ADR-106), nothing created, the bracket's own category, N the whole "
+        "source bracket and each fencer's source place (ADR-105).",
+        steps=(
+            Step("ParseSource"),
+            Step("ValidateIR"),
+            Step("ResolveEvent"),
+            Step("ResolveFencers", params={"intake": "INTERNATIONAL"}),
+            Step("ValidateCounts"),
+            Step("AssignSourceVcat"),
+            Step("Commit"),
         ),
         seeds=frozenset(),
     ),

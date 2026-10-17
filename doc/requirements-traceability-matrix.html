@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="68969109d06b1eab89d6976d655c5c1e035bd99cc64bba4905c28bc2d7db0e9d">
+<meta name="doc-source-sha256" content="15bdabd034542fe9df33a46a3be50767425ac8e0d7359337844c4630de46a5b0">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>481 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>502 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -979,8 +979,9 @@
 | FR-153 | <strong>The calendar drum reads downward in time and shows how it turns.</strong> Earlier months above the focused month, later below; ▲/▼ step to the nearest earlier/later month with competitions, as a tap on the neighbouring month does, and disappear where nothing lies further; the „najbliższe zawody” arrow points to where the opening month is drawn; turned-away months are inert; month labels are in the page's language; crowded previews stop before the buttons; the buttons sit at the drum's right edge at every width; ↑/↓ keys step. | ADR-084 (amendment 2026-10-06) | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50, CB.53; CB.E1–CB.E5 | Covered (2026-10-06, LOCAL) |
 | FR-154 | <strong>Every interface string and screen-reader label is in the reader's language.</strong> Every key the code uses exists in both locales, runtime key families are complete, identical PL/EN values are allowlisted with a reason, and the calendar surfaces render no word of the other language. | ADR-005 | TR.01–TR.06 | Covered (2026-10-06, LOCAL) |
 | FR-155 | <strong>A PZSz result (PPS, MPS) is kept only on surname, first name and birth year.</strong> A row is stored only when exactly one fencer in the fencer table matches its surname, its first name and the year of the birth date on the PZSz start list (FencingTimeLive carries no birth year). Polish letters are folded and case ignored; approved aliases do not count; an estimated birth year of ours is compared exactly. Everything else is skipped, and no fencer, alias, birth-year change or review row is ever written. No PPW or MPW start is required. A stored row keeps its original place and the whole field's N in one <code>SENIOR</code> tournament per weapon and gender. Nobody matched → nothing is written and the event is <code>COMPLETED</code>. The plugin <code>AdmitPzszRoster</code> begins as a copy of the EVF admission and shares nothing with it. | <a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>, ADR-100, ADR-105, ADR-110 | PZSZ.ADM.01–08, PZSZ.SL.01–02 | Covered (2026-10-06, LOCAL) |
-| FR-156 | <strong>One route to PROD for every organizer: ingest for CERT, promote for PROD, the same ingestion.</strong> <code>ingest &lt;code&gt;</code> runs on CERT; <code>promote &lt;code&gt;</code> runs the same flow and plugins on PROD and applies only a result equal to the verified CERT run. PPW and MPW use it today; a PZSz event takes the PZSz flow in <code>ingest_cli</code> and in promote's <code>plan_event</code>, and the run record keeps the start-list hash; EVF follows in a later plan. <code>ingest &lt;code&gt; prod</code> stays refused. | <a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> §6, ADR-108 | PZSZ.ROUTE.01–03 | Covered (2026-10-06, LOCAL) |
-| FR-157 | <strong>PZSz start lists are stored inputs, captured while pzszerm.pl serves them.</strong> Each version of a tournament's start list is stored on CERT, insert-only, as printed name and birth year (never the date), with its hash and source, and only when it differs from the newest version for the same event, weapon and gender. A daily capture stores the lists of the PZSz events within 14 days of today, stops at the first JavaScript check page, deletes the lists of events outside the active season, and sends Telegram the <code>ingest</code> command when a list is stored for an ended event without a finished CERT run. The CERT ingest captures, then reads the newest stored version, and fails with nothing written only when none was ever stored. Promote reads the lists the CERT run used from CERT by their hashes, refuses a missing or altered one, and never contacts pzszerm.pl. Pages saved in a browser are stored by the <code>store</code> command through the same parsers. | <a href="adr/112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>, ADR-111, ADR-108, ADR-078 | PZSZ.SL.03–04, PZSZ.CAP.01–05, PZSZ.CAP.06 (pzsz.49–pzsz.53), PZSZ.STORE.01 (pgTAP 109.1–109.6), PZSZ.ROUTE.04–07, PROMO.REPLAY.29–31 | Covered (CERT and PROD 2026-10-07) |</p>
+| FR-156 | <strong>One route to PROD for every organizer: ingest for CERT, promote for PROD, the same ingestion.</strong> <code>ingest &lt;code&gt;</code> runs on CERT; <code>promote &lt;code&gt;</code> runs the same flow and plugins on PROD and applies only a result equal to the verified CERT run. SPWS (PPW, MPW) takes the domestic keep-rule; PZSz (PPS, MPS) the PZSz flow, with the start-list hash in the run record; EVF (PEW, MEW, IMEW) and FIE (MSW, PSW, IMSW) the international flow, which reads every result URL slot, or EVF's results when none is set, files one tournament per source bracket with the source N and place, and records a bracket with no fencer of ours as dropped. Promote reads the slots the CERT run read and fills a blank PROD slot; the daily close covers every organizer. <code>ingest &lt;code&gt; prod</code> stays refused. | <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>, <a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> §6, ADR-108, ADR-105 | PZSZ.ROUTE.01–03, ROUTE.FLOW.01–04, ROUTE.SRC.01–10, ROUTE.INTL.01–04, ROUTE.PLAN.01–06, ROUTE.LIFE.01, ROUTE.CLOSE.01–02, ROUTE.REPORT.01–03, ROUTE.APPLY.01–05 | Covered (PZSz 2026-10-06; EVF and FIE 2026-10-17, LOCAL) |
+| FR-157 | <strong>PZSz start lists are stored inputs, captured while pzszerm.pl serves them.</strong> Each version of a tournament's start list is stored on CERT, insert-only, as printed name and birth year (never the date), with its hash and source, and only when it differs from the newest version for the same event, weapon and gender. A daily capture stores the lists of the PZSz events within 14 days of today, stops at the first JavaScript check page, deletes the lists of events outside the active season, and sends Telegram the <code>ingest</code> command when a list is stored for an ended event without a finished CERT run. The CERT ingest captures, then reads the newest stored version, and fails with nothing written only when none was ever stored. Promote reads the lists the CERT run used from CERT by their hashes, refuses a missing or altered one, and never contacts pzszerm.pl. Pages saved in a browser are stored by the <code>store</code> command through the same parsers. | <a href="adr/112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>, ADR-111, ADR-108, ADR-078 | PZSZ.SL.03–04, PZSZ.CAP.01–05, PZSZ.CAP.06 (pzsz.49–pzsz.53), PZSZ.STORE.01 (pgTAP 109.1–109.6), PZSZ.ROUTE.04–07, PROMO.REPLAY.29–31 | Covered (CERT and PROD 2026-10-07) |
+| FR-158 | <strong><code>ingest</code> starts from PROD's master data, and only ingest and promote write results.</strong> <code>ingest-event.yml</code> refreshes CERT from PROD before the ingestion and applies the refresh only when it renumbers nobody and leaves nobody unpaired; otherwise it stops before any write and Telegram reports why. The daily EVF sync writes no result and tells the operator to ingest; <code>evf-results-import</code> only compares; <code>scrape-tournament.yml</code> writes CERT only. The bot's <code>ingest</code>, <code>promote</code> and <code>/help</code> texts name every organizer. | <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §7–§8, ADR-108 §2 | ROUTE.REFRESH.01–04, ROUTE.WRITERS.01–04, ROUTE.BOT.01 | Covered (2026-10-17, LOCAL) |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery, ADR-080 §5); implementation complete with CERT pilot and PROD cron enablement pending.</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Total active FRs = 131 assigned; 129 covered + 1 implemented/pilot-pending + 1 superseded. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong> <strong>FR-155–FR-156 added 2026-10-06 (ADR-111); covered on LOCAL the same day, with a rehearsal on Poznań's real start lists.</strong></p>
 </blockquote>
@@ -1627,10 +1628,10 @@
 </tr>
 <tr>
 <td>INTL.URL.01</td>
-<td><code>ingest_event_from_url</code> refuses an international event before anything is written or fetched and names the Phase 5 runner; a domestic event still reaches the source fetch.</td>
+<td><code>ingest_event_from_url</code> reads an international event's sources before anything is written (rewritten 2026-10-17 by <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>: until then it refused the event and named the Phase 5 runner); a domestic event still reaches the source fetch.</td>
 <td>pytest</td>
 <td><code>python/tests/test_international_intake.py</code></td>
-<td><strong>Landed</strong> (2026-10-01, LOCAL)</td>
+<td><strong>Landed</strong> (2026-10-01, LOCAL; rewritten 2026-10-17)</td>
 </tr>
 <tr>
 <td>INTL.SCRAPE.01</td>
@@ -2597,6 +2598,113 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</h2>
+<p>Acceptance IDs for <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> and <a href="plans/ingest-and-promote-every-organizer-2026-10-17.html">doc/plans/ingest-and-promote-every-organizer-2026-10-17.html</a>. FR-156 and FR-158.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ROUTE.FLOW.01–04</td>
+<td><code>Flow.INGEST_INTERNATIONAL</code> runs ParseSource, ValidateIR, ResolveEvent, ResolveFencers (intake INTERNATIONAL), ValidateCounts, AssignSourceVcat and Commit, with no split, combined-pool or joint-pool step; <code>AssignSourceVcat</code> keeps the source category and refuses a bracket without one; Commit writes the source category for <code>SOURCE_FIELD_PLACE</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.SRC.01–10</td>
+<td><code>international_sources</code>: every result slot in order, blanks and repeats dropped; EVF's results as <code>evf:&lt;id&gt;</code> only when no slot is set; no source refuses naming Admin; an FTL schedule keeps the Finished flag and skips team and unfinished listings; other URLs go through <code>fetch_event_url_with_skips</code>; an uncategorised bracket or two sources for one bracket refuse before any write; an unparseable FTL name is listed as such; the daily close's re-read hashes as the run recorded it.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.INTL.01–04</td>
+<td>An MSW, IMSW, PEW or IMEW event is ingested, not refused, every bracket through the international flow with organizer FIE or EVF; the run record keeps the brackets; a PENDING row fails the run; a bracket with no fencer of ours is recorded as dropped, &quot;no fencer of ours&quot;, and the gate does not refuse it.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.PLAN.01–05</td>
+<td><code>plan_event</code> plans an international event from the CERT run's sources; a blank PROD slot takes the CERT run's URL, a different one refuses; the reference apply writes the slot; the run record keeps the sources it read.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.PLAN.06</td>
+<td><code>replay</code> passes the sources an international run read to the plan.</td>
+<td>pytest</td>
+<td><code>python/tests/test_promotion_replay.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.LIFE.01</td>
+<td>An unparseable bracket keeps the event IN_PROGRESS.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.CLOSE.01–02</td>
+<td>The daily close takes every organizer's code, and checks an international run against its own sources.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.REPORT.01–03</td>
+<td>The staging report <code>ingest</code> sends carries the international section, with the FIE flag for more than 4 rows of one federation; the formatter renders it before the footer.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.WRITERS.01–04</td>
+<td>The EVF sync writes no result, for a matched or a new event, and tells the operator to ingest, PENDING rows included (decided in the override file, never through the Phase 5 runner); <code>scrape-tournament.yml</code> holds no PROD secret and refuses any target but CERT.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.REFRESH.01–03</td>
+<td><code>run_refresh(refuse_renumbering=True)</code> stops before any write when an id would move and applies a refresh with the same ids; <code>--auto</code> sets it and exits 3 on a renumbering.</td>
+<td>pytest</td>
+<td><code>python/tests/test_promotion_refresh.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.REFRESH.04</td>
+<td><code>ingest-event.yml</code> runs the refresh on CERT with <code>--auto</code> before the ingestion, with CERT's URL.</td>
+<td>pytest</td>
+<td><code>python/tests/test_route_international.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.BOT.01</td>
+<td>The bot's <code>ingest</code>, <code>promote</code> and <code>/help</code> texts name SPWS, PZSz, EVF and FIE; <code>evf-results-import</code> no longer claims to import.</td>
+<td>pytest</td>
+<td><code>python/tests/test_gas_bot.py</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+<tr>
+<td>ROUTE.APPLY.01–05</td>
+<td><code>fn_promote_event_apply</code> fills a blank <code>url_event_2</code>…<code>url_event_5</code> from the plan, refuses a different URL naming the slot and writes nothing, and writes no other column.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/110_promote_apply_source_slot.sql</code></td>
+<td><strong>Landed</strong> (2026-10-17, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -2607,5 +2715,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>68969109d06b1eab89d6976d655c5c1e035bd99cc64bba4905c28bc2d7db0e9d</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>15bdabd034542fe9df33a46a3be50767425ac8e0d7359337844c4630de46a5b0</code></footer>
 </div></body></html>

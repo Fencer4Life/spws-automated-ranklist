@@ -1,6 +1,6 @@
 # ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering
 
-**Status:** Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read)
+**Status:** Accepted (2026-08-28; amended 2026-10-06 — accents folded, full-date ends read; amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md) — §5's results pass writes no result)
 **Date:** 2026-08-28
 **Resolved:** Both open items closed on sign-off, 2026-08-28.
 **Amends:** [ADR-043](043-evf-event-allocator.md) §Amendment (2026-08-07) — "missing/unsupported weapon sets … are hard errors" and "A later cancellation keeps its positive code"; [ADR-046](046-pew-weapon-suffix.md) §Amendment (2026-08-07) — "If no authoritative weapon set can be established, the entire calendar write fails before mutation" and "An event cancelled later keeps its previously assigned positive code"
@@ -146,6 +146,8 @@ Each field follows the policy of its siblings: `txt_venue_address` and `id_prior
 Calendar sync enters *future* events into the calendar. Results sync is the last-resort path for attaching results to events that have already happened; the normal path is manual ingestion from the admin UI, and this pass scrapes only EVF-organised results.
 
 The two share no data dependency, so `sync_results` now runs even when `sync_calendar` fails ([`evf_sync.py:1235`](../../python/scrapers/evf_sync.py)). The Telegram alert and the `FAILED` scrape-ledger row are unchanged, and the process still exits non-zero so CI stays red. The coupling was incidental — a shared `main()` — never a decision.
+
+*Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md) §8:* the results pass attaches no result. It compares EVF's results with CERT and, for an event with results to load, tells the operator to send `ingest <code>` and then `promote <code>`. It still runs when the calendar pass fails.
 
 ## Alternatives considered
 
