@@ -125,7 +125,7 @@
   <h1>Ingest and promote for every organizer</h1>
   <p class="dek">In Telegram, <code>ingest &lt;code&gt;</code> writes CERT, and <code>promote &lt;code&gt;</code> runs the same ingestion on PROD. Under this plan both work for <b>SPWS, PZSz, EVF and FIE</b>. Today they refuse EVF and FIE.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Approved 17 Oct · built and rehearsed on LOCAL (ADR-113) · release pending</span>
+    <span class="pill"><span class="dot"></span>Approved 17 Oct · built and rehearsed on LOCAL (ADR-113) · release needs your OK (R1)</span>
     <span class="pill">first event through it: MSW-2026-2027 (Tbilisi)</span>
     <span class="pill"><span class="dot"></span>Q1–Q5: A (you, in chat, 17 Oct)</span>
   </div>
@@ -249,6 +249,38 @@
       <li><span class="op-tag">YOU</span> Then you, in Telegram: <code>ingest MSW-2026-2027</code>, read the report, then <code>promote MSW-2026-2027</code>. I check CERT and PROD through what the site reads.</li>
     </ol>
     <p>No closed season is re-ingested anywhere, LOCAL included. EVF and 4fence are therefore proved by fixtures, and live on the first 2026/27 EVF event.</p>
+  </section>
+
+  <section id="result">
+    <p class="kicker">Built · 17 October</p>
+    <h2>What the LOCAL proof showed</h2>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>CERT refresh from PROD, read-only plan</td><td>373 of 373 fencers paired, <b>0 renumbered</b>, 0 unpaired, 5 alias values to copy. <code>ingest MSW-2026-2027</code> passes the automatic refresh.</td></tr>
+        <tr><td>LOCAL refreshed from PROD with <code>--auto</code></td><td>Applied; LOCAL equals PROD id for id.</td></tr>
+        <tr><td>Ingest on LOCAL with the workflow’s own arguments (run 150)</td><td>24 brackets read: 21 committed, 3 dropped with no fencer of ours. <b>65 results, 21 tournaments, 2,175.53 points</b>, identical row for row to the expected table but for the two corrected names.</td></tr>
+        <tr><td>Promote rehearsal: LOCAL rolled back to PROD’s state, run 150 replayed through the real gate, plan and apply</td><td>Gate passed; 43 writes; status IN_PROGRESS (the end date is today; the daily close completes it); <b>the apply ended on the run’s fingerprint</b>; the promoted rows equal the ingested ones.</td></tr>
+        <tr><td><code>scripts/preflight.sh</code></td><td>Exit 0, all 15 gates (pytest 1,973, vitest 1,226, pgTAP 1,456 assertions).</td></tr>
+      </tbody>
+    </table>
+    <div class="note danger">
+      <p class="lede">The rehearsal found a defect, fixed before commit</p>
+      <p>The first rehearsal recorded the three brackets with no fencer of ours (Vet-70 women’s sabre, Vet-60 and Vet-40 women’s foil) as committed listings that had not committed, and the promote gate refused. <code>promote MSW-2026-2027</code> would have stopped on PROD. Such a bracket is now recorded as dropped, “no fencer of ours” (ROUTE.INTL.04), and the second rehearsal passed.</p>
+    </div>
+    <p>Commit <code>0634876c</code> on <code>claude/ingest-promote-every-organizer</code>: code, migration <code>20261017000003</code>, ADR-113 with its amendments, the spec, the RTM and the handbook. Not integrated and not pushed.</p>
+  </section>
+
+  <section id="release">
+    <p class="kicker">Decide this first</p>
+    <h2>Release to CERT and PROD</h2>
+    <p>The push to main runs CI and the Release. The Release applies migration <code>20261017000003</code> (promote fills a blank result slot) to CERT, then PROD, and deploys the workflows. The front end does not change. Nothing writes Tbilisi’s results until you send <code>ingest</code>.</p>
+    <div class="note warn">
+      <p class="lede">R1 · Release now?</p>
+      <p><strong>A (recommended):</strong> integrate and push to main now; I watch CI and the Release to green and verify CERT and PROD. Then you send <code>ingest MSW-2026-2027</code> in Telegram, read the report, and send <code>promote MSW-2026-2027</code>. I check both environments through what the site reads.</p>
+      <p><strong>B:</strong> hold the release.</p>
+    </div>
+    <p>The Telegram bot works unchanged: it dispatches the same workflows with the same inputs. Its new <code>/help</code> and reply texts reach the phone when <code>scripts/gas_telegram_bot.js</code> is pasted over the Apps Script <code>Code.gs</code>; that can wait.</p>
   </section>
 
   <section>
