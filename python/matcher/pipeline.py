@@ -220,6 +220,7 @@ def resolve_tournament_results(
                 season_end_year=season_end_year,
                 roster=fencer_db,
                 spws_starters=spws_starters,
+                tournament_type=tournament_type,
             )
             if a.decision == "REJECTED":
                 result.skipped.append(name)
