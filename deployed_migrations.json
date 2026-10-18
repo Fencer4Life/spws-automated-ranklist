@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-17T13:50:59Z",
-    "last_sha": "1138b0f3b05cc1c60962bb0d7c42927e753564d9",
+    "last_updated": "2026-10-18T08:45:24Z",
+    "last_sha": "b4902526fd2d60eb78460fcd3d14147340b305e2",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -219,9 +219,10 @@
       "20261007000001_pzsz_start_list.sql",
       "20261017000001_fencer_name_fixes_mion_uijting.sql",
       "20261017000002_confirm_override_aliases.sql",
-      "20261017000003_promote_apply_source_slots.sql"
+      "20261017000003_promote_apply_source_slots.sql",
+      "20261018000001_equal_totals_share_place.sql"
     ],
-    "schema_fingerprint": "c0c47661cb5f5ff9dfb778bc54bc837d"
+    "schema_fingerprint": "f628e84bf8692243cda4dc1370cbcb2d"
   },
   "prod": {
     "last_updated": "2026-10-17T13:51:49Z",
