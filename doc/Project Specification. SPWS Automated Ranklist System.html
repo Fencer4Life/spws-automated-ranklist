@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="f74809e073d0b0d63a05e0f9898bd71d5a4d0bdabe4f7a5e6d27839b8501f857">
+<meta name="doc-source-sha256" content="e37bd9d87f3091c46f9d62f87a88428f5bcefb3494064bbdc65ab2cd04b5290e">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2969,7 +2969,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/114-ranklist-whole-points-close-call-decimals.html">ADR-114</a></td>
-<td><strong>Accepted (decided by the user in chat 2026-10-18: design C, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A); implemented test-first on LOCAL 2026-10-18; release pending the before/after sheet.</strong> <strong>The main ranklist shows whole points; a decimal appears only where neighbours would look equal.</strong> Every number in the main table is whole, a half rounding up. In the column that orders the list (Razem, Punkty), a run of neighbours showing the same whole number whose exact totals differ shows a small grey decimal (0.72 em, <code>#999</code>): one, or two when one would still look equal. Exact ties stay whole. The drilldown and the ODS download keep their decimals. Records that every ranking function numbers equal totals with <code>ROW_NUMBER</code> and no second key (open item 1: its own decision). Relates to ADR-101, ADR-098, ADR-078, ADR-102. Mocks embedded.</td>
+<td><strong>Accepted (decided by the user in chat 2026-10-18: design C, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A); implemented test-first; released to CERT and PROD on 2026-10-18 (main <code>29943732</code>) and checked on PROD's ranklist page: épée women V0, Ranking 2026/27 shows <code>71.34</code> · <code>71.31</code> in rows 5–6 and whole numbers elsewhere, the drilldown headline <code>71.3</code>, the ODS download the exact values.</strong> <strong>The main ranklist shows whole points; a decimal appears only where neighbours would look equal.</strong> Every number in the main table is whole, a half rounding up. In the column that orders the list (Razem, Punkty), a run of neighbours showing the same whole number whose exact totals differ shows a small grey decimal (0.72 em, <code>#999</code>): one, or two when one would still look equal. Exact ties stay whole. The drilldown and the ODS download keep their decimals. Records that every ranking function numbers equal totals with <code>ROW_NUMBER</code> and no second key (open item 1: its own decision). Relates to ADR-101, ADR-098, ADR-078, ADR-102. Mocks embedded.</td>
 <td></td>
 </tr>
 <tr>
@@ -3128,5 +3128,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>f74809e073d0b0d63a05e0f9898bd71d5a4d0bdabe4f7a5e6d27839b8501f857</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>e37bd9d87f3091c46f9d62f87a88428f5bcefb3494064bbdc65ab2cd04b5290e</code></footer>
 </div></body></html>
