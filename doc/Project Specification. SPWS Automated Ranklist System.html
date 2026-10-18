@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="6aa12608c92f9428a50e47f32dea4537e5f1d9417f6a55f076239c98177a53d4">
+<meta name="doc-source-sha256" content="0b608daa6e098c70924785f8fc8e5c139742a6e28c23d01ee22def64e584a2af">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2974,7 +2974,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/115-equal-totals-share-a-place.html">ADR-115</a></td>
-<td><strong>Accepted (decided by the user in chat 2026-10-18; the plan <code>doc/plans/equal-totals-shared-place-2026-10-18.html</code> signed off with Q1–Q4 A and S1 A, seed files in the ranking's row order); implemented test-first on LOCAL; release pending.</strong> <strong>Equal totals share a place; the next place skips.</strong> A fencer's place is one more than the number of fencers with a higher total (<code>RANK()</code>), so two fencers on 16th leave no 17th (16, 16, 18). The rule covers all six ranking variants (full, PPW, Kadra × event-FK, event-code) and every season. A shared place lists alphabetically by the shown name in Polish order. The season rules modal states the rule in Polish and English. In the FTL seed files a shared place is one tier, in the ranking's row order, in both generators: <code>fn_ftl_export_entries</code> orders by the ranking's ordinality, and the Python generator carries <code>fn_ranking_ppw</code>'s rank instead of counting positions. On PROD on 2026-10-18: 19 ties, 20 fencers move up, none move down. Tests: pgTAP RANK.TIE.01–07 (<code>111_equal_totals_share_place.sql</code>), pytest and Vitest RANK.TIE.07, Vitest RANK.TIE.08.</td>
+<td><strong>Accepted (decided by the user in chat 2026-10-18; the plan <code>doc/plans/equal-totals-shared-place-2026-10-18.html</code> signed off with Q1–Q4 A and S1 A, seed files in the ranking's row order); implemented test-first; released to CERT and PROD on 2026-10-18 (main <code>b4902526</code>) and checked on both: every rank one more than the number of higher totals, the 19 ties sharing one place in alphabetical order, PROD's page and rules modal as on the sheet.</strong> <strong>Equal totals share a place; the next place skips.</strong> A fencer's place is one more than the number of fencers with a higher total (<code>RANK()</code>), so two fencers on 16th leave no 17th (16, 16, 18). The rule covers all six ranking variants (full, PPW, Kadra × event-FK, event-code) and every season. A shared place lists alphabetically by the shown name in Polish order. The season rules modal states the rule in Polish and English. In the FTL seed files a shared place is one tier, in the ranking's row order, in both generators: <code>fn_ftl_export_entries</code> orders by the ranking's ordinality, and the Python generator carries <code>fn_ranking_ppw</code>'s rank instead of counting positions. On PROD on 2026-10-18: 19 ties, 20 fencers move up, none move down. Tests: pgTAP RANK.TIE.01–07 (<code>111_equal_totals_share_place.sql</code>), pytest and Vitest RANK.TIE.07, Vitest RANK.TIE.08.</td>
 <td>FR-159, ADR-098, ADR-114, ADR-080, ADR-101, ADR-083, ADR-018</td>
 </tr>
 <tr>
@@ -3134,5 +3134,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 <!-- Coverage Summary moved to doc/requirements-traceability-matrix.md in Phase 0.5 (2026-05-01). --></section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>6aa12608c92f9428a50e47f32dea4537e5f1d9417f6a55f076239c98177a53d4</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>0b608daa6e098c70924785f8fc8e5c139742a6e28c23d01ee22def64e584a2af</code></footer>
 </div></body></html>
