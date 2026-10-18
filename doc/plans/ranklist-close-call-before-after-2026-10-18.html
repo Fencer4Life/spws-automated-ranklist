@@ -1,0 +1,172 @@
+<meta charset="utf-8">
+<title>Ranklist before and after</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap" style="overflow-wrap:anywhere">
+
+  <p class="eyebrow">Before/after sheet · ADR-114 · LOCAL · 18 October 2026</p>
+  <h1>Whole points with close-call decimals, before and after</h1>
+  <p class="dek">The real ranklist on LOCAL, built twice from the same database: <b>before</b> is <code>main</code> (5711bf08), <b>after</b> is <code>claude/ranklist-close-call-decimals</code>. Only the list’s numbers change; the drilldown is byte-identical. Names are masked because this page is committed (ADR-078).</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Approved in chat on 18 October (A1: “I sign off both”)</span>
+    <span class="pill">Plan: <a href="ranklist-whole-points-2026-10-18.html">ranklist-whole-points-2026-10-18</a></span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="result">
+    <p class="kicker">What the sheet shows</p>
+    <h2>The rule holds on real lists; nothing else moves</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Close calls show a small grey decimal in the ordering column only</td><td>yes: cases 1–3</td></tr>
+        <tr><td>Two decimals where one would still look equal</td><td>yes: case 1, 71.34 · 71.31</td></tr>
+        <tr><td>Exact ties stay whole</td><td>yes: case 4</td></tr>
+        <tr><td>Every other number whole, a half rounding up</td><td>yes; checked against the exact values (e.g. 432.49 → <code>432</code>, 542.51 → <code>543</code>)</td></tr>
+        <tr><td>Column widths and row heights</td><td>unchanged</td></tr>
+        <tr><td>The drilldown (épée men V1, Ranking, row 5), desktop and phone</td><td><b>byte-identical PNGs</b> of the screen, and <b>identical text</b> of the whole drilldown, scrolled parts included</td></tr>
+        <tr><td>Tests and gates</td><td><code>RT.ROUND.01–10</code> green (01–08 seen red first; 09–10 are guards, green before and after); <code>scripts/preflight.sh</code> exit 0</td></tr>
+      </tbody>
+    </table></div>
+    <p>How it was made: two production builds (<code>vite build</code>), the only difference being <code>RanklistTable.svelte</code>; each served to headless Chromium by request interception, against LOCAL’s Supabase, at device scale 2. The active season is read with the rolling carry-over, as the site reads it. LOCAL’s close calls match PROD’s.</p>
+  </section>
+
+  <section id="ranking-epee-f-v0"><h2>1 · Two decimals: épée, women, V0 · Ranking 2026/27</h2><p>Rows 5 and 6 are 71.34 and 71.31. Today both read <code>71.3</code>, so they already look tied; after, <code>71<small>.34</small></code> and <code>71<small>.31</small></code>. Every other number is whole.</p><h3>Desktop, 1280 px</h3><div style="display:grid;grid-template-columns:1fr;gap:14px"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-f-v0-desktop.before.png" alt="Before · main: ranking-epee-f-v0-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-f-v0-desktop.after.png" alt="After · this branch: ranking-epee-f-v0-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div><h3>Phone, 375 px</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-f-v0-phone.before.png" alt="Before · main: ranking-epee-f-v0-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-f-v0-phone.after.png" alt="After · this branch: ranking-epee-f-v0-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div></section><section id="ranking-epee-m-v1"><h2>2 · Four close calls: épée, men, V1 · Ranking 2026/27</h2><p>Rows 5–6 (171.39 · 170.94), 17–18 (23.39 · 22.71), 19–20 (18.26 · 17.51) and 23–24 (6.15 · 5.72) keep a small decimal in Razem; their SPWS and EVF+ stay whole. Row 2 is one of the accepted sums that miss by one: 110.02 + 432.49 = 542.51 shows <code>110 + 432 = 543</code>.</p><h3>Desktop, 1280 px</h3><div style="display:grid;grid-template-columns:1fr;gap:14px"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-m-v1-desktop.before.png" alt="Before · main: ranking-epee-m-v1-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-m-v1-desktop.after.png" alt="After · this branch: ranking-epee-m-v1-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div><h3>Phone, 375 px</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-m-v1-phone.before.png" alt="Before · main: ranking-epee-m-v1-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ranking-epee-m-v1-phone.after.png" alt="After · this branch: ranking-epee-m-v1-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div></section><section id="ppw-epee-m-v3-2025"><h2>3 · A PPW close call: épée, men, V3 · PPW 2025/26</h2><p>Rows 9 and 10 are 22.09 and 21.90: <code>22<small>.1</small></code> and <code>21<small>.9</small></code>. The other rows are whole.</p><h3>Desktop, 1280 px</h3><div style="display:grid;grid-template-columns:1fr;gap:14px"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-epee-m-v3-2025-desktop.before.png" alt="Before · main: ppw-epee-m-v3-2025-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-epee-m-v3-2025-desktop.after.png" alt="After · this branch: ppw-epee-m-v3-2025-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div><h3>Phone, 375 px</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-epee-m-v3-2025-phone.before.png" alt="Before · main: ppw-epee-m-v3-2025-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-epee-m-v3-2025-phone.after.png" alt="After · this branch: ppw-epee-m-v3-2025-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div></section><section id="ppw-sabre-m-v0-2025"><h2>4 · Exact ties stay whole: sabre, men, V0 · PPW 2025/26</h2><p>Rows 6 and 7 are both 37.74 and show <code>38</code> · <code>38</code>; rows 10 and 11 are both 5.33 and show <code>5</code> · <code>5</code>. No decimal can explain an order the database does not fix (ADR-114, open item 1).</p><h3>Desktop, 1280 px</h3><div style="display:grid;grid-template-columns:1fr;gap:14px"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-sabre-m-v0-2025-desktop.before.png" alt="Before · main: ppw-sabre-m-v0-2025-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-sabre-m-v0-2025-desktop.after.png" alt="After · this branch: ppw-sabre-m-v0-2025-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div><h3>Phone, 375 px</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-sabre-m-v0-2025-phone.before.png" alt="Before · main: ppw-sabre-m-v0-2025-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/ppw-sabre-m-v0-2025-phone.after.png" alt="After · this branch: ppw-sabre-m-v0-2025-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div></section>
+
+  <section id="drilldown">
+    <h2>5 · The drilldown does not change</h2>
+    <p>Épée, men, V1, Ranking 2026/27, row 5 (171.39). The headline keeps <code>171.4</code>; the bars, tables and cards keep one decimal. The list behind the modal is hidden so it cannot enter the comparison. The pictures show the first screen; the whole drilldown’s text, the parts below included, was compared as well and is identical.</p>
+    <h3>Desktop, 1280 px</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/drilldown-desktop.before.png" alt="Before · main: drilldown-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/drilldown-desktop.after.png" alt="After · this branch: drilldown-desktop" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div>
+    <h3>Phone, 375 px</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start"><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">Before · main</figcaption><img src="ranklist-close-call-before-after-2026-10-18/drilldown-phone.before.png" alt="Before · main: drilldown-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure><figure style="margin:0"><figcaption class="kicker" style="margin:0 0 6px">After · this branch</figcaption><img src="ranklist-close-call-before-after-2026-10-18/drilldown-phone.after.png" alt="After · this branch: drilldown-phone" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff"></figure></div>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">Decide this</p>
+    <h2>Approval</h2>
+    <div class="note warn">
+      <p class="lede">A1 · Approve the sheet and release?</p>
+      <p><strong>A (recommended):</strong> approve; I commit with explicit paths, integrate, push <code>integration/main:main</code>, announce the wait, watch CI and the Release to green, and check PROD’s ranklist page, drilldown and ODS. A push to <code>main</code> reaches PROD’s WordPress pages with no further approval.</p>
+      <p><strong>B:</strong> change something first: say what.</p>
+    </div>
+  </section>
+
+  <p class="foot">Sources. Builds: main 5711bf08 and the branch’s RanklistTable.svelte; LOCAL Supabase (seed exported from PROD on 17 October 2026). Lists: fn_ranking_full / fn_ranking_ppw, 2026/27 rolling, 2025/26 not. Exact values checked on LOCAL with fn_ranking_full('EPEE','M','V1', 2026/27, true). Scripts kept in the session scratchpad: shoot_sheet.cjs, build_sheet.py.</p>
+</div>

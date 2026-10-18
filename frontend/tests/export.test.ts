@@ -59,6 +59,18 @@ describe('exportRankingFull', () => {
       { bookType: 'ods' },
     )
   })
+
+  // RT.ROUND.10 (ADR-114) — guard: the list shows whole points, the ODS keeps the exact values.
+  it('RT.ROUND.10 — keeps the exact values', () => {
+    const rows: RankingFullRow[] = [
+      { rank: 1, id_fencer: 1, fencer_name: 'SMITH John', spws_total: 96.35, evf_plus_total: 76.25, total_score: 172.6 },
+    ]
+    exportRankingFull(rows, 'ranking_test')
+
+    expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith([
+      { Rank: 1, Fencer: 'SMITH John', SPWS: 96.35, 'EVF+': 76.25, Razem: 172.6 },
+    ])
+  })
 })
 
 // 6.14 — drill-down ODS export. Its headers follow the UI language
