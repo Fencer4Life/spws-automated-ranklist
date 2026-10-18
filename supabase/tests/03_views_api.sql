@@ -344,8 +344,10 @@ SELECT ok(
     AND num_final_score IS NOT NULL
     AND txt_season_code IS NOT NULL
    FROM vw_score
-   WHERE txt_tournament_code = 'VW-PPW1'
-   LIMIT 1),
+   -- A scored row, named: VW-PPW1 also holds VW-V2-UNSCORED's result (place 5,
+   -- no score) on purpose, and an unordered LIMIT 1 picked it whenever the
+   -- planner returned that row first (CI on main ff8a6ab5, 2026-10-18).
+   WHERE txt_tournament_code = 'VW-PPW1' AND int_place = 1),
   '5.1b vw_score has all required columns'
 );
 
