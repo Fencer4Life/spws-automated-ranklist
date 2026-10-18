@@ -44,7 +44,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | FR-32 | Telegram alerting on pipeline failure | UC1(d) | 3.6 | Covered |
 | FR-33 | Web Component: weapon/gender/category filters | UC12(b) | FilterBar.test.ts (5 tests) | Covered |
 | FR-34 | Web Component: PPW/Kadra toggle with V0 guard (conditional on `bool_show_evf_toggle` season config, ADR-017) | UC12(b) | FilterBar.test.ts, DrilldownModal.test.ts | Modified (toggle hidden by default, visible when season config enables it) |
-| FR-35 | Web Component: ranking table with mode-specific columns | UC12(c) | RanklistTable.test.ts (5 tests) | Covered |
+| FR-35 | Web Component: ranking table with mode-specific columns; whole points, with a small decimal only where neighbours would look equal ([ADR-114](adr/114-ranklist-whole-points-close-call-decimals.md)) | UC12(c) | RanklistTable.test.ts, ranklistPoints.test.ts (RT.ROUND.01–10) | Covered |
 | FR-36 | Web Component: fencer drilldown modal with score breakdown. **Amended 2026-10-01:** both tables, their phone cards and both bar charts run by points (newer first on ties); a result that does not count is greyed (grey background and text, faded bar) and every counted result carries ★ (no ✓); tables sit in a framed panel; the PPW \| Ranking switch also switches the ranklist; rows are named by event and season, a joined-bracket row notes its premium. **Amended 2026-10-01 (controls, proposal A):** under the name a headline shows the fencer's place and total for the view shown, said once — the line of sums under the charts is removed and the SPWS and EVF+ parts stay in the chart headings; the Ranking \| PPW switch (Ranking first) and the ODS download sit at the right end of that row; the language flags and the close button sit in the top-right corner; Esc closes; on a phone the header stays at the top while the results scroll; every tournament with a results URL stays a link; a carried-over EVF+ or PZSz result draws a striped bar, as the legend shows. | UC13(a,b) | DrilldownModal.test.ts (77 tests, incl. DD.SORT.01–05, DD.GREY.01–07, DD.LOOK.01, DD.LEG.01, DD.STAR.01, DD.KEEP.01, DD.MODE.01, DD.FOOT.01, DD.NAME.01, DD.JOIN.01, DD.BAR.02, UX.DD.01–07); drilldown-counting.test.ts (DD.PARITY.01 — the counted set sums to `fn_ranking_full` / `fn_ranking_ppw` on a LOCAL snapshot of 228 fencers; DD.NAME.01–02, DD.JOIN.01); DrilldownModeSwitch.test.ts (DD.MODE.02) | Covered |
 | FR-37 | ODS export (ranking + drilldown) | UC12, UC13 | export.test.ts (5 tests) | Covered |
 | FR-38 | API client: fetch seasons, rankings, fencer scores | UC12(a) | 5.1a–b, api.test.ts (6 tests) | Covered |
@@ -493,6 +493,18 @@ Acceptance IDs for [ADR-113](adr/113-ingest-and-promote-carry-every-organizer.md
 | ROUTE.REFRESH.04 | `ingest-event.yml` runs the refresh on CERT with `--auto` before the ingestion, with CERT's URL. | pytest | `python/tests/test_route_international.py` | **Landed** (2026-10-17, LOCAL) |
 | ROUTE.BOT.01 | The bot's `ingest`, `promote` and `/help` texts name SPWS, PZSz, EVF and FIE; `evf-results-import` no longer claims to import. | pytest | `python/tests/test_gas_bot.py` | **Landed** (2026-10-17, LOCAL) |
 | ROUTE.APPLY.01–05 | `fn_promote_event_apply` fills a blank `url_event_2`…`url_event_5` from the plan, refuses a different URL naming the slot and writes nothing, and writes no other column. | pgTAP | `supabase/tests/110_promote_apply_source_slot.sql` | **Landed** (2026-10-17, LOCAL) |
+
+## Ranklist points display (RT.ROUND.*)
+
+Acceptance IDs for [ADR-114](adr/114-ranklist-whole-points-close-call-decimals.md) and [doc/plans/ranklist-whole-points-2026-10-18.html](plans/ranklist-whole-points-2026-10-18.html). FR-35.
+
+| Acceptance IDs | Contract | Layer | File | Status |
+|----------------|----------|-------|------|--------|
+| RT.ROUND.01 | `wholePoints` rounds a half up and shows an empty value as a dash. | Vitest | `frontend/tests/ranklistPoints.test.ts` | **Landed** (2026-10-18, LOCAL) |
+| RT.ROUND.02–05 | `closeCallDecimals`: neighbours with the same whole number and different totals get one decimal; exact ties stay whole; two decimals when one would still look equal; a run that differs shows the decimal on every row, a tie inside included. `splitPoints` splits the whole part and the digits. | Vitest | `frontend/tests/ranklistPoints.test.ts` | **Landed** (2026-10-18, LOCAL) |
+| RT.ROUND.06–08 | `RanklistTable` shows whole points; close-call rows show the small `.dec` decimal in Razem (Ranking) or Points (PPW) only, SPWS and EVF+ whole. | Vitest | `frontend/tests/RanklistTable.test.ts` | **Landed** (2026-10-18, LOCAL) |
+| RT.ROUND.09 | Guard: the drilldown headline keeps one decimal. | Vitest | `frontend/tests/DrilldownModal.test.ts` | **Landed** (2026-10-18, LOCAL) |
+| RT.ROUND.10 | Guard: the Ranking ODS download keeps the exact values. | Vitest | `frontend/tests/export.test.ts` | **Landed** (2026-10-18, LOCAL) |
 
 ## Cross-references
 

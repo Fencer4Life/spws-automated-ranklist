@@ -3,6 +3,8 @@
 // SS26.UI (design step 7, ADR-101): RANKING mode now renders the schema-v2
 // SPWS/EVF+/Razem columns from fn_ranking_full, replacing the legacy
 // PPW Total/PEW Total/Total columns from fn_ranking_kadra.
+// RT.ROUND.06–08 (ADR-114): whole points; a small decimal only in the
+// ordering column (Razem / Points) of close-call rows.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/svelte'
@@ -93,5 +95,57 @@ describe('RanklistTable', () => {
       props: { mode: 'RANKING', fullRows: [] },
     })
     expect(container.textContent).toContain('No results found')
+  })
+
+  const cellsOf = (row: Element) => Array.from(row.querySelectorAll('td'))
+
+  it('RT.ROUND.06 — a Ranking row shows whole points and no decimal', () => {
+    const { container } = render(RanklistTable, {
+      props: {
+        mode: 'RANKING',
+        fullRows: [
+          { rank: 1, id_fencer: 1, fencer_name: 'ALPHA Test', spws_total: 96.35, evf_plus_total: 76.25, total_score: 172.6, bool_has_carryover: false },
+        ],
+      },
+    })
+    const cells = cellsOf(container.querySelector('.data-row')!).map((td) => td.textContent)
+    expect(cells.slice(2)).toEqual(['96', '76', '173'])
+    expect(container.querySelector('.dec')).toBeNull()
+  })
+
+  it('RT.ROUND.07 — close-call rows show a small decimal in Razem only', () => {
+    const { container } = render(RanklistTable, {
+      props: {
+        mode: 'RANKING',
+        fullRows: [
+          { rank: 1, id_fencer: 1, fencer_name: 'A Test', spws_total: 0, evf_plus_total: 22.96, total_score: 22.96, bool_has_carryover: false },
+          { rank: 2, id_fencer: 2, fencer_name: 'B Test', spws_total: 22.09, evf_plus_total: 0, total_score: 22.09, bool_has_carryover: false },
+          { rank: 3, id_fencer: 3, fencer_name: 'C Test', spws_total: 0, evf_plus_total: 21.51, total_score: 21.51, bool_has_carryover: false },
+          { rank: 4, id_fencer: 4, fencer_name: 'D Test', spws_total: 0, evf_plus_total: 20.44, total_score: 20.44, bool_has_carryover: false },
+        ],
+      },
+    })
+    const rows = Array.from(container.querySelectorAll('.data-row')).map(cellsOf)
+    expect(rows.map((r) => r[4].textContent)).toEqual(['23', '22.1', '21.5', '20'])
+    expect(rows.map((r) => r[4].querySelector('.dec')?.textContent ?? null)).toEqual([null, '.1', '.5', null])
+    expect(rows[1].slice(2, 4).map((td) => td.textContent)).toEqual(['22', '0'])
+    expect(rows[2].slice(2, 4).map((td) => td.textContent)).toEqual(['0', '22'])
+    expect(container.querySelectorAll('.dec').length).toBe(2)
+  })
+
+  it('RT.ROUND.08 — the PPW view follows the same rule in Points', () => {
+    const { container } = render(RanklistTable, {
+      props: {
+        mode: 'PPW',
+        ppwRows: [
+          { rank: 1, id_fencer: 1, fencer_name: 'A Test', ppw_score: 22.09, mpw_score: 0, total_score: 22.09 },
+          { rank: 2, id_fencer: 2, fencer_name: 'B Test', ppw_score: 21.51, mpw_score: 0, total_score: 21.51 },
+          { rank: 3, id_fencer: 3, fencer_name: 'C Test', ppw_score: 18.2, mpw_score: 0, total_score: 18.2 },
+        ],
+      },
+    })
+    const points = Array.from(container.querySelectorAll('.data-row')).map((r) => cellsOf(r)[2])
+    expect(points.map((td) => td.textContent)).toEqual(['22.1', '21.5', '18'])
+    expect(points.map((td) => td.querySelector('.dec')?.textContent ?? null)).toEqual(['.1', '.5', null])
   })
 })
