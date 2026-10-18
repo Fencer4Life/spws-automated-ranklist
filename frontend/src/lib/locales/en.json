@@ -86,6 +86,8 @@
   "sr_or": " or ",
   "sr_roll_title": "Rolling ranking.",
   "sr_roll": "Until this season’s event has taken place, the result from its counterpart in the previous season counts (↩) — never both.",
+  "sr_tie_title": "The same total",
+  "sr_tie": "shares a place; the next place moves down by the number sharing it (e.g. 16, 16, 18).",
   "sr_coef_title": "Event-type coefficients.",
   "sr_coef": "Every result already includes them.",
   "sr_annex": "How points for one place are calculated — Scoring table →",

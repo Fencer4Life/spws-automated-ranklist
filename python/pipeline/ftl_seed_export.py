@@ -394,6 +394,7 @@ def assemble_mixall_subrankings(
     rankings: dict[str, list[int]],
     season_end_year: int,
     scores: dict[str, dict[int, float]] | None = None,
+    ranks: dict[str, dict[int, int]] | None = None,
 ) -> dict[str, list[FencerEntry]]:
     """Group one weapon's declared registrants into the 10 mix-all sub-rankings,
     ordered as the interleave expects (ADR-080 §2).
@@ -407,6 +408,12 @@ def assemble_mixall_subrankings(
     `registrations` rows carry: id_fencer, txt_surname, txt_first_name,
     enum_gender ('M'/'F'), int_birth_year, arr_weapons (list of enum values),
     ts_created. Names are canonicalised on the way in (ADR-080 §1).
+
+    `ranks` is {key: {id_fencer: rank}}, the rank fn_ranking_ppw returns. Equal
+    totals share a place (ADR-115), so two fencers can both hold 2nd while
+    standing 2nd and 3rd in `rankings[key]`; the rank, not the position, is
+    the tier. Without it the position stands in, which is the rank only while
+    nobody shares a place.
     """
     buckets: dict[str, list[dict]] = {}
     for reg in registrations:
@@ -440,14 +447,18 @@ def assemble_mixall_subrankings(
             idf = reg.get("id_fencer")
             return None if idf is None else _scores.get(idf)
 
-        def _true_rank(reg: dict, _rank_order: list[int] = rank_order) -> int | None:
-            """Position in the WHOLE sub-ranking, counting the fencers who did
-            not enter. Returning the position among entrants instead is what
-            made a genuine 4th place seed first — see interleave_mixall."""
+        bucket_ranks = (ranks or {}).get(key, {})
+
+        def _true_rank(
+            reg: dict, _rank_order: list[int] = rank_order, _ranks: dict[int, int] = bucket_ranks
+        ) -> int | None:
+            """Rank in the WHOLE sub-ranking, counting the fencers who did not
+            enter. Returning the position among entrants instead is what made a
+            genuine 4th place seed first — see interleave_mixall."""
             idf = reg.get("id_fencer")
             if idf is None or idf not in _rank_order:
                 return None
-            return _rank_order.index(idf) + 1
+            return _ranks.get(idf, _rank_order.index(idf) + 1)
 
         out[key] = [
             FencerEntry(
@@ -648,6 +659,7 @@ def build_event_seed_files(
     date_fichier_xml: str = "",
     rosters: dict[str, list[dict]] | None = None,
     scores_by_weapon: dict[str, dict[str, dict[int, float]]] | None = None,
+    ranks_by_weapon: dict[str, dict[str, dict[int, int]]] | None = None,
 ) -> list[SeedFile]:
     """The event's whole file set: one mix-all per weapon with registrants, one
     DE file per gender × category present in it, and — when `rosters` carries
@@ -670,6 +682,7 @@ def build_event_seed_files(
             rankings_by_weapon.get(weapon, {}),
             season_end_year,
             scores=(scores_by_weapon or {}).get(weapon, {}),
+            ranks=(ranks_by_weapon or {}).get(weapon, {}),
         )
         mixall = _weapon_seed_file(sub_rankings, weapon, event_code, date_fichier_xml)
         if mixall is None:
@@ -709,6 +722,7 @@ def build_event_mixall_files(
     season_end_year: int,
     date_fichier_xml: str = "",
     scores_by_weapon: dict[str, dict[str, dict[int, float]]] | None = None,
+    ranks_by_weapon: dict[str, dict[str, dict[int, int]]] | None = None,
 ) -> dict[str, str]:
     """{filename: xml} for the whole competition file set — the shape the
     Telegram delivery path and the .zip bundler consume."""
@@ -722,6 +736,7 @@ def build_event_mixall_files(
             season_end_year=season_end_year,
             date_fichier_xml=date_fichier_xml,
             scores_by_weapon=scores_by_weapon,
+            ranks_by_weapon=ranks_by_weapon,
         )
     }
 
