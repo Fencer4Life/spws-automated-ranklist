@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="114-ranklist-whole-points-close-call-decimals.md">
+<meta name="adr-source-sha256" content="06a9860c06e09005d5c6c7d60bb7e49cfc78b33f9370eea7a4867264f2641e30">
+<title>ADR-114 · The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 114</p><h1>The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A). Implemented test-first on LOCAL on 2026-10-18 (RT.ROUND.01–10); release pending the before/after sheet.</dd></div><div><dt>Date</dt><dd class="">2026-10-18 <strong>Relates to:</strong> <a href="101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> (it owns the Ranking / PPW table and its columns; this record decides how their numbers read), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (its functions return the rank; their <code>ROW_NUMBER</code> order is recorded here, unchanged), <a href="078-gdpr-data-handling.html">ADR-078</a> (why the committed mocks carry placeholder names), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the points calculator and the Points Table are untouched)</dd></div><div><dt>Source</dt><dd class=""><code>114-ranklist-whole-points-close-call-decimals.md</code></dd></div><div><dt>Length</dt><dd class="">80 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A). Implemented test-first on LOCAL on 2026-10-18 (RT.ROUND.01–10); release pending the before/after sheet.
+<strong>Date:</strong> 2026-10-18
+<strong>Relates to:</strong> <a href="101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> (it owns the Ranking / PPW table and its columns; this record decides how their numbers read), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (its functions return the rank; their <code>ROW_NUMBER</code> order is recorded here, unchanged), <a href="078-gdpr-data-handling.html">ADR-078</a> (why the committed mocks carry placeholder names), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the points calculator and the Points Table are untouched)
+<strong>Source:</strong> <code>frontend/src/lib/ranklist-points.ts</code>, <code>frontend/src/components/RanklistTable.svelte</code>, <code>doc/plans/ranklist-whole-points-2026-10-18.html</code>, <code>doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-whole-points">1 · Whole points</a></li><li class="depth-3"><a href="#2-a-decimal-only-for-close-calls-only-in-the-column-that-orders-the-list">2 · A decimal only for close calls, only in the column that orders the list</a></li><li class="depth-3"><a href="#3-how-the-decimal-looks">3 · How the decimal looks</a></li><li class="depth-3"><a href="#4-what-does-not-change">4 · What does not change</a></li><li class="depth-3"><a href="#5-one-pure-module">5 · One pure module</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li><li class="depth-2"><a href="#the-mocks">The mocks</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>The main ranklist showed one decimal on every number: <code>fmt</code> in <code>RanklistTable.svelte</code> rounded to one decimal and dropped a trailing <code>.0</code>, for Punkty in the PPW view and for SPWS, EVF+ and Razem in the Ranking view. Readers compare whole points, so the decimals cluttered the list without informing it. On 18 October 2026 the user asked to remove them from the main list and to keep them in the drilldown.</p>
+<p>Measured on PROD that day as the site reads the lists, every weapon, gender and category, SELECT only. The active season 2026/27 is read with the rolling carry-over (<code>p_rolling</code> true: <code>frontend/src/lib/rolling.ts</code>, <code>shouldUseRolling</code>) and the past season 2025/26 without it:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>List</th>
+<th>Neighbour pairs</th>
+<th>Same whole number, totals differ</th>
+<th>Same whole number, exact tie</th>
+<th>Needs two decimals</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ranking 2026/27 (rolling)</td>
+<td>227</td>
+<td>9</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr>
+<td>PPW 2026/27 (rolling)</td>
+<td>196</td>
+<td>8</td>
+<td>4</td>
+<td>1</td>
+</tr>
+<tr>
+<td>PPW 2025/26</td>
+<td>184</td>
+<td>3</td>
+<td>5</td>
+<td>0</td>
+</tr>
+<tr>
+<td>All</td>
+<td>607</td>
+<td>20</td>
+<td>13</td>
+<td>2</td>
+</tr>
+</tbody>
+</table></div>
+<p>With whole numbers alone, the 20 pairs whose totals differ show two ranks with the same number and no visible reason for the order (épée men V1, Ranking: #5 171.39 and #6 170.94 both show <code>171</code>). Two of them still look equal at one decimal: épée women V0, #5 71.34 and #6 71.31, in both views. In 20 of 256 Ranking 2026/27 rows the rounded SPWS plus the rounded EVF+ misses the rounded Razem by one, as 96.35 + 76.25 = 172.60 shows <code>96 + 76 = 173</code>; a one-decimal display already misses by 0.1 there (<code>96.4 + 76.3 = 172.6</code>).</p>
+<p>Every ranking function numbers its rows with <code>ROW_NUMBER() OVER (ORDER BY total DESC)</code> and no second key: <code>supabase/migrations/20261003000018_carry_stop_results.sql:222</code> (<code>fn_ranking_full_event_fk_matching</code>) and <code>:508</code> (<code>fn_ranking_ppw_event_fk_matching</code>), and the code-matching variants in <code>supabase/migrations/20260928000001_spws_place_medal_engine.sql:1220, :1337</code>. Exactly equal totals therefore take consecutive ranks in an order no rule fixes.</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-whole-points">1 · Whole points</h3>
+<p>Every number in the main table is whole, a half rounding up (<code>Math.round</code>): Punkty, SPWS, EVF+ and Razem. Stored scores have two decimals and any <code>x.50</code> is exact in binary, so a half is never misrounded. An empty value shows <code>—</code>.</p>
+<h3 id="2-a-decimal-only-for-close-calls-only-in-the-column-that-orders-the-list">2 · A decimal only for close calls, only in the column that orders the list</h3>
+<p>The exception applies to Razem in the Ranking view and Punkty in the PPW view. The list arrives sorted by that total and rounding never reorders, so rows showing the same whole number are always neighbours. When such a run's exact totals are not all equal, every row of the run shows its decimal: one, or two when one decimal would still show two different totals as equal. A run of exact ties stays whole, since no decimal can explain an order the database does not fix. SPWS and EVF+ stay whole even in a close-call row; they do not decide the order.</p>
+<h3 id="3-how-the-decimal-looks">3 · How the decimal looks</h3>
+<p>The decimal is 0.72 em (10 px under the 14 px digits, 9.4 px under 13 px on a phone) in the table's grey <code>#999</code>. It is rendered as Svelte markup (<code>&lt;span class=&quot;dec&quot;&gt;</code>), never as raw HTML. The separator stays the point the table already used.</p>
+<h3 id="4-what-does-not-change">4 · What does not change</h3>
+<p>The drilldown keeps its one decimal and the ODS download keeps the exact values. The order, the rank, the column widths (100 px, 70 px on a phone), the points calculator and the Points Table are unchanged.</p>
+<h3 id="5-one-pure-module">5 · One pure module</h3>
+<p><code>frontend/src/lib/ranklist-points.ts</code> holds the rule: <code>wholePoints</code>, <code>closeCallDecimals</code> and <code>splitPoints</code>. <code>RanklistTable.svelte</code> derives the decimals from its rows and only draws them.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep one decimal everywhere.</strong> Rejected: it is the clutter the user named.</li>
+<li><strong>A · whole numbers only.</strong> Rejected: two different ranks can show the same number with no visible reason.</li>
+<li><strong>B · every decimal three sizes smaller.</strong> Rejected: every number keeps a tail, <code>.0</code> on zeros and whole numbers included (a zero in 5 of the mock list's 10 SPWS cells). The list gets quieter, not clean.</li>
+<li><strong>B′ · B in grey.</strong> Rejected for the same reason, less loudly. Its look is kept for the close calls.</li>
+<li><strong>Decimals in every column of a close-call row.</strong> Rejected: SPWS and EVF+ do not decide the order, and the decimals would add clutter exactly where the signal sits.</li>
+<li><strong>Always two decimals for a close call.</strong> Rejected: one is enough in 18 of the 20 close calls PROD shows; two appear only where one is not (71.34 and 71.31).</li>
+<li><strong>Shared ranks for equal totals.</strong> Not decided here: it is a ranking rule, not a display (open item 1).</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>New: <code>frontend/src/lib/ranklist-points.ts</code>, <code>frontend/tests/ranklistPoints.test.ts</code> (RT.ROUND.01–05), <code>doc/adr/assets/adr-114-phone-five-ways.png</code>, <code>doc/adr/assets/adr-114-close-call.png</code>, <code>doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</code>. Modified: <code>frontend/src/components/RanklistTable.svelte</code> (its own <code>fmt</code> is gone), <code>frontend/tests/RanklistTable.test.ts</code> (RT.ROUND.06–08), and two guards: <code>frontend/tests/DrilldownModal.test.ts</code> (RT.ROUND.09) and <code>frontend/tests/export.test.ts</code> (RT.ROUND.10).</li>
+<li>A row's look depends on its neighbours: a <code>22</code> becomes <code>22.1</code> while another fencer is within the same whole number, and goes back when they part.</li>
+<li>Those few rows break the clean right edge of the column by a small tail.</li>
+<li>The visible sum can miss by one; the drilldown shows the exact parts.</li>
+<li><strong>Found, not fixed:</strong> equal totals take consecutive ranks in no fixed order (<code>ROW_NUMBER</code> without a second key).</li>
+<li>The committed mocks carry real scores and placeholder names: a fencer erased under ADR-078 must not survive in git history.</li>
+</ul>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<ol>
+<li><strong>How equal totals are ranked.</strong> Today they take consecutive ranks in no fixed order. Decided by the user on 2026-10-18 as its own ranking rule: equal totals share a place and the next place skips (16, 16, 18). It ships as its own change after this record, planned in <a href="../plans/equal-totals-shared-place-2026-10-18.html">doc/plans/equal-totals-shared-place-2026-10-18.html</a> and recorded in its own ADR. This record keeps exact ties whole either way.</li>
+</ol>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="the-mocks">The mocks</h2>
+<p>The five designs side by side on a phone. The scores are the real ones <code>fn_ranking_full</code> returned on PROD on 18 October 2026 for épée, women, category 2, 2026/27, read without the rolling carry-over, and the names are replaced by placeholders. The site shows the active season with the carry-over, so its rows differ; the design is the same. C, the chosen design, is under A:</p>
+<p><img src="assets/adr-114-phone-five-ways.png" alt="The ranklist five ways on a phone: today, A rounded, B small decimals, C close calls only, B′ small and lighter" /></p>
+<p>Rows 7 and 8 of that list, the close call, at 140%. C differs from A only in Razem:</p>
+<p><img src="assets/adr-114-close-call.png" alt="Rows 7 and 8 in each design: C shows 22.1 and 21.5 in Razem, A shows 22 and 22" /></p>
+<p>The full interactive mock, with the Ranking / PPW switch, the phone and desktop widths and the comparison table: <a href="../mockups/ranklist-whole-vs-small-decimals-2026-10-18.html">doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</a>.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="113-ingest-and-promote-carry-every-organizer.html">← ADR-113: Ingest and Promote Carry Every Organizer&#x27;s Event</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>114-ranklist-whole-points-close-call-decimals.md</code> · source SHA-256 <code>06a9860c06e09005d5c6c7d60bb7e49cfc78b33f9370eea7a4867264f2641e30</code></footer>
+</div></body></html>
