@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="115-equal-totals-share-a-place.md">
+<meta name="adr-source-sha256" content="c965a8e7ec3150264dd177fef59b43ca1588213d99482322b08a788c4a715c5b">
+<title>ADR-115 · Equal Totals Share a Place; the Next Place Skips</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 115</p><h1>Equal Totals Share a Place; the Next Place Skips</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (the rule decided by the user in chat on 2026-10-18; the plan <code>doc/plans/equal-totals-shared-place-2026-10-18.html</code> signed off the same day with Q1–Q4 A and S1 A, and the seed files set to follow the ranking's row order). Implemented test-first on LOCAL (RANK.TIE.01–08, each seen failing first except the TypeScript seed guard, which was already right); before/after sheet <code>doc/plans/equal-totals-before-after-2026-10-18.html</code> approved (A1); release in progress.</dd></div><div><dt>Date</dt><dd class="">2026-10-18</dd></div><div><dt>Source</dt><dd class=""><code>115-equal-totals-share-a-place.md</code></dd></div><div><dt>Length</dt><dd class="">74 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (the rule decided by the user in chat on 2026-10-18; the plan <code>doc/plans/equal-totals-shared-place-2026-10-18.html</code> signed off the same day with Q1–Q4 A and S1 A, and the seed files set to follow the ranking's row order). Implemented test-first on LOCAL (RANK.TIE.01–08, each seen failing first except the TypeScript seed guard, which was already right); before/after sheet <code>doc/plans/equal-totals-before-after-2026-10-18.html</code> approved (A1); release in progress.
+<strong>Date:</strong> 2026-10-18
+<strong>Amends:</strong> <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (the rank its functions return: a shared place instead of a row count), <a href="114-ranklist-whole-points-close-call-decimals.html">ADR-114</a> (open item 1 is resolved here), <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> (fencers sharing a seed tier follow the ranking's row order, in both generators)
+<strong>Relates to:</strong> <a href="101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> (<code>fn_ranking_kadra</code> stays the parity oracle and changes with the others), <a href="083-server-enforced-authorization.html">ADR-083</a> (the re-created functions keep their grants), <a href="018-rolling-score.html">ADR-018</a> (totals and the carry-over are untouched)
+<strong>Source:</strong> <code>supabase/migrations/20261018000001_equal_totals_share_place.sql</code>, <code>python/pipeline/ftl_seed_export.py</code>, <code>python/pipeline/ftl_seed_export_db.py</code>, <code>frontend/src/components/SeasonRulesModal.svelte</code>, <code>doc/plans/equal-totals-shared-place-2026-10-18.html</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-shared-place">1 · A shared place</a></li><li class="depth-3"><a href="#2-everywhere-the-rank-comes-from">2 · Everywhere the rank comes from</a></li><li class="depth-3"><a href="#3-alphabetical-inside-a-shared-place">3 · Alphabetical inside a shared place</a></li><li class="depth-3"><a href="#4-every-season-and-said-in-the-rules-modal">4 · Every season, and said in the rules modal</a></li><li class="depth-3"><a href="#5-seed-files-follow-the-ranking">5 · Seed files follow the ranking</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Every ranking function numbered its rows with <code>ROW_NUMBER() OVER (ORDER BY total DESC)</code> and no second key: ten rank lines across the six variants <code>fn_ranking_{full,ppw,kadra}_event_{fk,code}_matching</code> (for the event-FK variants, <code>supabase/migrations/20261003000018_carry_stop_results.sql:222, :324, :408, :508, :584</code>). Exactly equal totals therefore took consecutive places in an order nothing fixed. The dispatchers <code>fn_ranking_full</code>, <code>fn_ranking_ppw</code> and <code>fn_ranking_kadra</code> return those rows unchanged, so every surface printed that arbitrary order: the main list, the drilldown, the ODS download and the FTL seed files.</p>
+<p>Measured on PROD on 18 October 2026, SELECT only, every season the site shows and read as the site reads it (the running season with the rolling carry-over, past seasons without): 19 ties, 11 of them in past seasons and 8 in 2026/27. Twenty fencers stood one or two places below a fencer with exactly their total. ADR-114 had found the gap and kept those rows whole, and left the rule open (its open item 1).</p>
+<p>No rule in the regulations, an ADR or the handbook fixed the order of equal season totals. The 2026/27 rules draft shares ex aequo places inside a bracket in the same way the user chose here: n, n, then n + 2.</p>
+<p>The seed export was written for shared ranks before they existed. <code>interleave_mixall</code> (<code>python/pipeline/ftl_seed_export.py:202</code>) and its twin (<code>frontend/src/lib/ftlSeedExport.ts:263</code>) both say <em>&quot;fn_ranking_ppw gives two fencers on the same score the same rank&quot;</em>, and the organiser download's tier is that rank (<code>fn_ftl_export_entries</code>, <code>rk.position</code>). The building of this change found two places where the generators had drifted apart for a tied pair:</p>
+<ul>
+<li>The organiser download put fencers of one rank in registration order. The Python generator put them in the ranking's row order.</li>
+<li>The Python generator took the tier from the fencer's position in the ranking list (<code>index + 1</code>) and not from the rank. Under <code>ROW_NUMBER</code> the two are the same. Under a shared place, 16 and 16 become 16 and 17, so the two generators would have seeded a tie differently. The plan had said the Python generator needed no change. That was wrong. No organiser received such a file: the Python path feeds only the e-mail delivery, which has never run (ADR-080, 2026-09-25), and the organiser downloads the TypeScript generator's files.</li>
+</ul>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-a-shared-place">1 · A shared place</h3>
+<p>A fencer's place is one more than the number of fencers with a higher total: <code>RANK() OVER (ORDER BY total DESC)</code>. Fencers with exactly the same total share the place. The next place is further down by the number sharing it: two fencers on 16th leave no 17th, and the next fencer is 18th. Nobody moves down. Every place after a tie keeps its number, and only the second (and third) tied fencer moves up.</p>
+<h3 id="2-everywhere-the-rank-comes-from">2 · Everywhere the rank comes from</h3>
+<p>The decision covers all six ranking variants, in both branches where a function has two: full, PPW and Kadra, event-FK and event-code. One migration re-creates them from their live definitions. It changes only the rank line and the final row order. <code>CREATE OR REPLACE</code> keeps every signature, so the grants stay as they are. Everything that prints or uses the rank follows without a code change: the main list, the drilldown headline, the ODS download, the organiser download and the national-team positions tool.</p>
+<h3 id="3-alphabetical-inside-a-shared-place">3 · Alphabetical inside a shared place</h3>
+<p>Fencers sharing a place are listed by the name the ranking shows, in Polish alphabetical order (<code>COLLATE &quot;pl-x-icu&quot;</code>, present on LOCAL, CERT and PROD). A list therefore never reshuffles between two loads, and the order inside a place carries no claim of merit.</p>
+<h3 id="4-every-season-and-said-in-the-rules-modal">4 · Every season, and said in the rules modal</h3>
+<p>The rule applies to every season, past seasons included. A past season's list keeps every total and every place after a tie. The season rules modal says it in one sentence, first among its facts, directly under the pools that sum to the ranking's total. <strong>Polish:</strong> „<strong>Ta sama suma punktów</strong> daje to samo miejsce; kolejne miejsce przesuwa się o liczbę zawodników na tym miejscu (np. 16, 16, 18).” <strong>English:</strong> “<strong>The same total</strong> shares a place; the next place moves down by the number sharing it (e.g. 16, 16, 18).”</p>
+<h3 id="5-seed-files-follow-the-ranking">5 · Seed files follow the ranking</h3>
+<p>In the FTL seed files, fencers who share a place share a seed tier and keep the ranking's own row order (§3), in both generators. Registration time orders only the unranked tail.</p>
+<ul>
+<li><code>fn_ftl_export_entries</code> takes <code>fn_ranking_ppw</code> <code>WITH ORDINALITY</code> and orders a rank by that ordinality before registration time.</li>
+<li>The Python generator carries <code>fn_ranking_ppw</code>'s rank next to the order and the points: <code>fetch_weapon_rankings</code> returns it as a third map, and <code>assemble_mixall_subrankings</code> takes it as <code>ranks</code>. It no longer counts positions.</li>
+<li>The TypeScript generator already read the rank and the order from <code>fn_ftl_export_entries</code>, and is unchanged.</li>
+</ul>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Keep consecutive places with a stable second key, such as the name.</strong> Rejected: the alphabet would decide the place itself.</li>
+<li><strong>Dense places (16, 16, 17).</strong> Rejected by the user: there is no 17th.</li>
+<li><strong>A sporting tie-break, such as the best single result or more counted results.</strong> Rejected: the regulations have no such rule, and a shared place states what is true, that the totals are equal.</li>
+<li><strong>Only from 2026/27 (the plan's Q2 B).</strong> Rejected: every ranking function would need a season switch, and past lists would keep an order nothing fixed.</li>
+<li><strong>Registration time inside a shared tier, as the organiser download did.</strong> Rejected by the user in favour of the ranking's row order, so a seed file reads the way the ranking does.</li>
+<li><strong>Recompute the shared rank in Python from the points.</strong> Rejected: it would re-implement the ranking rule in a second place. The generator reads the rank the database gives it.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>New: <code>supabase/migrations/20261018000001_equal_totals_share_place.sql</code>, <code>supabase/tests/111_equal_totals_share_place.sql</code> (RANK.TIE.01–07, 12 assertions). Modified: <code>python/pipeline/ftl_seed_export.py</code>, <code>python/pipeline/ftl_seed_export_db.py</code>, <code>frontend/src/components/SeasonRulesModal.svelte</code> and <code>frontend/src/lib/locales/{pl,en}.json</code>. New tests sit in <code>python/tests/test_ftl_seed_orchestration.py</code> (RANK.TIE.07, two tests), <code>frontend/tests/ftlSeedExport.test.ts</code> (RANK.TIE.07, the parity case) and <code>frontend/tests/SeasonRulesModal.test.ts</code> (RANK.TIE.08).</li>
+<li>A list can show a gap after a tie (16, 16, 18). The rules modal explains it.</li>
+<li>Exact ties stay whole numbers under ADR-114, and they now share their place as well as their number.</li>
+<li>The main list, the drilldown, the ODS export and the TypeScript seed generator print the rank they are given and need no code change.</li>
+<li><strong>Checked, deliberately unchanged:</strong> <code>fn_ftl_roster</code>'s <code>ROW_NUMBER</code> numbers an alphabetical pick-list, not a place. The <code>ROW_NUMBER</code>s that choose each fencer's best N results inside the ranking functions choose results, not places.</li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Layer</th>
+<th>Asserts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RANK.TIE.01</td>
+<td>pgTAP</td>
+<td><code>fn_ranking_ppw</code> on totals 40, 35, 35, 20 returns ranks 1, 2, 2, 4.</td>
+</tr>
+<tr>
+<td>RANK.TIE.02</td>
+<td>pgTAP</td>
+<td>The same for <code>fn_ranking_full</code>, <code>fn_ranking_kadra</code> and the dispatchers.</td>
+</tr>
+<tr>
+<td>RANK.TIE.03</td>
+<td>pgTAP</td>
+<td>A three-way tie: 3.00, 1.00, 1.00, 1.00, 0.50 gives 1, 2, 2, 2, 5.</td>
+</tr>
+<tr>
+<td>RANK.TIE.04</td>
+<td>pgTAP</td>
+<td>The event-code variants rank the same way.</td>
+</tr>
+<tr>
+<td>RANK.TIE.05</td>
+<td>pgTAP</td>
+<td>A shared place lists alphabetically, and the same way on every call.</td>
+</tr>
+<tr>
+<td>RANK.TIE.06</td>
+<td>pgTAP</td>
+<td>Over all 30 PPW 2025/26 lists, every rank is one more than the number of higher totals.</td>
+</tr>
+<tr>
+<td>RANK.TIE.07</td>
+<td>pgTAP, pytest, Vitest</td>
+<td>Tied fencers share one seed tier, in the ranking's row order whatever their registration times, and both generators seed the same case the same way.</td>
+</tr>
+<tr>
+<td>RANK.TIE.08</td>
+<td>Vitest</td>
+<td>The rules modal states the rule in Polish and English, for every season.</td>
+</tr>
+</tbody>
+</table></div>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="114-ranklist-whole-points-close-call-decimals.html">← ADR-114: The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>115-equal-totals-share-a-place.md</code> · source SHA-256 <code>c965a8e7ec3150264dd177fef59b43ca1588213d99482322b08a788c4a715c5b</code></footer>
+</div></body></html>

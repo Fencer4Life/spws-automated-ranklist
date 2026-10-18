@@ -568,3 +568,88 @@ def test_exporter_carries_total_score_so_a_tier_seeds_by_points():
     }
     assert seeds["KOWALSKI"] == "1", "the higher score takes the first seed of the tier"
     assert seeds["NOWAK"] == "2"
+
+
+# ---------------------------------------------------------------------------
+# RANK.TIE.07 (ADR-115): equal totals share a place, and so share a seed tier
+# ---------------------------------------------------------------------------
+def test_assemble_gives_tied_fencers_the_place_they_share():
+    """Two fencers on the same total both hold 2nd: fn_ranking_ppw says so,
+    and its rank is the tier. Their position in the list (2nd and 3rd) is not.
+    Inside the shared place they keep the ranking's own row order, whatever
+    order they registered in (Zulu registered first)."""
+    regs = [
+        _reg(20, "Zulu", "Zenon", "M", 1990, ["EPEE"], ts="2025-12-01T00:00:00Z"),
+        _reg(10, "Alfa", "Adam", "M", 1990, ["EPEE"], ts="2026-01-05T00:00:00Z"),
+        _reg(30, "Kowalski", "Jan", "M", 1990, ["EPEE"]),
+    ]
+    subr = assemble_mixall_subrankings(
+        regs,
+        "EPEE",
+        {"MV0": [30, 10, 20]},
+        SEY,
+        ranks={"MV0": {30: 1, 10: 2, 20: 2}},
+    )
+    assert [(e.surname, e.rank) for e in subr["MV0"]] == [
+        ("KOWALSKI", 1),
+        ("ALFA", 2),
+        ("ZULU", 2),
+    ]
+
+
+def test_exporter_seeds_a_shared_place_in_one_tier_in_ranking_order():
+    """The seam again, from the RPC down: the organiser download takes the tier
+    from fn_ftl_export_entries, which is fn_ranking_ppw's rank, so this path
+    must read the same rank and not recount positions.
+
+    MV0: Alfa and Zulu share 2nd on 300. FV0: 1st 350, 2nd 310, 3rd 305. Tier 2
+    is 310, then the two 300s in the ranking's row order; FV0's 3rd follows in
+    tier 3. Counting positions instead put Zulu in tier 3, after 305."""
+    from python.pipeline.ftl_seed_export_db import FtlSeedExporter
+
+    sb = MagicMock()
+    sb.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value.data = [
+        _reg(3, "Zulu", "Zenon", "M", 1990, ["EPEE"], ts="2025-12-01T00:00:00Z"),
+        _reg(2, "Alfa", "Adam", "M", 1990, ["EPEE"], ts="2026-01-05T00:00:00Z"),
+        _reg(1, "Kowalski", "Jan", "M", 1990, ["EPEE"]),
+        _reg(4, "Nowak", "Anna", "F", 1990, ["EPEE"]),
+        _reg(5, "Wisniewska", "Ewa", "F", 1990, ["EPEE"]),
+        _reg(6, "Lewandowska", "Ola", "F", 1990, ["EPEE"]),
+    ]
+
+    def _ranking(_name, params):
+        rows = {
+            ("M", "V0"): [
+                {"rank": 1, "id_fencer": 1, "total_score": 400.0},
+                {"rank": 2, "id_fencer": 2, "total_score": 300.0},
+                {"rank": 2, "id_fencer": 3, "total_score": 300.0},
+            ],
+            ("F", "V0"): [
+                {"rank": 1, "id_fencer": 4, "total_score": 350.0},
+                {"rank": 2, "id_fencer": 5, "total_score": 310.0},
+                {"rank": 3, "id_fencer": 6, "total_score": 305.0},
+            ],
+        }.get((params["p_gender"], params["p_category"]), [])
+        rpc = MagicMock()
+        rpc.execute.return_value.data = rows
+        return rpc
+
+    sb.rpc.side_effect = _ranking
+
+    files = FtlSeedExporter(sb).build_bundle(
+        id_event=42,
+        weapons=["EPEE"],
+        event_code="PPW5-2025-2026",
+        season_end_year=SEY,
+        season=None,
+    )
+    doc = next(v for k, v in files.items() if "POOLS-MIXED" in k)
+    seeded = sorted(ET.fromstring(doc).iter("Tireur"), key=lambda t: int(t.get("Classement") or 0))
+    assert [(t.get("Nom") or "").split(" (")[0] for t in seeded] == [
+        "KOWALSKI",
+        "NOWAK",
+        "WISNIEWSKA",
+        "ALFA",
+        "ZULU",
+        "LEWANDOWSKA",
+    ]

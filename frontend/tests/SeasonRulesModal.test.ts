@@ -163,4 +163,16 @@ describe('SR.MODAL — the chosen season\'s ranking rules', () => {
     expect(q(show({ open: false }).container, '.rules-overlay')).toBeNull()
     expect(q(show({ rules: null }).container, '.rules-overlay')).toBeNull()
   })
+
+  // RANK.TIE.08 (ADR-115): equal totals share a place, so a list can read
+  // 16, 16, 18. The modal says so for every season, in both languages.
+  it('RANK.TIE.08 explains a shared place, for every season, in Polish and English', () => {
+    const tie = (c: HTMLElement) => text(q(c, '[data-fact="ties"] > div'))
+    expect(tie(show().container)).toBe(
+      'Ta sama suma punktów daje to samo miejsce; kolejne miejsce przesuwa się o liczbę zawodników na tym miejscu (np. 16, 16, 18).')
+    expect(tie(show({ season: SEASON_2026, rules: RULES_2026 }).container)).toContain('to samo miejsce')
+    setLocale('en')
+    expect(tie(show().container)).toBe(
+      'The same total shares a place; the next place moves down by the number sharing it (e.g. 16, 16, 18).')
+  })
 })

@@ -59,6 +59,7 @@
         </div>
 
         <div class="facts">
+          <div class="fact" data-fact="ties"><span class="fact-icon" aria-hidden="true">=</span><div><b>{t('sr_tie_title')}</b> {t('sr_tie')}</div></div>
           {#if rules.entry_types?.length}
             <div class="fact" data-fact="entry"><span class="fact-icon" aria-hidden="true">→</span><div><b>{t('sr_who_title')}</b> {t('sr_who', { types: rules.entry_types.join(t('sr_or')) })}</div></div>
           {/if}

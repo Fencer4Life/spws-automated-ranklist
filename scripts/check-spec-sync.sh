@@ -104,7 +104,8 @@ if [ -f "$RTM" ]; then
   #   captured while pzszerm.pl serves them; ADR-112).
   # 157 since 2026-10-17: +FR-158 (ingest starts from PROD's master data, and
   #   only ingest and promote write results; ADR-113).
-  EXPECTED=157
+  # 158 since 2026-10-18: +FR-159 (equal totals share a place; ADR-115).
+  EXPECTED=158
   if [ "$RTM_FR_COUNT" -eq "$EXPECTED" ]; then
     echo "  PASS: $RTM_FR_COUNT FR rows in RTM (matches expected $EXPECTED)"
   else
