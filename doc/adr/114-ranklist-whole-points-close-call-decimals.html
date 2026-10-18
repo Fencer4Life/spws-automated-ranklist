@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="114-ranklist-whole-points-close-call-decimals.md">
-<meta name="adr-source-sha256" content="06a9860c06e09005d5c6c7d60bb7e49cfc78b33f9370eea7a4867264f2641e30">
+<meta name="adr-source-sha256" content="e06ae32b7b0914b4ca16f79e27c7120d61f8050c15eebe26ab29cfef22a5376b">
 <title>ADR-114 · The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 114</p><h1>The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A). Implemented test-first on LOCAL on 2026-10-18 (RT.ROUND.01–10); release pending the before/after sheet.</dd></div><div><dt>Date</dt><dd class="">2026-10-18 <strong>Relates to:</strong> <a href="101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> (it owns the Ranking / PPW table and its columns; this record decides how their numbers read), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (its functions return the rank; their <code>ROW_NUMBER</code> order is recorded here, unchanged), <a href="078-gdpr-data-handling.html">ADR-078</a> (why the committed mocks carry placeholder names), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the points calculator and the Points Table are untouched)</dd></div><div><dt>Source</dt><dd class=""><code>114-ranklist-whole-points-close-call-decimals.md</code></dd></div><div><dt>Length</dt><dd class="">80 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A). Implemented test-first on LOCAL on 2026-10-18 (RT.ROUND.01–10); release pending the before/after sheet.
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A). Implemented test-first (RT.ROUND.01–10); before/after sheet approved (A1); released to CERT and PROD on 2026-10-18 (main <code>29943732</code>) and checked on PROD's ranklist page: épée women V0, Ranking 2026/27 shows <code>71.34</code> · <code>71.31</code> in rows 5–6 and whole numbers elsewhere, the drilldown headline <code>71.3</code>, the ODS download the exact values.</dd></div><div><dt>Date</dt><dd class="">2026-10-18 <strong>Relates to:</strong> <a href="101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> (it owns the Ranking / PPW table and its columns; this record decides how their numbers read), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (its functions return the rank; their <code>ROW_NUMBER</code> order is recorded here, unchanged), <a href="078-gdpr-data-handling.html">ADR-078</a> (why the committed mocks carry placeholder names), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the points calculator and the Points Table are untouched)</dd></div><div><dt>Source</dt><dd class=""><code>114-ranklist-whole-points-close-call-decimals.md</code></dd></div><div><dt>Length</dt><dd class="">80 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan <code>doc/plans/ranklist-whole-points-2026-10-18.html</code> with S1 A and S2 A). Implemented test-first (RT.ROUND.01–10); before/after sheet approved (A1); released to CERT and PROD on 2026-10-18 (main <code>29943732</code>) and checked on PROD's ranklist page: épée women V0, Ranking 2026/27 shows <code>71.34</code> · <code>71.31</code> in rows 5–6 and whole numbers elsewhere, the drilldown headline <code>71.3</code>, the ODS download the exact values.
 <strong>Date:</strong> 2026-10-18
 <strong>Relates to:</strong> <a href="101-ranking-ppw-public-ui-and-publication-boundary.html">ADR-101</a> (it owns the Ranking / PPW table and its columns; this record decides how their numbers read), <a href="098-ranking-schema-v2-and-generalized-ranking-rpc.html">ADR-098</a> (its functions return the rank; their <code>ROW_NUMBER</code> order is recorded here, unchanged), <a href="078-gdpr-data-handling.html">ADR-078</a> (why the committed mocks carry placeholder names), <a href="102-published-pages-share-one-scoring-module.html">ADR-102</a> (the points calculator and the Points Table are untouched)
 <strong>Source:</strong> <code>frontend/src/lib/ranklist-points.ts</code>, <code>frontend/src/components/RanklistTable.svelte</code>, <code>doc/plans/ranklist-whole-points-2026-10-18.html</code>, <code>doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</code></p>
@@ -87,7 +87,7 @@
 <li><strong>B′ · B in grey.</strong> Rejected for the same reason, less loudly. Its look is kept for the close calls.</li>
 <li><strong>Decimals in every column of a close-call row.</strong> Rejected: SPWS and EVF+ do not decide the order, and the decimals would add clutter exactly where the signal sits.</li>
 <li><strong>Always two decimals for a close call.</strong> Rejected: one is enough in 18 of the 20 close calls PROD shows; two appear only where one is not (71.34 and 71.31).</li>
-<li><strong>Shared ranks for equal totals.</strong> Not decided here: it is a ranking rule, not a display (open item 1).</li>
+<li><strong>Shared ranks for equal totals.</strong> Not decided here: it is a ranking rule, not a display (open item 1, decided by ADR-115).</li>
 </ol>
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
@@ -96,13 +96,13 @@
 <li>A row's look depends on its neighbours: a <code>22</code> becomes <code>22.1</code> while another fencer is within the same whole number, and goes back when they part.</li>
 <li>Those few rows break the clean right edge of the column by a small tail.</li>
 <li>The visible sum can miss by one; the drilldown shows the exact parts.</li>
-<li><strong>Found, not fixed:</strong> equal totals take consecutive ranks in no fixed order (<code>ROW_NUMBER</code> without a second key).</li>
+<li><strong>Found, not fixed here:</strong> equal totals took consecutive ranks in no fixed order (<code>ROW_NUMBER</code> without a second key). ADR-115 makes them share a place.</li>
 <li>The committed mocks carry real scores and placeholder names: a fencer erased under ADR-078 must not survive in git history.</li>
 </ul>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ol>
-<li><strong>How equal totals are ranked.</strong> Today they take consecutive ranks in no fixed order. Decided by the user on 2026-10-18 as its own ranking rule: equal totals share a place and the next place skips (16, 16, 18). It ships as its own change after this record, planned in <a href="../plans/equal-totals-shared-place-2026-10-18.html">doc/plans/equal-totals-shared-place-2026-10-18.html</a> and recorded in its own ADR. This record keeps exact ties whole either way.</li>
+<li><strong>How equal totals are ranked.</strong> Resolved by <a href="115-equal-totals-share-a-place.html">ADR-115</a> (decided by the user on 2026-10-18, its own change after this record): equal totals share a place and the next place skips (16, 16, 18). Exact ties stay whole here, and they now share their place too.</li>
 </ol>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="the-mocks">The mocks</h2>
@@ -113,6 +113,6 @@
 <p>The full interactive mock, with the Ranking / PPW switch, the phone and desktop widths and the comparison table: <a href="../mockups/ranklist-whole-vs-small-decimals-2026-10-18.html">doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</a>.</p>
 </section></main>
 </div>
-<nav class="pager" aria-label="ADR navigation"><a class="previous" href="113-ingest-and-promote-carry-every-organizer.html">← ADR-113: Ingest and Promote Carry Every Organizer&#x27;s Event</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>114-ranklist-whole-points-close-call-decimals.md</code> · source SHA-256 <code>06a9860c06e09005d5c6c7d60bb7e49cfc78b33f9370eea7a4867264f2641e30</code></footer>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="113-ingest-and-promote-carry-every-organizer.html">← ADR-113: Ingest and Promote Carry Every Organizer&#x27;s Event</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="115-equal-totals-share-a-place.html">→ ADR-115: Equal Totals Share a Place; the Next Place Skips</a></nav>
+<footer class="foot">Generated from <code>114-ranklist-whole-points-close-call-decimals.md</code> · source SHA-256 <code>e06ae32b7b0914b4ca16f79e27c7120d61f8050c15eebe26ab29cfef22a5376b</code></footer>
 </div></body></html>

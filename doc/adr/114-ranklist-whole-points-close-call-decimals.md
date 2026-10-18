@@ -1,6 +1,6 @@
 # ADR-114: The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal
 
-**Status:** Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan `doc/plans/ranklist-whole-points-2026-10-18.html` with S1 A and S2 A). Implemented test-first on LOCAL on 2026-10-18 (RT.ROUND.01–10); release pending the before/after sheet.
+**Status:** Accepted (decided by the user in chat on 2026-10-18: design C from the five-way mock, then the plan `doc/plans/ranklist-whole-points-2026-10-18.html` with S1 A and S2 A). Implemented test-first (RT.ROUND.01–10); before/after sheet approved (A1); released to CERT and PROD on 2026-10-18 (main `29943732`) and checked on PROD's ranklist page: épée women V0, Ranking 2026/27 shows `71.34` · `71.31` in rows 5–6 and whole numbers elsewhere, the drilldown headline `71.3`, the ODS download the exact values.
 **Date:** 2026-10-18
 **Relates to:** [ADR-101](101-ranking-ppw-public-ui-and-publication-boundary.md) (it owns the Ranking / PPW table and its columns; this record decides how their numbers read), [ADR-098](098-ranking-schema-v2-and-generalized-ranking-rpc.md) (its functions return the rank; their `ROW_NUMBER` order is recorded here, unchanged), [ADR-078](078-gdpr-data-handling.md) (why the committed mocks carry placeholder names), [ADR-102](102-published-pages-share-one-scoring-module.md) (the points calculator and the Points Table are untouched)
 **Source:** `frontend/src/lib/ranklist-points.ts`, `frontend/src/components/RanklistTable.svelte`, `doc/plans/ranklist-whole-points-2026-10-18.html`, `doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html`
@@ -52,7 +52,7 @@ The drilldown keeps its one decimal and the ODS download keeps the exact values.
 4. **B′ · B in grey.** Rejected for the same reason, less loudly. Its look is kept for the close calls.
 5. **Decimals in every column of a close-call row.** Rejected: SPWS and EVF+ do not decide the order, and the decimals would add clutter exactly where the signal sits.
 6. **Always two decimals for a close call.** Rejected: one is enough in 18 of the 20 close calls PROD shows; two appear only where one is not (71.34 and 71.31).
-7. **Shared ranks for equal totals.** Not decided here: it is a ranking rule, not a display (open item 1).
+7. **Shared ranks for equal totals.** Not decided here: it is a ranking rule, not a display (open item 1, decided by ADR-115).
 
 ## Consequences
 
@@ -60,12 +60,12 @@ The drilldown keeps its one decimal and the ODS download keeps the exact values.
 - A row's look depends on its neighbours: a `22` becomes `22.1` while another fencer is within the same whole number, and goes back when they part.
 - Those few rows break the clean right edge of the column by a small tail.
 - The visible sum can miss by one; the drilldown shows the exact parts.
-- **Found, not fixed:** equal totals take consecutive ranks in no fixed order (`ROW_NUMBER` without a second key).
+- **Found, not fixed here:** equal totals took consecutive ranks in no fixed order (`ROW_NUMBER` without a second key). ADR-115 makes them share a place.
 - The committed mocks carry real scores and placeholder names: a fencer erased under ADR-078 must not survive in git history.
 
 ## Open items
 
-1. **How equal totals are ranked.** Today they take consecutive ranks in no fixed order. Decided by the user on 2026-10-18 as its own ranking rule: equal totals share a place and the next place skips (16, 16, 18). It ships as its own change after this record, planned in [doc/plans/equal-totals-shared-place-2026-10-18.html](../plans/equal-totals-shared-place-2026-10-18.html) and recorded in its own ADR. This record keeps exact ties whole either way.
+1. **How equal totals are ranked.** Resolved by [ADR-115](115-equal-totals-share-a-place.md) (decided by the user on 2026-10-18, its own change after this record): equal totals share a place and the next place skips (16, 16, 18). Exact ties stay whole here, and they now share their place too.
 
 ## The mocks
 

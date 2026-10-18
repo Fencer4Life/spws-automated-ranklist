@@ -126,7 +126,7 @@
   <p class="dek">Fencers with exactly the same total share the place, and the next place skips: two fencers on equal points are both <b>16th</b>, there is no 17th, and the next fencer is <b>18th</b>. Today the database numbers them one after another in an order nothing fixes. The rule is yours (18 October, in chat). This plan builds it, records it as <b>ADR-115</b>, and leaves four small details for you.</p>
   <div class="meta">
     <span class="pill"><span class="dot"></span>Rule decided in chat, 18 October</span>
-    <span class="pill"><span class="dot"></span>Signed off in chat on 18 October: Q1–Q4 A, S1 A</span>
+    <span class="pill"><span class="dot"></span>Signed off in chat on 18 October: Q1–Q4 A, S1 A · before/after sheet approved (A1)</span>
     <span class="pill danger"><span class="dot"></span>A database change · PROD only after your approval in the Release run</span>
   </div>
 
@@ -179,7 +179,7 @@
         <tr><td>Main ranklist, “#” column</td><td><code>RanklistTable.svelte</code>, <code>row.rank</code></td><td>16, 16, 18 — no code change</td></tr>
         <tr><td>Drilldown headline, place</td><td><code>DrilldownModal.svelte</code>, <code>context.rank</code></td><td>both tied fencers show 16</td></tr>
         <tr><td>ODS download, Rank column</td><td><code>frontend/src/lib/export.ts</code></td><td>16, 16, 18</td></tr>
-        <tr><td>FTL seed export, tier</td><td><code>fn_ftl_export_entries</code>; <code>ftl_seed_export.py</code>, <code>ftlSeedExport.ts</code></td><td>tied fencers share a tier, as the code already expects</td></tr>
+        <tr><td>FTL seed export, tier</td><td><code>fn_ftl_export_entries</code>; <code>ftl_seed_export.py</code>, <code>ftlSeedExport.ts</code></td><td>tied fencers share a tier, as the code already expects (the Python generator after the correction in §5)</td></tr>
         <tr><td>National-team positions tool</td><td><code>python/tools/extract_ranking_positions.py</code> (<code>pos</code> from <code>fn_ranking_ppw</code>)</td><td>tied fencers share a position</td></tr>
         <tr><td><code>fn_ranking_kadra</code> (parity oracle for <code>fn_ranking_full</code>, ADR-101)</td><td>the same migrations</td><td>changed with the others, so parity holds</td></tr>
         <tr><td>Telegram <code>ranking</code> (CERT)</td><td><code>fn_category_ranking</code>: top 5 by points, no place numbers</td><td>unaffected</td></tr>
@@ -246,10 +246,14 @@
       <tbody>
         <tr><td><code>supabase/migrations/20261018000001_equal_totals_share_place.sql</code> (new)</td><td>Re-creates every ranking function whose <code>rank</code> is a <code>ROW_NUMBER</code> over the total, with <code>RANK()</code> in its place and the Q1 key added to the row order. Step one enumerates them from LOCAL’s live definitions (<code>pg_get_functiondef</code>), so none is missed: the full, PPW and Kadra functions, each in its event-FK and event-code variant, every branch. Bodies are copied from the live definitions with only that line changed; grants re-checked against ADR-083’s allowlist. <code>postgrestools check</code> clean.</td></tr>
         <tr><td><code>SeasonRulesModal.svelte</code>, <code>locales/pl.json</code>, <code>locales/en.json</code> (Q3 A only)</td><td>One sentence under “Suma wliczonych wyników → miejsce w rankingu”: <i>„Ta sama suma punktów daje to samo miejsce; kolejne miejsce przesuwa się o liczbę zawodników na tym miejscu (np. 16, 16, 18).”</i> / <i>“The same total shares a place; the next place moves down by the number sharing it (e.g. 16, 16, 18).”</i></td></tr>
-        <tr><td><code>fn_ftl_export_entries</code> (the organiser download), in the same migration</td><td>Ranked entries follow the ranking’s own row order (the <code>fn_ranking_ppw</code> call taken <code>WITH ORDINALITY</code>) instead of registration time; the unranked tail keeps registration time, then name. Its comments become true. The Python and TypeScript generators: no change.</td></tr>
+        <tr><td><code>fn_ftl_export_entries</code> (the organiser download), in the same migration</td><td>Ranked entries follow the ranking’s own row order (the <code>fn_ranking_ppw</code> call taken <code>WITH ORDINALITY</code>) instead of registration time; the unranked tail keeps registration time, then name. Its comments become true. The TypeScript generator: no change. The Python generator: carries the rank (see the correction below).</td></tr>
         <tr><td>Main list, drilldown, ODS</td><td>no change; they print the rank they are given</td></tr>
       </tbody>
     </table></div>
+    <div class="note warn">
+      <p class="lede">Corrected on 18 October, during the build</p>
+      <p>This plan said the Python and TypeScript generators needed no change. The TypeScript generator needs none: it reads the rank and the order from <code>fn_ftl_export_entries</code>. The Python generator did need one. It took the tier from the fencer&rsquo;s position in the ranking list (<code>index + 1</code> in <code>assemble_mixall_subrankings</code>), not from the rank. Under <code>ROW_NUMBER</code> the two are the same; under a shared place the tied pair would land in tiers 16 and 17. It now carries <code>fn_ranking_ppw</code>&rsquo;s rank (<code>fetch_weapon_rankings</code> returns it, <code>assemble_mixall_subrankings</code> takes it as <code>ranks</code>), and <code>RANK.TIE.07</code> checks both generators on the same six-fencer case. That case failed first, as predicted. No organiser received such a file: the Python path feeds only the e-mail delivery, which has never run (ADR-080, 2026-09-25).</p>
+    </div>
   </section>
 
   <section id="tests">
@@ -310,7 +314,7 @@
       </ol>
       <h3>Consequences</h3>
       <ul>
-        <li>One migration, which also aligns the organiser download’s order of a shared place; tests <code>RANK.TIE.01–08</code>; no change to the list, the drilldown, the ODS or the Python and TypeScript generators.</li>
+        <li>One migration, which also aligns the organiser download’s order of a shared place; tests <code>RANK.TIE.01–08</code>; no change to the list, the drilldown, the ODS or the TypeScript generator; the Python generator carries the rank (§5, corrected).</li>
         <li>Nobody moves down; on 18 October, 20 fencers move up to share a place.</li>
         <li>A list can show a gap after a tie (16, 16, 18), as the rules modal explains (Q3).</li>
       </ul>

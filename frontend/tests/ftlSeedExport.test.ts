@@ -477,6 +477,34 @@ describe('buildEventSeedFiles', () => {
     )
     expect(files.every((f) => f.weapon === 'EPEE')).toBe(true)
   })
+
+  // RANK.TIE.07 (ADR-115) — the same case, same answer, as
+  // test_exporter_seeds_a_shared_place_in_one_tier_in_ranking_order. Equal
+  // totals share a place, so ALFA and ZULU both arrive as rank 2 of MV0, in the
+  // ranking's own row order (int_order), whatever order they registered in.
+  it('RANK.TIE.07 seeds a shared place in one tier, in the ranking’s row order', () => {
+    const ranked = (r: ExportEntryRow, points: number): ExportEntryRow => ({ ...r, num_rank_points: points })
+    const files = buildEventSeedFiles(
+      [
+        ranked(row('Zulu', 'Zenon', 'M', 'V0', 'EPEE', 3, 2), 300),
+        ranked(row('Alfa', 'Adam', 'M', 'V0', 'EPEE', 2, 2), 300),
+        ranked(row('Kowalski', 'Jan', 'M', 'V0', 'EPEE', 1, 1), 400),
+        ranked(row('Nowak', 'Anna', 'F', 'V0', 'EPEE', 1, 1), 350),
+        ranked(row('Wisniewska', 'Ewa', 'F', 'V0', 'EPEE', 2, 2), 310),
+        ranked(row('Lewandowska', 'Ola', 'F', 'V0', 'EPEE', 3, 3), 305),
+      ],
+      'PPW5-2025-2026',
+    )
+    const mixall = files.find((f) => f.kind === 'MIXALL')!
+    const seeded = [...mixall.xml.matchAll(/<Tireur [^>]*>/g)]
+      .map((m) => ({
+        nom: /Nom="([^" ]*)/.exec(m[0])![1],
+        seed: Number(/Classement="([^"]*)"/.exec(m[0])![1]),
+      }))
+      .sort((a, b) => a.seed - b.seed)
+      .map((t) => t.nom)
+    expect(seeded).toEqual(['KOWALSKI', 'NOWAK', 'WISNIEWSKA', 'ALFA', 'ZULU', 'LEWANDOWSKA'])
+  })
 })
 
 // ---------------------------------------------------------------------------
