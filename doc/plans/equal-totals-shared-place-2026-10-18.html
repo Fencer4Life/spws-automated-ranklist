@@ -1,0 +1,430 @@
+<meta charset="utf-8">
+<title>Equal totals share a place</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap" style="overflow-wrap:anywhere">
+
+  <p class="eyebrow">Plan · ranking rule · 18 October 2026</p>
+  <h1>Equal totals share a place</h1>
+  <p class="dek">Fencers with exactly the same total share the place, and the next place skips: two fencers on equal points are both <b>16th</b>, there is no 17th, and the next fencer is <b>18th</b>. Today the database numbers them one after another in an order nothing fixes. The rule is yours (18 October, in chat). This plan builds it, records it as <b>ADR-115</b>, and leaves four small details for you.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Rule decided in chat, 18 October</span>
+    <span class="pill"><span class="dot"></span>Signed off in chat on 18 October: Q1–Q4 A, S1 A</span>
+    <span class="pill danger"><span class="dot"></span>A database change · PROD only after your approval in the Release run</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="contents">
+    <p class="kicker">Read in this order</p>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#decided">What you decided</a></li>
+      <li><a href="#today">Today, from the code</a></li>
+      <li><a href="#rule">The rule</a></li>
+      <li><a href="#measured">Measured on PROD</a></li>
+      <li><a href="#code">The change in the code</a></li>
+      <li><a href="#tests">Tests, red first</a></li>
+      <li><a href="#adr">ADR-115, the draft</a></li>
+      <li><a href="#docs">Documentation</a></li>
+      <li><a href="#ship">Order of work and the gates</a></li>
+      <li><a href="#parity">LOCAL, CERT and PROD</a></li>
+      <li><a href="#done">Definition of done</a></li>
+      <li><a href="#out">Not in this plan</a></li>
+      <li><a href="#decide">Decide this first</a></li>
+    </ol>
+  </section>
+
+  <section id="decided">
+    <p class="kicker">1 · What you decided · 18 October, in chat</p>
+    <h2>A shared place; the next place skips</h2>
+    <div class="note good">
+      <p class="lede">“They share the same place, meaning the place below is one position further down. So if we have two 16th places due to exact same points, there is no 17th place, the next fencer stays in place 18th.”</p>
+      <p>This settles ADR-114’s open item 1, which the plan for ADR-114 sent to its own session (S2 A).</p>
+    </div>
+    <div class="note good">
+      <p class="lede">Also decided on 18 October: Q1–Q4 all A, S1 A, and the seed files follow “the ranking’s row order”.</p>
+      <p>In the FTL seed files, fencers who share a place keep the order the ranking lists them in (Q1: alphabetical), in both generators. Registration time orders only the unranked tail.</p>
+    </div>
+  </section>
+
+  <section id="today">
+    <p class="kicker">2 · Today, from the code</p>
+    <h2>Consecutive ranks, in no fixed order</h2>
+    <ul>
+      <li>Every ranking function numbers its rows with <code>ROW_NUMBER() OVER (ORDER BY total DESC)</code> and no second key: <code>supabase/migrations/20261003000018_carry_stop_results.sql:222</code> (<code>fn_ranking_full_event_fk_matching</code>), <code>:324, :408</code> (<code>fn_ranking_kadra_event_fk_matching</code>), <code>:508, :584</code> (<code>fn_ranking_ppw_event_fk_matching</code>), and <code>fn_ranking_full_event_code_matching</code> in <code>20260928000001_spws_place_medal_engine.sql:1220, :1337</code>; the other code-matching variants are found in step one of the build. The dispatchers <code>fn_ranking_full</code>, <code>fn_ranking_ppw</code> and <code>fn_ranking_kadra</code> return those rows unchanged.</li>
+      <li>No rule in the regulations, an ADR or the handbook fixes the order of equal season totals (documentation searched on 18 October). The 2026/27 rules draft uses the same convention you chose for ex aequo places inside a bracket: n, n, then n + 2 (<code>doc/plans/scoring-engine-2026-2027-brainstorm-2026-09-27.html</code>, §3, point 6).</li>
+      <li><b>The seed export was already written for shared ranks.</b> Its tier is the fencer’s <code>fn_ranking_ppw</code> rank (<code>20260926000001_ftl_export_rank_points.sql</code>, <code>rk.position</code>), and both its comment and <code>python/pipeline/ftl_seed_export.py:201</code> say <i>“fn_ranking_ppw gives two fencers on the same score the same rank”</i>. That is false today: two tied fencers land in different seed tiers. It becomes true with this change: a tier may hold several fencers, an empty tier produces nothing, and equal points fall back to the fixed category order and then the generator’s list order. <b>One risk:</b> the two generators reach that list order differently — the organiser download (<code>fn_ftl_export_entries</code>) by registration time, then name; the Python path by the ranking’s own row order (<code>python/pipeline/ftl_seed_export_db.py:87</code>). ADR-080 relies on the two producing the same file. <b>Your choice: the ranking’s row order.</b> The organiser download is aligned to it in this change, and <code>RANK.TIE.07</code> checks that both generators now agree.</li>
+    </ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where a rank is shown or used</th><th>Source</th><th>After the change</th></tr></thead>
+      <tbody>
+        <tr><td>Main ranklist, “#” column</td><td><code>RanklistTable.svelte</code>, <code>row.rank</code></td><td>16, 16, 18 — no code change</td></tr>
+        <tr><td>Drilldown headline, place</td><td><code>DrilldownModal.svelte</code>, <code>context.rank</code></td><td>both tied fencers show 16</td></tr>
+        <tr><td>ODS download, Rank column</td><td><code>frontend/src/lib/export.ts</code></td><td>16, 16, 18</td></tr>
+        <tr><td>FTL seed export, tier</td><td><code>fn_ftl_export_entries</code>; <code>ftl_seed_export.py</code>, <code>ftlSeedExport.ts</code></td><td>tied fencers share a tier, as the code already expects</td></tr>
+        <tr><td>National-team positions tool</td><td><code>python/tools/extract_ranking_positions.py</code> (<code>pos</code> from <code>fn_ranking_ppw</code>)</td><td>tied fencers share a position</td></tr>
+        <tr><td><code>fn_ranking_kadra</code> (parity oracle for <code>fn_ranking_full</code>, ADR-101)</td><td>the same migrations</td><td>changed with the others, so parity holds</td></tr>
+        <tr><td>Telegram <code>ranking</code> (CERT)</td><td><code>fn_category_ranking</code>: top 5 by points, no place numbers</td><td>unaffected</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="rule">
+    <p class="kicker">3 · The rule</p>
+    <h2>Standard competition ranking</h2>
+    <ol class="steps">
+      <li>A fencer’s place is one more than the number of fencers with a <b>higher</b> total: <code>RANK() OVER (ORDER BY total DESC)</code>.</li>
+      <li>Fencers with exactly the same total share the place; the next place is further down by the number of fencers sharing it.</li>
+      <li><b>Nobody moves down.</b> Every place after a tie keeps the number it has today; only the second (and third) tied fencer moves up to share the place.</li>
+      <li>Totals, who is ranked, carry-over and the ADR-114 display stay as they are. ADR-114 keeps exact ties as whole numbers, and they now share the same place too.</li>
+    </ol>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Totals, in order</th><th>Today</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>40 · 35 · 35 · 20</td><td>1 · 2 · 3 · 4</td><td><b>1 · 2 · 2 · 4</b></td></tr>
+        <tr><td>Your example: places 15–18, two equal totals in the middle</td><td>15 · 16 · 17 · 18</td><td><b>15 · 16 · 16 · 18</b></td></tr>
+        <tr><td>3.00 · 1.00 · 1.00 · 1.00 · 0.50</td><td>1 · 2 · 3 · 4 · 5</td><td><b>1 · 2 · 2 · 2 · 5</b></td></tr>
+        <tr><td>no equal totals</td><td>1 · 2 · 3 · 4</td><td>1 · 2 · 3 · 4 (unchanged)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="measured">
+    <p class="kicker">4 · Measured on PROD, read only, 18 October</p>
+    <h2>19 ties; 20 fencers move up; none move down</h2>
+    <p>Every season the site shows, read as the site reads it (the running season with the rolling carry-over, past seasons without): <code>fn_ranking_ppw</code> for every season, <code>fn_ranking_full</code> for 2026/27, the only FULL season.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>List</th><th>Sub-ranking</th><th>Equal total</th><th>Places today</th><th>Shared place</th></tr></thead>
+      <tbody>
+        <tr><td>PPW 2023/24</td><td>épée M V0</td><td>108.72</td><td>8, 9</td><td>8, 8</td></tr>
+        <tr><td>PPW 2023/24</td><td>sabre M V0</td><td>18.79</td><td>7, 8</td><td>7, 7</td></tr>
+        <tr><td>PPW 2024/25</td><td>épée M V1</td><td>1.00</td><td>22, 23</td><td>22, 22</td></tr>
+        <tr><td>PPW 2024/25</td><td>épée M V3</td><td>1.00</td><td>17, 18</td><td>17, 17</td></tr>
+        <tr><td>PPW 2024/25</td><td>foil M V1</td><td>84.29</td><td>4, 5</td><td>4, 4</td></tr>
+        <tr><td>PPW 2024/25</td><td>sabre M V0</td><td>1.00</td><td>10, 11, 12</td><td>10, 10, 10</td></tr>
+        <tr><td>PPW 2025/26</td><td>épée W V1</td><td>1.00</td><td>6, 7</td><td>6, 6</td></tr>
+        <tr><td>PPW 2025/26</td><td>épée W V2</td><td>1.00</td><td>9, 10</td><td>9, 9</td></tr>
+        <tr><td>PPW 2025/26</td><td>sabre M V0</td><td>37.74</td><td>6, 7</td><td>6, 6</td></tr>
+        <tr><td>PPW 2025/26</td><td>sabre M V0</td><td>5.33</td><td>10, 11</td><td>10, 10</td></tr>
+        <tr><td>PPW 2025/26</td><td>sabre M V2</td><td>2.00</td><td>16, 17</td><td>16, 16</td></tr>
+        <tr><td>PPW 2026/27</td><td>épée W V1</td><td>1.00</td><td>6, 7</td><td>6, 6</td></tr>
+        <tr><td>PPW 2026/27</td><td>épée W V2</td><td>96.35</td><td>4, 5</td><td>4, 4</td></tr>
+        <tr><td>PPW 2026/27</td><td>épée M V4</td><td>5.99</td><td>9, 10</td><td>9, 9</td></tr>
+        <tr><td>PPW 2026/27</td><td>sabre M V2</td><td>1.00</td><td>17, 18</td><td>17, 17</td></tr>
+        <tr><td>Ranking 2026/27</td><td>épée W V1</td><td>1.00</td><td>7, 8</td><td>7, 7</td></tr>
+        <tr><td>Ranking 2026/27</td><td>épée M V4</td><td>5.99</td><td>12, 13</td><td>12, 12</td></tr>
+        <tr><td>Ranking 2026/27</td><td>sabre M V2</td><td>1.00</td><td>18, 19</td><td>18, 18</td></tr>
+        <tr><td>Ranking 2026/27</td><td>sabre M V3</td><td>1.00</td><td>8, 9</td><td>8, 8</td></tr>
+      </tbody>
+    </table></div>
+    <p>11 of the 19 ties are in past seasons, 8 in 2026/27 (Q2). Query: <code>RANK()</code> next to the functions’ own <code>rank</code>, through <code>scripts/cloud-sql.sh prod</code> (SELECT only).</p>
+  </section>
+
+  <section id="code">
+    <p class="kicker">5 · The change in the code</p>
+    <h2>One migration; the front end only explains it</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/migrations/20261018000001_equal_totals_share_place.sql</code> (new)</td><td>Re-creates every ranking function whose <code>rank</code> is a <code>ROW_NUMBER</code> over the total, with <code>RANK()</code> in its place and the Q1 key added to the row order. Step one enumerates them from LOCAL’s live definitions (<code>pg_get_functiondef</code>), so none is missed: the full, PPW and Kadra functions, each in its event-FK and event-code variant, every branch. Bodies are copied from the live definitions with only that line changed; grants re-checked against ADR-083’s allowlist. <code>postgrestools check</code> clean.</td></tr>
+        <tr><td><code>SeasonRulesModal.svelte</code>, <code>locales/pl.json</code>, <code>locales/en.json</code> (Q3 A only)</td><td>One sentence under “Suma wliczonych wyników → miejsce w rankingu”: <i>„Ta sama suma punktów daje to samo miejsce; kolejne miejsce przesuwa się o liczbę zawodników na tym miejscu (np. 16, 16, 18).”</i> / <i>“The same total shares a place; the next place moves down by the number sharing it (e.g. 16, 16, 18).”</i></td></tr>
+        <tr><td><code>fn_ftl_export_entries</code> (the organiser download), in the same migration</td><td>Ranked entries follow the ranking’s own row order (the <code>fn_ranking_ppw</code> call taken <code>WITH ORDINALITY</code>) instead of registration time; the unranked tail keeps registration time, then name. Its comments become true. The Python and TypeScript generators: no change.</td></tr>
+        <tr><td>Main list, drilldown, ODS</td><td>no change; they print the rank they are given</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">6 · Tests, red first</p>
+    <h2>Written and seen failing before the migration</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>RANK.TIE.01</code></td><td>pgTAP</td><td><code>fn_ranking_ppw</code> on a fixture with totals 40, 35, 35, 20 returns ranks 1, 2, 2, 4.</td></tr>
+        <tr><td><code>RANK.TIE.02</code></td><td>pgTAP</td><td>The same for <code>fn_ranking_full</code> (Ranking mode) and <code>fn_ranking_kadra</code>.</td></tr>
+        <tr><td><code>RANK.TIE.03</code></td><td>pgTAP</td><td>A three-way tie: 3.00, 1.00, 1.00, 1.00, 0.50 → 1, 2, 2, 2, 5.</td></tr>
+        <tr><td><code>RANK.TIE.04</code></td><td>pgTAP</td><td>The event-code variants rank the same way (the engine selector switched for the test).</td></tr>
+        <tr><td><code>RANK.TIE.05</code></td><td>pgTAP</td><td>Rows sharing a place come back in the Q1 order, the same on every call.</td></tr>
+        <tr><td><code>RANK.TIE.06</code></td><td>pgTAP</td><td>A list without equal totals keeps exactly the ranks it had (regression).</td></tr>
+        <tr><td><code>RANK.TIE.07</code></td><td>pgTAP + pytest + Vitest</td><td>The seed export puts two tied fencers of one sub-ranking in the same tier, lays down no empty tier, and the organiser download and the Python generator both order the tied pair by the ranking’s row order, whatever their registration times (extends test 76, <code>test_ftl_seed_export.py</code> and <code>ftlSeedExport.test.ts</code>).</td></tr>
+        <tr><td><code>RANK.TIE.08</code></td><td>Vitest (Q3 A only)</td><td>The rules modal shows the sentence in Polish and English.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The existing ranking suites (5.x, SS26.RANK, R.x, carry-over 94, seed export 76) stay green; their fixtures have no equal totals unless a test says so. Spec Appendix D gets the new pgTAP total. Then <code>scripts/preflight.sh</code> must exit 0.</p>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">7 · The decision record</p>
+    <h2>ADR-115, the draft</h2>
+    <p>Written to <code>doc/adr/115-equal-totals-share-a-place.md</code> after your sign-off, its <code>.html</code> generated by <code>scripts/render_adrs.py</code>.</p>
+    <h3>Audit of the existing decisions</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ADR</th><th>Outcome</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>ADR-098 ranking schema v2</td><td>Amends</td><td>The rank <code>fn_ranking_full</code> returns: shared places instead of a row count.</td></tr>
+        <tr><td>ADR-114 ranklist points display</td><td>Amends</td><td>Open item 1 is resolved; exact ties now share their place as well as their number.</td></tr>
+        <tr><td>ADR-080 FTL seeding</td><td>Amends</td><td>Its tiers assumed shared ranks; the assumption becomes true. Fencers sharing a place follow the ranking’s row order in the organiser download too, not registration time.</td></tr>
+        <tr><td>ADR-101 Ranking / PPW public UI</td><td>Relates</td><td><code>fn_ranking_kadra</code> stays the parity oracle and changes with the others.</td></tr>
+        <tr><td>ADR-018 rolling, ADR-042/045 engines, ADR-083 grants</td><td>Clean / checked</td><td>Totals, carry-over and engines untouched; the re-created functions keep their grants.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note accent">
+      <p class="lede">ADR-115: Equal Totals Share a Place; the Next Place Skips</p>
+      <p><b>Status:</b> Accepted for the rule (decided by the user in chat on 2026-10-18); Q1–Q4 of the plan pending<br>
+      <b>Date:</b> 2026-10-18<br>
+      <b>Amends:</b> ADR-098 (the rank), ADR-114 (open item 1), ADR-080 (the order of fencers sharing a seed tier)<br>
+      <b>Relates to:</b> ADR-101 (the Kadra parity oracle), ADR-083 (grants)<br>
+      <b>Source:</b> <code>supabase/migrations/20261018000001_equal_totals_share_place.sql</code>, <code>doc/plans/equal-totals-shared-place-2026-10-18.html</code></p>
+      <h3>Context</h3>
+      <p>Every ranking function numbered its rows with <code>ROW_NUMBER() OVER (ORDER BY total DESC)</code>, so exactly equal totals took consecutive places in an order nothing fixed. On PROD on 18 October 2026 that touched 19 ties across the four seasons the site shows, 20 fencers in all. The seed export already assumed that equal scores share a rank. No rule fixed the order of equal season totals; the 2026/27 rules draft shares ex aequo places in a bracket the same way.</p>
+      <h3>Decision</h3>
+      <p><b>1 · A shared place.</b> A fencer’s place is one more than the number of fencers with a higher total (<code>RANK()</code>): equal totals share the place, and the next place skips by the number sharing it (16, 16, 18).</p>
+      <p><b>2 · Everywhere the rank comes from.</b> Every ranking function and variant: full, PPW and Kadra, event-FK and event-code, every branch. Everything that prints or uses the rank (list, drilldown, ODS, seed export, positions tool) follows without change.</p>
+      <p><b>3 · The order inside a shared place</b> is fixed by Q1, so a list never reshuffles between two loads.</p>
+      <p><b>4 · Scope and wording</b> as settled by Q2 and Q3.</p>
+      <p><b>5 · Seed files follow the ranking.</b> In the FTL seed files, fencers who share a place keep the ranking’s own row order, in both generators; registration time orders only the unranked tail.</p>
+      <h3>Alternatives considered</h3>
+      <ol>
+        <li><b>Keep consecutive places, with a stable second key</b> (e.g. the name). Rejected: the place itself would be decided by the alphabet.</li>
+        <li><b>Dense places</b> (16, 16, 17). Rejected by the user: there is no 17th.</li>
+        <li><b>A sporting tie-break</b> (best single result, more counted results). Rejected: the regulations have no such rule, and a shared place states the truth: the totals are equal.</li>
+      </ol>
+      <h3>Consequences</h3>
+      <ul>
+        <li>One migration, which also aligns the organiser download’s order of a shared place; tests <code>RANK.TIE.01–08</code>; no change to the list, the drilldown, the ODS or the Python and TypeScript generators.</li>
+        <li>Nobody moves down; on 18 October, 20 fencers move up to share a place.</li>
+        <li>A list can show a gap after a tie (16, 16, 18), as the rules modal explains (Q3).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">8 · Documentation</p>
+    <h2>Where the rule is kept</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Page</th><th>Change, present tense</th></tr></thead>
+      <tbody>
+        <tr><td><code>doc/handbook/domain/competition-and-ranking.html</code></td><td>The ranking’s place rule: equal totals share a place, the next place skips (ADR-115).</td></tr>
+        <tr><td><code>doc/handbook/subsystems/scoring-and-ranking.html</code></td><td>Current flow: “numbers rows with <code>RANK()</code>…”, replacing today’s sentence about consecutive ranks in no fixed order.</td></tr>
+        <tr><td><code>doc/handbook/product/product-surfaces.html</code></td><td>Ranklist card: tied fencers share the place; the rules modal says so (Q3 A).</td></tr>
+        <tr><td>ADR-114</td><td>Open item 1: resolved by ADR-115.</td></tr>
+        <tr><td>ADR-098, ADR-080</td><td>An amendment line in each: ADR-098 for the rank, ADR-080 for the order inside a shared tier.</td></tr>
+        <tr><td>Specification</td><td>Appendix C: ADR-115 row, ADR-098 and ADR-114 rows updated. Appendix D: the pgTAP total.</td></tr>
+        <tr><td>RTM</td><td>New <b>FR-159</b> “Equal totals share a place; the next place skips (ADR-115)” with <code>RANK.TIE.01–08</code>; <code>check-spec-sync.sh</code> expects 158 FR rows.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note good">
+      <p class="lede">☐ Documentation coherence gate complete</p>
+<pre class="trace">Impact: domain | product | architecture | reference
+Canonical docs affected: doc/handbook/domain/competition-and-ranking.html;
+  doc/handbook/subsystems/scoring-and-ranking.html; doc/handbook/product/product-surfaces.html;
+  doc/requirements-traceability-matrix.md (+ .html); the specification (+ .html), Appendix C and D
+ADR impact: new (ADR-115); amend ADR-098, ADR-114, ADR-080; ADR-101 relates
+Operational impact: none (the Release run applies the migration)
+Source-map / last-verified updated: yes
+Validation: python scripts/check_docs.py --changed-from origin/main [PASS]
+Superseded prose archived rather than appended: not applicable</pre>
+    </div>
+  </section>
+
+  <section id="ship">
+    <p class="kicker">9 · Order of work</p>
+    <h2>Tests, LOCAL, the sheet, then CERT and PROD</h2>
+    <ol class="steps">
+      <li>You sign off this plan and Q1–Q4.</li>
+      <li>Tests <code>RANK.TIE.01–08</code> written and seen red on LOCAL.</li>
+      <li>The migration, applied on LOCAL through <code>psql</code>; green; <code>postgrestools check</code> clean; Q3’s sentence if A.</li>
+      <li>ADR-115 and the documentation of §8; renders, checks, reindex, graph refresh; <code>scripts/preflight.sh</code> exits 0.</li>
+      <li>A before/after sheet on LOCAL (names masked): a list with a tie in each view (sabre M V0 PPW 2025/26; épée W V2 PPW 2026/27; sabre M V3 Ranking 2026/27), the tied fencer’s drilldown headline, the rules modal (Q3 A), at desktop and phone width.</li>
+      <li>You approve the sheet in chat.</li>
+      <li>Commit with explicit paths, integrate, push <code>integration/main:main</code>; CI; the Release run applies the migration to CERT, and I check CERT through what the site reads.</li>
+      <li>You approve PROD in the Release run; I check PROD: the 19 ties share their places, and nothing else moved.</li>
+      <li>ADR-115 and its Appendix C row record the release.</li>
+    </ol>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">10 · Environments</p>
+    <h2>LOCAL, CERT and PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Migration</td><td><code>psql</code>, tests</td><td>Release run, automatic</td><td>Release run, after your approval</td></tr>
+        <tr><td>Front end</td><td colspan="3">unchanged, or Q3’s sentence in the same release: it needs no new database object, so ADR-109’s “one release after” rule does not apply</td></tr>
+        <tr><td>Data</td><td colspan="3">no data written; places are computed on every read</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">11 · Binary</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li><code>RANK.TIE.01–08</code> green, each seen red first; <code>scripts/preflight.sh</code> exit 0.</li>
+      <li>The before/after sheet approved in chat.</li>
+      <li>CI and the Release run green; CERT and PROD checked: the 19 ties of §4 share their places, every other place unchanged.</li>
+      <li>ADR-115 accepted with the release SHA; the §8 pages, Appendix C and D, the RTM and the coherence gate box done.</li>
+    </ul>
+  </section>
+
+  <section id="out">
+    <p class="kicker">12 · Not in this plan</p>
+    <h2>Left as it is</h2>
+    <ul>
+      <li>Any sporting tie-break; how totals are computed; who is ranked.</li>
+      <li>The seed tier order across sub-rankings (points, then the fixed category order).</li>
+      <li>The Telegram <code>ranking</code> top 5.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">13 · Decide this first</p>
+    <h2>Four details, then the sign-off</h2>
+    <div class="note warn">
+      <p class="lede">Q1 · In what order are fencers who share a place listed?</p>
+      <p><strong>A (recommended):</strong> alphabetically by the name shown, so the list is the same on every load and no order looks like a ranking.</p>
+      <p><strong>B:</strong> by registration in the system (fencer id): stable, but it means nothing to a reader.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Q2 · Which seasons?</p>
+      <p><strong>A (recommended):</strong> every season the site shows, 2023/24 to 2026/27. One rule everywhere; the old order was arbitrary, and nobody moves down. 11 of the 19 ties are in past seasons.</p>
+      <p><strong>B:</strong> from 2026/27 only: past lists keep their numbers, at the cost of a season switch inside every ranking function.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Q3 · Tell fencers in the season rules modal?</p>
+      <p><strong>A (recommended):</strong> yes, one sentence in Polish and English (§5), so “16, 16, 18” does not look like a missing row.</p>
+      <p><strong>B:</strong> no text.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">Q4 · Release order with ADR-114 (whole points)?</p>
+      <p><strong>A (recommended):</strong> ADR-114 first (its sheet awaits your A1; front end only), then this as its own release, so each change is checked on PROD on its own.</p>
+      <p><strong>B:</strong> both in one release.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">S1 · Build it as written?</p>
+      <p><strong>A (recommended):</strong> approve with your Q1–Q4 answers; I write the tests first, then the migration, ADR-115 and the documentation, and bring you the before/after sheet. Nothing reaches PROD before you approve the sheet and then the PROD step of the Release run.</p>
+      <p><strong>B:</strong> change something first: say what.</p>
+    </div>
+  </section>
+
+  <p class="foot">Sources. supabase/migrations/20261003000018_carry_stop_results.sql:222, :324, :408, :508, :584; supabase/migrations/20260928000001_spws_place_medal_engine.sql:1220, :1337; supabase/migrations/20260425000009_dispatcher_register_fk_engine.sql (dispatchers); supabase/migrations/20260926000001_ftl_export_rank_points.sql; python/pipeline/ftl_seed_export.py:163–222 (interleave_mixall); python/tools/extract_ranking_positions.py; scripts/gas_telegram_bot.js:169–176 and fn_category_ranking in supabase/migrations/20261006000001_active_season_computed.sql; frontend/src/components/SeasonRulesModal.svelte; doc/adr/011, 080, 098, 101, 109, 114; doc/handbook/operations/environments-and-release.html (PROD approval); doc/plans/scoring-engine-2026-2027-brainstorm-2026-09-27.html §3 point 6. PROD: fn_ranking_ppw for four seasons and fn_ranking_full for 2026/27, as the site reads them, SELECT only, 18 October 2026.</p>
+</div>

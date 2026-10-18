@@ -1,0 +1,449 @@
+<meta charset="utf-8">
+<title>Ranklist close-call decimals</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap" style="overflow-wrap:anywhere">
+
+  <p class="eyebrow">Plan · ranklist display · 18 October 2026 · revision 2 (design C)</p>
+  <h1>Whole points, with a decimal only for close calls</h1>
+  <p class="dek">The main ranklist shows every points value as a <b>whole number</b>. Only where two neighbours would show the same whole number while their totals differ does the column that orders the list add a small grey decimal. The drilldown and the ODS download keep their decimals. The ranking, its order and every stored score stay exactly as they are. The decision is recorded in a new <b>ADR-114</b>, with the mocks inside it.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off in chat on 18 October: S1 A, S2 A · ADR-114 written</span>
+    <span class="pill"><span class="dot"></span>Built and checked on LOCAL · before/after sheet approved in chat on 18 October (A1)</span>
+    <span class="pill">front end only · no migration</span>
+    <span class="pill danger"><span class="dot"></span>PROD only after you approve the before/after sheet</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="contents">
+    <p class="kicker">Read in this order</p>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#decided">What you decided</a></li>
+      <li><a href="#today">Today, from the code</a></li>
+      <li><a href="#rule">The rule</a></li>
+      <li><a href="#measured">Measured on PROD</a></li>
+      <li><a href="#code">The change in the code</a></li>
+      <li><a href="#tests">Tests, red first</a></li>
+      <li><a href="#adr">ADR-114, the draft</a></li>
+      <li><a href="#docs">Documentation</a></li>
+      <li><a href="#ship">Order of work and the gate before PROD</a></li>
+      <li><a href="#parity">LOCAL, CERT and PROD</a></li>
+      <li><a href="#done">Definition of done</a></li>
+      <li><a href="#out">Not in this plan</a></li>
+      <li><a href="#decide">Decide this first</a></li>
+    </ol>
+  </section>
+
+  <section id="decided">
+    <p class="kicker">1 · What you decided · 18 October, in chat</p>
+    <h2>Design C, and the earlier answers that still hold</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Question</th><th>Your answer</th></tr></thead>
+      <tbody>
+        <tr><td>How the main ranklist shows points</td><td><b>C</b> · whole numbers; a small grey decimal only for close calls (picked after the five-way mock)</td></tr>
+        <tr><td>SPWS + EVF+ shown next to Razem</td><td><b>A</b> · each number rounded on its own; the visible sum is sometimes off by one</td></tr>
+        <tr><td>The ODS download</td><td><b>A</b> · it keeps the exact values</td></tr>
+        <tr><td>Two different ranks showing the same whole number</td><td><span class="strike">A · leave it</span> → replaced by C: the decimal tells them apart</td></tr>
+        <tr><td>Where the reasoning is kept</td><td>In the documentation and an ADR, <b>with the mocks in the ADR</b></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="today">
+    <p class="kicker">2 · Today, from the code</p>
+    <h2>One small formatter, used by the table alone</h2>
+    <ul>
+      <li><code>frontend/src/components/RanklistTable.svelte:58–62</code>, <code>fmt</code>, rounds to one decimal and drops a trailing <code>.0</code>. It formats Punkty in the PPW view (<code>:24</code>) and SPWS, EVF+ and Razem in the Ranking view (<code>:32–34</code>), and nothing else. The component draws the rows in the order the database returns them: no filter, search or re-sort.</li>
+      <li>The drilldown has its own copy of the same function (<code>DrilldownModal.svelte:339</code>); it keeps one decimal.</li>
+      <li>The ODS download writes the exact numbers (<code>frontend/src/lib/export.ts:13, 28–30</code>).</li>
+      <li>The same bundle serves the github.io application (CERT) and the PROD WordPress pages, so one change covers both.</li>
+      <li><b>The rank.</b> Every ranking function numbers its rows with <code>ROW_NUMBER() OVER (ORDER BY total DESC)</code> and no second key: <code>supabase/migrations/20261003000018_carry_stop_results.sql:222</code> (<code>fn_ranking_full_event_fk_matching</code>), <code>:508</code> (<code>fn_ranking_ppw_event_fk_matching</code>), and the code-matching variants in <code>20260928000001_spws_place_medal_engine.sql:1220, :1337</code>. Two exactly equal totals therefore get consecutive ranks in an order no rule fixes.</li>
+      <li>No ADR or requirement fixes the ranklist’s decimal places or the order of equal totals. The documentation index and the ADR bodies were searched on 18 October; the audit is in <a href="#adr">§7</a>.</li>
+    </ul>
+  </section>
+
+  <section id="rule">
+    <p class="kicker">3 · The rule</p>
+    <h2>Whole everywhere; a decimal only where it explains the order</h2>
+    <ol class="steps">
+      <li><b>Every number in the main table is whole</b>, a half rounding up (<code>Math.round</code>): Punkty in the PPW view; SPWS, EVF+ and Razem in the Ranking view. An empty value still shows <code>—</code>. Stored scores have two decimals and any <code>x.50</code> is exact in binary, so a half is never misrounded.</li>
+      <li><b>The close-call exception</b> applies only to the column that orders the list: Razem in the Ranking view, Punkty in the PPW view. Rows that show the same whole number always sit next to each other, because the list is sorted and rounding never reorders. Such a run of rows is a close call when its exact totals are <b>not all equal</b>. Then every row in the run shows its decimal: one decimal, or two when one decimal would still show two different totals as equal.</li>
+      <li><b>Exact ties stay whole.</b> A run whose totals are all equal shows whole numbers: no decimal can explain an order the database does not fix.</li>
+      <li><b>The decimal’s look is B′:</b> 0.72 em, which is 10 px under the 14 px digits (9.4 px under 13 px on a phone), in the table’s grey <code>#999</code>. The separator stays the point the table uses today.</li>
+      <li>SPWS and EVF+ stay whole even in a close-call row; they do not decide the order.</li>
+    </ol>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Totals of neighbouring rows</th><th>Today</th><th>Shown</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>172.60</td><td><code>172.6</code></td><td><code>173</code></td><td>no neighbour shows 173</td></tr>
+        <tr><td>22.96 · 22.09 · 21.51 · 20.44</td><td><code>23 · 22.1 · 21.5 · 20.4</code></td><td><code>23 · 22<small>.1</small> · 21<small>.5</small> · 20</code></td><td>22.09 and 21.51 both round to 22 and differ</td></tr>
+        <tr><td>22.00 · 22.00</td><td><code>22 · 22</code></td><td><code>22 · 22</code></td><td>an exact tie stays whole</td></tr>
+        <tr><td>22.14 · 22.12</td><td><code>22.1 · 22.1</code></td><td><code>22<small>.14</small> · 22<small>.12</small></code></td><td>one decimal would still look equal</td></tr>
+        <tr><td>22.40 · 22.00 · 22.00 · 21.60</td><td><code>22.4 · 22 · 22 · 21.6</code></td><td><code>22<small>.4</small> · 22<small>.0</small> · 22<small>.0</small> · 21<small>.6</small></code></td><td>the run differs, so all four rows show it, the tie inside too</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="measured">
+    <p class="kicker">4 · Measured on PROD, read only, 18 October</p>
+    <h2>Rare, and two decimals are sometimes needed</h2>
+    <div class="note warn">
+      <p class="lede">Corrected on 18 October, after the sign-off</p>
+      <p>The first measurement read 2026/27 without the rolling carry-over. The site shows the active season <b>with</b> it (<code>frontend/src/lib/rolling.ts</code>, <code>shouldUseRolling</code>; <code>App.svelte:633</code>), so the figures below are re-read that way. The design and the code are unchanged, and the two-decimal case the rule already covers is real.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>List as the site shows it (30 sub-rankings each)</th><th>Neighbour pairs</th><th>Same whole number, totals differ → decimal</th><th>Same whole number, exact tie → whole</th><th>Needs two decimals</th></tr></thead>
+      <tbody>
+        <tr><td>Ranking 2026/27 (rolling)</td><td>227</td><td>9</td><td>4</td><td>1</td></tr>
+        <tr><td>PPW 2026/27 (rolling)</td><td>196</td><td>8</td><td>4</td><td>1</td></tr>
+        <tr><td>PPW 2025/26</td><td>184</td><td>3</td><td>5</td><td>0</td></tr>
+        <tr><td><b>All</b></td><td><b>607</b></td><td><b>20</b></td><td><b>13</b></td><td><b>2</b></td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>Examples:</b> épée men V1, Ranking, #5 171.39 and #6 170.94 both round to <code>171</code> → <code>171<small>.4</small></code> · <code>170<small>.9</small></code>. Épée women V0, #5 71.34 and #6 71.31, in both views, still look equal at one decimal → <code>71<small>.34</small></code> · <code>71<small>.31</small></code>.</li>
+      <li><b>Sums:</b> in 20 of 256 Ranking 2026/27 rows, the rounded SPWS + EVF+ misses the rounded Razem by one, as 96.35 + 76.25 = 172.60 shows <code>96 + 76 = 173</code>; a one-decimal display already misses by 0.1 there (<code>96.4 + 76.3 = 172.6</code>). Accepted; the drilldown shows the exact parts.</li>
+      <li>Queries: <code>fn_ranking_full</code> and <code>fn_ranking_ppw</code> over every weapon, gender and category, <code>p_rolling</code> true for 2026/27 and false for 2025/26, through <code>scripts/cloud-sql.sh prod</code> (SELECT only).</li>
+    </ul>
+  </section>
+
+  <section id="code">
+    <p class="kicker">5 · The change in the code</p>
+    <h2>One pure module; the component only draws</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>frontend/src/lib/ranklist-points.ts</code> (new)</td><td><code>wholePoints(v)</code> → <code>'—'</code> or the whole number; <code>closeCallDecimals(totals)</code> → for each row <code>0</code>, <code>1</code> or <code>2</code> decimals, by the runs of §3; <code>splitPoints(v, d)</code> → <code>{ whole, frac }</code> for a row that shows its decimal. No Svelte, no DOM: tested on its own.</td></tr>
+        <tr><td><code>frontend/src/components/RanklistTable.svelte</code></td><td><code>fmt</code> goes. Two <code>$derived</code> arrays hold the decimals for <code>ppwRows</code> and <code>fullRows</code>. The ordering cell renders <code>{whole}&lt;span class="dec"&gt;.{frac}&lt;/span&gt;</code> as Svelte markup, never <code>{@html}</code>; every other cell renders <code>wholePoints</code>. One CSS rule: <code>.dec{font-size:.72em;color:#999}</code>.</td></tr>
+        <tr><td><code>DrilldownModal.svelte</code>, <code>export.ts</code>, <code>scoring.ts</code> and the published pages</td><td>untouched</td></tr>
+      </tbody>
+    </table></div>
+    <p>Column widths stay as they are: 100 px, and 70 px on a phone, right-aligned.</p>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">6 · Tests, red first</p>
+    <h2>Written and seen failing before the change</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>File</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><code>RT.ROUND.01</code></td><td><code>ranklistPoints.test.ts</code></td><td><code>wholePoints</code>: 96.35 → <code>96</code>, 22.50 → <code>23</code>, 22.49 → <code>22</code>, <code>null</code> → <code>—</code>.</td></tr>
+        <tr><td><code>RT.ROUND.02</code></td><td><code>ranklistPoints.test.ts</code></td><td>Close call: totals 22.96 · 22.09 · 21.51 · 20.44 → decimals <code>0 · 1 · 1 · 0</code>.</td></tr>
+        <tr><td><code>RT.ROUND.03</code></td><td><code>ranklistPoints.test.ts</code></td><td>Exact tie: 22.00 · 22.00 → <code>0 · 0</code>.</td></tr>
+        <tr><td><code>RT.ROUND.04</code></td><td><code>ranklistPoints.test.ts</code></td><td>Two decimals: 22.14 · 22.12 → <code>2 · 2</code>, and <code>splitPoints</code> gives <code>22</code> + <code>14</code>, <code>22</code> + <code>12</code>.</td></tr>
+        <tr><td><code>RT.ROUND.05</code></td><td><code>ranklistPoints.test.ts</code></td><td>A run with a tie inside: 22.40 · 22.00 · 22.00 · 21.60 → <code>1 · 1 · 1 · 1</code>.</td></tr>
+        <tr><td><code>RT.ROUND.06</code></td><td><code>RanklistTable.test.ts</code></td><td>Ranking row 96.35 · 76.25 · 172.60 renders <code>96</code> · <code>76</code> · <code>173</code>, with no <code>.dec</code> element.</td></tr>
+        <tr><td><code>RT.ROUND.07</code></td><td><code>RanklistTable.test.ts</code></td><td>Ranking rows 22.09 and 21.51: Razem renders <code>22</code> + <code>.dec</code> <code>.1</code> and <code>21</code> + <code>.dec</code> <code>.5</code>; their SPWS and EVF+ stay whole.</td></tr>
+        <tr><td><code>RT.ROUND.08</code></td><td><code>RanklistTable.test.ts</code></td><td>The PPW view follows the same rule in Punkty.</td></tr>
+        <tr><td><code>RT.ROUND.09</code></td><td><code>DrilldownModal.test.ts</code></td><td>Guard: the drilldown headline for a total of 172.60 still reads <code>172.6</code>.</td></tr>
+        <tr><td><code>RT.ROUND.10</code></td><td><code>export.test.ts</code></td><td>Guard: the ODS row for 96.35 · 76.25 · 172.60 still carries those exact values.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The existing table tests stay green; their 380 · 200 · 580 are already whole. Then <code>npm run check</code>, Vitest, and <code>scripts/preflight.sh</code> must exit 0.</p>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">7 · The decision record</p>
+    <h2>ADR-114, the draft</h2>
+    <p>Per <code>doc/claude/planning.md</code> §6, the ADR is drafted here and written to <code>doc/adr/114-ranklist-whole-points-close-call-decimals.md</code> only after your sign-off. Its <code>.html</code> twin is generated by <code>scripts/render_adrs.py</code>, which turns <code>![…](assets/…png)</code> into an embedded image, as ADR-090 already does. So the ADR <b>embeds the two key screenshots</b> and <b>links the full interactive mock</b> (<code>.html</code>).</p>
+
+    <h3>Audit of the existing decisions</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ADR</th><th>Outcome</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>ADR-101 Ranking / PPW public UI</td><td>Relates</td><td>It owns the table and its columns (Punkty; SPWS, EVF+, Razem); ADR-114 decides how their numbers read. Nothing in it is reversed.</td></tr>
+        <tr><td>ADR-098 ranking schema v2, <code>fn_ranking_full</code></td><td>Relates</td><td>Its functions return the rank; ADR-114 records their <code>ROW_NUMBER</code> order, unchanged.</td></tr>
+        <tr><td>ADR-078 GDPR data handling</td><td>Relates</td><td>Why the committed mocks carry placeholder names: an erasure must not survive in git history.</td></tr>
+        <tr><td>ADR-102 one scoring module</td><td>Clean</td><td>The calculator and the Points Table are untouched.</td></tr>
+        <tr><td>ADR-015 M8 UI, ADR-053 EVF parity gate, ADR-092 Points Table annex</td><td>Clean</td><td>ADR-015 decides no number format. ADR-053’s ±0.5 gate is not a display. ADR-092’s decimal comma belongs to the annex; the table keeps its point.</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note accent">
+      <p class="lede">ADR-114: The main ranklist shows whole points; a decimal appears only where neighbours would look equal</p>
+      <p><b>Status:</b> Draft (proposed 2026-10-18; awaiting sign-off)<br>
+      <b>Date:</b> 2026-10-18<br>
+      <b>Relates to:</b> ADR-101 (the table and its columns), ADR-098 (the rank the functions return), ADR-078 (placeholder names in the committed mocks), ADR-102 (untouched)<br>
+      <b>Source:</b> <code>frontend/src/lib/ranklist-points.ts</code>, <code>frontend/src/components/RanklistTable.svelte</code>, <code>doc/plans/ranklist-whole-points-2026-10-18.html</code>, <code>doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</code></p>
+
+      <h3>Context</h3>
+      <p>The main ranklist showed one decimal on every number (<code>RanklistTable.svelte:58–62</code>). Readers compare whole points, so the decimals cluttered the list without informing it. On 18 October the user asked to remove them from the main list and keep them in the drilldown. Measured on PROD that day as the site reads the lists (2026/27 with the rolling carry-over, 2025/26 without), whole numbers make 33 of 607 neighbour pairs look equal. In 20 of them the totals differ (9 in Ranking 2026/27, 8 in PPW 2026/27, 3 in PPW 2025/26), so a reader sees two ranks with the same number and cannot tell why; 2 of those still look equal at one decimal (71.34 and 71.31). The other 13 are exact ties. In 20 of 256 Ranking rows, the rounded SPWS + EVF+ misses the rounded Razem by one; a one-decimal display already misses by 0.1. Every ranking function numbers rows with <code>ROW_NUMBER() OVER (ORDER BY total DESC)</code> and no second key (<code>20261003000018_carry_stop_results.sql:222, :508</code>; <code>20260928000001_spws_place_medal_engine.sql:1220, :1337</code>), so equal totals take consecutive ranks in no fixed order.</p>
+
+      <h3>Decision</h3>
+      <p><b>1 · Whole points.</b> Every number in the main table is whole, a half rounding up (<code>Math.round</code>): Punkty, SPWS, EVF+ and Razem. An empty value shows <code>—</code>.</p>
+      <p><b>2 · A decimal only for close calls, only in the column that orders the list</b> (Razem, Punkty). Rows that show the same whole number are neighbours, because the list is sorted and rounding never reorders. When their exact totals are not all equal, every row of that run shows its decimal: one, or two when one would still look equal. Exact ties stay whole.</p>
+      <p><b>3 · The decimal’s look.</b> 0.72 em in the table’s grey <code>#999</code>, rendered as markup, never as raw HTML. The separator stays the point.</p>
+      <p><b>4 · What does not change.</b> The drilldown keeps one decimal. The ODS download keeps the exact values. The order, the rank, the column widths, the points calculator and the Points Table are unchanged.</p>
+      <p><b>5 · One pure module.</b> <code>frontend/src/lib/ranklist-points.ts</code> holds the rule (<code>wholePoints</code>, <code>closeCallDecimals</code>, <code>splitPoints</code>); the component only draws.</p>
+
+      <h3>Alternatives considered</h3>
+      <ol>
+        <li><b>Today’s one decimal everywhere.</b> Rejected: it is the clutter the user named.</li>
+        <li><b>A · whole numbers only.</b> Rejected: two different ranks can show the same number with no visible reason.</li>
+        <li><b>B · every decimal three sizes smaller.</b> Rejected: every number keeps a tail, <code>.0</code> on zeros and whole numbers included (a zero in 5 of the mock list’s 10 SPWS cells). The list gets quieter, not clean.</li>
+        <li><b>B′ · B in grey.</b> Rejected for the same reason, less loudly; its look is kept for the close calls.</li>
+        <li><b>Decimals in every column of a close-call row.</b> Rejected: SPWS and EVF+ do not decide the order; it would add clutter exactly where the signal sits.</li>
+        <li><b>Always two decimals for a close call.</b> Rejected: one is enough in 18 of the 20 close calls PROD shows; two appear only where one is not (71.34 and 71.31).</li>
+        <li><b>Shared ranks for equal totals.</b> Not decided here: it is a ranking rule, not a display (open item 1).</li>
+      </ol>
+
+      <h3>Consequences</h3>
+      <ul>
+        <li>New: <code>frontend/src/lib/ranklist-points.ts</code>, <code>frontend/tests/ranklistPoints.test.ts</code>, <code>doc/adr/assets/adr-114-*.png</code>. Modified: <code>RanklistTable.svelte</code>, <code>RanklistTable.test.ts</code>, <code>DrilldownModal.test.ts</code>, <code>export.test.ts</code>. Tests <code>RT.ROUND.01–10</code>.</li>
+        <li>A row’s look depends on its neighbours: a <code>22</code> becomes <code>22.1</code> while another fencer is within the same whole number, and goes back when they part.</li>
+        <li>Those few rows break the clean right edge of the column by a small tail.</li>
+        <li>The visible sum can miss by one; the drilldown shows the exact parts.</li>
+        <li><b>Found, not fixed:</b> equal totals take consecutive ranks in no fixed order (<code>ROW_NUMBER</code> without a second key).</li>
+        <li>The committed mocks carry real scores and placeholder names (ADR-078).</li>
+      </ul>
+
+      <h3>Open items</h3>
+      <ol>
+        <li><b>How equal totals are ranked.</b> Today: consecutive ranks, order not fixed. Recommendation: decide it as its own ranking rule, either a shared rank or a written tie-break, in a separate session. This ADR keeps exact ties whole either way.</li>
+      </ol>
+
+      <h3>The mocks</h3>
+      <p>The five designs side by side on a phone (the real scores <code>fn_ranking_full</code> returned on PROD on 18 October for épée, women, category 2, 2026/27, read without the rolling carry-over; the site shows the active season with it, so its rows differ and the design is the same; names replaced by placeholders). C, the chosen design, is under A:</p>
+      <p><img src="../adr/assets/adr-114-phone-five-ways.png" alt="The ranklist five ways on a phone: today, A rounded, B small decimals, C close calls only, B′ small and lighter" style="max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px"></p>
+      <p>Rows 7 and 8 of that list, the close call, at 140%. C differs from A only in Razem:</p>
+      <p><img src="../adr/assets/adr-114-close-call.png" alt="Rows 7 and 8 in each design: C shows 22.1 and 21.5 in Razem, A shows 22 and 22" style="max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px"></p>
+      <p>The full interactive mock (Ranking / PPW switch, phone and desktop, the facts table): <a href="../mockups/ranklist-whole-vs-small-decimals-2026-10-18.html"><code>doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</code></a>.</p>
+    </div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">8 · Documentation</p>
+    <h2>Every insight, in the place that owns it</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Insight</th><th>Where it is kept</th></tr></thead>
+      <tbody>
+        <tr><td>The display rule (whole points, close-call decimal, exact ties whole, only the ordering column, B′ look)</td><td>ADR-114 §1–3; handbook <code>doc/handbook/product/product-surfaces.html</code>, Ranklist card, in present tense, linking ADR-114</td></tr>
+        <tr><td>Why not A, B or B′; why one or two decimals; why not every column</td><td>ADR-114, Alternatives considered</td></tr>
+        <tr><td>The PROD measurements as the site shows them (607 pairs, 20 close calls, 2 needing two decimals, 13 exact ties, 20 sums off by one)</td><td>ADR-114, Context; this plan §4</td></tr>
+        <tr><td>Rank is <code>ROW_NUMBER</code> with no second key</td><td>Handbook <code>doc/handbook/subsystems/scoring-and-ranking.html</code>, Current flow, as a present-tense fact; ADR-114, Consequences and open item 1</td></tr>
+        <tr><td>The rounding never reorders, so close calls are always neighbours</td><td>ADR-114 §2; the comment on <code>closeCallDecimals</code></td></tr>
+        <tr><td>Drilldown and ODS keep exact values</td><td>ADR-114 §4; guard tests <code>RT.ROUND.09–10</code></td></tr>
+        <tr><td>The mocks</td><td>Two screenshots embedded in ADR-114 (<code>doc/adr/assets/adr-114-phone-five-ways.png</code>, <code>adr-114-close-call.png</code>); the <code>.html</code> mock committed under <code>doc/mockups/</code> and linked</td></tr>
+        <tr><td>Placeholder names in committed mocks</td><td>ADR-114, Consequences, relating to ADR-078</td></tr>
+        <tr><td>The ADR in the registry</td><td>Specification Appendix C: a new ADR-114 row (<code>check-coherence.sh</code> gate 2 counts it)</td></tr>
+        <tr><td>Traceability</td><td>RTM: FR-35 (“ranking table with mode-specific columns”) widened to “… whole points, a decimal only for close calls (ADR-114)”, test column <code>RanklistTable.test.ts, ranklistPoints.test.ts</code>; a new acceptance block for ADR-114 listing <code>RT.ROUND.01–10</code></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note good">
+      <p class="lede">☑ Documentation coherence gate complete (18 October)</p>
+<pre class="trace">Impact: product | reference
+Canonical docs affected: doc/handbook/product/product-surfaces.html (Ranklist);
+  doc/handbook/subsystems/scoring-and-ranking.html (Current flow: rank numbering);
+  doc/handbook/reference/codebase-map.html (the new frontend/src/lib/ranklist-points.ts);
+  doc/requirements-traceability-matrix.md (+ rendered .html): FR-35, ADR-114 acceptance block;
+  doc/Project Specification. SPWS Automated Ranklist System.md (+ .html): Appendix C row
+ADR impact: new (ADR-114); ADR-101, ADR-098, ADR-078 relate, none amended
+Operational impact: none
+Source-map / last-verified updated: yes (both handbook pages)
+Validation: python scripts/check_docs.py --changed-from main [PASS]
+Superseded prose archived rather than appended: not applicable
+Ownership warnings reviewed, none needs a change: index, documentation-map,
+  documentation-standard, business-overview, system-context, containers-and-data,
+  frontend-and-automation, test-and-traceability (none states the table's number
+  format, the rank order or a per-view lib module)</pre>
+    </div>
+    <p>Then <code>python3 scripts/render_adrs.py</code> and <code>--check</code> (expected churn: ADR-113’s pager gains a next link, <code>doc/adr/index.html</code> gains the row), <code>python3 scripts/render_docs.py</code>, <code>bash scripts/check-coherence.sh</code>, <code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code>.</p>
+  </section>
+
+  <section id="ship">
+    <p class="kicker">9 · Order of work</p>
+    <h2>The before/after sheet is the gate</h2>
+    <p>A push to <code>main</code> puts the new bundle on PROD’s WordPress pages with no approval step, so your approval of the pictures comes before the push.</p>
+    <ol class="steps">
+      <li>You sign off this plan and the ADR-114 draft (S1).</li>
+      <li>Tests <code>RT.ROUND.01–10</code> written and seen red.</li>
+      <li>The module and the component change; green; <code>npm run check</code> clean.</li>
+      <li>ADR-114 written (<code>Accepted</code>, implementation pending), assets and the mock in place, Appendix C, RTM, the two handbook pages; renders, checks and the reindex of §8.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>On LOCAL, a before/after sheet as an <code>.html</code> page in <code>doc/plans/</code>: the PPW and Ranking views at desktop and phone width, a list with a close call (épée W V2 2026/27 if LOCAL’s seed holds it, otherwise one found by the §4 query on LOCAL), and the same fencer’s drilldown, which must be pixel-identical before and after.</li>
+      <li>You approve the sheet in chat.</li>
+      <li>Commit with explicit paths, integrate, push <code>integration/main:main</code>; I announce the wait and watch CI and the Release to green.</li>
+      <li>On PROD’s ranklist page: whole numbers in the list, the close-call decimal where PROD has one, one decimal in the drilldown, exact values in the ODS.</li>
+      <li>ADR-114 and its Appendix C row record the release (main SHA).</li>
+    </ol>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">10 · Environments</p>
+    <h2>LOCAL, CERT and PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT (github.io)</th><th>PROD (WordPress)</th></tr></thead>
+      <tbody>
+        <tr><td>Database</td><td colspan="3">unchanged: no migration, no data write</td></tr>
+        <tr><td>Bundle</td><td>tests, the sheet</td><td colspan="2">the same bundle from the one push to <code>main</code></td></tr>
+        <tr><td>Verified by</td><td>Vitest, preflight, the sheet</td><td>the Release run</td><td>the page itself (§9 step 9)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="done">
+    <p class="kicker">11 · Binary</p>
+    <h2>Definition of done</h2>
+    <ul>
+      <li><code>RT.ROUND.01–10</code> green, each seen red first.</li>
+      <li><code>scripts/preflight.sh</code> exit 0.</li>
+      <li>The before/after sheet approved in chat.</li>
+      <li>CI and the Release green on <code>main</code>.</li>
+      <li>PROD checked: list, drilldown, ODS.</li>
+      <li>ADR-114 accepted with the release SHA, its row in Appendix C, the RTM and both handbook pages updated, the coherence gate box checked.</li>
+    </ul>
+  </section>
+
+  <section id="out">
+    <p class="kicker">12 · Not in this plan</p>
+    <h2>Left as it is</h2>
+    <ul>
+      <li>The drilldown, the ODS download, the points calculator and the Points Table.</li>
+      <li>How equal totals are ranked (ADR-114 open item 1): a separate decision.</li>
+      <li>The decimal separator (the table keeps its point).</li>
+      <li>The Telegram <code>ranking</code> command, which prints its own numbers on CERT.</li>
+      <li>Any database or ranking-function change.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">13 · Decide this first</p>
+    <h2>Sign-off</h2>
+    <div class="note good">
+      <p class="lede">Signed off in chat on 18 October 2026: S1 A and S2 A (“I sign off the plan. Confirm all your recommendations”).</p>
+      <p>ADR-114 is written as <code>doc/adr/114-ranklist-whole-points-close-call-decimals.md</code>; the build follows §9.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">S1 · Build it as written, with ADR-114 as drafted in §7?</p>
+      <p><strong>A (recommended):</strong> approve; I write the tests first, then the change, ADR-114 and the documentation, run preflight and bring you the before/after sheet. Nothing reaches PROD before you approve that sheet.</p>
+      <p><strong>B:</strong> change something first: say what.</p>
+    </div>
+    <div class="note warn">
+      <p class="lede">S2 · Equal totals in no fixed order (ADR-114 open item 1)?</p>
+      <p><strong>A (recommended):</strong> record it now as written, and decide the ranking rule in its own session after this ships.</p>
+      <p><strong>B:</strong> record it only; no follow-up.</p>
+    </div>
+  </section>
+
+  <p class="foot">Sources. frontend/src/components/RanklistTable.svelte:24, 32–34, 58–62; frontend/src/components/DrilldownModal.svelte:339; frontend/src/lib/export.ts:13, 28–30; supabase/migrations/20261003000018_carry_stop_results.sql:222, :508; supabase/migrations/20260928000001_spws_place_medal_engine.sql:1220, :1337; doc/adr/078, 090 (embedded images), 098, 101, 102; doc/claude/planning.md §6, §9; doc/claude/documenting.md; doc/handbook/reference/documentation-standard.html (gate block). PROD measurements: fn_ranking_full 2026/27 and fn_ranking_ppw 2025/26 and 2026/27 over 30 sub-rankings, SELECT only, 18 October 2026. Mock: doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html.</p>
+</div>

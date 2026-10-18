@@ -93,6 +93,15 @@ describe('DrilldownModal', () => {
     expect(container.querySelector('.score-rank')?.textContent?.trim()).toBe('1')
   })
 
+  // RT.ROUND.09 (ADR-114) — guard: the main ranklist shows whole points,
+  // the drilldown keeps its one decimal.
+  it('RT.ROUND.09 — the drilldown headline keeps one decimal', () => {
+    const { container } = render(DrilldownModal, {
+      props: { open: true, fencerName: 'TEST User', scores: [makeScore()], context: { ...CTX, totalScore: 172.6 }, mode: 'RANKING' },
+    })
+    expect(container.querySelector('.score-total')?.textContent?.trim()).toBe('172.6')
+  })
+
   // 6.15 — PPW drill-down: domestic only
   it('PPW mode shows only domestic tournaments', () => {
     const scores = [
