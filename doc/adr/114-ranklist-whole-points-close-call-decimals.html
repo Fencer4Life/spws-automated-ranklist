@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="114-ranklist-whole-points-close-call-decimals.md">
-<meta name="adr-source-sha256" content="9ac60cbb00114725e81f83b1cf2f4729c05f081d0e9a18c75d7b27606a9939fc">
+<meta name="adr-source-sha256" content="e06ae32b7b0914b4ca16f79e27c7120d61f8050c15eebe26ab29cfef22a5376b">
 <title>ADR-114 · The Main Ranklist Shows Whole Points; a Decimal Appears Only Where Neighbours Would Look Equal</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -87,7 +87,7 @@
 <li><strong>B′ · B in grey.</strong> Rejected for the same reason, less loudly. Its look is kept for the close calls.</li>
 <li><strong>Decimals in every column of a close-call row.</strong> Rejected: SPWS and EVF+ do not decide the order, and the decimals would add clutter exactly where the signal sits.</li>
 <li><strong>Always two decimals for a close call.</strong> Rejected: one is enough in 18 of the 20 close calls PROD shows; two appear only where one is not (71.34 and 71.31).</li>
-<li><strong>Shared ranks for equal totals.</strong> Not decided here: it is a ranking rule, not a display (open item 1).</li>
+<li><strong>Shared ranks for equal totals.</strong> Not decided here: it is a ranking rule, not a display (open item 1, decided by ADR-115).</li>
 </ol>
 </section>
 <section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
@@ -96,13 +96,13 @@
 <li>A row's look depends on its neighbours: a <code>22</code> becomes <code>22.1</code> while another fencer is within the same whole number, and goes back when they part.</li>
 <li>Those few rows break the clean right edge of the column by a small tail.</li>
 <li>The visible sum can miss by one; the drilldown shows the exact parts.</li>
-<li><strong>Found, not fixed:</strong> equal totals take consecutive ranks in no fixed order (<code>ROW_NUMBER</code> without a second key).</li>
+<li><strong>Found, not fixed here:</strong> equal totals took consecutive ranks in no fixed order (<code>ROW_NUMBER</code> without a second key). ADR-115 makes them share a place.</li>
 <li>The committed mocks carry real scores and placeholder names: a fencer erased under ADR-078 must not survive in git history.</li>
 </ul>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ol>
-<li><strong>How equal totals are ranked.</strong> Today they take consecutive ranks in no fixed order. Decided by the user on 2026-10-18 as its own ranking rule: equal totals share a place and the next place skips (16, 16, 18). It ships as its own change after this record, planned in <a href="../plans/equal-totals-shared-place-2026-10-18.html">doc/plans/equal-totals-shared-place-2026-10-18.html</a> and recorded in its own ADR. This record keeps exact ties whole either way.</li>
+<li><strong>How equal totals are ranked.</strong> Resolved by <a href="115-equal-totals-share-a-place.html">ADR-115</a> (decided by the user on 2026-10-18, its own change after this record): equal totals share a place and the next place skips (16, 16, 18). Exact ties stay whole here, and they now share their place too.</li>
 </ol>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="the-mocks">The mocks</h2>
@@ -113,6 +113,6 @@
 <p>The full interactive mock, with the Ranking / PPW switch, the phone and desktop widths and the comparison table: <a href="../mockups/ranklist-whole-vs-small-decimals-2026-10-18.html">doc/mockups/ranklist-whole-vs-small-decimals-2026-10-18.html</a>.</p>
 </section></main>
 </div>
-<nav class="pager" aria-label="ADR navigation"><a class="previous" href="113-ingest-and-promote-carry-every-organizer.html">← ADR-113: Ingest and Promote Carry Every Organizer&#x27;s Event</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
-<footer class="foot">Generated from <code>114-ranklist-whole-points-close-call-decimals.md</code> · source SHA-256 <code>9ac60cbb00114725e81f83b1cf2f4729c05f081d0e9a18c75d7b27606a9939fc</code></footer>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="113-ingest-and-promote-carry-every-organizer.html">← ADR-113: Ingest and Promote Carry Every Organizer&#x27;s Event</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="115-equal-totals-share-a-place.html">→ ADR-115: Equal Totals Share a Place; the Next Place Skips</a></nav>
+<footer class="foot">Generated from <code>114-ranklist-whole-points-close-call-decimals.md</code> · source SHA-256 <code>e06ae32b7b0914b4ca16f79e27c7120d61f8050c15eebe26ab29cfef22a5376b</code></footer>
 </div></body></html>

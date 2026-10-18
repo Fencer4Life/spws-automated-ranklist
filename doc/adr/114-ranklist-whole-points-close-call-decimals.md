@@ -52,7 +52,7 @@ The drilldown keeps its one decimal and the ODS download keeps the exact values.
 4. **B′ · B in grey.** Rejected for the same reason, less loudly. Its look is kept for the close calls.
 5. **Decimals in every column of a close-call row.** Rejected: SPWS and EVF+ do not decide the order, and the decimals would add clutter exactly where the signal sits.
 6. **Always two decimals for a close call.** Rejected: one is enough in 18 of the 20 close calls PROD shows; two appear only where one is not (71.34 and 71.31).
-7. **Shared ranks for equal totals.** Not decided here: it is a ranking rule, not a display (open item 1).
+7. **Shared ranks for equal totals.** Not decided here: it is a ranking rule, not a display (open item 1, decided by ADR-115).
 
 ## Consequences
 
@@ -60,12 +60,12 @@ The drilldown keeps its one decimal and the ODS download keeps the exact values.
 - A row's look depends on its neighbours: a `22` becomes `22.1` while another fencer is within the same whole number, and goes back when they part.
 - Those few rows break the clean right edge of the column by a small tail.
 - The visible sum can miss by one; the drilldown shows the exact parts.
-- **Found, not fixed:** equal totals take consecutive ranks in no fixed order (`ROW_NUMBER` without a second key).
+- **Found, not fixed here:** equal totals took consecutive ranks in no fixed order (`ROW_NUMBER` without a second key). ADR-115 makes them share a place.
 - The committed mocks carry real scores and placeholder names: a fencer erased under ADR-078 must not survive in git history.
 
 ## Open items
 
-1. **How equal totals are ranked.** Today they take consecutive ranks in no fixed order. Decided by the user on 2026-10-18 as its own ranking rule: equal totals share a place and the next place skips (16, 16, 18). It ships as its own change after this record, planned in [doc/plans/equal-totals-shared-place-2026-10-18.html](../plans/equal-totals-shared-place-2026-10-18.html) and recorded in its own ADR. This record keeps exact ties whole either way.
+1. **How equal totals are ranked.** Resolved by [ADR-115](115-equal-totals-share-a-place.md) (decided by the user on 2026-10-18, its own change after this record): equal totals share a place and the next place skips (16, 16, 18). Exact ties stay whole here, and they now share their place too.
 
 ## The mocks
 

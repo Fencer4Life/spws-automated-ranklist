@@ -86,6 +86,8 @@
   "sr_or": " lub ",
   "sr_roll_title": "Ranking kroczący.",
   "sr_roll": "Dopóki turniej tego sezonu się nie odbył, liczy się wynik z jego odpowiednika w poprzednim sezonie (↩) — nigdy oba naraz.",
+  "sr_tie_title": "Ta sama suma punktów",
+  "sr_tie": "daje to samo miejsce; kolejne miejsce przesuwa się o liczbę zawodników na tym miejscu (np. 16, 16, 18).",
   "sr_coef_title": "Współczynniki typów zawodów.",
   "sr_coef": "Każdy wynik już je zawiera.",
   "sr_annex": "Jak liczone są punkty za jedno miejsce — Tabela punktacji →",
