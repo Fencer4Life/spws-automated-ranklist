@@ -1,0 +1,249 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zawodniczka — before / after</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<style>
+  .shots{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+  .shots.phone{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .shots figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .shots img{display:block;width:100%;height:auto;border-radius:6px;border:1px solid var(--line)}
+  .shots figcaption{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  @media (max-width:700px){.shots,.shots.phone{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+
+  <p class="eyebrow">Front end · Ranklist + drill-down · Before / after</p>
+  <h1>Only the word changed</h1>
+  <p class="dek">I took 14 screenshots before and after the change on LOCAL: both genders, both languages, desktop and phone, plus the drill-down. <b>12 are pixel-identical.</b> The other 2, the Polish women's list on desktop and phone, differ only in the header word, now <b>„Zawodniczka”</b>.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Approved 21 Oct 2026 — released to main</span>
+    <span class="pill">branch <code>claude/gender-specific-verbiage</code></span>
+    <span class="pill">1,243 tests pass</span>
+    <span class="pill">svelte-check 0 errors</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">1 · The two screenshots that changed</p>
+    <h2>Women's list, Polish</h2>
+    <p>The page opens on the women's épée V1 list. Before the change, its header said „Zawodnik”. The red box on the third image marks every changed pixel: 748 on desktop and 632 on phone, all inside the header word. The column widths, the numbers and the rows did not move.</p>
+    <h3>Desktop</h3>
+    <div class="shots">
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/ranklist-f-pl-desktop.before.png" alt="Women's list, Polish, desktop, before"><figcaption>Before · „Zawodnik”</figcaption></figure>
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/ranklist-f-pl-desktop.diff.png" alt="Women's list, Polish, desktop, after, changed area boxed"><figcaption>After · „Zawodniczka” · changed area boxed</figcaption></figure>
+    </div>
+    <h3>Phone (375 px)</h3>
+    <div class="shots phone">
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/ranklist-f-pl-phone.before.png" alt="Women's list, Polish, phone, before"><figcaption>Before</figcaption></figure>
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/ranklist-f-pl-phone.after.png" alt="Women's list, Polish, phone, after"><figcaption>After</figcaption></figure>
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/ranklist-f-pl-phone.diff.png" alt="Women's list, Polish, phone, changed area boxed"><figcaption>Changed area boxed</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">2 · The twelve that did not change</p>
+    <h2>0 changed pixels</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Screenshot</th><th>Header text</th><th>Changed pixels</th></tr></thead>
+      <tbody>
+        <tr><td>Men's list · Polish · desktop</td><td>Zawodnik</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Men's list · Polish · phone</td><td>Zawodnik</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Women's list · English · desktop</td><td>Fencer</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Women's list · English · phone</td><td>Fencer</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Men's list · English · desktop</td><td>Fencer</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Men's list · English · phone</td><td>Fencer</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Drill-down · women · Polish · desktop</td><td>—</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Drill-down · women · Polish · phone</td><td>—</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Drill-down · men · Polish · desktop</td><td>—</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Drill-down · men · Polish · phone</td><td>—</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Drill-down · women · English · desktop</td><td>—</td><td><span class="chip never">0</span></td></tr>
+        <tr><td>Drill-down · men · English · desktop</td><td>—</td><td><span class="chip never">0</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>The drill-down looks the same because its only change is the ODS button's tooltip, which shows on hover. Section 3 has the tooltip texts, read from the page.</p>
+    <div class="shots">
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/drilldown-f-pl-desktop.after.png" alt="Drill-down, women, Polish, desktop, after"><figcaption>Drill-down · women · after (identical to before)</figcaption></figure>
+      <figure><img src="gendered-fencer-wording-before-after-2026-10-21/ranklist-m-pl-desktop.after.png" alt="Men's list, Polish, desktop, after"><figcaption>Men's list · after (identical to before)</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">3 · The texts, read from the page</p>
+    <h2>Header and tooltip, before and after</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Header · women · Polish</td><td>Zawodnik</td><td><b>Zawodniczka</b></td></tr>
+        <tr><td>Header · men · Polish</td><td>Zawodnik</td><td>Zawodnik</td></tr>
+        <tr><td>Header · both · English</td><td>Fencer</td><td>Fencer</td></tr>
+        <tr><td>ODS tooltip · women · Polish</td><td>Pobierz arkusz ODS z wynikami zawodnika (Excel, LibreOffice)</td><td>Pobierz arkusz ODS z wynikami <b>zawodniczki</b> (Excel, LibreOffice)</td></tr>
+        <tr><td>ODS tooltip · men · Polish</td><td>Pobierz arkusz ODS z wynikami zawodnika (Excel, LibreOffice)</td><td>Pobierz arkusz ODS z wynikami zawodnika (Excel, LibreOffice)</td></tr>
+        <tr><td>ODS tooltip · both · English</td><td>Download the fencer’s results as an ODS spreadsheet (Excel, LibreOffice)</td><td>unchanged</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">4 · Your check: every dropdown change</p>
+    <h2>The word follows each switch, back and forth</h2>
+    <p>You asked that the word change with <b>every</b> gender selection. On the live LOCAL page, I changed the dropdowns in this order and read the header after each change:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Change</th><th>Gender shown</th><th>Header</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>page opens</td><td>Kobiety</td><td>Zawodniczka</td></tr>
+        <tr><td>1</td><td>gender → Mężczyźni</td><td>Mężczyźni</td><td>Zawodnik</td></tr>
+        <tr><td>2</td><td>gender → Kobiety</td><td>Kobiety</td><td>Zawodniczka</td></tr>
+        <tr><td>3</td><td>weapon → Szabla</td><td>Kobiety</td><td>Zawodniczka</td></tr>
+        <tr><td>4</td><td>gender → Mężczyźni</td><td>Mężczyźni</td><td>Zawodnik</td></tr>
+        <tr><td>5</td><td>category → V3</td><td>Mężczyźni</td><td>Zawodnik</td></tr>
+        <tr><td>6</td><td>gender → Kobiety</td><td>Kobiety</td><td>Zawodniczka</td></tr>
+        <tr><td>7</td><td>gender → Mężczyźni</td><td>Mężczyźni</td><td>Zawodnik</td></tr>
+        <tr><td>8</td><td>gender → Kobiety</td><td>Kobiety</td><td>Zawodniczka</td></tr>
+      </tbody>
+    </table></div>
+    <p>A second run switched Kobiety → Mężczyźni → Kobiety → Mężczyźni → Kobiety and opened the drill-down each time. The tooltip said „zawodniczki” on every women's list and „zawodnika” on every men's list.</p>
+    <p>The same sequence is now an automated test, <code>GW.APP.02</code> in <code>AppShell.test.ts</code>, so a later change cannot quietly break it.</p>
+  </section>
+
+  <section>
+    <p class="kicker">5 · Tests and checks</p>
+    <h2>RED first, then GREEN</h2>
+    <ul>
+      <li><b>New tests:</b> <code>GW.RT.01–02</code> (table header), <code>GW.DD.01</code> (tooltip), <code>GW.APP.01–02</code> (dropdown → header, back and forth). All five were run and seen failing on the old code before any source change.</li>
+      <li><b>One test fix along the way:</b> the first version of <code>GW.APP</code> fired before the seasons loaded. At that moment the dropdowns sit at other positions, so it changed the category instead of the gender. The test now waits for the seasons and finds each dropdown by its options. I then removed the gender link from <code>App.svelte</code> to confirm the test fails without it, and put the link back.</li>
+      <li><b>Whole suite:</b> 70 files, 1,243 tests pass. <code>svelte-check</code>: 0 errors and 21 warnings, the same as before the change, none in the changed files.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">6 · Release, after your approval</p>
+    <h2>The release steps</h2>
+    <ol class="steps">
+      <li>One sentence in the handbook (Product Surfaces → Ranklist) on the rule, then reindex the documentation search and refresh the code graph.</li>
+      <li><code>scripts/preflight.sh</code> must exit 0, then commit on <code>claude/gender-specific-verbiage</code>.</li>
+      <li>Push to <code>main</code> from the integration checkout. This puts the bundle on PROD's WordPress pages with no approval step.</li>
+      <li>Check CERT and PROD in the browser: the women's list says „Zawodniczka”, the men's list „Zawodnik”.</li>
+    </ol>
+  </section>
+
+  <p class="foot">before/after · gendered-fencer-wording · 21 Oct 2026 · LOCAL dev server from worktree SPWSranklist-claude-session-20261021-1808-bb3d57 · plan: gendered-fencer-wording-2026-10-21.html</p>
+</div>

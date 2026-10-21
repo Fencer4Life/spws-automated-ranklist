@@ -987,6 +987,23 @@ describe('DrilldownModal — points order and uncounted results (DD)', () => {
     expect(onmodechange).toHaveBeenCalledWith('PPW')
   })
 
+  // GW.DD (doc/plans/gendered-fencer-wording-2026-10-21.html): the ODS
+  // tooltip follows the ranklist's gender dropdown in Polish only.
+  it('GW.DD.01 — the ODS tooltip says „zawodnika” for men and „zawodniczki” for women in Polish, the same English for both', () => {
+    const odsTitle = (gender: 'M' | 'F') => {
+      const { container } = render(DrilldownModal, {
+        props: { open: true, fencerName: 'TEST User', scores: [makeScore()], mode: 'PPW', context: CTX, gender },
+      })
+      return container.querySelector('.ods-btn')?.getAttribute('title')
+    }
+    setLocale('pl')
+    expect(odsTitle('M')).toBe('Pobierz arkusz ODS z wynikami zawodnika (Excel, LibreOffice)')
+    expect(odsTitle('F')).toBe('Pobierz arkusz ODS z wynikami zawodniczki (Excel, LibreOffice)')
+    setLocale('en')
+    expect(odsTitle('M')).toBe('Download the fencer’s results as an ODS spreadsheet (Excel, LibreOffice)')
+    expect(odsTitle('F')).toBe('Download the fencer’s results as an ODS spreadsheet (Excel, LibreOffice)')
+  })
+
   it('DD.FOOT.01 (A4) — the multiplier footer no longer describes the old raw-score formula', () => {
     const { container } = renderKrz()
     const footer = container.querySelector('.modal-footer')?.textContent ?? ''
