@@ -104,6 +104,7 @@
         mode={filters.mode}
         ppwRows={ppwRows}
         fullRows={fullRows}
+        gender={filters.gender}
         onrowclick={openDrilldown}
       />
     {/if}
@@ -126,6 +127,7 @@
       context={modalContext}
       rankingRules={rankingRules}
       seasonCode={modalSeasonCode}
+      gender={filters.gender}
       onclose={closeDrilldown}
       onmodechange={handleModalModeChange}
     />
