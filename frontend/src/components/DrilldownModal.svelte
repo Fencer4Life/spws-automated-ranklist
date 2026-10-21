@@ -43,7 +43,7 @@
             {#if showEvfToggle}
               <ViewSwitch {mode} onchange={setMode} />
             {/if}
-            <OdsButton title={t('ods_tip_drilldown')} onclick={handleExport} />
+            <OdsButton title={t(gender === 'F' ? 'ods_tip_drilldown_F' : 'ods_tip_drilldown')} onclick={handleExport} />
           </div>
         </div>
       </div>
@@ -224,7 +224,7 @@
 {/snippet}
 
 <script lang="ts">
-  import type { ScoreRow, RankingMode, DrilldownContext, RankingRules } from '../lib/types'
+  import type { ScoreRow, RankingMode, DrilldownContext, RankingRules, GenderType } from '../lib/types'
   import { exportDrilldown } from '../lib/export'
   import { t, getLocale } from '../lib/locale.svelte'
   import {
@@ -251,6 +251,7 @@
     context = null as DrilldownContext | null,
     rankingRules = null as RankingRules | null,
     seasonCode = null as string | null,
+    gender = 'M' as GenderType,
     onclose,
     onmodechange,
   }: {
@@ -264,6 +265,9 @@
     rankingRules?: RankingRules | null
     // The season the ranking being drilled into belongs to (R.26–R.30).
     seasonCode?: string | null
+    // The ranklist's gender dropdown: the Polish ODS tooltip says
+    // „zawodniczki” on the women's list (gendered-fencer-wording plan).
+    gender?: GenderType
     onclose?: () => void
     // A1: the page follows the modal's PPW | Ranking switch, so the list
     // behind the modal and the rank in its header show the same view.
