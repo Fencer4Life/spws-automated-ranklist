@@ -149,3 +149,28 @@ describe('RanklistTable', () => {
     expect(points.map((td) => td.querySelector('.dec')?.textContent ?? null)).toEqual(['.1', '.5', null])
   })
 })
+
+// GW.RT (doc/plans/gendered-fencer-wording-2026-10-21.html): in Polish the
+// fencer column follows the gender dropdown; English says "Fencer" for both.
+describe('RanklistTable — the fencer column follows the gender dropdown (GW.RT)', () => {
+  function fencerHeader(gender: 'M' | 'F', mode: 'PPW' | 'RANKING') {
+    const { container } = render(RanklistTable, {
+      props: { mode, ppwRows: ppwData, fullRows: fullData, gender },
+    })
+    return container.querySelector('th.col-fencer')?.textContent
+  }
+
+  it('GW.RT.01 — Polish: „Zawodnik” for men, „Zawodniczka” for women, in both views', () => {
+    setLocale('pl')
+    for (const mode of ['PPW', 'RANKING'] as const) {
+      expect(fencerHeader('M', mode)).toBe('Zawodnik')
+      expect(fencerHeader('F', mode)).toBe('Zawodniczka')
+    }
+  })
+
+  it('GW.RT.02 — English: „Fencer” for both', () => {
+    setLocale('en')
+    expect(fencerHeader('M', 'PPW')).toBe('Fencer')
+    expect(fencerHeader('F', 'PPW')).toBe('Fencer')
+  })
+})
