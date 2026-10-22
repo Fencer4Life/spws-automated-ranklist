@@ -5,7 +5,7 @@
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §F and §11 (`registryOf()` widens from three registries to four; a fourth hue enters the organizer channel; `PanelType` gains a fifth member)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the event-code shape this extends with a gender letter), [ADR-081](081-cert-prod-event-reconciler.md) (childless CREATE, field ownership, code-keyed reconcile), [ADR-028](028-evf-calendar-results-import.md) (the calendar-source precedent this deliberately does not generalise), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the partially-published-season lesson applied before it bit), [ADR-083](083-server-enforced-authorization.md) (grants are table-level, so the new column needs none)
 **Source:** `doc/plans/pzsz-kalendarz-seniorski-2026-09-03.html`, `supabase/migrations/20260903000001_pzsz_organizer_and_event_id.sql`, `python/scrapers/pzsz_calendar.py`, `python/scrapers/pzsz_sync.py`
-**Amended by:** [ADR-088](088-calendar-location-contract.md) (PZSz adopts the shared location contract and gains venue-title extraction from the komunikat's `Miejsce Zawodów` line, which §7 here read past and discarded; the city path is unchanged in output).
+**Amended by:** [ADR-088](088-calendar-location-contract.md) (PZSz adopts the shared location contract and gains venue-title extraction from the komunikat's `Miejsce Zawodów` line, which §7 here read past and discarded; the city path is unchanged in output), [ADR-116](116-pzsz-calendar-browser-read-and-letter-passes.md) (§4: a headless browser engine reads past the JavaScript check, superseding the 2026-10-06 amendment's "the check fails the run"; §7: the letter is read for the venue address, fee and dates by four abstaining passes, not the single `Miejsce Zawodów` line; §9: the run processes each event and field independently and never stops part-way).
 
 ## Context
 
@@ -521,3 +521,13 @@ to PROD.
 
   With the rule switched off, pzsz.44, .45 and .48 fail on the reset of the end date to the
   3rd.
+
+## Amendment (2026-10-21) — browser-engine read, the letter in four passes, a run that never stops (ADR-116)
+
+[ADR-116](116-pzsz-calendar-browser-read-and-letter-passes.md) rebuilds the calendar workflow and supersedes three decisions here:
+
+- **§4 — the JavaScript check no longer fails the run.** The 2026-10-06 amendment made `refuse_js_check()` stop the run on the gate page. ADR-116 reads the listing, event and tournament pages with a headless browser engine (Python Playwright Chromium) that runs the page's own `pzs-m` script, so the gate is cleared the way a person's browser clears it — proven live on 21 October. The 70-row truncation guard is unchanged.
+- **§7 — the letter is read, not just linked.** Where this section filled `url_invitation` and left the fee, street address and dates to an admin, ADR-116 reads the venue address, the individual złoty fee and the start and end dates from the komunikat in four passes that abstain rather than guess (the city is validated, never rewritten). The fill-blank-only rule for `url_invitation` and the fee stays; the city, address and dates are read every run while the event is ahead.
+- **§9 — the run is per-event and never aborts.** The run works from our CERT list (future events only), decides each of six fields independently, writes with compare-and-set (`fn_pzsz_apply_event`), reports once in a single Telegram digest and sets its exit status last — red only for a genuine fatal.
+
+Nothing else here changes: the organizer migration, `id_pzsz_event` identity, the season-window membership, the event-code shape and the childless-create rule all stand.

@@ -1,0 +1,208 @@
+<meta charset="utf-8">
+<title>PZSz calendar findings</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap" style="overflow-wrap:anywhere">
+
+  <p class="eyebrow">PZSz calendar workflow · findings · 21 October 2026</p>
+  <h1>The PZSz calendar: every event, and every cause of error</h1>
+  <p class="dek">Read on 21 October from CERT and PROD (SELECT only), from all 51 <code>pzsz-sync.yml</code> runs since 3 September, from the code, and from pzszerm.pl with one plain request per page. Scope as you set it: <b>future events only</b>. Once an event is past, the workflow reads nothing from PZSz, and you add the FencingTimeLive link afterwards.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Findings, not a plan</span>
+    <span class="pill">Branch <code>claude/pzsz-calendar-update-fix</code> at main <code>2b5f257f</code>, nothing changed</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="events">
+    <p class="kicker">1 · The list</p>
+    <h2>Six PZSz events, five of them still ahead</h2>
+    <p>CERT and PROD hold the same six events, with the same dates and PZSz ids. Each was last read from pzszerm.pl on 6 October.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Dates held</th><th>PZSz id</th><th>Letter</th><th>Venue address held</th><th>Start lists</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>PPS1s Poznań, sabre</td><td>3–4 Oct</td><td>4588</td><td>yes</td><td><b>wrong</b>: „Ul. Noskowskiego 25, 61-705 Poznań” is the payee’s address (§3, cause 6)</td><td>0</td><td>past: COMPLETED, FTL link added by you</td></tr>
+        <tr><td><b>PPS1f Gdańsk, foil</b></td><td>24–25 Oct (in 3 days)</td><td>4581</td><td>yes</td><td><b>empty</b></td><td><b>0</b></td><td>PLANNED</td></tr>
+        <tr><td><b>PPS1e Szczecin, épée</b></td><td>24–25 Oct (in 3 days)</td><td>4596</td><td>yes</td><td><b>empty</b></td><td><b>0</b></td><td>PLANNED</td></tr>
+        <tr><td>PPS2s Konin, sabre</td><td>21 Nov</td><td>4591</td><td>not yet</td><td>empty</td><td>0</td><td>PLANNED</td></tr>
+        <tr><td>PPS2e Warszawa, épée</td><td>21–22 Nov</td><td>4599</td><td>not yet</td><td>empty</td><td>0</td><td>PLANNED</td></tr>
+        <tr><td>PPS2f Wrocław, foil</td><td>5–6 Dec</td><td>4585</td><td>not yet</td><td>empty</td><td>0</td><td>PLANNED</td></tr>
+      </tbody>
+    </table></div>
+    <p>The list holds round I and II of the PPS only. Later rounds and the MPS appear only once pzszerm.pl lists them. No fee is held for any event: the sync never reads one.</p>
+  </section>
+
+  <section id="causes">
+    <p class="kicker">2 · Every cause of error</p>
+    <h2>Twelve causes: four turn the run red, five write wrong or nothing and stay green, three waste or break your rules</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Cause</th><th>Evidence</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td colspan="4"><b>The run fails (red)</b></td></tr>
+        <tr><td>1</td><td>pzszerm.pl answers the listing with its gate page</td><td>every run 6–21 Oct (15 scheduled, 2 by hand)</td><td>the whole run stops before any event is touched</td></tr>
+        <tr><td>2</td><td>a transient server error, with no retry</td><td>10 Sep: „502 Bad Gateway” on the PPS 2025/2026 listing</td><td>the whole run stops</td></tr>
+        <tr><td>3</td><td>any one bad row in any listing response raises</td><td>code: <code>normalise_date</code> (a bad date on <i>any</i> row, senior or not; PZSz holds one: id 4307, end 11.05.0251), <code>plan_event_codes</code> (a PPS name without a Roman numeral, two events on one code), <code>assert_not_truncated</code> (70 rows)</td><td>the whole run stops; not seen in a run yet</td></tr>
+        <tr><td>4</td><td>the start-list capture fails with the gate, and one unreadable page stores nothing for its event</td><td>every capture since 10 Oct, the first day an event fell inside its window</td><td>no start list stored for Gdańsk or Szczecin</td></tr>
+        <tr><td colspan="4"><b>Green, but wrong or empty</b></td></tr>
+        <tr><td>5</td><td>before 6 Oct, the gate page was read as an empty listing</td><td>11–16 Sep, 30 Sep and 3–6 Oct: green runs reading „0 national senior event(s)”, „6 vanished”, and a Telegram „6 no longer listed”</td><td>11 green runs that read nothing</td></tr>
+        <tr><td>6</td><td>the venue is the first line starting „ul.” anywhere in the letter</td><td>Poznań: the payee’s „Ul. Noskowskiego 25” under „4. Startowe” was stored; the venue „ul. Pułaskiego 30” is on page 2</td><td>a wrong address on CERT and PROD</td></tr>
+        <tr><td>7</td><td>a hall and a street on one line, or the venue on the line after its heading, are not read</td><td>Gdańsk „…Szermierki. Ul. VII Dwór 7”; Szczecin „…MOSRiR Szczecin, ul. Narutowicza 17”</td><td>both addresses empty</td></tr>
+        <tr><td>8</td><td>the listing’s dates override everything until the event starts</td><td>Poznań: listing 3–3 Oct, letter „4 października”; Gdańsk: listing 24–25 Oct, letter „24.10.2026”. <code>SOURCE_OWNED_FIELDS</code> rewrites <code>dt_start</code>/<code>dt_end</code> on every readable run before the start (<code>pzsz_sync.py:83–90</code>)</td><td>a wrong end date, and an admin correction reverted</td></tr>
+        <tr><td>9</td><td>the fee is never read</td><td>all four letters state it (§3)</td><td>no fee on any event</td></tr>
+        <tr><td colspan="4"><b>Waste, and against your rules</b></td></tr>
+        <tr><td>10</td><td>past events are scraped</td><td><code>enrich_events</code> opens every season event’s page and downloads every letter (0.4–0.5 MB each) every day, Poznań included; the capture runs until 14 days after an event</td><td>your rule: nothing from PZSz once an event is past</td></tr>
+        <tr><td>11</td><td>writes are separate statements</td><td><code>pzsz_sync.py:360–363</code>, one <code>_management_query</code> per create and update</td><td>a failure midway leaves CERT half written</td></tr>
+        <tr><td>12</td><td>two Telegram messages per failed day</td><td><code>main()</code> sends „❌ PZSz Calendar failed”, then the workflow’s „Notify failure” step sends „PZSz calendar sync FAILED”</td><td>34 messages since 6 Oct (17 failed runs) for one cause</td></tr>
+      </tbody>
+    </table></div>
+    <p>CERT→PROD promotion is not a cause: the reconcile logs show no divergence on any PZSz event, and the promote job succeeded on every run.</p>
+  </section>
+
+  <section id="letters">
+    <p class="kicker">3 · The four letters we hold</p>
+    <h2>Four letters, four layouts, no shared rule</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Letter</th><th>City</th><th>Venue address</th><th>Fee</th><th>Dates</th></tr></thead>
+      <tbody>
+        <tr><td>MPS 2026, Warszawa (test fixture)</td><td>not named; „Praga Południe” (a district) in the venue line</td><td>„2. Miejsce Zawodów : OSiR SIENNICKA – Praga Południe”, then „ul. Siennicka 40B” alone on the next line</td><td>„4.Opłata startowa: 100,00 zł od zawodnika( drużyna 400,00 zł )”: two fees</td><td>a programme, 28.05.2026 to 31.05.2026, one line per session</td></tr>
+        <tr><td>PPS1s Poznań</td><td>„60-995 Poznań” in the venue line; also „O. Ś. AZS POZNAŃ” on page 1</td><td>page 2, the line after „Miejsce zawodów (dokładny adres):”: „Hala lekkoatletyczna AZS Poznań, ul. Pułaskiego 30, 60-995 Poznań”, then „(wjazd od ul. Cichej)”; page 3 adds the payee’s „Ul. Noskowskiego 25, 61-705 Poznań”</td><td>„w kwocie 100,00 zł od zawodnika”, inside a sentence under „4. Startowe”</td><td>„4 października 2026 r. (niedziela)”: one day, the month as a word</td></tr>
+        <tr><td>PPS1f Gdańsk</td><td>not in the venue line; only „Urząd Miejski w Gdańsku” and „Miasto Gdańsk” elsewhere</td><td>the line after „Miejsce zawodów (dokładny adres):”: „Gdańska Szkoła Szermierki. Ul. VII Dwór 7”</td><td>„100 PLN od zawodnika”, the line after „4. Startowe3” (a footnote mark glued to the word)</td><td>„Data:” then „24.10.2026 r.”: one day</td></tr>
+        <tr><td>PPS1e Szczecin</td><td>inside the hall name: „Hala Sportowa MOSRiR Szczecin”</td><td>the line after „Miejsce zawodów:”: „Hala Sportowa MOSRiR Szczecin, ul. Narutowicza 17”</td><td>„Startowe – 100.- zł”</td><td>„24 - 25 października 2026 r.” under the title, then „24 października…” and „25 października…” per day</td></tr>
+      </tbody>
+    </table></div>
+    <p>The parser’s own note says 7 of 7 measured komunikaty put the street alone on a line under the heading. Of these four, it reads the right venue from one (the fixture), a wrong one from one (Poznań) and none from two.</p>
+  </section>
+
+  <section id="gate">
+    <p class="kicker">4 · What pzszerm.pl serves today</p>
+    <h2>The calendar pages are gated; the home page and the letters are not</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Request (plain, no cookies)</th><th>Answer on 21 October</th></tr></thead>
+      <tbody>
+        <tr><td>Calendar listing <code>/zawody/kalendarium-zawodow/?Nazwa=…</code> (6 requests per run: PPS and MPS × 3 season keys)</td><td>1.9 KB gate page: <code>&lt;p id="pzs-m"&gt;Wczytywanie danych…</code>, a script that sets <code>pzs_t</code>, requests <code>?pzs_px=…</code> and reloads</td></tr>
+        <tr><td>Event page <code>/zawody/kalendarium-zawodow/zawody/?id=4581</code></td><td>the same gate page</td></tr>
+        <tr><td>Letter PDF <code>/test/fileDownload.php?fileId=…</code></td><td>the PDF</td></tr>
+        <tr><td>Home page <code>/</code></td><td>the page (164 KB), with a „Najbliższe zawody” table of the next 10 events: id, name, start, end; it reaches 3 days ahead today</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">Sources. CERT and PROD: tbl_event, tbl_tournament and tbl_pzsz_start_list for organizer PZSz, read through scripts/cloud-sql.sh. Runs: gh run list / view for all 51 pzsz-sync.yml runs, 3 September to 21 October 2026. Reconcile logs: doc/staging/reconcile/SPWS-2026-2027.20261021-*.md. pzszerm.pl: one request per page with the sync’s own client, 21 October. Letters: pypdf text of the three 2026/27 letters and of python/tests/fixtures/pzsz_komunikat_mps.pdf. Code: python/scrapers/pzsz_sync.py, pzsz_calendar.py, pzsz_start_list.py, pzsz_start_list_store.py; .github/workflows/pzsz-sync.yml.</p>
+</div>
