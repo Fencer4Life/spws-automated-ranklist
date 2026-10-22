@@ -418,6 +418,61 @@ describe('SS26.UIHIST — publication boundary and staleness', () => {
 // an authenticated admin session and a mounted EventManager to reach, and the
 // contract worth pinning is simply that this pairing never returns.
 // ---------------------------------------------------------------------------
+// GW.APP (doc/plans/gendered-fencer-wording-2026-10-21.html): the page hands
+// the gender dropdown to the ranklist, so the Polish fencer column reads
+// „Zawodniczka” on the women's list (the page opens on it) and „Zawodnik” on
+// the men's.
+describe('App — the gender dropdown names the fencer column (GW.APP)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setLocale('pl')
+  })
+
+  async function renderRanklist() {
+    const { fetchSeasons } = await import('../src/lib/api')
+    vi.mocked(fetchSeasons).mockResolvedValue(MOCK_SEASONS)
+    const { container } = render(App, {
+      props: { 'supabase-cert-url': CERT_URL, 'supabase-cert-key': CERT_KEY },
+    })
+    // The season dropdown appears once the seasons load; until then the
+    // filter bar's dropdowns sit at other positions, so wait for it first.
+    await vi.waitFor(() => expect(container.querySelectorAll('.season-select option').length).toBeGreaterThan(0))
+    await tick()
+    const fencerHeader = () => container.querySelector('th.col-fencer')?.textContent
+    // Each dropdown is found by an option only it has, never by position.
+    const withOption = (value: string) => () =>
+      Array.from(container.querySelectorAll('.filter-bar select')).find((s) => s.querySelector(`option[value="${value}"]`))!
+    return { fencerHeader, gender: withOption('F'), weapon: withOption('SABRE'), category: withOption('V3') }
+  }
+
+  it('GW.APP.01 — Kobiety gives „Zawodniczka”, Mężczyźni gives „Zawodnik”', async () => {
+    const { fencerHeader, gender } = await renderRanklist()
+    await vi.waitFor(() => expect(fencerHeader()).toBe('Zawodniczka'))
+
+    await fireEvent.change(gender(), { target: { value: 'M' } })
+    await vi.waitFor(() => expect(fencerHeader()).toBe('Zawodnik'))
+  })
+
+  it('GW.APP.02 — the word follows every gender change, back and forth, whatever else is selected', async () => {
+    const { fencerHeader, gender, weapon, category } = await renderRanklist()
+    await vi.waitFor(() => expect(fencerHeader()).toBe('Zawodniczka'))
+
+    const steps: [() => Element, string, string][] = [
+      [gender, 'M', 'Zawodnik'],
+      [gender, 'F', 'Zawodniczka'],
+      [weapon, 'SABRE', 'Zawodniczka'],
+      [gender, 'M', 'Zawodnik'],
+      [category, 'V3', 'Zawodnik'],
+      [gender, 'F', 'Zawodniczka'],
+      [gender, 'M', 'Zawodnik'],
+    ]
+    for (const [control, value, word] of steps) {
+      await fireEvent.change(control(), { target: { value } })
+      await vi.waitFor(() => expect(fencerHeader()).toBe(word))
+    }
+  })
+})
+
 describe('App — the calendar dataset', () => {
   async function appSource(): Promise<string> {
     const fs = await import('fs')

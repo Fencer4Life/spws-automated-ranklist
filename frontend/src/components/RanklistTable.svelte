@@ -3,7 +3,7 @@
     <thead>
       <tr>
         <th class="col-rank">#</th>
-        <th class="col-fencer">{t('col_fencer')}</th>
+        <th class="col-fencer">{t(gender === 'F' ? 'col_fencer_F' : 'col_fencer')}</th>
         {#if mode === 'PPW'}
           <th class="col-score col-total">{t('col_points')}</th>
         {:else}
@@ -45,7 +45,7 @@
 {/snippet}
 
 <script lang="ts">
-  import type { RankingPpwRow, RankingFullRow, RankingMode } from '../lib/types'
+  import type { RankingPpwRow, RankingFullRow, RankingMode, GenderType } from '../lib/types'
   import { t } from '../lib/locale.svelte'
   import { wholePoints, closeCallDecimals, splitPoints, type Decimals } from '../lib/ranklist-points'
 
@@ -53,11 +53,15 @@
     mode = 'PPW' as RankingMode,
     ppwRows = [] as RankingPpwRow[],
     fullRows = [] as RankingFullRow[],
+    gender = 'M' as GenderType,
     onrowclick,
   }: {
     mode?: RankingMode
     ppwRows?: RankingPpwRow[]
     fullRows?: RankingFullRow[]
+    // The gender dropdown's value: the Polish fencer column says „Zawodniczka”
+    // on the women's list (gendered-fencer-wording plan, 2026-10-21).
+    gender?: GenderType
     onrowclick?: (fencerId: number, fencerName: string) => void
   } = $props()
 
