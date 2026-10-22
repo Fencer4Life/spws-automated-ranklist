@@ -123,9 +123,9 @@
   <h1>One mirror, fired by every sync</h1>
   <p class="dek">The CERT→PROD calendar mirror is <b>copy-pasted into every sync</b>, and a value changed on CERT only reaches PROD on evf-sync's once-a-day cron. Extract <b>one reusable workflow</b> that evf-sync, pzsz-sync and any future FIE sync all call — right after each writes CERT.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>Plan — awaiting sign-off</span>
+    <span class="pill good"><span class="dot"></span>Signed off 2026-10-22 · released (main bec348d8)</span>
     <span class="pill">new <code>promote-calendar.yml</code> (<code>workflow_call</code>)</span>
-    <span class="pill warn"><span class="dot"></span>rewires evf-sync + pzsz-sync</span>
+    <span class="pill good"><span class="dot"></span>post-scrape only (pre dropped)</span>
     <span class="pill good"><span class="dot"></span>no logic change — CI wiring only</span>
   </div>
 
@@ -214,7 +214,6 @@ jobs:
     <div class="tablewrap"><table>
       <thead><tr><th>Caller</th><th>When</th><th><code>if:</code> (stays on the caller)</th><th><code>label</code></th></tr></thead>
       <tbody>
-        <tr><td>evf-sync — pre</td><td>before scrape</td><td><code>mode != 'results'</code></td><td>EVF pre-scrape</td></tr>
         <tr><td>evf-sync — post</td><td>after scrape</td><td><code>!cancelled() &amp;&amp; mode != 'results'</code></td><td>EVF</td></tr>
         <tr><td>pzsz-sync — post</td><td>after scrape</td><td><code>!cancelled() &amp;&amp; !dry_run</code></td><td>PZSz</td></tr>
         <tr><td><em>future FIE — post</em></td><td>after scrape</td><td>same shape</td><td>FIE</td></tr>
@@ -247,17 +246,17 @@ jobs:
   </section>
 
   <section>
-    <p class="kicker">Decide this first</p>
-    <h2>Two small calls — with my recommendation</h2>
+    <p class="kicker">Decided (2026-10-22)</p>
+    <h2>Both calls settled at sign-off</h2>
 
-    <div class="note">
-      <p class="lede">Q1 · Does pzsz-sync also get a <em>pre</em>-scrape mirror call, like evf-sync?</p>
-      <p><b>Recommendation: no — post-only.</b> pzsz-sync's post-scrape call already runs on <code>!cancelled()</code>, so a failed scrape still promotes whatever is already on CERT. A pre-call only narrows the window further; evf-sync's daily pre+post already converges the whole set. Keep pzsz-sync to one call to minimise PROD writes; add a pre later if ever needed.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Q1 · Post-scrape only — and evf-sync's pre-call removed too</p>
+      <p>Decided: no pre-scrape mirror anywhere. The post-scrape call already runs on <code>!cancelled()</code>, so a failed scrape still promotes whatever is on CERT; evf-sync's former pre-scrape promote was redundant and is dropped. Every sync now makes <b>one</b> post-scrape call.</p>
     </div>
 
-    <div class="note">
-      <p class="lede">Q2 · The stranded fee — fix it now, or let it self-heal?</p>
-      <p><b>Recommendation: fix it now.</b> The next scheduled evf-sync (~06:00–11:00 UTC today) will carry the 100 PLN to PROD on its own. If you don't want to wait, say the word and I'll dispatch <code>evf-sync</code> (calendar mode) — it writes PROD, so the classifier needs your go. ~4 min, then I verify PROD shows <code>100 / PLN</code>. This is independent of signing off the refactor.</p>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Q2 · The stranded fee — fixed now</p>
+      <p>Dispatched <code>evf-sync</code> (calendar mode) on 2026-10-22; the mirror carried the fee to PROD. Verified: <code>PPS1e</code> and <code>PPS1f</code> read <b>100 PLN</b> on PROD (<code>ts_updated</code> 06:04:15 UTC). The other PPS rows stay null because they are null on CERT (fill-blank, correct).</p>
     </div>
   </section>
 
