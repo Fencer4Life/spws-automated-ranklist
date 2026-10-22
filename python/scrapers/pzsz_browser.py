@@ -91,13 +91,11 @@ def playwright_render(
     carry one) so the check's reload has time to complete; a persistent check
     is returned for :class:`GatedFetcher` to retry and the reader to refuse."""
     # playwright is installed only by the browser workflows (pzsz-sync /
-    # pzsz-start-lists), not the base CI type-check/pytest job, so the import is
-    # optional to the type checker — matching the codebase's convention for
-    # env-specific imports (e.g. graphify in test_graphify_svelte_extract.py).
-    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError  # pyright: ignore[reportMissingImports]
-    from playwright.sync_api import sync_playwright  # pyright: ignore[reportMissingImports]
+    # pzsz-start-lists), not the base CI type-check/pytest job, so to the type
+    # checker it is an optional import (cf. graphify in the test suite).
+    from playwright import sync_api  # pyright: ignore[reportMissingImports]
 
-    with sync_playwright() as pw:
+    with sync_api.sync_playwright() as pw:
         browser = pw.chromium.launch()
         try:
             context = browser.new_context(user_agent=user_agent, locale="pl-PL")
@@ -108,7 +106,7 @@ def playwright_render(
                     page.goto(full_url, wait_until="domcontentloaded", timeout=nav_timeout_ms)
                     try:
                         page.wait_for_selector("table", timeout=settle_timeout_ms)
-                    except PlaywrightTimeoutError:
+                    except sync_api.TimeoutError:
                         pass  # gate may persist; GatedFetcher retries, reader refuses
                     return page.content()
                 finally:
