@@ -1,0 +1,259 @@
+<meta charset="utf-8">
+<title>„Zawodniczka” on the women’s list</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Front end · Ranklist + drill-down · Plan</p>
+  <h1>„Zawodniczka” on the women’s list</h1>
+  <p class="dek">In Polish, the ranklist says <b>„Zawodnik”</b> when <b>Mężczyźni</b> is selected in the gender dropdown and <b>„Zawodniczka”</b> when <b>Kobiety</b> is selected. English keeps <b>„Fencer”</b> for both. The drill-down follows the same rule.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Signed off 21 Oct (D1–D4 = A) · before/after approved · released to main</span>
+    <span class="pill">branch <code>claude/gender-specific-verbiage</code></span>
+    <span class="pill">Polish text only</span>
+    <span class="pill">2 strings change</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">1 · The rule, as I understood it</p>
+    <h2>The gender dropdown decides the word</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Language</th><th>Mężczyźni / Men selected</th><th>Kobiety / Women selected</th></tr></thead>
+      <tbody>
+        <tr><td>Polish</td><td>Zawodnik</td><td><b>Zawodniczka</b></td></tr>
+        <tr><td>English</td><td>Fencer</td><td>Fencer</td></tr>
+      </tbody>
+    </table></div>
+    <p>The word follows the <b>dropdown</b>, not the gender stored for each person. The drill-down opens from the list on screen, so it uses the same dropdown value.</p>
+  </section>
+
+  <section>
+    <p class="kicker">2 · Decide this first</p>
+    <h2>Four decisions, each with a recommendation</h2>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">D1</span> The drill-down: change the download button’s tooltip</p>
+      <p>The drill-down never shows the word „Zawodnik” on screen. The only place it appears is the tooltip of the ODS download button: „Pobierz arkusz ODS z wynikami <b>zawodnika</b>”. If you meant a different phrase in the drill-down, name it.</p>
+      <p><b>A (recommended)</b> — the tooltip follows the dropdown: „…z wynikami <b>zawodniczki</b>” for Kobiety.<br><b>B</b> — leave the tooltip as it is.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">D2</span> The season rules box (the pill under the list)</p>
+      <p>Three phrases use the masculine form: „w szczegółach <b>zawodnika</b>” (singular), „<b>Zawodnicy</b>, którzy wystartowali…” and „o liczbę <b>zawodników</b> na tym miejscu” (plural). The box describes the season’s rules for all lists. Its header already says „w każdej broni, płci i kategorii”.</p>
+      <p><b>A (recommended)</b> — leave the box as it is. It covers every gender, and the masculine plural is standard Polish for a mixed group.<br><b>B</b> — change only the singular „w szczegółach zawodnika/zawodniczki”, following the dropdown.<br><b>C</b> — all three phrases follow the dropdown.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">D3</span> The “N” wording in the drill-down</p>
+      <p>The footer reads „N — liczba <b>uczestników</b>”, and the drill-down spreadsheet has the column „Liczba <b>zawodników</b> (N)”. Under ADR-034, a woman who fenced in a men’s tournament because the event had no women’s bracket keeps that result on the women’s list. For that row, N counts men as well, so „liczba zawodniczek” would be wrong.</p>
+      <p><b>A (recommended)</b> — leave both as they are.<br><b>B</b> — both follow the dropdown.</p>
+    </div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">D4</span> The registration form</p>
+      <p>The registration form has its own gender field (step 1) and five messages with the masculine form (see §3). It is a different screen with no ranklist dropdown.</p>
+      <p><b>A (recommended)</b> — not part of this change. If you want it, it becomes a separate task with its own rule: follow the gender chosen in the form.<br><b>B</b> — include it here.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">3 · Your question: where else do we say „zawodnik”?</p>
+    <h2>Every Polish screen text with „zawodnik”</h2>
+    <p>I searched <code>pl.json</code> and all of <code>frontend/src</code> for every form of the word. The table lists each hit and what happens to it.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Polish text now</th><th>In this plan</th></tr></thead>
+      <tbody>
+        <tr><td>Ranklist, column header</td><td>Zawodnik</td><td><span class="chip fill">changes</span></td></tr>
+        <tr><td>Drill-down, ODS button tooltip</td><td>…z wynikami zawodnika…</td><td><span class="chip fill">changes</span> if D1 = A</td></tr>
+        <tr><td>Season rules box (ranklist page)</td><td>w szczegółach zawodnika · Zawodnicy, którzy… · liczbę zawodników</td><td><span class="chip warn">D2</span></td></tr>
+        <tr><td>Drill-down footer and its spreadsheet</td><td>liczba uczestników · Liczba zawodników (N)</td><td><span class="chip warn">D3</span></td></tr>
+        <tr><td>Registration form (public)</td><td>Dane zawodnika · istniejącego zawodnika · bazie zawodników · jest już zawodnik… · podobnego zawodnika</td><td><span class="chip warn">D4</span></td></tr>
+        <tr><td>Admin: identities, birth-year proposals</td><td>Nowy zawodnik · Przypisz zawodnika · Wybierz zawodnika · Zawodnik podał… and 6 more</td><td><span class="chip plain">not touched</span> — admin only, no gender dropdown</td></tr>
+        <tr><td>Admin: scoring settings</td><td>…od 4 zawodników · zawodnik otrzymuje mp · …niż zawodnik, który…</td><td><span class="chip plain">not touched</span> — describes rules for every gender</td></tr>
+        <tr><td>FTL export for organizers</td><td>Zawodników · Baza zawodników · BAZA ZAWODNIKÓW (file name)</td><td><span class="chip plain">not touched</span> — files hold both genders</td></tr>
+      </tbody>
+    </table></div>
+    <p>The ranking spreadsheet (ODS of the list) has an English column header, „Fencer”, in both languages. It needs no change.</p>
+  </section>
+
+  <section>
+    <p class="kicker">4 · Exact text</p>
+    <h2>Before and after</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Text</th><th>Mężczyźni (unchanged)</th><th>Kobiety (new)</th><th>English, both</th></tr></thead>
+      <tbody>
+        <tr><td>Column header</td><td>Zawodnik</td><td><b>Zawodniczka</b></td><td>Fencer</td></tr>
+        <tr><td>ODS tooltip (D1 = A)</td><td>Pobierz arkusz ODS z wynikami zawodnika (Excel, LibreOffice)</td><td>Pobierz arkusz ODS z wynikami <b>zawodniczki</b> (Excel, LibreOffice)</td><td>Download the fencer’s results as an ODS spreadsheet (Excel, LibreOffice)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">5 · How</p>
+    <h2>Same mechanism as the Polish plurals</h2>
+    <p>Wording already varies by key: the season rules box picks <code>sr_best_one</code>, <code>sr_best_few</code> or <code>sr_best_many</code> by number. Gender works the same way. A new key with the suffix <code>_F</code> holds the women’s form. The component picks it when the dropdown says <code>F</code>. <code>t()</code> (ADR-005) does not change.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>frontend/src/lib/locales/pl.json</code></td><td>add <code>col_fencer_F</code> „Zawodniczka” and <code>ods_tip_drilldown_F</code></td></tr>
+        <tr><td><code>frontend/src/lib/locales/en.json</code></td><td>the same two keys with the existing English text. The parity test requires both files to have the same keys.</td></tr>
+        <tr><td><code>frontend/src/components/RanklistTable.svelte</code></td><td>new optional prop <code>gender</code> (default <code>'M'</code>). The header uses <code>col_fencer_F</code> when it is <code>'F'</code>.</td></tr>
+        <tr><td><code>frontend/src/components/DrilldownModal.svelte</code></td><td>the same prop. The ODS tooltip uses <code>ods_tip_drilldown_F</code> when it is <code>'F'</code>.</td></tr>
+        <tr><td><code>frontend/src/App.svelte</code></td><td>passes <code>gender={filters.gender}</code> to both. The WordPress ranklist (<code>RanklistElement</code>) wraps <code>App.svelte</code>, so PROD gets the same change.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Nothing else on screen changes. „Zawodniczka” is three letters longer than „Zawodnik”, so the before/after sheet (§7) also checks the header at phone width.</p>
+  </section>
+
+  <section>
+    <p class="kicker">6 · Tests first</p>
+    <h2>RED before GREEN</h2>
+    <ol class="steps">
+      <li><code>RanklistTable.test.ts</code>: in Polish the header is „Zawodnik” for <code>M</code> and „Zawodniczka” for <code>F</code>; in English it is „Fencer” for both. Run it and watch it fail.</li>
+      <li><code>DrilldownModal.test.ts</code>: the ODS button’s tooltip, in the same four cases. Watch it fail.</li>
+      <li><code>AppShell.test.ts</code>: switch the dropdown to Kobiety and the header becomes „Zawodniczka”. This proves <code>App.svelte</code> passes the value through. Watch it fail.</li>
+      <li><code>AppShell.test.ts</code> <code>GW.APP.02</code>, added at your request during the build: the word follows <b>every</b> gender change, back and forth, with weapon and category changes in between. Watch it fail.</li>
+      <li>Make the change. All three pass, and <code>locale-parity.test.ts</code> stays green.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">7 · Proof of no deterioration</p>
+    <h2>Checks and a before/after sheet</h2>
+    <ul>
+      <li>Starting point, recorded today: <code>svelte-check</code> 0 errors and 21 warnings, none in the two components. The six ranklist and drill-down test files pass 106 tests. After the change: still 0 errors, no new warnings, and the full <code>vitest</code> suite green.</li>
+      <li>A <b>before/after sheet</b> (<code>.html</code>) with LOCAL screenshots: the list with Mężczyźni and with Kobiety, in Polish and English, at desktop and phone width (375 px), plus the drill-down tooltip. You approve it <b>before any push</b>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">8 · Docs and release</p>
+    <h2>One handbook sentence, then main</h2>
+    <ul>
+      <li>Handbook <code>product/product-surfaces.html</code>, Ranklist section: one sentence on the rule. No ADR is needed: the mechanism is ADR-005’s <code>t()</code>, unchanged.</li>
+      <li><code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code> before the commit. <code>scripts/preflight.sh</code> must exit 0.</li>
+      <li>A push to <code>main</code> puts the bundle on PROD’s WordPress pages <b>with no approval step</b>. So the push happens only after you approve the before/after sheet. Afterwards, check CERT and PROD in the browser.</li>
+    </ul>
+  </section>
+
+  <p class="foot">plan · gendered-fencer-wording · 21 Oct 2026 · worktree SPWSranklist-claude-session-20261021-1808-bb3d57</p>
+</div>
