@@ -4,6 +4,7 @@
 **Date:** 2026-10-07
 **Amends:** [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md) (§6: the replay no longer reads pzszerm.pl; D1's "send it again later" becomes a stored list), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays one more recorded input, the start list), [ADR-087](087-pzsz-senior-calendar-source.md) (§4: the JavaScript check no longer blocks an ingest once a list is stored), [ADR-078](078-gdpr-data-handling.md) (§1: a new personal-data store, with its purpose and retention)
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (the store is `service_role` only), [ADR-100](100-pzsz-senior-result-ingestion.md) (FencingTimeLive carries no birth year)
+**Amended by:** [ADR-116](116-pzsz-calendar-browser-read-and-letter-passes.md) (§2: the daily ±14-day capture becomes a D−4..D−1 window of five runs a day in its own CERT-only workflow `pzsz-start-lists.yml`, removed from `pzsz-sync.yml`; §5: the "send the ingest" notice moves into the rewritten calendar run).
 **Source:** `doc/plans/pzsz-start-lists-stored-2026-10-07.html`
 
 ## Context
@@ -140,3 +141,12 @@ The store is never part of the PROD seed export, and no real start list enters t
 - promote's read-only CERT side read both lists back by their hashes, and the plan made no request and showed no source difference.
 
 **Poznań (Q10 A):** the first day pzszerm.pl serves pages after the release, the capture stores its lists and Telegram names the ingest. No pages are saved by hand. The capture window for Poznań closes on 17 October (14 days after its start). After that, the CERT ingest's own capture, or saved pages, still store its lists.
+
+## Amendment (2026-10-21) — the capture window and its own workflow (ADR-116)
+
+[ADR-116](116-pzsz-calendar-browser-read-and-letter-passes.md) changes how and when start lists are captured, not what they are or how they are stored and replayed:
+
+- **§2 — the window and the workflow.** The daily `capture` step read every PZSz event within 14 days of today, inside `pzsz-sync.yml`. A PZSz start list exists only from four days before the event to the day before it, so capture now runs in a dedicated CERT-only workflow, `pzsz-start-lists.yml`, five times a day (06:00–21:00 Warsaw, both DST), for the events whose first day is one to four days away. Two independent checks compute the window so a single bug cannot widen it; the 25 October DST change is covered by the cron choice. The capture step is removed from `pzsz-sync.yml`, which now reads the gated pages with a browser engine.
+- **§5 — the ingest notice.** The "📋 send the `ingest`" Telegram message moves into the rewritten calendar run's single digest (ADR-116 §8, R5), announced once through `tbl_pzsz_check`.
+
+Unchanged: `tbl_pzsz_start_list`, its insert-only versioning and hash, the `service_role` grant, the year-only form (ADR-078 §1), the saved-page path, and the PROD promote that replays the stored lists by hash and never contacts pzszerm.pl.

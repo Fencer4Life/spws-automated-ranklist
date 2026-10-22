@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="116-pzsz-calendar-browser-read-and-letter-passes.md">
+<meta name="adr-source-sha256" content="e97230894a0f22059a01c3a69962041f038b64d9a35fb20071c5e04d6b0f8ea0">
+<title>ADR-116 · The PZSz calendar reads past the gate with a browser engine, and reads the organizer letter in four abstaining passes</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 116</p><h1>The PZSz calendar reads past the gate with a browser engine, and reads the organizer letter in four abstaining passes</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (the plan <code>doc/plans/pzsz-calendar-robust-rewrite-2026-10-21.html</code> was signed off by the user in chat on 2026-10-21, D1–D8). Implemented test-first; the letter reader verified against a 29-letter corpus with zero wrong values. Not yet committed or released — the release to CERT and PROD is the final step.</dd></div><div><dt>Date</dt><dd class="">2026-10-21</dd></div><div><dt>Source</dt><dd class=""><code>116-pzsz-calendar-browser-read-and-letter-passes.md</code></dd></div><div><dt>Length</dt><dd class="">142 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (the plan <code>doc/plans/pzsz-calendar-robust-rewrite-2026-10-21.html</code> was signed off by the user in chat on 2026-10-21, D1–D8). Implemented test-first; the letter reader verified against a 29-letter corpus with zero wrong values. Not yet committed or released — the release to CERT and PROD is the final step.
+<strong>Date:</strong> 2026-10-21
+<strong>Amends:</strong> <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (§4: a real browser engine now reads past pzszerm.pl's JavaScript check, superseding the 2026-10-06 amendment's &quot;the check fails the run&quot;; §7: the letter is read for the venue address, the fee and the dates by structured passes, not the single <code>Miejsce Zawodów</code> line; §9: the workflow is rewritten — the run processes each event and field independently and never stops part-way), <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a> (§2: the daily ±14-day capture becomes a D−4..D−1 window of five runs a day in its own CERT-only workflow; §5: the &quot;send the ingest&quot; notice moves into the calendar run)
+<strong>Relates to:</strong> <a href="088-calendar-location-contract.html">ADR-088</a> (the city stays the location contract's; the letter fills <code>txt_venue_address</code>), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (compare-and-set is the reconciler's field-ownership split made explicit per field), <a href="036-prod-export-local-mirror.html">ADR-036</a> (the PROD mirror, whose venue-address rule this changes for PZSz), <a href="078-gdpr-data-handling.html">ADR-078</a> (no real letter enters the public repository; the golden set is PII-free), <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (PROD never scrapes; promote replays CERT-stored lists by hash), <a href="083-server-enforced-authorization.html">ADR-083</a> (the new tables are <code>service_role</code> only), <a href="100-pzsz-senior-result-ingestion.html">ADR-100</a> (the ingest the run's notice names)
+<strong>Source:</strong> <code>doc/plans/pzsz-calendar-robust-rewrite-2026-10-21.html</code>, <code>doc/plans/pzsz-calendar-events-findings-2026-10-21.html</code>, <code>supabase/migrations/20261021000001_pzsz_calendar_provenance.sql</code>, <code>supabase/migrations/20261021000002_pzsz_mirror_address_overwrite.sql</code>, <code>python/scrapers/pzsz_browser.py</code>, <code>python/scrapers/pzsz_sources.py</code>, <code>python/scrapers/pzsz_write_rules.py</code>, <code>python/scrapers/pzsz_letter.py</code>, <code>python/scrapers/pzsz_sync.py</code>, <code>python/scrapers/pzsz_start_list.py</code>, <code>python/scrapers/pzsz_start_list_store.py</code>, <code>.github/workflows/pzsz-sync.yml</code>, <code>.github/workflows/pzsz-start-lists.yml</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-every-gated-pzszerm-pl-page-is-read-with-a-headless-browser-engine">1 · Every gated pzszerm.pl page is read with a headless browser engine</a></li><li class="depth-3"><a href="#2-the-run-works-from-our-list-one-event-and-one-field-at-a-time-future-only">2 · The run works from our list, one event and one field at a time, future only</a></li><li class="depth-3"><a href="#3-the-letter-is-read-in-four-passes-that-abstain-rather-than-guess">3 · The letter is read in four passes that abstain rather than guess</a></li><li class="depth-3"><a href="#4-pass-2-scores-every-street-bearing-line-and-takes-the-clear-winner">4 · Pass 2 scores every street-bearing line and takes the clear winner</a></li><li class="depth-3"><a href="#5-every-write-is-compare-and-set-recorded-with-its-source-and-evidence">5 · Every write is compare-and-set, recorded with its source and evidence</a></li><li class="depth-3"><a href="#6-the-prod-mirror-overwrites-the-pzsz-venue-address">6 · The PROD mirror overwrites the PZSz venue address</a></li><li class="depth-3"><a href="#7-start-lists-are-captured-only-in-the-d-4-d-1-window-in-their-own-cert-workflow">7 · Start lists are captured only in the D−4..D−1 window, in their own CERT workflow</a></li><li class="depth-3"><a href="#8-one-telegram-digest-a-run-the-exit-status-is-set-last">8 · One Telegram digest a run; the exit status is set last</a></li><li class="depth-3"><a href="#9-the-letter-reader-is-proved-by-a-golden-set-and-a-mutation-suite">9 · The letter reader is proved by a golden set and a mutation suite</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p>Since 3 October 2026 pzszerm.pl has served its <code>pzs-m</code> JavaScript cookie check on the listing and event pages. Our HTTP client runs no JavaScript, so <code>refuse_js_check()</code> (ADR-087's 2026-10-06 amendment) recognised the check page and stopped the run with nothing written. Every PZSz calendar sync since has gone red, and the start lists for the 24–25 October round-I events were never captured by the daily job. ADR-112 worked around this for start lists by storing them while the gate is open and reading from the store on gated days; the calendar sync itself had no such path and simply failed.</p>
+<p>Two things the earlier design did not do made the failure total rather than partial:</p>
+<ul>
+<li><strong>The run stopped at the first refusal.</strong> One gated page, or one event that could not be read, ended the whole run — so a transient problem on one event lost the others.</li>
+<li><strong>The letter was barely read.</strong> ADR-087 §7 filled <code>url_invitation</code> when the section stopped being empty and ADR-088 took a venue title from the komunikat's <code>Miejsce Zawodów</code> line, but the fee, the street address, and the start and end dates — all of which the letter states and the listing often does not — were left to an admin. The 31-letter sample measured against the then-current reader: <strong>10 right, 4 wrong (all the Poznań payee/letterhead address), 16 missed or partial.</strong></li>
+</ul>
+<p>The user's binding decisions (21 Oct, recorded in the plan): work from our own CERT list of events; read a PZSz page only while the event is in the future; read every gated page with a real browser engine that runs the page's own JavaScript — not a forged cookie, not a driven login, not a solved CAPTCHA; read the letter in independent passes that abstain rather than guess; let one event or field never stop another; one Telegram digest a run; the exit status red only for a genuine fatal.</p>
+<p>Getting past the gate by forgery was declined twice before and stays declined. A headless Chromium that loads the page and runs its own check script is the site answering its own challenge in a real engine — the same thing a person's browser does — and it was proven on 21 October against the live gate (Gdańsk men's foil, 58 fencers).</p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-every-gated-pzszerm-pl-page-is-read-with-a-headless-browser-engine">1 · Every gated pzszerm.pl page is read with a headless browser engine</h3>
+<p><code>python/scrapers/pzsz_browser.py</code> launches headless Chromium through Python Playwright (<code>playwright&gt;=1.47</code>, Chromium installed in CI) and loads the listing, event and tournament pages, letting the page run its own <code>pzs-m</code> script until the real content renders. <code>GatedFetcher.fetch(url, params)</code> reloads past the check up to a small number of attempts with a backoff; <code>browser_fetch()</code> is a context manager that launches one browser for the whole run. The <code>render</code> seam is injectable, so unit tests drive a fake and never start a browser.</p>
+<p>The letter download (<code>/test/fileDownload.php</code>) and the home page are <strong>not</strong> gated and are fetched over plain HTTP as before. ADR-087 §4's truncation guard is unchanged: a listing response at or above the 70-row cap still raises, because the browser clears the gate but does not change the cap.</p>
+<p>The local sandbox may block the browser; CI runs it. Reading the page with an engine is a read, not a write, and touches no account.</p>
+<h3 id="2-the-run-works-from-our-list-one-event-and-one-field-at-a-time-future-only">2 · The run works from our list, one event and one field at a time, future only</h3>
+<p><code>run_calendar()</code> (<code>python/scrapers/pzsz_sync.py</code>) reads our CERT calendar, not PZSz's listing, as the set of events to maintain. For each event that is <strong>in the future</strong> (first day strictly after today in Warsaw) it fetches the listing row, the home-page row and — once the letter exists — the letter, and decides each of six fields on its own. An event whose first day has arrived is never read from pzszerm.pl again; from then on the operator supplies the FencingTimeLive link.</p>
+<p>Each field and each event is independent: an exception reading one event, or one field that cannot be decided, is recorded and the run moves on. The run never aborts part-way.</p>
+<p>Six fields are decided (<code>_DECIDED_FIELDS</code>): <code>url_invitation</code>, <code>txt_location</code>, <code>dt_start</code>, <code>dt_end</code>, <code>txt_venue_address</code>, <code>num_entry_fee</code>. <code>url_invitation</code> and <code>num_entry_fee</code> are <strong>fill-blank-only</strong> (written once while empty, never overwritten — ADR-087 §7, ADR-081); the city, the address and the two dates are read every run while the event is ahead, because an organizer moves a venue or a date after first publishing it.</p>
+<h3 id="3-the-letter-is-read-in-four-passes-that-abstain-rather-than-guess">3 · The letter is read in four passes that abstain rather than guess</h3>
+<p><code>pzsz_letter.read_letter(bytes, LetterContext)</code> is <strong>structure-agnostic</strong>: PZSz letters share no layout, so the reader keys on content, not position. It extracts two pypdf text views (plain and layout), or the text of a DOCX or HTML letter; a letter with no extractable text (a scan) yields <code>has_text=False</code> and nothing else (the admin enters its fields — ADR-087's &quot;fill-when-available&quot; extended). It normalises both views (§8 below), segments each line into a region by the label that last opened one, and runs four passes:</p>
+<ul>
+<li><strong>Pass 1 — city (validate only).</strong> The city is the location contract's (ADR-088) and is never rewritten by the letter. The pass reads the city of a postcode in the venue section and reports whether it agrees with the stored city; a declined or adjectival form still agrees (a folded-stem compare). It warns on a genuine disagreement and is silent when the letter carries no venue postcode.</li>
+<li><strong>Pass 2 — the venue address</strong> (§4 below).</li>
+<li><strong>Pass 3 — the fee.</strong> The individual entry fee in złoty, in the sanity range 1–500; a team amount, a euro prize, and a payment deadline are excluded. Fill-blank-only.</li>
+<li><strong>Pass 4 — the start and end dates.</strong> Dates are scanned from both views in eleven shapes; a deadline, entry or payment date is excluded, the rest kept only if in season and within ten days of the stored start. The earliest is the start, the latest the end (at most four days apart). A note flags a letter that looks copied from last year (a date a year off) or whose event dates sit outside the window (a possible move). The letter wins over the listing for the dates.</li>
+</ul>
+<p>A pass that is not sure writes nothing. When two values compete (two different individual fees, two addresses that score within three of each other) the pass abstains and the run reports both for the admin.</p>
+<h3 id="4-pass-2-scores-every-street-bearing-line-and-takes-the-clear-winner">4 · Pass 2 scores every street-bearing line and takes the clear winner</h3>
+<p>The address is where the old reader went wrong — it published the payee's address from the bank-transfer block. The new pass scores every line that carries a street marker (<code>ul.</code>, <code>al.</code>, <code>pl.</code>, <code>os.</code>, <code>rondo</code>, …) by a weight table and takes the best <strong>only when it scores at least 5 and leads the next different address by at least 3</strong>; otherwise it reports two candidates or nothing. The weights (<code>_score_street</code>):</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>line is in the venue section</td>
+<td>+5</td>
+</tr>
+<tr>
+<td>a venue label is on this line or within two above</td>
+<td>+2</td>
+</tr>
+<tr>
+<td>a house number is present (postcode removed first)</td>
+<td>+2</td>
+</tr>
+<tr>
+<td>a hall word is present (<code>hala</code>, <code>AWF</code>, <code>AZS</code>, <code>OSiR</code>, <code>szkoła</code>, …)</td>
+<td>+1</td>
+</tr>
+<tr>
+<td>the postcode's city is the event's city</td>
+<td>+1</td>
+</tr>
+<tr>
+<td>the same street is found in both text views</td>
+<td>+1</td>
+</tr>
+<tr>
+<td>in the fee/account section, or near <code>konto</code>/<code>przelew</code>/<code>tytułem</code></td>
+<td>−6</td>
+</tr>
+<tr>
+<td>in a lodging section, or near <code>hotel</code>/<code>nocleg</code></td>
+<td>−6</td>
+</tr>
+<tr>
+<td>after <code>wjazd od</code> / <code>wejście od</code> / <code>parking</code> / <code>dojazd</code></td>
+<td>−5</td>
+</tr>
+<tr>
+<td>in the letterhead or a contact line</td>
+<td>−5</td>
+</tr>
+<tr>
+<td>in the organizer section with a postcode of another city</td>
+<td>−3</td>
+</tr>
+</tbody>
+</table></div>
+<p>The winning line is assembled into the full venue line: the hall name from a hall-word line just above (a hall split from its street across the line break, T6), the house number from the next line when the street wrapped (T7), the label prefix stripped, a parenthesised entrance clause dropped (T5). Across the 29-letter corpus this chooses the venue and never the payee, the organizer's other-city club, or a hotel.</p>
+<h3 id="5-every-write-is-compare-and-set-recorded-with-its-source-and-evidence">5 · Every write is compare-and-set, recorded with its source and evidence</h3>
+<p><code>fn_pzsz_apply_event(p_id_event int, p_payload jsonb)</code> (migration <code>20261021000001</code>, <code>SECURITY DEFINER</code>, <code>service_role</code> only) applies each field with <code>UPDATE … WHERE col IS NOT DISTINCT FROM $expected</code>: the run passes the value it last saw, and a row that no longer holds it (an admin changed it by hand) is left alone and recorded as <code>hand_changed</code>, never overwritten. Three insert-only provenance tables record what happened:</p>
+<ul>
+<li><code>tbl_pzsz_field_state</code> — the value last written by the run for each <code>(event, field)</code>, with its source, evidence line, the letter's SHA-256 and the parser version, so the next run knows what it may replace;</li>
+<li><code>tbl_pzsz_source_report</code> — what each source said for each field, so a lower-ranked source that disagrees is reported once and not every day;</li>
+<li><code>tbl_pzsz_check</code> — one row per <code>(scope, check)</code> run-health state, so a condition (a gated source, a stored-list notice) is announced when it changes and not repeated.</li>
+</ul>
+<p>Sources rank letter (3) &gt; listing (2) &gt; home page (1). The eight write rules live in one pure function, <code>pzsz_write_rules.decide()</code>: a blank field takes the best candidate; an equal-or-higher-ranked source replaces; a lower-ranked disagreement is reported once; a value an admin changed is never overwritten.</p>
+<h3 id="6-the-prod-mirror-overwrites-the-pzsz-venue-address">6 · The PROD mirror overwrites the PZSz venue address</h3>
+<p>Migration <code>20261021000002</code> rebuilds <code>fn_mirror_events_to_prod</code> from the live definition with one line changed: for a PZSz event (the payload carries <code>id_pzsz_event</code>, or the PROD row already has one) the mirror <strong>overwrites</strong> <code>txt_venue_address</code> from CERT, rather than filling it only when blank. The calendar run owns the PZSz address on CERT (§5), so CERT is its source of truth and must win on PROD; every other organizer keeps the existing fill-blank-when-empty behaviour. No other line of the function changes.</p>
+<h3 id="7-start-lists-are-captured-only-in-the-d-4-d-1-window-in-their-own-cert-workflow">7 · Start lists are captured only in the D−4..D−1 window, in their own CERT workflow</h3>
+<p>ADR-112's daily capture (every PZSz event within 14 days of today, as a step of <code>pzsz-sync.yml</code>) is replaced by a dedicated CERT-only workflow, <code>pzsz-start-lists.yml</code>, that runs five times a day (06:00–21:00 Warsaw, both DST) and captures only the events whose first day is <strong>one to four days away</strong>. A PZSz start list exists only in that window — published four days before and taken down when the event starts — so capturing outside it is wasted, and a missed window stops the result ingest (the birth year, ADR-111). Two independent checks compute the window (<code>select_window_events</code> and <code>read_event_start_lists_for_capture</code>'s own guard) so a single bug cannot widen it. The 25 October DST change is covered by the cron choice. PROD never scrapes: promote replays the CERT-stored lists by hash (ADR-108, ADR-112 §4). The capture step is removed from <code>pzsz-sync.yml</code>.</p>
+<h3 id="8-one-telegram-digest-a-run-the-exit-status-is-set-last">8 · One Telegram digest a run; the exit status is set last</h3>
+<p>The run collects plain lines, <code>⚠️</code> warnings (including a source that was gated on the first run of the day) and <code>❌</code> fatals into one <code>_Digest</code> and sends it once. The process exit status is computed <strong>last</strong>, from the digest: red only for a genuine fatal on a named event (a start-list window missed, a write rejected because CERT was unreachable), green otherwise — a gated source or an unreadable letter is a warning, not a failure, because the run did everything it could for every other event. The &quot;send the ingest&quot; Telegram notice of ADR-112 §5 moves here (R5): when a past PZSz event's <code>url_event</code> no longer points at pzszerm.pl and a start list is stored and no CERT run has finished, the digest names the <code>ingest</code> command; it is announced once, through <code>tbl_pzsz_check</code>.</p>
+<h3 id="9-the-letter-reader-is-proved-by-a-golden-set-and-a-mutation-suite">9 · The letter reader is proved by a golden set and a mutation suite</h3>
+<p>Two gates protect the reader:</p>
+<ul>
+<li><strong>A golden set</strong> (<code>python/tests/pzsz_golden_letters.py</code>, <code>test_pzsz_letter_golden.py</code>): twelve letters, each reproducing a documented shape or trap, read through <code>read_letter</code> with every field checked exactly. A wrong value fails; an abstention is asserted where the letter is genuinely ambiguous.</li>
+<li><strong>A mutation suite</strong> (<code>test_pzsz_letter_mutations.py</code>): twenty-two operators — dash and space variants, tripled glyphs, letter-spacing, soft hyphens, a street split across the break, swapped label forms, and injected noise that competes for the answer (a payee account block, an other-city organizer, a hotel, a euro prize, a payment deadline, a copied last-year date, a duplicated letter) — applied in random chains to the golden bases, about 6,000 cases. The invariant is absolute: the address, the fee and the dates are the golden value or nothing, never a different one. The reader may abstain; it may never guess.</li>
+</ul>
+<p>Two decisions departed from the plan's letter and are recorded here so they are not read as drift:</p>
+<ul>
+<li><strong>The venue-line length cap is 120 characters, not the plan's 80.</strong> The real Oborniki venue is 91 characters with its full hall name (<em>Hala Sportowa Ośrodka Sportu i Rekreacji w Obornikach Śląskich, ul. Józefa Poniatowskiego 22</em>). The plan's worked example abbreviated it to <em>OSiR</em>; abbreviating is guessing a name the letter did not write, so the reader emits the hall verbatim and the cap is widened to admit it. The cap is a sanity bound against a whole paragraph, not a style limit.</li>
+<li><strong>The committed golden set is PII-free shapes, not the 31 real letters &quot;masked&quot;.</strong> ADR-078 forbids a real organizer letter in this public repository — the files carry fencer names, bank-account numbers and organizers' private telephone and e-mail. The golden letters are invented clubs, streets and people on the real shapes; the evidence that the reader is right on the real letters is the <strong>29-letter corpus sweep (zero wrong values)</strong>, run from a throwaway scratchpad that is never committed. Verified end to end: Poznań, Konin and the others' postcodes confirm the city; Gdańsk, Szczecin and Oborniki find the hall and street and abstain on an absent postcode; the Szczecin 24–25 October range reads as a range; the Oborniki three-line split assembles exactly; the one scanned letter returns <code>has_text=False</code>.</li>
+</ul>
+<p>The normaliser (§8, <code>_normalise</code>) that both passes build on: Unicode NFKC; invisible characters and no-break spaces removed; every dash and curly quote mapped to its plain form; bullets to spaces; tripled glyphs collapsed (<em>PPPUUUCCCHHHAAARRR</em> → <em>PUCHAR</em>, T12); letter-spaced words rejoined with their word breaks kept (<em>M i e j s c e   z a w o d ó w</em> → <em>Miejsce zawodów</em>, T11); end-of-line hyphenation rejoined; a footnote digit glued to a label word stripped (<em>Startowe3</em> → <em>Startowe</em>, T13).</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>Forge the gate — set the <code>pzs-m</code> cookie, replay the pixel, or drive a login.</strong> Declined, twice, before this ADR and again here. A real engine answering the site's own challenge is a read a person could make; forging the token is not, and it is brittle the day the check changes.</li>
+<li><strong>Keep the HTTP client and wait for the gate to open.</strong> Rejected: gated stretches have lasted up to six days (ADR-112), and the round-I events needed their dates and venues now, not whenever the gate next lifts.</li>
+<li><strong>Position-based letter parsing (read the line under the <code>Miejsce Zawodów</code> label).</strong> Rejected: the 31-letter sample has no shared layout — the venue is one line, three lines, or label-less; the street number wraps; the hall name splits from its street. A position rule gets 10 of 31 and publishes the payee address for 4. A content scorer that abstains is the only shape that never publishes a wrong address.</li>
+<li><strong>Let the run stop on the first gated or unreadable page</strong>, as before. Rejected: it makes one event's transient problem lose every other event's good data. Independence per event and per field, with a digest and a last-computed exit status, is the opposite failure mode.</li>
+<li><strong>Commit the real letters, masked.</strong> Rejected under ADR-078: redacting 29 large view files by hand is error-prone for a public repository, and a leak is irreversible. PII-free shapes plus the throwaway-corpus sweep give the same regression protection without the risk.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<p><strong>New:</strong></p>
+<ul>
+<li><code>python/scrapers/pzsz_browser.py</code> — the headless-browser fetcher with an injectable render seam.</li>
+<li><code>python/scrapers/pzsz_sources.py</code> — listing rows, the newest letter link, the home-page &quot;Najbliższe zawody&quot; table.</li>
+<li><code>python/scrapers/pzsz_write_rules.py</code> — the eight write rules as one pure <code>decide()</code>.</li>
+<li><code>python/scrapers/pzsz_letter.py</code> — the structure-agnostic reader (normalise, segment, passes 1–4).</li>
+<li><code>supabase/migrations/20261021000001_pzsz_calendar_provenance.sql</code> — three provenance tables and <code>fn_pzsz_apply_event</code>; <code>supabase/tests/112_pzsz_calendar_provenance.sql</code>.</li>
+<li><code>supabase/migrations/20261021000002_pzsz_mirror_address_overwrite.sql</code> — the PZSz venue-address overwrite in <code>fn_mirror_events_to_prod</code>; <code>supabase/tests/113_pzsz_mirror_address_overwrite.sql</code>.</li>
+<li><code>.github/workflows/pzsz-start-lists.yml</code> — the CERT-only five-a-day capture in the D−4..D−1 window.</li>
+<li><code>python/tests/pzsz_golden_letters.py</code>, <code>test_pzsz_letter_golden.py</code>, <code>test_pzsz_letter_mutations.py</code>.</li>
+</ul>
+<p><strong>Changed:</strong></p>
+<ul>
+<li><code>python/scrapers/pzsz_sync.py</code> — <code>run_calendar</code> rewritten: browser fetch, per-event/per-field independence, compare-and-set via <code>fn_pzsz_apply_event</code>, one digest, exit status last, the ingest notice.</li>
+<li><code>python/scrapers/pzsz_start_list.py</code>, <code>pzsz_start_list_store.py</code> — the D−4..D−1 window, two independent checks, the capture run.</li>
+<li><code>.github/workflows/pzsz-sync.yml</code> — the capture step removed; the sync job installs Playwright and Chromium.</li>
+</ul>
+<p><strong>Not changed:</strong> ADR-088's city path and the location contract; ADR-111's admission rule; ADR-112's stored-list store, its hash, its <code>service_role</code> grant and the PROD-never-scrapes promote; the bot.</p>
+<p><strong>Tests:</strong> pgTAP 112.1–112.8 (20 assertions, <code>112_pzsz_calendar_provenance.sql</code>) and 113.0–113.4 (5 assertions, <code>113_pzsz_mirror_address_overwrite.sql</code>); pytest the PZSz suite (255 cases), including the golden set (12) and the mutation suite (~6,000). Letter reader verified on a 29-letter corpus, zero wrong values.</p>
+<p><strong>Deferred, not fixed:</strong> the venue-line cap is a sanity bound, not a style rule; a legitimately long venue publishes verbatim. The golden set is PII-free shapes; a real-letter regression would be caught by re-running the throwaway corpus sweep, not by CI.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
+<p>None. D1–D8 are decided in the plan; D9 and D10 were dropped there. The one remaining step is the release to CERT and PROD via the integration checkout.</p>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="115-equal-totals-share-a-place.html">← ADR-115: Equal Totals Share a Place; the Next Place Skips</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>116-pzsz-calendar-browser-read-and-letter-passes.md</code> · source SHA-256 <code>e97230894a0f22059a01c3a69962041f038b64d9a35fb20071c5e04d6b0f8ea0</code></footer>
+</div></body></html>

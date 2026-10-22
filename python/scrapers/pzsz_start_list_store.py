@@ -27,6 +27,7 @@ import re
 import sys
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -36,11 +37,27 @@ from python.scrapers.pzsz_start_list import (
     PzszPageError,
     PzszTournament,
     Starter,
+    in_start_list_window,
     read_event_start_lists,
+    read_event_start_lists_for_capture,
+    start_list_window,
 )
 
 SOURCE_PZSZERM = "pzszerm.pl"
 SOURCE_SAVED_PAGE = "saved page"
+ORGANIZER_CODE = "PZSz"
+
+# Events whose start lists the capture never reads: already over or called off.
+_NOT_CAPTURED = ("COMPLETED", "CANCELLED")
+
+# How a weapon and gender read in a Telegram line ("men's foil").
+_WEAPON_WORD = {"SABRE": "sabre", "EPEE": "épée", "FOIL": "foil"}
+_GENDER_WORD = {"M": "men's", "F": "women's"}
+
+
+def _wg(weapon: str, gender: str) -> str:
+    return f"{_GENDER_WORD.get(gender, gender)} {_WEAPON_WORD.get(weapon, weapon.lower())}"
+
 
 Store = Callable[[dict], bool]
 Fetch = Callable[[str, dict], str]
@@ -129,6 +146,227 @@ def store_saved_pages(
         return page
 
     return capture_event_start_lists(id_pzsz_event, fetch, store, source=SOURCE_SAVED_PAGE)
+
+
+@dataclass(frozen=True)
+class CaptureOutcome:
+    """One attempt at one event: the lists stored new, the lists already held
+    unchanged, the tournaments not read this attempt (each with weapon,
+    gender, reason), whether the event page itself did not render, and any
+    error note. All in weapon/gender terms, for the digest."""
+
+    code: str
+    id_pzsz_event: int
+    first_day: date
+    stored: list[tuple[str, str, int]]
+    unchanged: list[tuple[str, str, int]]
+    missing: list[tuple[str, str, str]]
+    not_served: bool
+    error: str | None
+
+
+def select_window_events(rows: Iterable[Mapping[str, Any]], today: date) -> list[dict]:
+    """Check 1 of the window rule (ADR-112 §2): the PZSz events whose start
+    lists this run reads — a PZSz id, not COMPLETED/CANCELLED, and today in
+    their D-4..D-1 window. Pure."""
+    chosen: list[dict] = []
+    for row in rows:
+        if row.get("id_pzsz_event") is None or row.get("enum_status") in _NOT_CAPTURED:
+            continue
+        start = row.get("dt_start")
+        if start in (None, ""):
+            continue
+        if in_start_list_window(date.fromisoformat(str(start)[:10]), today):
+            chosen.append(dict(row))
+    return chosen
+
+
+def _capture_one(row: Mapping[str, Any], today: date, fetch: Fetch, store: Store) -> CaptureOutcome:
+    code = str(row["txt_code"])
+    eid = int(row["id_pzsz_event"])
+    first_day = date.fromisoformat(str(row["dt_start"])[:10])
+    try:
+        result = read_event_start_lists_for_capture(eid, fetch, first_day=first_day, today=today)
+    except Exception as exc:  # noqa: BLE001 -- one event never stops another (ADR-116 §11)
+        return CaptureOutcome(code, eid, first_day, [], [], [], not_served=True, error=str(exc))
+    stored: list[tuple[str, str, int]] = []
+    unchanged: list[tuple[str, str, int]] = []
+    for (weapon, gender), (tournament, starters) in sorted(result.captured.items()):
+        payload = stored_payloads(eid, {(weapon, gender): (tournament, starters)}, SOURCE_PZSZERM)[
+            0
+        ]
+        is_new = store(payload)
+        (stored if is_new else unchanged).append((weapon, gender, len(starters)))
+    missing = [(t.weapon, t.gender, reason) for t, reason in result.missing]
+    return CaptureOutcome(
+        code, eid, first_day, stored, unchanged, missing, not_served=False, error=None
+    )
+
+
+def capture_window(
+    rows: Iterable[Mapping[str, Any]], today: date, fetch: Fetch, store: Store
+) -> list[CaptureOutcome]:
+    """Read and store the start lists of every in-window event, one event at a
+    time; one event never stops another (ADR-116 §11). Returns an outcome per
+    selected event."""
+    return [_capture_one(row, today, fetch, store) for row in select_window_events(rows, today)]
+
+
+@dataclass(frozen=True)
+class WindowReport:
+    """The digest of a capture run: the Telegram lines and the event codes
+    that ended fatal (a start list missing after the window)."""
+
+    lines: list[str]
+    fatal: list[str]
+
+
+def window_report(
+    outcomes: Iterable[CaptureOutcome],
+    *,
+    today: date,
+    first_run: bool,
+    final_run: bool,
+    stored_keys: Mapping[int, set[tuple[str, str]]],
+) -> WindowReport:
+    """Shape one capture run into Telegram lines and the fatal list (§10, §11).
+
+    ``stored_keys`` is the (weapon, gender) pairs already stored for each event
+    across the whole window — the ground truth for whether the ingest can run.
+    A tournament the event is known to have but with nothing stored is fatal,
+    but only on the window's last attempt (D-1 final run); until then a missing
+    list is a warning, because a later attempt may still catch it."""
+    lines: list[str] = []
+    fatal: list[str] = []
+    for out in outcomes:
+        opens, closes = start_list_window(out.first_day)
+        have = stored_keys.get(out.id_pzsz_event, set())
+        if first_run and today == opens:
+            lines.append(
+                f"📋 Start-list window open for {out.code} ({out.first_day:%d %b}), "
+                f"capturing to {closes:%d %b}."
+            )
+        if out.stored:
+            counts = ", ".join(f"{_wg(w, g)} {n}" for w, g, n in out.stored)
+            lines.append(f"✅ {out.code}: {counts} stored.")
+        if out.not_served:
+            lines.append(f"⚠️ {out.code}: start lists not served this run ({out.error}).")
+        known = (
+            {(w, g) for w, g, _ in out.stored}
+            | {(w, g) for w, g, _ in out.unchanged}
+            | {(w, g) for w, g, _ in out.missing}
+            | set(have)
+        )
+        short = known - set(have)
+        if final_run and today == closes:
+            if short or not known:
+                fatal.append(out.code)
+                miss = ", ".join(sorted(_wg(w, g) for w, g in short)) or "every tournament"
+                lines.append(
+                    f"❌ No start list for {out.code} after the window ({miss}): "
+                    "the result ingest will stop (ADR-111)."
+                )
+        elif short and today in (closes, closes - timedelta(days=1)):
+            miss = ", ".join(sorted(_wg(w, g) for w, g in short))
+            lines.append(f"⚠️ {out.code}: still missing {miss}.")
+    return WindowReport(lines, fatal)
+
+
+def _stored_keys(
+    query: Callable[..., list[dict]], ref: str, token: str, event_ids: Iterable[int]
+) -> dict[int, set[tuple[str, str]]]:
+    """The (weapon, gender) pairs already stored on CERT for each event, across
+    the whole window — the ground truth for whether the ingest can run."""
+    ids = sorted({int(e) for e in event_ids})
+    if not ids:
+        return {}
+    in_list = ",".join(str(i) for i in ids)
+    rows = query(
+        ref,
+        token,
+        "SELECT DISTINCT id_pzsz_event, enum_weapon::TEXT AS enum_weapon, "
+        f"enum_gender::TEXT AS enum_gender FROM tbl_pzsz_start_list WHERE id_pzsz_event IN ({in_list})",
+    )
+    out: dict[int, set[tuple[str, str]]] = {}
+    for r in rows or []:
+        out.setdefault(int(r["id_pzsz_event"]), set()).add(
+            (str(r["enum_weapon"]), str(r["enum_gender"]))
+        )
+    return out
+
+
+def run_capture(
+    ref: str,
+    token: str,
+    bot_token: str,
+    chat_id: str,
+    *,
+    today: date,
+    first_run: bool = False,
+    final_run: bool = False,
+    query: Callable[..., list[dict]] | None = None,
+    telegram: Callable[[str, str, str], None] | None = None,
+    store: Store | None = None,
+    fetch: Fetch | None = None,
+    season: Mapping[str, Any] | None = None,
+) -> int:
+    """Capture every in-window event's start lists to CERT and send one digest
+    (ADR-112 §2, ADR-116 §10-§11). Returns 0 (green, possibly with warnings) or
+    1 if any event ended fatal. Raises only the start-fatal: no active season.
+
+    The seams (``query``, ``telegram``, ``store``, ``fetch``, ``season``) have
+    production defaults and exist so the orchestration is driven in tests
+    without CERT or a browser. When ``fetch`` is not given, one headless
+    Chromium renders every page of the run."""
+    from python.scrapers._supabase import _management_query, _telegram
+
+    query = query or _management_query
+    telegram = telegram or _telegram
+    if season is None:
+        from python.scrapers._supabase import _get_active_season
+
+        season = _get_active_season(ref, token, query)
+    if season is None:
+        raise RuntimeError("No active season on CERT: nothing to capture start lists for.")
+
+    managed = ManagementStore(ref, token, query=query) if store is None else None
+    store_fn: Store = store or managed.store  # type: ignore[union-attr]
+    if managed is not None:
+        print(
+            f"start-list retention: {managed.purge()} version(s) outside the active season deleted"
+        )
+
+    rows = query(
+        ref,
+        token,
+        "SELECT e.txt_code, e.id_pzsz_event, e.dt_start::TEXT AS dt_start, "
+        "e.enum_status::TEXT AS enum_status FROM tbl_event e "
+        "JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
+        f"WHERE e.id_season = {int(season['id_season'])} AND o.txt_code = '{ORGANIZER_CODE}' "
+        "AND e.id_pzsz_event IS NOT NULL ORDER BY e.dt_start, e.txt_code",
+    )
+
+    if fetch is not None:
+        outcomes = capture_window(rows, today, fetch, store_fn)
+    else:
+        from python.scrapers.pzsz_browser import browser_fetch
+
+        with browser_fetch() as browser:
+            outcomes = capture_window(rows, today, browser, store_fn)
+
+    stored_keys = _stored_keys(query, ref, token, [o.id_pzsz_event for o in outcomes])
+    report = window_report(
+        outcomes, today=today, first_run=first_run, final_run=final_run, stored_keys=stored_keys
+    )
+    for o in outcomes:
+        note = " [not served]" if o.not_served else ""
+        print(
+            f"  {o.code}: {len(o.stored)} new, {len(o.unchanged)} unchanged, "
+            f"{len(o.missing)} missing{note}"
+        )
+    if report.lines:
+        telegram(bot_token, chat_id, "📋 <b>PZSz start lists</b>\n" + "\n".join(report.lines))
+    return 1 if report.fatal else 0
 
 
 def from_row(row: Mapping[str, Any]) -> StoredStartList:
@@ -223,6 +461,37 @@ def _store_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _capture_command(args: argparse.Namespace) -> int:
+    """The scheduled capture (pzsz-start-lists.yml): capture every in-window
+    event's start lists to CERT and send one digest. Catches the start-fatal so
+    the run still reports red on Telegram rather than crashing silently."""
+    ref = os.environ.get("SUPABASE_CERT_REF", "")
+    token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
+    bot = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if not ref or not token:
+        print("SUPABASE_CERT_REF and SUPABASE_ACCESS_TOKEN are required", file=sys.stderr)
+        return 2
+    from python.pipeline.promotion.lifecycle import warsaw_today
+
+    try:
+        return run_capture(
+            ref,
+            token,
+            bot,
+            chat,
+            today=warsaw_today(),
+            first_run=args.first_run,
+            final_run=args.final_run,
+        )
+    except Exception as exc:  # noqa: BLE001 -- start-fatal: report red, do not crash
+        from python.scrapers._supabase import _telegram
+
+        _telegram(bot, chat, f"❌ <b>PZSz start-list capture failed</b>\n{exc}")
+        print(f"capture failed: {exc}", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="PZSz start lists stored on CERT (ADR-112)")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -236,7 +505,12 @@ def main(argv: list[str] | None = None) -> int:
         metavar="ID=FILE",
         help="a saved tournament page, by its PZSz tournament id (repeat for each)",
     )
+    cap = sub.add_parser("capture", help="capture every in-window start list to CERT")
+    cap.add_argument("--first-run", action="store_true", help="the day's first run (06:00 Warsaw)")
+    cap.add_argument("--final-run", action="store_true", help="the day's last run (21:00 Warsaw)")
     args = parser.parse_args(argv)
+    if args.command == "capture":
+        return _capture_command(args)
     return _store_command(args)
 
 

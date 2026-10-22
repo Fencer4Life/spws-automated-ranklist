@@ -1,0 +1,618 @@
+<meta charset="utf-8">
+<title>PZSz Calendar Rewrite</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap" style="overflow-wrap:anywhere">
+
+  <p class="eyebrow">PZSz calendar workflow · complete rewrite · implementation plan · 21 October 2026</p>
+  <h1>Rebuild the PZSz calendar workflow: work from our list, read every page with a real browser, read each letter in independent passes, and never fail silently</h1>
+  <p class="dek">A self-contained plan for a fresh session. It replaces the PZSz calendar sync and its start-list capture end to end. Every decision below is settled — there are no open questions. Build it test-first, ship it LOCAL → CERT → PROD, and verify on both.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Plan — for a new implementation session</span>
+    <span class="pill">Branch <code>claude/pzsz-calendar-update-fix</code>, based on <code>main</code></span>
+    <span class="pill">New: ADR-116 · amends ADR-087, ADR-112</span>
+    <span class="pill danger"><span class="dot"></span>Start-list window for Gdańsk &amp; Szczecin is open now (20–23 Oct): §16</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="context">
+    <p class="kicker">1 · Context — why this rewrite</p>
+    <h2>The daily run has failed every day since 6 October, and a missed start list stops the result ingest</h2>
+    <p>The PZSz calendar sync (<code>.github/workflows/pzsz-sync.yml</code>, <code>python/scrapers/pzsz_sync.py</code>, <code>pzsz_calendar.py</code>) keeps CERT’s calendar of senior Polish Cup and Championship events in step with pzszerm.pl, and a daily capture stores each event’s start lists on CERT. Two things are broken:</p>
+    <ul>
+      <li><b>pzszerm.pl now answers its calendar, event and tournament pages with a JavaScript “<code>Wczytywanie danych…</code>” page</b> (the element <code>&lt;p id="pzs-m"&gt;</code>) that a plain HTTP request never gets past. Since 6 October every scheduled run has failed on it, and no start list has been captured since 10 October.</li>
+      <li><b>The old code was brittle in a dozen other ways</b> even when the site answered: one bad row aborted the whole run, the venue address was read as the first “ul.” line (so Poznań stored the payee’s address), the listing’s dates overrode an organizer letter and reverted admin corrections, the entry fee was never read, past events were scraped daily, and a failed day sent two Telegram messages. The companion findings page lists all of them: <code>doc/plans/pzsz-calendar-events-findings-2026-10-21.html</code>.</li>
+    </ul>
+    <p><b>Why a missed start list matters.</b> A PZSz result row is admitted to our ranking only when its surname, first name <i>and birth year</i> match one of our fencers (ADR-111), and the birth year is available only from the event’s start list. If the start list is never captured, the result ingest for that event stops. So the capture is not best-effort; missing it is a fatal condition that must be loud.</p>
+    <div class="note accent">
+      <p class="lede">What this rewrite delivers</p>
+      <p style="margin-bottom:0">A workflow that reads from <b>our</b> list of events, reads only events still ahead, reads every gated pzszerm.pl page with a <b>real browser engine</b> that runs the page’s own JavaScript, fills each field in an <b>independent pass</b> that no other pass or event can stop, writes nothing it is unsure of, captures each start list <b>inside a fixed window</b>, states every warning on Telegram, and turns the run <b>red only at the end, only for a fatal state on a named event</b>.</p>
+    </div>
+  </section>
+
+  <section id="rules">
+    <p class="kicker">2 · The binding rules</p>
+    <h2>The shape of the workflow, fixed</h2>
+    <ol class="steps">
+      <li><b>Work from our list.</b> The run reads CERT’s PZSz events and processes each one independently. pzszerm.pl’s calendar listing is used only to <i>discover</i> new events and new letter links, never as the list of what to process.</li>
+      <li><b>Future only; stop at the first day.</b> For an event whose first day is <b>D</b> (Warsaw date), the workflow reads pzszerm.pl for it only while <b>today &lt; D</b>. From D onward it reads nothing for that event — no listing row, no event page, no letter, no start list — and waits for the operator to add the FencingTimeLive results link.</li>
+      <li><b>Independent passes.</b> Each field is filled by its own pass, in order. A pass that finds nothing, finds two candidates, or raises is recorded; the next pass still runs. One event’s outcome never stops another event.</li>
+      <li><b>Read-once vs watch.</b> The <b>letter link (pass 0)</b> and the <b>fee (pass 3)</b> are read only while the field is empty. The <b>city (pass 1)</b>, <b>address (pass 2)</b> and <b>dates (pass 4)</b> are read on every run while the event is ahead, and compared with what is held.</li>
+      <li><b>Letters have no agreed structure.</b> They are written freely, year to year and club to club. No pass may depend on a label, a line order, or a format being present.</li>
+      <li><b>A real browser reads the gated pages.</b> Headless Chromium loads each pzszerm.pl page and runs the page’s own JavaScript, exactly as a person’s browser does. No forged cookie or pixel, no CAPTCHA, no login, no manual saving.</li>
+      <li><b>Start lists only inside their window.</b> Captured only on the Warsaw dates <b>D−4, D−3, D−2 and D−1</b> — never earlier, never on D or later.</li>
+      <li><b>Never stop; judge at the end.</b> The run processes everything, states every warning on Telegram, and sets its exit status last: red only for a fatal state on a named event, green otherwise.</li>
+      <li><b>Store on CERT; PROD replays.</b> Start lists live on CERT only. PROD never contacts pzszerm.pl; the PROD promote replays the CERT-stored lists by hash (ADR-108, ADR-112 §4).</li>
+    </ol>
+  </section>
+
+  <section id="decisions">
+    <p class="kicker">3 · Decisions, settled</p>
+    <h2>Eight decisions the user made on 21 October — a record, not open questions</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Decision</th><th>What it means in the build</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td><b>The letter wins on dates.</b></td><td>When a readable letter gives the event’s dates, they are authoritative. The listing and the home page fill the dates only while no letter is readable. A later listing move against a letter already applied is <b>held and reported</b>, never written silently (§9 rule 6). Evidence: 7 of the 29 past listing rows that have a letter disagree with it, and the letter is right each time.</td></tr>
+        <tr><td>D2</td><td><b>The city stays the city; the letter’s postcode must match it.</b></td><td>The city is set from the listing / home page. A postcode-city in the letter is a <b>check</b>, not a source: a match confirms, a mismatch is flagged and nothing changes. The letter never renames the city on its own.</td></tr>
+        <tr><td>D3</td><td><b>The address is the full venue line.</b></td><td>Hall name + street + number, with the postcode and city when the letter gives them (e.g. “Hala Sportowa MOSRiR Szczecin, ul. Narutowicza 17”; “Hala lekkoatletyczna AZS Poznań, ul. Pułaskiego 30, 60-995 Poznań”). This <b>extends</b> ADR-088: the hall name is kept, not dropped. The city column (<code>txt_location</code>) still holds the city on its own; the address lives in <code>txt_venue_address</code>, and may repeat the city.</td></tr>
+        <tr><td>D4</td><td><b>Store the individual PLN fee.</b></td><td>The fee a licensed Polish fencer pays, in PLN. Team fees, the foreign-fencer fee in euro, prize money and late fees are never stored.</td></tr>
+        <tr><td>D5</td><td><b>A corrected address reaches PROD.</b></td><td>For PZSz events the CERT→PROD mirror overwrites <code>txt_venue_address</code>, as it already does for dates and city. Admin corrections are made on CERT, where the sync keeps them (§9).</td></tr>
+        <tr><td>D6</td><td><b>“Past” means from the first day.</b></td><td>From D the workflow reads nothing from pzszerm.pl for the event (rule 2). Supersedes ADR-087’s 7 Oct amendment (“the sync keeps the dates of an event that has started”).</td></tr>
+        <tr><td>D7</td><td><b>A letter with no text layer is reported, not OCR’d.</b></td><td>The passes report “no text in the letter” and the operator enters the fields in Admin. One letter in three seasons (Katowice 2025/26) is a scan; OCR would need its own sample and tests.</td></tr>
+        <tr><td>D8</td><td><b>Build and test on the 31 letters already available.</b></td><td>No extra sample-gathering. The golden set still grows whenever a future letter cannot be read.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The earlier “D9” (how saved pages reach CERT) and “D10” (ask PZSz for access) are <b>dropped</b>: the real-browser fetch makes the capture fully automatic, so there is no manual-save path to configure and no request to send.</p>
+  </section>
+
+  <section id="evidence">
+    <p class="kicker">4 · The evidence the parser is built on</p>
+    <h2>31 letters across three seasons, 9 layouts, 24 traps; and the browser proof</h2>
+    <p>The letter parser is designed and tested against every senior Puchar Polski / Mistrzostwa Polski letter PZSz published for 2024/25, 2025/26 and 2026/27, plus the Mistrzostwa Polski letter already in the repo’s fixtures — <b>31 letters</b>. Most are copies of the previous year’s letter with new dates and fee, so next season’s letters are largely already in this sample. The letters name officials and carry bank accounts, so they are kept <b>outside the repository</b>; only masked text copies (names, phones, e-mails, account numbers replaced) are committed, as test fixtures.</p>
+    <p><b>Where the letters come from (the implementation session rebuilds the sample):</b> the <code>fileId</code> links in the saved listing fixtures <code>python/tests/fixtures/pzsz_calendar_pps_2024_2025.html</code> and <code>…_2025_2026.html</code> (26 links), the three 2026/27 letters whose links are in CERT <code>tbl_event.url_invitation</code>, and <code>python/tests/fixtures/pzsz_komunikat_mps.pdf</code>. The letter download (<code>pzszerm.pl/test/fileDownload.php?fileId=…</code>) is <b>not</b> gated. Read each with <code>pypdf</code> in both its plain and <code>extraction_mode="layout"</code> text modes.</p>
+
+    <h3>Today’s parser, measured on the 30 letters that have a text layer</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Venue address read by the current code</th><th>Letters</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip never">correct</span></td><td>10</td></tr>
+        <tr><td><span class="chip over">wrong</span> (payee’s or club’s address) — all four Poznań letters</td><td>4</td></tr>
+        <tr><td><span class="chip warn">partial</span> (hall only, or the whole messy line)</td><td>2</td></tr>
+        <tr><td><span class="chip warn">nothing</span> — Szczecin, Gdańsk, Warszawa-AWF, Oborniki…</td><td>14</td></tr>
+      </tbody>
+    </table></div>
+    <p>Dates: the current code reads the letter’s date but the listing overrides it (7 conflicts, the letter right each time). Fee: the current code reads <b>none</b>, though 29 of the 30 letters state one.</p>
+
+    <h3>The 24 traps the parser must survive (seen in the sample)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Trap</th><th>Example from the sample</th></tr></thead>
+      <tbody>
+        <tr><td>T1</td><td>A payee address beside the bank account, in the fee section</td><td>Poznań OŚ AZS ×3: “Ul. Noskowskiego 25, 61-705 Poznań” under “Nr konta”</td></tr>
+        <tr><td>T2</td><td>The organizer’s letterhead address, same city, above the venue</td><td>Poznań AWF “ul. Św. Rocha 9”; Gliwice “44-100 Gliwice, ul. Zwycięstwa 36”</td></tr>
+        <tr><td>T3</td><td>The organizer’s address in another city</td><td>Oborniki ×2: “50-450 Wrocław, ul Krasińskiego 30 B”</td></tr>
+        <tr><td>T4</td><td>Hotel addresses, some “ul” with no dot</td><td>Gliwice ×2; Poznań AWF “Hotel Ibis ul Kazimierza Wielkiego 23”</td></tr>
+        <tr><td>T5</td><td>An entrance street beside the venue</td><td>Poznań 2026/27 “(wjazd od ul. Cichej)”; amateur “(wejście od ul. Urugwajskiej)”</td></tr>
+        <tr><td>T6</td><td>Hall and street on one line, split by “,” “.” or “/”</td><td>Szczecin ×3, Gdańsk ×2, Poznań ×5, Katowice, Warszawa AWF ×2</td></tr>
+        <tr><td>T7</td><td>The street on the next line, or split inside its name</td><td>“…Piłsudskiego w / Warszawie ul. Marymoncka 34”; “ul. Józefa / Poniatowskiego 22”</td></tr>
+        <tr><td>T8</td><td>A street with no house number</td><td>Poznań AWF ×2: “ul. Królowej Jadwigi”</td></tr>
+        <tr><td>T9</td><td>A space inside the house number</td><td>“ul. Mikołowska 72 A”; “ul Krasińskiego 30 B”</td></tr>
+        <tr><td>T10</td><td>The venue label in many shapes, value on the same or next line</td><td>“Miejsce zawodów (dokładny adres):”, “Miejsce zawodów:”, “Miejsce zawodów -”, no colon, “2. Miejsce Zawodów :”, “MIEJSCE ZAWODÓW:” with a “➢”</td></tr>
+        <tr><td>T11</td><td>A whole page as one line (plain mode) / the page spaced letter-by-letter (layout mode)</td><td>Warszawianka 2025/26 (“T e r m i n z g ł o s”)</td></tr>
+        <tr><td>T12</td><td>Every character tripled</td><td>Oborniki ×2: “PPPUUUCCCHHHAAARRR”</td></tr>
+        <tr><td>T13</td><td>Footnote digits glued to labels; form instructions left in</td><td>“Startowe3”, “Nagrody6”, “turnieju 2”; “Wpisaać linki do hoteli…”</td></tr>
+        <tr><td>T14</td><td>A payment deadline in the fee section, the day before the event</td><td>Konin ×4: “na konto … do dnia 13.03.2026”</td></tr>
+        <tr><td>T15</td><td>Times that look like numbers or dates</td><td>“Godz. 900”, “10.00.”, “15.00-15.30”, “9:30-11:30”</td></tr>
+        <tr><td>T16</td><td>One letter for a series of tournaments</td><td>amateur league: five dates, each “sobota”</td></tr>
+        <tr><td>T17</td><td>Eleven date shapes</td><td>“24.10.2026 r.”, “4 października 2026 r. (niedziela)”, “24 - 25 października 2026 r.”, “7-8.12.2024”, “19.10. – 20.10.2024 r.”, “10/05/2025”, “16-17.05.2026r.”, “29.05.2026(piątek)”, “SZPADA KOBIET 08.03.2025”, “Katowice 08–09.03.2025”, “POZNAŃ 14.03.2026”</td></tr>
+        <tr><td>T18</td><td>Fourteen fee shapes</td><td>“100 zł od zawodnika”, “100zł”, “100,00 zł”, “50.- zł”, “50 zł.”, “100 PLN”, “– 50 zł/uczestnik”, “-&gt; 100 zł ,”, “100 zł / 25 euro - indywidualnie”, “400 zł / 100 euro - drużynowo”, “40 €”, “1 miejsce 1200 euro”, “( drużyna 400,00 zł )”, “w / kwocie 100,00 zł od zawodnika”</td></tr>
+        <tr><td>T19</td><td>A fee section with no amount</td><td>Gdańsk 2024/25: “Opłata startowa dokonywana jest gotówką w biurze zawodów”</td></tr>
+        <tr><td>T20</td><td>No city, only a district</td><td>MPS: “OSiR SIENNICKA – Praga Południe”</td></tr>
+        <tr><td>T21</td><td>The city only in the locative, as an adjective, or inside the hall name</td><td>“w Obornikach Śląskich”, “w Warszawie”, “Gdańska Szkoła Szermierki”, “MOSRiR Szczecin”</td></tr>
+        <tr><td>T22</td><td>No text layer (a scan)</td><td>Katowice 2025/26</td></tr>
+        <tr><td>T23</td><td>Last year’s letter, copied — same layout, new dates/fee</td><td>Szczecin ×3, Konin ×4, Gdańsk ×2, Warszawa AWF ×4, Oborniki ×2, Gliwice ×2 (fee 50→100 zł from March 2026)</td></tr>
+        <tr><td>T24</td><td>The listing’s own errors, which the letter corrects</td><td>5 end dates a day too late; Poznań’s start a day early; a year written “0251”</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> The real-browser fetch is proven, not theoretical</p>
+      <p style="margin-bottom:0">On 21 October, in the desktop app’s browser pane, the Gdańsk men’s foil tournament page (<code>pzszerm.pl/zawody/kalendarium-zawodow/turniej/?id=10681</code>) rendered its full start list — <b>58 fencers with birth years</b> — after Chromium loaded the page and the site’s own script reloaded it once. The sample is used <b>only to test the parser</b>; no value from a past letter is ever used to fill or check a current event.</p>
+    </div>
+  </section>
+
+  <section id="architecture">
+    <p class="kicker">5 · Architecture</p>
+    <h2>Two workflows, one fetcher, one letter reader, one writer</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Piece</th><th>File (new unless noted)</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>The fetcher</td><td><code>python/scrapers/pzsz_browser.py</code></td><td>Headless Chromium that renders any gated pzszerm.pl page (§6). Shared by both workflows.</td></tr>
+        <tr><td>The letter reader</td><td><code>python/scrapers/pzsz_letter.py</code></td><td>Pure functions: text views, normalisation, segments, the guard, and passes 1–4 (§8–§9). No I/O.</td></tr>
+        <tr><td>The sources</td><td><code>python/scrapers/pzsz_sources.py</code></td><td>The listing (rows + letter links), the home-page table, parsed one item at a time with recorded outcomes.</td></tr>
+        <tr><td>The calendar run</td><td><code>python/scrapers/pzsz_sync.py</code> (rewritten)</td><td>R1–R7 (§7): read our list, discover, run the passes per event, write, digest, set status.</td></tr>
+        <tr><td>The start-list capture</td><td><code>python/scrapers/pzsz_start_list.py</code>, <code>pzsz_start_list_store.py</code> (extended)</td><td>Render and store each event’s lists inside the window (§10).</td></tr>
+        <tr><td>Calendar workflow</td><td><code>.github/workflows/pzsz-sync.yml</code> (rewritten)</td><td>The daily calendar run; its old ±14-day capture job is removed.</td></tr>
+        <tr><td>Start-list workflow</td><td><code>.github/workflows/pzsz-start-lists.yml</code></td><td>CERT-only, five runs a day; the capture (§10).</td></tr>
+        <tr><td>The writer</td><td>migration <code>fn_pzsz_apply_event</code> + three tables</td><td>One atomic, compare-and-set write per event, with provenance (§11, §14).</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>CERT → PROD is unchanged and is restated here so it is not touched.</b> The calendar is promoted to PROD by the existing reconciler (<code>promote.py :: promote_calendar</code>), fill-blank for admin fields except where D5 now overwrites the address for PZSz events. Results and start lists reach PROD only through the verified replay (<code>promotion/replay.py</code>): <code>stored_start_lists()</code> reads the CERT-stored rows by <code>(pzsz_event, weapon, gender, sha256)</code>, recomputes each hash, and refuses if one is missing or changed — “Promote never fetches pzszerm.pl.” PROD is therefore an exact replay of what CERT verified.</p>
+  </section>
+
+  <section id="fetch">
+    <p class="kicker">6 · The fetcher</p>
+    <h2>A real browser engine runs the page’s own JavaScript — nothing more</h2>
+    <p>Every gated pzszerm.pl page (the calendar listing, each event page, each tournament start list) is loaded by <b>headless Chromium</b> via Playwright, which this repo already carries as a dev dependency and which GitHub Actions installs in CI. The page’s own script runs, sets its cookie, requests its pixel and reloads the page, and the real content appears — exactly what a person’s browser does, and what the browser pane did on 21 October.</p>
+    <div class="note accent">
+      <p class="lede">What it is, and is not</p>
+      <p style="margin-bottom:0">A real browser rendering a public page the ranking is authorized to read. There is <b>no cookie or pixel forged by us</b>, no CAPTCHA solved, no login, no access control touched. The “<code>pzs-m</code>” page is a “does this client run JavaScript” check, and a browser that runs JavaScript is its intended reader.</p>
+    </div>
+    <ul>
+      <li><b>One browser context, reused</b> across every page in a run, so the cookie set on the first page spares the reload on the rest. A normal desktop user-agent, viewport and Polish locale.</li>
+      <li><b>Per page:</b> load; wait for the real content marker (the start-list table’s “Data urodzenia” header, or the listing’s rows) up to a short timeout; if still the check page, reload and wait again, a few times; still not rendered → return “not served”.</li>
+      <li><b>Courtesy:</b> pages one at a time, a second or two apart. Each workflow visits only the pages it needs (events still ahead / events inside the start-list window) — fewer requests than a person clicking through.</li>
+      <li><b>The parsers are unchanged.</b> The fetcher hands rendered HTML to the existing <code>parse_calendar_html</code>, <code>parse_event_detail_html</code> and <code>parse_start_list</code>. A check page is refused by those parsers too, as a second guard.</li>
+      <li><b>Fallback:</b> if Chromium is unavailable in a run, the fetcher makes a plain request; a gated answer is then “not served”.</li>
+    </ul>
+    <div class="note warn">
+      <p class="lede">Note for local development</p>
+      <p style="margin-bottom:0">The real run is in GitHub Actions. A local sandbox may refuse to execute a headless fetch of a site that shows a bot-check; that is a local policy, not a failure of the design. Develop the fetcher against saved fixture HTML and the fake driver in the tests (§15); let CI exercise the live fetch.</p>
+    </div>
+  </section>
+
+  <section id="run">
+    <p class="kicker">7 · The calendar run</p>
+    <h2>Seven steps; none can stop the next</h2>
+    <pre class="trace">R1  read our list from CERT    PZSz events of the active season, not COMPLETED/CANCELLED, today &lt; D.
+                               CERT unreachable or no active season → the one fatal that ends the run now.
+R2  discover (the listing)     fetched by the browser (§6); rows parsed one by one; new future events
+                               created; letter links, listing city and dates kept. A page that will not
+                               render is recorded "not served" (a warning), and the run goes on.
+R3  the home page              the "Najbliższe zawody" table: id, name, start, end of the next events —
+                               a second source for pass 1 (city) and pass 4 (dates).
+R4  per event (ours + new), each on its own:
+        load the letter if a link is held  →  text views  →  segments  →  the guard
+        pass 0  letter link    (only while empty)
+        pass 1  city           (every run while ahead)
+        pass 2  address        (every run while ahead)
+        pass 3  fee            (only while empty)
+        pass 4  start + end    (every run while ahead)
+        decide per field (§9)  →  one atomic write for this event  →  record each pass's outcome
+R5  the "send ingest" notice   CERT-only check: past PZSz events whose url_event is now your
+                               FencingTimeLive link; tell the operator to ingest (§10).
+R6  one Telegram digest        plain lines for writes, ⚠️ for warnings, ❌ for fatal events (§13).
+R7  set exit status            green with warnings; red if any event ended fatal (§12).</pre>
+    <p>Gated pages (R2, R3) go through the fetcher, one at a time; a 5xx or timeout is retried within the run, then recorded. Letters are plain PDF downloads (never gated), three attempts, 5 s and 20 s apart; a 404 is final. Nothing in R2–R6 aborts the run.</p>
+  </section>
+
+  <section id="letter">
+    <p class="kicker">8 · Reading a letter (shared by passes 1–4)</p>
+    <h2>Two text views, normalised, cut at labels, then a relevance guard</h2>
+    <div class="op">
+      <span class="op-tag c">FETCH</span><span class="set">the held link, once per run</span>
+      <ul style="margin-bottom:0">
+        <li>One GET (not gated). First bytes decide the kind: <code>%PDF</code> → PDF; <code>PK</code> with <code>word/document.xml</code> → DOCX; an HTML/check page → “not a letter”. 20 MB limit.</li>
+        <li>The file’s SHA-256 is kept; the same file always yields the same answers, so a change shows as a new hash. An encrypted PDF is opened with the empty password; a broken one is “unreadable” and the last good values stand.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">VIEWS</span><span class="set">two extractions, because each fails differently</span>
+      <ul style="margin-bottom:0">
+        <li><b>Plain</b> (<code>extract_text()</code>) and <b>layout</b> (<code>extraction_mode="layout"</code>), page by page; DOCX gives one view. T11 is why both exist. No text in either → “no text in the letter (scan?)” (T22, D7); every pass then reports “no letter text”.</li>
+      </ul>
+    </div>
+    <div class="op">
+      <span class="op-tag u">NORMALISE</span><span class="set">each view, in this order; nothing is guessed here</span>
+      <ol style="margin-bottom:0">
+        <li>Unicode NFKC; soft hyphens and zero-width chars removed; no-break spaces → spaces; every dash → “-”; curly quotes → plain; bullets (“➢”, “•”) → spaces.</li>
+        <li>Collapse tripled glyphs: a word whose characters are each repeated 2–3× becomes the single word (T12).</li>
+        <li>Rejoin letter-spaced words: ≥4 single letters separated by spaces join when the result is a word from the label lexicon (T11).</li>
+        <li>Rejoin end-of-line hyphenation when the next line starts lower-case.</li>
+        <li>Strip a footnote digit glued to a label word (“Startowe3” → “Startowe”, T13).</li>
+        <li>Keep a folded copy for matching only (lower-case, Polish diacritics removed, spaces removed). All matching is on the folded copy; every stored value is cut from the original text.</li>
+      </ol>
+    </div>
+    <div class="op">
+      <span class="op-tag u">SEGMENTS</span><span class="set">cut at labels and numbered headings, not at line breaks</span>
+      <p style="margin-bottom:0">A label lexicon (matched on the folded copy, one typo tolerated for words of ≥6 letters) marks the start of each region: <b>venue</b> (miejsce zawodow, miejsce, obiekt, hala, lokalizacja, adres), <b>date</b> (data, termin zawodow, w dniach, w dniu), <b>programme</b> (program, terminarz), <b>fee</b> (startowe, oplata startowa, wpisowe), <b>entries</b> (zgloszenia, potwierdzenie), <b>lodging</b> (zakwaterowanie, noclegi, hotel), <b>organizer/contact</b> (organizator, wspolorganizator, kontakt, sedzia, komisja techniczna), <b>other</b> (nagrody, regulamin, punkt gastronomiczny). Text before the first heading or the “KOMUNIKAT” line is the <b>letterhead</b>; lines with “tel”, “e-mail”, “@”, “www”, “fax” and the two lines above them are <b>contact</b>. Segments only add or subtract evidence; <b>no pass requires a label to exist</b>, so a letter with no colons, no numbering and no labels is still read.</p>
+    </div>
+    <div class="op">
+      <span class="op-tag d">GUARD</span><span class="set">is this letter about this event?</span>
+      <ul style="margin-bottom:0">
+        <li><b>Weapon:</b> the event’s weapon in any form (floret/florecie/floretu; szpada/szpadzie/szpady; szabla/szabli). A letter naming only other weapons contradicts the event.</li>
+        <li><b>Dates:</b> at least one letter date within 10 days of the held start. Every date &gt;30 days off → contradicts; a whole year off → a copied letter (T23).</li>
+        <li>A contradiction makes the letter <b>suspect</b>: passes 1–4 still run and are reported so you see what it says, but <b>nothing is written</b>, and the digest flags it once.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="passes">
+    <p class="kicker">9 · The five passes, and how a finding becomes a write</p>
+    <h2>Each pass abstains rather than guess; one rule set decides every write</h2>
+
+    <div class="op">
+      <span class="op-tag c">PASS 0</span><span class="set">the letter link — only while none is held</span>
+      <ul style="margin-bottom:0">
+        <li><b>Held → skipped.</b> The held link is what passes 1–4 read.</li>
+        <li><b>Empty → looked for:</b> first in the listing rows from R2 (each carries its letter icon, titled e.g. “Komunikat organizatora z dnia 30_04_2026”); if the listing did not render, the event page’s “Komunikaty organizatora” section. Several links → the newest by the date in its title. Before storing, the link is fetched and must be a document that passes the guard.</li>
+        <li>Outcomes: <span class="chip fill">stored</span> · <span class="chip plain">none published yet</span> · <span class="chip warn">source not served</span> · <span class="chip over">not a letter</span>. A letter published later under a new link is picked up only after the old link is cleared in Admin (read-once rule).</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">PASS 1</span><span class="set">the city — validate, never rename (D2)</span>
+      <ul style="margin-bottom:0">
+        <li>The city is the value from the listing row, else the home-page row’s name suffix (“… – Gdańsk 2026/2027” → Gdańsk). The letter does <b>not</b> set it.</li>
+        <li>If the letter’s venue section has a postcode-city (“dd-ddd City”), it is <b>checked</b> against the held city (folded, case-insensitive): match → <span class="chip never">confirmed</span>; mismatch → <span class="chip warn">flagged</span>, city unchanged, nothing written. Locatives/adjectives/hall-names (“w Obornikach Śląskich”, “MOSRiR Szczecin”) only confirm. Postcode-cities in the letterhead, contact, fee or lodging sections are ignored (T2, T3).</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">PASS 2</span><span class="set">the address — the full venue line, located by score (D3)</span>
+      <p>Score every street-bearing line to find the <b>venue block</b>, then emit the whole venue line(s), joined and cleaned — hall name + street + number, with postcode + city when present. A street marker is ul/ul./ulica/al./aleja/pl./plac/os./osiedle/rondo/skwer (any case, dot and space optional), or a “name number, dd-ddd City” with no marker.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Evidence for a street being the venue</th><th>Weight</th></tr></thead>
+        <tbody>
+          <tr><td>inside the venue section</td><td>+5</td></tr>
+          <tr><td>on the venue label’s line or within the next two lines</td><td>+2</td></tr>
+          <tr><td>has a house number</td><td>+2</td></tr>
+          <tr><td>a hall word nearby (hala, sala, OSiR, MOSiR, MOSRiR, AWF, AZS, szkoła, centrum, arena)</td><td>+1</td></tr>
+          <tr><td>its postcode-city is the event’s city · found in both views</td><td>+1 each</td></tr>
+          <tr><td>in the fee section or near konto/przelew/tytułem/„poniższe dane” (T1)</td><td>−6</td></tr>
+          <tr><td>in the lodging section or near hotel/nocleg (T4)</td><td>−6</td></tr>
+          <tr><td>after wjazd od / wejście od / parking / dojazd (T5)</td><td>−5</td></tr>
+          <tr><td>in the letterhead or contact lines (T2)</td><td>−5</td></tr>
+          <tr><td>in the organizer section · its postcode-city is another city (T3)</td><td>−3 each</td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-bottom:0">The best street must score ≥ 5 and lead the best <i>different</i> street by ≥ 3. The address returned is the venue line containing that street — the hall name before it (same or previous line, T6/T7) and the postcode-city after it, joined; the house number may sit on the next line (T7); an entrance clause in parentheses (T5) is dropped. Otherwise <span class="chip warn">two candidates</span> (both reported) or <span class="chip warn">not found</span>. Validation: 4–80 chars, has a letter, no 7+ digit run, no “@”, no “tel”. The weights are fixed in code and set on the sample; changing one reruns every letter. Worked cases: Poznań 2026/27 → “Hala lekkoatletyczna AZS Poznań, ul. Pułaskiego 30, 60-995 Poznań” (payee −3, entrance −5 lose); Oborniki → “Hala Sportowa OSiR, ul. Józefa Poniatowskiego 22” (Wrocław club −6 loses); Konin → “ul. Dworcowa 2A, 62-510 Konin” (no hall name in the letter).</p>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">PASS 3</span><span class="set">the fee — individual PLN, only while empty (D4)</span>
+      <ul style="margin-bottom:0">
+        <li>In the fee section plus any line with startowe/opłata/wpisowe. An amount is digits (with “,00”, “.00”, “.-”, “,-”) and a currency within two words or glued: zł/zł./zl/złotych/PLN → PLN; euro/EUR/€ → EUR.</li>
+        <li>Each amount is classed by its own clause (to the next “/”, “;”, “(” or line end): team (drużyn), foreign (zagraniczn / “nie posiadający licencji” / any EUR amount), prize (miejsce, nagrod), late (po terminie), other (hotel, nocleg, kaucja) — else individual (od zawodnika/zawodniczki/uczestnika, indywidualnie) or unmarked.</li>
+        <li>Store the individual-or-unmarked PLN amount. One value → <span class="chip fill">found</span>; two different → <span class="chip warn">two candidates</span>; a section naming no amount → <span class="chip warn">not stated</span> (T19). Sanity 1–500 PLN. Written to <code>num_entry_fee</code> with <code>txt_entry_fee_currency = PLN</code>.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">PASS 4</span><span class="set">start and end dates — the letter wins (D1)</span>
+      <ul>
+        <li>Date grammar on both views: dd.mm.yyyy, d/m/yyyy, yyyy-mm-dd, “dd.mm.” (year from the range or the held start), Roman months, month names in any case/without diacritics, and ranges (“7-8.12.2024”, “19.10. – 20.10.2024”, “24 - 25 października 2026”, “od 28 do 31 maja”, “24 i 25 października”, “08–09.03.2025”).</li>
+        <li><b>Not dates:</b> a number after “godz.”, one with a colon, “hh.mm” whose second part &gt; 12 or is a time range, “900” (T15).</li>
+        <li><b>Role from surroundings — event:</b> in the date/programme section; after “w dniach/w dniu”; on a line with a weapon, gender, “godz.”, eliminacje, finał; on a title line with the name or city (“POZNAŃ 14.03.2026”); next to a weekday. <b>Not event:</b> “do dnia”, zgłoszenia, przelew, konto, płatne, rezerwac, “z dnia”, “regulamin z dnia”, or anything in the fee/entries/lodging sections (T14).</li>
+        <li>Window: event dates within 10 days of the held start and inside the season. Start = earliest, end = latest; one date → a one-day event. Checks: ≤ 4 days long; a weekday beside a date must match it; dates a year off → <span class="chip over">copied letter</span>, reported; dates outside the window → “letter differs from the calendar”, a possible move, reported. Worked: Gdańsk 2026/27 “Data: 24.10.2026 r.” → 24–24 (listing had 24–25); Poznań “4 października 2026 r. (niedziela)” → 4–4 (listing 3–3); the amateur league’s five dates → only 5 Dec is in-window (T16).</li>
+      </ul>
+    </div>
+
+    <h3>From findings to writes — one rule set for every field</h3>
+    <p>Per field the run keeps three things: the value now in <code>tbl_event</code>, the value it last wrote (with that value’s source), and each source’s last report.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Situation</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>nothing found</td><td>no write; outcome recorded</td></tr>
+        <tr><td>2</td><td>the field is empty</td><td>write</td></tr>
+        <tr><td>3</td><td>the value now differs from what the run last wrote</td><td>a person changed it: <b>never overwritten</b>; a disagreeing source reported once</td></tr>
+        <tr><td>4</td><td>the value now is what the run wrote, and a source of equal/higher rank differs</td><td>replaced, and reported</td></tr>
+        <tr><td>5</td><td>a lower-rank source disagrees</td><td>kept; reported once (letter beats listing: Gdańsk 24 vs 25)</td></tr>
+        <tr><td>6</td><td>a lower-rank source changes its own report against a higher-rank one (the listing moves the event after the letter was applied)</td><td><b>held</b> and sent to you with both values — the one case a person decides</td></tr>
+        <tr><td>7</td><td>the event has started (D6)</td><td>nothing read or written for it; awaits the FencingTimeLive link</td></tr>
+        <tr><td>8</td><td>link or fee</td><td>written only while empty</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-bottom:0"><b>Source ranks</b> (higher wins, D1/D2): letter &gt; listing &gt; home page for dates; for the city the letter only validates. <b>The write</b> for one event is a single transaction, <code>fn_pzsz_apply_event</code>; every UPDATE names the value it expects to replace, so an admin edit made between read and write wins and is reported “changed by hand meanwhile”. One event’s write failing rolls back only that event (and is fatal for it, §12). Admin corrections are made on CERT; D5 carries the address to PROD.</p>
+  </section>
+
+  <section id="startlists">
+    <p class="kicker">10 · Start lists</p>
+    <h2>Captured only inside the D−4…D−1 window, by the real browser, or the run goes red</h2>
+    <p><b>The window.</b> A PZSz start list exists from 4 days before the event’s first day to 1 day before, and is closed afterwards. The newest version captured inside the window is what the CERT ingest reads for birth years (ADR-111, ADR-112 §3). Miss the window and the result ingest stops.</p>
+
+    <div class="op">
+      <span class="op-tag c">THE WORKFLOW</span><span class="set">its own file, CERT only, five runs a day</span>
+      <ul style="margin-bottom:0">
+        <li><code>pzsz-start-lists.yml</code>, separate from the calendar sync, CERT-only (no PROD write, no <code>prod-write</code> queue). CI installs Playwright’s Chromium. Five runs a day — 06:00, 10:00, 14:00, 18:00, 21:00 Warsaw — so a list that appears at any hour of any window day is caught.</li>
+        <li><b>Per event:</b> render the event page, read its tournament ids, render each tournament page, parse the start list. Each list is stored when its hash is new. One tournament page that will not render does not drop the others; the missing ones are named. A whole attempt that meets the check records “not served” and stays green.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">THE WINDOW RULE — never before, never after</span><span class="set">two independent checks</span>
+      <ul style="margin-bottom:0">
+        <li><b>Only on D−4, D−3, D−2, D−1.</b> “Today” is the Warsaw date at run time (<code>zoneinfo</code> Europe/Warsaw), so the 25 October clock change cannot shift it. The five crons are set in UTC so every attempt lands between 06:00 and 21:00 Warsaw in both summer and winter time, never after midnight into day D.</li>
+        <li><b>Check 1 — selection:</b> the run picks only PZSz events, not COMPLETED/CANCELLED, with D−4 ≤ today ≤ D−1; none → it ends before opening the browser.</li>
+        <li><b>Check 2 — the reader:</b> <code>pzsz_start_list.py</code> refuses any event or tournament page of an event outside its window, whoever asked, and records the refusal. A bug in one check cannot cause a request outside the window. The saved-page <code>store</code> fallback obeys the same rule.</li>
+        <li><b>D is re-read from CERT each run;</b> if the event moves, the window moves with it.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag u">REMINDERS &amp; THE RED LINE</span><span class="set">nobody misses a window</span>
+      <div class="tablewrap"><table>
+        <thead><tr><th>When (Warsaw)</th><th>Telegram, only if not yet stored</th></tr></thead>
+        <tbody>
+          <tr><td>D−4, first attempt</td><td>“📋 Start-list window open for PPS1f Gdańsk (24 Oct), capturing to 23 Oct.”</td></tr>
+          <tr><td>after a capture</td><td>“✅ PPS1f Gdańsk: men’s foil 58, women’s foil 24 stored.”, or what is missing</td></tr>
+          <tr><td>D−2, 18:00</td><td>a reminder if anything is still missing</td></tr>
+          <tr><td>D−1, last attempt (21:00)</td><td>“❌ No start list for PPS1f after the window: the result ingest will stop (ADR-111).” — this is the <b>fatal</b> state that paints the start-list run <b>red</b> (§12), only if nothing was captured for that tournament across the whole window.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">HAND FALLBACK</span><span class="set">only if the browser never got through the window</span>
+      <p style="margin-bottom:0">Unchanged from ADR-112 §6: open the event and tournament pages in your own browser, save them, and run <code>python -m python.scrapers.pzsz_start_list_store store &lt;CODE&gt; --event-page FILE --tournament ID=FILE …</code>. With the real-browser fetch this should not be needed; it stays as the safety net, and it obeys the same window rule.</p>
+    </div>
+
+    <p style="margin-bottom:0"><b>The “send <code>ingest</code>” notice (R5, ADR-112 §5), corrected.</b> Today it fires when a start list is stored for an event that has ended and has any non-empty <code>url_event</code> — but a PZSz <code>url_event</code> is filled at creation with the pzszerm.pl page, and with the window rule no list is ever stored after the event. So the trigger is replaced: the calendar run (CERT-only, no pzszerm.pl request) finds past PZSz events whose <code>url_event</code> is now <b>your FencingTimeLive link</b> (no longer the pzszerm.pl address), that have a stored start list, and that have no FINISHED CERT run, and tells the operator once: “📋 Send <code>ingest PPS1f-2026-2027</code>”. If no list is stored, it says the ingest will stop instead. The ingest itself stays manual (ADR-108 §2).</p>
+  </section>
+
+  <section id="failures">
+    <p class="kicker">11 · Failures, warnings, and the red-at-end rule</p>
+    <h2>The run always finishes; it warns as it goes and goes red only for a fatal state on a named event</h2>
+    <p>Nothing stops a run part-way: one event never stops another, a source that will not read is recorded, a bad row is skipped, a pass or an event that raises is caught. The run processes everything, sends one digest with every warning, and sets its exit status <b>last</b>.</p>
+    <p><b>Fatal → the run ends red (after doing everything else):</b></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Fatal state</th><th>Why</th><th>Telegram</th></tr></thead>
+      <tbody>
+        <tr><td>A start list not captured anywhere in its whole window (start-list run, last attempt)</td><td>the result ingest for that event will stop (ADR-111)</td><td>❌ naming the event and weapon/gender</td></tr>
+        <tr><td>A write to CERT for an event rejected</td><td>our side failed; that event rolled back, the others written</td><td>❌ naming the event and the error</td></tr>
+        <tr><td>CERT unreachable, or no active season</td><td>nothing can run; the one case that ends the run at the start</td><td>❌ once</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Warned, but green — the run keeps going:</b></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Situation</th><th>What happens</th><th>Telegram</th></tr></thead>
+      <tbody>
+        <tr><td>The browser cannot render the listing (check persists, or Chromium missing)</td><td>recorded “not served”; events still processed from our list, the home page and the letters</td><td>⚠️ when it turns on or off</td></tr>
+        <tr><td>The listing (or an event page, or a letter link) answers 5xx / times out / stays the check</td><td>retried in the run, then recorded; existing events still updated</td><td>⚠️ the first day it cannot be read, then daily until it clears</td></tr>
+        <tr><td>A listing row with a bad date, no round numeral, or a shared code</td><td>that row skipped; the others used</td><td>⚠️ once per row</td></tr>
+        <tr><td>A listing page of exactly 70 rows (the source cap)</td><td>its rows used; events missing from it are <b>not</b> judged “gone”</td><td>⚠️ once</td></tr>
+        <tr><td>An event no longer in a fully rendered listing</td><td>reported; never deleted</td><td>⚠️ once, when first missing</td></tr>
+        <tr><td>The letter has no text, or looks like another event’s</td><td>recorded; nothing written for the letter’s fields</td><td>⚠️ once (Admin entry / review)</td></tr>
+        <tr><td>Two candidates for the address or fee</td><td>nothing written; both sent to you</td><td>⚠️ once</td></tr>
+        <tr><td>A pass, or a whole event, raises</td><td>caught and recorded; the next pass / event runs</td><td>⚠️ once, with a CI warning annotation</td></tr>
+        <tr><td>The home page fails, or Telegram fails</td><td>recorded; unsent items ride the next digest</td><td>— / next run</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-bottom:0">The old “green-but-empty” bug cannot recur: a check page is recognised before parsing (by the browser’s wait and again by the parser) and is never read as an empty listing, and an “event missing” verdict needs every listing page rendered and non-empty.</p>
+  </section>
+
+  <section id="telegram">
+    <p class="kicker">12 · Telegram</p>
+    <h2>One digest per run, three kinds of line</h2>
+    <p>An example (invented events and values):</p>
+    <pre class="trace">📅 PZSz calendar — 21 Nov run
+PPS2s Konin: letter link stored · address ul. Dworcowa 2A, 62-510 Konin · fee 100 PLN
+PPS1f Gdańsk: end date 25 → 24 Oct (letter: "Data: 24.10.2026 r.")
+⚠️ Listing not readable today (timeout); discovery paused, existing events still updated.
+⚠️ PPS2e Warszawa: two addresses in the letter — none written.
+❌ RUN RED — PPS1f Gdańsk: no women's foil start list captured in its window; the result ingest will stop.</pre>
+    <ul style="margin-bottom:0">
+      <li><b>Plain lines</b> for each change written; <b>⚠️</b> for everything recorded-but-green; <b>❌</b> naming each fatal event. The run’s badge matches: green with warnings, or red when a ❌ line is present.</li>
+      <li><b>Source-down</b> is warned on the <b>first</b> day, then daily until it clears — not after three days.</li>
+      <li><b>Reminders</b> for an event still missing a letter link, address or fee: 14, 7 and 3 days before it. Start lists keep their own window schedule (§10).</li>
+      <li><b>One message per run.</b> The workflow’s “Notify failure” step fires only when Python never started, so a crash sends one message, not the old two.</li>
+    </ul>
+  </section>
+
+  <section id="resilience">
+    <p class="kicker">13 · Resilience to letter mistakes nobody has seen</p>
+    <h2>Why an unforeseen mistake yields “not sure”, never a wrong value</h2>
+    <ol class="steps">
+      <li><b>No pass depends on structure.</b> Labels, order and formats only add or subtract evidence. A mistake removes evidence or adds a contradiction, so the result drops below the threshold/margin → “not found” or “two candidates” → reported, nothing written.</li>
+      <li><b>The golden set.</b> Each of the 31 letters is a test case with the expected value (or “not stated”) for city, address, fee, start and end, in both views. Expected values come from reading the letter, not the listing. Masked text copies are committed; the PDFs are not.</li>
+      <li><b>The mutation suite.</b> ~25 seeded operators (label spelling/case/missing-colon; section reorder; hall+street joined or split; house number on the next line; look-alike letterhead/hotel/payee/entrance/other-city addresses added; date and fee shapes swapped; year off by one; weekday wrong; tripled glyphs; letter-spacing; page-as-one-line; city removed) applied one at a time and in pairs, ~6,000 cases per CI run. Property: each field’s result is the expected value or an abstention; where an operator changes the truth (the fee, the year), the test expects the new value.</li>
+      <li><b>CI gate.</b> Wrong values on the golden set and the mutation suite: <b>zero</b> (hard fail). Fields filled on the golden set: ≥ 95% of those a human can read.</li>
+      <li><b>The sample grows.</b> A future letter the passes cannot read produces a report with its lines; it joins the golden set, masked.</li>
+    </ol>
+  </section>
+
+  <section id="data">
+    <p class="kicker">14 · Data model (one migration, CERT &amp; PROD via the pipeline)</p>
+    <h2>Three small tables and one function; service-role only</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Object</th><th>Holds</th><th>For</th></tr></thead>
+      <tbody>
+        <tr><td><code>tbl_pzsz_field_state</code></td><td>per event &amp; field: the value last written, its source, the evidence line, the letter SHA-256, the parser version, when</td><td>rules 3–4: a hand correction vs the run’s own value</td></tr>
+        <tr><td><code>tbl_pzsz_source_report</code></td><td>per event, field &amp; source: that source’s last reported value, when</td><td>rule 6: a source that moved</td></tr>
+        <tr><td><code>tbl_pzsz_check</code></td><td>per event (or the site) &amp; check: state, detail, since, last seen, last notified</td><td>digest-on-change; reminders; the recorded source-not-served state</td></tr>
+        <tr><td><code>fn_pzsz_apply_event(p_id_event, p_changes jsonb)</code></td><td>compare-and-set updates + provenance + checks, one transaction; SECURITY DEFINER</td><td>§9, the write</td></tr>
+      </tbody>
+    </table></div>
+    <p style="margin-bottom:0"><b>Backfill:</b> for the existing future events, record what the run already wrote (dates, city, link from the listing) as written-by-the-run, so rule 3 does not mistake it for a hand edit; values entered by hand keep no provenance and are treated as hand values. <b>Grants</b> deny-by-default (ADR-083); the evidence column keeps only venue/fee/date lines, never contact lines; none of the tables is in the PROD seed export (ADR-078).</p>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">15 · Tests — RED before each piece of code</p>
+    <h2>What pins each promise</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Layer</th><th>Cases</th></tr></thead>
+      <tbody>
+        <tr><td>pytest, letter reader</td><td>the golden set (31 letters × 5 fields × 2 views); the mutation suite; unit cases per step (normalise, segment, street-score, amount grammar, date grammar, city validation, guard)</td></tr>
+        <tr><td>pytest, fetcher</td><td>fake driver: renders first load → returned; check then renders → returned after one reload; stays the check → “not served”; the rendered-HTML guard rejects a check page; Chromium missing → plain-request fallback</td></tr>
+        <tr><td>pytest, calendar run</td><td>a listing that will not render → green, events still processed; 502 then 200 → read; a bad row skipped, others created; 70 rows → no “gone”; a crashing pass → next pass runs; a crashing event → next event runs; a past event → <b>no request names it</b>; link held → pass 0 silent; fee held → pass 3 skipped; a hand value kept (rule 3); a listing move held (rule 6); one digest; exit red only on a fatal event</td></tr>
+        <tr><td>pytest, start lists</td><td>window edges with a URL-recording fake: D−5 23:59 → no URL; D−4 00:00 and D−1 23:59 → captured; D 00:00 and later → no URL; the same across the 25 Oct change; the reader refuses an out-of-window event called directly; a moved event follows D; one tournament fails → others stored; same list twice → one version; the last-attempt red only if the whole window captured nothing; the <code>store</code> fallback obeys the window; the ingest notice keyed on the FencingTimeLive link</td></tr>
+        <tr><td>pgTAP</td><td><code>fn_pzsz_apply_event</code>: compare-and-set keeps a concurrent hand edit; one event rolls back alone; provenance rows; grants deny anon/authenticated. D5: the PROD mirror overwrites a PZSz address and stays fill-blank for the rest.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="build">
+    <p class="kicker">16 · Build order &amp; rollout</p>
+    <h2>Start-list capture first — Gdańsk and Szczecin close on 23 October</h2>
+    <p>Research first per this repo’s gate (RAG for docs via <code>mcp__spws-docs__search</code>, the graph for code via <code>graphify</code>). Each piece is seen RED before its code. Pieces 1, 2 and 3 touch different files and can be built in parallel sessions, merged into this branch before piece 5.</p>
+    <ol class="steps">
+      <li><b>The fetcher + the start-list capture.</b> <code>pzsz_browser.py</code> (§6); <code>pzsz-start-lists.yml</code> (CERT-only, five runs/day, the window rule, partial stores, the reminders, the corrected ingest notice). Ship first so the capture runs on CERT inside this weekend’s window for Gdańsk and Szczecin.</li>
+      <li><b>The calendar run.</b> <code>pzsz_sync.py</code> rewritten (R1–R7, the §9 rules, the digest, fetch via <code>pzsz_browser.py</code>); <code>pzsz_sources.py</code>; the migration (three tables, <code>fn_pzsz_apply_event</code>, the backfill, the D5 mirror change), each SQL file through <code>postgrestools check</code>; the “Notify failure” step only when Python did not start.</li>
+      <li><b>The letter reader.</b> <code>pzsz_letter.py</code> (§8–§9), pure functions; the golden set from the 31 letters as masked copies; the operator reviews the expected-values sheet (30 rows; Katowice 2025/26 has none) before the mutation suite runs.</li>
+      <li><b>Documentation</b> (§17).</li>
+      <li><b>The whole branch:</b> <code>scripts/preflight.sh</code> exit 0 (it also installs Playwright’s Chromium for the fetcher tests), <code>scripts/refresh-graph.sh</code>, <code>python3 tools/docs-search/ingest.py</code>, one commit with explicit paths.</li>
+      <li><b>Dry run on CERT</b> (<code>--dry-run</code>): every decision for the future events printed, nothing written; the operator reads it.</li>
+      <li><b>Release</b> via the integration checkout (<code>integration/main:main</code>); CI, then Release: CERT, then PROD after the operator’s approval in GitHub.</li>
+      <li><b>Verify</b> on CERT and PROD: a dispatched run of each workflow green with the check on, the gated pages rendered; Gdańsk and Szczecin start lists captured on CERT; the outcomes in <code>tbl_pzsz_check</code>; the five events’ values on CERT and the same on PROD after <code>promote-calendar</code>.</li>
+    </ol>
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> This weekend, before the rest</p>
+      <p style="margin-bottom:0">Gdańsk (PPS1f, foil) and Szczecin (PPS1e, épée) both start <b>24 October</b>, so their start-list window is <b>20–23 October — open now</b>, and no list is stored. Ship piece 1 first and let the capture run, or use the hand fallback (§10) before midnight on 23 October. Also correct from the letters, on CERT, with the operator’s per-event sign-off: Gdańsk address “ul. VII Dwór 7” + fee 100 PLN + end date 24 Oct (one day); Szczecin address “ul. Narutowicza 17” + fee 100 PLN; and the past Poznań (PPS1s) address, wrong on CERT and PROD, to “ul. Pułaskiego 30” (D5 carries it to PROD). Until the rewrite is live, a readable-listing day could rewrite Gdańsk’s end date back to 25 Oct; if the release is not on PROD by 07:30 Warsaw on 22 Oct, pause the schedule (<code>gh workflow disable pzsz-sync.yml</code>, on the operator’s yes).</p>
+    </div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">17 · Documentation</p>
+    <h2>One new ADR, two amended, the handbook in present tense</h2>
+    <ul>
+      <li><b>ADR-116 (new)</b> — “The PZSz calendar works from our list, reads each gated page with a real browser engine, and reads each letter in independent passes.” Records §§2–14, and in particular the §6 decision (headless Chromium runs the page’s own JavaScript; a real browser reading a public page, not a forged bypass) with its bounds.</li>
+      <li><b>ADR-087 amended:</b> §4’s JavaScript-check refusal (6 Oct) <b>superseded</b> — the page is rendered by a real browser, a page that still will not render is a recorded state; the 7 Oct “keep dates once started” amendment <b>superseded</b> by D6; §7’s field table gains the fee and the letter’s dates; the source-owned dates follow the §9 ranks; the start-list capture becomes a second workflow.</li>
+      <li><b>ADR-112 amended:</b> §2 — its own workflow, rendered by the browser, five runs/day across the D−4…D−1 window, a partial read stores what it read; §5 — the notice keyed on the FencingTimeLive link; §3/§4 restated unchanged (CERT store feeds the CERT ingest; PROD promote replays by hash); §6 — the saved-page command stays as the hand fallback.</li>
+      <li><b>Relates to (unchanged):</b> ADR-088 (location contract — D3 extends it; noted), ADR-108 (promote as verified replay), ADR-081 (field ownership), ADR-083 (grants), ADR-078 (no personal data in the repo).</li>
+      <li><b>Governance:</b> spec Appendix C rows for 116/087/112; RTM rows for the §2 rules; pgTAP and test totals in Appendix D set from the observed run.</li>
+      <li><b>Handbook:</b> the PZSz calendar subsystem page, the workflow catalog (both workflows), and the operations page (reminders, the saved-page fallback).</li>
+    </ul>
+  </section>
+
+  <section id="causes">
+    <p class="kicker">18 · The thirteen causes → where each is fixed</p>
+    <h2>Every failure on the findings page, closed</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Cause</th><th>Fixed by</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>the check page on the listing stops the run</td><td>the browser renders it (§6); our list first; a page unrendered is a warning, not fatal</td></tr>
+        <tr><td>2</td><td>a transient 5xx, no retry</td><td>retries, then recorded (§7)</td></tr>
+        <tr><td>3</td><td>one bad row raises</td><td>rows parsed one by one (§11)</td></tr>
+        <tr><td>4</td><td>the capture fails on the check; one bad page stores nothing</td><td>§10: the browser renders the pages; partial stores; shipped first this weekend</td></tr>
+        <tr><td>5</td><td>a check page read as an empty listing</td><td>recognised before parsing; no “gone” verdict without a rendered listing (§11)</td></tr>
+        <tr><td>6</td><td>the first “ul.” line taken (payee)</td><td>pass 2 scoring (§9); the §16 Poznań correction</td></tr>
+        <tr><td>7</td><td>hall+street on one line, or a value on the next line, not read</td><td>pass 2 line-joining and generators (§9)</td></tr>
+        <tr><td>8</td><td>listing dates override everything and revert hand edits</td><td>pass 4 + §9 ranks/rules 3–6 (D1)</td></tr>
+        <tr><td>9</td><td>the fee never read</td><td>pass 3 (§9, D4)</td></tr>
+        <tr><td>10</td><td>past events scraped</td><td>rule 2 / D6 — nothing read from D onward; a test asserts no request</td></tr>
+        <tr><td>11</td><td>writes not atomic</td><td><code>fn_pzsz_apply_event</code>, one transaction per event (§9, §14)</td></tr>
+        <tr><td>12</td><td>two Telegrams per failed day</td><td>one digest; “Notify failure” only when Python did not start (§12)</td></tr>
+        <tr><td>13</td><td>the ingest notice fires on any <code>url_event</code></td><td>§10: keyed on your FencingTimeLive link, CERT-only check</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">Sources. Letters: 31 PDFs from <code>pzszerm.pl/test/fileDownload.php</code> (links in <code>python/tests/fixtures/pzsz_calendar_pps_*.html</code>, CERT <code>url_invitation</code>, and <code>pzsz_komunikat_mps.pdf</code>), read with pypdf in plain and layout modes. The real-browser render was confirmed in the desktop app’s browser pane on 21 October (Gdańsk men’s foil, 58 fencers). Code read: <code>python/scrapers/pzsz_sync.py</code>, <code>pzsz_calendar.py</code>, <code>pzsz_start_list.py</code>, <code>pzsz_start_list_store.py</code>, <code>_location.py</code>; <code>python/pipeline/promote.py</code>, <code>promotion/replay.py</code>, <code>promotion/plan.py</code>; <code>supabase/migrations/20261006000003_prod_mirror_pzsz_identity.sql</code>. ADRs 087, 108, 111, 112, 088. Companion findings: <code>doc/plans/pzsz-calendar-events-findings-2026-10-21.html</code>.</p>
+</div>
