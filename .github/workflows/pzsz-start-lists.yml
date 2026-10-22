@@ -1,0 +1,84 @@
+name: PZSz Start Lists → CERT
+
+# A PZSz start list exists only from four days before an event's first day to
+# one day before it (D-4..D-1), and is closed from day D. Its birth years are
+# what the PZSz admission compares (ADR-111), so a missed window stops the
+# result ingest. This workflow captures every in-window event's start lists to
+# CERT, by a real browser engine that runs pzszerm.pl's own JavaScript check
+# (ADR-116 §6), five times a day so a list that appears at any hour is caught.
+#
+# SEPARATE FROM pzsz-sync.yml, ON ITS OWN SCHEDULE. The calendar sync runs once
+# a day; the start-list window needs several attempts a day and its own
+# red/green. CERT ONLY — it writes no PROD and joins no prod-write queue;
+# PROD receives start lists only through the verified promote replay
+# (ADR-108, ADR-112 §4).
+#
+# WINDOW, TWO INDEPENDENT CHECKS (ADR-112 §2). "Today" is the Warsaw date at run
+# time (zoneinfo Europe/Warsaw), so the 25 October clock change cannot shift
+# it. The five crons are set in UTC so every attempt lands between 06:00 and
+# 21:00 Warsaw in both summer (UTC+2 → 07:00..21:00) and winter time
+# (UTC+1 → 06:00..20:00), never after midnight into day D. Check 1 is the run's
+# selection (select_window_events); check 2 is the reader
+# (read_event_start_lists_for_capture), which refuses any page of an
+# out-of-window event whoever asks.
+
+on:
+  schedule:
+    - cron: '0 5 * * *'   # first run  — 06:00/07:00 Warsaw
+    - cron: '0 9 * * *'   #            — 10:00/11:00 Warsaw
+    - cron: '0 13 * * *'  #            — 14:00/15:00 Warsaw
+    - cron: '0 17 * * *'  #            — 18:00/19:00 Warsaw
+    - cron: '0 19 * * *'  # final run  — 20:00/21:00 Warsaw
+  workflow_dispatch:
+
+# ADR-083: least-privilege GITHUB_TOKEN.
+permissions:
+  contents: read
+
+# One capture at a time; a run is never cancelled in flight (an idempotent
+# store makes overlap harmless, but there is no reason to pay for it twice).
+concurrency:
+  group: pzsz-start-lists
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: Capture start lists → CERT
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      # httpx + beautifulsoup4 for the CERT Management API and the parsers;
+      # playwright drives the headless Chromium that renders the gated pages.
+      - name: Install dependencies
+        run: pip install httpx beautifulsoup4 playwright
+
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+
+      # The cron that fired decides whether this is the day's first run (the
+      # window-open notice) or its last (the red line if a list is still
+      # missing). A manual run is neither.
+      - name: Capture PZSz start lists → CERT
+        env:
+          # github.event.schedule is one of this workflow's own cron strings
+          # (or empty for a manual run); read it via env, never interpolated
+          # into the shell, so there is no injection surface.
+          SCHEDULE: ${{ github.event.schedule }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          FLAGS=""
+          case "$SCHEDULE" in
+            "0 5 * * *")  FLAGS="--first-run" ;;
+            "0 19 * * *") FLAGS="--final-run" ;;
+          esac
+          python -m python.scrapers.pzsz_start_list_store capture $FLAGS

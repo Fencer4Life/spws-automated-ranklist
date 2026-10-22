@@ -20,7 +20,7 @@ import re
 import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from bs4 import BeautifulSoup, Tag
 
@@ -41,6 +41,33 @@ class PzszPageError(RuntimeError):
 class PzszGateError(PzszPageError):
     """pzszerm.pl answered with its JavaScript gate. It is on for every page
     while it is on, so a reader stops at the first one (ADR-112 §2)."""
+
+
+class PzszWindowError(PzszPageError):
+    """An event's start list was asked for outside its D-4..D-1 window. The
+    list does not exist before D-4 and is closed from day D, so the reader
+    refuses the request before any page is fetched (ADR-112 §2, check 2)."""
+
+
+# A PZSz start list exists from four days before the event's first day to one
+# day before it, and is closed from day D (ADR-111, ADR-112 §3).
+WINDOW_OPEN_DAYS_BEFORE = 4
+WINDOW_CLOSE_DAYS_BEFORE = 1
+
+
+def start_list_window(first_day: date) -> tuple[date, date]:
+    """The inclusive D-4..D-1 window in which a PZSz start list exists."""
+    return (
+        first_day - timedelta(days=WINDOW_OPEN_DAYS_BEFORE),
+        first_day - timedelta(days=WINDOW_CLOSE_DAYS_BEFORE),
+    )
+
+
+def in_start_list_window(first_day: date, today: date) -> bool:
+    """True only on D-4, D-3, D-2, D-1 (``today`` is the Warsaw date at run
+    time). Never before the list exists, never on or after day D."""
+    opens, closes = start_list_window(first_day)
+    return opens <= today <= closes
 
 
 @dataclass(frozen=True)
@@ -76,13 +103,21 @@ def _cells(row: Tag) -> list[str]:
     return [" ".join(c.get_text(" ").split()) for c in row.find_all(["td", "th"])]
 
 
-def refuse_js_check(html: str) -> None:
-    """Raise when pzszerm.pl answered with its JavaScript check (a page with
-    the `pzs-m` message and no table) instead of the page asked for. Every
-    PZSz reader calls it: the start lists, the event pages and the calendar
-    listing. Nothing tries to get past the check."""
+def is_js_check(html: str) -> bool:
+    """True when pzszerm.pl answered with its JavaScript check — the `pzs-m`
+    message and no table — instead of the page asked for. This is the one
+    definition of the gate: the browser fetcher (ADR-116) reloads while it is
+    true, and the readers refuse a page that is."""
     soup = BeautifulSoup(html, "html.parser")
-    if soup.find(id="pzs-m") is not None and soup.find("table") is None:
+    return soup.find(id="pzs-m") is not None and soup.find("table") is None
+
+
+def refuse_js_check(html: str) -> None:
+    """Raise when the page is pzszerm.pl's JavaScript check
+    (:func:`is_js_check`) instead of the page asked for. Every PZSz reader
+    calls it: the start lists, the event pages and the calendar listing.
+    Nothing tries to get past the check."""
+    if is_js_check(html):
         raise PzszGateError(
             "pzszerm.pl answered with its JavaScript check instead of the page; "
             "nothing was read. Run it again later."
@@ -185,3 +220,61 @@ def read_event_start_lists(
         page = fetch(PZSZ_TOURNAMENT_PAGE, {"id": t.id_pzsz_tournament})
         lists[key] = (t, parse_start_list(page))
     return lists
+
+
+@dataclass(frozen=True)
+class EventStartLists:
+    """One capture attempt at an event: the tournaments whose start list was
+    read, keyed by (weapon, gender), and the ones that were not, each with the
+    reason. ``missing`` being non-empty is not a failure — another attempt in
+    the same window catches the stragglers (ADR-112 §2)."""
+
+    captured: dict[tuple[str, str], tuple[PzszTournament, list[Starter]]]
+    missing: list[tuple[PzszTournament, str]]
+
+
+def read_event_start_lists_for_capture(
+    id_pzsz_event: int,
+    fetch: Callable[[str, dict], str],
+    *,
+    first_day: date,
+    today: date,
+) -> EventStartLists:
+    """The capture's best-effort read of a PZSz event's start lists, inside
+    its window only.
+
+    Check 2 of the window rule (ADR-112 §2): the event's first day is re-read
+    from CERT each run, and this reader refuses — before fetching any page —
+    an event whose window is closed, whoever asked. A bug in the run's
+    selection (check 1) therefore cannot cause a request outside the window.
+
+    Unlike :func:`read_event_start_lists` (the ingest's all-or-nothing read),
+    one tournament page that will not render does not drop the others: its
+    list is named in ``missing`` and the rest are captured. The event page
+    itself not rendering serves nothing (there are no ids to read), so that
+    raises, and the whole event is 'not served' for this attempt."""
+    if not in_start_list_window(first_day, today):
+        opens, closes = start_list_window(first_day)
+        raise PzszWindowError(
+            f"PZSz event {id_pzsz_event} is outside its start-list window "
+            f"({opens}..{closes}); today is {today}. Nothing was requested."
+        )
+    tournaments = parse_event_tournaments(fetch(PZSZ_EVENT_PAGE, {"id": id_pzsz_event}))
+    captured: dict[tuple[str, str], tuple[PzszTournament, list[Starter]]] = {}
+    missing: list[tuple[PzszTournament, str]] = []
+    for t in tournaments:
+        key = (t.weapon, t.gender)
+        if key in captured:
+            missing.append(
+                (
+                    t,
+                    f"two {t.weapon}/{t.gender} tournaments; which list belongs to which cannot be told",
+                )
+            )
+            continue
+        try:
+            page = fetch(PZSZ_TOURNAMENT_PAGE, {"id": t.id_pzsz_tournament})
+            captured[key] = (t, parse_start_list(page))
+        except PzszPageError as exc:
+            missing.append((t, str(exc)))
+    return EventStartLists(captured, missing)
