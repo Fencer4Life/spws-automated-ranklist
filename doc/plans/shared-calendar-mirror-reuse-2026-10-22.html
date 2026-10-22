@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One mirror, fired by every sync</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+
+  pre.code{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:14.5px;line-height:1.6;color:var(--ink)}
+  pre.code b{color:var(--good)}
+  pre.code .c{color:var(--faint)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:66ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">CERT → PROD · CI workflows · Implementation Plan</p>
+  <h1>One mirror, fired by every sync</h1>
+  <p class="dek">The CERT→PROD calendar mirror is <b>copy-pasted into every sync</b>, and a value changed on CERT only reaches PROD on evf-sync's once-a-day cron. Extract <b>one reusable workflow</b> that evf-sync, pzsz-sync and any future FIE sync all call — right after each writes CERT.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Plan — awaiting sign-off</span>
+    <span class="pill">new <code>promote-calendar.yml</code> (<code>workflow_call</code>)</span>
+    <span class="pill warn"><span class="dot"></span>rewires evf-sync + pzsz-sync</span>
+    <span class="pill good"><span class="dot"></span>no logic change — CI wiring only</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">The symptom you hit</p>
+    <h2>Why the PROD fee is blank — and it is not a bug</h2>
+    <p>The entry fee is set on CERT and absent on PROD for one reason: <b>the mirror that carries it has not run since you set it.</b></p>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>CERT <code>num_entry_fee</code></th><th>CERT set at (UTC)</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>PPS1f-2026-2027</td><td>100 PLN</td><td><code>2026-10-21 18:45:35</code></td><td><span class="chip warn">null</span></td></tr>
+        <tr><td>PPS1e-2026-2027</td><td>100 PLN</td><td><code>2026-10-21 18:48:22</code></td><td><span class="chip warn">null</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note accent">
+      <p class="lede"><span class="tick">⏱</span> A seven-hour miss</p>
+      <p>The last successful calendar mirror (evf-sync) ran <b>2026-10-21 11:23 UTC</b>. You set the fee at <b>18:45–18:48 UTC</b> — <b>~7 hours later</b>. No mirror has run since. The mechanism is sound: <code>fn_mirror_events_to_prod</code> fills a blank PROD fee from CERT (<code>COALESCE(num_entry_fee, cert_value)</code>), and <code>promote_calendar</code> sends <em>every</em> active event each run. It simply has not fired after your edit.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">!</span> The real gap: the mirror is cron-only, and only on <em>one</em> workflow's clock</p>
+      <p><b>evf-sync</b> mirrors CERT→PROD on its daily 06:00 UTC cron (and around its scrape). <b>pzsz-sync</b> has its own copy that runs on <em>its</em> cron. A hand edit to CERT between runs — or a value a sync writes to CERT — waits for the next cron. That is exactly the stranded fee.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The duplication</p>
+    <h2>The same job, pasted three times</h2>
+    <p>The mirror's <em>logic</em> is already one module — <code>python/pipeline/promote.py --mode calendar</code> calling the one RPC <code>fn_mirror_events_to_prod</code>. What is duplicated is the <b>CI wrapper</b>: a ~70-line GitHub job, copied verbatim into three places, differing only by a label string and an <code>if:</code> gate.</p>
+
+    <div class="tablewrap"><table>
+      <thead><tr><th>Workflow · job</th><th>Runs</th><th>Identical to the others?</th></tr></thead>
+      <tbody>
+        <tr><td><code>evf-sync.yml</code> · <code>promote-calendar-pre</code></td><td>before the EVF scrape</td><td>yes — label + <code>if</code> differ</td></tr>
+        <tr><td><code>evf-sync.yml</code> · <code>promote-calendar</code></td><td>after the EVF scrape</td><td>yes — label + <code>if</code> differ</td></tr>
+        <tr><td><code>pzsz-sync.yml</code> · <code>promote-calendar</code></td><td>after the PZSz scrape</td><td>yes — label + <code>if</code> differ</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">△</span> A future FIE sync is a fourth copy — and copies drift</p>
+      <p>Each copy carries the same delicate <code>concurrency: prod-write · queue: max</code> block, whose own in-file comment warns that a single member missing <code>queue: max</code> silently cancels a sibling's pending promote. Three hand-maintained copies of a trap is the defect to remove, not add a fourth to.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">The fix</p>
+    <h2>One reusable workflow, called with <code>uses:</code></h2>
+    <p>Add <code>.github/workflows/promote-calendar.yml</code> with <code>on: workflow_call</code>. It holds the single mirror job — the <code>prod-write</code> concurrency, the <code>promote --mode calendar</code> step, the reconcile-log commit, the Telegram-on-failure — with the only varying piece, the label, as an input. Every sync calls it and passes its label and secrets.</p>
+
+    <pre class="code"><span class="c"># .github/workflows/promote-calendar.yml  (the one definition)</span>
+on:
+  workflow_call:
+    inputs:
+      label: { type: string, required: true }   <span class="c"># "EVF" · "EVF pre-scrape" · "PZSz" · "FIE"</span>
+    secrets:
+      SUPABASE_ACCESS_TOKEN: { required: true }
+      SUPABASE_CERT_REF: { required: true }
+      SUPABASE_PROD_REF: { required: true }
+      SUPABASE_CERT_SERVICE_ROLE_KEY: { required: true }
+      TELEGRAM_BOT_TOKEN: { required: true }
+      TELEGRAM_CHAT_ID: { required: true }
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }            <span class="c"># reconcile-log commit/push</span>
+    concurrency: { group: prod-write, cancel-in-progress: false, queue: max }
+    steps: [ checkout · setup-python · pip install httpx supabase ·
+             <b>run: python -m python.pipeline.promote --mode calendar</b> ·
+             commit reconcile log · notify "${{ inputs.label }} promote FAILED" ]
+
+<span class="c"># every caller, after it writes CERT:</span>
+  promote-calendar:
+    needs: sync
+    if: ${{ !cancelled() &amp;&amp; ... }}            <span class="c"># caller keeps its own gate</span>
+    permissions: { contents: write }
+    uses: ./.github/workflows/promote-calendar.yml
+    with:    { label: "PZSz" }
+    secrets: inherit</pre>
+
+    <h3>Where it gets called</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Caller</th><th>When</th><th><code>if:</code> (stays on the caller)</th><th><code>label</code></th></tr></thead>
+      <tbody>
+        <tr><td>evf-sync — pre</td><td>before scrape</td><td><code>mode != 'results'</code></td><td>EVF pre-scrape</td></tr>
+        <tr><td>evf-sync — post</td><td>after scrape</td><td><code>!cancelled() &amp;&amp; mode != 'results'</code></td><td>EVF</td></tr>
+        <tr><td>pzsz-sync — post</td><td>after scrape</td><td><code>!cancelled() &amp;&amp; !dry_run</code></td><td>PZSz</td></tr>
+        <tr><td><em>future FIE — post</em></td><td>after scrape</td><td>same shape</td><td>FIE</td></tr>
+      </tbody>
+    </table></div>
+    <p>This is exactly your requirement: <b>one shared mirror</b>, and <b>every sync triggers it right after it updates CERT</b>. No sync waits for another's cron.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The details that make this safe</p>
+    <h2>GitHub Actions constraints — got right on purpose</h2>
+    <div class="note accent">
+      <p class="lede"><span class="tick">1</span> Concurrency lives in the shared file now</p>
+      <p>A job that calls a reusable workflow (<code>uses:</code>) cannot declare <code>steps</code> or job-level <code>concurrency</code>. So the <code>prod-write · queue: max</code> block moves <em>inside</em> the shared job — which is the point: the trap is defined once. Concurrency groups are repo-global by name, so <code>prod-write</code> still serialises against <code>promote.yml</code>, <code>promote-season.yml</code>, <code>event-close.yml</code> and the parity sweep, exactly as today.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">2</span> Permissions are intersected — pzsz-sync needs a bump</p>
+      <p>A called workflow's <code>contents: write</code> is capped by the caller's token. <code>evf-sync.yml</code> is already <code>contents: write</code> at the top. <code>pzsz-sync.yml</code> is <code>contents: read</code> — so its calling job gets <code>permissions: { contents: write }</code>, or the reconcile-log push fails.</p>
+    </div>
+    <div class="note accent">
+      <p class="lede"><span class="tick">3</span> <code>mode</code> / <code>dry_run</code> gating stays on the caller</p>
+      <p>A called workflow cannot read the caller's <code>github.event.inputs</code>. That is fine — the <code>if:</code> gates already belong on the calling job (the table above), so each sync decides for itself whether to fire the mirror. <code>secrets: inherit</code> passes all six secrets with no re-listing.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Out of scope — deliberately</p>
+    <h2>Start lists are not part of this mirror</h2>
+    <p>The <code>pzsz-start-lists.yml</code> workflow writes <code>tbl_pzsz_start_list</code> on CERT, which reaches PROD by <b>hash replay in <code>promote_event</code></b> (ADR-108/112), not by the calendar mirror. It does <b>not</b> call <code>promote-calendar.yml</code>. The two PZSz workflows stay separate, as you decided. This plan touches only the <b>calendar</b> path (<code>tbl_event</code> via <code>fn_mirror_events_to_prod</code>).</p>
+  </section>
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Two small calls — with my recommendation</h2>
+
+    <div class="note">
+      <p class="lede">Q1 · Does pzsz-sync also get a <em>pre</em>-scrape mirror call, like evf-sync?</p>
+      <p><b>Recommendation: no — post-only.</b> pzsz-sync's post-scrape call already runs on <code>!cancelled()</code>, so a failed scrape still promotes whatever is already on CERT. A pre-call only narrows the window further; evf-sync's daily pre+post already converges the whole set. Keep pzsz-sync to one call to minimise PROD writes; add a pre later if ever needed.</p>
+    </div>
+
+    <div class="note">
+      <p class="lede">Q2 · The stranded fee — fix it now, or let it self-heal?</p>
+      <p><b>Recommendation: fix it now.</b> The next scheduled evf-sync (~06:00–11:00 UTC today) will carry the 100 PLN to PROD on its own. If you don't want to wait, say the word and I'll dispatch <code>evf-sync</code> (calendar mode) — it writes PROD, so the classifier needs your go. ~4 min, then I verify PROD shows <code>100 / PLN</code>. This is independent of signing off the refactor.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Build order</p>
+    <h2>Steps, test-first where there is logic to test</h2>
+    <ol class="steps">
+      <li>Write <code>.github/workflows/promote-calendar.yml</code> (<code>workflow_call</code>, <code>label</code> input, six secrets, the <code>prod-write · queue:max</code> job, parameterised Telegram + commit strings). Lint with <code>actionlint</code> if available.</li>
+      <li>Rewire <code>evf-sync.yml</code>: its two promote jobs become <code>uses:</code> calls (<code>label: "EVF pre-scrape"</code> / <code>"EVF"</code>), keeping their existing <code>needs:</code> / <code>if:</code> / <code>permissions</code>.</li>
+      <li>Rewire <code>pzsz-sync.yml</code>: its promote job becomes a <code>uses:</code> call (<code>label: "PZSz"</code>); add <code>permissions: { contents: write }</code> to that calling job.</li>
+      <li>Document the FIE pattern — one <code>uses:</code> block — on the workflow-catalog handbook page, so the next sync is a four-line add.</li>
+      <li><code>scripts/preflight.sh</code> to exit 0; commit on <code>claude/pzsz-calendar-update-fix</code>, explicit paths only.</li>
+      <li>Release via the integration checkout (<code>integration/main:main</code>); watch CI and Release to green.</li>
+      <li>Verify: dispatch <code>evf-sync</code> and <code>pzsz-sync</code> (calendar); confirm each run shows a <code>promote-calendar.yml</code> called job, and PROD <code>num_entry_fee = 100</code> for the PPS1e/PPS1f rows.</li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="kicker">Documentation coherence gate</p>
+    <h2>What the docs must say after</h2>
+    <ul>
+      <li><b>ADR-116 amendment</b> — the calendar mirror is a single reusable workflow (<code>promote-calendar.yml</code>) invoked by every CERT-writing sync immediately after its CERT write, replacing the per-sync copies.</li>
+      <li><b>Handbook</b> — <code>reference/workflow-catalog.html</code> (new reusable workflow + the FIE call pattern) and <code>operations/environments-and-release.html</code> (how a CERT change reaches PROD) in present tense.</li>
+      <li><code>render_adrs.py</code> / <code>render_docs.py</code> twins regenerated; <code>check_docs.py</code> clean; graph + docs-search reindex before the commit.</li>
+    </ul>
+    <div class="note good">
+      <p class="lede"><span class="tick">▸</span> Low blast radius</p>
+      <p>No Python, no SQL, no migration — the mirror logic is unchanged. This is YAML de-duplication plus one permissions bump. The verification run proves the shared job fires from both syncs and the fee lands.</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    doc/plans/shared-calendar-mirror-reuse-2026-10-22.html · branch claude/pzsz-calendar-update-fix · amends ADR-116
+  </div>
+
+</div>
+</body>
+</html>

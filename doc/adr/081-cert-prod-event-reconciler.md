@@ -111,9 +111,9 @@ pytest `test_promote.py`, `test_promote_season.py`, `test_reconcile_report.py`.
 ## See also
 
 - **System explainer:** `doc/plans/evf-calendar-sync-how-it-works.html` — end-to-end
-  walkthrough of how EVF calendar sync works now (architecture diagram, the three-job
-  `evf-sync.yml` bracket, the reconciler's create/update/delete diff, the active-season
-  guard, and the 2026-07-14 incident that hardened both).
+  walkthrough of how EVF calendar sync works now (architecture diagram, the `evf-sync.yml` scrape-then-mirror bracket, the reconciler's create/update/delete diff,
+  the active-season guard, and the 2026-07-14 incident that hardened both). The mirror job
+  itself is now the shared reusable workflow `promote-calendar.yml` (amendment 2026-10-22).
 
 ## Amendment (2026-08-28) — the reconciler carries the planning lifecycle
 
@@ -133,3 +133,14 @@ DETAIL: Key (id_season, id_prior_event)=(4, 66) already exists.
 ```
 
 The same transient-collision class the code-rename staging already solves; it simply was not extended when `id_prior_event` began being carried. The pre-pass now releases a link **when another event in the same payload is claiming it** — narrow on purpose, because the UPDATE is `COALESCE(new, old)`, so clearing on a payload that merely says nothing would silently destroy a link PROD holds and CERT never mentioned. Pinned by 63.5.
+
+
+## Amendment (2026-10-22) — one shared mirror, fired by every sync
+
+The mirror was invoked by a GitHub Actions job copy-pasted into each sync: two in `evf-sync.yml` (a pre-scrape converge and a post-scrape one) and one in `pzsz-sync.yml`, each a ~70-line duplicate of the same `prod-write` / `queue: max` job. A CERT change therefore reached PROD only on the cron of whichever sync next ran its copy — a fee hand-set on CERT on 2026-10-21 sat unmirrored because that day's mirror had already run hours earlier.
+
+The mirror job is now one reusable workflow, `.github/workflows/promote-calendar.yml` (`on: workflow_call`, with a `label` input for the reconcile-commit and failure-alert text). Every sync that writes `tbl_event` on CERT — `evf-sync.yml`, `pzsz-sync.yml`, and any future organizer sync — calls it with `uses:` immediately after its scrape, passing `secrets: inherit` and `permissions: contents: write`, so that sync's own calendar changes converge to PROD in the same run instead of waiting for another workflow's cron. The `prod-write` / `queue: max` concurrency lives once, inside the reusable job (a `uses:` caller cannot declare job-level concurrency), so it can no longer drift between copies. evf-sync's redundant pre-scrape call is dropped: the post-scrape call already runs on `!cancelled()`, so a failed scrape still promotes whatever is already on CERT.
+
+Scope unchanged — the calendar only (`fn_mirror_events_to_prod`). Start lists reach PROD by hash replay in `promote_event` (ADR-108/112), so `pzsz-start-lists.yml` does not call this workflow. No change to the reconciler's diff, its field-ownership split, or the season guard.
+
+**Source:** `doc/plans/shared-calendar-mirror-reuse-2026-10-22.html`, `.github/workflows/promote-calendar.yml`, `.github/workflows/evf-sync.yml`, `.github/workflows/pzsz-sync.yml`.
