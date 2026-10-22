@@ -4,21 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="081-cert-prod-event-reconciler.md">
-<meta name="adr-source-sha256" content="0c93afca86d8a7647f4bbf408e7fc45fa08cf9af365064c5fc358135f9d02483">
+<meta name="adr-source-sha256" content="e75519af0f4fad9eff413d9a8f8a3c011610dbef105735af9fd93cb53b84cbdd">
 <title>ADR-081 · CERT→PROD Event Reconciler</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 081</p><h1>CERT→PROD Event Reconciler</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-07-11, shipped to CERT+PROD)</dd></div><div><dt>Date</dt><dd class="">2026-07-11</dd></div><div><dt>Source</dt><dd class=""><code>081-cert-prod-event-reconciler.md</code></dd></div><div><dt>Length</dt><dd class="">135 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (2026-07-11, shipped to CERT+PROD)</dd></div><div><dt>Date</dt><dd class="">2026-07-11</dd></div><div><dt>Source</dt><dd class=""><code>081-cert-prod-event-reconciler.md</code></dd></div><div><dt>Length</dt><dd class="">146 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (2026-07-11, shipped to CERT+PROD)
 <strong>Date:</strong> 2026-07-11
 <strong>Source:</strong> CERT→PROD calendar promotion (spec §; migrations <code>20260711000001</code>, <code>20260711000002</code>). Supersedes the calendar-delta half of ADR-026; amends ADR-028, ADR-039 (rev 3), ADR-077.</p>
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-organizer-agnostic-verified-from-source">1. Organizer-agnostic, verified from source</a></li><li class="depth-3"><a href="#2-whole-set-diff-no-code-filter">2. Whole-set diff, no code filter</a></li><li class="depth-3"><a href="#3-field-ownership-split-update">3. Field-ownership split (UPDATE)</a></li><li class="depth-3"><a href="#4-guarded-delete">4. Guarded DELETE</a></li><li class="depth-3"><a href="#5-create-is-childless">5. CREATE is childless</a></li><li class="depth-3"><a href="#6-active-season-mismatch-guard">6. Active-season-mismatch guard</a></li><li class="depth-3"><a href="#7-run-log">7. Run log</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#see-also">See also</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-reconciler-carries-the-planning-lifecycle">Amendment (2026-08-28) — the reconciler carries the planning lifecycle</a></li><li class="depth-2"><a href="#amendment-2026-08-29-a-prior-event-link-is-released-before-it-is-reassigned">Amendment (2026-08-29) — a prior-event link is released before it is reassigned</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-organizer-agnostic-verified-from-source">1. Organizer-agnostic, verified from source</a></li><li class="depth-3"><a href="#2-whole-set-diff-no-code-filter">2. Whole-set diff, no code filter</a></li><li class="depth-3"><a href="#3-field-ownership-split-update">3. Field-ownership split (UPDATE)</a></li><li class="depth-3"><a href="#4-guarded-delete">4. Guarded DELETE</a></li><li class="depth-3"><a href="#5-create-is-childless">5. CREATE is childless</a></li><li class="depth-3"><a href="#6-active-season-mismatch-guard">6. Active-season-mismatch guard</a></li><li class="depth-3"><a href="#7-run-log">7. Run log</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#see-also">See also</a></li><li class="depth-2"><a href="#amendment-2026-08-28-the-reconciler-carries-the-planning-lifecycle">Amendment (2026-08-28) — the reconciler carries the planning lifecycle</a></li><li class="depth-2"><a href="#amendment-2026-08-29-a-prior-event-link-is-released-before-it-is-reassigned">Amendment (2026-08-29) — a prior-event link is released before it is reassigned</a></li><li class="depth-2"><a href="#amendment-2026-10-22-one-shared-mirror-fired-by-every-sync">Amendment (2026-10-22) — one shared mirror, fired by every sync</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p>The CERT→PROD calendar-promotion path (<code>python/pipeline/promote.py::promote_calendar</code> →
 <code>fn_import_evf_events</code>, the ADR-026 amendment) was written as an <strong>EVF special-case</strong>
@@ -110,9 +110,9 @@ pytest <code>test_promote.py</code>, <code>test_promote_season.py</code>, <code>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="see-also">See also</h2>
 <ul>
 <li><strong>System explainer:</strong> <code>doc/plans/evf-calendar-sync-how-it-works.html</code> — end-to-end
-walkthrough of how EVF calendar sync works now (architecture diagram, the three-job
-<code>evf-sync.yml</code> bracket, the reconciler's create/update/delete diff, the active-season
-guard, and the 2026-07-14 incident that hardened both).</li>
+walkthrough of how EVF calendar sync works now (architecture diagram, the <code>evf-sync.yml</code> scrape-then-mirror bracket, the reconciler's create/update/delete diff,
+the active-season guard, and the 2026-07-14 incident that hardened both). The mirror job
+itself is now the shared reusable workflow <code>promote-calendar.yml</code> (amendment 2026-10-22).</li>
 </ul>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-08-28-the-reconciler-carries-the-planning-lifecycle">Amendment (2026-08-28) — the reconciler carries the planning lifecycle</h2>
@@ -126,8 +126,14 @@ guard, and the 2026-07-14 incident that hardened both).</li>
 DETAIL: Key (id_season, id_prior_event)=(4, 66) already exists.
 </code></pre>
 <p>The same transient-collision class the code-rename staging already solves; it simply was not extended when <code>id_prior_event</code> began being carried. The pre-pass now releases a link <strong>when another event in the same payload is claiming it</strong> — narrow on purpose, because the UPDATE is <code>COALESCE(new, old)</code>, so clearing on a payload that merely says nothing would silently destroy a link PROD holds and CERT never mentioned. Pinned by 63.5.</p>
+</section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-22-one-shared-mirror-fired-by-every-sync">Amendment (2026-10-22) — one shared mirror, fired by every sync</h2>
+<p>The mirror was invoked by a GitHub Actions job copy-pasted into each sync: two in <code>evf-sync.yml</code> (a pre-scrape converge and a post-scrape one) and one in <code>pzsz-sync.yml</code>, each a ~70-line duplicate of the same <code>prod-write</code> / <code>queue: max</code> job. A CERT change therefore reached PROD only on the cron of whichever sync next ran its copy — a fee hand-set on CERT on 2026-10-21 sat unmirrored because that day's mirror had already run hours earlier.</p>
+<p>The mirror job is now one reusable workflow, <code>.github/workflows/promote-calendar.yml</code> (<code>on: workflow_call</code>, with a <code>label</code> input for the reconcile-commit and failure-alert text). Every sync that writes <code>tbl_event</code> on CERT — <code>evf-sync.yml</code>, <code>pzsz-sync.yml</code>, and any future organizer sync — calls it with <code>uses:</code> immediately after its scrape, passing <code>secrets: inherit</code> and <code>permissions: contents: write</code>, so that sync's own calendar changes converge to PROD in the same run instead of waiting for another workflow's cron. The <code>prod-write</code> / <code>queue: max</code> concurrency lives once, inside the reusable job (a <code>uses:</code> caller cannot declare job-level concurrency), so it can no longer drift between copies. evf-sync's redundant pre-scrape call is dropped: the post-scrape call already runs on <code>!cancelled()</code>, so a failed scrape still promotes whatever is already on CERT.</p>
+<p>Scope unchanged — the calendar only (<code>fn_mirror_events_to_prod</code>). Start lists reach PROD by hash replay in <code>promote_event</code> (ADR-108/112), so <code>pzsz-start-lists.yml</code> does not call this workflow. No change to the reconciler's diff, its field-ownership split, or the season guard.</p>
+<p><strong>Source:</strong> <code>doc/plans/shared-calendar-mirror-reuse-2026-10-22.html</code>, <code>.github/workflows/promote-calendar.yml</code>, <code>.github/workflows/evf-sync.yml</code>, <code>.github/workflows/pzsz-sync.yml</code>.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="080-clean-roster-ftl-seeding.html">← ADR-080: Clean-Roster FTL Seeding</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="082-markdown-source-generated-html-docs.html">→ ADR-082: Markdown-Source, Generated-HTML Documentation Standard</a></nav>
-<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>0c93afca86d8a7647f4bbf408e7fc45fa08cf9af365064c5fc358135f9d02483</code></footer>
+<footer class="foot">Generated from <code>081-cert-prod-event-reconciler.md</code> · source SHA-256 <code>e75519af0f4fad9eff413d9a8f8a3c011610dbef105735af9fd93cb53b84cbdd</code></footer>
 </div></body></html>

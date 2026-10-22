@@ -25,86 +25,8 @@ permissions:
   contents: write   # commits + pushes the CERT->PROD reconcile run log
 
 jobs:
-  promote-calendar-pre:
-    name: Promote EVF calendar → PROD (pre-scrape)
-    # Converge PROD to CERT's current state BEFORE the scraper writes new
-    # rows, so a scrape failure never leaves PROD further behind than it
-    # needs to be, and any admin edits already sitting in CERT land on PROD
-    # even if the scrape step itself fails downstream. fn_mirror_events_to_prod
-    # is a full Create/Update/Delete converge keyed on txt_code -- a no-op
-    # when CERT and PROD already agree, so running it twice per workflow
-    # (pre and post) is safe.
-    if: ${{ github.event.inputs.mode != 'results' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: prod-write
-      cancel-in-progress: false
-      # queue: max on EVERY member of prod-write. The setting is per-job and
-      # GitHub queues only ONE pending job per group, cancelling the pending one
-      # when a new job arrives -- so a member without it can silently cancel a
-      # sibling's pending promote. Rationale in full: pzsz-sync.yml.
-      queue: max
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install httpx supabase
-
-      - name: Promote calendar CERT → PROD (pre-scrape)
-        run: python -m python.pipeline.promote --mode calendar
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
-          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
-          SUPABASE_CERT_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
-      - name: Commit reconcile run log
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add doc/staging/reconcile/*.md 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No reconcile report to commit"
-          else
-            git commit -m "chore: CERT→PROD reconcile run log (pre-scrape) [skip ci]"
-            for attempt in 1 2 3 4 5; do
-              if git push; then
-                break
-              fi
-              echo "Push rejected (attempt $attempt) -- fetching and rebasing"
-              git fetch origin main
-              git rebase origin/main
-              if [ "$attempt" = "5" ]; then
-                echo "::error::git push failed after 5 attempts"
-                exit 1
-              fi
-            done
-          fi
-
-      - name: Notify failure
-        if: failure()
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="EVF pre-scrape calendar promote FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
   sync:
     name: EVF Sync
-    needs: promote-calendar-pre
-    # Run regardless of promote-calendar-pre's outcome (skipped on
-    # mode=results, or even if it failed) -- a broken PROD promote must not
-    # block getting new events into CERT. Only a cancelled workflow run
-    # skips this job.
-    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -149,81 +71,23 @@ jobs:
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="EVF sync FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+  # The CERT→PROD calendar mirror is the shared reusable workflow
+  # promote-calendar.yml (one definition for every sync). It runs right after
+  # the scrape has written CERT, carrying this run's calendar changes to PROD.
   promote-calendar:
     name: Promote EVF calendar → PROD
     needs: sync
     # Run when mode ∈ {calendar, both} (default 'both' on cron), skip on
-    # results-only dispatch. !cancelled() is required, not cosmetic: GitHub
-    # Actions' default "needs" gate looks at the WHOLE ancestor chain, not
-    # just the direct need. Without it, a promote-calendar-pre failure
-    # (upstream of sync) silently skips this job too even though sync itself
-    # succeeded -- observed live 2026-07-14 (run 29309139092): sync landed
-    # 13 new CERT events but this job never ran to promote them to PROD.
+    # results-only dispatch. !cancelled() so a failed sync still promotes
+    # whatever is already on CERT -- a broken scrape must not strand admin
+    # edits or a prior run's committed events (observed 2026-07-14, run
+    # 29309139092: sync landed 13 events but the promote was skipped).
     if: ${{ !cancelled() && github.event.inputs.mode != 'results' }}
-    runs-on: ubuntu-latest
-    # contents: write so the run-report .md can be committed back to doc/staging.
+    # contents: write so the reusable workflow's reconcile-log push works
+    # (capped by the caller's token; top-level here is already write).
     permissions:
       contents: write
-    # Serialise with the manual per-event promote (promote.yml).
-    concurrency:
-      group: prod-write
-      cancel-in-progress: false
-      # queue: max on EVERY member of prod-write. The setting is per-job and
-      # GitHub queues only ONE pending job per group, cancelling the pending one
-      # when a new job arrives -- so a member without it can silently cancel a
-      # sibling's pending promote. Rationale in full: pzsz-sync.yml.
-      queue: max
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      # supabase-py is used to upload the run-report to the CERT staging-reports
-      # bucket (best-effort; the repo copy under doc/staging/reconcile always writes).
-      - name: Install dependencies
-        run: pip install httpx supabase
-
-      - name: Promote calendar CERT → PROD
-        run: python -m python.pipeline.promote --mode calendar
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_CERT_REF: ${{ secrets.SUPABASE_CERT_REF }}
-          SUPABASE_PROD_REF: ${{ secrets.SUPABASE_PROD_REF }}
-          SUPABASE_CERT_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
-      # Commit the human-readable reconcile run log (doc/staging/reconcile/{season}.{ts}Z.md),
-      # mirroring the per-event scrape reports. [skip ci] so it doesn't re-trigger CI.
-      - name: Commit reconcile run log
-        if: success()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add doc/staging/reconcile/*.md 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No reconcile report to commit"
-          else
-            git commit -m "chore: CERT→PROD reconcile run log [skip ci]"
-            for attempt in 1 2 3 4 5; do
-              if git push; then
-                break
-              fi
-              echo "Push rejected (attempt $attempt) -- fetching and rebasing"
-              git fetch origin main
-              git rebase origin/main
-              if [ "$attempt" = "5" ]; then
-                echo "::error::git push failed after 5 attempts"
-                exit 1
-              fi
-            done
-          fi
-
-      - name: Notify failure
-        if: failure()
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="EVF calendar promote FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    uses: ./.github/workflows/promote-calendar.yml
+    with:
+      label: EVF
+    secrets: inherit
