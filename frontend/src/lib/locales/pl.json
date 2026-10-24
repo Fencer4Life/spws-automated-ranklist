@@ -455,7 +455,7 @@
   "import_triggered_ok": "Import uruchomiony",
   "import_no_github": "Brak konfiguracji GitHub (PAT/repo)",
   "import_event_confirm": "Odkryć i importować wyniki wszystkich turniejów?",
-  "tooltip_import_event": "Importuj wyniki ze strony wydarzenia",
+  "tooltip_import_event": "Znajdź linki do wyników na stronie wydarzenia",
   "skip_ingestion": "pomiń import",
   "tooltip_skip_ingestion": "Pomiń źródło FTL tej rundy przy następnym imporcie",
   "reg_step1_title": "Krok 1 z 3 · Dane zawodnika",

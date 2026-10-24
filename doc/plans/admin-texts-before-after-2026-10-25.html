@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin texts before/after</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0 26px}
+  .pair.phone{grid-template-columns:repeat(2,minmax(0,300px))}
+  .pair figure{margin:0}
+  .pair img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  .pair figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  .stack{display:grid;gap:14px;margin:12px 0 26px}
+  .stack figure{margin:0}
+  .stack img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  .stack figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  @media (max-width:700px){.pair,.pair.phone{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">Admin UI · W2 #9 of the workflow page plan · before/after for your sign-off · 25 Oct 2026</p>
+  <h1>Two admin texts now say what has happened, and nothing else on the screens moves.</h1>
+  <p class="dek">The ⬇ on an event row finds result links; its tooltip said it imports results. The alias screen&rsquo;s last line said the report was regenerated and sent, when GitHub had only accepted the start. Only those two strings change. Every screen captured before and after is pixel-identical. Committed on the branch only; nothing goes to <code>main</code> before you sign off.</p>
+  <div class="meta">
+    <span class="pill">2 strings · 2 locales for the tooltip</span>
+    <span class="pill good"><span class="dot"></span>4 screens · 0 pixels changed</span>
+    <span class="pill good"><span class="dot"></span>tests 9.45r and 5.3.5 seen red, now green</span>
+    <span class="pill warn"><span class="dot"></span>1 finding: the Aliases screen is wider than a phone (before and after)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="texts">
+    <p class="kicker">§ 1 · the change</p>
+    <h2>The two texts</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Before</th><th>After</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Admin → Events, the ⬇ on an event row (tooltip, English)</td><td>Import results from event page</td><td><b>Find result links on the event page</b></td><td rowspan="2">The button starts <code>populate-urls.yml</code>, which writes each tournament&rsquo;s <code>url_results</code> and imports no result.</td></tr>
+        <tr><td>Same, Polish</td><td>Importuj wyniki ze strony wydarzenia</td><td><b>Znajdź linki do wyników na stronie wydarzenia</b></td></tr>
+        <tr><td>Admin → Fencers → Aliases, last line after &ldquo;Create new fencer&rdquo;</td><td>✓ PPW1-2026-2027/full.md regenerated · sent to Telegram</td><td><b>✓ PPW1-2026-2027/full.md regeneration started · the report arrives on Telegram</b></td><td>The call returns when GitHub accepts the start; <code>regen-report.yml</code> renders and sends the report afterwards and can still fail (it then sends its own failure message).</td></tr>
+      </tbody>
+    </table></div>
+    <p>The tooltip is a <code>title</code> attribute, shown on hover, so it leaves no pixels; it was read from the page instead. All 22 ⬇ buttons carry &ldquo;Import results from event page&rdquo; before and &ldquo;Find result links on the event page&rdquo; after in English, and the Polish pair above in Polish. On LOCAL the alias screen still shows its unchanged line &ldquo;regen skipped on LOCAL&rdquo;.</p>
+  </section>
+
+  <section id="banner">
+    <p class="kicker">§ 2 · the one visible change</p>
+    <h2>The alias screen&rsquo;s status banner</h2>
+    <p>Rendered by the real app after &ldquo;+ Create new fencer&rdquo; on the first unreviewed alias. Only the last line differs.</p>
+    <div class="stack"><figure><figcaption>BEFORE</figcaption><img loading="lazy" src="admin-texts-before-after-2026-10-25/banner-before.png" alt="BEFORE"></figure><figure><figcaption>AFTER</figcaption><img loading="lazy" src="admin-texts-before-after-2026-10-25/banner-after.png" alt="AFTER"></figure></div>
+  </section>
+
+  <section id="pixels">
+    <p class="kicker">§ 3 · no other change</p>
+    <h2>Every captured screen, compared pixel by pixel</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Screen</th><th>Viewport</th><th>Page size</th><th>Pixels changed</th></tr></thead>
+      <tbody>
+<tr><td>Admin → Events</td><td>1280px</td><td>1280 × 2157</td><td><b>0</b></td></tr>
+<tr><td>Admin → Events</td><td>375px</td><td>375 × 4829</td><td><b>0</b></td></tr>
+<tr><td>Admin → Fencers → Aliases</td><td>1280px</td><td>1280 × 2641</td><td><b>0</b></td></tr>
+<tr><td>Admin → Fencers → Aliases</td><td>375px</td><td>425 × 3521</td><td><b>0</b></td></tr>
+      </tbody>
+    </table></div>
+    <p>Full pages, light scheme, signed in as the LOCAL test admin. The Aliases captures show fencers&rsquo; admin details, so they stay out of the repository; only their numbers are here. The top of Admin → Events, before and after:</p>
+    <div class="pair"><figure><figcaption>BEFORE · 1280px</figcaption><img loading="lazy" src="admin-texts-before-after-2026-10-25/events-1280-before.png" alt="BEFORE · 1280px"></figure><figure><figcaption>AFTER · 1280px</figcaption><img loading="lazy" src="admin-texts-before-after-2026-10-25/events-1280-after.png" alt="AFTER · 1280px"></figure></div>
+    <div class="pair phone"><figure><figcaption>BEFORE · 375px</figcaption><img loading="lazy" src="admin-texts-before-after-2026-10-25/events-375-before.png" alt="BEFORE · 375px"></figure><figure><figcaption>AFTER · 375px</figcaption><img loading="lazy" src="admin-texts-before-after-2026-10-25/events-375-after.png" alt="AFTER · 375px"></figure></div>
+  </section>
+
+  <section id="how">
+    <p class="kicker">§ 4 · how this was captured</p>
+    <h2>Two builds, one LOCAL database, nothing written</h2>
+    <ul>
+      <li>BEFORE was built from the committed versions of the four changed files, AFTER from the working tree (<code>vite build</code>); the working tree was restored after each build.</li>
+      <li>Headless Chromium, no server: the harness answers every request to <code>localhost</code> from the build, and the app reads LOCAL Supabase as usual. <code>?admin=1</code> signs in the test admin that <code>scripts/reset-dev.sh</code> creates.</li>
+      <li>The banner needs the CERT/PROD path, so both banner builds set <code>VITE_DEPLOY_ENV=CERT</code>, which only switches the regen from &ldquo;skipped on LOCAL&rdquo; to a dispatch. The split RPC and the dispatch call were answered by the harness with a fixed result, so LOCAL was not written: it holds no fencer &ldquo;TESTOWY&rdquo; afterwards.</li>
+    </ul>
+  </section>
+
+  <section id="code">
+    <p class="kicker">§ 5 · the code</p>
+    <h2>What changed in the source</h2>
+    <ul>
+      <li><code>frontend/src/lib/locales/en.json</code>, <code>pl.json</code>: <code>tooltip_import_event</code>.</li>
+      <li><code>frontend/src/lib/api.ts</code>: <code>regenStagingReportStep(eventCode, result)</code>, the line the alias screen shows for one regen; <code>App.svelte</code> calls it instead of building the line inline.</li>
+      <li>Tests: <code>EventManager.test.ts</code> 9.45r (both locales and the rendered <code>title</code>), <code>api.regenStagingReport.test.ts</code> 5.3.5 (the started line, and the LOCAL line kept). Both seen red first. Vitest 1247/1247; svelte-check 0 errors, 0 warnings.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 6 · decide this</p>
+    <h2>One sign-off, one finding</h2>
+    <p>Found while capturing: at 375px the Aliases screen is 425px wide, so a phone scrolls sideways. It is the same before and after this change; nothing here caused it. A UI change waits for your word, so it is a question here.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>T1</b></td><td>The two texts as shown</td><td><b>A</b> accept; they go to <code>main</code> with the rest of W2 after the final sheet<br><b>B</b> other wording (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>T2</b></td><td>The Aliases screen wider than a phone</td><td><b>A</b> fix it in this session, test first, with its own before/after sheet<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">admin-texts-before-after-2026-10-25 · 25 Oct 2026 · LOCAL Supabase, headless Chromium (Playwright), builds of the committed and working-tree front end · plan: <a href="github-actions-workflows-page-2026-10-24.html">github-actions-workflows-page-2026-10-24.html</a> W2 #9</p>
+</div>
+</body></html>

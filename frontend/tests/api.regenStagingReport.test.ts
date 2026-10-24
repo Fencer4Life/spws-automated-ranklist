@@ -69,3 +69,22 @@ describe('regenStagingReport', () => {
     await expect(regenStagingReport('X')).rejects.toThrow(/denied/)
   })
 })
+
+// 5.3.5 — the alias screen's step line says what has happened: GitHub accepted the
+// start. The report is rendered and sent by regen-report.yml afterwards, and that run
+// can still fail, so "regenerated · sent to Telegram" claimed too much.
+describe('regenStagingReportStep', () => {
+  it('a dispatched regen reads as started, with the report still to come', async () => {
+    const { regenStagingReportStep } = await import('../src/lib/api')
+    const line = regenStagingReportStep('PPW1-2026-2027', { ok: true })
+    expect(line).toBe('✓ PPW1-2026-2027/full.md regeneration started · the report arrives on Telegram')
+    expect(line).not.toMatch(/regenerated|sent to Telegram/)
+  })
+
+  it('LOCAL keeps its skip line', async () => {
+    const { regenStagingReportStep } = await import('../src/lib/api')
+    expect(regenStagingReportStep('X', { skipped: 'local' })).toBe(
+      'ℹ X/full.md regen skipped on LOCAL (rerun phase5_report from shell)',
+    )
+  })
+})
