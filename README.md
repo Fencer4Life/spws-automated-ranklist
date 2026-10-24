@@ -6,11 +6,11 @@ SPWS automates competition results, identity resolution, scoring and public rank
 
 ## Start here
 
-- [Developer handbook](doc/handbook/index.html) — business domain, product, current architecture, subsystems and operations
-- [Documentation map](doc/handbook/documentation-map.html) — top-down ownership map from implementation areas to canonical pages
-- [Architecture Decision Records](doc/adr/index.html) — rationale for durable choices
-- [Requirements and governance](doc/governance/index.html) — specification, traceability and formal rules
-- [Repository documentation gateway](doc/index.html) — evidence and historical material in addition to current docs
+- [Developer handbook](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/handbook/index.html) — business domain, product, current architecture, subsystems and operations
+- [Documentation map](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/handbook/documentation-map.html) — top-down ownership map from implementation areas to canonical pages
+- [Architecture Decision Records](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/adr/index.html) — rationale for durable choices
+- [Requirements and governance](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/governance/index.html) — specification, traceability and formal rules
+- [Repository documentation gateway](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/index.html) — evidence and historical material in addition to current docs
 
 ## Live surfaces
 
@@ -19,7 +19,7 @@ SPWS automates competition results, identity resolution, scoring and public rank
 
 ## Local development
 
-Prerequisites and exact commands are maintained in the [local development guide](doc/handbook/operations/local-development.html). The safe starting loop is:
+Prerequisites and exact commands are maintained in the [local development guide](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/handbook/operations/local-development.html). The safe starting loop is:
 
 ```bash
 supabase start
@@ -33,7 +33,7 @@ Never run a bare `supabase db reset`; the repository wrapper preserves required 
 
 ## Documentation changes
 
-Human-facing project documentation is HTML. Follow the [documentation standard](doc/handbook/reference/documentation-standard.html) and run:
+Human-facing project documentation is HTML. Follow the [documentation standard](https://html-preview.github.io/?url=https://github.com/Fencer4Life/spws-automated-ranklist/blob/main/doc/handbook/reference/documentation-standard.html) and run:
 
 ```bash
 python scripts/check_docs.py
