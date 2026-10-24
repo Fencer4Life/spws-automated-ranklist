@@ -61,6 +61,7 @@
   .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
   .pill.warn .dot{background:var(--warn)}
   .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
 
   .rule{height:2px;background:var(--line);border:0;margin:48px 0}
   section{margin-top:52px}
@@ -125,7 +126,7 @@
   <h1>Remove the e-mail delivery of FTL seed files. Keep the files and the download page.</h1>
   <p class="dek">The e-mail delivery of seed files will never happen, so this plan closes it: the workflow, the sender, the delivery stamp, the admin button and their tests go. <b>Seed file generation and the organizer download page reached by the shared link stay exactly as they are</b>, byte for byte, and the plan proves it before and after. New guard tests fail if anyone rebuilds an e-mail path.</p>
   <div class="meta">
-    <span class="pill warn"><span class="dot"></span>Sheet, D1–D6, D8, R1 accepted 24 Oct · D7 fixed here (your order) · D9 withdrawn · second pass built (§ 16) · waiting for: your go to release</span>
+    <span class="pill good"><span class="dot"></span>Released 24 Oct · main d1c72747 · CI 40122029842 + Release 40122189669 green · CERT and PROD verified · D9 withdrawn</span>
     <span class="pill">ADR-080 amendment</span>
     <span class="pill">2 migrations · 2 UI changes (before/after sheet)</span>
     <span class="pill danger"><span class="dot"></span>download path: zero code changes (D8: 5 comment lines, bundle byte-identical)</span>
@@ -534,18 +535,29 @@
     <p class="kicker">§ 17 · definition of done</p>
     <h2>Done means all of these are true</h2>
     <ul>
-      <li>☐ NOMAIL.01–07 were seen RED before the removal and are GREEN after.</li>
-      <li>☐ <code>git diff --stat origin/main -- &lt;protected paths&gt;</code> prints nothing, except the five comment lines D8 names (four in test 111, one in <code>FtlExportElement.svelte</code>, proven inert by the byte-identical bundle).</li>
-      <li>☐ Protected suites: same pass counts as the baseline.</li>
+      <li>☑ NOMAIL.01–07 were seen RED before the removal and are GREEN after.</li>
+      <li>☑ <code>git diff --stat origin/main -- &lt;protected paths&gt;</code> prints nothing, except the five comment lines D8 names (four in test 111, one in <code>FtlExportElement.svelte</code>, proven inert by the byte-identical bundle).</li>
+      <li>☑ Protected suites: same pass counts as the baseline.</li>
       <li>☑ Before/after sheet (§ 1–7, including the phone layout) signed off by you, 24 Oct.</li>
-      <li>☐ <code>scripts/preflight.sh</code> exits 0. That run includes the postgrestools hard gate with live canaries, Ruff, format and BasedPyright over <code>python/ scripts/ tools/</code>, svelte-check with warnings failing, pytest with deprecations failing, and GATE.01–06.</li>
-      <li>☐ pgTAP 22.6a–d and LAYOUT.01 were seen RED, then GREEN.</li>
-      <li>☐ CI and Release green on main. That includes the new CI steps: postgrestools in test-db, svelte-check in test-frontend.</li>
-      <li>☐ CERT and PROD: <code>fn_mark_ftl_sent</code> absent; <code>fn_create_evf_event_from_results</code> carries the qualified <code>tbl_event.id_event</code>; the download page lists the same events as the baseline.</li>
-      <li>☐ <code>ftl-seed.yml</code> gone from <code>gh workflow list</code>.</li>
+      <li>☑ <code>scripts/preflight.sh</code> exits 0. That run includes the postgrestools hard gate with live canaries, Ruff, format and BasedPyright over <code>python/ scripts/ tools/</code>, svelte-check with warnings failing, pytest with deprecations failing, and GATE.01–06.</li>
+      <li>☑ pgTAP 22.6a–d and LAYOUT.01 were seen RED, then GREEN.</li>
+      <li>☑ CI and Release green on main. That includes the new CI steps: postgrestools in test-db, svelte-check in test-frontend.</li>
+      <li>☑ CERT and PROD: <code>fn_mark_ftl_sent</code> absent; <code>fn_create_evf_event_from_results</code> carries the qualified <code>tbl_event.id_event</code>; the download page lists the same events as the baseline.</li>
+      <li>☑ <code>ftl-seed.yml</code> gone from <code>gh workflow list</code>.</li>
       <li>☑ D6 A, D8 A, R1 A answered; D9 withdrawn. <code>python/pipeline/orchestrator.py</code>, <code>ingest_cli.py</code> and <code>storage_handler.py</code> are byte-identical to main.</li>
-      <li>☐ Documentation gate box checked; RAG re-indexed; graph refreshed.</li>
+      <li>☑ Documentation gate box checked; RAG re-indexed; graph refreshed.</li>
     </ul>
+    <h3>Release record, 24 Oct 2026</h3>
+    <ul>
+      <li><b>Commit</b> <code>ac1a1ada</code>, merged from the integration checkout as <code>d1c72747</code> and pushed with <code>integration/main:main</code>. Preflight 16/16 in the worker and again in the integration checkout; the merge tree equals the validated commit tree.</li>
+      <li><b>CI</b> run 40122029842: success, including the new postgrestools hard gate (test-db) and svelte-check with warnings failing (test-frontend, Node 20).</li>
+      <li><b>Release</b> run 40122189669: gate, build, deploy-cert, deploy-pages, deploy-prod all success (PROD approved by you). Tracking commits 16a0f2c3 (CERT) and a3ee2b46 (PROD) record both migrations.</li>
+      <li><b>CERT and PROD, read-only:</b> <code>fn_mark_ftl_sent</code> absent; <code>fn_create_evf_event_from_results</code> carries <code>WHERE tbl_event.id_event = v_id_evt AND tbl_event.id_evf_event IS NULL</code>; no event carries a sent stamp; <code>ts_ftl_sent</code> carries its retired comment.</li>
+      <li><b>Download page:</b> the event picker returns what it returned before the change: CERT none, PROD <code>PEW5efs-2026-2027</code> with 36 registrations (baseline taken 16:09 and 18:51 the same day). The token was read inside SQL and never printed.</li>
+      <li><b>Bundle:</b> the live <code>assets/main.ce.js</code> on GitHub Pages is byte-identical to the final local build (1,228,788 bytes).</li>
+      <li><b>Workflows:</b> <code>ftl-seed.yml</code> is gone from <code>gh workflow list</code>; <code>phase5-event-runner.yml</code> shows &ldquo;Stage or replace one event's results (past-season repair)&rdquo;.</li>
+    </ul>
+
   </section>
 
   <p class="foot">ftl-seed-email-removal · 24 Oct 2026 · evidence: read-only queries on CERT and PROD (24 Oct), gh run history, repository grep and graph, RTM FR-121/125/131/136, ADR-080 amendments 2026-09-25 and 2026-10-18</p>
