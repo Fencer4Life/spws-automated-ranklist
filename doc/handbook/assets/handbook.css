@@ -1,5 +1,11 @@
 .handbook-header { border-bottom: 3px solid var(--navy); padding-bottom: 34px; }
 .handbook-header h1 { max-width: 20ch; }
+/* The ADR page frame: scripts/render_handbook_frame.py writes the facts card and the
+   contents column from the page's own metadata and sections (HBFRAME.01–07). */
+.mast-main { min-width: 0; }
+.facts .current { color: var(--green); }
+.facts .draft { color: var(--amber); }
+main > section[id] { scroll-margin-top: 22px; }
 .breadcrumb { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; font: 700 12px var(--mono); color: var(--muted); }
 .breadcrumb a { text-decoration: none; }
 .breadcrumb span::before { content: "/"; margin-right: 8px; color: var(--line-strong); }

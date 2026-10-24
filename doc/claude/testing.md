@@ -30,6 +30,7 @@ bash scripts/check-spec-sync.sh
 python scripts/check_docs.py
 python scripts/render_adrs.py --check
 python scripts/render_docs.py --check
+python scripts/render_handbook_frame.py --check
 ```
 
 Run narrow affected tests first. Before completing a code change, run the applicable full suites and repository gates. Do not claim a command passed unless it completed successfully in the current work.

@@ -73,6 +73,7 @@ gate "ruff format --check (CI)"       ruff format --check "${PYTOOL_PATHS[@]}"
 gate "basedpyright (CI)"              basedpyright "${PYTOOL_PATHS[@]}"
 gate "render_adrs.py --check (CI)"    python scripts/render_adrs.py --check
 gate "render_docs.py --check (CI)"    python scripts/render_docs.py --check
+gate "render_handbook_frame.py --check (CI)" python scripts/render_handbook_frame.py --check
 gate "check_docs.py (CI)"             python scripts/check_docs.py
 gate "pytest (CI)"                    pytest -q
 

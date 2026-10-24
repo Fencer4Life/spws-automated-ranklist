@@ -89,6 +89,9 @@ jobs:
       - name: Validate generated Docs HTML
         run: python scripts/render_docs.py --check
 
+      - name: Validate generated handbook page frame
+        run: python scripts/render_handbook_frame.py --check
+
       - name: Validate current documentation
         env:
           DOC_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}

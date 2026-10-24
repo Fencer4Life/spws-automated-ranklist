@@ -42,7 +42,8 @@ run by hand instead; CI then failed on `main` for `basedpyright` and
 A push to `main` auto-deploys PROD, so that discovery order is a release hazard.
 
 What preflight covers: ruff (lint + format), basedpyright, `render_adrs.py
---check`, `render_docs.py --check`, `check_docs.py`, pytest, Vitest,
+--check`, `render_docs.py --check`, `render_handbook_frame.py --check`,
+`check_docs.py`, pytest, Vitest,
 `check-coherence.sh`, `supabase test db`, `check-spec-sync.sh`, `svelte-check`,
 and the `git diff --check` that `integrate-agent-branch.sh` enforces.
 
