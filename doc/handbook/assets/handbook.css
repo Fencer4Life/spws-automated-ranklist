@@ -1,5 +1,3 @@
-@import url("../../adr/assets/adr.css");
-
 .handbook-header { border-bottom: 3px solid var(--navy); padding-bottom: 34px; }
 .handbook-header h1 { max-width: 20ch; }
 .breadcrumb { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; font: 700 12px var(--mono); color: var(--muted); }
