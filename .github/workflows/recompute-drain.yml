@@ -37,6 +37,10 @@ jobs:
     concurrency:
       group: cert-write
       cancel-in-progress: false
+      # Keep every waiting job: by default GitHub keeps one waiting job per lane and
+      # cancels the older, so a waiting ingest could be dropped by the next drain
+      # (test_workflow_lanes.py WFLANE.01).
+      queue: max
     steps:
       - uses: actions/checkout@v5
 
