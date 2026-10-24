@@ -85,14 +85,9 @@ def telegram_notify(msg: str) -> None:
     if not bot or not chat:
         print(f"[Telegram] {msg}", file=sys.stderr)
         return
-    try:
-        httpx.post(
-            f"https://api.telegram.org/bot{bot}/sendMessage",
-            data={"chat_id": chat, "text": msg, "parse_mode": "HTML"},
-            timeout=10,
-        )
-    except Exception as exc:
-        print(f"[Telegram] FAILED to send ({exc}): {msg}", file=sys.stderr)
+    from python.telegram import send_message
+
+    _ = send_message(bot, chat, msg)
 
 
 def scrape_and_parse(url: str | None) -> list[dict]:

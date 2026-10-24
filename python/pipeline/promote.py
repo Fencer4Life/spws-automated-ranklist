@@ -488,14 +488,9 @@ def main(argv: list[str] | None = None) -> None:
 
     def notify(msg: str) -> None:
         if bot_token and chat_id:
-            try:
-                httpx.post(
-                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
-                    timeout=10,
-                )
-            except Exception:
-                pass
+            from python.telegram import send_message
+
+            _ = send_message(bot_token, chat_id, msg)
 
     # -------------------------- Calendar mode (reconciler) --------------------
     if args.mode == "calendar":

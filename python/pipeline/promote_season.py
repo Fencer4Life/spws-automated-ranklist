@@ -20,8 +20,6 @@ import os
 import re
 from functools import partial
 
-import httpx
-
 from python.pipeline.promote import _management_query
 
 # Season codes are admin-controlled but flow through a workflow_dispatch input;
@@ -233,14 +231,9 @@ def main() -> None:
 
     def notify(msg: str) -> None:
         if bot_token and chat_id:
-            try:
-                httpx.post(
-                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
-                    timeout=10,
-                )
-            except Exception:  # noqa: BLE001 — notification is best-effort
-                pass
+            from python.telegram import send_message
+
+            _ = send_message(bot_token, chat_id, msg)
 
     if args.action == "promote":
         result = promote_season(

@@ -270,7 +270,8 @@ class TestTelegramNotify:
         from python.tools.scrape_tournament import telegram_notify
 
         with patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "TOK", "TELEGRAM_CHAT_ID": "CHAT"}):
-            with patch("python.tools.scrape_tournament.httpx") as mock_httpx:
+            # The post happens in python/telegram.py, every sender's one route (TG.07).
+            with patch("python.telegram.httpx") as mock_httpx:
                 mock_httpx.post.return_value = _resp()
                 telegram_notify("layer4-msg")
                 assert mock_httpx.post.called

@@ -6,10 +6,13 @@ does: every command documented once, every documented command handled, every
 workflow it starts declaring the inputs it sends, and every line naming where it acts.
 """
 
+import json
 import os
 import re
+import subprocess
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -182,3 +185,62 @@ def test_ingest_and_promote_name_every_organizer():
     assert "domestic event" not in src
     assert "Import one event results from the EVF API" not in src
     assert "EVF results with CERT; nothing is written" in src
+
+
+SEND_HARNESS = r"""
+const vm = require('vm');
+const fs = require('fs');
+const src = fs.readFileSync(process.argv[1], 'utf8');
+const fn = src.match(/function sendTelegramMessage\(props, message\) \{[\s\S]*?\n\}\n/)[0];
+const answers = JSON.parse(process.argv[2]);
+const calls = [];
+const logs = [];
+const ctx = {
+  UrlFetchApp: { fetch: (url, opts) => {
+    calls.push(opts.payload);
+    const [code, body] = answers.shift();
+    return { getResponseCode: () => code, getContentText: () => body };
+  } },
+  Logger: { log: (m) => logs.push(m) },
+};
+vm.createContext(ctx);
+vm.runInContext(fn, ctx);
+const props = { getProperty: (k) => ({ TELEGRAM_BOT_TOKEN: 't', TELEGRAM_CHAT_ID: '42' })[k] };
+ctx.sendTelegramMessage(props, process.argv[3]);
+console.log(JSON.stringify({ calls, logs }));
+"""
+
+
+def _send(answers: list[tuple[int, str]], message: str) -> dict[str, list[Any]]:
+
+    out = subprocess.run(
+        ["node", "-e", SEND_HARNESS, str(BOT), json.dumps(answers), message],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    ).stdout
+    result: dict[str, list[Any]] = json.loads(out)
+    return result
+
+
+def test_a_refused_reply_is_sent_again_as_plain_text():
+    """GAS.SEND.01: Telegram refuses a reply whose HTML it cannot parse; the bot
+    fetched with muteHttpExceptions and never read the answer, so the admin got no
+    reply at all. It now sends the same reply again as plain text."""
+    parse_error = '{"ok":false,"description":"Bad Request: can\'t parse entities"}'
+    sent = _send(
+        [(400, parse_error), (200, "{}")], "<b>Error</b>\n<pre>x &lt; y &amp; z</pre> <module>"
+    )
+    assert len(sent["calls"]) == 2
+    assert sent["calls"][0]["parse_mode"] == "HTML"
+    assert "parse_mode" not in sent["calls"][1]
+    assert sent["calls"][1]["text"] == "Error\nx < y & z <module>"
+    assert sent["logs"] == []
+
+
+def test_any_other_refusal_is_logged():
+    """GAS.SEND.02: any other refusal is written to the Apps Script log."""
+    sent = _send([(403, '{"ok":false,"description":"Forbidden: bot was blocked"}')], "hello")
+    assert len(sent["calls"]) == 1
+    assert any("bot was blocked" in line for line in sent["logs"])
