@@ -10,14 +10,19 @@ The gate fails OPEN: anything it cannot classify with confidence deploys.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / "scripts/release-gate.sh"
+TRACKING = ROOT / "scripts/update-tracking.sh"
+RELEASE = ROOT / ".github/workflows/release.yml"
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -286,3 +291,65 @@ def test_deploy_jobs_inherit_the_gate_through_build() -> None:
 
     assert "needs: build" in workflow
     assert "needs: [build, deploy-cert, deploy-pages]" in workflow
+
+
+# ─── Every deploy records its commit (ADR-094 amendment 2026-10-24) ──────────
+#
+# The gate's base is .prod.last_sha. ADR-094's alternative 4 rejected that base
+# while the tracking steps ran only for a release that applied a migration: after
+# a migration-free release the range would only grow, and every docs-only change
+# would deploy. So every deploy now records the commit it deployed.
+
+
+def _release_jobs() -> dict[str, Any]:
+    spec: dict[str, Any] = yaml.safe_load(RELEASE.read_text())
+    return spec["jobs"]
+
+
+def _tracking_steps(job: str) -> list[dict[str, Any]]:
+    steps: list[dict[str, Any]] = _release_jobs()[job]["steps"]
+    return [step for step in steps if "update-tracking.sh" in str(step.get("run", ""))]
+
+
+@pytest.mark.parametrize("job", ["deploy-cert", "deploy-prod"])
+def test_every_deploy_records_the_commit_it_deployed(job: str) -> None:
+    steps = _tracking_steps(job)
+    assert steps, f"{job} has no tracking step"
+    conditional = [s["name"] for s in steps if "has_new_migrations" in str(s.get("if", ""))]
+    assert conditional == [], f"{job} records its commit only when a migration applied"
+    assert any("git push" in str(s["run"]) for s in steps), f"{job} never pushes its tracking"
+
+
+def test_the_cert_deploy_commits_the_manifest_of_the_release() -> None:
+    """build wrote release-manifest.json on its own runner and dropped it, so the
+    committed file still described March 2026. deploy-cert writes it again inside the
+    tracking commit, before update-tracking.sh stamps the deploy into it."""
+    (commit,) = [s for s in _tracking_steps("deploy-cert") if "git push" in str(s["run"])]
+    run = str(commit["run"])
+    assert "scripts/generate-manifest.sh" in run
+    assert run.index("generate-manifest.sh") < run.index("update-tracking.sh")
+    assert "release-manifest.json" in run
+
+
+def test_tracking_with_no_new_migrations_moves_the_deployed_commit(tmp_path: Path) -> None:
+    """A migration-free deploy passes '[]': the commit and time move, the list stays."""
+    before = {
+        "cert": {"last_sha": "c0", "applied": ["a.sql"], "schema_fingerprint": "f0"},
+        "prod": {"last_sha": "p0", "applied": ["a.sql"], "schema_fingerprint": "f0"},
+    }
+    (tmp_path / "deployed_migrations.json").write_text(json.dumps(before))
+    completed = subprocess.run(
+        ["bash", str(TRACKING), "prod", "p1", "f1", "[]"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    after: dict[str, dict[str, Any]] = json.loads(
+        (tmp_path / "deployed_migrations.json").read_text()
+    )
+    assert after["prod"]["last_sha"] == "p1"
+    assert after["prod"]["applied"] == ["a.sql"]
+    assert after["prod"]["schema_fingerprint"] == "f1"
+    assert after["cert"] == before["cert"]

@@ -197,6 +197,19 @@ Actions API call are gone, and so is `release.yml`'s `actions: read`
 permission (§2), which nothing else uses: `actions/deploy-pages` documents
 `pages: write` and `id-token: write` as its minimum.
 
+**Alternative 4 answered.** Alternative 4 rejected this base because the
+tracking steps ran only for a release that applied a migration, so
+`.prod.last_sha` stood still through every migration-free release and the
+range would only grow. That cause is removed: `deploy-cert` and `deploy-prod`
+run their tracking steps on every deploy, passing `[]` when no migration
+applied, so `.prod.last_sha` is the commit PROD last deployed. Every deploying
+release therefore pushes two `[skip ci]` tracking commits, CERT's then PROD's;
+§3 exempts both files, so neither triggers a deploy. The CERT tracking commit
+also writes `release-manifest.json` with `scripts/generate-manifest.sh`. `build`
+generated it on its own runner and dropped it, so the committed manifest still
+described March 2026; `build`'s copy stays as a dry run that proves the script
+on the tree before anything deploys.
+
 One fail-open rule joins §3: a base that is not an ancestor of the head
 deploys. That is the case right after the history rewrite of 24 October 2026,
 whose recorded SHA is no longer on `main`; the next release deploys and
@@ -207,6 +220,10 @@ Tests in `python/tests/test_release_docs_only_gate.py`:
 `test_docs_only_change_after_the_last_deploy_skips` and
 `test_base_not_an_ancestor_of_head_fails_open`; the wiring test now asserts
 that `release.yml` reads no CI run history and holds no `actions: read`.
+`test_every_deploy_records_the_commit_it_deployed` (both deploy jobs),
+`test_the_cert_deploy_commits_the_manifest_of_the_release` and
+`test_tracking_with_no_new_migrations_moves_the_deployed_commit` pin the
+tracking on every deploy.
 
 ## Open items
 

@@ -68,6 +68,7 @@ jobs:
       # window-open notice) or its last (the red line if a list is still
       # missing). A manual run is neither.
       - name: Capture PZSz start lists → CERT
+        id: capture
         env:
           # github.event.schedule is one of this workflow's own cron strings
           # (or empty for a manual run); read it via env, never interpolated
@@ -84,3 +85,16 @@ jobs:
             "11 19 * * *") FLAGS="--final-run" ;;
           esac
           python -m python.scrapers.pzsz_start_list_store capture $FLAGS
+
+      # The capture alerts on Telegram itself (ADR-116 §11-§12, one digest), so
+      # this speaks only when it never ran: a failed install (WFALERT.01).
+      - name: Notify setup failure
+        if: failure() && steps.capture.outcome != 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=PZSz start-list capture FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null

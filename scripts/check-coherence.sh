@@ -5,14 +5,13 @@
 #   Gate 1: pyproject.toml version == package.json version          (hard fail)
 #   Gate 2: ADR file count in doc/adr/ == ADR rows in Appendix C    (hard fail)
 #   Gate 3: Sum of SELECT plan(N) in pgTAP == documented total      (hard fail)
-#   Gate 4: New migration without spec/ADR change                   (warning)
+#   Gate 4: Migration change without a documentation change         (hard fail)
 #
-# Exit 0 if all gates pass, 1 if any hard gate fails.
+# Exit 0 if all gates pass, 1 if any gate fails.
 
 set -euo pipefail
 
 ERRORS=0
-WARNINGS=0
 
 echo "=== Coherence Checks ==="
 echo ""
@@ -79,37 +78,50 @@ else
 fi
 echo ""
 
-# ---------- Gate 4: New migration without spec/ADR change (warning) ----------
+# ---------- Gate 4: Migration change without a documentation change ----------
 echo "--- Gate 4: Migration ↔ documentation sync ---"
 
-# Compare current branch to main (or HEAD~1 if on main)
-if git rev-parse --verify origin/main >/dev/null 2>&1; then
-  BASE="origin/main"
-else
-  BASE="HEAD~1"
+# The range is what this push or pull request brings. CI passes COHERENCE_BASE:
+# the pull request's base, or the commit main stood at before the push. Without
+# it (preflight), the branch's fork point from origin/main; the working tree is
+# compared, so uncommitted changes count. An unusable base (zeros for a new
+# branch, or a commit a rewritten history dropped) falls back to that fork point,
+# and to the last commit when the fork point is HEAD itself. The gate used to
+# compare against origin/main, which on a push to main IS the pushed commit, so
+# it never fired there (test_coherence_migration_gate.py COH.01-04).
+BASE="${COHERENCE_BASE:-}"
+if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+  BASE=""
+  if git rev-parse --verify -q origin/main >/dev/null; then
+    BASE="$(git merge-base origin/main HEAD 2>/dev/null || true)"
+  fi
+  if [ -z "$BASE" ] || [ "$BASE" = "$(git rev-parse HEAD)" ]; then
+    BASE="$(git rev-parse --verify -q 'HEAD~1' || true)"
+  fi
 fi
 
-CHANGED_FILES=$(git diff --name-only "$BASE" -- . 2>/dev/null || echo "")
+CHANGED_FILES=""
+if [ -n "$BASE" ]; then
+  CHANGED_FILES=$(git diff --name-only "$BASE" -- .)
+fi
 
-HAS_NEW_MIGRATION=$(echo "$CHANGED_FILES" | grep -c 'supabase/migrations/' || true)
-HAS_SPEC_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/Project Specification' || true)
-HAS_ADR_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/adr/' || true)
-HAS_HANDBOOK_CHANGE=$(echo "$CHANGED_FILES" | grep -c 'doc/handbook/' || true)
+MIGRATIONS=$(grep '^supabase/migrations/' <<<"$CHANGED_FILES" || true)
+DOCUMENTATION=$(grep -E '^doc/(Project Specification|adr/|handbook/|governance/)' <<<"$CHANGED_FILES" || true)
 
-if [ "$HAS_NEW_MIGRATION" -gt 0 ] && [ "$HAS_SPEC_CHANGE" -eq 0 ] && [ "$HAS_ADR_CHANGE" -eq 0 ] && [ "$HAS_HANDBOOK_CHANGE" -eq 0 ]; then
-  echo "  WARNING: New migration(s) without any doc/spec/ADR changes"
-  WARNINGS=$((WARNINGS + 1))
-  # Emit GitHub Actions warning annotation
+if [ -n "$MIGRATIONS" ] && [ -z "$DOCUMENTATION" ]; then
+  echo "  FAIL: migration(s) changed since ${BASE:0:12} without a specification, ADR, governance or handbook change:"
+  sed 's/^/    /' <<<"$MIGRATIONS"
+  ERRORS=$((ERRORS + 1))
   if [ -n "${GITHUB_ACTIONS:-}" ]; then
-    echo "::warning::New migration added without specification, ADR, or handbook update"
+    echo "::error::Migration changed without a specification, ADR, governance or handbook update"
   fi
 else
-  echo "  PASS: Documentation changes present (or no new migrations)"
+  echo "  PASS: no migration changed, or its documentation changed with it"
 fi
 echo ""
 
 # ---------- Summary ----------
-echo "=== Summary: $ERRORS error(s), $WARNINGS warning(s) ==="
+echo "=== Summary: $ERRORS error(s) ==="
 
 if [ "$ERRORS" -gt 0 ]; then
   echo "FAILED — fix coherence errors before merging."

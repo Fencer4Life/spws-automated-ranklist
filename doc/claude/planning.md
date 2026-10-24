@@ -128,14 +128,14 @@ Required artefacts:
 ## 7a. CI coherence gates — NEVER forget to update these (hard CI fail otherwise)
 
 The CI runs [scripts/check-coherence.sh](../../scripts/check-coherence.sh) which has FOUR
-gates — three are hard fails, one a warning:
+gates, all four hard fails:
 
 | Gate | Check | Hard fail? | What to update when adding code |
 |------|-------|-----------|---------------------------------|
 | 1 | `pyproject.toml` version == `frontend/package.json` version | YES | Bump both together when releasing. |
 | 2 | ADR file count in `doc/adr/` == ADR rows matching `\| [ADR-0` in spec Appendix C | YES | **Every new `doc/adr/NNN-*.md` file MUST have a matching row in spec Appendix C. Every superseded ADR keeps its row.** |
 | 3 | Sum of `SELECT plan(N)` across `supabase/tests/*.sql` == `pgTAP total: N assertions` line in spec Appendix D | YES | **Every new pgTAP `plan(N)` MUST be added into the documented total. Update the `pgTAP total: N assertions` line in spec Appendix D and the per-suite Count column in the table below it.** |
-| 4 | New migration in `supabase/migrations/` accompanied by spec/ADR change | warning | Land docs alongside migrations. |
+| 4 | A change under `supabase/migrations/` comes with a change to the specification, `doc/adr/`, `doc/governance/` or `doc/handbook/`, over the range the push or pull request brings (CI passes `COHERENCE_BASE`; preflight uses the branch's fork point from `origin/main`) | YES | Land the documentation in the same push as the migration. |
 
 **Workflow before pushing**:
 

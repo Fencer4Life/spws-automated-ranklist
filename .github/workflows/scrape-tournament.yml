@@ -70,7 +70,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TOURNAMENT_CODE: ${{ github.event.inputs.tournament_code }}
         run: |
-          OUTPUT=$(tail -10 /tmp/scrape-output.txt 2>/dev/null || echo "No output")
+          # HTML mode: Telegram rejects a message holding a tag it does not know,
+          # such as a traceback's <module>, so the quoted lines are escaped
+          # (test_workflow_alerts.py WFALERT.03).
+          if [ -f /tmp/scrape-output.txt ]; then
+            OUTPUT=$(tail -10 /tmp/scrape-output.txt | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+          else
+            OUTPUT="No output"
+          fi
           STATUS="${{ job.status }}"
           MSG="<b>Scrape: ${TOURNAMENT_CODE}</b>
           <i>Status: ${STATUS}</i>

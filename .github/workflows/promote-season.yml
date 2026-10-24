@@ -91,7 +91,32 @@ jobs:
           git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
           if git diff --cached --quiet; then
             echo "No seed changes to commit"
-          else
-            git commit -m "chore: auto-export seed from PROD after season $SEASON_ACTION $SEASON_CODE [skip ci]"
-            git push
+            exit 0
           fi
+          git commit -m "chore: auto-export seed from PROD after season $SEASON_ACTION $SEASON_CODE [skip ci]"
+          # A commit landing on main while this ran rejects the push: rebase onto it
+          # and retry, as promote.yml does (test_workflow_alerts.py WFPUSH.01).
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "push attempt $attempt failed; retrying"
+            sleep $((attempt * 10))
+          done
+          exit 1
+
+      # The last step, so it sees every step before it (test_workflow_alerts.py
+      # WFALERT.01). The failed step tells whether PROD changed: the seed export
+      # and its commit run only after the promote or delete succeeded.
+      - name: Notify failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SEASON_CODE: ${{ github.event.inputs.season_code }}
+          SEASON_ACTION: ${{ github.event.inputs.action || 'promote' }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=Season skeleton ${SEASON_ACTION} ${SEASON_CODE} FAILED. Check: ${RUN_URL}" > /dev/null

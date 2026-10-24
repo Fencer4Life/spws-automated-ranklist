@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="3421acb2f67ef8ce006f63685247b8de8e8456feaae0f470539ab6d677526af2">
+<meta name="doc-source-sha256" content="ddbcf7535f9aa4ac0f0bb793e72dead36b2ecf7503aac0a4ce76217e8c7918cc">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -1099,9 +1099,9 @@
 </tr>
 <tr>
 <td>NFR-15</td>
-<td>Static checks are hard gates with zero findings: postgrestools (type check, plpgsql_check, lint) over every migration after the configured baseline and every pgTAP file, proven live by canaries; svelte-check with <code>--fail-on-warnings</code>; Ruff, Ruff format and BasedPyright over <code>python/ scripts/ tools/</code>; Python deprecation warnings from project code fail pytest</td>
-<td>User directive 2026-10-24; <a href="plans/ftl-seed-email-removal-2026-10-24.html">plan</a> §13</td>
-<td><code>python/tests/test_static_check_gates.py</code> GATE.01–GATE.06; <code>scripts/check-postgrestools.sh</code> in <code>scripts/preflight.sh</code> and <code>ci.yml</code> test-db; svelte-check in preflight and <code>ci.yml</code> test-frontend</td>
+<td>Static checks are hard gates with zero findings: postgrestools (type check, plpgsql_check, lint) over every migration after the configured baseline and every pgTAP file, proven live by canaries; svelte-check with <code>--fail-on-warnings</code>; Ruff, Ruff format and BasedPyright over <code>python/ scripts/ tools/</code>; Python deprecation warnings from project code fail pytest; coherence gate 4 (a migration change comes with a documentation change) fails the run over the range a push or pull request brings</td>
+<td>User directive 2026-10-24; <a href="plans/ftl-seed-email-removal-2026-10-24.html">plan</a> §13; <a href="plans/github-actions-workflows-page-2026-10-24.html">workflow page plan</a> W2 #8</td>
+<td><code>python/tests/test_static_check_gates.py</code> GATE.01–GATE.06; <code>python/tests/test_coherence_migration_gate.py</code> COH.01–COH.05; <code>scripts/check-postgrestools.sh</code> in <code>scripts/preflight.sh</code> and <code>ci.yml</code> test-db; svelte-check in preflight and <code>ci.yml</code> test-frontend</td>
 <td>Covered</td>
 </tr>
 </tbody>
@@ -2960,5 +2960,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>3421acb2f67ef8ce006f63685247b8de8e8456feaae0f470539ab6d677526af2</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>ddbcf7535f9aa4ac0f0bb793e72dead36b2ecf7503aac0a4ce76217e8c7918cc</code></footer>
 </div></body></html>

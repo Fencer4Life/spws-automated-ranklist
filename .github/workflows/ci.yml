@@ -135,4 +135,9 @@ jobs:
           fetch-depth: 0
 
       - name: Run coherence checks
+        env:
+          # The range this pull request or push brings, which gate 4 checks: on a
+          # push to main, origin/main is the pushed commit itself, so without it the
+          # gate compared a commit with itself (test_coherence_migration_gate.py).
+          COHERENCE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: bash scripts/check-coherence.sh
