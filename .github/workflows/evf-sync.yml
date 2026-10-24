@@ -43,7 +43,7 @@ jobs:
         run: |
           # On scheduled runs, default to --filter-stale so daily cadence is cheap.
           # On manual dispatch, honour the workflow input toggle.
-          # Inputs come in through env, never as ${{ }} in this script (WFINJ.01).
+          # Inputs come in through env, never as an expression in this script (WFINJ.01).
           if [ "${{ github.event_name }}" = "schedule" ]; then
             FLAG="--filter-stale"
           elif [ "$FILTER_STALE" = "true" ]; then
@@ -88,8 +88,9 @@ jobs:
     # edits or a prior run's committed events (observed 2026-07-14, run
     # 29309139092: sync landed 13 events but the promote was skipped).
     if: ${{ !cancelled() && github.event.inputs.mode != 'results' }}
-    # contents: write so the reusable workflow's reconcile-log push works
-    # (capped by the caller's token; top-level here is already write).
+    # contents: write so the reusable workflow's reconcile-log push works --
+    # this workflow's top level is contents: read (ADR-083, WFPERM.01), and a
+    # called workflow gets no more than the calling job grants.
     permissions:
       contents: write
     uses: ./.github/workflows/promote-calendar.yml
