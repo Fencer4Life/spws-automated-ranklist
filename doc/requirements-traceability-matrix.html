@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="a2d5190bbd71747ff233b6421d9faa88fb7c92856ffd859f8f372db15df07ecd">
+<meta name="doc-source-sha256" content="28fef978fcbba68b84c114981c76d91736d966a735ce673e134ccf40bc39ba5f">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -637,7 +637,7 @@
 <td>FR-88</td>
 <td>Monolithic PROD seed export on promote (schema-driven, single file)</td>
 <td>ADR-027→ADR-036</td>
-<td>9.209–9.213</td>
+<td><code>python/tests/test_seed_export.py::PROMO.SEED.01</code>–<code>05</code> (the seed keeps PROD's fencer ids); <code>python/tests/test_joined_brackets.py::JB27.STORE.04</code> (inputs only, never scoring outputs); <code>python/tests/test_seed_export_naming.py::SEEDNAME.01</code>–<code>04</code> (only a PROD export becomes <code>seed_prod_latest.sql</code>; a CERT export is <code>seed_cert_&lt;date&gt;.sql</code>). Until 2026-10-25 this row cited 9.209–9.213, which test the Event manager and identity proposals, not the export.</td>
 <td>Covered</td>
 </tr>
 <tr>
@@ -2960,5 +2960,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>a2d5190bbd71747ff233b6421d9faa88fb7c92856ffd859f8f372db15df07ecd</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>28fef978fcbba68b84c114981c76d91736d966a735ce673e134ccf40bc39ba5f</code></footer>
 </div></body></html>

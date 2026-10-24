@@ -1,14 +1,15 @@
 """
 Schema-driven monolithic PROD export (ADR-036).
 
-Generates a single timestamped SQL file that recreates all data. The file is
-always named supabase/seed_prod_<date>.sql and becomes seed_prod_latest.sql,
-whichever project --ref names: export-seed.yml with source=cert writes CERT's
-data under that name (question E1 on the W2 sign-off sheet).
-Discovers columns at runtime — future-proof.
+Generates a single timestamped SQL file that recreates all data, named for the
+environment it was read from: supabase/seed_prod_<date>.sql, which becomes
+seed_prod_latest.sql (the seed CI, a LOCAL boot and seed-remote.sh load), or,
+with --env cert, supabase/seed_cert_<date>.sql, which leaves the PROD seed alone
+(SEEDNAME.01–04). Discovers columns at runtime — future-proof.
 
 Usage:
     python -m python.pipeline.export_seed --ref ywgymtgcyturldazcpmw
+    python -m python.pipeline.export_seed --ref <cert ref> --env cert
 """
 
 from __future__ import annotations
@@ -565,6 +566,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Monolithic PROD export (ADR-036)")
     parser.add_argument("--ref", required=True, help="Supabase project ref")
     parser.add_argument("--output", default=None, help="Output file (default: timestamped)")
+    parser.add_argument(
+        "--env",
+        choices=("prod", "cert"),
+        default="prod",
+        help="Environment --ref names; only a PROD export becomes seed_prod_latest.sql",
+    )
     args = parser.parse_args()
 
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
@@ -573,7 +580,7 @@ def main() -> None:
         sys.exit(1)
 
     stamp = date.today().isoformat()
-    out_path = args.output or os.path.join("supabase", f"seed_prod_{stamp}.sql")
+    out_path = args.output or os.path.join("supabase", f"seed_{args.env}_{stamp}.sql")
 
     print(f"Exporting {args.ref} → {out_path}", file=sys.stderr)
     sql = export_monolithic(args.ref, token)
@@ -581,6 +588,11 @@ def main() -> None:
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(sql)
     print(f"  Written: {out_path} ({len(sql) // 1024} KB)", file=sys.stderr)
+
+    if args.env != "prod":
+        print("  seed_prod_latest.sql unchanged: not a PROD export", file=sys.stderr)
+        print("Done.", file=sys.stderr)
+        return
 
     # Update latest symlink
     latest = os.path.join("supabase", "seed_prod_latest.sql")
