@@ -31,18 +31,24 @@ jobs:
       - name: Install dependencies
         run: pip install httpx
 
+      # Inputs reach the scripts only through env, never as ${{ }} in a script
+      # (test_workflow_shell_safety.py WFINJ.01).
       - name: Export seed
         run: |
-          if [ "${{ github.event.inputs.source }}" = "cert" ]; then
+          if [ "$SOURCE" = "cert" ]; then
             REF="${{ secrets.SUPABASE_CERT_REF }}"
           else
             REF="${{ secrets.SUPABASE_PROD_REF }}"
           fi
           python -m python.pipeline.export_seed --ref "$REF"
         env:
+          SOURCE: ${{ github.event.inputs.source }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Commit seed file
+        env:
+          SOURCE: ${{ github.event.inputs.source }}
+          REASON: ${{ github.event.inputs.reason }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -50,16 +56,19 @@ jobs:
           if git diff --cached --quiet; then
             echo "No seed changes to commit"
           else
-            git commit -m "chore: auto-export seed from ${{ github.event.inputs.source }} (${{ github.event.inputs.reason }}) [skip ci]"
+            git commit -m "chore: auto-export seed from ${SOURCE} (${REASON}) [skip ci]"
             git push
           fi
 
       - name: Notify success
         if: success()
+        env:
+          SOURCE: ${{ github.event.inputs.source }}
+          REASON: ${{ github.event.inputs.reason }}
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="Seed exported from ${{ github.event.inputs.source }} (${{ github.event.inputs.reason }}). Git updated."
+            -d text="Seed exported from ${SOURCE} (${REASON}). Git updated."
 
       - name: Notify failure
         if: failure()

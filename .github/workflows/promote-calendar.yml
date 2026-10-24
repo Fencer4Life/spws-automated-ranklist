@@ -74,8 +74,11 @@ jobs:
       # Commit the human-readable reconcile run log
       # (doc/staging/reconcile/{season}.{ts}Z.md). [skip ci] so it doesn't
       # re-trigger CI.
+      # The label reaches the scripts only through env (WFINJ.01).
       - name: Commit reconcile run log
         if: success()
+        env:
+          LABEL: ${{ inputs.label }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -83,7 +86,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No reconcile report to commit"
           else
-            git commit -m "chore: CERT→PROD reconcile run log (${{ inputs.label }}) [skip ci]"
+            git commit -m "chore: CERT→PROD reconcile run log (${LABEL}) [skip ci]"
             for attempt in 1 2 3 4 5; do
               if git push; then
                 break
@@ -100,7 +103,9 @@ jobs:
 
       - name: Notify failure
         if: failure()
+        env:
+          LABEL: ${{ inputs.label }}
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="${{ inputs.label }} calendar promote FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            -d text="${LABEL} calendar promote FAILED. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

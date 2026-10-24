@@ -20,6 +20,22 @@ jobs:
     name: Discover & Populate URLs (${{ github.event.inputs.target }})
     runs-on: ubuntu-latest
     steps:
+      # Inputs reach the scripts only through env, never as ${{ }} in a script
+      # (test_workflow_shell_safety.py WFINJ.01).
+      - name: Validate inputs
+        env:
+          EVENT_CODE: ${{ github.event.inputs.event_code }}
+          TARGET_ENV: ${{ github.event.inputs.target }}
+        run: |
+          if [[ ! "$EVENT_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::event_code must match [A-Za-z0-9_-]+, got: $EVENT_CODE"
+            exit 1
+          fi
+          if [[ "$TARGET_ENV" != "cert" && "$TARGET_ENV" != "prod" ]]; then
+            echo "::error::target must be cert or prod, got: $TARGET_ENV"
+            exit 1
+          fi
+
       - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v6
@@ -29,8 +45,12 @@ jobs:
       - name: Install dependencies
         run: pip install httpx beautifulsoup4
 
+      # shell: bash runs with pipefail, so a failed run fails the step
+      # through the tee (test_workflow_shell_safety.py WFPIPE.01).
       - name: Populate tournament URLs
+        shell: bash
         env:
+          EVENT_CODE: ${{ github.event.inputs.event_code }}
           SUPABASE_URL: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_URL || secrets.SUPABASE_CERT_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ github.event.inputs.target == 'prod' && secrets.SUPABASE_PROD_SERVICE_ROLE_KEY || secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -39,7 +59,7 @@ jobs:
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
         run: |
           python -m python.tools.populate_tournament_urls \
-            --event-code "${{ github.event.inputs.event_code }}" \
+            --event-code "$EVENT_CODE" \
             2>&1 | tee /tmp/populate-output.txt
 
       - name: Notify Telegram
@@ -47,10 +67,11 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EVENT_CODE: ${{ github.event.inputs.event_code }}
         run: |
           OUTPUT=$(tail -20 /tmp/populate-output.txt 2>/dev/null || echo "No output")
           STATUS="${{ job.status }}"
-          MSG="<b>Populate URLs: ${{ github.event.inputs.event_code }}</b>
+          MSG="<b>Populate URLs: ${EVENT_CODE}</b>
           <i>Status: ${STATUS}</i>
           <pre>${OUTPUT}</pre>"
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
