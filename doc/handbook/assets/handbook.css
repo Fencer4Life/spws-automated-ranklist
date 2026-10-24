@@ -45,10 +45,31 @@ main > section[id] { scroll-margin-top: 22px; }
 .map-node h3 { margin: 6px 0 8px; }
 .map-node ul { font-size: 15px; }
 .checklist li { margin: 10px 0; }
+/* The GitHub Actions workflows table (reference/github-actions-workflows.html): one
+   <tbody> per workflow, the short facts on its first row and the two long fields side by
+   side on the second; on a phone every cell stacks under its own label (GHWF.01–06). */
+.workflow-table table { min-width: 0; table-layout: fixed; }
+.workflow-table tbody { border-top: 3px solid var(--line-strong); }
+.workflow-table tbody tr:nth-child(odd) { background: var(--card); }
+.workflow-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--paper) 55%, var(--card)); }
+.workflow-table tbody tr:first-child td, .workflow-table tbody tr:first-child th { border-bottom: 1px solid var(--line); }
+.workflow-table th[data-field="name"] { text-align: left; }
+.workflow-table .wf-name { display: block; font: 800 15px/1.3 var(--sans); color: var(--navy); }
+.workflow-table .wf-file { display: inline-block; margin-top: 6px; }
+.workflow-table .wf-label { margin: 0 0 6px; font: 750 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.workflow-table td p { margin: 0 0 10px; max-width: none; }
+.workflow-table td p:last-child { margin-bottom: 0; }
+.workflow-table td ul { margin: 6px 0 0; padding-left: 18px; max-width: none; }
+.workflow-table td li { margin: 4px 0; }
+.lane-table td:first-child { font: 700 13px var(--mono); white-space: nowrap; }
 @media (max-width: 780px) {
   .learning-path, .card-grid, .flow-grid, .layer-grid, .boundary { grid-template-columns: 1fr; }
   .page-links { display: block; }
   .page-links a { display: block; margin: 12px 0; }
+  .workflow-table table, .workflow-table tbody, .workflow-table tr, .workflow-table th, .workflow-table td { display: block; width: auto; }
+  .workflow-table thead { display: none; }
+  .workflow-table th, .workflow-table td { border-right: 0; }
+  .workflow-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 4px; font: 750 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 }
 
 /* Screenshots. First introduced by the registration lifecycle page: a UI claim
