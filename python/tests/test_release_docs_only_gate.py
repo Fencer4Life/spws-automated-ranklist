@@ -308,27 +308,18 @@ def _release_jobs() -> dict[str, Any]:
 
 def _tracking_steps(job: str) -> list[dict[str, Any]]:
     steps: list[dict[str, Any]] = _release_jobs()[job]["steps"]
-    return [step for step in steps if "update-tracking.sh" in str(step.get("run", ""))]
+    return [step for step in steps if "scripts/commit-tracking.sh" in str(step.get("run", ""))]
 
 
 @pytest.mark.parametrize("job", ["deploy-cert", "deploy-prod"])
 def test_every_deploy_records_the_commit_it_deployed(job: str) -> None:
+    """The record itself, the CERT manifest included, is tested by running the script:
+    test_release_tracking_commit.py RELTRACK.02-05."""
     steps = _tracking_steps(job)
-    assert steps, f"{job} has no tracking step"
-    conditional = [s["name"] for s in steps if "has_new_migrations" in str(s.get("if", ""))]
-    assert conditional == [], f"{job} records its commit only when a migration applied"
-    assert any("git push" in str(s["run"]) for s in steps), f"{job} never pushes its tracking"
-
-
-def test_the_cert_deploy_commits_the_manifest_of_the_release() -> None:
-    """build wrote release-manifest.json on its own runner and dropped it, so the
-    committed file still described March 2026. deploy-cert writes it again inside the
-    tracking commit, before update-tracking.sh stamps the deploy into it."""
-    (commit,) = [s for s in _tracking_steps("deploy-cert") if "git push" in str(s["run"])]
-    run = str(commit["run"])
-    assert "scripts/generate-manifest.sh" in run
-    assert run.index("generate-manifest.sh") < run.index("update-tracking.sh")
-    assert "release-manifest.json" in run
+    assert len(steps) == 1, f"{job} has no step recording its deploy"
+    assert "has_new_migrations" not in str(steps[0].get("if", "")), (
+        f"{job} records its commit only when a migration applied"
+    )
 
 
 def test_tracking_with_no_new_migrations_moves_the_deployed_commit(tmp_path: Path) -> None:

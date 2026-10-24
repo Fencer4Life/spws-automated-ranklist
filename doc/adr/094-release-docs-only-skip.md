@@ -220,10 +220,11 @@ Tests in `python/tests/test_release_docs_only_gate.py`:
 `test_docs_only_change_after_the_last_deploy_skips` and
 `test_base_not_an_ancestor_of_head_fails_open`; the wiring test now asserts
 that `release.yml` reads no CI run history and holds no `actions: read`.
-`test_every_deploy_records_the_commit_it_deployed` (both deploy jobs),
-`test_the_cert_deploy_commits_the_manifest_of_the_release` and
+`test_every_deploy_records_the_commit_it_deployed` (both deploy jobs) and
 `test_tracking_with_no_new_migrations_moves_the_deployed_commit` pin the
-tracking on every deploy.
+tracking on every deploy; since ADR-011's amendment of 2026-10-25 the record
+and the CERT manifest are written by `scripts/commit-tracking.sh`, tested in
+`python/tests/test_release_tracking_commit.py`.
 
 ## Open items
 

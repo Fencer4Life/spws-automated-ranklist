@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2025-03-22 (M7)
-**Amended by:** [ADR-094](094-release-docs-only-skip.md) (2026-09-13) — `release.yml`'s trigger below is no longer "CI success" alone; a `gate` job now decides whether `build` runs, skipping the whole chain for a documentation-only CI run.
+**Amended by:** [ADR-094](094-release-docs-only-skip.md) (2026-09-13) — `release.yml`'s trigger below is no longer "CI success" alone; a `gate` job now decides whether `build` runs, skipping the whole chain for a documentation-only CI run. Amended 2026-10-25 (below): every deploy job applies the commit `build` fingerprinted, and `scripts/commit-tracking.sh` records each deploy on main.
 
 ## Context
 
@@ -36,3 +36,31 @@ Key mechanisms:
 - `[skip ci]` commits from tracking updates do not trigger infinite pipeline loops.
 - Frontend is built once in CI and deployed to GitHub Pages — not promoted from local dev builds (local uses `127.0.0.1:54321`).
 - PROD deployment requires manual approval from the `Fencer4Life` reviewer in the GitHub `production` environment.
+
+## Amendment (2026-10-25) — every deploy job applies the commit build fingerprinted
+
+The Decision says the same git SHA flows through all tiers. The jobs had drifted
+from it: `build` checked out main when it started, `deploy-cert` the commit that
+triggered the run, and `deploy-prod` main again, pulled after its approval wait. A
+commit carrying a migration that landed in between was applied without having been
+fingerprinted. PROD failed "Fingerprint mismatch after applying migrations" on
+28 August 2026 (run 33143154193) and 5 September 2026 (run 33985677430): `build`
+fingerprinted b7ca0235 and 4a2cdcff, `deploy-prod` applied 340d2ca0 and e5ccb327,
+and each time the migration stayed applied while the tracking stayed behind. It was
+found while correcting the comment that claimed both deploy jobs pull main
+(`doc/plans/github-actions-workflows-page-2026-10-24.html`, W2 #10).
+
+**Decision:** `build` records the commit it checked out (`outputs.sha`), and
+`deploy-cert` and `deploy-prod` check out exactly that commit; neither pulls. A
+commit that lands on main meanwhile is deployed by its own release, which the
+`release` lane runs next. The record of a deploy is written by
+`scripts/commit-tracking.sh` on top of origin/main as it is when the deploy
+finishes, in a separate worktree, so the job's tree stays the deployed one; on a
+rejected push it fetches main and writes the record again. It names the deployed
+commit (`.<env>.last_sha`), which ADR-094's gate measures from, and the CERT record
+carries the release manifest of the deployed tree.
+
+Tests: `python/tests/test_release_tracking_commit.py` RELTRACK.01 (the wiring) and
+RELTRACK.02–05 (the script against a temporary origin whose main moved: the record
+lands on top, the CERT manifest counts the deployed tree, a rejected push is
+written again once, and the last failed attempt ends red).

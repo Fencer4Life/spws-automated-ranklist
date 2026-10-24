@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="0f0cd71ae551ae8ff829ab9996491b460a34e84a1256e1e233dfb86ac54071d7">
+<meta name="doc-source-sha256" content="456a1af6d94462e5d0f0a333b0d71d13c0e8c0ebfd3cd1d151bf214371a9110c">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2539,7 +2539,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/011-artifact-release-pipeline.html">ADR-011</a></td>
-<td>Three-Tier Artifact Release Pipeline with Schema Fingerprinting. <strong>Amended 2026-09-13:</strong> <code>release.yml</code>'s trigger is no longer &quot;CI success&quot; alone — a <code>gate</code> job resolves the diff range since CI last completed on <code>main</code> and <code>build</code> runs only when it found a deployable path change, per ADR-094.</td>
+<td>Three-Tier Artifact Release Pipeline with Schema Fingerprinting. <strong>Amended 2026-09-13:</strong> <code>release.yml</code>'s trigger is no longer &quot;CI success&quot; alone — a <code>gate</code> job resolves the diff range (since the commit PROD last deployed, ADR-094 amendment 2026-10-24) and <code>build</code> runs only when it found a deployable path change, per ADR-094. <strong>Amended 2026-10-25:</strong> <code>deploy-cert</code> and <code>deploy-prod</code> check out the commit <code>build</code> fingerprinted (<code>outputs.sha</code>) instead of the triggering commit and a re-pulled main, which had twice applied an unfingerprinted migration on PROD (28 Aug, 5 Sep 2026); <code>scripts/commit-tracking.sh</code> records each deploy on top of main.</td>
 <td>§2.2, ADR-094</td>
 </tr>
 <tr>
@@ -3139,5 +3139,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>0f0cd71ae551ae8ff829ab9996491b460a34e84a1256e1e233dfb86ac54071d7</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>456a1af6d94462e5d0f0a333b0d71d13c0e8c0ebfd3cd1d151bf214371a9110c</code></footer>
 </div></body></html>

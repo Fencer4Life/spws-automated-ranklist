@@ -51,16 +51,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
+      sha: ${{ steps.head.outputs.sha }}
     steps:
-      # Pin to latest main — the SAME commit deploy-cert/deploy-prod apply via
-      # `git pull origin main`. Without this, build checks out the triggering CI
-      # commit (github.sha); if a migration-bearing commit lands on main while an
-      # earlier release run is mid-flight, deploy applies the new migration but
-      # build's fingerprint is from the old commit → false fingerprint mismatch
-      # at the deploy gate (the 2026-06-25 PROD-deploy failure).
+      # Latest main, and that exact commit is handed to deploy-cert and deploy-prod
+      # (outputs.sha), which apply it: the fingerprint built here is the one they
+      # verify. Building the triggering commit while deploy pulled main failed PROD
+      # on 2026-06-25; deploy-prod pulling a main that moved during its approval
+      # wait failed it on 2026-08-28 and 2026-09-05, each time with a migration
+      # applied that build never fingerprinted (test_release_tracking_commit.py).
       - uses: actions/checkout@v5
         with:
           ref: main
+
+      - name: Record the commit this build fingerprints
+        id: head
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # --- Schema fingerprint from LOCAL Docker Supabase ---
       - uses: supabase/setup-cli@v1
@@ -256,7 +261,10 @@ jobs:
     environment: cert
     runs-on: ubuntu-latest
     steps:
+      # The commit build fingerprinted, not the triggering one or a later main.
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.build.outputs.sha }}
 
       - name: Check for pending CERT migrations
         id: check
@@ -332,54 +340,16 @@ jobs:
 
       # Every deploy records the commit it deployed, with or without migrations:
       # release-gate.sh measures the next release from .prod.last_sha (ADR-094
-      # amendment 2026-10-24), and a field that moved only on migration releases
-      # would make every later docs-only change deploy.
-      - name: Update tracking files
+      # amendment 2026-10-24). scripts/commit-tracking.sh writes the record on top
+      # of main in a separate worktree and, when another push got there first,
+      # fetches main and writes it again: update-tracking.sh re-derives the file
+      # from what is there, so two close releases never merge two diffs.
+      - name: Record the deploy on main
         run: |
-          bash scripts/update-tracking.sh cert \
-            "${{ github.sha }}" \
+          bash scripts/commit-tracking.sh cert \
+            "${{ needs.build.outputs.sha }}" \
             "${{ needs.build.outputs.schema_fingerprint }}" \
             '${{ steps.check.outputs.new_migrations }}'
-
-      - name: Commit tracking update
-        # Retry-and-regenerate instead of stash/rebase/stash-pop: the old
-        # sequence stashed a locally-computed JSON diff, pulled, then tried
-        # to 3-way-merge that stash back in -- guaranteed to CONFLICT
-        # whenever two Release runs land close together, since both compute
-        # independent diffs of the same auto-generated file (observed live
-        # 2026-07-14: a manual dispatch and the CI-triggered run collided,
-        # the second's tracking commit failed outright). update-tracking.sh
-        # is idempotent -- it re-derives the file from whatever's on disk --
-        # so on a push race we just re-fetch, reset to the new tip (safe:
-        # this is a disposable checkout, no other local work exists), and
-        # regenerate + recommit against that fresh base instead of merging.
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            # The manifest describes this release: version, migration and test
-            # counts. generate-manifest.sh keeps its deployed block, and
-            # update-tracking.sh then stamps CERT into it.
-            bash scripts/generate-manifest.sh "${{ needs.build.outputs.schema_fingerprint }}"
-            bash scripts/update-tracking.sh cert \
-              "${{ github.sha }}" \
-              "${{ needs.build.outputs.schema_fingerprint }}" \
-              '${{ steps.check.outputs.new_migrations }}'
-            git add deployed_migrations.json release-manifest.json
-            git commit -m "chore: update CERT tracking [skip ci]"
-            if git push; then
-              echo "Pushed on attempt $attempt"
-              break
-            fi
-            if [ "$attempt" = 5 ]; then
-              echo "::error::Failed to push CERT tracking update after 5 attempts" >&2
-              exit 1
-            fi
-            echo "Push rejected (race with a concurrent release run) -- refetching and retrying ($attempt/5)"
-            sleep $(( (RANDOM % 5) + 1 ))
-            git fetch origin main
-            git reset --hard origin/main
-          done
 
       # Every failure but the posture check's, which has its own message above:
       # migrations, fingerprint, Edge Function or the tracking push (WFALERT.01).
@@ -400,12 +370,12 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     steps:
+      # The commit build fingerprinted, however far main moved during the approval
+      # wait: a later commit is deployed by its own release. The record of this
+      # deploy is written on top of main by scripts/commit-tracking.sh.
       - uses: actions/checkout@v5
         with:
-          ref: main
-
-      - name: Pull latest (includes CERT tracking commit)
-        run: git pull origin main
+          ref: ${{ needs.build.outputs.sha }}
 
       - name: Check for pending PROD migrations
         id: check
@@ -470,41 +440,16 @@ jobs:
 
       # Every deploy records the commit it deployed, with or without migrations:
       # release-gate.sh measures the next release from .prod.last_sha (ADR-094
-      # amendment 2026-10-24), and a field that moved only on migration releases
-      # would make every later docs-only change deploy.
-      - name: Update tracking files
+      # amendment 2026-10-24). scripts/commit-tracking.sh writes the record on top
+      # of main in a separate worktree and, when another push got there first,
+      # fetches main and writes it again: update-tracking.sh re-derives the file
+      # from what is there, so two close releases never merge two diffs.
+      - name: Record the deploy on main
         run: |
-          bash scripts/update-tracking.sh prod \
-            "${{ github.sha }}" \
+          bash scripts/commit-tracking.sh prod \
+            "${{ needs.build.outputs.sha }}" \
             "${{ needs.build.outputs.schema_fingerprint }}" \
             '${{ steps.check.outputs.new_migrations }}'
-
-      - name: Commit tracking update
-        # See the matching comment on deploy-cert's "Commit tracking update"
-        # -- same retry-and-regenerate fix, same race it closes.
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            bash scripts/update-tracking.sh prod \
-              "${{ github.sha }}" \
-              "${{ needs.build.outputs.schema_fingerprint }}" \
-              '${{ steps.check.outputs.new_migrations }}'
-            git add deployed_migrations.json release-manifest.json
-            git commit -m "chore: update PROD tracking [skip ci]"
-            if git push; then
-              echo "Pushed on attempt $attempt"
-              break
-            fi
-            if [ "$attempt" = 5 ]; then
-              echo "::error::Failed to push PROD tracking update after 5 attempts" >&2
-              exit 1
-            fi
-            echo "Push rejected (race with a concurrent release run) -- refetching and retrying ($attempt/5)"
-            sleep $(( (RANDOM % 5) + 1 ))
-            git fetch origin main
-            git reset --hard origin/main
-          done
 
       # Every failure but the posture check's, which has its own message above:
       # migrations, fingerprint, Edge Function or the tracking push (WFALERT.01).

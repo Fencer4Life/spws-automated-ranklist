@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="6f834e056036009b21a634b40f504e086046828f44ce0438fc2d3ca96ac5579a">
+<meta name="adr-source-sha256" content="13e317da990ae527594e4eb0a27f8cb7db8b25d95d76060d694a2e33dc49661e">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">234 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">235 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
@@ -215,10 +215,11 @@ records a valid one.</p>
 <code>test_docs_only_change_after_the_last_deploy_skips</code> and
 <code>test_base_not_an_ancestor_of_head_fails_open</code>; the wiring test now asserts
 that <code>release.yml</code> reads no CI run history and holds no <code>actions: read</code>.
-<code>test_every_deploy_records_the_commit_it_deployed</code> (both deploy jobs),
-<code>test_the_cert_deploy_commits_the_manifest_of_the_release</code> and
+<code>test_every_deploy_records_the_commit_it_deployed</code> (both deploy jobs) and
 <code>test_tracking_with_no_new_migrations_moves_the_deployed_commit</code> pin the
-tracking on every deploy.</p>
+tracking on every deploy; since ADR-011's amendment of 2026-10-25 the record
+and the CERT manifest are written by <code>scripts/commit-tracking.sh</code>, tested in
+<code>python/tests/test_release_tracking_commit.py</code>.</p>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ul>
@@ -231,5 +232,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>6f834e056036009b21a634b40f504e086046828f44ce0438fc2d3ca96ac5579a</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>13e317da990ae527594e4eb0a27f8cb7db8b25d95d76060d694a2e33dc49661e</code></footer>
 </div></body></html>
