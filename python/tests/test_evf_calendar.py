@@ -1667,6 +1667,30 @@ class TestCalendarFailureDoesNotBlockResults:
         assert calls == ["calendar", "results"]
 
 
+class TestMissingCredentialsFailTheRun:
+    """Test evf.84: a run without its CERT credentials ends red.
+
+    ``main()`` printed an error and returned, so the process exited 0 and the
+    scheduled job stayed green while it synced nothing. ``pzsz_sync.py`` exits 2
+    for the same case.
+    """
+
+    @pytest.mark.parametrize("missing", ["SUPABASE_CERT_REF", "SUPABASE_ACCESS_TOKEN"])
+    def test_missing_cert_credential_exits_non_zero(self, monkeypatch, capsys, missing):
+        from python.scrapers import evf_sync
+
+        monkeypatch.setenv("SUPABASE_CERT_REF", "ref")
+        monkeypatch.setenv("SUPABASE_ACCESS_TOKEN", "tok")
+        monkeypatch.delenv(missing)
+        monkeypatch.setattr("sys.argv", ["evf_sync", "--mode", "both"])
+
+        with pytest.raises(SystemExit) as exc:
+            evf_sync.main()
+
+        assert exc.value.code == 2
+        assert missing in capsys.readouterr().err
+
+
 class TestCancelledEventRenumbering:
     """Tests evf.19: a pinned cancellation may shift when the sequence shifts.
 

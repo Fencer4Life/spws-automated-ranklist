@@ -453,7 +453,8 @@ def main(argv: list[str] | None = None) -> None:
         choices=("event", "calendar"),
         default="event",
         help="event: replay the verified CERT run of one event on PROD (default, ADR-108). "
-        "calendar: EVF calendar + URL refresh (ADR-026 amendment).",
+        "calendar: mirror the active season's whole event set CERT → PROD, every "
+        "organizer (fn_mirror_events_to_prod, ADR-026 amendment).",
     )
     parser.add_argument(
         "--event",
@@ -467,8 +468,8 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("--event is required when --mode=event")
     if args.mode == "calendar" and args.event:
         parser.error(
-            "--event is not accepted when --mode=calendar (calendar promotes "
-            "all EVF events for the active season)"
+            "--event is not accepted when --mode=calendar (calendar mirrors "
+            "every event of the active season)"
         )
 
     # -------------------------- Event mode: the replay (ADR-108 §6) -----------
@@ -487,14 +488,9 @@ def main(argv: list[str] | None = None) -> None:
 
     def notify(msg: str) -> None:
         if bot_token and chat_id:
-            try:
-                httpx.post(
-                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
-                    timeout=10,
-                )
-            except Exception:
-                pass
+            from python.telegram import send_message
+
+            _ = send_message(bot_token, chat_id, msg)
 
     # -------------------------- Calendar mode (reconciler) --------------------
     if args.mode == "calendar":

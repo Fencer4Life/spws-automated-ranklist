@@ -464,11 +464,30 @@ function sendTelegramMessage(props, message) {
     message = message.substring(0, 4000) + '\n...(truncated)';
   }
 
-  UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+  var url = 'https://api.telegram.org/bot' + token + '/sendMessage';
+  var resp = UrlFetchApp.fetch(url, {
     method: 'post',
     payload: { chat_id: chatId, text: message, parse_mode: 'HTML' },
     muteHttpExceptions: true,
   });
+  if (resp.getResponseCode() === 200) return;
+  var body = resp.getContentText();
+  // Telegram refuses a reply whose HTML it cannot parse ("can't parse entities"),
+  // such as an error text quoting a '<'. Send it again as plain text rather than
+  // leave the admin without a reply (python/tests/test_gas_bot.py GAS.SEND.01-02).
+  if (resp.getResponseCode() === 400 && /parse/i.test(body)) {
+    var plain = message
+      .replace(/<\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a)(\s[^>]*)?>/gi, '')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    resp = UrlFetchApp.fetch(url, {
+      method: 'post',
+      payload: { chat_id: chatId, text: plain },
+      muteHttpExceptions: true,
+    });
+    if (resp.getResponseCode() === 200) return;
+    body = resp.getContentText();
+  }
+  Logger.log('Telegram refused the reply (' + resp.getResponseCode() + '): ' + body);
 }
 
 

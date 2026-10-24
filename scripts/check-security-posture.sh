@@ -7,13 +7,14 @@
 #
 # Why this exists as well as pgTAP 52.1-52.12.
 #
-# `supabase test db` runs against LOCAL only, and release.yml's build job is
-# skipped entirely by a manual workflow_dispatch:
+# `supabase test db` runs against LOCAL only, in CI, and release.yml's gate job
+# goes on for a manual workflow_dispatch whatever CI did:
 #
 #     if: ${{ github.event_name == 'workflow_dispatch' || ... }}
 #            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unconditional
 #
-# so a hand-triggered release skips CI and therefore skips pgTAP. That makes
+# and release-gate.sh deploys every manual dispatch, so a hand-triggered
+# release deploys without CI and therefore without pgTAP. That makes
 # the standing guard optional in practice. This script closes that route by
 # asserting the posture against the ACTUAL deployed database, from inside the
 # deploy job, where nothing can be routed around it.

@@ -265,7 +265,7 @@ This is the rule ADR-018 set for the older engine on 2026-06-26, and it closes t
 
 ### 9 · Who may write, and when
 
-- **`cert-write`:** the refresh, the CERT ingest and the CERT recompute drain. The drain leaves `cert-recompute`.
+- **`cert-write`:** the refresh, the CERT ingest and the CERT recompute drain. The drain leaves `cert-recompute`. *(2026-10-24: both member jobs set `queue: max`, as every `prod-write` member does, so a waiting ingest is never cancelled by the next drain; `python/tests/test_workflow_lanes.py` WFLANE.01.)*
 - **`prod-write`:** promote, the PROD drain, the daily close and the existing calendar and season promotions.
 - **`ingest-event.yml`** refuses `target: prod` for a domestic event. International events keep the Phase 5 runner on each environment (ADR-105), and promote refuses them by name.
 

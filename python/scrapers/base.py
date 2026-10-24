@@ -138,12 +138,6 @@ def send_telegram_alert(
     if error:
         text += f"\n```\n{error}\n```"
 
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "Markdown",
-    }
+    from python.telegram import send_message
 
-    with httpx.Client() as client:
-        client.post(url, json=payload)
+    _ = send_message(bot_token, chat_id, text, parse_mode="Markdown")

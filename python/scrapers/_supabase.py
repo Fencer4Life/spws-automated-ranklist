@@ -46,15 +46,13 @@ def _management_query(ref: str, token: str, sql: str) -> list[dict]:
 
 
 def _telegram(bot_token: str, chat_id: str, msg: str) -> None:
-    """Send Telegram notification."""
+    """Send Telegram notification (HTML), through python/telegram.py."""
     if not bot_token or not chat_id:
         print(f"[Telegram] {msg}")
         return
-    httpx.post(
-        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-        data={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"},
-        timeout=10,
-    )
+    from python.telegram import send_message
+
+    _ = send_message(bot_token, chat_id, msg)
 
 
 def _get_active_season(

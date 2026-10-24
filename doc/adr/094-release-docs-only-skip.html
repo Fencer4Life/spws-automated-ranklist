@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="094-release-docs-only-skip.md">
-<meta name="adr-source-sha256" content="2048e5f4fdaac1ee2fb597a5bbc65140c3c8f72db30c2c28a8ea6b112a05009f">
+<meta name="adr-source-sha256" content="13e317da990ae527594e4eb0a27f8cb7db8b25d95d76060d694a2e33dc49661e">
 <title>ADR-094 · Release Gate Skips Build/Deploy for Documentation-Only CI Runs</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 094</p><h1>Release Gate Skips Build/Deploy for Documentation-Only CI Runs</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">186 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="proposed">Draft (proposed 2026-09-13; awaiting sign-off)</dd></div><div><dt>Date</dt><dd class="">2026-09-13</dd></div><div><dt>Source</dt><dd class=""><code>094-release-docs-only-skip.md</code></dd></div><div><dt>Length</dt><dd class="">235 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Draft (proposed 2026-09-13; awaiting sign-off)
 <strong>Date:</strong> 2026-09-13
 <strong>Amends:</strong> <a href="011-artifact-release-pipeline.html">ADR-011</a> — the release trigger is no longer &quot;CI success on <code>main</code>&quot; alone; a <code>gate</code> job now decides whether <code>build</code> runs. ADR-011's four-job description (build, deploy-pages, deploy-cert, deploy-prod) is otherwise unchanged.
@@ -20,7 +20,7 @@
 </div>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-a-gate-job-runs-before-build">1 · A `gate` job runs before `build`</a></li><li class="depth-3"><a href="#2-the-base-commit-is-the-previous-completed-ci-run-s-head">2 · The base commit is the previous completed CI run&#x27;s head</a></li><li class="depth-3"><a href="#3-scripts-release-gate-sh-classifies-the-range-and-fails-open">3 · `scripts/release-gate.sh` classifies the range and fails open</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li><li class="depth-2"><a href="#amendment-2026-09-13-exempt-the-release-workflow-s-own-tracking-files">Amendment (2026-09-13): exempt the Release workflow&#x27;s own tracking files</a></li><li class="depth-2"><a href="#amendment-2026-10-24-the-range-starts-at-the-commit-prod-last-deployed">Amendment (2026-10-24) — the range starts at the commit PROD last deployed</a></li><li class="depth-2"><a href="#open-items">Open items</a></li></ol></nav>
   <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
 <p><code>release.yml</code> runs on every completed <code>CI</code> run on <code>main</code> (<code>workflow_run</code>), and
 <code>build</code> had <code>if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'</code> — i.e. it ran whenever CI
@@ -177,6 +177,50 @@ paragraph is itself that live proof: a follow-up, docs-only-by-construction
 commit, pushed to observe the gate's actual verdict on <code>main</code> with no other
 Release run's tracking commit interleaved.</p>
 </section>
+<section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-24-the-range-starts-at-the-commit-prod-last-deployed">Amendment (2026-10-24) — the range starts at the commit PROD last deployed</h2>
+<p><strong>Supersedes §2.</strong> Measuring from the previous completed CI run, whatever its
+result, left a gap, found while writing the workflow catalog
+(<code>doc/plans/github-actions-workflows-page-2026-10-24.html</code>, W2 #4). Take a
+code change whose release never ran: its CI was red, so the gate skipped it,
+or its release was cancelled while it waited in the <code>release</code> lane behind
+another run's PROD approval. If the next push was documentation only, its
+range was documentation only too, so that code was not deployed until the
+next code change or a manual dispatch.</p>
+<p><strong>Decision:</strong> <code>scripts/release-gate.sh</code> takes its base from
+<code>deployed_migrations.json</code> on <code>main</code>: <code>.prod.last_sha</code>, the commit
+<code>deploy-prod</code> last recorded through <code>scripts/update-tracking.sh</code>. PROD deploys
+after CERT, so its commit is the oldest deployed state, and a change stays in
+the range until PROD has it. The gate's &quot;Resolve base commit&quot; step and its
+Actions API call are gone, and so is <code>release.yml</code>'s <code>actions: read</code>
+permission (§2), which nothing else uses: <code>actions/deploy-pages</code> documents
+<code>pages: write</code> and <code>id-token: write</code> as its minimum.</p>
+<p><strong>Alternative 4 answered.</strong> Alternative 4 rejected this base because the
+tracking steps ran only for a release that applied a migration, so
+<code>.prod.last_sha</code> stood still through every migration-free release and the
+range would only grow. That cause is removed: <code>deploy-cert</code> and <code>deploy-prod</code>
+run their tracking steps on every deploy, passing <code>[]</code> when no migration
+applied, so <code>.prod.last_sha</code> is the commit PROD last deployed. Every deploying
+release therefore pushes two <code>[skip ci]</code> tracking commits, CERT's then PROD's;
+§3 exempts both files, so neither triggers a deploy. The CERT tracking commit
+also writes <code>release-manifest.json</code> with <code>scripts/generate-manifest.sh</code>. <code>build</code>
+generated it on its own runner and dropped it, so the committed manifest still
+described March 2026; <code>build</code>'s copy stays as a dry run that proves the script
+on the tree before anything deploys.</p>
+<p>One fail-open rule joins §3: a base that is not an ancestor of the head
+deploys. That is the case right after the history rewrite of 24 October 2026,
+whose recorded SHA is no longer on <code>main</code>; the next release deploys and
+records a valid one.</p>
+<p>Tests in <code>python/tests/test_release_docs_only_gate.py</code>:
+<code>test_code_that_never_deployed_is_deployed_by_the_next_docs_only_change</code>,
+<code>test_docs_only_change_after_the_last_deploy_skips</code> and
+<code>test_base_not_an_ancestor_of_head_fails_open</code>; the wiring test now asserts
+that <code>release.yml</code> reads no CI run history and holds no <code>actions: read</code>.
+<code>test_every_deploy_records_the_commit_it_deployed</code> (both deploy jobs) and
+<code>test_tracking_with_no_new_migrations_moves_the_deployed_commit</code> pin the
+tracking on every deploy; since ADR-011's amendment of 2026-10-25 the record
+and the CERT manifest are written by <code>scripts/commit-tracking.sh</code>, tested in
+<code>python/tests/test_release_tracking_commit.py</code>.</p>
+</section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="open-items">Open items</h2>
 <ul>
 <li>Whether the same gate should also suppress <code>evf-sync.yml</code>/<code>pzsz-sync.yml</code>'s
@@ -188,5 +232,5 @@ unless a concrete cost is observed.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="093-registration-as-birth-year-source.html">← ADR-093: Registration as an Authoritative Birth-Year Source</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="095-ftl-export-token-lifecycle.html">→ ADR-095: FTL Export Token Lifecycle Stays Admin-Assisted, Not Self-Service</a></nav>
-<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>2048e5f4fdaac1ee2fb597a5bbc65140c3c8f72db30c2c28a8ea6b112a05009f</code></footer>
+<footer class="foot">Generated from <code>094-release-docs-only-skip.md</code> · source SHA-256 <code>13e317da990ae527594e4eb0a27f8cb7db8b25d95d76060d694a2e33dc49661e</code></footer>
 </div></body></html>

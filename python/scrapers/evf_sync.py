@@ -1182,8 +1182,10 @@ def main() -> None:
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
 
     if not ref or not token:
-        print("ERROR: SUPABASE_CERT_REF and SUPABASE_ACCESS_TOKEN required")
-        return
+        # Red, not a bare return: a green run that synced nothing alerts nobody
+        # (evf.84). pzsz_sync.py exits 2 for the same case.
+        print("ERROR: SUPABASE_CERT_REF and SUPABASE_ACCESS_TOKEN required", file=sys.stderr)
+        raise SystemExit(2)
 
     cal_events = None
     calendar_error: BaseException | None = None

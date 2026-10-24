@@ -461,7 +461,7 @@ class TestWorkflow:
             "queue": "max",
         }
         triggers = wf[True]  # PyYAML reads the key `on` as True
-        assert triggers["schedule"] == [{"cron": "0 4 * * *"}]
+        assert triggers["schedule"] == [{"cron": "17 4 * * *"}]  # off the hour (WFCRON.01)
         assert triggers["workflow_dispatch"]["inputs"]["dry_run"]["default"] is True
         runs = " ".join(s.get("run") or "" for s in wf["jobs"]["close"]["steps"])
         assert "python -m python.pipeline.promotion.close --dry-run" in runs

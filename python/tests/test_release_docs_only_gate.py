@@ -10,14 +10,19 @@ The gate fails OPEN: anything it cannot classify with confidence deploys.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / "scripts/release-gate.sh"
+TRACKING = ROOT / "scripts/update-tracking.sh"
+RELEASE = ROOT / ".github/workflows/release.yml"
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -210,6 +215,54 @@ def test_empty_diff_fails_open(repo: Path, tmp_path: Path) -> None:
     assert deploy == "true", log
 
 
+def test_base_not_an_ancestor_of_head_fails_open(repo: Path, tmp_path: Path) -> None:
+    """A base off the head's history (a rewritten or foreign commit) proves nothing, even
+    when the two trees differ only in documentation."""
+    root = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-q", "-b", "side")
+    side = _commit(repo, ["doc/side.html"], "side branch, docs only")
+    _git(repo, "checkout", "-q", "main")
+    _git(repo, "reset", "-q", "--hard", root)
+    head = _commit(repo, ["doc/handbook/index.html"], "docs only")
+    deploy, log = _run_gate(repo, tmp_path, **_range_env(side, head))
+    assert deploy == "true", log
+
+
+# ─── Base: the commit PROD last deployed (ADR-094 amendment 2026-10-24) ─────
+
+
+def _record_prod_deploy(repo: Path, sha: str) -> str:
+    """Commit deployed_migrations.json saying PROD last deployed `sha`, as deploy-prod does."""
+    (repo / "deployed_migrations.json").write_text(
+        f'{{"cert": {{"last_sha": "{sha}"}}, "prod": {{"last_sha": "{sha}"}}}}\n'
+    )
+    _git(repo, "add", "deployed_migrations.json")
+    _git(repo, "commit", "-q", "-m", "chore: update PROD tracking [skip ci]")
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def test_code_that_never_deployed_is_deployed_by_the_next_docs_only_change(
+    repo: Path, tmp_path: Path
+) -> None:
+    """PROD deployed X; code A never deployed (its CI red, or its release cancelled while
+    waiting); then a docs-only B. Measured from the last CI run, B's range held only docs
+    and A stayed undeployed. Measured from PROD's last deploy, A is in the range."""
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    _commit(repo, ["python/app.py"], "code A, never deployed")
+    head = _commit(repo, ["doc/handbook/index.html"], "docs B")
+    deploy, log = _run_gate(repo, tmp_path, RELEASE_GATE_HEAD_SHA=head)
+    assert deploy == "true", log
+
+
+def test_docs_only_change_after_the_last_deploy_skips(repo: Path, tmp_path: Path) -> None:
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    head = _commit(repo, ["doc/handbook/index.html"], "docs only")
+    deploy, log = _run_gate(repo, tmp_path, RELEASE_GATE_HEAD_SHA=head)
+    assert deploy == "false", log
+
+
 # ─── Workflow wiring contract ────────────────────────────────────────
 
 
@@ -221,8 +274,12 @@ def test_release_workflow_gates_build_on_the_relevance_job() -> None:
     assert "gate:" in workflow
     assert "needs: gate" in workflow
     assert "needs.gate.outputs.deploy == 'true'" in workflow
-    # Reading the previous CI run needs the Actions API.
-    assert "actions: read" in workflow
+    # The base is the commit PROD last deployed, which the gate reads from
+    # deployed_migrations.json; it no longer asks the Actions API for the
+    # previous CI run, so the workflow needs no `actions: read`.
+    assert "actions/workflows/ci.yml/runs" not in workflow
+    assert "RELEASE_GATE_BASE_SHA" not in workflow
+    assert "actions: read" not in workflow
     # The CI-conclusion condition moved onto the gate; build must not keep a
     # second copy that could let it run when the gate said no.
     assert workflow.count("github.event.workflow_run.conclusion == 'success'") == 1
@@ -234,3 +291,56 @@ def test_deploy_jobs_inherit_the_gate_through_build() -> None:
 
     assert "needs: build" in workflow
     assert "needs: [build, deploy-cert, deploy-pages]" in workflow
+
+
+# ─── Every deploy records its commit (ADR-094 amendment 2026-10-24) ──────────
+#
+# The gate's base is .prod.last_sha. ADR-094's alternative 4 rejected that base
+# while the tracking steps ran only for a release that applied a migration: after
+# a migration-free release the range would only grow, and every docs-only change
+# would deploy. So every deploy now records the commit it deployed.
+
+
+def _release_jobs() -> dict[str, Any]:
+    spec: dict[str, Any] = yaml.safe_load(RELEASE.read_text())
+    return spec["jobs"]
+
+
+def _tracking_steps(job: str) -> list[dict[str, Any]]:
+    steps: list[dict[str, Any]] = _release_jobs()[job]["steps"]
+    return [step for step in steps if "scripts/commit-tracking.sh" in str(step.get("run", ""))]
+
+
+@pytest.mark.parametrize("job", ["deploy-cert", "deploy-prod"])
+def test_every_deploy_records_the_commit_it_deployed(job: str) -> None:
+    """The record itself, the CERT manifest included, is tested by running the script:
+    test_release_tracking_commit.py RELTRACK.02-05."""
+    steps = _tracking_steps(job)
+    assert len(steps) == 1, f"{job} has no step recording its deploy"
+    assert "has_new_migrations" not in str(steps[0].get("if", "")), (
+        f"{job} records its commit only when a migration applied"
+    )
+
+
+def test_tracking_with_no_new_migrations_moves_the_deployed_commit(tmp_path: Path) -> None:
+    """A migration-free deploy passes '[]': the commit and time move, the list stays."""
+    before = {
+        "cert": {"last_sha": "c0", "applied": ["a.sql"], "schema_fingerprint": "f0"},
+        "prod": {"last_sha": "p0", "applied": ["a.sql"], "schema_fingerprint": "f0"},
+    }
+    (tmp_path / "deployed_migrations.json").write_text(json.dumps(before))
+    completed = subprocess.run(
+        ["bash", str(TRACKING), "prod", "p1", "f1", "[]"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    after: dict[str, dict[str, Any]] = json.loads(
+        (tmp_path / "deployed_migrations.json").read_text()
+    )
+    assert after["prod"]["last_sha"] == "p1"
+    assert after["prod"]["applied"] == ["a.sql"]
+    assert after["prod"]["schema_fingerprint"] == "f1"
+    assert after["cert"] == before["cert"]

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Handbook page frame</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0 30px}
+  .pair.phone{grid-template-columns:repeat(2,minmax(0,300px))}
+  .pair figure{margin:0}
+  .pair img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  .pair figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  @media (max-width:700px){.pair,.pair.phone{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">Documentation · look and feel · E2 + E3 before/after · 24 Oct 2026</p>
+  <h1>Every handbook page now has the ADR page frame, written by a checked renderer.</h1>
+  <p class="dek">E2 and E3 as you accepted them (&ldquo;E1 A, E2 A, E3 A&rdquo;). Each handbook page gets the ADR facts card beside its title and the ADR contents column beside its text, built from the page&rsquo;s own metadata and sections. The ADR Decision band no longer makes phone pages 4 px too wide. The page text is unchanged.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>On the branch (commit e956660b) · not on main · waiting for F1</span>
+    <span class="pill">26 pages + 2 stylesheets + 1 renderer</span>
+    <span class="pill good"><span class="dot"></span>preflight 17/17 · page text unchanged on all 26</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="what">
+    <p class="kicker">§ 1 · E2, what changes</p>
+    <h2>The facts card and the contents column, generated from the page itself</h2>
+    <ul>
+      <li><b>Facts card</b> beside the title, the same card as on an ADR: <b>Status</b>, <b>Owner</b>, <b>Type</b>, <b>Last verified</b> and <b>Page id</b>, read from the page&rsquo;s <code>&lt;meta&gt;</code> tags. &ldquo;Current&rdquo; is green and the template&rsquo;s &ldquo;Draft&rdquo; is amber, using the same colours as ADR statuses.</li>
+      <li><b>Contents column</b> on the left (&ldquo;On this page&rdquo;), the ADR <code>.toc</code>: one entry per <code>&lt;section id&gt;</code>, titled by its heading, in page order. Sticky on desktop. On a phone it sits under the title, in two columns, as on ADRs.</li>
+      <li><b>Generated, never hand-edited.</b> <code>scripts/render_handbook_frame.py</code> writes both, like <code>render_adrs.py</code> writes ADR pages. <code>--check</code> runs in preflight and in CI, so a page whose sections or metadata change without a re-render fails the build.</li>
+      <li><b>Pages:</b> the 26 handbook pages with page metadata, including <code>PAGE_TEMPLATE.html</code>, so new pages start with the frame. Pages without handbook metadata are left as they are: governance, rules, evidence, <code>doc/index.html</code>, the archive index and two older plans.</li>
+      <li><b>Tests, seen RED first:</b> <code>python/tests/test_render_handbook_frame.py</code> HBFRAME.01&ndash;07: card from metadata; contents in section order; rendering twice changes nothing; the stale chip goes and other chips stay; page text untouched; every page current; preflight and CI run the check.</li>
+      <li><b>Docs:</b> the documentation standard now states the frame rule, the validation list includes the new check, and so do <code>doc/claude/testing.md</code> and the release skill.</li>
+    </ul>
+  </section>
+
+  <section id="proof">
+    <p class="kicker">§ 2 · E2, no deterioration</p>
+    <h2>Measured on all 26 pages</h2>
+    <ul>
+      <li><b>Page text unchanged:</b> the <code>&lt;main&gt;</code> markup is byte-identical to main on all 26 pages. Reversing the three generated parts gives back each page exactly, apart from the dropped chip. In the browser, the text of <code>&lt;main&gt;</code> is identical in 54 of 56 captures. The other two are the documentation standard, where I added the paragraph that describes the frame.</li>
+      <li><b>No sideways scrolling</b> at 1280 or 375 px: 56 of 56 captures, light and dark. Through html-preview, all six pages below load the ADR stylesheet: Inter, with the navy edge on desktop. The phone layout has no edge by design.</li>
+      <li><b>The text column is narrower:</b> 818 px instead of 1092 px on desktop, because the contents column takes the left side. ADR pages have the same column width. Text keeps its 72-character measure. Tables and screenshots get narrower: the first registration screenshot goes from 1092 to 818 px wide and is still readable (§ 4). Page length changes by &minus;4% to +27% on desktop (median +8%). Registration lifecycle gets shorter because its screenshots shrink. On a phone the change is +3% to +49% (median +7%), from the card and the contents list stacked above the text. The nearly empty template is the extreme.</li>
+    </ul>
+  </section>
+
+  <section id="date">
+    <p class="kicker">§ 3 · E2, the one visible text change</p>
+    <h2>The &ldquo;Verified &hellip;&rdquo; chip goes; the card shows <code>last-verified</code></h2>
+    <ul>
+      <li>21 pages, and the template, had a hand-written chip such as <code>Verified 3 October 2026</code> under the title. It is removed, and an empty chip row goes with it. Other chips stay.</li>
+      <li>The card shows the page&rsquo;s <code>last-verified</code> metadata instead. That is the value <code>check_docs.py</code> validates and the documentation contract maintains. The chips were never checked and had drifted.</li>
+      <li><b>What you will see:</b> most cards say <b>24 October 2026</b>. That date was set by the ownership review in today&rsquo;s FTL e-mail release, when pages whose watched sources changed were reviewed and re-dated. The old chip dates were older, for example 3 October on Ingestion and 23 July on Security posture. Three pages keep earlier dates: competition and ranking 18 October, scoring and ranking 18 October, identity and recompute 2 October.</li>
+    </ul>
+  </section>
+
+  <section id="shots">
+    <p class="kicker">§ 4 · E2 before and after, through html-preview</p>
+    <h2>What the README links open</h2>
+    <p>Before: the page from main today. After: the same page from commit <code>e956660bb961571eb4fc921b3b77730b07eda2ed</code>. Top of each page, light mode.</p>
+    <h3>Handbook index</h3>
+<div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/handbook-index_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/handbook-index_1280.after.png" alt="after, 1280 px"></figure></div>
+<div class="pair phone"><figure><figcaption>before · main today · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/handbook-index_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · the branch commit · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/handbook-index_375.after.png" alt="after, 375 px"></figure></div>
+<h3>Subsystem page · Ingestion</h3>
+<div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/subsystem-ingestion_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/subsystem-ingestion_1280.after.png" alt="after, 1280 px"></figure></div>
+<div class="pair phone"><figure><figcaption>before · main today · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/subsystem-ingestion_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · the branch commit · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/subsystem-ingestion_375.after.png" alt="after, 375 px"></figure></div>
+<h3>Documentation map · two sections</h3>
+<div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/documentation-map_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/documentation-map_1280.after.png" alt="after, 1280 px"></figure></div>
+<div class="pair phone"><figure><figcaption>before · main today · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/documentation-map_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · the branch commit · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/documentation-map_375.after.png" alt="after, 375 px"></figure></div>
+<h3>Reference page with tables · Workflow catalogue</h3>
+<div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/workflow-catalog_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/workflow-catalog_1280.after.png" alt="after, 1280 px"></figure></div>
+<div class="pair phone"><figure><figcaption>before · main today · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/workflow-catalog_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · the branch commit · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/workflow-catalog_375.after.png" alt="after, 375 px"></figure></div>
+<h3>Reference page with screenshots · Registration lifecycle</h3>
+<div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/registration-lifecycle_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/registration-lifecycle_1280.after.png" alt="after, 1280 px"></figure></div>
+<div class="pair phone"><figure><figcaption>before · main today · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/registration-lifecycle_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · the branch commit · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/registration-lifecycle_375.after.png" alt="after, 375 px"></figure></div>
+<h3>Long page · Operator runbooks, 14 sections</h3>
+<div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/operator-runbooks_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/operator-runbooks_1280.after.png" alt="after, 1280 px"></figure></div>
+<div class="pair phone"><figure><figcaption>before · main today · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/operator-runbooks_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · the branch commit · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/operator-runbooks_375.after.png" alt="after, 375 px"></figure></div>
+    <h3>Screenshot inside the narrower column · Registration lifecycle</h3>
+    <div class="pair"><figure><figcaption>before · main today · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/registration-figure_1280.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · the branch commit · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/registration-figure_1280.after.png" alt="after, 1280 px"></figure></div>
+    <h3>Dark mode · Ingestion (opened as a file)</h3>
+    <div class="pair"><figure><figcaption>before · as a file · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/local_subsystems__ingestion_1280_dark.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · as a file · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/local_subsystems__ingestion_1280_dark.after.png" alt="after, 1280 px"></figure></div>
+    <h3>The template new pages start from · <code>PAGE_TEMPLATE.html</code> (opened as a file)</h3>
+    <div class="pair"><figure><figcaption>before · as a file · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/local_PAGE_TEMPLATE_1280_light.before.png" alt="before, 1280 px"></figure><figure><figcaption>after · as a file · 1280 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/local_PAGE_TEMPLATE_1280_light.after.png" alt="after, 1280 px"></figure></div>
+  </section>
+
+  <section id="e3">
+    <p class="kicker">§ 5 · E3, the Decision band on a phone</p>
+    <h2>The band pulls out to the page edge, not past it</h2>
+    <ul>
+      <li>Below 820 px the phone page margin is 20 px, but the ADR &ldquo;Decision&rdquo; band pulled out 24 px on each side. Through html-preview on main, ADR-115 on a 375 px phone measures <b>379 px wide</b>, with the band running from &minus;4 to 379. With the fix it is <b>375 px</b> and the band runs from 0 to 375.</li>
+      <li>Fix: one rule in <code>doc/adr/assets/adr.css</code>, inside the phone media query: <code>.section-card.decision { margin-inline: -20px; padding-inline: 20px; }</code>. Desktop is unchanged: full-page desktop screenshots of ADR-043, ADR-080 and ADR-115, light and dark, are byte-identical (6 of 6).</li>
+      <li>Test, seen RED first: <code>python/tests/test_docs_stylesheets.py</code> DOCSTYLE.04. On phones, the band may pull out no further than the page margin.</li>
+    </ul>
+    <div class="pair phone"><figure><figcaption>before · main · page 379 px · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/adr-115-band-edge_375.before.png" alt="before, 375 px"></figure><figure><figcaption>after · page 375 px · 375 px</figcaption><img loading="lazy" src="docs-handbook-frame-2026-10-24/adr-115-band-edge_375.after.png" alt="after, 375 px"></figure></div>
+    <p>The two crops look the same because the difference is 4 px. On main the crop is wider than the phone, which is the sideways scroll this fixes.</p>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 6 · decide this</p>
+    <h2>One decision</h2>
+    <p>Answer like <b>F1 A</b>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>F1</b></td><td>This sheet: E2 and E3 as shown</td><td><b>A</b> signed off: merge into integration and push to main. Documentation only: no database, no front-end bundle<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="yours">
+    <p class="kicker">§ 7 · left for you, from the authorship change</p>
+    <h2>Two things only you can do</h2>
+    <ul>
+      <li><b>GitHub Support:</b> ask them to purge cached views of the old commits and the 19 <code>refs/pull/*</code> refs, which still point at old history. A force-push can&rsquo;t remove those.</li>
+      <li><b>Other checkouts on this Mac</b> (the primary checkout and other worktrees) still hold the old history. Reset each to <code>origin</code> before working in it, or a push from there could bring the old commits back. I can do this for you on request, one checkout at a time.</li>
+    </ul>
+  </section>
+
+  <p class="foot">docs-handbook-frame · 24 Oct 2026 · screenshots: headless Chromium through html-preview.github.io (main vs. e956660b) and on file:// URLs · metrics: page width, &lt;main&gt; text hash, contents and card counts</p>
+</div>
+</body></html>

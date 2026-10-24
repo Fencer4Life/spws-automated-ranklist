@@ -1100,3 +1100,15 @@ export async function regenStagingReport(
   }
   return data as RegenStagingReportResult
 }
+
+// The alias screen's line for one regen. A dispatch returns when GitHub accepts the
+// start; regen-report.yml renders and sends the report afterwards and can still fail,
+// so the line says it started (test 5.3.5).
+export function regenStagingReportStep(
+  eventCode: string,
+  result: RegenStagingReportResult | null | undefined,
+): string {
+  return result?.skipped === 'local'
+    ? `ℹ ${eventCode}/full.md regen skipped on LOCAL (rerun phase5_report from shell)`
+    : `✓ ${eventCode}/full.md regeneration started · the report arrives on Telegram`
+}

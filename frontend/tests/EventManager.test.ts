@@ -896,6 +896,18 @@ describe('EventManager Accordion (Phase 6)', () => {
     expect(container.querySelector('[data-field="event-import-btn"]')).toBeNull()
   })
 
+  // 9.45r — The ⬇ starts populate-urls.yml, which fills each tournament's result
+  // link and imports no results; its tooltip said "Import results from event page".
+  it('9.45r: the ⬇ tooltip names what it does, finding result links, in both locales', async () => {
+    const en = (await import('../src/lib/locales/en.json')).default as Record<string, string>
+    const pl = (await import('../src/lib/locales/pl.json')).default as Record<string, string>
+    expect(en.tooltip_import_event).toBe('Find result links on the event page')
+    expect(pl.tooltip_import_event).toBe('Znajdź linki do wyników na stronie wydarzenia')
+    const { container } = render(EventManager, { props: propsWithTournaments })
+    const title = container.querySelector('[data-field="event-import-btn"]')!.getAttribute('title')
+    expect([en.tooltip_import_event, pl.tooltip_import_event]).toContain(title)
+  })
+
   // 9.45f — Multiple events render independent statuses
   it('9.45f: dispatch on event A does not affect event B status', async () => {
     mockRequestDispatch.mockReset()

@@ -1,9 +1,10 @@
 name: PZSz Senior Calendar Sync
 
 # Polish veterans also enter senior national competitions run by Polski Zwiazek
-# Szermierczy. This scrapes the PPS and MPS calendar into CERT and promotes it
-# to PROD. Scoring those results is a separate deliverable; nothing here
-# anticipates it.
+# Szermierczy. This scrapes the PPS and MPS calendar into CERT, and
+# promote-calendar.yml mirrors it to PROD. Their results reach CERT through
+# ingest-event.yml and PROD through promote.yml like every organizer's
+# (ADR-111, ADR-113); this workflow carries the calendar only.
 #
 # WHY A SEPARATE WORKFLOW AND NOT A JOB INSIDE evf-sync.yml. A job there would
 # share one run identity: a single red/green, one re-run button, and a set of
@@ -22,7 +23,7 @@ name: PZSz Senior Calendar Sync
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '23 6 * * *'   # off the hour (WFCRON.01); same minute as evf-sync.yml
   workflow_dispatch:
     inputs:
       dry_run:
@@ -60,10 +61,12 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       # The run sends its own one digest (R6) and reports any top-level failure
-      # on Telegram itself, so there is no separate "notify failure" step — that
-      # would be a second message on a fatal run (ADR-116 §11-§12, one digest).
+      # on Telegram itself, so the notify step below speaks only when this step
+      # never ran: a second message on a fatal run would break ADR-116 §11-§12
+      # (one digest).
       # Its exit status is red only for a fatal event; the job colour reflects it.
       - name: Sync PZSz calendar → CERT
+        id: sync
         env:
           DRY_RUN: ${{ inputs.dry_run }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -74,6 +77,18 @@ jobs:
           FLAG=""
           [ "$DRY_RUN" = "true" ] && FLAG="--dry-run"
           python -m python.scrapers.pzsz_sync $FLAG
+
+      # A failed install before the sync leaves it no chance to alert (WFALERT.01).
+      - name: Notify setup failure
+        if: failure() && steps.sync.outcome != 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=PZSz calendar sync FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null
 
   # Start-list capture moved to its own workflow, pzsz-start-lists.yml (ADR-116
   # §10): it needs several attempts a day inside each event's D-4..D-1 window

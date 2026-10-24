@@ -6,7 +6,8 @@ master-data edit, so a `DEDUP_SWEEP` touching many fencers coalesces into one
 rerun per event instead of dozens. Convergent: the queue dedups by id_event and
 recompute is idempotent, so the loop settles to a fixpoint.
 
-Invoked periodically (pg_cron → Edge Function, ADR-041). Pure enough to unit-test:
+Invoked every 15 minutes by recompute-drain.yml (CERT) and recompute-drain-prod.yml
+(PROD), GitHub Actions crons. Pure enough to unit-test:
 the clock, the flow runner, and the DB are all injected.
 """
 
@@ -133,9 +134,10 @@ def drain_recompute_queue(
 def main(argv: list[str] | None = None) -> int:
     """CLI entry for the scheduled self-heal drain (ADR-072, Step C scheduling).
 
-    Invoked by `recompute-drain.yml` on a GitHub Actions cron against CERT (the
-    repo's established scheduler pattern; the worker's own DEBOUNCE_WINDOW
-    coalesces bursts, so a coarse cron is fine). LOCAL stays manual.
+    Invoked by `recompute-drain.yml` against CERT and `recompute-drain-prod.yml`
+    against PROD, on GitHub Actions crons (the repo's established scheduler
+    pattern; the worker's own DEBOUNCE_WINDOW coalesces bursts, so a coarse cron
+    is fine). LOCAL stays manual.
     """
     import argparse
 

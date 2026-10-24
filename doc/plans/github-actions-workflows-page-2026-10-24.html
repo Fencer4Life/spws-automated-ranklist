@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GitHub Actions workflows page</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  .shot{margin:12px 0 26px}
+  .shot img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  .shot figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0 26px}
+  .pair.phone{grid-template-columns:repeat(2,minmax(0,300px))}
+  .pair figure{margin:0}
+  .pair img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  .pair figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  @media (max-width:700px){.pair,.pair.phone{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">Developer handbook · External systems · GitHub · draft for your review · 24 Oct 2026</p>
+  <h1>One page for every GitHub Actions workflow: what it does, when it runs, what it needs, and what red means.</h1>
+  <p class="dek">The page you asked for, built in the ADR design and linked from the GitHub card under External systems. Every workflow file has one block with the six things you named. A test fails the build when a workflow changes without the page following it, and the release skill says so. It is in the worktree only: nothing is committed or on the branch until you sign off.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>W1 A, W2 A accepted 24 Oct · the page replaced the catalog at its address · the ten defects follow, test first</span>
+    <span class="pill">all 18 workflow files · 5 processes</span>
+    <span class="pill good"><span class="dot"></span>GHWF.01–06 seen red, now green · other pages unchanged (56/56)</span>
+  </div>
+  <p><b>Open the page:</b> <a href="../handbook/reference/workflow-catalog.html"><code>doc/handbook/reference/workflow-catalog.html</code></a> (drafted at <code>reference/github-actions-workflows.html</code>; moved here by W1 A).</p>
+
+  <hr class="rule">
+
+  <section id="what">
+    <p class="kicker">§ 1 · what is on the page</p>
+    <h2>One block per workflow, grouped by the process it serves</h2>
+    <ul>
+      <li><b>The six things you named</b>, for every file in <code>.github/workflows/</code>: the name (as GitHub shows it, and the file), an elaborate description of what it does, how often it runs and who starts it, what it depends on, the process it supports, and what a red run usually means with the first thing to check.</li>
+      <li><b>Layout.</b> Six long columns do not fit the ADR text column (818 px beside the contents column), so each workflow is a two-row block in one common table design: the short facts (workflow, process, how often, depends on) on the first row, the two long texts side by side on the second. On a phone each field stacks under its own label.</li>
+      <li><b>Five process groups</b>: quality gate and release; results intake; calendar and start-list synchronization; promotion to PROD and event close; self-healing recompute. Plus a <i>daily schedule</i> (UTC and Warsaw, summer and winter), <i>how the workflows connect</i> (the chains, and the four shared lanes), and <i>keeping this page current</i>.</li>
+      <li><b>How often is measured, not just configured.</b> GitHub starts scheduled runs late: measured 10–24 Oct 2026, the daily ones started 4–9 hours after their cron, and the 15-minute drains ran 5–6 times a day, not 96. The page states both, with the dates.</li>
+      <li><b>Linked from</b> the GitHub card in <a href="../handbook/architecture/system-context.html#external">System context → External systems</a>: &ldquo;Actions workflows&rdquo; is now the link (§ 2, last pair).</li>
+      <li><b>Kept current.</b> <code>python/tests/test_github_workflows_page.py</code> (GHWF.01–06, seen red before the page existed) fails in preflight and CI unless the page has one block per workflow file, the workflow&rsquo;s own name, every field filled, every cron, every called or triggering workflow and every lane. Both copies of the release skill (<code>.claude/skills/release/SKILL.md</code>, <code>.agents/skills/release/SKILL.md</code>) now carry the step: a workflow added, removed, renamed or changed updates its block in the same commit.</li>
+    </ul>
+  </section>
+
+  <section id="shots">
+    <p class="kicker">§ 2 · the draft, rendered</p>
+    <h2>Screens</h2>
+    <figure class="shot"><figcaption>top of the page · 1280 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_top_1280_light.png" alt="top of the page · 1280 px"></figure>
+    <figure class="shot"><figcaption>a block: CI · 1280 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_delivery_1280_light.png" alt="a block: CI · 1280 px"></figure>
+    <figure class="shot"><figcaption>a block: EVF sync · 1280 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_evf-sync_1280_light.png" alt="a block: EVF sync · 1280 px"></figure>
+    <figure class="shot"><figcaption>a block that states a hidden failure: Scrape Tournament Results · 1280 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_scrape_1280_light.png" alt="a block that states a hidden failure: Scrape Tournament Results · 1280 px"></figure>
+    <figure class="shot"><figcaption>how the workflows connect · the shared lanes · 1280 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_lanes_1280_light.png" alt="how the workflows connect · the shared lanes · 1280 px"></figure>
+    <div class="pair phone"><figure><figcaption>top · 375 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_top_375_light.png" alt="top · 375 px"></figure><figure><figcaption>a block stacked · 375 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_evf-sync_375_light.png" alt="a block stacked · 375 px"></figure></div>
+    <figure class="shot"><figcaption>dark mode · 1280 px</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/gha_top_1280_dark.png" alt="dark mode · 1280 px"></figure>
+    <div class="pair"><figure><figcaption>System context, GitHub card · before</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/system-context-card.before.png" alt="System context, GitHub card · before"></figure><figure><figcaption>after: &ldquo;Actions workflows&rdquo; links to the page</figcaption><img loading="lazy" src="github-actions-workflows-page-2026-10-24/system-context-card.after.png" alt="after: &ldquo;Actions workflows&rdquo; links to the page"></figure></div>
+  </section>
+
+  <section id="sources">
+    <p class="kicker">§ 3 · how it was written</p>
+    <h2>From the files, the code they run and their real runs</h2>
+    <ul>
+      <li>All 18 workflow files parsed: triggers, crons, inputs, called workflows, lanes, environments, the commands each job runs.</li>
+      <li>Four read-only research passes over the code each workflow runs, every claim with its <code>file:line</code>, after the docs index and the graph; nothing was run, edited or written.</li>
+      <li>GitHub run history: the last 200 runs of each workflow, and the failing job and step of its recent red runs, read from their logs.</li>
+      <li>Start times of every scheduled workflow measured over 10–24 Oct 2026.</li>
+      <li>I checked the three claims the page states that came only from reading code: the missing <code>pipefail</code> (no <code>shell:</code> set, so GitHub uses <code>bash -e</code>), the package <code>scrape_tournament.py</code> imports at line 327 that the job never installs, and the release gate&rsquo;s base (the last <i>completed</i> CI run, <code>release.yml</code> lines 41–50).</li>
+      <li>Everything the current workflow catalog says about a workflow is on the new page, with its ADR link (17 ADRs linked).</li>
+    </ul>
+  </section>
+
+  <section id="proof">
+    <p class="kicker">§ 4 · no deterioration</p>
+    <h2>The other handbook pages are unchanged</h2>
+    <ul>
+      <li>The new styles in <code>handbook.css</code> use only two new classes (<code>.workflow-table</code>, <code>.lane-table</code>) that no other page has.</li>
+      <li>All 26 other framed handbook pages at 1280 and 375 px, light and dark for two: <b>56 of 56 screenshots byte-identical</b>, and page width, height, text, contents and facts card identical.</li>
+      <li>System context changes by the one link in the GitHub card; its text is the same.</li>
+      <li>The page passes <code>check_docs.py</code> except for one line that W1 decides: it is not yet in the documentation map.</li>
+    </ul>
+  </section>
+
+  <section id="catalog">
+    <p class="kicker">§ 5 · W1 · the page that already exists</p>
+    <h2>There is already a workflow catalog</h2>
+    <p><code>doc/handbook/reference/workflow-catalog.html</code> lists the same 18 workflows with three columns (workflow, trigger, responsibility). Thirteen current files link to it (both release skills, ADR-072, five handbook pages, three agent guides and an audit), and 24 plans. Two pages describing the same workflows means two places to update for every workflow change, against the documentation standard&rsquo;s &ldquo;one fact, one owner&rdquo;, and they will drift. Some of the catalog&rsquo;s text is already wrong (the PZSz 70-row cap &ldquo;fails the run&rdquo;: it only warns; export-seed &ldquo;exports tracking data&rdquo;: it does not).</p>
+    <ul>
+      <li><b>A (recommended):</b> the new page replaces the catalog at the catalog&rsquo;s address, <code>reference/workflow-catalog.html</code>, titled &ldquo;GitHub Actions workflows&rdquo;. Every existing link keeps working, the documentation map keeps its one entry, and there is one inventory. Nothing the catalog says about a workflow is lost (§ 3).</li>
+      <li><b>B:</b> keep both: the new page at <code>reference/github-actions-workflows.html</code> with its own map entry, and the catalog as it is.</li>
+    </ul>
+  </section>
+
+  <section id="findings">
+    <p class="kicker">§ 6 · W2 · what the research found</p>
+    <h2>Defects in the workflows</h2>
+    <p>The page describes each workflow as it behaves today, these defects included, so that nobody trusts a green run that hides a failure. None is fixed in this draft: you asked for the page only.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Defect</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>scrape-tournament.yml</code> does not install the <code>supabase</code> package its write path imports (line 327).</td><td>Every scrape that reaches the write fails. The ⬇ &ldquo;Import results from URL&rdquo; button and Telegram <code>t-scrape</code> write nothing, and the run still shows green (2).</td></tr>
+        <tr><td>2</td><td><code>scrape-tournament.yml</code> and <code>populate-urls.yml</code> pipe Python through <code>tee</code> without <code>pipefail</code>.</td><td>A failed script leaves the run green and its Telegram status &ldquo;success&rdquo;.</td></tr>
+        <tr><td>3</td><td>The same two put their inputs straight into the shell, unvalidated; the other workflows validate theirs.</td><td>An input with shell syntax would run as a command on the runner (only admins and the bot can start them).</td></tr>
+        <tr><td>4</td><td>The release gate measures from the last <i>completed</i> CI run, whatever its result.</td><td>A code change whose release never ran (red CI, or cancelled while waiting behind a PROD approval), followed by a documentation-only change, is not deployed until the next code change.</td></tr>
+        <tr><td>5</td><td><code>evf-parity-sweep.yml</code> probes each event&rsquo;s <code>url_event</code>, the organizer&rsquo;s page, and counts any fetch error as empty.</td><td>In every run sampled from 1 Aug to 24 Oct 2026 it promoted nothing: EVF parity (ADR-053) does not happen. To investigate before a fix.</td></tr>
+        <tr><td>6</td><td>GitHub starts the crons, all set on the hour, 4–9 hours late; the 19:00 UTC start-list run has started after midnight Warsaw time.</td><td>The daily close, syncs and sweep run around midday instead of the morning; a late &ldquo;final&rdquo; start-list run can judge the wrong day, so its last-chance alert can be missed.</td></tr>
+        <tr><td>7</td><td>The <code>cert-write</code> lane has no <code>queue: max</code>.</td><td>A waiting ingest can be cancelled by the next drain. Never seen so far.</td></tr>
+        <tr><td>8</td><td>Smaller gaps: <code>promote-season.yml</code> sends no alert on failure and, like <code>export-seed.yml</code>, pushes without a retry; <code>evf-sync.yml</code> ends green when its CERT credentials are missing; the coherence check&rsquo;s gate 4 never fires on <code>main</code>; <code>release-manifest.json</code> still describes March.</td><td>A failure that nobody hears about, or a check that never checks.</td></tr>
+        <tr><td>9</td><td>Two admin texts: the ⬇ on an event row says &ldquo;Import results from event page&rdquo; but imports none (it fills result links); the alias screen says &ldquo;regenerated · sent to Telegram&rdquo; when GitHub has only accepted the start.</td><td>The admin is told something that has not happened. A UI change, so it gets its own before/after sheet.</td></tr>
+        <tr><td>10</td><td>More than 30 comments in workflow files, scripts and two ADRs say something the code no longer does (a <code>/regen</code> Telegram command that does not exist, a &ldquo;Re-ingest event&rdquo; button that does not exist, rationale &ldquo;in pzsz-sync.yml&rdquo; that moved, old lane member lists).</td><td>The next reader is misled.</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>A (recommended):</b> after this page lands, fix all ten in this session, test first, in the order above, each group as its own commit with the page block updated in the same commit. #5 starts with a short investigation, and #9 with its own before/after sheet.</li>
+      <li><b>B:</b> fix #1–#4 now (hidden failures, injection, undeployed code); record #5–#10 in a plan for later.</li>
+      <li><b>C:</b> record all ten in a plan; fix nothing now.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 7 · decide this</p>
+    <h2>Two decisions</h2>
+    <p>Answer like <b>W1 A, W2 A</b>. After sign-off: the page goes where W1 says, then refresh-graph, the docs index, preflight, commit on the branch, and the before/after of the published page through html-preview before anything goes to <code>main</code>.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>W1</b></td><td>The existing workflow catalog</td><td><b>A</b> the new page replaces it at its address; one inventory, no broken link<br><b>B</b> keep both pages</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>W2</b></td><td>The ten defects in § 6</td><td><b>A</b> fix all ten in this session after the page, test first<br><b>B</b> fix #1–#4 now, plan the rest<br><b>C</b> plan only</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">github-actions-workflows-page · 24 Oct 2026 · sources: .github/workflows/*.yml, the code they run (file:line), gh run history (last 200 runs per workflow), scheduled start times 10–24 Oct 2026 · screenshots: headless Chromium on file:// URLs</p>
+</div>
+</body></html>

@@ -81,7 +81,7 @@ jobs:
     needs: resolve
     runs-on: ubuntu-latest
     # Serialise with every other PROD writer (the PROD drain, the daily close, the
-    # calendar and season promotions). cancel-in-progress: false so a run is never
+    # parity sweep, the calendar and season promotions). cancel-in-progress: false so a run is never
     # cut off mid-flight.
     concurrency:
       group: prod-write
@@ -90,7 +90,7 @@ jobs:
       # enough on its own -- GitHub queues only ONE pending run per group and
       # CANCELS the pending one when a new one arrives. A member without this can
       # silently kill a sibling's pending promote, and cancelled is not failed, so
-      # nothing alerts. Rationale in full: pzsz-sync.yml.
+      # nothing alerts. Enforced and explained by python/tests/test_workflow_lanes.py (WFLANE.01).
       queue: max
     outputs:
       applied: ${{ steps.replay.outputs.applied }}

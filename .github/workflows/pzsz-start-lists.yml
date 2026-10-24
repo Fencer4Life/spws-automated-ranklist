@@ -15,20 +15,22 @@ name: PZSz Start Lists → CERT
 #
 # WINDOW, TWO INDEPENDENT CHECKS (ADR-112 §2). "Today" is the Warsaw date at run
 # time (zoneinfo Europe/Warsaw), so the 25 October clock change cannot shift
-# it. The five crons are set in UTC so every attempt lands between 06:00 and
-# 21:00 Warsaw in both summer (UTC+2 → 07:00..21:00) and winter time
-# (UTC+1 → 06:00..20:00), never after midnight into day D. Check 1 is the run's
+# it. The five crons are set in UTC, eleven minutes past the hour, so every
+# attempt is due between 06:11 and 21:11 Warsaw in both summer (UTC+2 →
+# 07:11..21:11) and winter time (UTC+1 → 06:11..20:11). GitHub starts scheduled
+# runs late (measured 0.2-3.5 hours), so a late final run can start after
+# midnight Warsaw time, on day D. Check 1 is the run's
 # selection (select_window_events); check 2 is the reader
 # (read_event_start_lists_for_capture), which refuses any page of an
 # out-of-window event whoever asks.
 
 on:
   schedule:
-    - cron: '0 5 * * *'   # first run  — 06:00/07:00 Warsaw
-    - cron: '0 9 * * *'   #            — 10:00/11:00 Warsaw
-    - cron: '0 13 * * *'  #            — 14:00/15:00 Warsaw
-    - cron: '0 17 * * *'  #            — 18:00/19:00 Warsaw
-    - cron: '0 19 * * *'  # final run  — 20:00/21:00 Warsaw
+    - cron: '11 5 * * *'   # first run  — 06:11/07:11 Warsaw
+    - cron: '11 9 * * *'   #            — 10:11/11:11 Warsaw
+    - cron: '11 13 * * *'  #            — 14:11/15:11 Warsaw
+    - cron: '11 17 * * *'  #            — 18:11/19:11 Warsaw
+    - cron: '11 19 * * *'  # final run  — 20:11/21:11 Warsaw
   workflow_dispatch:
 
 # ADR-083: least-privilege GITHUB_TOKEN.
@@ -66,6 +68,7 @@ jobs:
       # window-open notice) or its last (the red line if a list is still
       # missing). A manual run is neither.
       - name: Capture PZSz start lists → CERT
+        id: capture
         env:
           # github.event.schedule is one of this workflow's own cron strings
           # (or empty for a manual run); read it via env, never interpolated
@@ -78,7 +81,20 @@ jobs:
         run: |
           FLAGS=""
           case "$SCHEDULE" in
-            "0 5 * * *")  FLAGS="--first-run" ;;
-            "0 19 * * *") FLAGS="--final-run" ;;
+            "11 5 * * *")  FLAGS="--first-run" ;;
+            "11 19 * * *") FLAGS="--final-run" ;;
           esac
           python -m python.scrapers.pzsz_start_list_store capture $FLAGS
+
+      # The capture alerts on Telegram itself (ADR-116 §11-§12, one digest), so
+      # this speaks only when it never ran: a failed install (WFALERT.01).
+      - name: Notify setup failure
+        if: failure() && steps.capture.outcome != 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=PZSz start-list capture FAILED before it started (a setup step). Check: ${RUN_URL}" > /dev/null

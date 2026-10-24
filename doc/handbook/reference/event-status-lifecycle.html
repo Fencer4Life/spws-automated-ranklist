@@ -14,14 +14,14 @@
 <link rel="stylesheet" href="../../adr/assets/adr.css"><link rel="stylesheet" href="../assets/handbook.css">
 </head>
 <body><div class="page">
-<header class="handbook-header">
+<header class="handbook-header mast"><div class="mast-main">
 <nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Reference</span></nav>
 <p class="eyebrow">Reference · Walkthrough</p>
 <h1>Event status lifecycle</h1>
 <p class="dek">What each event status means, who is allowed to change it, which automation carries it between environments, and why an event with a perfectly good date can still be invisible on the public calendar.</p>
-<div class="doc-meta"><span>Current</span><span>Events and registration</span><span>Verified 28 August 2026</span></div>
-</header>
-<main>
+<div class="doc-meta"><span>Current</span><span>Events and registration</span></div>
+</div><aside class="facts" data-frame="handbook" aria-label="Page metadata"><dl><div><dt>Status</dt><dd class="current">Current</dd></div><div><dt>Owner</dt><dd class="">Events and registration</dd></div><div><dt>Type</dt><dd class="">Reference</dd></div><div><dt>Last verified</dt><dd class="">24 October 2026</dd></div><div><dt>Page id</dt><dd class="">HB-REF-EVT-STATUS</dd></div></dl></aside></header>
+<div class="layout" data-frame="handbook"><nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#purpose">Purpose</a></li><li class="depth-2"><a href="#statuses">What each status means</a></li><li class="depth-2"><a href="#two-axes">Two lifecycles share one column</a></li><li class="depth-2"><a href="#calendar">What the public calendar actually shows</a></li><li class="depth-2"><a href="#transitions">The transition matrix</a></li><li class="depth-2"><a href="#calendar-automation">What the calendar promotion may change</a></li><li class="depth-2"><a href="#field-ownership">Three tiers, and why the registration switch is not synced</a></li><li class="depth-2"><a href="#results-automation">What promote changes</a></li><li class="depth-2"><a href="#manual">Manual changes</a></li><li class="depth-2"><a href="#moved-pill">“ZMIANA DATY z 12/12/2026”</a></li><li class="depth-2"><a href="#troubleshooting">“My event is not on the PROD calendar”</a></li><li class="depth-2"><a href="#adjacent">Adjacent statuses that are not this one</a></li></ol></nav><main>
 
 <section id="purpose">
 <p class="kicker">Why this page exists</p>
@@ -206,7 +206,7 @@
 </ul>
 </section>
 
-</main>
+</main></div>
 <footer class="freshness">Owner: Events and registration · Review when the event status enum, its transition validator, the CERT→PROD mirror's status handling, the calendar's visibility filter or the moved-date pill changes.</footer>
 </div></body>
 </html>

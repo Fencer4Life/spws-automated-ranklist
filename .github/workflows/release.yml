@@ -11,7 +11,6 @@ permissions:
   contents: write
   pages: write
   id-token: write
-  actions: read   # ADR-094 gate job reads prior CI run history to find its diff base
 
 concurrency:
   group: "release"
@@ -19,14 +18,14 @@ concurrency:
 
 jobs:
   # ─── Gate ─────────────────────────────────────────────────────────
-  # ADR-094: a CI completion that only touched documentation should not walk
-  # the whole build/deploy chain — nothing it produces differs from what is
-  # already on CERT/PROD. `workflow_run` carries no `before` SHA (unlike the
-  # `push` event ci.yml reads for check_docs.py), so this job derives one:
-  # the head_sha of the previous *completed* CI run on main, i.e. "everything
-  # since CI last finished". scripts/release-gate.sh does the classification
-  # and fails OPEN — any manual dispatch, or anything it cannot resolve with
-  # confidence, deploys.
+  # ADR-094: when everything that changed since PROD last deployed is
+  # documentation, the build/deploy chain is skipped — nothing it produces
+  # differs from what is already on CERT/PROD. `workflow_run` carries no
+  # `before` SHA, so scripts/release-gate.sh measures from the commit PROD last
+  # deployed, read from deployed_migrations.json on main (ADR-094 amendment
+  # 2026-10-24): a change whose release never ran stays in the range. It fails
+  # OPEN — any manual dispatch, or anything it cannot resolve with confidence,
+  # deploys.
   gate:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
@@ -38,22 +37,10 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Resolve base commit (previous completed CI run on main)
-        id: base
-        if: github.event_name == 'workflow_run'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          BASE_SHA=$(gh api \
-            "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=10" \
-            --jq '[.workflow_runs[] | select(.id != ${{ github.event.workflow_run.id }})] | sort_by(.run_started_at) | last | .head_sha // empty')
-          echo "base_sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
-
       - name: Run release gate
         id: gate
         env:
           RELEASE_GATE_EVENT: ${{ github.event_name }}
-          RELEASE_GATE_BASE_SHA: ${{ steps.base.outputs.base_sha }}
           RELEASE_GATE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: bash scripts/release-gate.sh
 
@@ -64,16 +51,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
+      sha: ${{ steps.head.outputs.sha }}
     steps:
-      # Pin to latest main — the SAME commit deploy-cert/deploy-prod apply via
-      # `git pull origin main`. Without this, build checks out the triggering CI
-      # commit (github.sha); if a migration-bearing commit lands on main while an
-      # earlier release run is mid-flight, deploy applies the new migration but
-      # build's fingerprint is from the old commit → false fingerprint mismatch
-      # at the deploy gate (the 2026-06-25 PROD-deploy failure).
+      # Latest main, and that exact commit is handed to deploy-cert and deploy-prod
+      # (outputs.sha), which apply it: the fingerprint built here is the one they
+      # verify. Building the triggering commit while deploy pulled main failed PROD
+      # on 2026-06-25; deploy-prod pulling a main that moved during its approval
+      # wait failed it on 2026-08-28 and 2026-09-05, each time with a migration
+      # applied that build never fingerprinted (test_release_tracking_commit.py).
       - uses: actions/checkout@v5
         with:
           ref: main
+
+      - name: Record the commit this build fingerprints
+        id: head
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # --- Schema fingerprint from LOCAL Docker Supabase ---
       - uses: supabase/setup-cli@v1
@@ -100,7 +92,10 @@ jobs:
       - name: Stop Supabase
         run: supabase stop
 
-      # --- Generate release manifest ---
+      # --- Release manifest: a dry run ---
+      # This copy never leaves the runner. It proves generate-manifest.sh runs on
+      # this tree before anything deploys; deploy-cert writes the committed
+      # release-manifest.json inside its tracking commit.
       - name: Generate release manifest
         run: bash scripts/generate-manifest.sh "${{ steps.fingerprint.outputs.fingerprint }}"
 
@@ -236,6 +231,18 @@ jobs:
         with:
           path: frontend/dist
 
+      # The last step, so it sees every step before it (WFALERT.01).
+      - name: Notify build failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=Release build FAILED: nothing was deployed. Check: ${RUN_URL}" > /dev/null
+
   # ─── Deploy Pages ─────────────────────────────────────────────────
   deploy-pages:
     needs: build
@@ -254,7 +261,10 @@ jobs:
     environment: cert
     runs-on: ubuntu-latest
     steps:
+      # The commit build fingerprinted, not the triggering one or a later main.
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.build.outputs.sha }}
 
       - name: Check for pending CERT migrations
         id: check
@@ -310,6 +320,7 @@ jobs:
       # actually looks like, which is the thing that silently drifted for four
       # months while LOCAL looked fine.
       - name: Verify security posture (CERT)
+        id: posture
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: bash scripts/check-security-posture.sh "${{ secrets.SUPABASE_CERT_REF }}" CERT
@@ -317,57 +328,41 @@ jobs:
       # The Supabase advisory fired weekly from 6 May and every message but the
       # last went unread. Detection already existed; DELIVERY failed. Telegram
       # is the channel this project actually reacts to.
+      # Only for the posture check itself: failure() alone is true after any
+      # earlier failed step, such as a migration that failed to apply, and this
+      # message would then name the wrong cause (WFALERT.02).
       - name: Notify posture failure (CERT)
-        if: failure()
+        if: failure() && steps.posture.outcome == 'failure'
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="SECURITY POSTURE REGRESSION on CERT (ADR-083) — release halted before PROD. Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      - name: Update tracking files
-        if: steps.check.outputs.has_new_migrations == 'true'
+      # Every deploy records the commit it deployed, with or without migrations:
+      # release-gate.sh measures the next release from .prod.last_sha (ADR-094
+      # amendment 2026-10-24). scripts/commit-tracking.sh writes the record on top
+      # of main in a separate worktree and, when another push got there first,
+      # fetches main and writes it again: update-tracking.sh re-derives the file
+      # from what is there, so two close releases never merge two diffs.
+      - name: Record the deploy on main
         run: |
-          bash scripts/update-tracking.sh cert \
-            "${{ github.sha }}" \
+          bash scripts/commit-tracking.sh cert \
+            "${{ needs.build.outputs.sha }}" \
             "${{ needs.build.outputs.schema_fingerprint }}" \
             '${{ steps.check.outputs.new_migrations }}'
 
-      - name: Commit tracking update
-        if: steps.check.outputs.has_new_migrations == 'true'
-        # Retry-and-regenerate instead of stash/rebase/stash-pop: the old
-        # sequence stashed a locally-computed JSON diff, pulled, then tried
-        # to 3-way-merge that stash back in -- guaranteed to CONFLICT
-        # whenever two Release runs land close together, since both compute
-        # independent diffs of the same auto-generated file (observed live
-        # 2026-07-14: a manual dispatch and the CI-triggered run collided,
-        # the second's tracking commit failed outright). update-tracking.sh
-        # is idempotent -- it re-derives the file from whatever's on disk --
-        # so on a push race we just re-fetch, reset to the new tip (safe:
-        # this is a disposable checkout, no other local work exists), and
-        # regenerate + recommit against that fresh base instead of merging.
+      # Every failure but the posture check's, which has its own message above:
+      # migrations, fingerprint, Edge Function or the tracking push (WFALERT.01).
+      - name: Notify deploy failure (CERT)
+        if: failure() && steps.posture.outcome != 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            bash scripts/update-tracking.sh cert \
-              "${{ github.sha }}" \
-              "${{ needs.build.outputs.schema_fingerprint }}" \
-              '${{ steps.check.outputs.new_migrations }}'
-            git add deployed_migrations.json release-manifest.json
-            git commit -m "chore: update CERT tracking [skip ci]"
-            if git push; then
-              echo "Pushed on attempt $attempt"
-              break
-            fi
-            if [ "$attempt" = 5 ]; then
-              echo "::error::Failed to push CERT tracking update after 5 attempts" >&2
-              exit 1
-            fi
-            echo "Push rejected (race with a concurrent release run) -- refetching and retrying ($attempt/5)"
-            sleep $(( (RANDOM % 5) + 1 ))
-            git fetch origin main
-            git reset --hard origin/main
-          done
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=Release: CERT deploy FAILED, so PROD was not deployed. Check: ${RUN_URL}" > /dev/null
 
   # ─── Deploy PROD ──────────────────────────────────────────────────
   deploy-prod:
@@ -375,12 +370,12 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     steps:
+      # The commit build fingerprinted, however far main moved during the approval
+      # wait: a later commit is deployed by its own release. The record of this
+      # deploy is written on top of main by scripts/commit-tracking.sh.
       - uses: actions/checkout@v5
         with:
-          ref: main
-
-      - name: Pull latest (includes CERT tracking commit)
-        run: git pull origin main
+          ref: ${{ needs.build.outputs.sha }}
 
       - name: Check for pending PROD migrations
         id: check
@@ -428,49 +423,43 @@ jobs:
       # ADR-083 — see the equivalent step in deploy-cert for why this lives in
       # the deploy job rather than relying on CI having run.
       - name: Verify security posture (PROD)
+        id: posture
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: bash scripts/check-security-posture.sh "${{ secrets.SUPABASE_PROD_REF }}" PROD
 
+      # Only for the posture check itself: failure() alone is true after any
+      # earlier failed step, such as a migration that failed to apply, and this
+      # message would then name the wrong cause (WFALERT.02).
       - name: Notify posture failure (PROD)
-        if: failure()
+        if: failure() && steps.posture.outcome == 'failure'
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d text="SECURITY POSTURE REGRESSION on PROD (ADR-083). Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      - name: Update tracking files
-        if: steps.check.outputs.has_new_migrations == 'true'
+      # Every deploy records the commit it deployed, with or without migrations:
+      # release-gate.sh measures the next release from .prod.last_sha (ADR-094
+      # amendment 2026-10-24). scripts/commit-tracking.sh writes the record on top
+      # of main in a separate worktree and, when another push got there first,
+      # fetches main and writes it again: update-tracking.sh re-derives the file
+      # from what is there, so two close releases never merge two diffs.
+      - name: Record the deploy on main
         run: |
-          bash scripts/update-tracking.sh prod \
-            "${{ github.sha }}" \
+          bash scripts/commit-tracking.sh prod \
+            "${{ needs.build.outputs.sha }}" \
             "${{ needs.build.outputs.schema_fingerprint }}" \
             '${{ steps.check.outputs.new_migrations }}'
 
-      - name: Commit tracking update
-        if: steps.check.outputs.has_new_migrations == 'true'
-        # See the matching comment on deploy-cert's "Commit tracking update"
-        # -- same retry-and-regenerate fix, same race it closes.
+      # Every failure but the posture check's, which has its own message above:
+      # migrations, fingerprint, Edge Function or the tracking push (WFALERT.01).
+      - name: Notify deploy failure (PROD)
+        if: failure() && steps.posture.outcome != 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ format('https://github.com/{0}/actions/runs/{1}', github.repository, github.run_id) }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            bash scripts/update-tracking.sh prod \
-              "${{ github.sha }}" \
-              "${{ needs.build.outputs.schema_fingerprint }}" \
-              '${{ steps.check.outputs.new_migrations }}'
-            git add deployed_migrations.json release-manifest.json
-            git commit -m "chore: update PROD tracking [skip ci]"
-            if git push; then
-              echo "Pushed on attempt $attempt"
-              break
-            fi
-            if [ "$attempt" = 5 ]; then
-              echo "::error::Failed to push PROD tracking update after 5 attempts" >&2
-              exit 1
-            fi
-            echo "Push rejected (race with a concurrent release run) -- refetching and retrying ($attempt/5)"
-            sleep $(( (RANDOM % 5) + 1 ))
-            git fetch origin main
-            git reset --hard origin/main
-          done
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=Release: PROD deploy FAILED. Check: ${RUN_URL}" > /dev/null

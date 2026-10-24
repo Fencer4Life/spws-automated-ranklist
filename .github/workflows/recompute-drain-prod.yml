@@ -8,9 +8,10 @@ name: Recompute Self-Heal Drain (PROD)
 # `recompute-drain.yml` (CERT), pointed at PROD instead.
 #
 # Concurrency group is `prod-write`, NOT a dedicated `prod-recompute` group: PROD
-# already has one shared-writer serialization point used by promote-season.yml,
-# evf-sync.yml and promote.yml specifically so season/calendar/event-result
-# promotion never overlaps. Joining that same group is what actually prevents a
+# already has one shared-writer serialization point, used by promote.yml,
+# promote-season.yml, promote-calendar.yml (the syncs' mirror), event-close.yml
+# and evf-parity-sweep.yml, so season/calendar/event-result promotion never
+# overlaps. Joining that same group is what actually prevents a
 # recompute from racing a live promotion write to the same rows — a separate group
 # would not (two different concurrency groups run concurrently with each other).
 #
@@ -20,7 +21,7 @@ on:
   schedule:
     # Same cadence as the CERT drain. Combined with the worker's 120s debounce, a
     # single edit or a multi-fencer DEDUP_SWEEP coalesces into one rerun per event.
-    - cron: '*/15 * * * *'
+    - cron: '7,22,37,52 * * * *'   # every 15 min, off the hour (WFCRON.01)
   workflow_dispatch:
     inputs:
       debounce:
@@ -45,7 +46,7 @@ jobs:
       # queue: max on EVERY member of prod-write. The setting is per-job and
       # GitHub queues only ONE pending job per group, cancelling the pending one
       # when a new job arrives -- so a member without it can silently cancel a
-      # sibling's pending promote. Rationale in full: pzsz-sync.yml.
+      # sibling's pending promote. Enforced and explained by python/tests/test_workflow_lanes.py (WFLANE.01).
       queue: max
     steps:
       - uses: actions/checkout@v5

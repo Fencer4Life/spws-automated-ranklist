@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="112-pzsz-start-lists-are-stored-inputs.md">
-<meta name="adr-source-sha256" content="aa82e31a8a8813696398c0d5b2d97c03ff0c699fdeb362bd7153d8705a9abcaa">
+<meta name="adr-source-sha256" content="56d15d6bac1c2a4407d9e7477758f13be5ed2f31a7e13ca9bcbda32e16545fa5">
 <title>ADR-112 · PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -136,12 +136,12 @@ Send <code>ingest PPS1s-2026-2027</code></p>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-21-the-capture-window-and-its-own-workflow-adr-116">Amendment (2026-10-21) — the capture window and its own workflow (ADR-116)</h2>
 <p><a href="116-pzsz-calendar-browser-read-and-letter-passes.html">ADR-116</a> changes how and when start lists are captured, not what they are or how they are stored and replayed:</p>
 <ul>
-<li><strong>§2 — the window and the workflow.</strong> The daily <code>capture</code> step read every PZSz event within 14 days of today, inside <code>pzsz-sync.yml</code>. A PZSz start list exists only from four days before the event to the day before it, so capture now runs in a dedicated CERT-only workflow, <code>pzsz-start-lists.yml</code>, five times a day (06:00–21:00 Warsaw, both DST), for the events whose first day is one to four days away. Two independent checks compute the window so a single bug cannot widen it; the 25 October DST change is covered by the cron choice. The capture step is removed from <code>pzsz-sync.yml</code>, which now reads the gated pages with a browser engine.</li>
+<li><strong>§2 — the window and the workflow.</strong> The daily <code>capture</code> step read every PZSz event within 14 days of today, inside <code>pzsz-sync.yml</code>. A PZSz start list exists only from four days before the event to the day before it, so capture now runs in a dedicated CERT-only workflow, <code>pzsz-start-lists.yml</code>, five times a day (06:00–21:00 Warsaw, both DST; since 2026-10-24 eleven minutes past each hour, off the start of the hour where GitHub delays scheduled runs (WFCRON.01)), for the events whose first day is one to four days away. Two independent checks compute the window so a single bug cannot widen it; the 25 October DST change is covered by the cron choice. The capture step is removed from <code>pzsz-sync.yml</code>, which now reads the gated pages with a browser engine.</li>
 <li><strong>§5 — the ingest notice.</strong> The &quot;📋 send the <code>ingest</code>&quot; Telegram message moves into the rewritten calendar run's single digest (ADR-116 §8, R5), announced once through <code>tbl_pzsz_check</code>.</li>
 </ul>
 <p>Unchanged: <code>tbl_pzsz_start_list</code>, its insert-only versioning and hash, the <code>service_role</code> grant, the year-only form (ADR-078 §1), the saved-page path, and the PROD promote that replays the stored lists by hash and never contacts pzszerm.pl.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="111-pzsz-results-admitted-by-surname-name-birth-year.html">← ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="113-ingest-and-promote-carry-every-organizer.html">→ ADR-113: Ingest and Promote Carry Every Organizer&#x27;s Event</a></nav>
-<footer class="foot">Generated from <code>112-pzsz-start-lists-are-stored-inputs.md</code> · source SHA-256 <code>aa82e31a8a8813696398c0d5b2d97c03ff0c699fdeb362bd7153d8705a9abcaa</code></footer>
+<footer class="foot">Generated from <code>112-pzsz-start-lists-are-stored-inputs.md</code> · source SHA-256 <code>56d15d6bac1c2a4407d9e7477758f13be5ed2f31a7e13ca9bcbda32e16545fa5</code></footer>
 </div></body></html>

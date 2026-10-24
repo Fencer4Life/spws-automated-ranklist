@@ -379,6 +379,7 @@
     transferFencerAlias,
     splitFencerFromAlias,
     regenStagingReport,  // Phase 5.5 (ADR-058+059+061)
+    regenStagingReportStep,
     discardFencerAliasAndResults,
     confirmFencerAlias,
     requestDispatch,                 // ADR-077 season-skeleton promotion
@@ -1331,11 +1332,7 @@
         aliasCreateSteps = [...aliasCreateSteps, `⏳ Regenerating ${ec}/full.md...`]
         try {
           const r = await regenStagingReport(ec)
-          aliasCreateSteps = aliasCreateSteps.slice(0, -1).concat(
-            r?.skipped === 'local'
-              ? `ℹ ${ec}/full.md regen skipped on LOCAL (rerun phase5_report from shell)`
-              : `✓ ${ec}/full.md regenerated · sent to Telegram`,
-          )
+          aliasCreateSteps = aliasCreateSteps.slice(0, -1).concat(regenStagingReportStep(ec, r))
         } catch (e: unknown) {
           aliasCreateSteps = aliasCreateSteps.slice(0, -1).concat(
             `❌ ${ec}/full.md regen failed: ${e instanceof Error ? e.message : String(e)}`,

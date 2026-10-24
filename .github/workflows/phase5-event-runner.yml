@@ -6,7 +6,8 @@ run-name: "${{ inputs.commit_run_id != ''
   || format('Stage {0} on {1} — drafts and review report', inputs.event_code, inputs.target) }}"
 
 # Phase 5.5 (ADR-058 + ADR-059 + ADR-061) — runs the unified Phase-5 pipeline
-# against an event whose URL is already on tbl_event.url_results. Produces
+# against an event whose URLs are already in tbl_event.url_event..url_event_5.
+# Produces
 # tbl_*_draft rows + uploads staging-reports/{event_code}/full.md to Storage
 # + Telegram-sends the document to the operator.
 #
@@ -29,7 +30,7 @@ on:
   workflow_dispatch:
     inputs:
       event_code:
-        description: 'Event code, e.g. EVENT-A-2024-2025 (URL must be on tbl_event.url_results)'
+        description: 'Event code, e.g. EVENT-A-2024-2025 (its URLs must be in tbl_event.url_event..url_event_5)'
         required: true
       target:
         description: 'Target env: cert | prod'

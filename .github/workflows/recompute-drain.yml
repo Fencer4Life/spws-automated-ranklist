@@ -15,7 +15,7 @@ on:
   schedule:
     # Every 15 minutes. Combined with the worker's 120s debounce, a single edit
     # or a multi-fencer DEDUP_SWEEP coalesces into one rerun per affected event.
-    - cron: '*/15 * * * *'
+    - cron: '7,22,37,52 * * * *'   # every 15 min, off the hour (WFCRON.01)
   workflow_dispatch:
     inputs:
       debounce:
@@ -37,6 +37,10 @@ jobs:
     concurrency:
       group: cert-write
       cancel-in-progress: false
+      # Keep every waiting job: by default GitHub keeps one waiting job per lane and
+      # cancels the older, so a waiting ingest could be dropped by the next drain
+      # (test_workflow_lanes.py WFLANE.01).
+      queue: max
     steps:
       - uses: actions/checkout@v5
 

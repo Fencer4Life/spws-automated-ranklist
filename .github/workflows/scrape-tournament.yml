@@ -23,12 +23,19 @@ jobs:
       # ADR-113 (Q2 A): results reach PROD only through promote, which replays
       # a verified CERT run. This workflow holds no PROD secret and refuses a
       # PROD target, so the per-tournament scrape is a CERT tool only.
+      # Inputs reach the scripts only through env, never as ${{ }} in a script
+      # (test_workflow_shell_safety.py WFINJ.01).
       - name: Validate inputs
         env:
           TARGET_ENV: ${{ github.event.inputs.target }}
+          TOURNAMENT_CODE: ${{ github.event.inputs.tournament_code }}
         run: |
           if [[ "$TARGET_ENV" != "cert" ]]; then
             echo "::error::scrape-tournament writes CERT only. PROD gets results through promote: send 'ingest <event code>' (CERT), then 'promote <event code>' (PROD)."
+            exit 1
+          fi
+          if [[ ! "$TOURNAMENT_CODE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::tournament_code must match [A-Za-z0-9_-]+, got: $TOURNAMENT_CODE"
             exit 1
           fi
 
@@ -39,17 +46,21 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install httpx beautifulsoup4 rapidfuzz
+        run: pip install httpx beautifulsoup4 rapidfuzz supabase
 
+      # shell: bash runs with pipefail, so a failed scrape fails the step
+      # through the tee (test_workflow_shell_safety.py WFPIPE.01).
       - name: Scrape tournament results
+        shell: bash
         env:
+          TOURNAMENT_CODE: ${{ github.event.inputs.tournament_code }}
           SUPABASE_URL: ${{ secrets.SUPABASE_CERT_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_CERT_SERVICE_ROLE_KEY }}
           FTL_USERNAME: ${{ secrets.FTL_USERNAME }}
           FTL_PASSWORD: ${{ secrets.FTL_PASSWORD }}
         run: |
           python -m python.tools.scrape_tournament \
-            --tournament-code "${{ github.event.inputs.tournament_code }}" \
+            --tournament-code "$TOURNAMENT_CODE" \
             2>&1 | tee /tmp/scrape-output.txt
 
       - name: Notify Telegram
@@ -57,10 +68,18 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TOURNAMENT_CODE: ${{ github.event.inputs.tournament_code }}
         run: |
-          OUTPUT=$(tail -10 /tmp/scrape-output.txt 2>/dev/null || echo "No output")
+          # HTML mode: Telegram rejects a message holding a tag it does not know,
+          # such as a traceback's <module>, so the quoted lines are escaped
+          # (test_workflow_alerts.py WFALERT.03).
+          if [ -f /tmp/scrape-output.txt ]; then
+            OUTPUT=$(tail -10 /tmp/scrape-output.txt | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+          else
+            OUTPUT="No output"
+          fi
           STATUS="${{ job.status }}"
-          MSG="<b>Scrape: ${{ github.event.inputs.tournament_code }}</b>
+          MSG="<b>Scrape: ${TOURNAMENT_CODE}</b>
           <i>Status: ${STATUS}</i>
           <pre>${OUTPUT}</pre>"
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \

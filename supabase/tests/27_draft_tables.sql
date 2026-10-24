@@ -27,7 +27,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(31);
+SELECT plan(32);
 
 
 -- =============================================================================
@@ -218,6 +218,12 @@ BEGIN
   v_season := fn_create_season('VW-DRAFT-27', '2098-09-01', '2099-06-30');
   PERFORM set_config('spws.today', (SELECT dt_start::text FROM tbl_season WHERE id_season = v_season), false);
 
+  -- fn_create_season assigns no scoring engine (nothing infers one), and the
+  -- commit scores what it moves (27.15b): assign one, as an operator does.
+  UPDATE tbl_season SET id_scoring_engine =
+         (SELECT id_engine FROM tbl_scoring_engine WHERE txt_code = 'EVF_CLASSIC_V1_2025_2026')
+   WHERE id_season = v_season;
+
   INSERT INTO tbl_organizer (txt_code, txt_name)
        VALUES ('VW27ORG', 'VW Test 27 Org')
   ON CONFLICT (txt_code) DO NOTHING;
@@ -313,6 +319,17 @@ SELECT is(
     - (SELECT live_results FROM _pre_commit),
   7,
   '27.15: fn_commit_event_draft moves all 7 draft result rows to tbl_result'
+);
+
+
+-- ===== 27.15b — the commit scores every result it moves =====
+SELECT is(
+  (SELECT COUNT(*)::INT FROM tbl_result r
+     JOIN tbl_tournament t ON r.id_tournament = t.id_tournament
+    WHERE t.txt_code LIKE 'VW27E-%'
+      AND r.ts_points_calc IS NOT NULL),
+  7,
+  '27.15b: fn_commit_event_draft scores all 7 committed results'
 );
 -- pgt-ignore-end typecheck
 

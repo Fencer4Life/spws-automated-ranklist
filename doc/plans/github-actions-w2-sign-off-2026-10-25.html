@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>W2 sign-off</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0 26px}
+  .pair.phone{grid-template-columns:repeat(2,minmax(0,300px))}
+  .pair figure,.shot{margin:0 0 22px}
+  .pair img,.shot img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  .shot.narrow img{max-width:375px}
+  .pair figcaption,.shot figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  td ul{margin:0;padding-left:18px}
+  @media (max-width:700px){.pair,.pair.phone{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">GitHub Actions workflows page · W2 · sign-off before main · 25 Oct 2026</p>
+  <h1>The workflows page and all ten defects are done; six questions stand before the push.</h1>
+  <p class="dek">Twelve commits sit on <code>claude/ftl-seed-email-removal</code>, none on <code>main</code>. Every code change was test-first, and the whole preflight was green before each commit (17 of 17 gates). Fixing the ten turned up more defects, and they are fixed too: two of them had already failed PROD releases, and two pipeline messages never reached Telegram at all. Nothing goes to <code>main</code> until you answer below.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>W2 #1–#10 done · 12 commits · preflight 17/17</span>
+    <span class="pill warn"><span class="dot"></span>6 questions · 1 push decision</span>
+    <span class="pill">pytest 2145 · Vitest 1247 · pgTAP 1494</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="branch">
+    <p class="kicker">§ 1 · on the branch</p>
+    <h2>Twelve commits, oldest first</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Commit</th><th>What</th><th>Proof</th><th>Where it lands</th></tr></thead>
+      <tbody>
+<tr><td><code>e956660b</code></td><td>Handbook pages wear the ADR page frame; the ADR Decision band stays inside the phone gutter (E2, E3)</td><td>html-preview sheet, decision F1</td><td>Docs only</td></tr>
+<tr><td><code>b22ea0c6</code></td><td>The GitHub Actions workflows page replaces the workflow catalog at its address (W1 A); the release skill keeps it current</td><td>GHWF.01–06</td><td>Docs only</td></tr>
+<tr><td><code>dab03434</code></td><td>W2 #1–3: scrape installs what it imports; a step piping into tee fails when its command fails; workflow inputs reach scripts only through env</td><td>WFDEPS.01, WFPIPE.01, WFINJ.01</td><td>Workflows</td></tr>
+<tr><td><code>811a1e7d</code></td><td>W2 #4: the release gate measures from the commit PROD last deployed</td><td>release gate tests; ADR-094 amendment</td><td>Release</td></tr>
+<tr><td><code>fba0040b</code></td><td>W2 #6 (schedule): no cron fires at the start of an hour</td><td>WFCRON.01–02</td><td>Workflows</td></tr>
+<tr><td><code>184f38f3</code></td><td>W2 #7: the cert-write lane keeps every waiting job, like prod-write</td><td>WFLANE.01</td><td>Workflows</td></tr>
+<tr><td><code>8cc46529</code></td><td>W2 #8: every writing job ends in a Telegram alert; pushes retry; evf-sync without credentials is red; coherence gate 4 fires on main and fails; every deploy records its commit and the manifest</td><td>WFALERT.01–03, WFPUSH.01, evf.84, COH.01–05, release tests</td><td>Workflows, release, coherence</td></tr>
+<tr><td><code>ed853845</code></td><td>W2 #9: the event ⬇ tooltip and the alias regen line say what has happened</td><td>9.45r, 5.3.5; its own before/after sheet</td><td>Admin UI (goes live on push)</td></tr>
+<tr><td><code>1b485ec2</code></td><td>Every deploy job applies the commit build fingerprinted; scripts/commit-tracking.sh records the deploy on main</td><td>RELTRACK.01–05; ADR-011 amendment</td><td>Release (PROD deploy path)</td></tr>
+<tr><td><code>9409b338</code></td><td>W2 #10: comments and docstrings in 12 workflows and 7 Python modules say what the code does; ADR-061 and ADR-077 gain dated notes; evf-sync&rsquo;s top-level write narrowed to read</td><td>WFCRON.03, WFPERM.01</td><td>Comments, one permission</td></tr>
+<tr><td><code>d36b4f18</code></td><td>Telegram: a refused message is sent again as plain text, any other refusal is logged (Python and the Apps Script bot)</td><td>TG.01–07, GAS.SEND.01–02</td><td>Alerts</td></tr>
+<tr><td><code>0bb60bb7</code></td><td>pgTAP: the draft commit test scores what it commits; its fixture season had no engine, so the commit skipped scoring with three warnings and the test still passed</td><td>27.15b (RED: 0 of 7 scored)</td><td>Tests and docs</td></tr>
+      </tbody>
+    </table></div>
+    <p>Sheets behind them: <a href="github-actions-workflows-page-2026-10-24.html">the workflows page plan</a> (W1, W2), <a href="docs-handbook-frame-2026-10-24.html">the handbook frame</a> (E2, E3, F1) and <a href="admin-texts-before-after-2026-10-25.html">the two admin texts</a> (#9, pixel-identical screens). The page itself: <a href="../handbook/reference/workflow-catalog.html"><code>doc/handbook/reference/workflow-catalog.html</code></a>.</p>
+  </section>
+
+  <section id="page">
+    <p class="kicker">§ 2 · the page, before and after</p>
+    <h2>The workflow catalog on main, and the workflows page that replaces it</h2>
+    <p>Published through html-preview: <code>main</code> against the page&rsquo;s commit. The layout and stylesheet have not changed since; later commits only updated the text in the blocks they touched. The page has 18 workflow blocks, its table of contents and facts card, and no sideways scroll at 375px.</p>
+    <div class="pair"><figure ><figcaption>MAIN · 1280px</figcaption><img loading="lazy" src="github-actions-w2-sign-off-2026-10-25/catalog-1280-main.png" alt="MAIN · 1280px"></figure><figure ><figcaption>BRANCH · 1280px</figcaption><img loading="lazy" src="github-actions-w2-sign-off-2026-10-25/catalog-1280-page.png" alt="BRANCH · 1280px"></figure></div>
+    <div class="pair phone"><figure ><figcaption>MAIN · 375px</figcaption><img loading="lazy" src="github-actions-w2-sign-off-2026-10-25/catalog-375-main.png" alt="MAIN · 375px"></figure><figure ><figcaption>BRANCH · 375px</figcaption><img loading="lazy" src="github-actions-w2-sign-off-2026-10-25/catalog-375-page.png" alt="BRANCH · 375px"></figure></div>
+    <p>Two blocks as they read now, after the fixes:</p>
+    <figure class="shot"><figcaption>release.yml · 1280px</figcaption><img loading="lazy" src="github-actions-w2-sign-off-2026-10-25/release-block-1280.png" alt="release.yml · 1280px"></figure>
+    <figure class="shot narrow"><figcaption>promote-season.yml · 375px</figcaption><img loading="lazy" src="github-actions-w2-sign-off-2026-10-25/promote-season-block-375.png" alt="promote-season.yml · 375px"></figure>
+  </section>
+
+  <section id="beyond">
+    <p class="kicker">§ 3 · found while fixing, and fixed</p>
+    <h2>Beyond the ten</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Defect</th><th>Evidence</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>My #4 fix measured the gate from a field that moved only on releases with migrations</td><td>ADR-094 itself had rejected that base for this reason (its alternative 4); I had not answered it</td><td>Every deploy records its commit; the amendment answers alternative 4 (<code>8cc46529</code>)</td></tr>
+        <tr><td>deploy-prod applied a newer <code>main</code> than build fingerprinted</td><td>PROD failed &ldquo;Fingerprint mismatch after applying migrations&rdquo; on 28 Aug (run 33143154193) and 5 Sep (run 33985677430), each time leaving the migration applied and the tracking behind</td><td>Both deploy jobs apply build&rsquo;s commit; <code>scripts/commit-tracking.sh</code> records it on top of main (<code>1b485ec2</code>, <a href="../adr/011-artifact-release-pipeline.html">ADR-011 amendment</a>)</td></tr>
+        <tr><td>The posture alert said SECURITY POSTURE REGRESSION after any earlier failure, and nothing alerted after the tracking push</td><td><code>failure()</code> in a step is true for any earlier failed step</td><td>Posture message for the posture step only; a deploy-failure message as each job&rsquo;s last step (WFALERT.02)</td></tr>
+        <tr><td>Two pipeline messages never arrived</td><td>Markdown mode: &ldquo;promoted to EVF_PUBLISHED&rdquo; and &ldquo;txt_code →&rdquo; each hold a lone <code>_</code>, which Telegram refuses; no sender read the reply</td><td>One sender, <code>python/telegram.py</code>: refused formatting is sent again as plain text, other refusals are logged (<code>d36b4f18</code>)</td></tr>
+        <tr><td>HTML alerts quoting log lines could be refused</td><td>A traceback&rsquo;s <code>&lt;module&gt;</code> inside <code>&lt;pre&gt;</code></td><td>The quoted lines are escaped (WFALERT.03)</td></tr>
+        <tr><td>evf-sync held write access it no longer used</td><td>Its reconcile-log push moved into the promote-calendar job</td><td>Top level is read (WFPERM.01, ADR-083)</td></tr>
+        <tr><td>A pgTAP test committed results without scoring them and passed</td><td>Preflight printed three <code>WARNING</code> lines from <code>27_draft_tables.sql</code>: its fixture season had no engine. The other four <code>WARNING</code> lines (28.7, C.1, 75.8) are notices the functions raise by design, provoked on purpose by those assertions</td><td>27.15b asserts the scoring; the fixture assigns an engine (<code>0bb60bb7</code>)</td></tr>
+        <tr><td>Three comments kept the old cron hours after #6</td><td>&ldquo;Daily at 06:00 UTC&rdquo; over <code>'23 6 * * *'</code></td><td>Corrected; WFCRON.03 keeps named times equal to the crons</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">§ 4 · decision records</p>
+    <h2>Two amendments to read</h2>
+    <ul>
+      <li><a href="../adr/094-release-docs-only-skip.html">ADR-094, amendment of 24 October</a>: the gate measures from the commit PROD last deployed; it answers the alternative it had rejected; a base that is not an ancestor of the new commit deploys. The ADR is still marked Draft (proposed 13 Sep), as it was.</li>
+      <li><a href="../adr/011-artifact-release-pipeline.html">ADR-011, amendment of 25 October</a>: every deploy job applies the commit build fingerprinted, which restores its own &ldquo;same git SHA through all tiers&rdquo;.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 5 · decide this</p>
+    <h2>Six questions and the push</h2>
+    <p>Answer like <b>F1 A, T1 A, T2 A, P5 A, P6 A, E1 A, S1 A</b>. P5, P6, E1 and T2 change behaviour or a screen, so they wait for your word; an A on any of them is built in this session, test first, each as its own commit, with T2 on its own before/after sheet.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>F1</b></td><td>E2 and E3: the handbook page frame and the Decision band fix, as on <a href="docs-handbook-frame-2026-10-24.html">their sheet</a></td><td><b>A</b> signed off<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>T1</b></td><td>The two admin texts, as on <a href="admin-texts-before-after-2026-10-25.html">their sheet</a> (screens pixel-identical, one banner line differs)</td><td><b>A</b> signed off<br><b>B</b> other wording (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>T2</b></td><td>Admin → Fencers → Aliases is 425px wide on a 375px phone, before and after #9</td><td><b>A</b> fix it in this session with its own before/after sheet<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>P5</b></td><td>W2 #5, the EVF parity sweep: it fetches each event&rsquo;s <code>url_event</code> (the organiser&rsquo;s page) instead of EVF&rsquo;s results, so it never compares anything. Making it promote as designed would overwrite PROD scores outside promote, against <a href="../adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §8 (&ldquo;no other writer of results&rdquo;), and promote would then refuse that event.</td><td><b>A</b> a read-only parity check: read EVF&rsquo;s results the way evf-sync does (<code>scrape_event_results</code>, POL), compare per tournament with PROD, report on Telegram; amend ADR-053<br><b>B</b> make it write as designed, with an ADR-113 amendment</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>P6</b></td><td>W2 #6, the final start-list run: it reads &ldquo;today&rdquo; from the clock when it starts. The final run&rsquo;s cron is 19:11 UTC: 21:11 in Warsaw in summer, 20:11 in winter. On 22&ndash;24 Oct, while the crons were on the hour, start-list runs began 0.2&ndash;3.5 hours late. A final run 2&nbsp;h&nbsp;49&nbsp;min late in summer, or 3&nbsp;h&nbsp;49&nbsp;min late in winter, starts after midnight in Warsaw: it then misses the window that closed (no alarm; pzsz-sync&rsquo;s &ldquo;no stored start list&rdquo; alarm comes later), and the previous day&rsquo;s late run raises a false alarm</td><td><b>A</b> each run works on the date it was scheduled for, not the date it started<br><b>B</b> move the final run earlier, leaving less time for late lists<br><b>C</b> leave it; rely on pzsz-sync&rsquo;s later alarm</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>E1</b></td><td><code>export-seed.yml</code> with <code>source=cert</code> writes CERT&rsquo;s data as <code>seed_prod_&lt;date&gt;.sql</code> and points <code>seed_prod_latest.sql</code> at it, so the next CI and LOCAL boot load CERT&rsquo;s data under PROD&rsquo;s name</td><td><b>A</b> a CERT export is written as <code>seed_cert_&lt;date&gt;.sql</code> and leaves the PROD seed alone<br><b>B</b> keep it</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>S1</b></td><td>The push</td><td><b>A</b> push the twelve commits now, then build the accepted questions as their own releases<br><b>B</b> build the accepted questions first and push everything together</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="push">
+    <p class="kicker">§ 6 · after sign-off</p>
+    <h2>The push, and what I watch</h2>
+    <ol>
+      <li>In the integration checkout: fetch, merge the branch into <code>integration/main</code>, run the preflight there, push <code>integration/main:main</code>.</li>
+      <li>Watch CI and then Release in the foreground. The release deploys fully: its gate fails open once, because the PROD commit recorded before the history rewrite is no longer on <code>main</code>. GitHub Pages and the WordPress embed go live with no approval, the #9 texts included.</li>
+      <li>You approve the PROD job in GitHub&rsquo;s <code>production</code> environment.</li>
+      <li>I verify: both fingerprints match; two tracking commits written by <code>scripts/commit-tracking.sh</code> name build&rsquo;s commit; <code>release-manifest.json</code> describes this release instead of March; the workflows page is live; the CERT and PROD schema are unchanged (no migrations in this batch).</li>
+      <li><b>Your step:</b> paste <code>scripts/gas_telegram_bot.js</code> into the Apps Script project, so the bot&rsquo;s plain-text retry takes effect.</li>
+    </ol>
+  </section>
+
+  <section id="remind">
+    <p class="kicker">§ 7 · still open from the authorship rewrite</p>
+    <h2>Two reminders</h2>
+    <ul>
+      <li>Ask GitHub Support to purge the old commits and the 19 <code>refs/pull/*</code> that still hold the old history.</li>
+      <li>Other local checkouts still hold the old history: reset each to <code>origin</code> before working in it.</li>
+    </ul>
+  </section>
+
+  <p class="foot">github-actions-w2-sign-off-2026-10-25 · 25 Oct 2026 · branch claude/ftl-seed-email-removal at 0bb60bb7 · preflight 17/17 on each commit · release history from gh run list/view (last 200 Release runs)</p>
+</div>
+</body></html>

@@ -42,7 +42,8 @@ run by hand instead; CI then failed on `main` for `basedpyright` and
 A push to `main` auto-deploys PROD, so that discovery order is a release hazard.
 
 What preflight covers: ruff (lint + format), basedpyright, `render_adrs.py
---check`, `render_docs.py --check`, `check_docs.py`, pytest, Vitest,
+--check`, `render_docs.py --check`, `render_handbook_frame.py --check`,
+`check_docs.py`, pytest, Vitest,
 `check-coherence.sh`, `supabase test db`, `check-spec-sync.sh`, `svelte-check`,
 and the `git diff --check` that `integrate-agent-branch.sh` enforces.
 
@@ -63,6 +64,11 @@ pass"; quote its summary rather than asserting it.
 - Review `git diff --cached --check`, the staged summary, and complete staged diff.
 - Verify release manifests, migration tracking, documentation totals, and traceability when affected.
 - Complete the documentation coherence gate; update current handbook/runbook pages in present tense and archive superseded operational prose.
+- A workflow added, removed or renamed, or a change to a workflow's schedule, the workflow it
+  calls or is triggered by, its concurrency group, its failure conditions or who dispatches it:
+  update its block on `doc/handbook/reference/workflow-catalog.html` in the same commit.
+  `python/tests/test_github_workflows_page.py` (GHWF.01–06) fails until the page lists every
+  workflow file with its name, schedule, calls and lanes.
 - Use a focused commit message that describes the actual change.
 
 ## Push and operate workflows

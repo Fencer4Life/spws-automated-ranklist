@@ -43,6 +43,11 @@ Never report a command as passing unless it completed successfully in this run.
 - Review `git diff --cached --check`, the staged summary, and complete staged diff.
 - Verify release manifests, migration tracking, documentation totals, and traceability when affected.
 - Complete the documentation coherence gate; update current handbook/runbook pages in present tense and archive superseded operational prose.
+- A workflow added, removed or renamed, or a change to a workflow's schedule, the workflow it
+  calls or is triggered by, its concurrency group, its failure conditions or who dispatches it:
+  update its block on `doc/handbook/reference/workflow-catalog.html` in the same commit.
+  `python/tests/test_github_workflows_page.py` (GHWF.01–06) fails until the page lists every
+  workflow file with its name, schedule, calls and lanes.
 - Use a focused commit message that describes the actual change.
 
 ## Push and operate workflows

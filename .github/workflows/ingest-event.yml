@@ -7,15 +7,16 @@ name: Ingest event (NEW pipeline, from URL)
 # the event accordion.
 #
 # Triggered by:
-#   * Admin UI "Re-ingest event" button → dispatch-workflow edge fn (allowlisted)
+#   * Telegram `ingest <event code>` (scripts/gas_telegram_bot.js), dispatched
+#     straight to GitHub; no admin screen starts it
 #   * Manual: gh workflow run ingest-event.yml -f event_code=<X> -f season_end_year=<Y> -f target=cert
 #
 # ADR-113: this path ingests every organizer's event (SPWS, PZSz, EVF, FIE);
 # an international event reads each result URL slot, or its EVF results
 # (ADR-105 rules). Every event reaches PROD only through promote, so target
-# prod is refused. The run is recorded in tbl_ingest_run for promote. It shares
-# `cert-write` with the CERT recompute drain and the refresh, so CERT's result
-# never mixes two states.
+# prod is refused. The run is recorded in tbl_ingest_run for promote. The job,
+# its PROD→CERT refresh step included, holds the `cert-write` lane with the CERT
+# recompute drain, so CERT's results never mix two states.
 #
 # Security: all user-controlled inputs validated before shell interpolation.
 
@@ -23,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       event_code:
-        description: 'Event code, e.g. PPW3-2025-2026 (url_event must be on tbl_event)'
+        description: 'Event code, e.g. PPW3-2025-2026 (a domestic event needs its url_event; an EVF or FIE event reads its result links or EVF results)'
         required: true
       season_end_year:
         description: 'Season end year, e.g. 2026'
@@ -48,6 +49,10 @@ jobs:
     concurrency:
       group: cert-write
       cancel-in-progress: false
+      # Keep every waiting job: by default GitHub keeps one waiting job per lane and
+      # cancels the older, so a waiting ingest could be dropped by the next drain
+      # (test_workflow_lanes.py WFLANE.01).
+      queue: max
     env:
       EVENT_CODE: ${{ inputs.event_code }}
       SEASON_END_YEAR: ${{ inputs.season_end_year }}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="061-local-parity-and-telegram-commands.md">
-<meta name="adr-source-sha256" content="83144847d163ce5a9547af81f39fa9d18e5b6c7b2a8a7504c95946e85f966f34">
+<meta name="adr-source-sha256" content="416b1dfb47fae2f69b074d7068e5180160635785bbeaa1e1fbc5dcab3ec49ab1">
 <title>ADR-061 · LOCAL operator workflow preserved verbatim; Telegram-driven CERT command surface</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -116,9 +116,9 @@
 </ul>
 </section>
 <section class="section-card adr-section detail"><p class="kicker">Decision record</p><h2 id="amendment-2026-10-03-the-telegram-command-surface-is-withdrawn">Amendment 2026-10-03 — the Telegram command surface is withdrawn</h2>
-<p>The four commands (<code>regen</code>, <code>stage</code>, <code>parity</code>, <code>verdict</code>) and their help text never reached the deployed bot. They were added to <code>scripts/gas_email_ingestion.js</code> while the live Apps Script project ran another copy, and the two copies drifted apart. <code>parity</code> could not have worked, because <code>evf-parity-sweep.yml</code> declares no <code>event_code</code> or <code>target</code> input. <code>stage</code> would write CERT outside a recorded run, which ADR-108 rules out for a domestic event. <code>ingest-event.yml</code> already sends the staging report to Telegram. The commands are withdrawn, and FR-108 with them. <code>regen-report.yml</code> and <code>phase5-event-runner.yml</code> remain, started from the Actions page and the admin UI. The LOCAL-parity half of this ADR is unaffected.</p>
+<p>The four commands (<code>regen</code>, <code>stage</code>, <code>parity</code>, <code>verdict</code>) and their help text never reached the deployed bot. They were added to <code>scripts/gas_email_ingestion.js</code> while the live Apps Script project ran another copy, and the two copies drifted apart. <code>parity</code> could not have worked, because <code>evf-parity-sweep.yml</code> declares no <code>event_code</code> or <code>target</code> input. <code>stage</code> would write CERT outside a recorded run, which ADR-108 rules out for a domestic event. <code>ingest-event.yml</code> already sends the staging report to Telegram. The commands are withdrawn, and FR-108 with them. <code>regen-report.yml</code> and <code>phase5-event-runner.yml</code> remain, started from the Actions page and the admin UI. <em>(Note 2026-10-25: only <code>regen-report.yml</code> is started from the admin UI, by the alias screen's create-fencer cascade; <code>phase5-event-runner.yml</code> is started by hand from the Actions page only.)</em> The LOCAL-parity half of this ADR is unaffected.</p>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="060-evf-parity-delta-md.html">← ADR-060: EVF parity sweep emits delta-only .md (no full.md overwrite)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="062-spws-bracket-name-filter.html">→ ADR-062: Skip non-SPWS bracket names at FTL event-schedule discovery</a></nav>
-<footer class="foot">Generated from <code>061-local-parity-and-telegram-commands.md</code> · source SHA-256 <code>83144847d163ce5a9547af81f39fa9d18e5b6c7b2a8a7504c95946e85f966f34</code></footer>
+<footer class="foot">Generated from <code>061-local-parity-and-telegram-commands.md</code> · source SHA-256 <code>416b1dfb47fae2f69b074d7068e5180160635785bbeaa1e1fbc5dcab3ec49ab1</code></footer>
 </div></body></html>

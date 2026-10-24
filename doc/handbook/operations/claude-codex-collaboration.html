@@ -43,15 +43,15 @@
 </head>
 <body>
 <div class="page">
-  <header class="handbook-header">
+  <header class="handbook-header mast"><div class="mast-main">
     <nav class="breadcrumb"><a href="../index.html">Handbook</a><span>Operations</span></nav>
     <p class="eyebrow">Operations · Multi-agent development</p>
     <h1>Claude and Codex working at the same time</h1>
     <p class="dek">Give each agent its own folder and branch. Let them work simultaneously, then merge their finished work one branch at a time through a clean integration checkout.</p>
     <div class="doc-meta"><span>macOS + VS Code</span><span>Separate worktrees</span><span>One integrator</span><span>No shared dirt</span></div>
-  </header>
+  </div><aside class="facts" data-frame="handbook" aria-label="Page metadata"><dl><div><dt>Status</dt><dd class="current">Current</dd></div><div><dt>Owner</dt><dd class="">Development environment</dd></div><div><dt>Type</dt><dd class="">Operations</dd></div><div><dt>Last verified</dt><dd class="">24 October 2026</dd></div><div><dt>Page id</dt><dd class="">HB-OPS-AGENTS</dd></div></dl></aside></header>
 
-  <main>
+  <div class="layout" data-frame="handbook"><nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#idea">Three folders, three jobs</a></li><li class="depth-2"><a href="#mental-model">What you should see in your coding folder</a></li><li class="depth-2"><a href="#setup">Choose and register the integration checkout</a></li><li class="depth-2"><a href="#start-workers">Create one worker for Claude and one for Codex</a></li><li class="depth-2"><a href="#session-start">A Claude session starts in its own worker automatically</a></li><li class="depth-2"><a href="#ownership">Assign tasks with explicit file ownership</a></li><li class="depth-2"><a href="#simultaneous">How simultaneous work actually proceeds</a></li><li class="depth-2"><a href="#worker-finish">Finish and commit the assigned task</a></li><li class="depth-2"><a href="#integrate">Integrate one completed branch</a></li><li class="depth-2"><a href="#second-worker">Rebase the second worker before integration</a></li><li class="depth-2"><a href="#graphify">Give each worker its own Graphify cache</a></li><li class="depth-2"><a href="#rules">What nobody should do</a></li><li class="depth-2"><a href="#checklists">Three short checklists</a></li></ol></nav><main>
     <section id="idea">
       <p class="kicker">The idea in one minute</p>
       <h2>Three folders, three jobs</h2>
@@ -282,7 +282,7 @@ cp /Users/aleks/coding/SPWSranklist/graphify-out/GRAPH_REPORT.md graphify-out/</
         <article class="flow-card"><h3>When uncertain</h3><ul class="checklist"><li>Stop before destructive Git</li><li>Preserve unfamiliar files</li><li>Ask who owns the paths</li><li>Move conflict resolution to worker</li><li>Do not improvise on main</li></ul></article>
       </div>
     </section>
-  </main>
+  </main></div>
 
   <nav class="page-links"><a href="local-development.html">← Local development</a><a href="environments-and-release.html">Environments and release →</a></nav>
   <footer class="freshness">Document owner: Development environment · Review when agent coordination, worktree scripts, branch naming, integration ownership or Git guards change.</footer>

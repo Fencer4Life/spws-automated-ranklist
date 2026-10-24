@@ -239,7 +239,9 @@ sequenceDiagram
 ```
 
 - **No PROD write credentials in the browser** — reuse the existing `requestDispatch` → `dispatch-workflow`
-  Edge Function path (same as the Re-ingest + regen-report buttons).
+  Edge Function path (same as the regen-report dispatch). *(Note 2026-10-25: this
+  also named a Re-ingest button; no admin screen dispatches `ingest-event.yml`, which
+  the Telegram `ingest` command starts.)*
 - **Create-flow convenience (optional):** after the wizard commits on CERT, surface the same
   `⬆ Promote to PROD` affordance inline — one-shot if the admin wants — but the **default lands on CERT
   for review**; never "create on both by default" (that would break id-identity + skip the review gate).
