@@ -33,6 +33,7 @@ SELECT lives_ok(
       '{"min_participants_evf": 1}'::jsonb, NULL, 'REV.EMPTY test', 'pgtap')$$,
   'REV.EMPTY.01 a season holding an empty SCORED tournament is revised');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT rescored_count FROM rev_out),
   (SELECT count(*)::INT FROM tbl_tournament t JOIN tbl_event e USING (id_event)
@@ -40,6 +41,7 @@ SELECT is(
     WHERE s.txt_code = 'SPWS-2025-2026' AND t.enum_import_status = 'SCORED'
       AND EXISTS (SELECT 1 FROM tbl_result r WHERE r.id_tournament = t.id_tournament)),
   'REV.EMPTY.02 it rescores exactly the tournaments that have results');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

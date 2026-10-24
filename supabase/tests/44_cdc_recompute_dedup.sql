@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- ADR-072 (CDC recompute) + ADR-071 (dedup) — the self-healing DB layer.
 -- NEW ingestion pipeline build, milestone 5.
@@ -99,9 +100,11 @@ SELECT is(
 -- ---- 44.5 watermark bumped on enqueue ------------------------------------
 CREATE TEMP TABLE _wm AS SELECT ts_last_master_change AS old FROM tbl_recompute_watermark;
 SELECT fn_enqueue_affected_events((SELECT id_fencer FROM tbl_fencer WHERE txt_surname='TRIG'));
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT ok(
   (SELECT ts_last_master_change FROM tbl_recompute_watermark) > (SELECT old FROM _wm),
   '44.5: enqueue bumps the debounce watermark');
+-- pgt-ignore-end typecheck
 
 -- ---- 44.6 trigger fires on BY change -------------------------------------
 DELETE FROM tbl_recompute_queue;

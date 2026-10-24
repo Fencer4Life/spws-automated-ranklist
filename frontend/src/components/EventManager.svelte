@@ -113,9 +113,6 @@
                 <label>{t('event_entry_list_url_label')}
                   <input data-field="form-entry-list-url" type="text" bind:value={draftUrlEntryList} readonly />
                 </label>
-                <label>{t('event_organizer_email_label')}
-                  <input data-field="form-organizer-email" type="email" bind:value={draftOrganizerEmail} />
-                </label>
                 <!-- Payment override. Leaving these empty is the normal case and
                      must not read as an error: the event then shows its
                      organizer's default account. -->
@@ -139,19 +136,6 @@
                         : t('event_payment_source_none')}
                   </span>
                 </div>
-                <div class="read-only-field"><span>{t('event_ftl_sent_at_label')}</span>
-                  <span data-field="form-ftl-sent-at" class="read-only-value">
-                    {draftFtlSentAt || t('event_ftl_not_sent')}
-                  </span>
-                </div>
-                <button
-                  data-field="form-send-ftl-seed"
-                  class="action-btn"
-                  type="button"
-                  disabled={!event.txt_organizer_email?.trim() || draftOrganizerEmail.trim() !== event.txt_organizer_email.trim()}
-                  title={draftOrganizerEmail.trim() !== (event.txt_organizer_email ?? '').trim() ? t('event_ftl_save_email_first') : t('event_ftl_send_title')}
-                  onclick={() => { handleDispatchSeed(event) }}
-                >{t('event_ftl_send_button')}</button>
               </div>
               <label>{t('event_organizer_label')}
                 <select data-field="form-organizer" bind:value={draftOrganizerId}>
@@ -520,7 +504,7 @@
 
   async function dispatchAndTrack(
     statusId: number,
-    workflow: 'populate-urls.yml' | 'scrape-tournament.yml' | 'ftl-seed.yml',
+    workflow: 'populate-urls.yml' | 'scrape-tournament.yml',
     inputs: Record<string, string>,
     label: string,
   ) {
@@ -567,15 +551,6 @@
       'populate-urls.yml',
       { event_code: event.txt_code, target: activeEnv.toLowerCase() },
       event.txt_code,
-    )
-  }
-
-  function handleDispatchSeed(event: CalendarEvent) {
-    return dispatchAndTrack(
-      event.id_event,
-      'ftl-seed.yml',
-      { event_code: event.txt_code, target: activeEnv.toLowerCase() },
-      `${event.txt_code} → FTL`,
     )
   }
 
@@ -686,13 +661,11 @@
   // ADR-079 amend — entry-list URL, derived alongside draftRegistration when the
   // SPWS-registration toggle is on (see onToggleSpwsRegistration).
   let draftUrlEntryList = $state('')
-  let draftOrganizerEmail = $state('')
   // Per-event payment override (migration 20260902000001). Blank is the normal
   // case: the event then shows its organizer's default account.
   let draftPayee = $state('')
   let draftIban = $state('')
   let ibanError = $state(false)
-  let draftFtlSentAt = $state('')
 
   // ADR-079 amend — ticking the toggle derives self-contained absolute
   // register.html URLs (form + entry list) from where register.html lives +
@@ -916,11 +889,9 @@
     draftInvitation = ''
     draftRegistration = ''
     draftUrlEntryList = ''
-    draftOrganizerEmail = ''
     draftPayee = ''
     draftIban = ''
     ibanError = false
-    draftFtlSentAt = ''
     draftRegistrationDeadline = ''
     draftEntryFee = null
     draftCurrency = 'PLN'
@@ -951,12 +922,10 @@
     draftInvitation = event.url_invitation ?? ''
     draftRegistration = event.url_registration ?? ''
     draftUrlEntryList = event.url_entry_list ?? ''
-    draftOrganizerEmail = event.txt_organizer_email ?? ''
     // The event's own override, never the resolved value — see types.ts.
     draftPayee = event.txt_event_payee ?? ''
     draftIban = event.txt_event_iban ?? ''
     ibanError = false
-    draftFtlSentAt = event.ts_ftl_sent ?? ''
     draftRegistrationDeadline = event.dt_registration_deadline ?? ''
     draftEntryFee = event.num_entry_fee
     draftCurrency = event.txt_entry_fee_currency ?? 'PLN'
@@ -1029,10 +998,10 @@
       // ADR-079 amend — entry-list URL, always sent with the form (like
       // `registration`); '' when the toggle is off so the RPC clears it.
       urlEntryList: draftUrlEntryList || undefined,
-      // FR-131: always send the trimmed value; '' explicitly clears in SQL.
-      organizerEmail: draftOrganizerEmail.trim(),
-      // Always sent, like organizerEmail: '' explicitly clears the override and
-      // falls the event back to its organizer's account.
+      // Always sent: '' explicitly clears the override and falls the event back
+      // to its organizer's account. No organizer e-mail is sent: the column is
+      // retired and fn_update_event leaves it unchanged (ADR-080 amendment
+      // 2026-10-24).
       payee: draftPayee.trim(),
       iban: draftIban.trim(),
       organizerId: draftOrganizerId || undefined,
@@ -1582,5 +1551,32 @@
   }
   .import-btn:hover {
     background: #c3e6cb;
+  }
+
+  /* LAYOUT.01 (24 Oct 2026): on a phone the header and each row wrap instead
+     of widening the page (694 px at a 375 px viewport before). Desktop rules
+     above are untouched; this block applies only below 600 px. */
+  @media (max-width: 600px) {
+    .event-header {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .season-selector-label {
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .season-selector-label select {
+      max-width: 100%;
+    }
+    .event-row {
+      flex-wrap: wrap;
+      gap: 6px 12px;
+    }
+    /* The name takes the rest of the first line, beside the expand arrow,
+       and wraps inside it rather than dropping below the arrow. */
+    .event-cell[data-field="event-name"] {
+      flex: 1 1 calc(100% - 48px);
+      min-width: 0;
+    }
   }
 </style>

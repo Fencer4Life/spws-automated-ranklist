@@ -281,9 +281,6 @@ export interface CalendarEvent {
   num_entry_fee_2w?: number | null
   num_entry_fee_3w?: number | null
   url_entry_list?: string | null
-  // FR-131 / ADR-080 §5 — organizer delivery configuration and last accepted send.
-  txt_organizer_email?: string | null
-  ts_ftl_sent?: string | null
   // Payment account, resolved by vw_calendar: the event's own override where it
   // has one, else the organizer's default. txt_payment_source names which level
   // answered, so the admin UI states it rather than inferring it from whether a
@@ -486,8 +483,6 @@ export interface UpdateEventParams {
   // (url_registration) when the SPWS-registration toggle is on. Direct-assign
   // in fn_update_event (value sets, null clears) — always sent with the form.
   urlEntryList?: string | null
-  // FR-131: empty string explicitly clears; undefined leaves unchanged.
-  organizerEmail?: string
   // Per-event payment override (migration 20260902000001). Empty string clears
   // it, so the event falls back to its organizer's default account.
   payee?: string

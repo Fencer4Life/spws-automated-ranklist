@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FTL e-mail removal — before/after sheet</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0 30px}
+  .pair figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .pair figcaption{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--muted);margin:0 0 8px;letter-spacing:.03em}
+  .pair img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
+  .pair.narrow{grid-template-columns:repeat(2,minmax(0,380px))}
+  .zoom{margin:12px 0 26px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .zoom img{display:block;max-width:100%;height:auto;image-rendering:pixelated}
+  .zoom p{margin:8px 0 0;font-size:15px;color:var(--muted)}
+  td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+  @media (max-width:760px){.pair,.pair.narrow{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Events &amp; registration · FTL seed · before/after sheet · 24 Oct 2026</p>
+  <h1>Five elements leave the admin event form. Nothing else moves except upward into the space they left.</h1>
+  <p class="dek">Your UI rule: only what was asked may change, and you sign off before any push. Every screen the change can reach was captured on LOCAL before and after, in Polish and English, at 1280 px and 375 px, and compared pixel by pixel and element by element. The organizer download page and the ZIP it produces are <b>identical</b>. A second, separate change makes the admin event list fit a phone; it has its own before/after in <a href="#phone">§ 6</a>.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Waiting for your sign-off · no push before it</span>
+    <span class="pill">plan: <a href="ftl-seed-email-removal-2026-10-24.html">ftl-seed-email-removal-2026-10-24.html</a></span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Verdict</p>
+    <h2>What changed, and what did not</h2>
+    <div class="note good"><p class="lede">Download path: byte-identical</p>
+      <p>The organizer page reached by the shared link renders identically, and the ZIP it builds has the same name and the same SHA-256 (<code>a79a8be588c56d74a0863beb31afcb47713e8e255d80202569e6f2127e08a02e</code>) before and after, in all four captures.</p></div>
+    <div class="note accent"><p class="lede">Admin event form: exactly the five planned elements are gone</p>
+      <ul>
+        <li>the &ldquo;Organizer e-mail&rdquo; label and its input;</li>
+        <li>the &ldquo;FTL bundle last sent / Not sent yet&rdquo; line (two elements);</li>
+        <li>the &ldquo;Send to organizer&rdquo; button.</li>
+      </ul>
+      <p>In every one of the 8 form states, every other element is pixel-identical or sits higher by exactly the height of the removed elements above it. The registration section keeps its width and gets 112 px shorter (130 px in Polish at 375 px).</p></div>
+  </section>
+
+  <section>
+    <p class="kicker">§ 1 · element by element</p>
+    <h2>The event form, in 8 states</h2>
+    <p>&ldquo;Gone&rdquo; counts removed elements. &ldquo;Moved&rdquo; counts elements that only shifted up. &ldquo;Same&rdquo; counts elements at the same place with the same pixels. The last column is the registration section's change in width / height, in px.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Form</th><th>Lang</th><th>Width</th><th>Page height</th><th>Gone</th><th>Moved</th><th>Same</th><th>Section Δw / Δh</th></tr></thead>
+      <tbody>
+<tr><td>registration on, e-mail and stamp filled</td><td>PL</td><td class=num>1280</td><td class=num>1042 → 930</td><td class=num>5</td><td class=num>0</td><td class=num>53</td><td class=num>0 / -112</td></tr>
+<tr><td>registration off, nothing filled</td><td>PL</td><td class=num>1280</td><td class=num>1042 → 930</td><td class=num>5</td><td class=num>4</td><td class=num>51</td><td class=num>0 / -112</td></tr>
+<tr><td>registration on, e-mail and stamp filled</td><td>PL</td><td class=num>375</td><td class=num>1896 → 1766</td><td class=num>5</td><td class=num>2</td><td class=num>51</td><td class=num>0 / -130</td></tr>
+<tr><td>registration off, nothing filled</td><td>PL</td><td class=num>375</td><td class=num>1960 → 1830</td><td class=num>5</td><td class=num>0</td><td class=num>55</td><td class=num>0 / -130</td></tr>
+<tr><td>registration on, e-mail and stamp filled</td><td>EN</td><td class=num>1280</td><td class=num>1042 → 930</td><td class=num>5</td><td class=num>0</td><td class=num>53</td><td class=num>0 / -112</td></tr>
+<tr><td>registration off, nothing filled</td><td>EN</td><td class=num>1280</td><td class=num>1042 → 930</td><td class=num>5</td><td class=num>4</td><td class=num>51</td><td class=num>0 / -112</td></tr>
+<tr><td>registration on, e-mail and stamp filled</td><td>EN</td><td class=num>375</td><td class=num>1847 → 1735</td><td class=num>5</td><td class=num>2</td><td class=num>51</td><td class=num>0 / -112</td></tr>
+<tr><td>registration off, nothing filled</td><td>EN</td><td class=num>375</td><td class=num>1911 → 1799</td><td class=num>5</td><td class=num>0</td><td class=num>55</td><td class=num>0 / -112</td></tr>
+      </tbody>
+    </table></div>
+    <p>The moved elements are not repainted differently: their largest difference is <b>9 pixels, by at most 3/255</b> in one colour channel. That is font anti-aliasing at a new vertical offset, invisible to the eye. Magnified in § 4.</p>
+  </section>
+
+  <section>
+    <p class="kicker">§ 2 · screens that must not change</p>
+    <h2>Download page and event list: unchanged</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Screen</th><th>Size</th><th>Pixels differing, before vs after</th><th>Capture noise (two before runs)</th></tr></thead>
+      <tbody>
+<tr><td><code>admin-list_pl_1280</code></td><td class=num>1280×900</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export_pl_1280</code></td><td class=num>1280×1490</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export-after-download_pl_1280</code></td><td class=num>1280×1490</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>admin-list_pl_375</code></td><td class=num>643×900</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export_pl_375</code></td><td class=num>375×2557</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export-after-download_pl_375</code></td><td class=num>375×2557</td><td class=num>9</td><td class=num>9</td></tr>
+<tr><td><code>admin-list_en_1280</code></td><td class=num>1280×900</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export_en_1280</code></td><td class=num>1280×1446</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export-after-download_en_1280</code></td><td class=num>1280×1446</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>admin-list_en_375</code></td><td class=num>610×900</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export_en_375</code></td><td class=num>375×2575</td><td class=num>0</td><td class=num>0</td></tr>
+<tr><td><code>ftl-export-after-download_en_375</code></td><td class=num>375×2575</td><td class=num>0</td><td class=num>0</td></tr>
+      </tbody>
+    </table></div>
+    <p>The only non-zero row (9 pixels at the right edge of the page after a download, at 375 px) also appears between two captures taken <b>before</b> the change. It is capture noise, not a change.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Capture</th><th>ZIP name</th><th>Same name</th><th>Same bytes</th><th>SHA-256</th></tr></thead>
+      <tbody>
+<tr><td><code>all_pl_1280</code></td><td><code>PPW1-2026-2027_FTL.zip</code></td><td>yes</td><td>yes</td><td><code>a79a8be588c56d74…</code></td></tr>
+<tr><td><code>all_pl_375</code></td><td><code>PPW1-2026-2027_FTL.zip</code></td><td>yes</td><td>yes</td><td><code>a79a8be588c56d74…</code></td></tr>
+<tr><td><code>all_en_1280</code></td><td><code>PPW1-2026-2027_FTL.zip</code></td><td>yes</td><td>yes</td><td><code>a79a8be588c56d74…</code></td></tr>
+<tr><td><code>all_en_375</code></td><td><code>PPW1-2026-2027_FTL.zip</code></td><td>yes</td><td>yes</td><td><code>a79a8be588c56d74…</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">§ 3 · side by side</p>
+    <h2>The event form</h2>
+    <h3>Event form · registration on, e-mail and stamp filled · PL · 1280 px</h3><div class="pair"><figure><figcaption>BEFORE · registration on, e-mail and stamp filled · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_pl_1280.before.png" alt="Before: registration on, e-mail and stamp filled · PL · 1280" loading="lazy"></figure><figure><figcaption>AFTER · registration on, e-mail and stamp filled · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_pl_1280.after.png" alt="After: registration on, e-mail and stamp filled · PL · 1280" loading="lazy"></figure></div><h3>Event form · registration on, e-mail and stamp filled · PL · 375 px</h3><div class="pair narrow"><figure><figcaption>BEFORE · registration on, e-mail and stamp filled · PL · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_pl_375.before.png" alt="Before: registration on, e-mail and stamp filled · PL · 375" loading="lazy"></figure><figure><figcaption>AFTER · registration on, e-mail and stamp filled · PL · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_pl_375.after.png" alt="After: registration on, e-mail and stamp filled · PL · 375" loading="lazy"></figure></div><h3>Event form · registration on, e-mail and stamp filled · EN · 1280 px</h3><div class="pair"><figure><figcaption>BEFORE · registration on, e-mail and stamp filled · EN · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_en_1280.before.png" alt="Before: registration on, e-mail and stamp filled · EN · 1280" loading="lazy"></figure><figure><figcaption>AFTER · registration on, e-mail and stamp filled · EN · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_en_1280.after.png" alt="After: registration on, e-mail and stamp filled · EN · 1280" loading="lazy"></figure></div><h3>Event form · registration on, e-mail and stamp filled · EN · 375 px</h3><div class="pair narrow"><figure><figcaption>BEFORE · registration on, e-mail and stamp filled · EN · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_en_375.before.png" alt="Before: registration on, e-mail and stamp filled · EN · 375" loading="lazy"></figure><figure><figcaption>AFTER · registration on, e-mail and stamp filled · EN · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-reg_en_375.after.png" alt="After: registration on, e-mail and stamp filled · EN · 375" loading="lazy"></figure></div><h3>Event form · registration off, nothing filled · PL · 1280 px</h3><div class="pair"><figure><figcaption>BEFORE · registration off, nothing filled · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_pl_1280.before.png" alt="Before: registration off, nothing filled · PL · 1280" loading="lazy"></figure><figure><figcaption>AFTER · registration off, nothing filled · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_pl_1280.after.png" alt="After: registration off, nothing filled · PL · 1280" loading="lazy"></figure></div><h3>Event form · registration off, nothing filled · PL · 375 px</h3><div class="pair narrow"><figure><figcaption>BEFORE · registration off, nothing filled · PL · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_pl_375.before.png" alt="Before: registration off, nothing filled · PL · 375" loading="lazy"></figure><figure><figcaption>AFTER · registration off, nothing filled · PL · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_pl_375.after.png" alt="After: registration off, nothing filled · PL · 375" loading="lazy"></figure></div><h3>Event form · registration off, nothing filled · EN · 1280 px</h3><div class="pair"><figure><figcaption>BEFORE · registration off, nothing filled · EN · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_en_1280.before.png" alt="Before: registration off, nothing filled · EN · 1280" loading="lazy"></figure><figure><figcaption>AFTER · registration off, nothing filled · EN · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_en_1280.after.png" alt="After: registration off, nothing filled · EN · 1280" loading="lazy"></figure></div><h3>Event form · registration off, nothing filled · EN · 375 px</h3><div class="pair narrow"><figure><figcaption>BEFORE · registration off, nothing filled · EN · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_en_375.before.png" alt="Before: registration off, nothing filled · EN · 375" loading="lazy"></figure><figure><figcaption>AFTER · registration off, nothing filled · EN · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-form-plain_en_375.after.png" alt="After: registration off, nothing filled · EN · 375" loading="lazy"></figure></div>
+    <h2>The admin event list</h2>
+    <div class="pair"><figure><figcaption>BEFORE · event list · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-list_pl_1280.before.png" alt="Before: event list · PL · 1280" loading="lazy"></figure><figure><figcaption>AFTER · event list · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-list_pl_1280.after.png" alt="After: event list · PL · 1280" loading="lazy"></figure></div>
+    <div class="pair narrow"><figure><figcaption>BEFORE · event list · PL · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-list_pl_375.before.png" alt="Before: event list · PL · 375" loading="lazy"></figure><figure><figcaption>AFTER · event list · PL · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-list_pl_375.after.png" alt="After: event list · PL · 375" loading="lazy"></figure></div>
+    <h2>The organizer download page</h2>
+    <div class="pair"><figure><figcaption>BEFORE · download page · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/ftl-export_pl_1280.before.png" alt="Before: download page · PL · 1280" loading="lazy"></figure><figure><figcaption>AFTER · download page · PL · 1280</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/ftl-export_pl_1280.after.png" alt="After: download page · PL · 1280" loading="lazy"></figure></div>
+    <div class="pair narrow"><figure><figcaption>BEFORE · download page · EN · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/ftl-export_en_375.before.png" alt="Before: download page · EN · 375" loading="lazy"></figure><figure><figcaption>AFTER · download page · EN · 375</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/ftl-export_en_375.after.png" alt="After: download page · EN · 375" loading="lazy"></figure></div>
+  </section>
+
+  <section>
+    <p class="kicker">§ 4 · magnified</p>
+    <h2>The few pixels that differ on moved elements</h2>
+    <p>Each image is 4× magnified.</p>
+    <div class="zoom"><img src="ftl-seed-email-removal-before-after-2026-10-24/zoom-organizer-select.png" alt="Organizer select, PL 1280: moved up 112 px; 1 pixel differs, by 3/255." loading="lazy"><p>Organizer select, PL 1280: moved up 112 px; 1 pixel differs, by 3/255. Left: before · middle: after · right: after, with differing pixels painted red (a 1/255 difference can vanish when the mask is made, so a crop may show no red).</p></div>
+<div class="zoom"><img src="ftl-seed-email-removal-before-after-2026-10-24/zoom-status-select.png" alt="Status select, PL 1280: moved up 112 px; 1 pixel differs, by 3/255." loading="lazy"><p>Status select, PL 1280: moved up 112 px; 1 pixel differs, by 3/255. Left: before · middle: after · right: after, with differing pixels painted red (a 1/255 difference can vanish when the mask is made, so a crop may show no red).</p></div>
+<div class="zoom"><img src="ftl-seed-email-removal-before-after-2026-10-24/zoom-iban-input.png" alt="IBAN input, PL 375: moved up 58 px; 9 pixels differ, by at most 2/255." loading="lazy"><p>IBAN input, PL 375: moved up 58 px; 9 pixels differ, by at most 2/255. Left: before · middle: after · right: after, with differing pixels painted red (a 1/255 difference can vanish when the mask is made, so a crop may show no red).</p></div>
+<div class="zoom"><img src="ftl-seed-email-removal-before-after-2026-10-24/zoom-prior-hint.png" alt="Prior-event hint, EN 375: moved up 112 px; 2 pixels differ, by 1/255." loading="lazy"><p>Prior-event hint, EN 375: moved up 112 px; 2 pixels differ, by 1/255. Left: before · middle: after · right: after, with differing pixels painted red (a 1/255 difference can vanish when the mask is made, so a crop may show no red).</p></div>
+  </section>
+
+  <section id="phone">
+    <p class="kicker">§ 6 · second change: the admin event list on a phone (LAYOUT.01)</p>
+    <h2>At 375 px the event list was 694 px wide. Now it fits; desktop is unchanged.</h2>
+    <p>Measured in the real admin app on LOCAL (signed in, real data), on every admin screen at 375 px and 1280 px. Each row of the event list was one line of seven cells that could not wrap, and the header's season picker and add button could not either. A block of rules that applies <b>only below 600 px</b> lets them wrap; nothing above it changed.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Screen</th><th>375 px before</th><th>375 px after</th><th>1280 px before → after</th></tr></thead>
+      <tbody>
+        <tr><td>Seasons</td><td class=num>375</td><td class=num>375</td><td>byte-identical (noise only, see below)</td></tr>
+        <tr><td>Events (list)</td><td class=num><b>694</b></td><td class=num>375</td><td>byte-identical</td></tr>
+        <tr><td>Events (form open)</td><td class=num><b>694</b></td><td class=num>375</td><td>byte-identical</td></tr>
+        <tr><td>Fencers</td><td class=num>375</td><td class=num>375</td><td>byte-identical</td></tr>
+      </tbody>
+    </table></div>
+    <p>The seasons screen at 1280 px differs by 44 pixels in one 64×24 box between two captures taken <b>before</b> any change. The after-capture equals one of those two before-captures byte for byte, so that difference is capture noise. Seasons and fencers at 375 px are byte-identical too.</p>
+    <h3>Events list · 375 px (top of the page)</h3>
+    <div class="pair"><figure><figcaption>BEFORE · event list · PL · 375 px</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-phone-events_375.before.png" alt="Before: event list · PL · 375 px" loading="lazy"></figure><figure><figcaption>AFTER · event list · PL · 375 px</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-phone-events_375.after.png" alt="After: event list · PL · 375 px" loading="lazy"></figure></div>
+    <h3>Event form open · 375 px (top of the page)</h3>
+    <div class="pair"><figure><figcaption>BEFORE · event form · PL · 375 px</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-phone-event-form_375.before.png" alt="Before: event form · PL · 375 px" loading="lazy"></figure><figure><figcaption>AFTER · event form · PL · 375 px</figcaption><img src="ftl-seed-email-removal-before-after-2026-10-24/admin-phone-event-form_375.after.png" alt="After: event form · PL · 375 px" loading="lazy"></figure></div>
+    <p>Test: <code>frontend/tests/EventManager.layout.test.ts</code> (LAYOUT.01) pins the phone-only rules and that the desktop rules carry none of them. It was RED before the change; the real-browser width measurement above is the layout proof, since the unit-test DOM has no layout engine.</p>
+  </section>
+
+  <section>
+    <p class="kicker">§ 7 · the lint fixes ship nothing</p>
+    <h2>Both bundles are byte-identical after the warning fixes</h2>
+    <p>The svelte-check warnings were fixed by declaring in <code>svelte.config.js</code> the <code>customElement</code> option both builds already use, and by marking three deliberate one-time attribute reads, including one in the protected <code>FtlExportElement.svelte</code>. To prove none of that reaches what ships, I built the app and the custom-element bundle before and after: <b>all 21 output files are byte-identical</b>. The same holds after the Vite size-budget and type-reference changes.</p>
+    <h3>What the phone fix (§ 6) changes in the bundles, and nothing else</h3>
+    <p>The custom-element bundle <code>main.ce.js</code> is the file the organizer download page loads, and it also carries the whole admin app: the ranklist and calendar elements embed <code>App.svelte</code>. So the § 6 phone rules ship in it too. They are 779 characters of CSS, scoped to the event list&rsquo;s own class and applied only below 600 px. They cannot reach the download form, which has its own scoped classes.</p>
+    <p><b>Proof, rebuilt from the final tree on 24 Oct:</b> I took out only that 779-character block and built both bundles again. Both came out <b>byte-identical to the before-build</b>, all files. The source file was then restored and compared byte for byte with its backup. So the phone block is the only difference in what ships, in both bundles.</p>
+  </section>
+
+  <section>
+    <p class="kicker">§ 5 · limits of this sheet</p>
+    <h2>What it does not show</h2>
+    <ul>
+      <li><b>No dark-mode captures.</b> The plan said &ldquo;light and dark&rdquo;. That was wrong for these screens. The only dark-mode rule in the frontend is a card shadow on the public calendar (<code>EventCard.svelte</code>). The admin form, the admin list and the download page have no dark theme, so a dark capture would equal the light one.</li>
+      <li><b>The phone overflow is fixed in § 6</b>, a separate, intended change with its own before/after.</li>
+    </ul>
+  </section>
+
+  <p class="foot">ftl-seed-email-removal before/after · 24 Oct 2026 · captured on LOCAL with Playwright from this worktree; comparison: full-page pixel diff, per-element crops located by test id, download bytes hashed</p>
+</div>
+</body>
+</html>

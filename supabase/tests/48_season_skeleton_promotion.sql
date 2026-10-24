@@ -51,7 +51,9 @@ SELECT jsonb_build_object(
 
 SAVEPOINT s_promote;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT fn_promote_season_skeleton((SELECT p FROM _payload));
+-- pgt-ignore-end typecheck
 
 -- 48.1 — season inserted with the EXPLICIT id
 SELECT is(
@@ -96,7 +98,9 @@ SELECT throws_ok(
 
 -- 48.7 — delete removes a childless, non-active promoted season
 SAVEPOINT s_delete;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT fn_promote_season_skeleton((SELECT p FROM _payload));
+-- pgt-ignore-end typecheck
 SELECT fn_delete_season_skeleton(9990);
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_season WHERE id_season = 9990),

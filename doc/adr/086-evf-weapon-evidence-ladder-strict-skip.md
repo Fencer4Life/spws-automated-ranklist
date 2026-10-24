@@ -138,7 +138,7 @@ Each field follows the policy of its siblings: `txt_venue_address` and `id_prior
 **Three things stay excluded, because pushing CERT's value would destroy or falsify a PROD-owned fact:**
 
 - ~~`enum_status`~~ — **this exclusion was wrong and is reversed by the 2026-08-28 amendment below.** `promote_event` does advance PROD's *results* lifecycle, but the reasoning was generalised to the *planning* lifecycle as well, which CERT owns.
-- `ts_ftl_sent` — stamped per environment by `ftl_feed_seed_send.py` (`--target cert|prod`); overwriting would falsify the record of a seed actually sent from PROD.
+- `ts_ftl_sent` — stamped per environment by `ftl_feed_seed_send.py` (`--target cert|prod`); overwriting would falsify the record of a seed actually sent from PROD. *(2026-10-24: that sender is removed and the column is retired, never written — [ADR-080](080-clean-roster-ftl-seeding.md) amendment 2026-10-24. It stays unsynced.)*
 - The ingestion provenance block (`txt_source_status`, `enum_parser_kind`, `dt_last_scraped`, `txt_source_url_used`, `txt_parity_notes`, `json_ingest_sources`, `json_source_overrides`) — CERT-side scrape diagnostics describing how CERT obtained the row, not facts about the event.
 
 ### 5 · A calendar failure no longer blocks results ingestion

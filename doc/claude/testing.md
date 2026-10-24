@@ -7,20 +7,21 @@ This file defines Claude's test procedure. The canonical human overview and trac
 ```bash
 # LOCAL database — never run a bare supabase db reset
 ./scripts/reset-dev.sh
+bash scripts/check-postgrestools.sh    # hard gate: zero findings, canaries prove it ran live
 supabase test db
 
 # Python
 source .venv/bin/activate
 python -m pytest python/tests/ -v
 python -m pytest -m integration        # opt-in: live EVF/Dartagnan sites; a plain run deselects them
-ruff check python/ scripts/
-ruff format --check python/ scripts/
-basedpyright python/ scripts/
+ruff check python/ scripts/ tools/
+ruff format --check python/ scripts/ tools/
+basedpyright python/ scripts/ tools/
 
 # Frontend
 cd frontend
 npm test
-npm run check
+npm run check -- --fail-on-warnings
 npm run test:e2e
 
 # Repository and documentation coherence
@@ -35,9 +36,9 @@ Run narrow affected tests first. Before completing a code change, run the applic
 
 ## Language-specific checks
 
-- Python: Ruff lint/format and BasedPyright are CI-enforced. Preserve intentional re-exports and order-dependent imports with justified annotations.
-- PL/pgSQL: run `postgrestools check <changed.sql>` with LOCAL Supabase running, then affected pgTAP. Follow `.claude/skills/plpgsql-check/SKILL.md`.
-- Svelte/TypeScript: run `npm run check` after every frontend source edit, plus affected Vitest/Playwright coverage. Follow `.claude/skills/svelte-check/SKILL.md`.
+- Python: Ruff lint/format and BasedPyright over `python/ scripts/ tools/` are CI-enforced with zero findings. A `DeprecationWarning` raised from project code fails pytest (`filterwarnings` in `pyproject.toml`); a test that exercises a deprecated path on purpose ignores that one message by name. Preserve intentional re-exports and order-dependent imports with justified annotations.
+- PL/pgSQL: run `postgrestools check <changed.sql>` with LOCAL Supabase running, then affected pgTAP. `scripts/check-postgrestools.sh` then checks all migrations after the configured cut-off and all pgTAP files with warnings as errors: zero findings, and an unavoidable one carries an inline `-- pgt-ignore…: <reason>`. It first proves type checking and `plpgsql_check` are live with canary files, because postgrestools silently skips both when the database is unreachable. It is a hard gate in `scripts/preflight.sh` (also under `--fast`) and in CI's test-db job. Follow `.claude/skills/plpgsql-check/SKILL.md`.
+- Svelte/TypeScript: run `npm run check -- --fail-on-warnings` after every frontend source edit (preflight fails on any warning), plus affected Vitest/Playwright coverage. Follow `.claude/skills/svelte-check/SKILL.md`.
 - Documentation tooling: run Ruff and BasedPyright on changed Python scripts, then all documentation render/check commands above.
 
 Do not preserve numeric baseline prose here. CI configuration, test files, RTM and coherence scripts are the evidence; volatile counts belong only in generated or explicitly validated governance records.

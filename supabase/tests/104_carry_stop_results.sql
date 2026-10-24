@@ -31,6 +31,7 @@ SELECT (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026') AS s
        (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'EVF') AS evf;
 
 -- Previous editions, held; current editions linked to them and IN_PROGRESS.
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, dt_end, enum_status)
 SELECT c, 'CARRY.RS fixture', s2526, o, DATE '2026-05-10', DATE '2026-05-10', 'COMPLETED'
   FROM rs, (VALUES ('PPW97-2025-2026', 'spws'), ('PEW95efs-2025-2026', 'evf')) v(c, w)
@@ -46,6 +47,7 @@ INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, dt
 SELECT 'PPS97-2026-2027', 'CARRY.RS fixture', s2627, COALESCE((SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'PZSZ'), spws),
        DATE '2026-11-07', DATE '2026-11-07', 'COMPLETED'
   FROM rs;
+-- pgt-ignore-end typecheck
 
 -- The 2026/27 window reaches thirty days past today.
 UPDATE tbl_season SET int_carryover_days = (CURRENT_DATE - DATE '2026-05-10') + 30 WHERE txt_code = 'SPWS-2026-2027';
@@ -96,9 +98,11 @@ SELECT results_eq(
   'CARRY.RS.03 a linked international (PEW) carry stops the same way: the link decides, not the type');
 
 -- ---------------------------------------------------------------- the rankings
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT total_score FROM fn_ranking_ppw_event_fk_matching('EPEE', 'M', 'V1', (SELECT s2627 FROM rs), TRUE)
             WHERE id_fencer = 98401), 60.00::NUMERIC,
   'CARRY.RS.04 the PPW ranking counts the current épée result once, without the carried one');
+-- pgt-ignore-end typecheck
 
 SELECT results_eq(
   $$SELECT spws_total, evf_plus_total, bool_has_carryover
@@ -106,9 +110,11 @@ SELECT results_eq(
   $$VALUES (60.00::NUMERIC, 90.00::NUMERIC, FALSE)$$,
   'CARRY.RS.05 the full ranking counts the current editions only: PPW 60, PEW 80 + PPS 10, no carry');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT bool_has_carryover FROM fn_ranking_ppw_event_fk_matching('FOIL', 'M', 'V1', (SELECT s2627 FROM rs), TRUE)
             WHERE id_fencer = 98401), TRUE,
   'CARRY.RS.06 the foil ranking still carries the previous edition');
+-- pgt-ignore-end typecheck
 
 SELECT results_eq(
   $$SELECT spws_total, bool_has_carryover
@@ -130,16 +136,20 @@ ROLLBACK TO SAVEPOINT unscored;
 
 SAVEPOINT women;
 UPDATE tbl_tournament SET enum_gender = 'F' WHERE txt_code = 'PPW97-V1-M-EPEE-2026-2027';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT count(*)::INT FROM fn_fencer_scores_rolling_event_fk_matching(98401, 'EPEE', 'M', 'V1', (SELECT s2627 FROM rs))
             WHERE txt_tournament_code = 'PPW97-V1-M-EPEE-2025-2026'), 1,
   'CARRY.RS.09 a scored result of the other gender does not stop the men''s carry');
+-- pgt-ignore-end typecheck
 ROLLBACK TO SAVEPOINT women;
 
 SAVEPOINT created;
 UPDATE tbl_event SET enum_status = 'CREATED' WHERE txt_code = 'PPW97-2026-2027';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT count(*)::INT FROM fn_fencer_scores_rolling_event_fk_matching(98401, 'EPEE', 'M', 'V1', (SELECT s2627 FROM rs))
             WHERE txt_tournament_code = 'PPW97-V1-M-EPEE-2025-2026' AND bool_carried_over), 1,
   'CARRY.RS.11 results of a current edition that does not count (CREATED) do not stop the carry: no empty slot');
+-- pgt-ignore-end typecheck
 ROLLBACK TO SAVEPOINT created;
 
 UPDATE tbl_event SET enum_status = 'COMPLETED' WHERE txt_code = 'PPW97-2026-2027';

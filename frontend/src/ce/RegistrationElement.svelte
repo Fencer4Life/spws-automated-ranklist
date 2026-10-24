@@ -40,6 +40,7 @@
   // the client immediately to fetch the event) — the child could run first
   // and throw on an uninitialized client. Attrs are static (set once at
   // element creation), so no reactivity is needed for this call anyway.
+  // svelte-ignore state_referenced_locally
   if (!demo) {
     const url = supabaseCertUrl || supabaseProdUrl
     const key = supabaseCertKey || supabaseProdKey

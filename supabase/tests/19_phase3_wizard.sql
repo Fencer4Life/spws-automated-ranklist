@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- Phase 3 — Admin UI + season-init wizard backend RPCs
 -- =============================================================================
@@ -129,7 +130,9 @@ SAVEPOINT s_imew;
 -- doesn't depend on scoring config values).
 -- ADR-077 Phase C: SPWS-2026-2027 now exists in the seed (promoted skeleton).
 -- Remove it within this savepoint so the fixture recreates it; ROLLBACK restores it.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.seed_imported_2026_27_result('19.imew');
+-- pgt-ignore-end typecheck
 
 -- Clear the dependants first (match candidates, results, tournaments,
 -- events). When this fixture was written SPWS-2026-2027 was
@@ -328,7 +331,9 @@ SAVEPOINT s_parity;
 
 -- Insert SPWS-2026-2027 (FK-matching engine via DEFAULT after Phase 3 migration)
 -- ADR-077 Phase C: clear the seeded SPWS-2026-2027 first (savepoint-local; restored on ROLLBACK).
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.seed_imported_2026_27_result('19.parity');
+-- pgt-ignore-end typecheck
 
 -- Clear the dependants first (match candidates, results, tournaments,
 -- events). When this fixture was written SPWS-2026-2027 was
@@ -465,7 +470,9 @@ SAVEPOINT s_update;
 -- assertion brittle; using a skeleton is the realistic Phase 3 use case
 -- anyway (admin renames a CREATED skeleton during planning).
 -- ADR-077 Phase C: clear the seeded SPWS-2026-2027 first (savepoint-local; restored on ROLLBACK).
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.seed_imported_2026_27_result('19.update');
+-- pgt-ignore-end typecheck
 
 -- Clear the dependants first (match candidates, results, tournaments,
 -- events). When this fixture was written SPWS-2026-2027 was

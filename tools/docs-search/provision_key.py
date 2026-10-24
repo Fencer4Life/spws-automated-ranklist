@@ -62,9 +62,7 @@ def api(method: str, path: str, key: str, payload=None) -> dict:
         with urllib.request.urlopen(req, timeout=30) as resp:
             body = resp.read().decode()
     except urllib.error.HTTPError as exc:
-        raise SystemExit(
-            f"{method} {path} failed: {exc.code} {exc.read().decode()[:300]}"
-        ) from exc
+        raise SystemExit(f"{method} {path} failed: {exc.code} {exc.read().decode()[:300]}") from exc
     return json.loads(body) if body else {}
 
 
@@ -72,13 +70,18 @@ def mint(master: str) -> str:
     for existing in api("GET", "/keys", master).get("results", []):
         if existing.get("name") == KEY_NAME:
             api("DELETE", f"/keys/{existing['uid']}", master)
-    made = api("POST", "/keys", master, {
-        "name": KEY_NAME,
-        "description": "Search-only key for the MCP server.",
-        "actions": READ_ONLY_ACTIONS,
-        "indexes": [INDEX],
-        "expiresAt": None,
-    })
+    made = api(
+        "POST",
+        "/keys",
+        master,
+        {
+            "name": KEY_NAME,
+            "description": "Search-only key for the MCP server.",
+            "actions": READ_ONLY_ACTIONS,
+            "indexes": [INDEX],
+            "expiresAt": None,
+        },
+    )
     KEY_FILE.write_text(made["key"] + "\n", encoding="utf-8")
     os.chmod(KEY_FILE, 0o600)
     return made["key"]
@@ -95,10 +98,15 @@ def register(key: str) -> None:
         # `-e VAR` with no value passes it through from the environment, so the
         # key stays out of any command line visible to `ps`.
         "args": [
-            "run", "-i", "--rm",
-            "--network", NETWORK,
-            "-e", "MEILI_HTTP_ADDR",
-            "-e", "MEILI_MASTER_KEY",
+            "run",
+            "-i",
+            "--rm",
+            "--network",
+            NETWORK,
+            "-e",
+            "MEILI_HTTP_ADDR",
+            "-e",
+            "MEILI_MASTER_KEY",
             MCP_IMAGE,
         ],
         "env": {

@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Email the FTL seed files to the organizer — as the SPWS Gmail, no domain</title>
+<title>[SUPERSEDED — DO NOT EXECUTE] Email the FTL seed files to the organizer — as the SPWS Gmail, no domain</title>
 <style>
   :root{
     --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
@@ -127,7 +127,8 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">FTL seed delivery · ADR-080 §5 · Implementation Plan</p>
+  <p class="eyebrow">FTL seed delivery · ADR-080 §5 · Implementation Plan · SUPERSEDED — historical record only</p>
+  <div class="note warn"><p class="lede">SUPERSEDED · do not execute</p><p>The e-mail delivery this plan built never ran in production and was removed from the tree on 24 October 2026 (<a href="../adr/080-clean-roster-ftl-seeding.html">ADR-080 amendment 2026-10-24</a>; plan <a href="ftl-seed-email-removal-2026-10-24.html">ftl-seed-email-removal-2026-10-24.html</a>). The seed XML is still generated and is handed to the organizer through the shared download page (<a href="../adr/095-ftl-export-token-lifecycle.html">ADR-095</a>). Tests NOMAIL.01–07 fail if an e-mail path comes back.</p></div>
   <h1>Email the seed files to the organizer — as the SPWS Gmail, no domain</h1>
   <p class="dek">The "deliver" arrow of the §5 pipeline was logged as <b>blocked on a new SMTP capability / Resend + an <code>eu.org</code> domain</b>. It never needed any of that. SPWS already runs a dedicated Gmail — the one that scrapes results back in. We send <b>as that same account</b> over verified TLS, straight from the Python pipeline. No domain, no Resend, no eu.org.</p>
   <div class="meta">

@@ -291,10 +291,12 @@ SELECT (SELECT COUNT(*)::INT FROM tbl_tournament WHERE txt_code LIKE 'VW27E-%') 
          WHERE txt_run_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::UUID) AS history_rows;
 
 -- Run the commit
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_commit_event_draft('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::UUID) AS commit_result \gset
 
 
 -- ===== 27.14 — draft tournament rows moved to live =====
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_tournament WHERE txt_code LIKE 'VW27E-%')
     - (SELECT live_tournaments FROM _pre_commit),
@@ -312,6 +314,7 @@ SELECT is(
   7,
   '27.15: fn_commit_event_draft moves all 7 draft result rows to tbl_result'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 27.16 — draft tables emptied for this run_id =====
@@ -326,6 +329,7 @@ SELECT is(
 
 
 -- ===== 27.17 — audit log rows written =====
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT cmp_ok(
   (SELECT COUNT(*)::INT FROM tbl_audit_log WHERE txt_action = 'DRAFT_COMMIT')
     - (SELECT audit_commits FROM _pre_commit),
@@ -333,6 +337,7 @@ SELECT cmp_ok(
   1,
   '27.17: fn_commit_event_draft writes at least one DRAFT_COMMIT audit row'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 27.18 — ingest history appended with run_id =====
@@ -406,6 +411,7 @@ CREATE TEMP TABLE _pre_discard AS
 SELECT (SELECT COUNT(*)::INT FROM tbl_audit_log
          WHERE txt_action = 'DRAFT_DISCARD') AS audit_discards;
 
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_discard_event_draft('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::UUID) AS discard_result \gset
 
 
@@ -421,6 +427,7 @@ SELECT is(
 
 
 -- ===== 27.22 — discard writes audit row =====
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT cmp_ok(
   (SELECT COUNT(*)::INT FROM tbl_audit_log WHERE txt_action = 'DRAFT_DISCARD')
     - (SELECT audit_discards FROM _pre_discard),
@@ -428,6 +435,7 @@ SELECT cmp_ok(
   1,
   '27.22: fn_discard_event_draft writes at least one DRAFT_DISCARD audit row'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 27.23 — unknown run_id returns counts of 0, no throw =====
@@ -447,6 +455,7 @@ SELECT (SELECT COUNT(*)::INT FROM tbl_tournament_draft) AS tdraft,
        (SELECT COUNT(*)::INT FROM tbl_result_draft)     AS rdraft;
 
 -- Call with a non-trivial payload
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_dry_run_event_draft(
   jsonb_build_object(
     'tournaments', jsonb_build_array(
@@ -469,6 +478,7 @@ SELECT fn_dry_run_event_draft(
 
 
 -- ===== 27.24 — dry-run does not persist anything =====
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_tournament_draft)
     - (SELECT tdraft FROM _pre_dryrun)
@@ -477,6 +487,7 @@ SELECT is(
   0,
   '27.24: fn_dry_run_event_draft writes nothing to draft tables'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 27.25 — empty payload returns counts of 0 =====

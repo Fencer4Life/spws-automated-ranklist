@@ -41,6 +41,7 @@ SELECT to_jsonb(f) || jsonb_build_object('id_fencer',
          CASE f.id_fencer WHEN 97001 THEN 97101 WHEN 97002 THEN 97102
                           WHEN 97003 THEN 97104 WHEN 97004 THEN 97103 ELSE f.id_fencer END) AS j
   FROM tbl_fencer f;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 UPDATE sd_roster SET j = j || '{"txt_club": "KS Seed"}' WHERE (j->>'id_fencer')::INT = 97102;
 INSERT INTO sd_roster
 SELECT jsonb_build_object('id_fencer', 97105, 'txt_surname', 'SEEDE', 'txt_first_name', 'Ewa',
@@ -48,6 +49,7 @@ SELECT jsonb_build_object('id_fencer', 97105, 'txt_surname', 'SEEDE', 'txt_first
                           'enum_gender', 'F', 'json_name_aliases', '[]'::jsonb,
                           'json_revoked_aliases', '[]'::jsonb, 'json_user_confirmed_aliases', '[]'::jsonb,
                           'ts_created', now(), 'ts_updated', now());
+-- pgt-ignore-end typecheck
 
 CREATE TEMP VIEW sd_all AS SELECT jsonb_agg(j) AS j FROM sd_roster;
 
@@ -85,18 +87,22 @@ SELECT results_eq(
            (97105, 'SEEDE', 1965::SMALLINT, NULL::TEXT)$$,
   'SEED.05 present fencers sit at PROD''s ids with PROD''s values (namesakes by birth year, an unknown year with an unknown year), and E is created');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT count(*)::INT FROM tbl_fencer),
           (SELECT jsonb_array_length(j) FROM sd_all),
   'SEED.06 the roster holds exactly the rows given');
+-- pgt-ignore-end typecheck
 
 SELECT ok((SELECT last_value >= 97200 FROM tbl_fencer_id_fencer_seq),
   'SEED.07 the id sequence is set to PROD''s, so a new fencer never takes a PROD id');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT (j->>'renumbered')::INT || '/' || (j->>'created')::INT FROM sd_out), '4/1',
   'SEED.08 the summary counts the four present fencers moved and the one created');
 
 -- Put the sequence back: sequences do not roll back.
 SELECT setval('tbl_fencer_id_fencer_seq', last_value, is_called) FROM sd_seq;
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

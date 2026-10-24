@@ -17,12 +17,13 @@ Python (ruff/basedpyright) and SQL (postgrestools).
 Immediately after creating or editing a `.svelte` or `frontend/**/*.ts` file:
 
 ```bash
-cd frontend && npm run check
+cd frontend && npm run check -- --fail-on-warnings
 ```
 
-(`svelte-check --tsconfig ./tsconfig.json` under the hood — checks the whole
-project each run since svelte-check doesn't cleanly support true single-file
-mode; skim the output for the file(s) you touched.)
+(`svelte-check --tsconfig ./tsconfig.json` under the hood; without
+`--fail-on-warnings` it exits 0 on warnings, which `scripts/preflight.sh` and
+CI's test-frontend job both reject. It checks the whole project each run,
+since svelte-check doesn't cleanly support true single-file mode.)
 
 For quick interactive lookups on a specific `.ts`/`.js` symbol (hover,
 go-to-definition, find-references) the harness's `LSP` tool works directly —
@@ -32,8 +33,13 @@ go-to-definition, find-references) the harness's `LSP` tool works directly —
 
 ## Before the task counts as done
 
-- **Zero new errors** on the file(s) you touched. Fix genuine type errors and
-  real bugs the checker surfaces (e.g. use-before-assignment, comparisons
+- **The baseline is zero errors and zero warnings, across the whole project.**
+  Preflight and CI both run `npm run check -- --fail-on-warnings` (pinned by
+  `python/tests/test_static_check_gates.py` GATE.05–06), so any finding fails,
+  wherever it is. There is no "pre-existing" excuse. `tsconfig.json` includes
+  both Vite configs, and `svelte.config.js` declares the `customElement`
+  compiler option both builds use, so the checker sees what ships.
+- Fix genuine type errors and real bugs the checker surfaces (e.g. use-before-assignment, comparisons
   between disjoint literal types that can never be true — both found in the
   2026-07-02 baseline and worth a second look wherever similar patterns
   appear).
@@ -42,9 +48,9 @@ go-to-definition, find-references) the harness's `LSP` tool works directly —
   etc.) should be fixed, not just noted — they're cheap to fix at write time.
 - Svelte 5 runes-migration warnings (`state_referenced_locally`) on code you
   wrote should be fixed; don't introduce new ones.
-- Don't fix pre-existing findings in files you didn't touch as a drive-by —
-  see the 2026-07-02 baseline in `doc/claude/testing.md` (37 errors, 66
-  warnings, 29 files) for what's already-known legacy debt.
+- A warning that marks deliberate code gets a `// svelte-ignore <code>`
+  comment on the statement, with the reason next to it (for example a
+  one-time read of an element attribute at mount), never a config switch.
 - This runs **in addition to**, not instead of, vitest and the mandatory TDD
   workflow in `doc/claude/testing.md`.
 - If the frontend change alters product behavior, navigation, authentication, embedding or operations, update the owning current HTML page from `doc/handbook/documentation-map.html` and complete the documentation coherence gate.

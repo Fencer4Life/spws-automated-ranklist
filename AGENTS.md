@@ -50,13 +50,13 @@ done is `scripts/preflight.sh` exiting 0, never a hand-copied subset of this
 list (see `doc/claude/planning.md` rule 5a for what a copied list cost).
 
 - Python: `source .venv/bin/activate && python -m pytest python/tests/ -v`
-- Ruff: `source .venv/bin/activate && ruff check python/ && ruff format --check python/`
-- Python types: `source .venv/bin/activate && basedpyright python/`
-- Frontend: `cd frontend && npm test && npm run check`
+- Ruff: `source .venv/bin/activate && ruff check python/ scripts/ tools/ && ruff format --check python/ scripts/ tools/`
+- Python types: `source .venv/bin/activate && basedpyright python/ scripts/ tools/`
+- Frontend: `cd frontend && npm test && npm run check -- --fail-on-warnings`
 - Browser tests: `cd frontend && npm run test:e2e`
 - Database: `supabase test db`
 - Coherence: `bash scripts/check-coherence.sh && bash scripts/check-spec-sync.sh`
-- PL/pgSQL: `postgrestools check <changed SQL path>` with local Supabase running
+- PL/pgSQL: `postgrestools check <changed SQL path>` with local Supabase running; `bash scripts/check-postgrestools.sh` is the hard gate (preflight and CI): every checked migration and pgTAP file, zero findings, with canaries proving the database checks ran
 
 ## Git and release
 

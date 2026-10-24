@@ -16,6 +16,7 @@ SELECT plan(5);
 -- Build a function that returns 5 TAP-shaped rows. EXECUTE keeps the
 -- planner from binding storage.buckets / pg_policies(storage,objects)
 -- statically — required because LOCAL doesn't have those tables.
+-- pgt-ignore-start plpgsql_check: storage is disabled on LOCAL (ADR-061) and the test skips it at run time (plpgsql_check sees only the live schema)
 CREATE OR REPLACE FUNCTION pg_temp._spws_test_5_12() RETURNS SETOF TEXT
 LANGUAGE plpgsql AS $fn$
 DECLARE
@@ -86,8 +87,11 @@ BEGIN
   END IF;
 END
 $fn$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp._spws_test_5_12();
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 

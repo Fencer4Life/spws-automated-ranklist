@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- SS26 — Versioned season scoring: contract tests and golden fixtures
 -- =============================================================================
@@ -200,11 +201,13 @@ SELECT results_eq(
 -- rounded once, not applied to already-rounded parts. 125.9604965 x 1.2
 -- rounds to 151.15; rounding first would give 151.152 -> 151.15 as well, so
 -- the assertion is paired with HIST.02 to pin both the parts and the product.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT final FROM pg_temp.comp('SS26-MPW-N24', 1)),
   151.15::NUMERIC,
   'SS26.HIST.06 classic MPW multiplier 1.2 applied exactly -> 151.15'
 );
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.DB — engine architecture. RED until §11 step 2.
@@ -412,8 +415,10 @@ END $mm$;
 
 -- SS26.TYPE.01 — every season/type pair is present and carries that season's
 -- OWN stored multiplier.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.type_cfg_mismatches(), 0::BIGINT,
   'SS26.TYPE.01 every season/type pair migrated with its own stored multiplier, none defaulted');
+-- pgt-ignore-end typecheck
 
 -- SS26.TYPE.02 — the threshold routing is NOT what the column labels suggest,
 -- and normalizing must preserve it exactly. PSW is domestic and gates on the
@@ -442,8 +447,10 @@ EXCEPTION WHEN undefined_table OR undefined_column THEN
   RETURN NULL;
 END $th$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.threshold_mismatches(), 0::BIGINT,
   'SS26.TYPE.02 threshold routing preserved: {PPW,MPW,PSW}->ppw and {PEW,MEW,MSW}->evf');
+-- pgt-ignore-end typecheck
 
 -- SS26.TYPE.03 — the fail-closed gate §07 requires. get_min_participants
 -- currently returns 1 for an unrecognised type and for a season with no config
@@ -475,8 +482,10 @@ EXCEPTION WHEN undefined_table OR undefined_column THEN
   RETURN NULL;
 END $tr$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.type_cfg_tracks_edit(), 1.7::NUMERIC,
   'SS26.TYPE.04 a configuration edit propagates to the normalized type rows');
+-- pgt-ignore-end typecheck
 
 -- SS26.TYPE.05 — the normalized table is what SCORING actually reads. Without
 -- this, the table could be a decorative copy that happens to agree. The edit
@@ -524,9 +533,11 @@ END $sw$;
 -- Classic engine, N=24 place 1: components 50 + 50 + 25.9604965 = 125.9604965.
 -- The legacy column says 1.7 (-> 214.13); the normalized row says 1.9. Only
 -- 239.32 proves scoring read the normalized table.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.scored_with_normalized(), 239.32::NUMERIC,
   'SS26.TYPE.05 scoring reads its multiplier from the normalized table, not the legacy column'
 );
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.TYPE.06 — PPS/MPS enum and normalized settings.
@@ -559,8 +570,10 @@ EXCEPTION WHEN undefined_table OR undefined_column OR invalid_text_representatio
   RETURN NULL;
 END $pps_a$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pps_reaches_type_config(), 1.55::NUMERIC,
   'SS26.TYPE.06a a PPS multiplier set in config reaches the normalized type table');
+-- pgt-ignore-end typecheck
 
 -- SS26.TYPE.06b — fn_assert_type_configured resolves the same value for PPS
 -- that 06a just wrote, reusing this transaction's state as SS26.TYPE.04/05 do.
@@ -575,8 +588,10 @@ EXCEPTION WHEN undefined_function THEN
   RETURN NULL;
 END $pps_b$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pps_assert_type_configured(), 1.55::NUMERIC,
   'SS26.TYPE.06b fn_assert_type_configured resolves the PPS multiplier set above');
+-- pgt-ignore-end typecheck
 
 -- SS26.TYPE.06c — a PPS tournament scores end to end with its configured
 -- multiplier. Classic engine (SPWS-2023-2024), N=24 place 1: raw components
@@ -616,9 +631,11 @@ EXCEPTION WHEN undefined_table OR undefined_column OR undefined_function OR inva
   RETURN NULL;
 END $pps_c$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pps_scored_end_to_end(), 195.24::NUMERIC,
   'SS26.TYPE.06c a PPS tournament scores end-to-end with its configured multiplier'
 );
+-- pgt-ignore-end typecheck
 
 -- SS26.TYPE.06d — the fixed fn_auto_populate_multiplier (live defect 1 in
 -- doc/plans/did-you-plan-to-optimized-penguin.md) caches a non-NULL
@@ -661,9 +678,11 @@ WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $pps_d$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.auto_multiplier_psw_pps(), 'BOTH_NON_NULL',
   'SS26.TYPE.06d fn_auto_populate_multiplier caches a non-NULL multiplier for PSW and PPS'
 );
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.LOCK — the governance lock (design step 3b, first half).
@@ -712,6 +731,7 @@ END $ltf$;
 
 -- SS26.LOCK.01 — every governed field is writable before the season's first
 -- scored result, on the unscored copy of SPWS-2026-2027's configuration.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.lock01_all_editable_unlocked()
 RETURNS TEXT
 LANGUAGE plpgsql AS $l01$
@@ -748,15 +768,19 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $l01$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock01_all_editable_unlocked(), 'ALL_OK',
   'SS26.LOCK.01 every governed field is writable before the season''s first scored result');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.02 — the same fields, rejected individually once a score exists.
 -- SPWS-2023-2024 is real seed data, already scored -- locked as soon as the
 -- backfill in 20260919000005 runs. 777 is chosen to differ from every real
 -- stored value (all small round numbers: 50, 3, 2, 1, 1.0, 1.2, 2.0, 5) and
 -- to be a whole number so it casts cleanly to both INT and NUMERIC columns.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.lock02_all_rejected_locked()
 RETURNS TEXT
 LANGUAGE plpgsql AS $l02$
@@ -802,9 +826,12 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $l02$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock02_all_rejected_locked(), 'ALL_REJECTED',
   'SS26.LOCK.02 every governed field is rejected once the season has a scored result');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.03 — the trigger is the first scored RESULT, not dt_end. A
 -- past-dated, unscored season stays editable; a future-dated, scored one locks.
@@ -853,8 +880,10 @@ EXCEPTION WHEN undefined_column THEN
   RETURN NULL;
 END $l03$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock03_date_independent(), 'OK',
   'SS26.LOCK.03 the lock trigger is the first scored result, not dt_start/dt_end');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.04 — direct UPDATE on tbl_scoring_config bypassing the RPC is
 -- rejected post-lock by the trigger guard (defense in depth). pgTAP itself
@@ -884,8 +913,10 @@ BEGIN
   RETURN v_result;
 END $l04$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock04_direct_update_rejected(), 'REJECTED',
   'SS26.LOCK.04 a direct UPDATE on tbl_scoring_config is rejected on a locked season');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.05 — tbl_scoring_type_config was never a direct write surface
 -- (trigger-owned since 20260919000002). Two independent layers close it:
@@ -926,8 +957,10 @@ EXCEPTION WHEN undefined_column THEN
   RETURN NULL;
 END $l06$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock06_timestamp_stable(), TRUE,
   'SS26.LOCK.06 ts_scoring_locked_at is stable across a same-revision rescore');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.07 — the regression test for field-level (not whole-function)
 -- authorization: handleUpdateSeason (App.svelte:1169-1197) resends the
@@ -947,8 +980,10 @@ EXCEPTION WHEN OTHERS THEN
   RETURN 'REJECTED:' || SQLERRM;
 END $l07$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock07_toggle_only_succeeds(), 'OK',
   'SS26.LOCK.07 a toggle-only resave (full payload, only show_evf_toggle changed) succeeds on a locked season');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.08 — the carry-over engine write path (a separate PATCH on
 -- tbl_season, not part of fn_import_scoring_config) is untouched by this lock.
@@ -964,8 +999,10 @@ EXCEPTION WHEN OTHERS THEN
   RETURN 'REJECTED:' || SQLERRM;
 END $l08$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock08_carryover_unaffected(), 'OK',
   'SS26.LOCK.08 the carry-over engine write path stays available regardless of lock state');
+-- pgt-ignore-end typecheck
 
 -- SS26.LOCK.09 — repair (same-revision rescore) remains available: scoring
 -- itself never touches tbl_scoring_config, so it is untouched by construction.
@@ -995,8 +1032,10 @@ EXCEPTION WHEN unique_violation THEN RETURN 'REJECTED';
 WHEN undefined_table THEN RETURN NULL;
 END $l10$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock10_unique_active_revision(), 'REJECTED',
   'SS26.LOCK.10 the partial unique index rejects a second active revision for one season');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.REVISION — the privileged audited whole-season revision/rescore path.
@@ -1064,8 +1103,10 @@ BEGIN
 END;
 $rbs$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.revision_build_season('SS26-REV-OK', '2040-08-01', '2041-07-15', 'PPW');
 SELECT pg_temp.revision_build_season('SS26-REV-FAIL', '2042-08-01', '2043-07-15', 'MSW');
+-- pgt-ignore-end typecheck
 
 -- REV-FAIL's tournament scored fine at fixture-build time. The plan's own
 -- prose (§09) illustrates REVISION.07 with "a tournament with a deliberately
@@ -1137,8 +1178,10 @@ BEGIN
 END;
 $r3$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision03_prior_survives(), 'OK',
   'SS26.REVISION.03 the prior active revision survives, deactivated, snapshot intact');
+-- pgt-ignore-end typecheck
 
 -- SS26.REVISION.04 — an engine code identical to the current one is a
 -- data-only revision: the existing engine row is reused, never re-created.
@@ -1165,8 +1208,10 @@ BEGIN
 END;
 $r4$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision04_same_engine_no_new_row(), 'OK',
   'SS26.REVISION.04 passing the current engine code is a data-only revision, no new engine row');
+-- pgt-ignore-end typecheck
 
 -- SS26.REVISION.05 — a multiplier/threshold-only revision (no engine
 -- change) is permitted and rescoring actually reflects it.
@@ -1199,8 +1244,10 @@ BEGIN
 END;
 $r5$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision05_rescore_reflects_change(), 'OK',
   'SS26.REVISION.05 multiplier/threshold-only revision is permitted and rescoring reflects it');
+-- pgt-ignore-end typecheck
 
 -- SS26.REVISION.06 — after a successful call, every result in the season
 -- references the new revision id; zero rows reference the old one.
@@ -1229,8 +1276,10 @@ BEGIN
 END;
 $r6$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision06_all_results_stamped(), 'OK',
   'SS26.REVISION.06 after a successful call every result references the new revision id');
+-- pgt-ignore-end typecheck
 
 -- SS26.REVISION.07 — an injected mid-rescore failure (SS26-REV-FAIL's
 -- tournament, its participant count corrupted to NULL above) leaves the
@@ -1281,8 +1330,10 @@ BEGIN
 END;
 $r7$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision07_mid_rescore_rollback(), 'OK',
   'SS26.REVISION.07 a mid-rescore failure rolls back the whole transaction, prior revision and scores intact');
+-- pgt-ignore-end typecheck
 
 -- SS26.REVISION.08 — a successful call is atomic end to end: season
 -- pointer, revision activation and every rescored result's stamp all agree
@@ -1319,8 +1370,10 @@ BEGIN
 END;
 $r8$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision08_atomic_consistency(), 'OK',
   'SS26.REVISION.08 a successful call flips season pointer, revision activation and result stamps together');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.LOCK.13 / SS26.REVISION.09 -- default_ranking_mode joins both governed
@@ -1332,6 +1385,7 @@ SELECT is(pg_temp.revision08_atomic_consistency(), 'OK',
 -- SS26.LOCK.13 -- editable before the first score (real, unlocked
 -- SPWS-2026-2027), rejected once locked (real, seed-scored SPWS-2023-2024).
 -- Same two seasons SS26.LOCK.01/02 already use.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.lock13_default_ranking_mode() RETURNS TEXT
 LANGUAGE plpgsql AS $l13$
 DECLARE
@@ -1359,9 +1413,12 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $l13$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.lock13_default_ranking_mode(), 'OK',
   'SS26.LOCK.13 default_ranking_mode is editable before first score and rejected after');
+-- pgt-ignore-end typecheck
 
 -- SS26.REVISION.09 -- the privileged revision path can change
 -- default_ranking_mode on its own, independent of any engine/multiplier
@@ -1390,8 +1447,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $r9$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.revision09_default_ranking_mode(), 'OK',
   'SS26.REVISION.09 the privileged revision path can change default_ranking_mode independent of engine/multiplier changes');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.RANK -- Season Scoring Rules v2: three sections, two display groups,
@@ -1430,8 +1489,10 @@ EXCEPTION WHEN undefined_function THEN
   RETURN NULL;
 END $rk1$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank01_two_groups(), ARRAY['evf_plus','spws']::TEXT[],
   'SS26.RANK.01 three Season Scoring Rules sections resolve to exactly two display groups');
+-- pgt-ignore-end typecheck
 
 -- SS26.RANK.04 -- a bucket declaring neither best nor always is rejected.
 SELECT throws_like(
@@ -1530,6 +1591,7 @@ END $rar$;
 -- SS26.RANK.02/03 fixture -- one isolated season per property, so the
 -- best-N cap and the always-include lack-of-cap are proven independently
 -- rather than conflated in one combined total.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.rank_setup_best_always() RETURNS VOID
 LANGUAGE plpgsql AS $rksba$
 DECLARE
@@ -1573,8 +1635,11 @@ BEGIN
   PERFORM pg_temp.rank_add_result(v_season_always, v_org, 'RA1', 'MPW', 'EPEE', 'M', 'V2', v_fencer_always, 5);
   PERFORM pg_temp.rank_add_result(v_season_always, v_org, 'RA2', 'MPW', 'EPEE', 'M', 'V2', v_fencer_always, 7);
 END $rksba$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.rank_setup_best_always();
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank02_best_n_caps() RETURNS NUMERIC
 LANGUAGE plpgsql AS $rk2$
@@ -1588,8 +1653,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $rk2$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank02_best_n_caps(), 50.00,
   'SS26.RANK.02 a best:2 bucket sums only the top two of three scores, dropping the weakest');
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank03_always_no_cap() RETURNS NUMERIC
 LANGUAGE plpgsql AS $rk3$
@@ -1603,11 +1670,14 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $rk3$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank03_always_no_cap(), 12.00,
   'SS26.RANK.03 an always:true bucket sums every eligible score unconditionally, with no cap');
+-- pgt-ignore-end typecheck
 
 -- SS26.RANK.08/09/10 fixture -- all three sections populated for one fencer,
 -- plus a second, V0-category fencer with only an spws-group result.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.rank_setup_groups() RETURNS VOID
 LANGUAGE plpgsql AS $rksg$
 DECLARE
@@ -1643,8 +1713,11 @@ BEGIN
   VALUES ('RankGroupsV0', 'Tester', 'PL', 2012, 'M') RETURNING id_fencer INTO v_fencer_v0;
   PERFORM pg_temp.rank_add_result(v_season, v_org, 'RG-V0-PPW', 'PPW', 'EPEE', 'M', 'V0', v_fencer_v0, 12);
 END $rksg$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.rank_setup_groups();
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank08_combined_evf_plus() RETURNS NUMERIC
 LANGUAGE plpgsql AS $rk8$
@@ -1663,8 +1736,10 @@ END $rk8$;
 -- evf_plus_total/total_score/bool_has_carryover -- no third, per-section
 -- subtotal column exists for this value to come from, by the function's own
 -- fixed RETURNS TABLE signature.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank08_combined_evf_plus(), 23.00,
   'SS26.RANK.08 evf_fie and pzsz scores combine into one evf_plus_total');
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank09_total_is_sum() RETURNS BOOLEAN
 LANGUAGE plpgsql AS $rk9$
@@ -1681,8 +1756,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $rk9$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank09_total_is_sum(), TRUE,
   'SS26.RANK.09 total_score always equals spws_total plus evf_plus_total');
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank10_v0_not_shortcircuited() RETURNS TEXT
 LANGUAGE plpgsql AS $rk10$
@@ -1702,8 +1779,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $rk10$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank10_v0_not_shortcircuited(), 'OK',
   'SS26.RANK.10 V0 is not short-circuited: spws/pzsz can still contribute while evf_fie is naturally empty');
+-- pgt-ignore-end typecheck
 
 -- SS26.RANK.11 fixture -- a schema-v1 (legacy) season, built the way the real
 -- system actually stores it: "international" DUPLICATES "domestic"'s own
@@ -1715,6 +1794,7 @@ SELECT is(pg_temp.rank10_v0_not_shortcircuited(), 'OK',
 -- canonicalization adapter must therefore drop an "international" bucket
 -- whose types are already wholly covered by "domestic", or evf_plus_total
 -- would double-count PPW/MPW.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.rank_setup_legacy() RETURNS INT
 LANGUAGE plpgsql AS $rksl$
 DECLARE
@@ -1744,8 +1824,11 @@ BEGIN
 
   RETURN v_season;
 END $rksl$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.rank_setup_legacy();
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank11_legacy_parity() RETURNS TEXT
 LANGUAGE plpgsql AS $rk11$
@@ -1779,8 +1862,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $rk11$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank11_legacy_parity(), 'OK',
   'SS26.RANK.11 legacy (schema-v1) adapter parity: fn_ranking_full matches fn_ranking_ppw/fn_ranking_kadra exactly');
+-- pgt-ignore-end typecheck
 
 -- SS26.RANK.12 fixture -- a prior season with a scored PPS result, and a
 -- current (rolling) season whose pzsz section declares PPS, linked to the
@@ -1792,6 +1877,7 @@ SELECT is(pg_temp.rank11_legacy_parity(), 'OK',
 -- resulted" to vw_eligible_event, and carries no tournament/result of its
 -- own. Design §07: "future PPS/MPS carry-over... begins disabled" -- proven
 -- here as a behavior, not left to be true by accident.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.rank_setup_pzsz_carry() RETURNS INT
 LANGUAGE plpgsql AS $rkspc$
 DECLARE
@@ -1825,8 +1911,11 @@ BEGIN
 
   RETURN v_curr;
 END $rkspc$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.rank_setup_pzsz_carry();
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.rank12_pzsz_carry_disabled() RETURNS INT
 LANGUAGE plpgsql AS $rk12$
@@ -1840,8 +1929,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $rk12$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.rank12_pzsz_carry_disabled(), 0,
   'SS26.RANK.12 PPS/MPS carry-over is disabled by default, even with rolling=true and the type declared in the current section');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SS26.PUBLISH -- the immutable per-season publication boundary.
@@ -1878,8 +1969,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p1$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish01_real_seasons(), 'ALL_OK',
   'SS26.PUBLISH.01 the three spreadsheet-derived seasons are PPW_ONLY and SPWS-2026-2027 is FULL');
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.02 -- a freshly created season defaults to FULL, no code
 -- needed beyond the column default (same pattern as enum_carryover_engine
@@ -1897,14 +1990,17 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p2$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish02_default_full(), 'FULL',
   'SS26.PUBLISH.02 a freshly created season defaults to FULL via the column default alone');
+-- pgt-ignore-end typecheck
 
 -- Fixture: a PPW_ONLY scratch season with real scored results. Direct
 -- INSERT, not fn_create_season + UPDATE -- the immutability trigger (once
 -- created) rejects ANY UPDATE to this column, including on a row created
 -- moments ago, by design (§04 of the plan: no age exemption, no role
 -- exemption).
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.publish_build_ppw_only_season() RETURNS INT
 LANGUAGE plpgsql AS $pbpo$
 DECLARE
@@ -1937,8 +2033,11 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $pbpo$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.publish_build_ppw_only_season();
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.03 -- fn_ranking_full raises for a PPW_ONLY season, naming
 -- the searchable phrase design §13 requires.
@@ -1952,6 +2051,7 @@ SELECT throws_like(
 -- Fixture: a FULL scratch season with real scored results, for the
 -- regression check (PUBLISH.04) that this step did not also break the
 -- FULL path fn_ranking_full already had.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.publish_build_full_season() RETURNS INT
 LANGUAGE plpgsql AS $pbf$
 DECLARE
@@ -1978,8 +2078,11 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $pbf$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.publish_build_full_season();
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.publish04_full_still_works() RETURNS NUMERIC
 LANGUAGE plpgsql AS $p4$
@@ -1993,8 +2096,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p4$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish04_full_still_works(), 33.00,
   'SS26.PUBLISH.04 fn_ranking_full still succeeds normally for a FULL season');
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.05 -- the publication column is immutable: a direct UPDATE
 -- raises, run as postgres (no role exemption, unlike the scoring lock).
@@ -2017,8 +2122,10 @@ EXCEPTION WHEN OTHERS THEN
   RETURN 'FAIL:' || SQLERRM;
 END $p6$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish06_unrelated_update_ok(), 'OK',
   'SS26.PUBLISH.06 an unrelated UPDATE to tbl_season is not blocked by the publication guard');
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.07 -- historical EVF/FIE data remains fully queryable
 -- through fn_ranking_kadra for a PPW_ONLY season -- restricting
@@ -2035,8 +2142,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p7$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish07_kadra_still_reads(), 1,
   'SS26.PUBLISH.07 fn_ranking_kadra still reads a PPW_ONLY season''s data -- nothing is deleted or hidden elsewhere');
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.08 -- fn_ranking_ppw succeeds normally for a PPW_ONLY
 -- season -- the restriction is specific to the combined view.
@@ -2052,8 +2161,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p8$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish08_ppw_still_works(), 40.00,
   'SS26.PUBLISH.08 fn_ranking_ppw succeeds normally for a PPW_ONLY season -- only the combined view is restricted');
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.09 -- enum_ranking_publication lives on tbl_season, not
 -- tbl_scoring_config, and is not a governed field of the scoring lock --
@@ -2074,8 +2185,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p9$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish09_config_json_unchanged(), 'OK',
   'SS26.PUBLISH.09 fn_export_scoring_config carries no publication key -- it is not a governed scoring-lock field');
+-- pgt-ignore-end typecheck
 
 -- SS26.PUBLISH.10 -- the calendar's own EVF toggle and publication
 -- capability are independent (design §06: "calendar scope is unchanged").
@@ -2103,8 +2216,10 @@ EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p10$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.publish10_calendar_independent(), 'OK',
   'SS26.PUBLISH.10 the calendar EVF toggle and publication capability are independent');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

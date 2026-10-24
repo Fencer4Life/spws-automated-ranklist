@@ -53,6 +53,7 @@ Environment:
   refuses to post a body that still holds the placeholder.
   WP_PUBLISH_CONFIRM=yes — required for create/update; get never needs it.
 """
+
 import argparse
 import http.client
 import os
@@ -91,7 +92,11 @@ def creds() -> tuple[str, str, str]:
     wp_url = env_lookup("WP_URL")
     user = env_lookup("WP_USER")
     password = env_lookup("WP_APP_PASSWORD")
-    missing = [n for n, v in (("WP_URL", wp_url), ("WP_USER", user), ("WP_APP_PASSWORD", password)) if not v]
+    missing = [
+        n
+        for n, v in (("WP_URL", wp_url), ("WP_USER", user), ("WP_APP_PASSWORD", password))
+        if not v
+    ]
     if missing:
         print(f"ERROR: missing {', '.join(missing)} in .env or the environment", file=sys.stderr)
         sys.exit(1)
@@ -131,13 +136,18 @@ def xmlrpc_call(wp_url: str, method: str, params: tuple[Any, ...]) -> Any:
     endpoint = wp_url.rstrip("/") + "/xmlrpc.php"
     parsed = urllib.parse.urlsplit(endpoint)
     if not parsed.hostname:
-        print(f"ERROR: could not parse a host out of WP_URL-derived endpoint {endpoint!r}", file=sys.stderr)
+        print(
+            f"ERROR: could not parse a host out of WP_URL-derived endpoint {endpoint!r}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     body = xmlrpc.client.dumps(params, methodname=method)
     body = body.replace("<?xml version='1.0'?>", '<?xml version="1.0"?>', 1)
     body_bytes = body.encode("utf-8")
 
-    conn_cls = http.client.HTTPSConnection if parsed.scheme == "https" else http.client.HTTPConnection
+    conn_cls = (
+        http.client.HTTPSConnection if parsed.scheme == "https" else http.client.HTTPConnection
+    )
     conn = conn_cls(parsed.hostname, parsed.port, timeout=30)
     try:
         conn.request(
@@ -163,7 +173,10 @@ def xmlrpc_call(wp_url: str, method: str, params: tuple[Any, ...]) -> Any:
     try:
         result, _ = xmlrpc.client.loads(data.decode("utf-8"))
     except xmlrpc.client.Fault as fault:
-        print(f"ERROR: XML-RPC fault {fault.faultCode} calling {method}: {fault.faultString}", file=sys.stderr)
+        print(
+            f"ERROR: XML-RPC fault {fault.faultCode} calling {method}: {fault.faultString}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     return result[0] if result else None
 
@@ -235,11 +248,10 @@ def cmd_create(args):
         "post_status": args.status,
     }
     post_id = xmlrpc_call(wp_url, "wp.newPost", (0, user, password, post))
-    result = _expect_dict(xmlrpc_call(wp_url, "wp.getPost", (0, user, password, post_id)), "wp.getPost")
-    print(
-        f"Created page_id={post_id} status={result.get('post_status')} "
-        f"link={result.get('link')}"
+    result = _expect_dict(
+        xmlrpc_call(wp_url, "wp.getPost", (0, user, password, post_id)), "wp.getPost"
     )
+    print(f"Created page_id={post_id} status={result.get('post_status')} link={result.get('link')}")
 
 
 def cmd_update(args):
@@ -253,10 +265,14 @@ def cmd_update(args):
     if args.status is not None:
         fields["post_status"] = args.status
     if not fields:
-        print("ERROR: update needs at least one of --title, --content-file, --status", file=sys.stderr)
+        print(
+            "ERROR: update needs at least one of --title, --content-file, --status", file=sys.stderr
+        )
         sys.exit(1)
     xmlrpc_call(wp_url, "wp.editPost", (0, user, password, args.page_id, fields))
-    result = _expect_dict(xmlrpc_call(wp_url, "wp.getPost", (0, user, password, args.page_id)), "wp.getPost")
+    result = _expect_dict(
+        xmlrpc_call(wp_url, "wp.getPost", (0, user, password, args.page_id)), "wp.getPost"
+    )
     print(
         f"Updated page_id={args.page_id} status={result.get('post_status')} "
         f"link={result.get('link')}"
@@ -264,7 +280,9 @@ def cmd_update(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_get = sub.add_parser("get", help="Look up a page by slug (read-only)")

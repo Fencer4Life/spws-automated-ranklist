@@ -794,8 +794,8 @@ export async function updateEvent(id: number, params: UpdateEventParams): Promis
     // no SPWS registration) so the column is cleared, not stored as an empty
     // string that CalendarView would render as a link with an empty href.
     p_url_entry_list: params.urlEntryList || null,
-    // FR-131 — NULL means unchanged; '' is the RPC's explicit clear sentinel.
-    p_txt_organizer_email: params.organizerEmail,
+    // p_txt_organizer_email is not sent: the column is retired and the RPC's
+    // NULL default leaves it unchanged (ADR-080 amendment 2026-10-24).
     // Per-event payment override. '' clears it and falls the event back to its
     // organizer's account; undefined leaves whatever is stored untouched.
     p_payee: params.payee ?? null,

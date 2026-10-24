@@ -63,7 +63,9 @@ BEGIN
 END $fx$;
 
 CREATE TEMP TABLE g (label TEXT PRIMARY KEY, j JSONB);
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO g SELECT 'clean', fn_promote_gate_checks('PPW9-2096-2097', ARRAY[98201]);
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- grants
 SELECT ok(NOT has_function_privilege('anon', 'fn_promote_gate_checks(text,integer[])', 'EXECUTE')
@@ -76,6 +78,7 @@ SELECT ok(NOT has_function_privilege('anon', 'fn_promote_gate_checks(text,intege
   'GATE.DB.01 the gate''s functions run for the service role only');
 
 -- ---------------------------------------------------------------- a clean event
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT jsonb_object_agg(k, jsonb_array_length(v)) FROM jsonb_each((SELECT j FROM g WHERE label = 'clean')) e(k, v)
             WHERE jsonb_typeof(v) = 'array' AND k NOT IN ('stored')),
           '{"estimated_years": 0, "pending_candidates": 0, "unscored": 0, "unstamped": 0, "parity": 0,
@@ -89,6 +92,7 @@ SELECT is((SELECT jsonb_array_length(j->'stored') || '|' || (j->'stored'->0->>'n
                   || '|' || jsonb_array_length(j->'stored'->0->'results') FROM g WHERE label = 'clean'),
           '2|4|1010|2',
   'GATE.DB.03 the stored tournaments come back with N, order and results, for the source comparison');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- birth years
 SELECT is(fn_fencer_fitting_birth_years(98201), ARRAY(SELECT generate_series(2048, 2057)),

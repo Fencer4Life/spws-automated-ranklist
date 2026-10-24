@@ -83,11 +83,13 @@ BEGIN
   CREATE TEMP TABLE t59 AS SELECT v_id AS id, v_e AS ev;
 END $register$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT uuid_edit_token FROM tbl_registration WHERE id_registration = (SELECT id FROM t59)),
   '11111111-1111-1111-1111-111111111111'::UUID,
   '59.4 — the client-supplied token is stored on the row'
 );
+-- pgt-ignore-end typecheck
 
 -- 59.5 — a re-submission that carries no token must not erase the existing one
 DO $resubmit$
@@ -98,11 +100,13 @@ BEGIN
             ARRAY['EPEE','SABRE']::enum_weapon_type[], NULL, NULL, NULL, NULL);
 END $resubmit$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT uuid_edit_token FROM tbl_registration WHERE id_registration = (SELECT id FROM t59)),
   '11111111-1111-1111-1111-111111111111'::UUID,
   '59.5 — a re-submission without a token keeps the one already stored'
 );
+-- pgt-ignore-end typecheck
 
 -- 59.5b — but a re-submission that DOES supply a token takes ownership of the
 -- row. This is the mechanism that makes a correction possible after the handle
@@ -118,11 +122,13 @@ BEGIN
             '99999999-9999-9999-9999-999999999999'::UUID);
 END $rotate$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT uuid_edit_token FROM tbl_registration WHERE id_registration = (SELECT id FROM t59)),
   '99999999-9999-9999-9999-999999999999'::UUID,
   '59.5b — re-submitting the declared tuple mints a fresh handle for that row'
 );
+-- pgt-ignore-end typecheck
 
 SELECT is(
   (SELECT count(*)::INT FROM tbl_registration r JOIN tbl_event e USING (id_event)
@@ -132,6 +138,7 @@ SELECT is(
 );
 
 -- 59.6 — the wrong token is refused
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT throws_ok(
   format($$SELECT fn_update_registration(%s, '22222222-2222-2222-2222-222222222222'::UUID,
             'KOWALSKI'::TEXT, 'Adam'::TEXT, 'M'::enum_gender_type, 1968::SMALLINT,
@@ -148,6 +155,7 @@ SELECT throws_ok(
   NULL, NULL,
   '59.7 — a NULL edit token is refused'
 );
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 59.8–59.9 — the correction itself: the surname is fixed IN PLACE
@@ -167,6 +175,7 @@ SELECT is(
   '59.8 — correcting the spelling leaves ONE row, not a second entry'
 );
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT txt_surname FROM tbl_registration WHERE id_registration = (SELECT id FROM t59)),
   'KOWALSKI',
@@ -180,6 +189,7 @@ SELECT isnt(
   NULL,
   '59.10 — the consent stamp survives an edit'
 );
+-- pgt-ignore-end typecheck
 
 -- 59.11 — a correction that would collide with another entrant fails loudly
 -- rather than silently destroying or duplicating either row.
@@ -192,6 +202,7 @@ BEGIN
             '33333333-3333-3333-3333-333333333333'::UUID);
 END $rival$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT throws_ok(
   format($$SELECT fn_update_registration(%s, '99999999-9999-9999-9999-999999999999'::UUID,
             'NOWAK'::TEXT, 'Adam'::TEXT, 'M'::enum_gender_type, 1968::SMALLINT,
@@ -199,6 +210,7 @@ SELECT throws_ok(
   NULL, NULL,
   '59.11 — editing into another entrant''s identity is refused, not merged'
 );
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 SELECT * FROM finish();

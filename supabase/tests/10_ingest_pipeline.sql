@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- Go-to-PROD: Ingest Pipeline Tests
 -- =============================================================================

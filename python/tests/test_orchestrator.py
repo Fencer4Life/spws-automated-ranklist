@@ -22,6 +22,14 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
+# Every test here exercises the deprecated legacy path (ADR-067) on purpose.
+# Its DeprecationWarning is asserted once, in test_ingest_cli_unified.py
+# (test_legacy_process_xml_file_emits_deprecation_warning); this module
+# names that exact message instead of repeating the assertion per test.
+pytestmark = pytest.mark.filterwarnings("ignore:process_xml_file is deprecated:DeprecationWarning")
+
 FIXTURES = Path(__file__).parent / "fixtures" / "fencingtime_xml"
 
 

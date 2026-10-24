@@ -40,6 +40,19 @@ jobs:
       - name: Start Supabase local stack
         run: supabase start
 
+      # The version comes from the config's $schema pin, so CI and LOCAL run the
+      # same checker; scripts/check-postgrestools.sh refuses any other version.
+      - name: Install postgrestools
+        run: npm install -g "@postgrestools/postgrestools@$(sed -n 's#.*pg-language-server\.com/\([0-9.]*\)/schema\.json.*#\1#p' postgres-language-server.jsonc)"
+
+      # Zero findings over every pgTAP file and every migration after the
+      # config's cut-off, warnings included, with positive controls proving
+      # type checking, plpgsql_check and pgTAP resolution ran (GATE.02–03).
+      # pgTAP and plpgsql_check come from supabase/seed_dev_tooling.sql,
+      # loaded by `supabase start`.
+      - name: postgrestools (hard gate)
+        run: bash scripts/check-postgrestools.sh
+
       - name: Run pgTAP tests
         run: supabase test db
 
@@ -61,14 +74,14 @@ jobs:
 
       # Ruff baseline is clean (lint + format) — these steps now ENFORCE (block CI).
       - name: Ruff lint
-        run: ruff check python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py
+        run: ruff check python/ scripts/ tools/
 
       - name: Ruff format check
-        run: ruff format --check python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py
+        run: ruff format --check python/ scripts/ tools/
 
       # basedpyright baseline is clean — enforces (blocks CI), same as ruff above.
       - name: basedpyright type-check
-        run: basedpyright python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py
+        run: basedpyright python/ scripts/ tools/
 
       - name: Validate generated ADR HTML
         run: python scripts/render_adrs.py --check
@@ -99,6 +112,12 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      # Same gate as scripts/preflight.sh (GATE.06): svelte-check exits 0 on
+      # warnings unless told otherwise.
+      - name: svelte-check (warnings fail)
+        working-directory: frontend
+        run: npm run check -- --fail-on-warnings
 
       - name: Run Vitest
         working-directory: frontend

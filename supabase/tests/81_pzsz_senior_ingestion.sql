@@ -89,6 +89,7 @@ END $tourn$;
 -- SS26.TYPE.06e -- a tournament with enum_age_category='SENIOR' is a
 -- legitimate source-bracket label and can be inserted.
 -- ---------------------------------------------------------------------------
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.type06e_senior_tournament_ok() RETURNS TEXT
 LANGUAGE plpgsql AS $t06e$
 DECLARE
@@ -101,9 +102,12 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $t06e$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.type06e_senior_tournament_ok(), 'SENIOR',
   'SS26.TYPE.06e a SENIOR-labeled tournament can be created');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- SS26.TYPE.06f -- a result row's own enum_source_age_category can never be
@@ -130,6 +134,7 @@ SELECT throws_like(
 -- SS26.PZSZ.02 -- the existing p_participant_count override still reports the
 -- full source field size, not the written-row count, on a SENIOR tournament.
 -- ---------------------------------------------------------------------------
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.pzsz02_full_participant_count() RETURNS INT
 LANGUAGE plpgsql AS $p02$
 DECLARE
@@ -155,9 +160,12 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p02$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pzsz02_full_participant_count(), 107,
   'SS26.PZSZ.02 int_participant_count is the full source field, not the written-row count');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- SS26.PZSZ.03/05/08 -- the review queue's full lifecycle: queue, approve
@@ -176,6 +184,7 @@ BEGIN
   out_review := fn_queue_pzsz_match_review(out_tournament, 'Scraped Name', 34, out_fencer, 62.5);
 END $rv$;
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.pzsz05_queue_writes_pending() RETURNS TEXT
 LANGUAGE plpgsql AS $p05a$
 DECLARE
@@ -186,10 +195,14 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p05a$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pzsz05_queue_writes_pending(), 'PENDING',
   'SS26.PZSZ.05a fn_queue_pzsz_match_review writes a PENDING row');
+-- pgt-ignore-end typecheck
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.pzsz05_no_result_before_decision() RETURNS INT
 LANGUAGE plpgsql AS $p05b$
 DECLARE
@@ -204,10 +217,14 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p05b$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pzsz05_no_result_before_decision(), 0,
   'SS26.PZSZ.05b a PENDING review produces no tbl_result row');
+-- pgt-ignore-end typecheck
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.pzsz08_approve_writes_own_vcat() RETURNS TEXT
 LANGUAGE plpgsql AS $p08$
 DECLARE
@@ -223,10 +240,13 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p08$;
+-- pgt-ignore-end plpgsql_check
 
 -- fixture fencer born 2000, this season (n=6) ends 2066 -> age 66 -> V3.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pzsz08_approve_writes_own_vcat(), 'V3',
   'SS26.PZSZ.08 approval writes the fencer''s own season-derived V-cat, independent of SENIOR');
+-- pgt-ignore-end typecheck
 
 CREATE FUNCTION pg_temp.pzsz_approve_marks_status(p_n INT, OUT v_status TEXT, OUT v_place INT)
 LANGUAGE plpgsql AS $p05c$
@@ -243,11 +263,14 @@ BEGIN
    WHERE id_tournament = v_tournament AND id_fencer = v_fencer;
 END $p05c$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is((pg_temp.pzsz_approve_marks_status(7)).v_status, 'APPROVED',
   'SS26.PZSZ.05c approval marks the review APPROVED');
 SELECT is((pg_temp.pzsz_approve_marks_status(8)).v_place, 34,
   'SS26.PZSZ.03 the approved row keeps its original place (34), never renumbered');
+-- pgt-ignore-end typecheck
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.pzsz_double_approve_raises() RETURNS TEXT
 LANGUAGE plpgsql AS $p05d$
 DECLARE
@@ -264,11 +287,15 @@ EXCEPTION
   WHEN undefined_function OR undefined_column THEN RETURN NULL;
   WHEN OTHERS THEN RETURN SQLERRM;
 END $p05d$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT matches(pg_temp.pzsz_double_approve_raises(), 'No pending PZSz match review',
   'SS26.PZSZ.05d approving twice raises -- a resolved review cannot be re-decided'
 );
+-- pgt-ignore-end typecheck
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.pzsz_reject_writes_nothing() RETURNS INT
 LANGUAGE plpgsql AS $p05e$
 DECLARE
@@ -284,9 +311,12 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column THEN
   RETURN NULL;
 END $p05e$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.pzsz_reject_writes_nothing(), 0,
   'SS26.PZSZ.05e rejecting a review writes no tbl_result row');
+-- pgt-ignore-end typecheck
 
 SELECT throws_like(
   $$SELECT fn_reject_pzsz_match_review(999999999)$$,
@@ -327,12 +357,14 @@ BEGIN
   );
 END $p09$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is((pg_temp.pzsz09_historical_season_not_gated_but_invisible()).v_min, 1,
   'SS26.PZSZ.09a a real historical season is already PPS-configured (step 4''s global default), not fail-closed'
 );
 SELECT is((pg_temp.pzsz09_historical_season_not_gated_but_invisible()).v_rules_mention_pps, FALSE,
   'SS26.PZSZ.09b that season''s own json_ranking_rules never names PPS -- the actual "no historical scoring" boundary'
 );
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

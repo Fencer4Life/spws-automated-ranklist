@@ -37,7 +37,9 @@ SELECT id_event, 98101, 'RUNA', 'Anna', 'F', 1975, ARRAY['EPEE']::enum_weapon_ty
   FROM tbl_event WHERE txt_code = 'PPW9-2097-2098';
 
 CREATE TEMP TABLE snaps (label TEXT PRIMARY KEY, fp JSONB);
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO snaps SELECT 'base', fn_event_input_fingerprint('PPW9-2097-2098');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- service role only
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'tbl_ingest_run'::regclass),
@@ -69,66 +71,89 @@ SELECT is(current_setting('run.fp_service'), fn_schema_fingerprint(),
   'RUN.02 the service role sees the whole schema, as the release script does');
 
 -- ---------------------------------------------------------------- the input fingerprint
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys((SELECT fp->'parts' FROM snaps WHERE label = 'base')) k),
           ARRAY['event', 'lock', 'registrations', 'roster', 'schema', 'season'],
   'RUN.03 the input fingerprint has a part per input: schema, roster, registrations, season, lock, event');
+-- pgt-ignore-end typecheck
 
 SELECT throws_like($$SELECT fn_event_input_fingerprint('PPW7-2097-2098')$$, '%INGEST_RUN_EVENT_NOT_FOUND%',
   'RUN.04 an unknown event is refused');
 
 UPDATE tbl_event SET url_event = 'https://www.fencingtimelive.com/tournaments/eventSchedule/RUN'
  WHERE txt_code = 'PPW9-2097-2098';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(fn_event_input_fingerprint('PPW9-2097-2098')->>'fingerprint', (SELECT fp->>'fingerprint' FROM snaps WHERE label = 'base'),
   'RUN.05 the event URL is not an input: promote writes CERT''s URL on PROD');
+-- pgt-ignore-end typecheck
 
 INSERT INTO tbl_registration (id_event, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons)
 SELECT id_event, 'ELSEWHERE', 'Ewa', 'F', 1965, ARRAY['FOIL']::enum_weapon_type[] FROM tbl_event WHERE txt_code = 'PPW8-2097-2098';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(fn_event_input_fingerprint('PPW9-2097-2098')->>'fingerprint', (SELECT fp->>'fingerprint' FROM snaps WHERE label = 'base'),
   'RUN.05 another event''s registrations are not an input');
+-- pgt-ignore-end typecheck
 
 UPDATE tbl_fencer SET id_fencer = 98199 WHERE id_fencer = 98102;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(fn_event_input_fingerprint('PPW9-2097-2098')->>'fingerprint', (SELECT fp->>'fingerprint' FROM snaps WHERE label = 'base'),
   'RUN.05 the roster is fingerprinted by person, never by id');
+-- pgt-ignore-end typecheck
 
 SET LOCAL TimeZone = 'Pacific/Auckland';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(fn_event_input_fingerprint('PPW9-2097-2098')->>'fingerprint', (SELECT fp->>'fingerprint' FROM snaps WHERE label = 'base'),
   'RUN.05 the session time zone changes nothing');
+-- pgt-ignore-end typecheck
 RESET TimeZone;
 
 UPDATE tbl_scoring_config SET bool_show_evf_toggle = NOT COALESCE(bool_show_evf_toggle, FALSE)
  WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2097-2098');
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(fn_event_input_fingerprint('PPW9-2097-2098')->>'fingerprint', (SELECT fp->>'fingerprint' FROM snaps WHERE label = 'base'),
   'RUN.05 a display switch is not a scoring setting');
+-- pgt-ignore-end typecheck
 
 UPDATE tbl_fencer SET int_birth_year = 1976 WHERE id_fencer = 98101;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT isnt(fn_event_input_fingerprint('PPW9-2097-2098')->'parts'->>'roster', (SELECT fp->'parts'->>'roster' FROM snaps WHERE label = 'base'),
   'RUN.06 a moved birth year changes the roster part');
+-- pgt-ignore-end typecheck
 
 INSERT INTO tbl_registration (id_event, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons)
 SELECT id_event, 'LATE', 'Lena', 'F', 1970, ARRAY['SABRE']::enum_weapon_type[] FROM tbl_event WHERE txt_code = 'PPW9-2097-2098';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT isnt(fn_event_input_fingerprint('PPW9-2097-2098')->'parts'->>'registrations', (SELECT fp->'parts'->>'registrations' FROM snaps WHERE label = 'base'),
   'RUN.06 a registration for the event changes the registrations part');
+-- pgt-ignore-end typecheck
 
 UPDATE tbl_scoring_config SET num_ppw_multiplier = num_ppw_multiplier + 1
  WHERE id_season = (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2097-2098');
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT isnt(fn_event_input_fingerprint('PPW9-2097-2098')->'parts'->>'season', (SELECT fp->'parts'->>'season' FROM snaps WHERE label = 'base'),
   'RUN.06 a scoring setting changes the season part');
+-- pgt-ignore-end typecheck
 
 UPDATE tbl_event SET json_source_overrides = '{"skip": ["https://www.fencingtimelive.com/events/results/X"]}'::JSONB
  WHERE txt_code = 'PPW9-2097-2098';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT isnt(fn_event_input_fingerprint('PPW9-2097-2098')->'parts'->>'event', (SELECT fp->'parts'->>'event' FROM snaps WHERE label = 'base'),
   'RUN.06 an admin skip/process choice changes the event part');
 
 INSERT INTO snaps SELECT 'prelock', fn_event_input_fingerprint('PPW9-2097-2098');
+-- pgt-ignore-end typecheck
 UPDATE tbl_season SET ts_scoring_locked_at = now() WHERE txt_code = 'SPWS-2097-2098';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((fn_event_input_fingerprint('PPW9-2097-2098')->'parts'->>'lock')
           || '|' || (fn_event_input_fingerprint('PPW9-2097-2098')->'parts'->>'season'),
           'locked|' || (SELECT fp->'parts'->>'season' FROM snaps WHERE label = 'prelock'),
   'RUN.06 the lock is a part of its own; the season part ignores it');
+-- pgt-ignore-end typecheck
 UPDATE tbl_season SET ts_scoring_locked_at = NULL WHERE txt_code = 'SPWS-2097-2098';
 
 -- ---------------------------------------------------------------- opening a run
 CREATE TEMP TABLE runs (label TEXT PRIMARY KEY, id BIGINT);
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO runs SELECT 'first', fn_ingest_run_open('PPW9-2097-2098', 'local', repeat('a', 40), 2098,
                                                    'https://www.fencingtimelive.com/tournaments/eventSchedule/RUN', NULL, NULL);
 
@@ -139,6 +164,7 @@ SELECT is((SELECT txt_status || '|' || txt_input_fingerprint FROM tbl_ingest_run
 SELECT is((SELECT jsonb_array_length(jsonb_roster_before) FROM tbl_ingest_run WHERE id_ingest_run = (SELECT id FROM runs WHERE label = 'first')),
           (SELECT count(*)::INT FROM tbl_fencer),
   'RUN.07 a run keeps the roster as it found it');
+-- pgt-ignore-end typecheck
 
 SELECT throws_ok($$SELECT fn_ingest_run_open('PPW9-2097-2098', 'prod', repeat('a', 40), 2098, 'https://x', NULL, NULL)$$,
   '23514', NULL, 'RUN.08 only LOCAL and CERT record runs');
@@ -146,10 +172,12 @@ SELECT throws_ok($$SELECT fn_ingest_run_open('PPW9-2097-2098', 'prod', repeat('a
 SELECT throws_ok($$SELECT fn_ingest_run_open('PPW9-2097-2098', 'cert', 'main', 2098, 'https://x', NULL, NULL)$$,
   '23514', NULL, 'RUN.08 the commit is a full git hash');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO runs SELECT 'second', fn_ingest_run_open('PPW9-2097-2098', 'local', repeat('b', 40), 2098,
                                                     'https://www.fencingtimelive.com/tournaments/eventSchedule/RUN', NULL, NULL);
 SELECT is((SELECT txt_status FROM tbl_ingest_run WHERE id_ingest_run = (SELECT id FROM runs WHERE label = 'first')), 'ABANDONED',
   'RUN.09 a newer run of the same event abandons one still running');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- what the run changed
 INSERT INTO tbl_fencer (id_fencer, txt_surname, txt_first_name, int_birth_year, enum_gender)
@@ -157,6 +185,7 @@ VALUES (98103, 'RUNC', 'Celina', 1990, 'F');
 UPDATE tbl_fencer SET int_birth_year = 1977 WHERE id_fencer = 98101;
 UPDATE tbl_fencer SET json_name_aliases = json_name_aliases || '["RUNB B."]'::JSONB WHERE id_fencer = 98199;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO snaps SELECT 'finished', fn_ingest_run_finish((SELECT id FROM runs WHERE label = 'second'),
                                                           '{"rounds": [{"name": "Szpada K", "sha256": "x"}]}'::JSONB);
 
@@ -177,18 +206,23 @@ SELECT is((SELECT txt_status || '|' || (jsonb_master_data = (SELECT fp FROM snap
              FROM tbl_ingest_run WHERE id_ingest_run = (SELECT id FROM runs WHERE label = 'second')),
           'FINISHED|true|Szpada K|true',
   'RUN.10 a finished run keeps its listings and its master-data changes');
+-- pgt-ignore-end typecheck
 
 SELECT throws_like($$SELECT fn_ingest_run_finish((SELECT id FROM runs WHERE label = 'second'), '{}'::JSONB)$$,
   '%INGEST_RUN_NOT_RUNNING%', 'RUN.11 a run finishes once');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO runs SELECT 'failed', fn_ingest_run_open('PPW9-2097-2098', 'cert', repeat('c', 40), 2098,
                                                     'https://www.fencingtimelive.com/tournaments/eventSchedule/RUN', NULL, NULL);
+-- pgt-ignore-end typecheck
 UPDATE tbl_fencer SET bool_birth_year_estimated = TRUE WHERE id_fencer = 98103;
 DO $$ BEGIN PERFORM fn_ingest_run_fail((SELECT id FROM runs WHERE label = 'failed'), 'FTL timed out', NULL); END $$;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT txt_status || '|' || txt_error || '|' || (jsonb_master_data->'birth_year_moved'->0->>'estimated_to')
              FROM tbl_ingest_run WHERE id_ingest_run = (SELECT id FROM runs WHERE label = 'failed')),
           'FAILED|FTL timed out|true',
   'RUN.12 a failed run keeps its error and what it had changed');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- anything else is recorded too
 SELECT is(fn_roster_changes(

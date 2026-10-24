@@ -9,7 +9,8 @@
   <meta name="doc-owner" content="Release operations">
   <meta name="last-verified" content="2026-09-25">
   <meta name="source-globs" content=".github/workflows/ftl-seed.yml; python/pipeline/ftl_feed_seed_send.py; python/pipeline/db_connector.py; frontend/src/components/EventManager.svelte">
-  <meta name="review-triggers" content="None — archived 2026-09-25. The procedure it describes was never commissioned and will not be.">
+  <meta name="review-triggers" content="None — archived 2026-09-25 and moved to the legacy archive 2026-10-24, when the workflow and sender it set up were deleted (ADR-080 amendment 2026-10-24). The source paths above no longer exist.">
+
   <title>Set up Gmail delivery for FTL seed bundles</title>
   <style>
     :root{
@@ -121,7 +122,7 @@
 
   <hr class="rule">
 
-  <div class="note danger"><p class="lede">Archived — do not follow this procedure.</p><p>E-mail delivery of FTL seed bundles was never commissioned and never ran. The association holds no registered sending identity, so the project cannot send e-mail; the setup below cannot be completed and would achieve nothing if it were. Measured 2026-09-25: <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events on CERT and 0 of 103 on PROD carry <code>ts_ftl_sent</code>.</p><p>The organizer handoff in service is the capability-gated download page — see <a href="operator-runbooks.html#ftl-seed">Operator runbooks</a> and <a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> amendment 2026-09-25. Do not create a Google App Password or set <code>ENABLE_FTL_DEADLINE_SEND</code> for this. Retained as the record of work that was done, not as an instruction.</p></div><section id="outcome">
+  <div class="note danger"><p class="lede">Archived — do not follow this procedure.</p><p>E-mail delivery of FTL seed bundles was never commissioned and never ran. The association holds no registered sending identity, so the project cannot send e-mail; the setup below cannot be completed and would achieve nothing if it were. Measured 2026-09-25: <code>ftl-seed.yml</code> has never been dispatched, every scheduled run was skipped, and 0 of 103 events on CERT and 0 of 103 on PROD carry <code>ts_ftl_sent</code>.</p><p>The organizer handoff in service is the capability-gated download page — see <a href="../../handbook/operations/operator-runbooks.html#ftl-seed">Operator runbooks</a> and <a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> amendment 2026-09-25. Do not create a Google App Password or set <code>ENABLE_FTL_DEADLINE_SEND</code> for this. Retained as the record of work that was done, not as an instruction.</p></div><section id="outcome">
     <p class="kicker">Start here</p>
     <h2>What this setup enables</h2>
     <p>The manual workflow reads an event from CERT, generates the current mix-all FTL seed ZIP in memory, sends it through Gmail over certificate-verifying TLS, and stamps <code>tbl_event.ts_ftl_sent</code> only after Gmail accepts the message.</p>
@@ -349,8 +350,8 @@ gh run watch RUN_ID \
       <li><a href="https://support.google.com/accounts/answer/46526">Google Account Help — Make your account more secure</a></li>
       <li><a href="https://docs.github.com/en/actions/reference/security/secrets">GitHub Actions — Secrets reference</a></li>
       <li><a href="https://cli.github.com/manual/gh_secret_set">GitHub CLI — <code>gh secret set</code></a></li>
-      <li><a href="operator-runbooks.html#ftl-seed">SPWS operator runbook — Send an FTL seed bundle</a></li>
-      <li><a href="environments-and-release.html#secrets">SPWS environment and release secret contract</a></li>
+      <li><a href="../../handbook/operations/operator-runbooks.html#ftl-seed">SPWS operator runbook — Send an FTL seed bundle</a></li>
+      <li><a href="../../handbook/operations/environments-and-release.html#secrets">SPWS environment and release secret contract</a></li>
     </ul>
   </section>
 

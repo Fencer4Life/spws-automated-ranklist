@@ -27,10 +27,12 @@ SELECT (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2025-2026') AS s
        (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2026-2027') AS s2627,
        (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS') AS spws;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, dt_end, enum_status)
 SELECT v.c, 'RANK.TIE fixture', CASE v.w WHEN '2526' THEN tie.s2526 ELSE tie.s2627 END, tie.spws, v.d, v.d, 'COMPLETED'
   FROM tie, (VALUES ('PPW96-2025-2026', '2526', DATE '2026-03-14'),
                     ('PPW96-2026-2027', '2627', DATE '2026-10-10')) v(c, w, d);
+-- pgt-ignore-end typecheck
 
 INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category,
                             dt_tournament, int_participant_count)
@@ -134,6 +136,7 @@ SELECT results_eq(
   'RANK.TIE.05c a three-way tie is listed alphabetically');
 
 -- ---------------------------------------------------------------- the definition, on the seed's own lists
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (WITH combos AS (
      SELECT w::enum_weapon_type AS w, g::enum_gender_type AS g, c::enum_age_category AS c
@@ -148,6 +151,7 @@ SELECT is(
                           WHERE b.w = a.w AND b.g = a.g AND b.c = a.c AND b.total_score > a.total_score)),
   0,
   'RANK.TIE.06 every place is one more than the number of higher totals (2025/26, all 30 PPW lists): a list without ties keeps 1..n');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- the FTL seed export (ADR-080)
 DO $setup$

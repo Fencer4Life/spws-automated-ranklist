@@ -1,0 +1,303 @@
+<meta charset="utf-8">
+<title>What two workflows do, and names that say it</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">GitHub Actions · explanation · rename proposal · 24 Oct 2026</p>
+  <h1>What two workflows do, and names that say it</h1>
+  <p class="dek"><b>FTL Seed Organizer Delivery</b> was built to e-mail an event's entry files to the organizer and has <b>never sent anything</b>. <b>Phase 5 Event Runner</b> loads one event's results into drafts, or <b>replaces</b> an event's stored results with a staged run. Neither name says this, and every run of either shows the same title.</p>
+  <div class="note accent">
+    <p class="lede"><span class="tick">→</span> Superseded on 24 Oct 2026 by two plans</p>
+    <p style="margin-bottom:0"><b>D1 and D2</b> (the Phase 5 name and run titles) were accepted as proposed and continue in <code>doc/plans/phase5-workflow-rename-2026-10-24.html</code>. <b>D3–D5</b> are replaced: the e-mail delivery is removed, not renamed, in <code>doc/plans/ftl-seed-email-removal-2026-10-24.html</code>.</p>
+  </div>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>Superseded — kept as the record</span>
+    <span class="pill">branch <code>claude/workflow-descriptive-names</code></span>
+    <span class="pill">nothing changed yet</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Decide this first</p>
+    <h2>Five answers, by letter</h2>
+    <p>Answer like <b>D1 A, D2 A, D3 A, D4 A, D5 A</b>, or "accept all". Each recommendation is explained in the sections below the table.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Recommended</th></tr></thead>
+      <tbody>
+        <tr><td><b>D1</b></td><td>New name for <code>phase5-event-runner.yml</code></td><td>
+          <b>A</b> <code>Stage or replace one event's results (past-season repair)</code><br>
+          <b>B</b> <code>Event results: stage drafts / commit a staged run</code><br>
+          <b>C</b> keep <code>Phase 5 Event Runner</code></td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D2</b></td><td>Give each Phase 5 run its own title (event, environment, mode)</td><td>
+          <b>A</b> yes — titles as in the examples below<br>
+          <b>B</b> no — the workflow name only</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D3</b></td><td>New name for <code>ftl-seed.yml</code></td><td>
+          <b>A</b> <code>NOT IN SERVICE · e-mail FTL seed files to organizer</code><br>
+          <b>B</b> <code>FTL seed e-mail to organizer (withdrawn, ADR-080 §5)</code><br>
+          <b>C</b> keep <code>FTL Seed Organizer Delivery</code></td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D4</b></td><td>The daily scheduled run of <code>ftl-seed.yml</code> (always skipped)</td><td>
+          <b>A</b> remove the schedule and the sweep job it is the only route to<br>
+          <b>B</b> keep it; rename only</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D5</b></td><td>The admin event form still has a "send to organizer" button that starts <code>ftl-seed.yml</code></td><td>
+          <b>A</b> a separate task, with its own before/after screenshots<br>
+          <b>B</b> include it in this change<br>
+          <b>C</b> leave the button</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">Workflow 1 · <code>phase5-event-runner.yml</code></p>
+    <h2>"Phase 5 Event Runner": loads one event's results, or replaces them</h2>
+    <p><b>"Phase 5"</b> is history, not function: it was the fifth phase of the 2026 rebuild of the ingestion pipeline (ADR-050, phases 0–6). The name tells you nothing about what a run does.</p>
+    <p>You start it by hand (Actions → Run workflow, or <code>gh workflow run</code>) with an <b>event code</b>, a <b>target</b> (<code>cert</code> or <code>prod</code>) and an optional <b>staged run id</b>. The run id decides which of two different jobs it does:</p>
+
+    <div class="op">
+      <span class="op-tag u">STAGE</span><span class="set">staged run id empty</span>
+      <ul>
+        <li>Reads the event's result URL from <code>tbl_event.url_results</code> and scrapes it (logging in to FencingTimeLive when the source is there).</li>
+        <li>Matches each fencer to the master list and writes the results into the <b>draft</b> tables on the target. The stored, published results are not touched.</li>
+        <li>Writes the review report <code>staging-reports/&lt;event&gt;/full.md</code> to Storage and sends it to Telegram.</li>
+      </ul>
+    </div>
+
+    <div class="op">
+      <span class="op-tag d">REPLACE</span><span class="set">staged run id given</span>
+      <ul>
+        <li>Runs the sign-off checks on that staged run: it refuses a run that still holds an unresolved PENDING fencer or a ❌ match.</li>
+        <li>Then, in one transaction, removes the event's stored results (by its exact code) and commits the staged run in their place (<code>fn_replace_event_from_draft</code>). <b>On <code>prod</code>, this rewrites published results.</b></li>
+      </ul>
+    </div>
+
+    <p>Today it is kept for LOCAL work and for repairing a <b>past-season</b> event. A new event of any organizer goes through <code>ingest-event.yml</code> on CERT and <code>promote.yml</code> to PROD (ADR-113), because <code>promote.yml</code> only reaches the active season.</p>
+
+    <h3>The run you linked</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Run</th><th>What it actually did</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/37097307828">37097307828</a><br><span class="mono" style="font-size:15px;color:var(--faint)">3 Oct 2026, 04:40 UTC · 20 s · success</span></td>
+          <td><span class="chip over">REPLACE</span> on <b>PROD</b>: event <code>PEW8f-2024-2025</code>, from staged run <code>f731d33c-a5f8-4857-9de0-c05a38f27f34</code>. The stage step was skipped and the commit step ran.</td></tr>
+      </tbody>
+    </table></div>
+    <p>All 144 runs on record are from 2–3 October 2026, the past-season repair batch (120 on the 2nd, 24 on the 3rd). Every one of them is titled <b>"Phase 5 Event Runner"</b>, so the list cannot tell you which event, which environment, or whether a run only staged drafts or replaced PROD results. To find out for the run above, I had to open its log.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The file's header comment is out of date</p>
+      <p style="margin-bottom:0">It says the runner is started by an admin "Stage event" button and a Telegram <code>/stage</code> command. Neither exists any more: no front-end code and no command in <code>scripts/gas_telegram_bot.js</code> starts it. The only routes are a manual dispatch and the <code>dispatch-workflow</code> edge function's allowlist. The rename corrects the comment too.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Workflow 2 · <code>ftl-seed.yml</code></p>
+    <h2>"FTL Seed Organizer Delivery": built to e-mail the entry files, never commissioned</h2>
+    <p>It was built in July 2026 (ADR-080 §5) to do one thing: take an event's declared registrations, generate the FencingTimeLive import files (the "seed"), zip them, e-mail the zip to the organizer's address on the event from the SPWS Gmail, and stamp the event with <code>ts_ftl_sent</code>. It has two jobs:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Job</th><th>Trigger</th><th>What it would do</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><b>Deliver current FTL seed bundle</b></td><td>manual: event code + <code>cert</code>/<code>prod</code></td><td>e-mail one event's seed zip to its organizer</td><td><span class="chip warn">never dispatched</span></td></tr>
+        <tr><td><b>Deliver due PROD rosters</b></td><td>daily, 04:00 UTC</td><td>e-mail every PROD event whose registration deadline has passed</td><td><span class="chip plain">skipped every day</span> — runs only if the repository variable <code>ENABLE_FTL_DEADLINE_SEND</code> is <code>true</code>, and it was never set</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">0</span> It has never sent an e-mail, and it cannot</p>
+      <p>Every finished scheduled run (101) was skipped; there has never been a manual run; when ADR-080 measured it on 25 September, 0 of 103 events carried a delivery stamp on CERT or PROD. The repository has no <code>SPWS_GMAIL_USER</code> or <code>SPWS_GMAIL_APP_PASSWORD</code> secret, so a run would fail at the sending step. ADR-080 withdrew the e-mail delivery on 25 September 2026: the association holds no registered sending identity.</p>
+      <p style="margin-bottom:0">What replaced it: the organizer downloads their own event's files from the page reached by their capability link (<code>tbl_ftl_export_token</code>). The workflow, its Python sender and generator stay in the tree, unused.</p>
+    </div>
+
+    <p>So the only trace it leaves is one skipped run a day near the top of the Actions list, under a name that reads like a working delivery.</p>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> The admin UI still offers the withdrawn action (D5)</p>
+      <p style="margin-bottom:0">The event form in <code>frontend/src/components/EventManager.svelte:147-154</code> still has the send-to-organizer button and the read-only "sent at" field, and the button dispatches <code>ftl-seed.yml</code>. Since no Gmail secret exists, a click would start a run that fails at sending and posts a Telegram failure; nothing reaches an organizer. Removing the button is UI work, so I recommend its own task with before/after screenshots rather than mixing it into a rename.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">How the names would look</p>
+    <h2>Two knobs: the workflow's name and each run's title</h2>
+    <p>GitHub shows two different labels. <code>name:</code> is the workflow's label in the Actions sidebar. <code>run-name:</code> is the title of each run in the list; without it, every run is titled with the workflow's name, which is why all 144 runs read "Phase 5 Event Runner". No workflow in this repository sets <code>run-name:</code> today.</p>
+
+    <h3>Phase 5 runner (D1 A + D2 A)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Today</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>Sidebar</td><td><span class="strike">Phase 5 Event Runner</span></td><td>Stage or replace one event's results (past-season repair)</td></tr>
+        <tr><td>Run title, stage</td><td><span class="strike">Phase 5 Event Runner</span></td><td>Stage PEW8f-2024-2025 on cert: drafts + review report</td></tr>
+        <tr><td>Run title, commit</td><td><span class="strike">Phase 5 Event Runner</span></td><td>REPLACE PEW8f-2024-2025 results on prod with staged run f731d33c-a5f8-4857-9de0-c05a38f27f34</td></tr>
+      </tbody>
+    </table></div>
+    <pre class="trace">run-name: &gt;-
+  ${{ inputs.commit_run_id != ''
+      &amp;&amp; format('REPLACE {0} results on {1} with staged run {2}',
+                inputs.event_code, inputs.target, inputs.commit_run_id)
+      || format('Stage {0} on {1}: drafts + review report',
+                inputs.event_code, inputs.target) }}</pre>
+
+    <h3>FTL seed (D3 A, with D4 A)</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>Today</th><th>Proposed</th></tr></thead>
+      <tbody>
+        <tr><td>Sidebar</td><td><span class="strike">FTL Seed Organizer Delivery</span></td><td>NOT IN SERVICE · e-mail FTL seed files to organizer</td></tr>
+        <tr><td>Run title, manual</td><td><span class="strike">FTL Seed Organizer Delivery</span></td><td>NOT IN SERVICE · e-mail FTL seed for PPW1-2026-2027 on cert</td></tr>
+        <tr><td>Daily run</td><td>one skipped run a day</td><td>none (D4 A)</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="note accent">
+      <p class="lede">Worth knowing about these two labels</p>
+      <ul style="margin-bottom:0">
+        <li><b>A run's title is fixed when the run is created.</b> The 144 old runs keep "Phase 5 Event Runner"; only new runs get the new titles.</li>
+        <li><code>run-name:</code> can read only the <code>github</code> and <code>inputs</code> contexts, not <code>vars</code> or <code>secrets</code>. It is a display string, never executed by a shell, so putting an unvalidated input in it is safe; the job still validates every input before its first use.</li>
+        <li><b>The file names do not change.</b> Everything that starts these workflows uses the file name: the <code>dispatch-workflow</code> edge function, the admin UI, <code>gh workflow run</code>, the tests. The only workflow that follows another by its display name is <code>release.yml</code>, which follows <code>CI</code>, and <code>CI</code> is not renamed.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">Why these recommendations</p>
+    <h2>Reasoning</h2>
+    <ul>
+      <li><b>D1 A.</b> It names both modes and the dangerous verb, "replace", and says when the workflow is used today, so nobody reaches for it to load a new event. B is accurate but hides that a commit overwrites stored results.</li>
+      <li><b>D2 A.</b> The run title is where the confusion is: 144 identical lines, some of which rewrote PROD. A title with the event, the environment and the mode makes a REPLACE on prod stand out in the list.</li>
+      <li><b>D3 A.</b> "NOT IN SERVICE" first, because that is the one fact a reader of the Actions list needs; B puts it last, in parentheses.</li>
+      <li><b>D4 A.</b> The daily run is the only reason this workflow keeps appearing in the list, and it changes nothing: every run is skipped, and the sweep job can only be reached from the schedule. The cost is small and named below: one contract test, one handbook row, one line in the ADR-080 amendment.</li>
+      <li><b>D5 A.</b> The button is a UI change and follows the UI rule (before/after sheet signed off first). It also touches the edge function's allowlist and a contract test that asserts <code>"ftl-seed.yml"</code> is allowlisted, so it is its own small decision.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">If signed off as recommended</p>
+    <h2>What changes, in order</h2>
+    <ol class="steps">
+      <li><b>Tests first, seen red.</b> In <code>python/tests/test_phase5_workflow_commit.py</code>: the workflow has a <code>run-name</code> that carries <code>inputs.event_code</code> and <code>inputs.target</code> and says REPLACE when <code>commit_run_id</code> is set. In <code>python/tests/test_ftl_seed_workflow_contract.py</code>: the name starts "NOT IN SERVICE", and (D4 A) there is no <code>schedule:</code>, no <code>--sweep-deadlines</code>, no <code>ENABLE_FTL_DEADLINE_SEND</code>.</li>
+      <li><b><code>phase5-event-runner.yml</code></b>: new <code>name:</code>, new <code>run-name:</code>, header comment corrected (manual dispatch only). Jobs and steps unchanged.</li>
+      <li><b><code>ftl-seed.yml</code></b>: new <code>name:</code> and <code>run-name:</code>; header comment says it is not in service and points to ADR-080's 2026-09-25 amendment; (D4 A) the <code>schedule:</code> trigger and the <code>deadline-sweep</code> job removed. The manual job is unchanged.</li>
+      <li><b>Docs</b>: <code>doc/handbook/operations/ftl-gmail-actions-setup.html</code> (it names "Actions → FTL Seed Organizer Delivery"); the <code>ftl-seed.yml</code> row in <code>doc/handbook/reference/workflow-catalog.html</code> ("every scheduled run skipped" becomes "no schedule"); one line in ADR-080's 2026-09-25 amendment that the schedule is gone. Then the RAG re-index and the graph refresh.</li>
+      <li><b>Checks</b>: the two test files green, <code>scripts/preflight.sh</code> exit 0, YAML parsed by the tests.</li>
+      <li><b>Release</b> to main through the integration checkout; CI and Release green.</li>
+      <li><b>Verify</b>: <code>gh workflow list</code> shows both new names. The run titles cannot be proved without a real run, and a test run of either workflow is not harmless (Phase 5 writes drafts; the FTL job would try to send), so the title is checked on the next real dispatch. No workflow is started for the sake of the check.</li>
+    </ol>
+  </section>
+
+  <p class="foot">workflow-descriptive-names · 24 Oct 2026 · sources: the two workflow files, run 37097307828's log, gh run history, ADR-080 amendment 2026-09-25, handbook workflow catalog</p>
+</div>

@@ -1,0 +1,552 @@
+<meta charset="utf-8">
+<title>Remove the FTL seed e-mail delivery; keep the files and the download page</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Events &amp; registration · FTL seed · removal plan · 24 Oct 2026</p>
+  <h1>Remove the e-mail delivery of FTL seed files. Keep the files and the download page.</h1>
+  <p class="dek">The e-mail delivery of seed files will never happen, so this plan closes it: the workflow, the sender, the delivery stamp, the admin button and their tests go. <b>Seed file generation and the organizer download page reached by the shared link stay exactly as they are</b>, byte for byte, and the plan proves it before and after. New guard tests fail if anyone rebuilds an e-mail path.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Sheet, D1–D6, D8, R1 accepted 24 Oct · D7 fixed here (your order) · D9 withdrawn · second pass built (§ 16) · waiting for: your go to release</span>
+    <span class="pill">ADR-080 amendment</span>
+    <span class="pill">2 migrations · 2 UI changes (before/after sheet)</span>
+    <span class="pill danger"><span class="dot"></span>download path: zero code changes (D8: 5 comment lines, bundle byte-identical)</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order</p>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#decide">Decide this first</a> — D1 to D9: all answered; D9 withdrawn</li>
+      <li><a href="#line">The line: what is protected, what goes</a></li>
+      <li><a href="#evidence">Evidence: the e-mail path never ran</a></li>
+      <li><a href="#changes">What changes, file by file</a></li>
+      <li><a href="#protect">How the download path is protected</a></li>
+      <li><a href="#tests">Tests: guards first, red before green</a></li>
+      <li><a href="#scenarios">Walk-throughs</a></li>
+      <li><a href="#ui">The one UI change: before/after sheet</a></li>
+      <li><a href="#parity">LOCAL / CERT / PROD</a></li>
+      <li><a href="#order">Order of work</a></li>
+      <li><a href="#adr">ADR-080 amendment — draft for sign-off</a></li>
+      <li><a href="#docs">Documentation coherence gate</a></li>
+      <li><a href="#pgt">postgrestools: zero findings in every migration and test (D6)</a></li>
+      <li><a href="#found">A live defect found on the way (D7, fixed here)</a></li>
+      <li><a href="#second">Second pass: every bug, gap and warning, fixed here</a></li>
+      <li><a href="#done">Definition of done</a></li>
+    </ol>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">Decide this first</p>
+    <h2>Nine decisions</h2>
+    <div class="note good"><p class="lede">Answered 24 Oct: sheet OK, D6 A, D8 A, R1 A. D7: fixed here on your order. D9: withdrawn.</p><p>This change removes the e-mail delivery and nothing else. D9 proposed removing the legacy direct-write XML ingest. You never asked for that; I proposed it myself, and my text did not say it would also remove <code>.zip</code> input and the Storage staging intake. It is withdrawn: the legacy ingest code is byte-identical to main.</p></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>D1</b></td><td>The two event columns that existed only for the e-mail: <code>ts_ftl_sent</code> (the "sent at" stamp) and <code>txt_organizer_email</code> (the recipient)</td><td>
+          <b>A</b> <b>Retire, don't drop.</b> Keep both columns, mark them retired in a column comment; no code reads or writes them.<br>
+          <b>B</b> <b>Drop both now.</b> This means rebuilding <code>vw_calendar</code>, changing <code>fn_update_event</code>'s signature and the PROD mirror, and editing the seed dump that every LOCAL and CI bootstrap loads.</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D2</b></td><td>The "Organizer e-mail" input in the admin event form</td><td>
+          <b>A</b> remove it; its only use was as the send's recipient<br>
+          <b>B</b> keep it as a plain contact field</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D3</b></td><td>How wide the guard tests reach</td><td>
+          <b>A</b> this path, <b>plus</b> no outbound e-mail anywhere in the code<br>
+          <b>B</b> this path only</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D4</b></td><td>The handbook page "Set up Gmail delivery for FTL seed bundles"</td><td>
+          <b>A</b> move it to <code>doc/archive/legacy-2026-07/</code> with an archive index entry<br>
+          <b>B</b> delete it</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D5</b></td><td>How the decision is recorded</td><td>
+          <b>A</b> a dated amendment to ADR-080, plus one-line pointers in ADR-086 and ADR-087<br>
+          <b>B</b> a new ADR superseding ADR-080 §5</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D6</b></td><td>The postgrestools findings that are the checker's limits, not defects (<a href="#pgt">§ 13</a>)</td><td>
+          <b>A</b> <b>Built.</b> An inline suppression with its reason on exactly the statements concerned; preflight fails on any finding, warnings included<br>
+          <b>B</b> one <code>-- pgt-ignore-all typecheck</code> line per affected test file: 35 lines instead of 449, but every other statement in those files goes unchecked<br>
+          <b>C</b> rewrite the tests without <code>pg_temp</code> helpers, temp tables and <code>\gset</code>: test logic in about 40 files changes to suit a checker</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D7</b></td><td>The live defect in <code>fn_create_evf_event_from_results</code> (<a href="#found">§ 14</a>)</td><td>
+          <b>Decided by you, 24 Oct:</b> fix it here. Done, test first: migration <code>20261024000002</code>, pgTAP 22.6a–d seen RED, then GREEN.</td><td><span class="chip never">done</span></td></tr>
+        <tr><td><b>D8</b></td><td>The byte-identity check (§ 5.1) now prints two protected files. <code>supabase/tests/111_equal_totals_share_place.sql | 4 +</code>: four D6 suppression comments around two RANK.TIE statements, not in its FTL-export part. <code>frontend/src/ce/FtlExportElement.svelte | 1 +</code>: one <code>// svelte-ignore state_referenced_locally</code> comment (§ 16 row 4); the built bundle is byte-identical, so nothing that ships changes. Your rule says work stops here.</td><td>
+          <b>A</b> accept these five comment lines by name; every other protected path stays byte-identical<br>
+          <b>B</b> revert them, keep both files byte-identical, exclude 111 from postgrestools (<code>files.ignore</code>, tested: it works) and leave one svelte-check warning, which then fails the new zero-warning gate</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D9</b></td><td><span class="strike">Remove the legacy direct-write ingest path</span> (<code>run_ingest</code> → <code>process_xml_file</code>, <code>--from-storage</code>, bare path, <code>.zip</code> input)</td><td><b>Withdrawn 24 Oct, by you:</b> &ldquo;only the e-mail, nothing else&rdquo;. Nothing was built; the ingest code is byte-identical to main.</td><td><span class="chip never">withdrawn</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Why</h3>
+    <ul>
+      <li><b>D1 A.</b> Dropping the columns puts at risk exactly what you asked me to protect, for no gain.
+        <ul>
+          <li><code>vw_calendar</code> selects both columns, and the <b>registration form reads that view</b>. Registrations are the data the seed files are built from. Removing a column from a view means dropping and recreating it, together with its grants.</li>
+          <li>The seed dump that every LOCAL reset and every CI run loads (<code>supabase/seed_prod_latest.sql</code> → <code>seed_prod_2026-10-17.sql</code>, wired in <code>supabase/config.toml:74</code>) names <code>ts_ftl_sent</code> in all 104 event rows. A dropped column breaks the bootstrap until the dump is regenerated.</li>
+          <li>Both columns are empty on every event on CERT and PROD (checked today), so keeping them costs nothing. They can be dropped later, together with a seed regeneration.</li>
+        </ul></li>
+      <li><b>D2 A.</b> The field exists only to give the send a recipient, and nobody has ever filled it: 0 of 104 events on CERT and on PROD. <code>fn_update_event</code> keeps its <code>p_txt_organizer_email</code> parameter (default <code>NULL</code> = leave unchanged), so the form simply stops sending it. No SQL signature changes.</li>
+      <li><b>D3 A.</b> The handbook already states that nothing in the system sends e-mail. Today the only code that does is the sender being removed: <code>smtplib</code> and <code>email.message</code> appear nowhere else in <code>python/</code>, <code>scripts/</code>, <code>frontend/src</code>, the edge functions or the workflows. The guard turns that statement into a test.</li>
+      <li><b>D4 A.</b> The documentation standard archives superseded pages and keeps the files and their history. Only <code>doc/handbook/documentation-map.html</code> links to this page.</li>
+      <li><b>D5 A.</b> ADR-080's 2026-09-25 amendment already took the decision (withdrawn, never commissioned). This amendment finishes it: the code is gone, not "retained unused". A new ADR would split one decision across two records.</li>
+      <li><b>D6 A.</b> Every suppression covers only the statements the checker cannot read, and says why. A real defect next to them is still caught (canary in § 13). An unused suppression is itself a warning, so preflight fails once one goes stale. B leaves whole files unchecked. C changes working tests to suit a tool.</li>
+      <li><b>D7, done here.</b> My recommendation was a separate release; you told me to fix it here, so I did. The protected-path proof is unaffected: the fix touches one EVF function and one EVF test file, neither on the protected list (§ 5).</li>
+      <li><b>D8 A.</b> Comments don't change what the test runs: test 111's count and results are unchanged (preflight). The pgTAP total moves from 1489 to 1493 only because of the four new D7 assertions in file 22. B keeps the bytes but removes all checking of a protected test, which protects it less.</li>
+    </ul>
+  </section>
+
+  <section id="line">
+    <p class="kicker">§ 2 · the line</p>
+    <h2>What is protected, and what goes</h2>
+
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> PROTECTED — seed generation and the download page. Not one byte changes.</p>
+      <div class="tablewrap" style="background:var(--surface)"><table>
+        <thead><tr><th>Part</th><th>Files</th></tr></thead>
+        <tbody>
+          <tr><td>Python generator (the reference twin)</td><td><code>python/pipeline/ftl_seed_export.py</code>, <code>python/pipeline/ftl_seed_export_db.py</code>, <code>python/pipeline/vcat_marker.py</code></td></tr>
+          <tr><td>Browser generator and archive</td><td><code>frontend/src/lib/ftlSeedExport.ts</code> (held byte for byte to the Python by X8.14), <code>frontend/src/lib/zip.ts</code>, <code>frontend/src/lib/exportArchive.ts</code></td></tr>
+          <tr><td>Download page</td><td><code>frontend/src/components/FtlExport.svelte</code>, <code>frontend/src/ce/FtlExportElement.svelte</code>, <code>frontend/src/main.ce.ts</code></td></tr>
+          <tr><td>Database behind the link</td><td><code>tbl_ftl_export_token</code>, <code>fn_ftl_export_token_valid</code>, <code>fn_ftl_export_events</code>, <code>fn_ftl_export_entries</code>, <code>fn_ftl_roster</code>; registrations and <code>vw_registration_entry_list</code></td></tr>
+          <tr><td>Their tests</td><td><code>python/tests/test_ftl_seed_export.py</code>, <code>test_ftl_seed_orchestration.py</code>, <code>test_ftl_name_marker.py</code>; <code>frontend/tests/ftlSeedExport.test.ts</code>, <code>FtlExport.test.ts</code>, <code>FtlExportElement.test.ts</code>, <code>exportArchive.test.ts</code>; pgTAP <code>76_ftl_export_entries.sql</code>, <code>77_ftl_roster.sql</code>, <code>78_registration_club.sql</code>, <code>111_equal_totals_share_place.sql</code>, <code>52_security_posture.sql</code>; <code>scripts/check-security-posture.sh</code></td></tr>
+          <tr><td>Outside the repo</td><td>the WordPress page <code>pliki-zasilajace-xml-ftl</code>, the live link (1 active token on CERT, 1 on PROD), the <code>ftl-token-rotate</code> skill</td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin:12px 0 0">Two consequences of that rule. <code>FtlSeedExporter</code> (<code>ftl_seed_export_db.py</code>) stays even though the removed sender was its only runtime caller: it generates files, and its tests keep the Python twin honest. And an old docstring in <code>test_ftl_seed_export.py:524</code> that mentions the removed workflow stays as it is, because the file is protected.</p>
+    </div>
+
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> REMOVED — the e-mail delivery</p>
+      <ul style="margin-bottom:0">
+        <li><code>.github/workflows/ftl-seed.yml</code>: both jobs, the manual send and the daily deadline sweep</li>
+        <li><code>python/pipeline/ftl_feed_seed_send.py</code>: the sender (Gmail <code>SMTP_SSL</code>, deadline sweep, e-mail builder)</li>
+        <li><code>DbConnector.mark_ftl_sent</code> and <code>DbConnector.list_ftl_delivery_candidates</code> in <code>python/pipeline/db_connector.py</code></li>
+        <li>SQL function <code>fn_mark_ftl_sent(text)</code>, dropped by a new migration</li>
+        <li>In the admin event form: the "Send to organizer" button, the "FTL bundle last sent" field and (D2 A) the "Organizer e-mail" input, plus their five locale keys in each language</li>
+        <li><code>"ftl-seed.yml"</code> in the <code>dispatch-workflow</code> allowlist</li>
+        <li>Tests of the removed code: <code>python/tests/test_ftl_feed_seed_send.py</code>, <code>test_ftl_seed_workflow_contract.py</code>, pgTAP FTLDEL-DB-01/02, Vitest FTLDEL-UI-01/02</li>
+      </ul>
+    </div>
+
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> One test is moved, not deleted</p>
+      <p style="margin-bottom:0"><code>FTLDEL-PY-07</code> lives in the sender's test file, but it protects seed generation. It checks that a name the generator writes, such as <code>SAMECKA-NACZYŃSKA (1) Martyna</code>, is read back correctly by the results matcher (<code>format_nom_with_marker</code> → <code>canonicalize_scraped_name</code>). No other test crosses that boundary: <code>test_matcher.py</code> uses literal strings, and <code>test_ftl_seed_export.py</code> doesn't call the matcher. It moves unchanged into a new file, <code>python/tests/test_ftl_seed_marker_roundtrip.py</code>, as <b>FR125.RT.01</b> under FR-125.</p>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <p class="kicker">§ 3 · evidence, checked 24 Oct 2026</p>
+    <h2>The e-mail path never ran</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Events</td><td>104</td><td>104</td></tr>
+        <tr><td>Events with a delivery stamp <code>ts_ftl_sent</code></td><td><b>0</b></td><td><b>0</b></td></tr>
+        <tr><td>Events with an organizer e-mail</td><td><b>0</b></td><td><b>0</b></td></tr>
+        <tr><td><code>fn_mark_ftl_sent</code> present</td><td>yes</td><td>yes</td></tr>
+        <tr><td>Active download links (<code>tbl_ftl_export_token</code>, not revoked)</td><td>1</td><td>1</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><code>ftl-seed.yml</code>: 101 scheduled runs, all skipped; never dispatched by hand.</li>
+      <li>No <code>SPWS_GMAIL_USER</code> or <code>SPWS_GMAIL_APP_PASSWORD</code> secret, and no <code>ENABLE_FTL_DEADLINE_SEND</code> variable, exist in the repository. Nothing needs revoking on GitHub.</li>
+      <li>The Telegram bot lost its <code>send</code> command on 3 Oct; <code>python/tests/test_gas_bot.py:135</code> already forbids <code>'ftl-seed.yml'</code> in the bot.</li>
+    </ul>
+  </section>
+
+  <section id="changes">
+    <p class="kicker">§ 4 · the change</p>
+    <h2>What changes, file by file</h2>
+
+    <div class="op"><span class="op-tag d">DELETE</span><span class="set">files</span>
+      <ul>
+        <li><code>.github/workflows/ftl-seed.yml</code></li>
+        <li><code>python/pipeline/ftl_feed_seed_send.py</code></li>
+        <li><code>python/tests/test_ftl_feed_seed_send.py</code> (after FTLDEL-PY-07 is moved out)</li>
+        <li><code>python/tests/test_ftl_seed_workflow_contract.py</code> (replaced by the guard file below)</li>
+      </ul>
+    </div>
+
+    <div class="op"><span class="op-tag u">EDIT</span><span class="set">code</span>
+      <ul>
+        <li><code>python/pipeline/db_connector.py</code>: delete <code>mark_ftl_sent</code> (l. 144–147) and <code>list_ftl_delivery_candidates</code> (l. 149–160). In <code>find_event_by_code</code> (l. 115), drop <code>txt_organizer_email, ts_ftl_sent</code> from the select; only the sender read them. The method itself is shared with ingestion and stays.</li>
+        <li><code>supabase/functions/dispatch-workflow/index.ts</code>: remove <code>"ftl-seed.yml"</code> and its comment (l. 59–60). The two stale comments in the same block, about a "Stage event" button and a "Re-ingest event" button that don't exist, are corrected while the block is open.</li>
+        <li><code>frontend/src/components/EventManager.svelte</code>: remove the organizer e-mail input (l. 116–117), the "last sent" field and the send button (l. 142–154), <code>handleDispatchSeed</code> (l. 573–580), <code>'ftl-seed.yml'</code> from <code>dispatchAndTrack</code>'s type (l. 523), and the <code>draftFtlSentAt</code> / <code>draftOrganizerEmail</code> state and its resets. <code>organizerEmail</code> is no longer sent on save (l. 1033); the comment at l. 1034 follows.</li>
+        <li><code>frontend/src/lib/api.ts</code>: <code>updateEvent</code> stops passing <code>p_txt_organizer_email</code> (l. 798). The SQL default <code>NULL</code> means "leave unchanged".</li>
+        <li><code>frontend/src/lib/types.ts</code>: drop <code>ts_ftl_sent</code> and <code>txt_organizer_email</code> (l. 285–286) from <code>CalendarEvent</code>.</li>
+        <li><code>frontend/src/lib/locales/en.json</code>, <code>pl.json</code>: remove <code>event_ftl_sent_at_label</code>, <code>event_ftl_not_sent</code>, <code>event_ftl_send_button</code>, <code>event_ftl_send_title</code>, <code>event_ftl_save_email_first</code> (l. 179–183), and <code>event_organizer_email_label</code> under D2 A.</li>
+        <li><code>frontend/tests/dispatchWorkflowAuth.test.ts</code>: the header comment (l. 6) stops naming <code>ftl-seed.yml</code>. Comment only.</li>
+      </ul>
+    </div>
+
+    <div class="op"><span class="op-tag c">NEW</span><span class="set">migration <code>supabase/migrations/20261024000001_remove_ftl_seed_email_delivery.sql</code> (next free number on the day)</span>
+      <ul>
+        <li><code>DROP FUNCTION IF EXISTS fn_mark_ftl_sent(text);</code> No caller exists once the sender is gone, and nothing else references it (checked: <code>scripts/check-security-posture.sh</code> and <code>52_security_posture.sql</code> don't list it).</li>
+        <li><code>COMMENT ON COLUMN tbl_event.ts_ftl_sent</code> and <code>tbl_event.txt_organizer_email</code>: "Retired 2026-10-24 (ADR-080 amendment). Never written; kept so the seed dump and vw_calendar stay valid. Drop together with a seed regeneration."</li>
+        <li><code>vw_calendar</code>, <code>fn_update_event</code>, the PROD mirror functions and the download functions are <b>not touched</b>.</li>
+        <li><code>postgrestools check</code> on the migration; LOCAL reset only through <code>./scripts/reset-dev.sh</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="protect">
+    <p class="kicker">§ 5 · protecting the download path</p>
+    <h2>Four checks, before and after</h2>
+    <ol class="steps">
+      <li><b>Protected files are byte-identical.</b> Before every commit and before the push: <code>git diff --stat origin/main -- &lt;every protected path in § 2&gt;</code> prints nothing. The output is shown to you. If it ever prints a line, the work stops.</li>
+      <li><b>Protected tests: same result before and after.</b> Before the first edit, a baseline run of every protected suite in § 2 (pytest, Vitest, pgTAP 52/76/77/78/111) with its pass count recorded in the implementation notes. After the change, the same suites with the same counts. Then <code>scripts/preflight.sh</code> exits 0.</li>
+      <li><b>The bundle the download page loads still builds and mounts.</b> <code>FtlExport</code> ships in the same front-end bundle as the admin form being edited. <code>FtlExportElement.test.ts</code> mounts the element, and preflight's build and <code>svelte-check</code> cover the rest.</li>
+      <li><b>After release, the live page.</b> On CERT and PROD, read-only: the event picker <code>fn_ftl_export_events</code>, called with the active token, returns the same events as today's baseline. The token is read inside SQL and never printed. Then the WordPress page <code>pliki-zasilajace-xml-ftl</code> opens with the live link and lists the same events. The link is not written into chat or into any file.</li>
+    </ol>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">§ 6 · tests — RED before GREEN</p>
+    <h2>Guards first, so the tests prove the removal</h2>
+    <p>The new guard tests are written first and run against today's tree. They must fail (RED), because the e-mail path is still there. Then the code is removed, and they pass.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Layer · file</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><b>NOMAIL.01</b></td><td>pytest · <code>python/tests/test_no_outbound_email.py</code></td><td><code>.github/workflows/ftl-seed.yml</code> does not exist, and no workflow file names <code>SPWS_GMAIL</code>, <code>ENABLE_FTL_DEADLINE_SEND</code>, <code>smtp</code> or <code>ftl_feed_seed_send</code></td></tr>
+        <tr><td><b>NOMAIL.02</b></td><td>pytest · same file</td><td><code>python.pipeline.ftl_feed_seed_send</code> cannot be imported; no module under <code>python/</code> (tests excluded) or <code>scripts/</code> imports <code>smtplib</code>, <code>email.message</code> or <code>email.mime</code> (D3 A)</td></tr>
+        <tr><td><b>NOMAIL.03</b></td><td>pytest · same file</td><td>the <code>dispatch-workflow</code> allowlist does not contain <code>ftl-seed.yml</code></td></tr>
+        <tr><td><b>NOMAIL.04</b></td><td>pytest · same file</td><td>no Apps Script source (<code>scripts/*.js</code>, today <code>scripts/gas_telegram_bot.js</code>) calls <code>GmailApp.sendEmail</code> or <code>MailApp</code>; <code>frontend/src</code> contains no <code>ftl-seed.yml</code> (D3 A)</td></tr>
+        <tr><td><b>NOMAIL.05</b></td><td>Vitest · <code>frontend/tests/EventManager.test.ts</code></td><td>the event form has no send button (<code>form-send-ftl-seed</code>), no "last sent" field (<code>form-ftl-sent-at</code>) and no organizer e-mail input (<code>form-organizer-email</code>); saving an event sends no <code>organizerEmail</code></td></tr>
+        <tr><td><b>NOMAIL.06</b></td><td>pgTAP · <code>supabase/tests/49_registration_schema.sql</code></td><td><code>hasnt_function('fn_mark_ftl_sent')</code></td></tr>
+        <tr><td><b>NOMAIL.07</b></td><td>pgTAP · same file</td><td>no function in <code>public</code> assigns <code>ts_ftl_sent</code> (a <code>pg_proc.prosrc</code> scan for <code>ts_ftl_sent\s*=</code> finds 0)</td></tr>
+        <tr><td><b>FR125.RT.01</b></td><td>pytest · <code>python/tests/test_ftl_seed_marker_roundtrip.py</code></td><td>moved unchanged from FTLDEL-PY-07: a generated marker name round-trips through the matcher</td></tr>
+        <tr><td><b>FR121.ORGMAIL.01</b></td><td>pgTAP · <code>supabase/tests/05_calendar_view.sql</code></td><td>renamed from FTLDEL-DB-03, assertion unchanged: <code>fn_update_event</code> still trims, persists and clears the column when asked</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Removed with the code:</b> FTLDEL-PY-01 to 06, FTLDEL-OPS-01, FTLDEL-DB-01a–c and 02a–c (6 pgTAP assertions), FTLDEL-UI-01 and 02 (3 Vitest cases). <b>pgTAP net:</b> −6 + 2 = −4 in file 49 (<code>plan(41)</code> → <code>plan(37)</code>). The spec Appendix D total moves by the observed number, today 1493 → 1489. The RTM, the spec totals and <code>scripts/check-spec-sync.sh</code>'s roster move in the same commit.</p>
+  </section>
+
+  <section id="scenarios">
+    <p class="kicker">§ 7 · walk-throughs</p>
+    <h2>What happens after the release</h2>
+    <h3>The organizer opens the link the morning after</h3>
+    <p>The WordPress page loads the front-end bundle. <code>&lt;spws-ftl-export&gt;</code> calls <code>fn_ftl_export_events(token)</code>, which is unchanged, and lists the same events. The organizer picks one, and the browser builds the files with <code>ftlSeedExport.ts</code>, also unchanged, from the entry list read at that moment. The ZIP is byte-identical to one built the day before from the same entries. Nothing the page touches is in the diff.</p>
+    <h3>An admin edits an event on CERT</h3>
+    <p>The "Organizator" section shows no e-mail input, no "last sent" line and no send button; the rest of the form is as before (§ 8, before/after sheet). Saving calls <code>fn_update_event</code> without <code>p_txt_organizer_email</code>. The parameter defaults to <code>NULL</code>, so the column keeps its value, which is empty on every event anyway.</p>
+    <h3>Someone tries to bring the e-mail back</h3>
+    <p>Restoring the workflow, importing <code>smtplib</code>, re-adding the allowlist entry or the button, or re-creating <code>fn_mark_ftl_sent</code> each fails a NOMAIL test in CI. The test's message points to the ADR-080 amendment: e-mail needs a new ADR first.</p>
+    <h3>A LOCAL reset, and CI's bootstrap</h3>
+    <p>The migrations run, then the seed dump loads. The dump still names <code>ts_ftl_sent</code> and <code>txt_organizer_email</code>, and both columns still exist (D1 A), so it loads as today.</p>
+    <h3>The calendar mirror, CERT → PROD</h3>
+    <p>Unchanged. <code>txt_organizer_email</code> stays fill-blank and <code>ts_ftl_sent</code> stays unsynced, as the functions already say; both are empty on both sides.</p>
+  </section>
+
+  <section id="ui">
+    <p class="kicker">§ 8 · the one UI change</p>
+    <h2>Before/after sheet, signed off before any push</h2>
+    <p>The admin event form loses three elements. Per your rule for UI work, I capture the event form on LOCAL before and after, in Polish and English, at desktop and phone width. I put them side by side in an HTML sheet for your sign-off. Only the three removed elements may differ. <b>Correction:</b> this paragraph first said &ldquo;light and dark&rdquo;. These screens have no dark theme (the only dark-mode rule in the frontend is a card shadow on the public calendar), so a dark capture would equal the light one. <b>Sheet:</b> <a href="ftl-seed-email-removal-before-after-2026-10-24.html">ftl-seed-email-removal-before-after-2026-10-24.html</a>. The public calendar, the registration form and the download page don't change, and the sheet shows them unchanged too.</p>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">§ 9 · environments</p>
+    <h2>LOCAL / CERT / PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Migration</td><td><code>reset-dev.sh</code></td><td>release pipeline</td><td>release pipeline</td></tr>
+        <tr><td>Seed dump</td><td>loads unchanged (columns kept)</td><td>—</td><td>—</td></tr>
+        <tr><td>Admin form</td><td>new form</td><td>new form (same bundle)</td><td>new form (same bundle)</td></tr>
+        <tr><td>Download page</td><td>unchanged</td><td>unchanged</td><td>unchanged; live check § 5.4</td></tr>
+        <tr><td>Workflow</td><td>—</td><td colspan="2">gone from the Actions list on push to main</td></tr>
+        <tr><td>Data</td><td colspan="3">no row changes anywhere; only <code>fn_mark_ftl_sent</code> is dropped and two column comments change</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="order">
+    <p class="kicker">§ 10 · order of work</p>
+    <h2>Steps</h2>
+    <ol class="steps">
+      <li>Baseline: run the protected suites (§ 5.2), record the counts; read today's <code>fn_ftl_export_events</code> event list on CERT and PROD (§ 5.4).</li>
+      <li>Capture the "before" screenshots of the event form (§ 8).</li>
+      <li>Write NOMAIL.01–07 and move FTLDEL-PY-07 to FR125.RT.01; run them; NOMAIL must be <b>RED</b>, FR125.RT.01 green.</li>
+      <li>Remove the code (§ 4) and add the migration; <code>postgrestools check</code>; <code>./scripts/reset-dev.sh</code>.</li>
+      <li>Run NOMAIL → <b>GREEN</b>; protected suites → same counts; byte-identity check (§ 5.1) prints nothing.</li>
+      <li>"After" screenshots → before/after sheet → <b>your sign-off</b>.</li>
+      <li>Documentation (§ 12), ADR amendment as signed off, RTM, spec totals; <code>render_adrs.py</code>, <code>render_docs.py</code>, <code>check_docs.py --changed-from origin/main</code>; <code>python3 tools/docs-search/ingest.py</code>; <code>scripts/refresh-graph.sh</code>.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>Release through the <code>release</code> skill: commit, integrate, push to main, watch CI and Release in the foreground.</li>
+      <li>Verify CERT and PROD: <code>fn_mark_ftl_sent</code> absent, the column comments present, the live download check (§ 5.4), and <code>ftl-seed.yml</code> gone from <code>gh workflow list</code>.</li>
+    </ol>
+  </section>
+
+  <section id="adr">
+    <p class="kicker">§ 11 · ADR draft — Status: Proposed</p>
+    <h2>ADR-080 amendment (2026-10-24): the e-mail delivery is removed</h2>
+    <div class="note accent">
+      <p><b>Context.</b> The 2026-09-25 amendment withdrew §5's e-mail delivery as never commissioned, but kept its code "retained, unused". That left a workflow running a skipped job every day, a send button in the admin form, and a dispatch route to it. The association holds no registered sending identity, and the decision is final: seed files will never be e-mailed.</p>
+      <p><b>Decision.</b> The delivery is removed from the tree: <code>ftl-seed.yml</code>, <code>python/pipeline/ftl_feed_seed_send.py</code>, <code>DbConnector.mark_ftl_sent</code> and <code>list_ftl_delivery_candidates</code>, <code>fn_mark_ftl_sent</code>, the event form's send button, "last sent" field and organizer e-mail input, and the <code>dispatch-workflow</code> allowlist entry. Tests NOMAIL.01–07 fail if any of these, or any outbound e-mail code, returns.</p>
+      <p><b>Unchanged and in service.</b> Seed generation (§1–§4 and amendments (b)–(h)): <code>ftl_seed_export.py</code>, <code>ftl_seed_export_db.py</code>, <code>vcat_marker.py</code>, <code>ftlSeedExport.ts</code> (byte for byte to the Python), <code>zip.ts</code>, <code>exportArchive.ts</code>. The organizer download page reached by the capability link (amendment (h), ADR-093, ADR-095) is the only handoff.</p>
+      <p><b>Retired, not dropped.</b> <code>tbl_event.ts_ftl_sent</code> and <code>tbl_event.txt_organizer_email</code> remain as columns, empty on every event on CERT and PROD (checked 2026-10-24). No code reads or writes them. They stay because the seed dump every LOCAL and CI bootstrap loads names them, and because <code>vw_calendar</code>, which the registration form reads, selects them. Dropping them belongs with a future seed regeneration.</p>
+      <p><b>Alternatives.</b> Keeping the code unused, the 2026-09-25 state, was rejected: it kept dead triggers live. Dropping the columns now was rejected: it would touch the registration view and the bootstrap for no functional gain.</p>
+      <p style="margin-bottom:0"><b>Consequences.</b> Any organizer handoff by e-mail needs a new ADR, and the NOMAIL tests will name it. ADR-086's note that <code>ts_ftl_sent</code> is "stamped per environment by <code>ftl_feed_seed_send.py</code>" and ADR-087's listing of <code>ftl-seed.yml::deadline-sweep</code> in the <code>prod-write</code> group each get a one-line pointer to this amendment.</p>
+    </div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">§ 12 · documentation</p>
+    <h2>Every page that changes</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Page</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>doc/adr/080-clean-roster-ftl-seeding.md</code></td><td>the amendment above; status line updated; HTML twin regenerated</td></tr>
+        <tr><td><code>doc/adr/086-…md</code>, <code>doc/adr/087-…md</code></td><td>one-line pointer each, where they name the removed code</td></tr>
+        <tr><td><code>doc/requirements-traceability-matrix.md</code></td><td>FR-131 → <b>REMOVED 2026-10-24</b>, tests NOMAIL.01–07; FR-136 drops "§5's on-demand e-mail remains"; FR-121 notes the two retired columns; FR-125 gains FR125.RT.01</td></tr>
+        <tr><td><code>doc/Project Specification…md</code></td><td>§5.2 status (l. 160, "Phase 4 … implemented, pending CERT pilot") rewritten; l. 158 notes the retired columns; Appendix D pgTAP total</td></tr>
+        <tr><td><code>doc/handbook/subsystems/events-and-registration.html</code></td><td>"FTL seed delivery": the download page is the handoff and no delivery code exists. The implementation map drops <code>ftl_feed_seed_send.py</code> and <code>fn_mark_ftl_sent</code>; the "Run and observe" paragraph about Gmail and <code>ENABLE_FTL_DEADLINE_SEND</code> goes.</td></tr>
+        <tr><td><code>doc/handbook/operations/operator-runbooks.html</code></td><td>"Send an FTL seed bundle" becomes "Give the organizer the download link". The content stays, without the withdrawn-send history.</td></tr>
+        <tr><td><code>doc/handbook/reference/workflow-catalog.html</code></td><td>the <code>ftl-seed.yml</code> row is removed</td></tr>
+        <tr><td><code>doc/handbook/operations/environments-and-release.html</code></td><td>the <code>ENABLE_FTL_DEADLINE_SEND</code> row goes; "No Gmail secret exists" stays</td></tr>
+        <tr><td><code>doc/handbook/subsystems/frontend-and-automation.html</code></td><td>the sentence about the seed button and the <code>ftl-seed.yml</code> source-map row go; the "no Gmail secret" invariant stays</td></tr>
+        <tr><td><code>doc/handbook/reference/event-status-lifecycle.html</code></td><td><code>ts_ftl_sent</code> stays in the "Per-environment" tier, because the column stays (D1 A); a line after the table notes the two retired columns</td></tr>
+        <tr><td><code>doc/handbook/reference/registration-lifecycle.html</code></td><td>Stage 9: the files are built when the organizer downloads them; the &ldquo;successful send is stamped&rdquo; and &ldquo;on-demand send remains&rdquo; sentences go. The page is the only handover. The event-editor screenshot (<code>assets/registration/06-admin-event-edit.png</code>) still showed the removed controls, so it was recaptured by script from the real admin app on LOCAL. Its caption no longer names the e-mail field.</td></tr>
+        <tr><td><code>doc/handbook/reference/security-posture.html</code></td><td>"seven allowlisted workflows, including … <code>ftl-seed.yml</code>" → six</td></tr>
+        <tr><td><code>doc/handbook/documentation-map.html</code></td><td>the Gmail setup row points to its archive location; the ownership JSON drops the deleted source globs and adds the postgrestools files to local development; the header count is corrected to 25 canonical pages (it said 23, already wrong on main, which had 26)</td></tr>
+        <tr><td><code>operations/local-development.html</code>, <code>reference/test-and-traceability.html</code>, <code>.claude/skills/plpgsql-check/SKILL.md</code>, <code>doc/claude/testing.md</code>, <code>AGENTS.md</code></td><td>postgrestools at zero findings, see <a href="#pgt">§ 13</a></td></tr>
+        <tr><td>four pages' <code>source-globs</code> meta</td><td>the deleted <code>ftl-seed.yml</code> / <code>ftl_feed_seed_send.py</code> paths removed; the &ldquo;SMTP delivery&rdquo; review trigger and the SMTP-stamp operations sentence in <code>frontend-and-automation.html</code> removed</td></tr>
+        <tr><td><code>doc/handbook/operations/ftl-gmail-actions-setup.html</code></td><td>moved to <code>doc/archive/legacy-2026-07/</code> and listed in the archive index (D4 A)</td></tr>
+        <tr><td><code>doc/plans/ftl-seed-organizer-delivery.html</code></td><td>"[SUPERSEDED — DO NOT EXECUTE]" banner, the house convention for dead plans</td></tr>      </tbody>
+    </table></div>
+    <p><b>Checked and unchanged:</b> <code>doc/handbook/architecture/system-context.html</code> already says nothing sends e-mail. FR-132's account of the July security finding names <code>ftl-seed.yml</code> as history and stays.</p>
+
+    <div class="note accent">
+      <p class="lede">Documentation coherence gate</p>
+      <p style="margin-bottom:0">☑ Documentation coherence gate complete<br>
+      Impact: product | architecture | operations | configuration | reference<br>
+      Canonical docs affected: <code>doc/handbook/subsystems/events-and-registration.html</code>, <code>doc/handbook/operations/operator-runbooks.html</code>, <code>doc/handbook/reference/workflow-catalog.html</code>, <code>doc/handbook/operations/environments-and-release.html</code>, <code>doc/handbook/subsystems/frontend-and-automation.html</code>, <code>doc/handbook/reference/event-status-lifecycle.html</code>, <code>doc/handbook/reference/security-posture.html</code>, <code>doc/handbook/documentation-map.html</code><br>
+      ADR impact: amend (ADR-080; pointers in ADR-086, ADR-087)<br>
+      Operational impact: <code>operator-runbooks.html</code>, <code>workflow-catalog.html</code>, <code>environments-and-release.html</code><br>
+      Source-map / last-verified updated: yes<br>
+      Validation: <code>python scripts/check_docs.py --changed-from origin/main</code> → <b>PASS</b>, 25 pages, 11 ownership warnings. Each is a review trigger; every owning page was searched and none describes the e-mail path. <code>check-coherence.sh</code> PASS (pgTAP total 1489); <code>check-spec-sync.sh</code> PASS (158 FR rows); <code>render_adrs.py</code> / <code>render_docs.py --check</code> PASS<br>
+      Superseded prose archived rather than appended: yes (<code>ftl-gmail-actions-setup.html</code> → archive)</p>
+    </div>
+  </section>
+
+  <section id="pgt">
+    <p class="kicker">§ 13 · postgrestools</p>
+    <h2>Zero findings in every migration and every test, and preflight keeps it that way</h2>
+    <p>You asked for every 42883 &ldquo;function does not exist&rdquo; finding to be fixed in this plan. They are fixed at the cause, not suppressed. Once they were gone, the same run showed the next layers. Each one was sorted and then fixed, suppressed with its reason, or proven harmless. Nothing was waved through as &ldquo;pre-existing&rdquo;.</p>
+
+    <h3>Before and after</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Finding</th><th>Where</th><th>Before</th><th>Cause</th><th>Fix</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>42883 on <code>plan()</code>, <code>is()</code>, <code>has_column()</code>…</td><td>tests</td><td>1,446</td><td>pgTAP was not installed on LOCAL, and the checker looked only in <code>public</code></td><td>pgTAP in the <code>extensions</code> schema (<code>supabase/seed_dev_tooling.sql</code>); <code>typecheck.searchPath ["public","extensions"]</code></td><td>0</td></tr>
+        <tr><td>42883 <code>fn_refresh_active_season()</code></td><td>1 migration</td><td>1</td><td>A migration applied in April calls a function dropped on 6 Oct</td><td><code>migrations.after 20261022000000</code>: applied migrations are history, never edited, so they aren't checked</td><td>0</td></tr>
+        <tr><td><code>plpgsqlCheck</code> silently off</td><td>config</td><td>—</td><td>The config enabled it, but the <code>plpgsql_check</code> extension was missing, so it checked nothing</td><td><code>plpgsql_check</code> in the same seed file</td><td>on</td></tr>
+        <tr><td>typecheck</td><td>35 test files</td><td>366</td><td>Objects the test file creates itself, which the checker can't see: <code>pg_temp</code> helpers (209), temp tables (150), temp views (5), helper parameters (2)</td><td>213 range suppressions, each wrapping only the statements concerned</td><td>0</td></tr>
+        <tr><td>plpgsql_check (newly active)</td><td>tests</td><td>24</td><td><code>pg_temp</code> helpers calling other helpers; <code>storage.buckets</code> (storage is off on LOCAL, ADR-061, and the test skips it); one implicit-cast warning in a helper</td><td>included in the 213 ranges</td><td>0</td></tr>
+        <tr><td>syntax</td><td>4 test files</td><td>23</td><td>psql <code>\gset</code> lines: pg_prove runs them through psql, but the checker's parser doesn't know them</td><td>23 line suppressions</td><td>0</td></tr>
+        <tr><td><code>lint/safety/*</code> warnings</td><td>18 test files</td><td>792</td><td>Lock rules for DDL on live data. Every pgTAP file runs inside <code>BEGIN … ROLLBACK</code> on LOCAL/CI (checked: all 114)</td><td>a <code>-- pgt-ignore-all lint/safety</code> line 1 in those 18 files. <code>linter.ignore</code> was tried and does nothing in 0.25.5, even with <code>**</code></td><td>0</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Result:</b> <code>postgrestools check --error-on-warnings --max-diagnostics=none supabase/migrations supabase/tests</code> → 115 files, <b>0 errors, 0 warnings, exit 0</b>.</p>
+
+    <h3>Why the suppressions hide nothing</h3>
+    <ul>
+      <li><b>The diff is comments only.</b> 449 added lines in 35 files plus 18 line-1 lines, and every one starts with <code>-- pgt-ignore</code>. No other line in any test file changed, so the tests behave as before.</li>
+      <li><b>Every flagged statement was classified first:</b> 0 of the 366 typecheck, 23 syntax and 24 plpgsql_check findings is a defect.</li>
+      <li><b>Canary.</b> In a copy of the file with the most suppressions (80, 57 ranges), I planted a missing column and a missing <code>pg_temp</code> helper. Both were reported, exit 1.</li>
+      <li><b>Nothing can go stale silently.</b> An unused suppression is itself a warning (&ldquo;This suppression has no effect&rdquo;), and the gate treats warnings as errors.</li>
+    </ul>
+
+    <h3>Can the skipped migrations hide a live defect?</h3>
+    <p>Without the cut-off, the 219 applied migrations report 839 findings. Most are lock warnings on DDL that already ran on CERT and PROD. There are also 19 typecheck and 4 syntax findings in superseded history: <code>bool_active</code> named bare before the 6 Oct computed field, a dropped function, and parameter and parser limits. A history check can't prove the <b>live</b> schema is clean. So I ran <code>plpgsql_check</code> over all <b>162 live PL/pgSQL functions</b> in <code>public</code>, in a transaction that was rolled back. 56 findings in 6 functions:</p>
+    <ul>
+      <li>55 are temp tables those functions create themselves (<code>_align_map</code>, <code>_commit_map</code>…), plus the follow-on messages.</li>
+      <li><b>1 is a real defect</b>, in <a href="#found">§ 14</a>.</li>
+    </ul>
+
+    <h3>What changes</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/seed_dev_tooling.sql</code> (new)</td><td><code>CREATE EXTENSION IF NOT EXISTS pgtap / plpgsql_check WITH SCHEMA extensions</code>. Loaded by <code>supabase db reset</code> on LOCAL and CI only; CERT and PROD receive migrations, never seeds. Both are on Supabase's privileged-extension list, so the <code>postgres</code> role installs them (tested: drop both, run the seed, both back, rolled back). The schema fingerprint reads <code>public</code> only, so it does not move.</td></tr>
+        <tr><td><code>supabase/config.toml</code></td><td>the seed file added to <code>sql_paths</code></td></tr>
+        <tr><td><code>postgres-language-server.jsonc</code></td><td><code>migrations.after</code>, <code>typecheck.searchPath</code>, and comments explaining both and the line-1 lint rule</td></tr>
+        <tr><td>35 + 18 files in <code>supabase/tests/</code></td><td>suppression comments only</td></tr>
+        <tr><td><code>scripts/preflight.sh</code>, <code>scripts/check-postgrestools.sh</code> (new), <code>ci.yml</code></td><td>the hard gate &ldquo;postgrestools (CI)&rdquo;: canaries first, then every checked file with <code>--error-on-warnings</code>. Never skipped, not even by <code>--fast</code>; also in CI&rsquo;s test-db job (§ 16 row 2)</td></tr>
+        <tr><td><code>.claude/skills/plpgsql-check/SKILL.md</code>, <code>doc/claude/testing.md</code>, <code>AGENTS.md</code></td><td>Baseline zero; when and how to suppress; which extensions LOCAL needs. Replaces the old &ldquo;20 pre-existing warnings&rdquo; note.</td></tr>
+        <tr><td>handbook <code>operations/local-development.html</code>, <code>reference/test-and-traceability.html</code>, <code>documentation-map.html</code></td><td>Tooling prerequisites, the validation loop, a troubleshooting line for 42883, and new watched sources</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="found">
+    <p class="kicker">§ 14 · found on the way</p>
+    <h2>A live defect in EVF event creation (D7, fixed here)</h2>
+    <div class="note danger"><p class="lede">This fails today on CERT and PROD; fixed in this change</p>
+      <p><code>fn_create_evf_event_from_results</code>, line 26 of its body: <code>UPDATE tbl_event SET id_evf_event = p_id_evf_event WHERE id_event = v_id_evt …</code>. The function returns <code>TABLE(id_event, txt_code)</code>, so <code>id_event</code> could be either its own output column or the table's column. PL/pgSQL refuses to guess.</p></div>
+    <ul>
+      <li><b>When it fires.</b> The EVF results sync (<code>evf_sync.py</code>: <code>sync_results</code> → <code>_compare_and_ingest</code> → <code>_create_cert_event</code>) finds no CERT match for an event and asks this function to create one. If the code allocator returns a code that already exists (<code>CURRENT_SLOT_REUSE</code>: always the case for the IMEW and DMEW championships once their row exists) and an EVF id is passed, the &ldquo;already exists&rdquo; branch runs this UPDATE.</li>
+      <li><b>Reproduced on LOCAL</b> (rolled back): <code>IMEW-2026-2027</code> exists with no EVF id; a second call with an EVF id fails with <code>ERROR: column reference "id_event" is ambiguous</code>. <code>_management_query</code> raises on the API error, so that event's sync stops instead of backfilling the id.</li>
+      <li><b>Where.</b> Every environment. The definition comes from <code>20260429000003_evf_fk_ingestion.sql:218</code>, and a read-only query today shows the same line in the live function on CERT and on PROD.</li>
+      <li><b>Fixed here.</b> <code>supabase/migrations/20261024000002_fix_evf_create_ambiguous_id_event.sql</code> is a <code>CREATE OR REPLACE</code> identical to the current body except one line: <code>WHERE tbl_event.id_event = v_id_evt AND tbl_event.id_evf_event IS NULL</code>. Grants unchanged (authenticated only).</li>
+      <li><b>Test first.</b> <code>supabase/tests/22_evf_fk_ingestion.sql</code> 22.6a–d: creating the IMEW event twice backfills the EVF id on the second call (22.6a lives, 22.6b the id is stored), and a third call with another id returns the same event and leaves the first id in place (22.6c–d). Seen RED against the old body, GREEN after; postgrestools 0 findings on both files.</li>
+      <li><b>Records.</b> RTM FR-96 (pgTAP 22.6a–d), ADR-043 &ldquo;Fix (2026-10-24)&rdquo;, specification pgTAP total 1493. After the release: read the live function on CERT and PROD and confirm the qualified line.</li>
+      <li><b>One false alarm, withdrawn.</b> I first suspected <code>evf_sync.py:1003/1136</code> (<code>s.bool_active</code>). It is correct: <code>bool_active(tbl_season)</code> is the computed field from 6 Oct, and the same query returns season 4 on LOCAL and CERT.</li>
+    </ul>
+  </section>
+
+  <section id="second">
+    <p class="kicker">§ 16 · second pass, 24 Oct</p>
+    <h2>Every bug, gap and warning found, fixed here</h2>
+    <p class="lede">You asked for all of it in this session, nothing deferred. Each row was seen failing or warning first, then fixed, then proven.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>What was wrong</th><th>Fix</th><th>Proof</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>EVF event creation fails</b> on CERT and PROD when an existing IMEW/DMEW row gets its EVF id (§ 14)</td><td>Migration <code>20261024000002</code>: one qualified column</td><td>pgTAP 22.6a–d RED → GREEN; FR-96</td></tr>
+        <tr><td>2</td><td><b>postgrestools passed when it checked nothing.</b> With the database down it skips type checking and <code>plpgsql_check</code> and still exits 0; <code>--fast</code> skipped it; CI never ran it</td><td>New <code>scripts/check-postgrestools.sh</code>: version pin, three canaries (a missing column must be caught, a broken function body must be caught, a pgTAP call must pass), then every checked file with warnings as errors, and an exact file count. A hard gate in preflight (also under <code>--fast</code>) and in CI's test-db job</td><td>PASS, 116 files, 0 findings. Proven to FAIL with the database unreachable and with <code>plpgsql_check</code> removed. GATE.01–03</td></tr>
+        <tr><td>3</td><td><b>Ruff and BasedPyright skipped most of the code.</b> CI and preflight checked <code>python/</code> and four named scripts; <code>scripts/</code> and <code>tools/</code> had 10 BasedPyright errors and 3 unformatted files</td><td>All three tools over <code>python/ scripts/ tools/</code> in CI and preflight; graphify imports annotated with the reason (an optional tool, not a dependency); 3 files formatted</td><td>Ruff, format, BasedPyright: 0 / 0 / 0. GATE.04</td></tr>
+        <tr><td>4</td><td><b>svelte-check: 21 warnings in 6 files</b>, and warnings never failed anything; the main Vite config had a type error (TS2769) nobody checked; CI ran no svelte-check at all</td><td><code>svelte.config.js</code> declares the <code>customElement</code> option both builds already use; three deliberate one-time attribute reads marked with <code>svelte-ignore</code>; <code>tsconfig.json</code> includes both Vite configs; <code>--fail-on-warnings</code> in preflight and a new CI step</td><td>0 errors, 0 warnings, 503 files. Both bundles byte-identical, 21 files (sheet § 7). GATE.05–06, GATE.06 seen RED first</td></tr>
+        <tr><td>5</td><td><b>pytest: 23 warnings</b>, including a <code>datetime.utcnow()</code> deprecation in <code>phase5_runner.py</code></td><td><code>datetime.now(UTC)</code>; <code>pyproject.toml</code> turns deprecations raised from project code into errors; the one test file that exercises the deprecated legacy path on purpose ignores that one message by name</td><td>2088 passed, 0 warnings (final preflight)</td></tr>
+        <tr><td>6</td><td><b>Vitest printed a Node warning</b> on every run (<code>--localstorage-file</code>, Node 25 Web Storage)</td><td>Workers start with <code>--no-experimental-webstorage</code> when the running Node knows the flag (CI's Node 20 does not, so it gets nothing)</td><td>Vitest output clean</td></tr>
+        <tr><td>7</td><td><b>Vite warned on every build</b> that chunks exceed 500 kB</td><td>An explicit 1,300 kB budget in both configs, with the measured sizes in a comment (SPA 1,188 kB; the custom-element bundle 1,226 kB, a single file by contract). The warning now means a real regression</td><td>Builds clean; bundles byte-identical</td></tr>
+        <tr><td>8</td><td><b>The admin event list did not fit a phone:</b> 694 px wide at a 375 px viewport, against NFR-09</td><td>Rules that apply only below 600 px let the header and each row wrap</td><td>375 px after; desktop byte-identical (sheet § 6). LAYOUT.01 RED → GREEN; NFR-09</td></tr>
+        <tr><td>9</td><td><b>Documentation warnings:</b> a dead link in the archived Telegram ingest page; 11 handbook pages flagged for stale review dates; the GAS row still said it read e-mail</td><td>Link points at <code>scripts/gas_telegram_bot.js</code>; pages re-verified against source and dated 24 Oct; GAS row corrected</td><td><code>render_docs</code> and <code>check_docs</code>: 0 warnings</td></tr>
+        <tr><td>10</td><td><b>The RTM disagreed with itself:</b> its Coverage Summary stopped at FR-110 (99 covered) while the rows run to FR-159; a note still said FR-131 was pilot-pending</td><td>Summary recomputed from the rows (158 FR, 15 NFR); note corrected; NFR-15 added for the static gates</td><td><code>check-coherence</code>, <code>check-spec-sync</code> pass</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Withdrawn, not a bug:</b> my interim message said <code>evf_sync.py</code>&rsquo;s <code>s.bool_active</code> crashes. It does not: <code>bool_active(tbl_season)</code> is the computed field from 6 Oct, and the same query returns season 4 on LOCAL and CERT (§ 14).</p>
+    <p><b>Withdrawn:</b> D9, the removal of the legacy direct-write ingest path. This change removes the e-mail delivery and nothing else; the ingest code stays byte-identical to main.</p>
+  </section>
+
+  <section id="done">
+    <p class="kicker">§ 17 · definition of done</p>
+    <h2>Done means all of these are true</h2>
+    <ul>
+      <li>☐ NOMAIL.01–07 were seen RED before the removal and are GREEN after.</li>
+      <li>☐ <code>git diff --stat origin/main -- &lt;protected paths&gt;</code> prints nothing, except the five comment lines D8 names (four in test 111, one in <code>FtlExportElement.svelte</code>, proven inert by the byte-identical bundle).</li>
+      <li>☐ Protected suites: same pass counts as the baseline.</li>
+      <li>☑ Before/after sheet (§ 1–7, including the phone layout) signed off by you, 24 Oct.</li>
+      <li>☐ <code>scripts/preflight.sh</code> exits 0. That run includes the postgrestools hard gate with live canaries, Ruff, format and BasedPyright over <code>python/ scripts/ tools/</code>, svelte-check with warnings failing, pytest with deprecations failing, and GATE.01–06.</li>
+      <li>☐ pgTAP 22.6a–d and LAYOUT.01 were seen RED, then GREEN.</li>
+      <li>☐ CI and Release green on main. That includes the new CI steps: postgrestools in test-db, svelte-check in test-frontend.</li>
+      <li>☐ CERT and PROD: <code>fn_mark_ftl_sent</code> absent; <code>fn_create_evf_event_from_results</code> carries the qualified <code>tbl_event.id_event</code>; the download page lists the same events as the baseline.</li>
+      <li>☐ <code>ftl-seed.yml</code> gone from <code>gh workflow list</code>.</li>
+      <li>☑ D6 A, D8 A, R1 A answered; D9 withdrawn. <code>python/pipeline/orchestrator.py</code>, <code>ingest_cli.py</code> and <code>storage_handler.py</code> are byte-identical to main.</li>
+      <li>☐ Documentation gate box checked; RAG re-indexed; graph refreshed.</li>
+    </ul>
+  </section>
+
+  <p class="foot">ftl-seed-email-removal · 24 Oct 2026 · evidence: read-only queries on CERT and PROD (24 Oct), gh run history, repository grep and graph, RTM FR-121/125/131/136, ADR-080 amendments 2026-09-25 and 2026-10-18</p>
+</div>

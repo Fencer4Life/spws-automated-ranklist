@@ -140,6 +140,7 @@ SELECT ok(
 -- The annex is pinned to this season (§08) and shows the PPW engine, so this is
 -- the pin's contract. JB27.TYPE.01 (85_spws_evf_joined_engine.sql) asserts
 -- every type.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT engine_code FROM pg_temp.params_of('SPWS-2026-2027') WHERE type_code = 'PPW'),
   'SPWS_EVF_JOINED_V1_2026_2027',
@@ -189,6 +190,7 @@ SELECT is(
   0,
   'SS26.CALC.08: an unknown season code yields no row rather than raising'
 );
+-- pgt-ignore-end typecheck
 
 -- The active season's engine per type, from the resolver the scorer uses;
 -- NULL while fn_get_type_engine does not exist.
@@ -212,12 +214,14 @@ END $$;
 -- follows the active season, the annex is pinned to SPWS-2026-2027. One function
 -- serves both, so the calculator does not need a second round trip to discover
 -- which season is active — which matters for a static page on GitHub Pages.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COALESCE(string_agg(type_code || '=' || engine_code, ',' ORDER BY type_code), 'no rows')
      FROM pg_temp.params_of(NULL)),
   COALESCE(pg_temp.active_type_engines(), 'no resolver'),
   'SS26.CALC.09: a NULL season code resolves to the active season, type by type'
 );
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 

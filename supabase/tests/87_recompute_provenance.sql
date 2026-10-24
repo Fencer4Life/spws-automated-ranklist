@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- RECOMP.PROV — the ingest RPC writes a recompute's stored provenance verbatim
 -- =============================================================================
@@ -45,6 +46,7 @@ BEGIN
   END LOOP;
 END $fx$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates; pg_temp helpers this file creates (the checker sees only the live schema)
 CREATE FUNCTION pg_temp.id(p_k TEXT) RETURNS INT LANGUAGE sql AS $$
   SELECT v FROM prov_ids WHERE k = p_k;
 $$;
@@ -88,6 +90,7 @@ SELECT is(
   (SELECT num_match_confidence FROM tbl_result WHERE id_tournament = pg_temp.id('t')),
   100.00::NUMERIC(5,2),
   'RECOMP.PROV.RPC.05 a row without a confidence key is still written at 100');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

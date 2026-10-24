@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- REPAIR.RB — roll back a past event by its exact code
 -- =============================================================================
@@ -56,9 +57,11 @@ BEGIN
   END LOOP;
 END $fx$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 CREATE FUNCTION pg_temp.id(p_k TEXT) RETURNS INT LANGUAGE sql AS $$
   SELECT v FROM rb_ids WHERE k = p_k;
 $$;
+-- pgt-ignore-end typecheck
 
 -- The error text of a statement, or 'OK' when it runs.
 CREATE FUNCTION pg_temp.err(p_sql TEXT) RETURNS TEXT LANGUAGE plpgsql AS $$
@@ -78,6 +81,7 @@ CREATE TEMP TABLE rb_out ON COMMIT DROP AS
 SELECT pg_temp.err($$SELECT fn_rollback_event_by_code('PEW96efs')$$) AS prefix_err,
        fn_rollback_event_by_code('PEW96efs-2025-2026') AS result;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates; pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   jsonb_build_object(
     'prefix', (SELECT prefix_err LIKE '%no event%PEW96efs%' FROM rb_out),
@@ -112,6 +116,7 @@ SELECT is(
      FROM tbl_event WHERE id_event = pg_temp.id('event1')),
   jsonb_build_object('code', 'PEW96efs-2025-2026', 'status', 'COMPLETED'),
   'REPAIR.RB.03 the event row and its status are kept');
+-- pgt-ignore-end typecheck
 
 -- REPAIR.RB.04 — service_role only (ADR-083).
 SELECT is(
@@ -161,6 +166,7 @@ BEGIN
   END LOOP;
 END $fx2$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 CREATE FUNCTION pg_temp.event3_state() RETURNS JSONB LANGUAGE sql AS $$
   SELECT jsonb_build_object('tournaments', count(DISTINCT t.id_tournament),
                             'n', max(t.int_participant_count), 'place', max(r.int_place))
@@ -187,11 +193,13 @@ SELECT is(
   jsonb_build_object('failed', TRUE,
                      'state', jsonb_build_object('tournaments', 1, 'n', 1, 'place', 1)),
   'REPAIR.RB.06 when the commit fails, the rollback is undone with it');
+-- pgt-ignore-end typecheck
 
 -- REPAIR.RB.09 — an unresolved PENDING guess (a fencer, no match method) is
 -- refused: committing it would credit the result to the guess.
 UPDATE tbl_result_draft SET enum_match_method = NULL
  WHERE txt_run_id = '00000000-0000-0000-0000-0000000000a1';
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   jsonb_build_object(
     'err', pg_temp.err($$SELECT fn_replace_event_from_draft('PEW95efs-2025-2026',
@@ -200,6 +208,7 @@ SELECT is(
   jsonb_build_object('err', TRUE,
                      'state', jsonb_build_object('tournaments', 1, 'n', 1, 'place', 1)),
   'REPAIR.RB.09 a run with an unresolved PENDING guess is refused and the stored event is kept');
+-- pgt-ignore-end typecheck
 UPDATE tbl_result_draft SET enum_match_method = 'AUTO_MATCH'
  WHERE txt_run_id = '00000000-0000-0000-0000-0000000000a1';
 
@@ -208,6 +217,7 @@ UPDATE tbl_result_draft SET enum_match_method = 'AUTO_MATCH'
 CREATE TEMP TABLE rb_rep ON COMMIT DROP AS
 SELECT fn_replace_event_from_draft('PEW95efs-2025-2026', '00000000-0000-0000-0000-0000000000a1') AS out;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   jsonb_build_object(
     'rolled_back', (SELECT out -> 'rolled_back' -> 'tournaments_deleted' FROM rb_rep),
@@ -218,6 +228,7 @@ SELECT is(
                      'state', jsonb_build_object('tournaments', 1, 'n', 60, 'place', 31),
                      'code', 'RB-T3'),
   'REPAIR.RB.07 the stored tournaments are replaced by the run''s, code kept, N and place from the source');
+-- pgt-ignore-end typecheck
 
 -- REPAIR.RB.08 — service_role only (ADR-083).
 SELECT is(

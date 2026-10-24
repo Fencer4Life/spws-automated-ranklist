@@ -1,13 +1,13 @@
 -- =============================================================================
 -- EVF FK ingestion plumbing
 -- =============================================================================
--- Tests 22.1–22.3: the three EVF RPCs propagate id_evf_event /
+-- Tests 22.1–22.6: the three EVF RPCs propagate id_evf_event /
 -- id_evf_competition into tbl_event / tbl_tournament when supplied; remain
 -- backwards-compatible (NULL when not supplied).
 -- =============================================================================
 
 BEGIN;
-SELECT plan(5);
+SELECT plan(9);
 
 -- ===== SETUP =====
 DO $setup$
@@ -185,6 +185,49 @@ SELECT is(
   'evf-fk-test-event-225',
   '22.5: fn_ingest_evf_calendar writes evf_slug from JSONB into tbl_event.txt_evf_slug'
 );
+
+
+-- =========================================================================
+-- 22.6 — an existing row is backfilled, not refused: the code allocator
+--        reuses the IMEW slot, so the "already exists" branch runs. Its
+--        UPDATE named id_event bare, which is also the function's own OUT
+--        column, and PL/pgSQL raised 42702 "column reference is ambiguous"
+--        (found 2026-10-24, reproduced on LOCAL; same body on CERT and PROD).
+-- =========================================================================
+DO $t226$
+BEGIN
+  PERFORM set_config('test.imew_first', (
+    SELECT id_event::TEXT FROM fn_create_evf_event_from_results(
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST'),
+      'European Veterans Individual Championships', '2033-06-01'::DATE,
+      'TestCity226', 'Hungary', false, NULL)), false);
+END;
+$t226$;
+
+SELECT lives_ok(
+  $$SELECT * FROM fn_create_evf_event_from_results(
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST'),
+      'European Veterans Individual Championships', '2033-06-01'::DATE,
+      'TestCity226', 'Hungary', false, 7650001)$$,
+  '22.6a: a second call with an EVF id for the existing IMEW row does not raise');
+
+SELECT is(
+  (SELECT id_evf_event FROM tbl_event WHERE id_event = current_setting('test.imew_first')::INT),
+  7650001,
+  '22.6b: the existing row is backfilled with the EVF id');
+
+SELECT is(
+  (SELECT id_event FROM fn_create_evf_event_from_results(
+      (SELECT id_season FROM tbl_season WHERE txt_code = 'EVFFK-INGEST'),
+      'European Veterans Individual Championships', '2033-06-01'::DATE,
+      'TestCity226', 'Hungary', false, 7650002)),
+  current_setting('test.imew_first')::INT,
+  '22.6c: the call returns the existing event, no second row');
+
+SELECT is(
+  (SELECT id_evf_event FROM tbl_event WHERE id_event = current_setting('test.imew_first')::INT),
+  7650001,
+  '22.6d: an EVF id already stored is never overwritten (only NULL is backfilled)');
 
 
 SELECT * FROM finish();
