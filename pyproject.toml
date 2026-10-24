@@ -43,6 +43,15 @@ addopts = "-m 'not integration'"
 markers = [
     "integration: tests requiring live external APIs (opt-in: pytest -m integration)",
 ]
+# A deprecation raised from our own code (module python.*) fails the run: it is
+# either a bug to fix or behaviour a test must assert with pytest.warns. A test
+# module that exercises deprecated code on purpose says so with a filterwarnings
+# mark naming the exact message. Third-party warnings are left alone so a
+# dependency bump cannot turn CI red.
+filterwarnings = [
+    "error::DeprecationWarning:python\\.",
+    "error::PendingDeprecationWarning:python\\.",
+]
 
 [tool.basedpyright]
 include = ["python"]

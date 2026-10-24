@@ -94,6 +94,7 @@ END
 $$;
 
 -- 5.11.1 — id_tournaments key present, length 2
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT jsonb_array_length(result -> 'id_tournaments')
      FROM _spws_36_transfer),
@@ -127,6 +128,7 @@ SELECT is(
   2,
   '5.11.4 — tournaments_recomputed = 2 matches array length'
 );
+-- pgt-ignore-end typecheck
 
 -- ============================================================================
 -- 5.11.5-6 — fn_discard_fencer_alias_and_results returns the same shape
@@ -153,6 +155,7 @@ END
 $$;
 
 -- 5.11.5 — discard.id_tournaments has length 2
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT jsonb_array_length(result -> 'id_tournaments')
      FROM _spws_36_discard),
@@ -167,6 +170,7 @@ SELECT is(
   2,
   '5.11.6 — fn_discard_fencer_alias_and_results.tournament_labels has length 2'
 );
+-- pgt-ignore-end typecheck
 
 -- ============================================================================
 -- 5.11.7-8 — fn_split_fencer_from_alias passes through new keys via transfer_result
@@ -196,6 +200,7 @@ END
 $$;
 
 -- 5.11.7 — split.transfer_result.id_tournaments has length 1 (single event)
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT jsonb_array_length((result -> 'transfer_result') -> 'id_tournaments')
      FROM _spws_36_split),
@@ -209,6 +214,7 @@ SELECT ok(
      FROM _spws_36_split),
   '5.11.8 — fn_split_fencer_from_alias label[0] starts with PGTAP36-EV-A'
 );
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 

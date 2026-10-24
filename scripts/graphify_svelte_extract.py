@@ -108,7 +108,9 @@ def _default_js_extract(paths: list[Path], *, cache_root: Path) -> dict:
     reattribution logic below — the part written here, and the part that can be
     wrong — be tested without graphify present.
     """
-    from graphify.extract import extract
+    # graphify is imported from graphify's own interpreter (scripts/refresh-graph.sh runs this
+    # file with it), not from the project venv the type checker reads; hence the per-line ignores.
+    from graphify.extract import extract  # pyright: ignore[reportMissingImports]
 
     return extract(paths, cache_root=cache_root, parallel=False)
 

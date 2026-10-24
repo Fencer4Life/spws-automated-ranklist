@@ -1,0 +1,22 @@
+-- =============================================================================
+-- LOCAL / CI developer tooling — never applied to CERT or PROD
+-- =============================================================================
+-- Loaded by `supabase db reset` / `supabase start` through config.toml's
+-- [db.seed] sql_paths. Cloud environments receive migrations only
+-- (scripts/apply-migrations.sh), never seeds.
+--
+-- pgTAP stays installed in the `extensions` schema so the Postgres language
+-- server (postgrestools, config postgres-language-server.jsonc with
+-- typecheck.searchPath ["public", "extensions"]) can resolve plan(), is(),
+-- has_column() and the rest when it type-checks supabase/tests/*.sql. Without
+-- it every pgTAP call reported 42883 "function does not exist" (1,446 findings
+-- on 2026-10-24). `supabase test db` leaves a pre-installed pgTAP in place.
+--
+-- plpgsql_check is what the language server's plpgsqlCheck feature runs on
+-- every CREATE FUNCTION body it checks. The config has always enabled that
+-- feature, but without the extension it silently did nothing.
+--
+-- The schema fingerprint covers `public` only, so neither extension moves it.
+-- =============================================================================
+CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS plpgsql_check WITH SCHEMA extensions;

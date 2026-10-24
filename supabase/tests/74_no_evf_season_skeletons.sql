@@ -81,7 +81,9 @@ $imported$;
 -- ---------------------------------------------------------------------------
 SAVEPOINT s_init;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.seed_imported_2026_27_result('74.init');
+-- pgt-ignore-end typecheck
 
 -- Clear the dependants first (match candidates, results, tournaments,
 -- events). When this fixture was written SPWS-2026-2027 was
@@ -166,11 +168,13 @@ SELECT is(
 -- 74.6 — the return contract does not change shape. Callers read by_kind by
 -- key (the season wizard renders the breakdown from it), so PEW keeps its key
 -- and reports zero rather than disappearing.
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   ((SELECT by_kind FROM _init74) ->> 'PEW'),
   '0',
   '74.6 — by_kind still carries the PEW key, reporting 0 (callers read by key)'
 );
+-- pgt-ignore-end typecheck
 
 -- 74.7 — the rule restated at the level that actually matters: no skeleton is
 -- provisioned for an organiser whose events arrive by scrape.

@@ -27,6 +27,7 @@ SELECT (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AS s
 
 -- Held, no 2026/27 row (the Criterium case); held with a linked 2026/27 row;
 -- not held; held two seasons back.
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, dt_end, enum_status)
 SELECT c, 'CARRY.NS fixture', CASE which WHEN 's2526' THEN s2526 ELSE s2425 END, evf, d, d,
        st::enum_event_status
@@ -40,6 +41,7 @@ INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status,
 SELECT 'PEW98efs-2026-2027', 'CARRY.NS fixture', s2627, evf, 'PLANNED',
        (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW98efs-2025-2026')
   FROM ns_ids;
+-- pgt-ignore-end typecheck
 
 -- The 2026/27 window reaches thirty days past today.
 UPDATE tbl_season SET int_carryover_days = (CURRENT_DATE - DATE '2026-07-05') + 30
@@ -95,10 +97,12 @@ UPDATE tbl_season SET int_carryover_days = (CURRENT_DATE - DATE '2026-07-05') + 
  WHERE txt_code = 'SPWS-2026-2027';
 
 -- The next edition appears: the carry continues through its link, once.
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, id_prior_event)
 SELECT 'PEW97efs-2026-2027', 'CARRY.NS successor', s2627, evf, 'PLANNED',
        (SELECT id_event FROM tbl_event WHERE txt_code = 'PEW97efs-2025-2026')
   FROM ns_ids;
+-- pgt-ignore-end typecheck
 
 SELECT results_eq(
   $$SELECT count(*)::INT FROM ns_carried WHERE txt_code = 'PEW97efs-2025-2026'$$,

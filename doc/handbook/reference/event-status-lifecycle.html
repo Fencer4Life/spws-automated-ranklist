@@ -7,7 +7,7 @@
 <meta name="doc-status" content="current">
 <meta name="doc-type" content="reference">
 <meta name="doc-owner" content="Events and registration">
-<meta name="last-verified" content="2026-08-28">
+<meta name="last-verified" content="2026-10-24">
 <meta name="source-globs" content="supabase/migrations/**event_status*; supabase/migrations/**prod_mirror*; supabase/migrations/**first_published*; python/pipeline/promote.py; python/pipeline/promotion/replay.py; python/pipeline/promotion/lifecycle.py; frontend/src/lib/calendarMonths.ts; frontend/src/lib/eventStatus.ts; frontend/src/components/EventCard.svelte">
 <meta name="review-triggers" content="The event status enum, fn_validate_event_transition, the CERT→PROD mirror's status handling, promote's status in fn_promote_event_apply, the calendar's visibility filter, or the moved-date pill">
 <title>Event status lifecycle · SPWS Handbook</title>
@@ -121,6 +121,7 @@
 <tr><td>Per-environment</td><td><code>bool_use_spws_registration</code>, <code>ts_ftl_sent</code>, the ingestion provenance block, the results half of <code>enum_status</code></td><td><b>Not synced</b> after the event is created. PROD owns them outright.</td></tr>
 </tbody>
 </table></div>
+<p><code>ts_ftl_sent</code> and <code>txt_organizer_email</code> are retired columns: empty on every event and written by no code since the e-mail delivery was removed (<a href="../../adr/080-clean-roster-ftl-seeding.html">ADR-080</a> amendment 2026-10-24). The mirror still treats them as listed above, so nothing about the sync changes.</p>
 <p><b><code>bool_use_spws_registration</code> is the one to understand.</b> Registration may be deliberately off on CERT and on in PROD — a field whose purpose is to hold different values in two environments cannot be synced. It was briefly treated as CERT-owned configuration, and because the column is <code>NOT NULL DEFAULT false</code> CERT always states a value, making that an unconditional overwrite: the next promote would have switched off a live public form holding eighteen entries. It is now PROD-owned in both directions — CERT can neither enable nor disable it.</p>
 <p>A divergence in the bottom tier is therefore <b>expected</b>, not a defect. If you see one in the daily reconcile log, that is the design working.</p>
 </section>

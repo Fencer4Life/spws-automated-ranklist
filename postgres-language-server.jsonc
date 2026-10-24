@@ -9,6 +9,17 @@
   "files": {
     "ignore": []
   },
+  // Migrations already applied on CERT and PROD are history: they were written
+  // against an older schema (one calls fn_refresh_active_season(), dropped on
+  // 2026-10-06) and must never be edited. Every newer migration is checked in full.
+  "migrations": {
+    "migrationsDir": "supabase/migrations",
+    "after": 20261022000000
+  },
+  // The linter's rules are all lint/safety/*: lock and table-rewrite hazards of
+  // DDL run against live CERT/PROD data. pgTAP files never reach CERT or PROD,
+  // so each test file that does DDL opens with a line-1
+  // "-- pgt-ignore-all lint/safety: ..." (linter.ignore has no effect in 0.25.5).
   "linter": {
     "enabled": true,
     "rules": {
@@ -25,7 +36,8 @@
     "enabled": false
   },
   "typecheck": {
-    "enabled": true
+    "enabled": true,
+    "searchPath": ["public", "extensions"]
   },
   "plpgsqlCheck": {
     "enabled": true

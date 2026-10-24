@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- JB27 — the 2026/2027 SPWS engine: EVF with a joined-bracket premium (ADR-104)
 -- =============================================================================
@@ -133,6 +134,7 @@ $$;
 
 -- Part C: id, finishing order (category digit per place), type, final scores.
 CREATE TEMP TABLE jb27_partc (id TEXT PRIMARY KEY, ord TEXT, ttype TEXT, finals TEXT);
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO jb27_partc VALUES
   ('C2A', '343344', 'PPW', '96.35,65.04,35.41,22.09,6.99,2.00'),
   ('C2B', '22222222222323', 'PPW', '111.69,81.59,56.83,44.26,30.12,26.73,23.87,21.39,9.20,7.25,5.48,4.48,2.38,1.38'),
@@ -151,6 +153,7 @@ INSERT INTO jb27_partc VALUES
   ('C5A', '2102321424', 'PPW', '120.33,82.08,53.08,44.55,29.61,24.06,19.59,18.59,5.24,4.24'),
   ('C5B', '010234', 'PPW', '96.35,65.04,35.41,24.30,8.99,5.00'),
   ('C5C', '01203243', 'MPW', '117.60,82.74,52.95,32.80,18.09,11.73,9.78,4.80');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- JB27.CLEAN — the place-and-medal engine and its columns are gone
@@ -179,6 +182,7 @@ SELECT throws_like(
 
 -- JB27.CLEAN.02a — the six columns are gone from tbl_result and
 -- tbl_result_draft; the method column stays.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT string_agg(table_name || '.' || column_name, ',' ORDER BY table_name, column_name)
      FROM information_schema.columns
@@ -202,6 +206,7 @@ SELECT is(
    ) c WHERE c.name = ANY (pg_temp.retired_result_columns())),
   0,
   'JB27.CLEAN.02b vw_score and the three rolling functions publish none of the retired columns');
+-- pgt-ignore-end typecheck
 
 -- JB27.CLEAN.02c — the PZSz review queue no longer keeps b, and its queue RPC
 -- is back to five parameters.
@@ -257,6 +262,7 @@ SELECT ok(
 
 -- JB27.CLEAN.03c — and they return the stored scores: a scored fencer's rolling
 -- rows and vw_score rows carry the stored final score and method.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT ok(
   pg_temp.safe_bool($$
     WITH one AS (
@@ -273,6 +279,7 @@ SELECT ok(
        AND EXISTS (SELECT 1 FROM vw_score v
                     WHERE v.num_final_score IS NOT NULL AND v.enum_score_method = 'EVF_CLASSIC')$$),
   'JB27.CLEAN.03c the rolling functions and vw_score return stored final scores with their method');
+-- pgt-ignore-end typecheck
 
 -- JB27.CLEAN.04 — the cleanup's guard refuses to drop a column that holds a
 -- value. It is the function the migration calls on tbl_result,
@@ -283,14 +290,18 @@ CREATE TEMP TABLE jb27_guard_probe (
   int_category_count INT     NOT NULL DEFAULT -1,
   num_medal_bonus    NUMERIC NOT NULL DEFAULT -1
 );
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO jb27_guard_probe (id) VALUES (1), (2);
+-- pgt-ignore-end typecheck
 
 SELECT lives_ok(
   $$SELECT fn_assert_retired_columns_unused('pg_temp.jb27_guard_probe'::REGCLASS,
                                             ARRAY['int_category_count', 'num_medal_bonus'])$$,
   'JB27.CLEAN.04a the guard passes when every retired column holds -1');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 UPDATE jb27_guard_probe SET int_category_count = 3 WHERE id = 2;
+-- pgt-ignore-end typecheck
 SELECT throws_like(
   $$SELECT fn_assert_retired_columns_unused('pg_temp.jb27_guard_probe'::REGCLASS,
                                             ARRAY['int_category_count', 'num_medal_bonus'])$$,
@@ -302,6 +313,7 @@ SELECT throws_like(
 -- =============================================================================
 
 -- JB27.ENG.01 — a bracket of 1-3 is a meeting: N - place + 1, joined or not.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT string_agg(x.totals, '|' ORDER BY x.n) FROM (
      SELECT n, string_agg(j.total::TEXT || '/' || j.method, ',' ORDER BY p) AS totals
@@ -356,6 +368,7 @@ SELECT ok(
   AND pg_temp.raises_like($$SELECT fn_score_spws_evf_joined_v1_2026_2027(8, 1, 5, TRUE, 50, 10, 3, 2, 1)$$, '%category steps%')
   AND pg_temp.raises_like($$SELECT fn_score_spws_evf_joined_v1_2026_2027(8, 1, 1, FALSE, 50, 10, 3, 2, 1)$$, '%category steps%'),
   'JB27.ENG.06 d of -1 or 5, or d > 0 in a single category, raises');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- JB27.CAP.03 — the guarantees, over every finishing order of two line-ups
@@ -364,6 +377,7 @@ SELECT ok(
 -- fn_score_joined_bracket: the youngest category is never capped; everyone
 -- scores at least 1 below the fencer directly ahead; and a category of 3 never
 -- scores below its own meeting (3, 2, 1 by its own ranks).
+-- pgt-ignore-start plpgsql_check: temp tables/views this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.cap_guarantees() RETURNS TEXT
 LANGUAGE plpgsql AS $cg$
 DECLARE v_orders INT; v_bad TEXT;
@@ -399,9 +413,12 @@ BEGIN
 EXCEPTION WHEN undefined_function OR undefined_column OR undefined_object THEN
   RETURN NULL;
 END $cg$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.cap_guarantees(), '1700 orders; no violation',
   'JB27.CAP.03 over 1,700 orders the youngest is never capped, everyone is 1 below the fencer ahead, a category of 3 keeps its meeting');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- SE27.TYPE / SE27.CALC — moved unchanged from 83 (2026/2027 still unlocked)
@@ -433,6 +450,7 @@ EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $sn$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.snapshot_has_type_engines(), 'OK',
   'SE27.TYPE.05 a revision snapshot records the engine of each type');
 
@@ -445,6 +463,7 @@ SELECT ok(
       JOIN tbl_scoring_config c ON c.id_season = s.id_season
       JOIN tbl_scoring_type_config tc ON tc.id_config = c.id_config AND tc.enum_type::TEXT = p.type_code$$),
   'SE27.CALC.02 each published coefficient equals the type''s stored multiplier');
+-- pgt-ignore-end typecheck
 
 -- SE27.CALC.03 — anon may execute it: the pages hold only the anon key.
 SELECT ok(
@@ -455,6 +474,7 @@ SELECT ok(
 
 -- SE27.CALC.04 — every row publishes the season's EVF settings, which feed
 -- every bracket of 4 or more.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT ok(
   pg_temp.safe_bool($$
     SELECT count(*) > 0
@@ -483,6 +503,7 @@ SELECT is(
      WHERE s.txt_code = 'SPWS-2026-2027'$$),
   'SPWS_EVF_JOINED_V1_2026_2027|' || pg_temp.expected_2026_2027_engines() || '|' || pg_temp.expected_2026_2027_engines(),
   'JB27.TYPE.01 2026/2027 puts the default, PPW and MPW on the joined engine and the other six on EVF classic');
+-- pgt-ignore-end typecheck
 
 -- JB27.TYPE.02 — every earlier season stays on EVF classic, every type.
 SELECT is(
@@ -498,6 +519,7 @@ SELECT is(
 -- season refuses a change of a type's engine (ADR-097). SPWS-2026-2027 exports
 -- its engines; since its first promote (3 Oct 2026) it is locked, so the change
 -- lands on an unscored copy of its configuration.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.type_engines_round_trip() RETURNS TEXT
 LANGUAGE plpgsql AS $rt$
 DECLARE v_open INT; v_locked INT; v_cfg JSONB;
@@ -537,9 +559,12 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $rt$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.type_engines_round_trip(), 'OK',
   'JB27.TYPE.04 type_engines round-trip; an unlocked change lands on one type; a locked season refuses it');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- JB27.ORD.01 — the order's CHECK
@@ -570,12 +595,14 @@ EXCEPTION WHEN OTHERS THEN
   RETURN FALSE;
 END $$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT ok(
   pg_temp.rejects($$UPDATE tbl_tournament SET txt_joined_order = '0125' WHERE txt_code = 'JB27-ORD'$$)
   AND pg_temp.rejects($$UPDATE tbl_tournament SET txt_joined_order = '012' WHERE txt_code = 'JB27-ORD'$$)
   AND pg_temp.rejects($$UPDATE tbl_tournament SET txt_joined_order = '01 2' WHERE txt_code = 'JB27-ORD'$$)
   AND pg_temp.order_stored('0112'),
   'JB27.ORD.01 the order admits only digits 0-4, one per place of the bracket');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- FIXTURES — scored results (this locks 2026/2027; everything rolls back)
@@ -749,6 +776,7 @@ $$;
 
 -- JB27.CAP.01 — all 17 Part C orders store the Part C finals, MPW x 1.2
 -- included, each category tournament scored on its own.
+-- pgt-ignore-start typecheck: temp tables/views this file creates; pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COALESCE(string_agg(p.id || ' stored ' || COALESCE(s.got, 'nothing'), '; ' ORDER BY p.id), 'all 17')
      FROM jb27_partc p
@@ -782,6 +810,7 @@ SELECT is(
      FROM fn_score_joined_bracket('SPWS_EVF_JOINED_V1_2026_2027', '010210312', 50, 10, 3, 2, 1) b),
   '0|23.53',
   'JB27.CAP.04 C4B stores ROUND(capped x 1.2, 2) everywhere; place 7 is 22.85, not 23.53');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- JB27.ORD.02 — the writer needs the order and follows it
@@ -820,6 +849,7 @@ EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $wr$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.writer_refusals(), 'OK',
   'JB27.ORD.02a the writer refuses a joined-engine bracket with no order, and a row the order places in another category');
 
@@ -843,6 +873,7 @@ SELECT is(
      WHERE t.txt_code = 'JB27-C4B-V3'$$),
   '22.85/0.56/EVF_JOINED',
   'JB27.PRE.01 the preview of C4B place 7 is the capped 22.85, as stored');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- JB27.STORE — the method, the new components and the draft path
@@ -863,6 +894,7 @@ SELECT is(
 
 -- JB27.STORE.02 — the CHECKs admit only real values or -1, and the components
 -- match the method: an EVF_CLASSIC row cannot carry a premium.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT ok(
   pg_temp.rejects($$UPDATE tbl_result SET num_joined_premium = -2 WHERE id_result = (SELECT min(id_result) FROM tbl_result)$$)
   AND pg_temp.rejects($$UPDATE tbl_result SET num_cap_reduction = -0.5 WHERE id_result = (SELECT min(id_result) FROM tbl_result)$$)
@@ -872,9 +904,11 @@ SELECT ok(
   AND pg_temp.rejects($$UPDATE tbl_result SET num_cap_reduction = -1
                          WHERE id_result = (pg_temp.stored('C2B', 12)).id_result$$),
   'JB27.STORE.02 -2, -0.5 and components the method does not use are refused');
+-- pgt-ignore-end typecheck
 
 -- JB27.STORE.03 — a draft commit carries the order onto the tournament, keeps
 -- the joined N, and scores the rows with the new columns.
+-- pgt-ignore-start plpgsql_check: implicit cast inside a test helper (warning) (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.draft_commit() RETURNS TEXT
 LANGUAGE plpgsql AS $dc$
 DECLARE v_e INT; v_run UUID := 'bbbbbbbb-2710-4104-8104-000000000104'; v_td INT; v_f INT; v_out TEXT;
@@ -903,10 +937,13 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $dc$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.draft_commit(),
   '2322|4|1:EVF_JOINED:0:0.00:0.00,3:EVF_JOINED:0:0.00:0.00,4:EVF_JOINED:0:0.00:0.00',
   'JB27.STORE.03 a draft commit keeps the order and the joined N and scores its rows EVF_JOINED');
+-- pgt-ignore-end typecheck
 
 -- =============================================================================
 -- JB27.TYPE.03 — the §11 gate: a scored season is never reassigned
@@ -928,6 +965,7 @@ EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $g$;
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates; checker substitutes literals for a pg_temp helper's parameters (the checker sees only the live schema)
 SELECT is(pg_temp.gate_keeps_scored_season(), 'SPWS_EVF_JOINED_V1_2026_2027|SPWS_EVF_JOINED_V1_2026_2027',
   'JB27.TYPE.03 the backfill leaves a scored 2026/2027 as it stands');
 
@@ -945,6 +983,7 @@ RETURNS BOOLEAN LANGUAGE sql AS $$
       JOIN tbl_fencer f ON f.id_fencer = rk.id_fencer
      WHERE f.txt_surname = p_fencer);
 $$;
+-- pgt-ignore-end typecheck
 
 -- The gate is tested with entry_types set here. Since ADR-110 the live
 -- 2026/2027 rules carry none, so the block sets them itself and holds on any
@@ -969,6 +1008,7 @@ SELECT f.txt_surname, rk.total_score
 
 -- SE27.RANK.01 — a fencer with only EVF results is absent from 2026/2027.
 -- Guarded on the fixture so an absent fixture cannot pass it.
+-- pgt-ignore-start typecheck: temp tables/views this file creates; pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   ROW((SELECT detail FROM se27_fx WHERE fixture = 'base'),
       pg_temp.in_ranking('SE27-11', 'FOIL', 'M', 'V2', FALSE))::TEXT,
@@ -996,6 +1036,7 @@ SELECT is(
       pg_temp.in_ranking('SE27-14', 'FOIL', 'M', 'V2', FALSE))::TEXT,
   ROW('ok', FALSE, FALSE)::TEXT,
   'SE27.RANK.04 a last PPW start in 2024/2025 admits to neither 2026/2027 ranking');
+-- pgt-ignore-end typecheck
 
 -- SE27.RANK.05 — §8 ust. 13: a fencer V1 in 2025/2026 and V2 in 2026/2027
 -- carries the 2025/2026 points into the V2 ranking. Pins existing behaviour
@@ -1052,6 +1093,7 @@ EXCEPTION WHEN OTHERS THEN
 END $ro$;
 
 -- ROSTER.01 — EVF points only, in the ranked season: ranked, rolling and not.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates; temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   ROW(pg_temp.in_ranking('SE27-11', 'FOIL', 'M', 'V2', TRUE),
       pg_temp.in_ranking('SE27-11', 'FOIL', 'M', 'V2', FALSE))::TEXT,
@@ -1090,6 +1132,7 @@ SELECT is(
      END),
   2,
   'ROSTER.04 the totals of fencers the gate admitted are unchanged without it');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 

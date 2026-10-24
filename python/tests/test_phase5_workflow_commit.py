@@ -99,3 +99,44 @@ def test_WF_P5_02_real_event_codes_pass_and_shell_input_is_refused():
         assert _validate(code) != 0, code
     assert _validate("PEW10efs-2025-2026", "06edd72e-72f1-4b95-be30-f9f17530d567") == 0
     assert _validate("PEW10efs-2025-2026", "06EDD72E;id") != 0
+
+
+# WF.P5.03–04 — doc/plans/phase5-workflow-rename-2026-10-24.html (D1 A, D2 A):
+# the Actions list and every run say what the run does.
+
+
+def _run_title(commit_run_id: str) -> str:
+    """Render run-name the way GitHub does for these two branches: the
+    `cond && format(A) || format(B)` idiom, format() filling {0}..{n} from
+    inputs.* arguments."""
+    expr = _workflow()["run-name"]
+    assert isinstance(expr, str)
+    body = expr.strip()
+    assert body.startswith("${{") and body.endswith("}}")
+    inputs = {
+        "event_code": "PEW8f-2024-2025",
+        "target": "prod" if commit_run_id else "cert",
+        "commit_run_id": commit_run_id,
+    }
+    calls = re.findall(r"format\(\s*'([^']*)'\s*,([^)]*)\)", body)
+    assert len(calls) == 2, body
+
+    def render(template: str, args: str) -> str:
+        names = [a.strip().removeprefix("inputs.") for a in args.split(",")]
+        return template.format(*(inputs[n] for n in names))
+
+    condition = body[3 : body.index("&&")].strip()
+    assert condition == "inputs.commit_run_id != ''", condition
+    commit_call, stage_call = calls
+    return render(*commit_call) if commit_run_id else render(*stage_call)
+
+
+def test_WF_P5_03_the_workflow_name_says_what_it_does():
+    assert _workflow()["name"] == "Stage or replace one event's results (past-season repair)"
+
+
+def test_WF_P5_04_each_run_is_titled_with_its_event_target_and_mode():
+    assert _run_title("") == "Stage PEW8f-2024-2025 on cert — drafts and review report"
+    assert _run_title("f731d33c-a5f8-4857-9de0-c05a38f27f34") == (
+        "REPLACE PEW8f-2024-2025 results on prod with staged run f731d33c-a5f8-4857-9de0-c05a38f27f34"
+    )

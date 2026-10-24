@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- T9.0: Admin Auth Migration — REVOKE/GRANT Tests
 -- =============================================================================

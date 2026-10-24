@@ -1,0 +1,275 @@
+<meta charset="utf-8">
+<title>Rename the Phase 5 workflow</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">GitHub Actions · rename plan · 24 Oct 2026</p>
+  <h1>Rename the Phase 5 workflow so its name and every run say what they do</h1>
+  <p class="dek">"Phase 5 Event Runner" becomes <b>"Stage or replace one event's results (past-season repair)"</b>, and every run gets its own title naming the event, the environment and whether it staged drafts or <b>replaced</b> results. The file name, the jobs and the steps don't change.</p>
+  <div class="meta">
+    <span class="pill warn"><span class="dot"></span>Accepted 24 Oct · built · preflight green · waiting for R1 (release timing)</span>
+    <span class="pill">decided: D1 A + D2 A (naming page, 24 Oct)</span>
+    <span class="pill">one workflow file · one test file</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">Read order</p>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#what">What changes</a></li>
+      <li><a href="#unchanged">What deliberately does not change</a></li>
+      <li><a href="#tests">Tests, red before green</a></li>
+      <li><a href="#verify">Verification</a></li>
+      <li><a href="#parity">LOCAL / CERT / PROD</a></li>
+      <li><a href="#docs">Documentation coherence gate</a></li>
+      <li><a href="#release-timing">When it ships (R1)</a></li>
+      <li><a href="#done">Definition of done</a></li>
+    </ol>
+    <div class="note good">
+      <p class="lede"><span class="tick">✓</span> Built 24 Oct · one decision left: R1</p>
+      <p style="margin-bottom:0">You chose the name (D1 A) and the per-run titles (D2 A) on the naming page, and accepted this plan on 24 Oct (&ldquo;accept all&rdquo;). It is built and preflight is green. Only the release timing (<a href="#release-timing">R1</a>) is open.</p>
+    </div>
+  </section>
+
+  <section id="what">
+    <p class="kicker">§ 1 · the change</p>
+    <h2>What changes in <code>.github/workflows/phase5-event-runner.yml</code></h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where it shows</th><th>Today</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Actions sidebar (<code>name:</code>)</td><td><span class="strike">Phase 5 Event Runner</span></td><td>Stage or replace one event's results (past-season repair)</td></tr>
+        <tr><td>Run title, stage mode</td><td><span class="strike">Phase 5 Event Runner</span></td><td>Stage PEW8f-2024-2025 on cert — drafts and review report</td></tr>
+        <tr><td>Run title, commit mode</td><td><span class="strike">Phase 5 Event Runner</span></td><td>REPLACE PEW8f-2024-2025 results on prod with staged run f731d33c-a5f8-4857-9de0-c05a38f27f34</td></tr>
+      </tbody>
+    </table></div>
+    <pre class="trace">name: "Stage or replace one event's results (past-season repair)"
+run-name: "${{ inputs.commit_run_id != ''
+  &amp;&amp; format('REPLACE {0} results on {1} with staged run {2}',
+            inputs.event_code, inputs.target, inputs.commit_run_id)
+  || format('Stage {0} on {1} — drafts and review report',
+            inputs.event_code, inputs.target) }}"</pre>
+    <ul>
+      <li>Both values are <b>quoted YAML strings</b>. A bare value containing <code>": "</code> would be read as a mapping and break the file, so the stage title uses a dash, not a colon.</li>
+      <li>The <b>header comment</b> is rewritten. It currently says the runner is started by an admin "Stage event" button and a Telegram <code>/stage</code> command, and neither exists. The new text: started by hand only (Actions page or <code>gh workflow run</code>); for LOCAL work and past-season repairs; never for a current-season event, which goes through <code>ingest-event.yml</code> and <code>promote.yml</code>, because a Phase 5 commit on PROD makes <code>promote</code> refuse that event (<code>python/pipeline/promotion/replay.py:162-166</code>).</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede">Why the titles are safe</p>
+      <p style="margin-bottom:0"><code>run-name</code> can read only the <code>github</code> and <code>inputs</code> contexts. GitHub only displays it and never runs it in a shell, so an unvalidated input in the title can't inject anything. The job still validates every input before first use, as it does today. Old runs keep their old titles: a title is fixed when the run is created.</p>
+    </div>
+  </section>
+
+  <section id="unchanged">
+    <p class="kicker">§ 2 · left alone on purpose</p>
+    <h2>What does not change</h2>
+    <ul>
+      <li><b>The file name</b> <code>phase5-event-runner.yml</code>. Everything that refers to the workflow uses it: the <code>dispatch-workflow</code> allowlist, the handbook's workflow catalog, <code>gh workflow run</code> commands in plans and runbooks, the test file, and the Telegram failure message.</li>
+      <li><b>Jobs, steps, inputs, validation, secrets and permissions.</b> The tests WF.P5.01 and WF.P5.02 already pin them and must stay green untouched.</li>
+      <li><b>The Python runner</b> <code>python/tools/phase5_runner.py</code>, and the three programs that borrow its helpers.</li>
+      <li><b>Nothing else follows this workflow by its display name.</b> Only <code>release.yml</code> follows another workflow by name, and it follows <code>CI</code>.</li>
+    </ul>
+    <p>The FTL e-mail removal plan edits the <code>dispatch-workflow</code> comment that mentions this workflow. This plan doesn't touch that file, so the two plans share no files and can run in either order or in parallel.</p>
+  </section>
+
+  <section id="tests">
+    <p class="kicker">§ 3 · tests</p>
+    <h2>Red before green</h2>
+    <p>Added to <code>python/tests/test_phase5_workflow_commit.py</code> and run against today's file first. Both must fail (RED); then the YAML changes and both pass.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>ID</th><th>Asserts</th></tr></thead>
+      <tbody>
+        <tr><td><b>WF.P5.03</b></td><td>the workflow's <code>name</code> is exactly "Stage or replace one event's results (past-season repair)"</td></tr>
+        <tr><td><b>WF.P5.04</b></td><td><code>run-name</code> exists; it names <code>inputs.event_code</code> and <code>inputs.target</code>; it keys on <code>inputs.commit_run_id</code>; the commit branch says <code>REPLACE</code> and carries <code>inputs.commit_run_id</code>; the stage branch says <code>Stage</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>The RTM row for <code>WF.P5.01–02</code> (<code>doc/requirements-traceability-matrix.md:356</code>) becomes <code>WF.P5.01–04</code>, with one sentence for the two new IDs.</p>
+  </section>
+
+  <section id="verify">
+    <p class="kicker">§ 4 · verification</p>
+    <h2>How it's proved</h2>
+    <ol class="steps">
+      <li>WF.P5.03 and WF.P5.04 seen RED, then GREEN; WF.P5.01 and WF.P5.02 green throughout.</li>
+      <li><code>scripts/preflight.sh</code> exits 0.</li>
+      <li>Released through the <code>release</code> skill; CI and Release green on main.</li>
+      <li><code>gh workflow list</code> shows the new name.</li>
+      <li>The run title is checked on the <b>next real dispatch</b>. No run is started just to test it: stage mode writes drafts on its target, and commit mode replaces results.</li>
+    </ol>
+  </section>
+
+  <section id="parity">
+    <p class="kicker">§ 5 · environments</p>
+    <h2>LOCAL / CERT / PROD</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th></th><th>LOCAL</th><th>CERT / PROD</th></tr></thead>
+      <tbody>
+        <tr><td>Effect</td><td>none; LOCAL runs <code>python -m python.tools.phase5_runner</code> directly</td><td>new label in the Actions list and on new runs; behavior identical</td></tr>
+        <tr><td>Database</td><td colspan="2">no migration, no data change</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="docs">
+    <p class="kicker">§ 6 · documentation</p>
+    <h2>Documentation coherence gate</h2>
+    <div class="note accent">
+      <p style="margin-bottom:0">☑ Documentation coherence gate complete (24 Oct: no current page uses the display name, checked by docs search and grep; ADR-058 and ADR-061 mention the retired &ldquo;Stage event&rdquo; button and <code>/stage</code> as dated history and stay)<br>
+      Impact: operations (the label in the GitHub Actions list)<br>
+      Canonical docs affected: none. The handbook names workflows by file (<code>doc/handbook/reference/workflow-catalog.html</code>, <code>doc/handbook/operations/operator-runbooks.html</code>), and the file name doesn't change; no current page uses the display name (checked by search, 24 Oct)<br>
+      ADR impact: none<br>
+      Operational impact: none beyond the label; the runbook commands use the file name<br>
+      Source-map / last-verified updated: not applicable<br>
+      Validation: <code>python scripts/check_docs.py --changed-from origin/main</code> [PASS required]<br>
+      Superseded prose archived rather than appended: not applicable</p>
+    </div>
+    <p>Also: the RTM row in § 3, then <code>python3 tools/docs-search/ingest.py</code> and <code>scripts/refresh-graph.sh</code> before the commit.</p>
+  </section>
+
+  <section id="release-timing">
+    <p class="kicker">Built 24 Oct · one decision left</p>
+    <h2>R1 · When it ships</h2>
+    <p>The rename is built in the same worktree as the FTL e-mail removal (<a href="ftl-seed-email-removal-2026-10-24.html">ftl-seed-email-removal-2026-10-24.html</a>), which still waits for your sign-off on its before/after sheet and D6–D8. Both edit <code>doc/requirements-traceability-matrix.md</code> (different rows), so they cannot be split by file alone.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>What happens</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>A</b></td><td>Ship both in one release after your sign-off on the e-mail removal. One CI and Release run, one CERT/PROD check.</td><td><b>A</b></td></tr>
+        <tr><td><b>B</b></td><td>Ship the rename now, alone. I commit only its hunks (the workflow, the test, its RTM row and this page) by building the staged patch by hand, then release; the e-mail removal follows later.</td><td></td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Why A:</b> nothing urgent hangs on a label in the Actions list, and one release halves the CI/Release waits and the environment checks. Pick B only if you want the new name visible before you've reviewed the sheet.</p>
+  </section>
+
+  <section id="done">
+    <p class="kicker">§ 7 · definition of done</p>
+    <h2>Done means</h2>
+    <ul>
+      <li>☑ WF.P5.03–04 seen RED (name was &ldquo;Phase 5 Event Runner&rdquo;; no <code>run-name</code>), then GREEN; WF.P5.01–02 unchanged and green: 7 passed.</li>
+      <li>☑ <code>scripts/preflight.sh</code> exits 0 (16 of 16 gates, 24 Oct).</li>
+      <li>☐ CI and Release green on main.</li>
+      <li>☐ <code>gh workflow list</code> shows "Stage or replace one event's results (past-season repair)".</li>
+      <li>☑ RTM row is now WF.P5.01–04 and names both titles.</li>
+      <li>☑ RAG re-indexed; graph refreshed.</li>
+    </ul>
+  </section>
+
+  <p class="foot">phase5-workflow-rename · 24 Oct 2026 · decided on doc/plans/workflow-descriptive-names-2026-10-24.html (D1 A, D2 A)</p>
+</div>

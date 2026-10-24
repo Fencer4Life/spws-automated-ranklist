@@ -94,6 +94,7 @@ When the EVF scraper next finds a Salzburg event, the allocator hits Step A and 
 - Post-seed mirror (LOCAL only): [`supabase/seed_post_backfill.sql`](../../supabase/seed_post_backfill.sql) re-applies the slug-fix after seed loads (the migration ran against an empty schema in local).
 - Tests: [`supabase/tests/18_evf_event_allocator.sql`](../../supabase/tests/18_evf_event_allocator.sql) — evf.25–evf.39 (15 assertions); [`python/tests/test_evf_calendar.py`](../../python/tests/test_evf_calendar.py) — evf.40–evf.42 (3 assertions in `TestEvfPhase2Allocator`).
 - Python: [`python/scrapers/evf_sync.py`](../../python/scrapers/evf_sync.py) — `sync_calendar()` calls `fn_import_evf_events_v2` and emits per-alert Telegrams; `_create_cert_event()` calls `fn_create_evf_event_from_results`.
+- Fix (2026-10-24): [`20261024000002_fix_evf_create_ambiguous_id_event.sql`](../../supabase/migrations/20261024000002_fix_evf_create_ambiguous_id_event.sql) — when the allocator returns an existing code (`CURRENT_SLOT_REUSE`), `fn_create_evf_event_from_results` backfills a missing EVF id; the backfill named `id_event` bare, which is also the function's output column, and failed with 42702. Tests: [`supabase/tests/22_evf_fk_ingestion.sql`](../../supabase/tests/22_evf_fk_ingestion.sql) 22.6a–d.
 
 ## Cross-phase coordination
 

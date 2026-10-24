@@ -23,6 +23,7 @@ BEGIN;
 
 SELECT plan(30);
 
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT pg_sequence_last_value(pg_get_serial_sequence('public.tbl_fencer', 'id_fencer')::regclass) AS seq_before \gset
 
 -- A season of its own on EVF classic, with the latest real settings, unlocked.
@@ -57,12 +58,16 @@ SELECT id_event, 'PPW8-V1-M-SABRE-2095-2096', 'a', 'PPW', 'SABRE', 'M', 'V1', DA
 INSERT INTO tbl_result (id_fencer, id_tournament, int_place, txt_scraped_name)
 SELECT 98301, id_tournament, 1, 'APPLYA Adam' FROM tbl_tournament WHERE txt_code = 'PPW8-V1-M-SABRE-2095-2096';
 
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT id_event AS ev FROM tbl_event WHERE txt_code = 'PPW9-2095-2096' \gset
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT (fn_event_input_fingerprint('PPW9-2095-2096')->'parts')::TEXT AS inputs \gset
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_event_result_fingerprint('PPW9-2095-2096') AS empty_fp \gset
 
 -- The plan as plan mode records it (python/pipeline/promotion/plan.py).
 CREATE TEMP TABLE p (label TEXT PRIMARY KEY, j JSONB);
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO p VALUES ('plan', jsonb_build_object('event_code', 'PPW9-2095-2096', 'ops', jsonb_build_array(
   jsonb_build_object('op', 'insert_fencer', 'id_fencer', 98310, 'fencer', jsonb_build_object(
     'txt_surname', 'APPLYNEW', 'txt_first_name', 'Nowy', 'int_birth_year', 2051,
@@ -76,17 +81,21 @@ INSERT INTO p VALUES ('plan', jsonb_build_object('event_code', 'PPW9-2095-2096',
     jsonb_build_object('id_fencer', 98302, 'int_place', 3, 'txt_scraped_name', 'APPLYB Bogdan'))),
   jsonb_build_object('op', 'set_event_url_event', 'id_event', :ev, 'url_event', 'https://www.fencingtimelive.com/tournaments/eventSchedule/APPLY'),
   jsonb_build_object('op', 'set_event_ingest_sources', 'id_event', :ev, 'sources', '[{"name": "Szabla", "status": "committed"}]'::JSONB))));
+-- pgt-ignore-end typecheck
 
 -- The live run: the same writes made directly, measured, then undone.
 SAVEPOINT live;
 INSERT INTO tbl_fencer (id_fencer, txt_surname, txt_first_name, int_birth_year, bool_birth_year_estimated, txt_nationality, enum_gender)
 VALUES (98310, 'APPLYNEW', 'Nowy', 2051, TRUE, 'PL', 'M');
 SELECT fn_update_fencer_birth_year(98301, 2049, FALSE);
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT fn_ingest_tournament_results(
   fn_find_or_create_tournament(:ev, 'SABRE', 'M', 'V1', DATE '2095-10-10', 'PPW', NULL, 'https://www.fencingtimelive.com/events/results/APPLY1'),
   (SELECT j->'ops'->3->'rows' FROM p WHERE label = 'plan'), 3, NULL);
+-- pgt-ignore-end typecheck
 UPDATE tbl_event SET url_event = 'https://www.fencingtimelive.com/tournaments/eventSchedule/APPLY',
                      json_ingest_sources = '[{"name": "Szabla", "status": "committed"}]' WHERE id_event = :ev;
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_event_result_fingerprint('PPW9-2095-2096') AS live_fp \gset
 ROLLBACK TO SAVEPOINT live;
 
@@ -114,10 +123,12 @@ SELECT throws_like($$SELECT fn_event_result_fingerprint('NOPE-2095-2096')$$, '%P
   'APPLY.02 an unknown event is refused');
 
 -- ---------------------------------------------------------------- a dry run persists nothing
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT throws_like(format($$SELECT fn_promote_event_apply('PPW9-2095-2096', %L::JSONB, %L, %L::JSONB, NULL, 'IN_PROGRESS', TRUE)$$,
                           (SELECT j FROM p WHERE label = 'plan'), :'live_fp', :'inputs'),
   'PROMOTE_DRY_RUN_OK ' || :'live_fp' || '%',
   'APPLY.03 a dry run makes every write, matches the live fingerprint and raises');
+-- pgt-ignore-end typecheck
 
 SELECT ok(NOT EXISTS (SELECT 1 FROM tbl_fencer WHERE id_fencer = 98310)
       AND (SELECT int_birth_year FROM tbl_fencer WHERE id_fencer = 98301) = 2050
@@ -126,6 +137,7 @@ SELECT ok(NOT EXISTS (SELECT 1 FROM tbl_fencer WHERE id_fencer = 98310)
       AND (SELECT enum_status FROM tbl_event WHERE id_event = :ev) = 'PLANNED',
   'APPLY.03 after a dry run: no fencer, no birth year moved, no tournament, no URL, still PLANNED');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT ok((SELECT count(*) FROM tbl_recompute_queue) = (SELECT queue FROM before_state)
       AND (SELECT ts_scoring_locked_at FROM tbl_season WHERE txt_code = 'SPWS-2095-2096') IS NULL
       AND pg_sequence_last_value(pg_get_serial_sequence('public.tbl_fencer', 'id_fencer')::regclass)
@@ -159,15 +171,19 @@ SELECT throws_like(format($$SELECT fn_promote_event_apply('PPW9-2095-2096', %L::
                           jsonb_set(:'inputs'::JSONB, '{lock}', '"locked"')),
   'PROMOTE_DRY_RUN_OK%',
   'APPLY.05 CERT locked and PROD not is accepted (G1 A)');
+-- pgt-ignore-end typecheck
 
 SAVEPOINT locked;
 UPDATE tbl_season SET ts_scoring_locked_at = now() WHERE txt_code = 'SPWS-2095-2096';
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT throws_like(format($$SELECT fn_promote_event_apply('PPW9-2095-2096', %L::JSONB, %L, %L::JSONB, NULL, 'IN_PROGRESS', TRUE)$$,
                           (SELECT j FROM p WHERE label = 'plan'), :'live_fp', :'inputs'),
   'PROMOTE_INPUT_CHANGED: lock%',
   'APPLY.05 PROD locked and CERT not refuses: PROD scored results CERT never had');
+-- pgt-ignore-end typecheck
 ROLLBACK TO SAVEPOINT locked;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT throws_like(format($$SELECT fn_promote_event_apply('PPW9-2095-2096', %L::JSONB, %L, %L::JSONB, NULL, 'IN_PROGRESS', TRUE)$$,
                           jsonb_set((SELECT j FROM p WHERE label = 'plan'), '{ops,0,id_fencer}', '98302'), :'live_fp', :'inputs'),
   'PROMOTE_FENCER_ID_TAKEN: 98302%',
@@ -187,13 +203,16 @@ SELECT throws_like(format($$SELECT fn_promote_event_apply('PPW9-2095-2096', %L::
                           (SELECT j FROM p WHERE label = 'plan'), :'live_fp', :'inputs', repeat('1', 64)),
   'PROMOTE_PRIOR%',
   'APPLY.06 PROD must hold the previous promote it is told about');
+-- pgt-ignore-end typecheck
 
 SAVEPOINT url;
 UPDATE tbl_event SET url_event = 'https://www.fencingtimelive.com/tournaments/eventSchedule/OTHER' WHERE id_event = :ev;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT throws_like(format($$SELECT fn_promote_event_apply('PPW9-2095-2096', %L::JSONB, %L, %L::JSONB, NULL, 'IN_PROGRESS', TRUE)$$,
                           (SELECT j FROM p WHERE label = 'plan'), :'live_fp', :'inputs'),
   'PROMOTE_URL_DIFFERS%',
   'APPLY.07 a different non-blank PROD URL refuses (ADR-086 fill-blank tier)');
+-- pgt-ignore-end typecheck
 ROLLBACK TO SAVEPOINT url;
 
 -- ---------------------------------------------------------------- the apply
@@ -201,7 +220,9 @@ CREATE TEMP TABLE applied AS
 SELECT fn_promote_event_apply('PPW9-2095-2096', (SELECT j FROM p WHERE label = 'plan'), :'live_fp', :'inputs'::JSONB,
                               NULL, 'IN_PROGRESS', FALSE) AS r;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT (r->>'skipped')::BOOLEAN FROM applied), FALSE, 'APPLY.08 the apply writes');
+-- pgt-ignore-end typecheck
 SELECT is(fn_event_result_fingerprint('PPW9-2095-2096'), :'live_fp', 'APPLY.08 PROD now holds exactly the live result');
 
 SELECT ok((SELECT int_birth_year = 2051 AND bool_birth_year_estimated FROM tbl_fencer WHERE id_fencer = 98310)
@@ -226,14 +247,18 @@ SELECT is((SELECT enum_status::TEXT FROM tbl_event WHERE id_event = :ev), 'IN_PR
   'APPLY.09 PLANNED becomes IN_PROGRESS');
 
 -- ---------------------------------------------------------------- idempotence
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((fn_promote_event_apply('PPW9-2095-2096', (SELECT j FROM p WHERE label = 'plan'), :'live_fp', :'inputs'::JSONB,
                                   NULL, 'IN_PROGRESS', FALSE)->>'skipped')::BOOLEAN, TRUE,
   'APPLY.10 a second apply finds PROD already equal and writes nothing');
+-- pgt-ignore-end typecheck
 SELECT is((SELECT count(*)::INT FROM tbl_result r JOIN tbl_tournament t USING (id_tournament) WHERE t.id_event = :ev), 3,
   'APPLY.10 still three results');
 
 -- ---------------------------------------------------------------- status pairs
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_event_result_fingerprint('PPW9-2095-2096') AS day1_fp \gset
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO p SELECT 'swap', jsonb_set(j, '{ops,3,rows}', jsonb_build_array(
     jsonb_build_object('id_fencer', 98302, 'int_place', 1, 'txt_scraped_name', 'APPLYB Bogdan'),
     jsonb_build_object('id_fencer', 98310, 'int_place', 2, 'txt_scraped_name', 'APPLYNEW Nowy', 'enum_match_status', 'NEW_FENCER'),
@@ -243,28 +268,38 @@ INSERT INTO p SELECT 'swap', jsonb_set(j, '{ops,3,rows}', jsonb_build_array(
 UPDATE p SET j = jsonb_set(j, '{ops}', (SELECT jsonb_agg(o) FROM jsonb_array_elements(j->'ops') o
                                          WHERE o->>'op' NOT IN ('insert_fencer', 'update_fencer_birth_year')))
  WHERE label = 'swap';
+-- pgt-ignore-end typecheck
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT (fn_event_input_fingerprint('PPW9-2095-2096')->'parts')::TEXT AS inputs2 \gset
 
 SAVEPOINT live2;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT fn_ingest_tournament_results(
   (SELECT id_tournament FROM tbl_tournament WHERE id_event = :ev),
   (SELECT j->'ops'->1->'rows' FROM p WHERE label = 'swap'), 3, NULL);
+-- pgt-ignore-end typecheck
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_event_result_fingerprint('PPW9-2095-2096') AS swap_fp \gset
 ROLLBACK TO SAVEPOINT live2;
 
 UPDATE tbl_event SET enum_status = 'COMPLETED' WHERE id_event = :ev;
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((fn_promote_event_apply('PPW9-2095-2096', (SELECT j FROM p WHERE label = 'swap'), :'swap_fp', :'inputs2'::JSONB,
                                   :'day1_fp', 'COMPLETED', FALSE)->>'skipped')::BOOLEAN, FALSE,
   'APPLY.09 a correction of a COMPLETED event applies');
+-- pgt-ignore-end typecheck
 SELECT ok((SELECT enum_status::TEXT FROM tbl_event WHERE id_event = :ev) = 'COMPLETED'
       AND fn_event_result_fingerprint('PPW9-2095-2096') = :'swap_fp',
   'APPLY.09 COMPLETED steps to IN_PROGRESS for the writes and back to COMPLETED');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((fn_promote_event_apply('PPW9-2095-2096', (SELECT j FROM p WHERE label = 'swap'), :'swap_fp', :'inputs2'::JSONB,
                                   :'day1_fp', 'IN_PROGRESS', FALSE)->>'status'), 'IN_PROGRESS',
   'APPLY.09 an equal result still applies the status: COMPLETED back to IN_PROGRESS');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------- the CERT run records its fingerprint
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_ingest_run_open('PPW9-2095-2096', 'local', repeat('a', 40), 2096, 'https://www.fencingtimelive.com/tournaments/eventSchedule/APPLY', NULL, NULL) AS run_id \gset
 SELECT fn_ingest_run_finish(:run_id, '{}'::JSONB);
 SELECT is((SELECT txt_result_fingerprint FROM tbl_ingest_run WHERE id_ingest_run = :run_id),

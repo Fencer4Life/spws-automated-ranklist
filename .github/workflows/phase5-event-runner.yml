@@ -1,14 +1,21 @@
-name: Phase 5 Event Runner
+name: "Stage or replace one event's results (past-season repair)"
+# Each run is titled with its event, target and mode (WF.P5.04). Quoted: a bare
+# value containing ": " would be read as a mapping.
+run-name: "${{ inputs.commit_run_id != ''
+  && format('REPLACE {0} results on {1} with staged run {2}', inputs.event_code, inputs.target, inputs.commit_run_id)
+  || format('Stage {0} on {1} — drafts and review report', inputs.event_code, inputs.target) }}"
 
 # Phase 5.5 (ADR-058 + ADR-059 + ADR-061) — runs the unified Phase-5 pipeline
 # against an event whose URL is already on tbl_event.url_results. Produces
 # tbl_*_draft rows + uploads staging-reports/{event_code}/full.md to Storage
 # + Telegram-sends the document to the operator.
 #
-# Triggered by:
-#   * Admin UI "Stage event" button → dispatch-workflow edge fn
-#   * Telegram /stage <event_code> command from GAS
-#   * Manual: gh workflow run phase5-event-runner.yml -f event_code=<X> -f target=<env>
+# Started by hand only (the Actions page, or
+#   gh workflow run phase5-event-runner.yml -f event_code=<X> -f target=<env>);
+# no admin screen or Telegram command dispatches it. It is for LOCAL work and
+# past-season repairs. A current-season event goes through ingest-event.yml and
+# promote.yml instead: a Phase 5 commit on PROD makes promote refuse that event
+# (python/pipeline/promotion/replay.py:162-166).
 #
 # Commit mode (WF.P5.01): -f commit_run_id=<run> commits that staged run on the
 # target through the runner's sign-off checks and its replace path (rollback

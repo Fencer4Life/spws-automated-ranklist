@@ -97,9 +97,11 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, enum_gender
 
 -- Event CG-NOSIB: ONLY a men's SABRE V1 tournament (no F sibling). Both fencers
 -- have a result in it.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start)
 VALUES ('CG-NOSIB-TST', 'No F sibling event', pg_temp.sid('TST-CG'),
         (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'TST-ORG'), 'SCHEDULED', '2092-01-10');
+-- pgt-ignore-end typecheck
 
 DO $cg$
 DECLARE v_tid int;
@@ -118,6 +120,7 @@ END $cg$;
 
 -- Event CG-SIB: BOTH a men's and a women's SABRE V1 tournament (the F sibling
 -- exists). No results needed — only the sibling's existence matters.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, enum_status, dt_start)
 VALUES ('CG-SIB-TST', 'F sibling event', pg_temp.sid('TST-CG'),
         (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'TST-ORG'), 'SCHEDULED', '2092-02-10');
@@ -180,6 +183,7 @@ SELECT ok(
     SELECT 1 FROM fn_ranking_ppw('SABRE'::enum_weapon_type, 'M'::enum_gender_type, 'V1'::enum_age_category, pg_temp.sid('TST-CG'))
      WHERE id_fencer = pg_temp.fid('TSTNULLG')),
   'CG.9: fencer with NULL gender in M tournament still in M ranking');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

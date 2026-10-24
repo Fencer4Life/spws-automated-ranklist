@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- fn_split_pew_by_weapon collision resilience (ADR-046 amendment, 2026-06-25)
 -- =============================================================================

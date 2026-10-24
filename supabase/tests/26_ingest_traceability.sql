@@ -251,10 +251,12 @@ BEGIN
 END;
 $$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT ok(
   (SELECT passed FROM trace26_outcome WHERE test_id = '26.19'),
   '26.19: deleting an event cascades to tbl_event_ingest_history (zero survivors)'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 26.20 — UNIQUE (id_event, txt_run_id) =====
@@ -284,10 +286,12 @@ BEGIN
 END;
 $$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT ok(
   (SELECT passed FROM trace26_outcome WHERE test_id = '26.20'),
   '26.20: duplicate (id_event, txt_run_id) raises unique_violation'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 26.21 — Cap-of-6: inserting 7 history rows for one event leaves 6 =====
@@ -310,6 +314,7 @@ BEGIN
 END;
 $$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_event_ingest_history
     WHERE id_event = (SELECT event_b_id FROM trace26_ids)),
@@ -326,6 +331,7 @@ SELECT is(
   0,
   '26.22: oldest history row (the original from 26.20) is the one evicted'
 );
+-- pgt-ignore-end typecheck
 
 
 -- ===== 26.23 — Cap is per-parent (tournament-side mirror) =====
@@ -347,12 +353,14 @@ BEGIN
 END;
 $$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COUNT(*)::INT FROM tbl_tournament_ingest_history
     WHERE id_tournament = (SELECT tour_id FROM trace26_ids)),
   6,
   '26.23: cap-of-6 trigger fires for tbl_tournament_ingest_history too'
 );
+-- pgt-ignore-end typecheck
 
 
 SELECT * FROM finish();

@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- pgTAP — Phase 4 follow-up: vw_fencer_aliases scalar-tolerance
 -- =============================================================================

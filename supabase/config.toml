@@ -71,7 +71,9 @@ enabled = true
 # INSERT sequence. The fresh bulk dump now captures all operator-curated
 # fields directly, making the overlay redundant. Regenerate via
 # `python -m python.pipeline.export_seed_local` after every cleanup pass.
-sql_paths = ["./seed_prod_latest.sql", "./seed_post_backfill.sql"]
+# seed_dev_tooling.sql installs pgTAP and plpgsql_check for the Postgres language server (LOCAL/CI
+# only; see the file header).
+sql_paths = ["./seed_prod_latest.sql", "./seed_post_backfill.sql", "./seed_dev_tooling.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

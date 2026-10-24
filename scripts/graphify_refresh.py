@@ -122,7 +122,9 @@ def main() -> int:
         print("  Run a full build first:  /graphify .", file=sys.stderr)
         return 3
 
-    from graphify.detect import detect_incremental
+    # graphify is imported from graphify's own interpreter (scripts/refresh-graph.sh runs this
+    # file with it), not from the project venv the type checker reads; hence the per-line ignores.
+    from graphify.detect import detect_incremental  # pyright: ignore[reportMissingImports]
 
     r = detect_incremental(Path("."))
     new_files = r.get("new_files", {})
@@ -174,19 +176,23 @@ def main() -> int:
     # (6) targeted AST merge for code + the local doc layer (free, headless)
     if not changed_docs:
         say("refresh-graph: code-only changes — targeted AST merge (no LLM)…")
-    from graphify.analyze import god_nodes, suggest_questions, surprising_connections
-    from graphify.build import build_merge
-    from graphify.cluster import cluster, score_all
-    from graphify.detect import save_manifest
-    from graphify.export import to_html, to_json
-    from graphify.extract import collect_files, extract
-    from graphify.report import generate
+    from graphify.analyze import (  # pyright: ignore[reportMissingImports]
+        god_nodes,
+        suggest_questions,
+        surprising_connections,
+    )
+    from graphify.build import build_merge  # pyright: ignore[reportMissingImports]
+    from graphify.cluster import cluster, score_all  # pyright: ignore[reportMissingImports]
+    from graphify.detect import save_manifest  # pyright: ignore[reportMissingImports]
+    from graphify.export import to_html, to_json  # pyright: ignore[reportMissingImports]
+    from graphify.extract import collect_files, extract  # pyright: ignore[reportMissingImports]
+    from graphify.report import generate  # pyright: ignore[reportMissingImports]
 
     before = len(json.loads(Path(GRAPH_JSON).read_text())["nodes"])
 
     every_code: list[str] = []
     if args.full_code:
-        from graphify.detect import detect
+        from graphify.detect import detect  # pyright: ignore[reportMissingImports]
 
         every_code = list(detect(Path("."))["files"].get("code", []))
         old_sources = (

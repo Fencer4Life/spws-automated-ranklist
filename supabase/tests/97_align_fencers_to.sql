@@ -46,9 +46,11 @@ CREATE TEMP TABLE al_ids AS
 SELECT (SELECT id_season FROM tbl_season WHERE txt_code = 'SPWS-2024-2025') AS s2425,
        (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS') AS spws;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, dt_end, enum_status)
 SELECT 'PPW8-2024-2025', 'ALIGN fixture', s2425, spws, DATE '2025-05-10', DATE '2025-05-10', 'COMPLETED'
   FROM al_ids;
+-- pgt-ignore-end typecheck
 
 INSERT INTO tbl_tournament (id_event, txt_code, enum_type, enum_weapon, enum_gender, enum_age_category, dt_tournament)
 SELECT e.id_event, c, 'PPW', w::enum_weapon_type, 'M', 'V2', DATE '2025-05-10'
@@ -60,20 +62,24 @@ CREATE TEMP VIEW al_t AS
 SELECT (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW8-V2-M-EPEE-2024-2025') AS epee,
        (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW8-V2-M-FOIL-2024-2025') AS foil;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_result (id_tournament, id_fencer, int_place)
 SELECT epee, f, p FROM al_t, (VALUES (96001, 1), (96002, 2), (96003, 3), (96006, 4), (96007, 5), (96008, 6)) v(f, p);
 INSERT INTO tbl_result (id_tournament, id_fencer, int_place) SELECT foil, 96001, 1 FROM al_t;
+-- pgt-ignore-end typecheck
 
 INSERT INTO tbl_registration (id_event, id_fencer, txt_surname, txt_first_name, enum_gender, int_birth_year, arr_weapons)
 SELECT id_event, 96001, 'ALIGNA', 'Adam', 'M', 1970, ARRAY['EPEE']::enum_weapon_type[]
   FROM tbl_event WHERE txt_code = 'PPW8-2024-2025';
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_match_candidate (id_result, id_fencer, txt_scraped_name)
 SELECT r.id_result, 96001, 'ALIGNA Adam'
   FROM tbl_result r, al_t WHERE r.id_tournament = al_t.foil AND r.id_fencer = 96001;
 
 INSERT INTO tbl_fencer_nationality (id_fencer, id_season, txt_country, enum_source)
 SELECT 96001, s2425, 'POL', 'ADMIN' FROM al_ids;
+-- pgt-ignore-end typecheck
 
 INSERT INTO tbl_registration_identity_override (id_registration, id_fencer, txt_surname, txt_first_name,
                                                 int_birth_year_before, int_birth_year_after)
@@ -105,6 +111,7 @@ CREATE TEMP TABLE al_prod AS
 SELECT to_jsonb(f) || jsonb_build_object('id_fencer', m.prod_id) AS j
   FROM tbl_fencer f JOIN al_map m ON m.cert_id = f.id_fencer;
 -- On PROD the alias "ALIGNA ADAMEK" belongs to B (id 96001); A (96002) has none.
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 UPDATE al_prod SET j = j || '{"json_name_aliases": []}' WHERE (j->>'id_fencer')::INT = 96002;
 UPDATE al_prod SET j = j || '{"json_name_aliases": ["ALIGNA ADAMEK"]}' WHERE (j->>'id_fencer')::INT = 96001;
 -- H: PROD confirmed 1975 and holds no alias; E holds H's old alias.
@@ -116,6 +123,7 @@ SELECT jsonb_build_object('id_fencer', 96005, 'txt_surname', 'ALIGNE', 'txt_firs
                           'enum_gender', 'M', 'json_name_aliases', '["ALIGNH HUBI"]'::jsonb,
                           'json_revoked_aliases', '[]'::jsonb, 'json_user_confirmed_aliases', '[]'::jsonb,
                           'ts_created', now(), 'ts_updated', now());
+-- pgt-ignore-end typecheck
 
 -- The target's roster before the alignment: the restore point (ALIGN.28).
 CREATE TEMP TABLE al_orig AS SELECT jsonb_agg(to_jsonb(f)) AS j FROM tbl_fencer f;
@@ -217,9 +225,11 @@ SELECT is((SELECT id_fencer FROM tbl_registration r JOIN tbl_event e USING (id_e
   'ALIGN.12 the registration follows');
 SELECT is((SELECT id_fencer FROM tbl_match_candidate WHERE txt_scraped_name = 'ALIGNA Adam'), 96002,
   'ALIGN.13 the match candidate follows');
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT id_fencer FROM tbl_fencer_nationality n JOIN al_ids ON n.id_season = al_ids.s2425
             WHERE txt_country = 'POL' AND enum_source = 'ADMIN' AND id_fencer IN (96001, 96002)), 96002,
   'ALIGN.14 the season nationality follows and keeps its admin source');
+-- pgt-ignore-end typecheck
 SELECT is((SELECT id_fencer FROM tbl_registration_identity_override WHERE txt_surname = 'ALIGNA'), 96002,
   'ALIGN.15 the identity override follows');
 SELECT is((SELECT id_fencer FROM tbl_result_draft WHERE txt_run_id = 'a1a1a1a1-0000-4000-8000-000000000097'), 96002,
@@ -275,6 +285,7 @@ SELECT results_eq(
   $$VALUES (0, 0, 0)$$,
   'ALIGN.26 an aligned roster aligns to itself with nothing to do');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT count(*)::INT FROM tbl_result r JOIN al_t ON r.id_tournament IN (al_t.epee, al_t.foil)), 7,
   'ALIGN.27 no result was lost or duplicated');
 
@@ -295,6 +306,7 @@ SELECT ok(
   'ALIGN.28 the inverse pairing with the saved roster restores every id, value and result');
 
 SELECT setval('tbl_fencer_id_fencer_seq', last_value, is_called) FROM al_seq;
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

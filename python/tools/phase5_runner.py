@@ -966,7 +966,7 @@ def _append_event_to_seed(db, event_code: str) -> int:
     surname+first_name and tournament code so the increments file stays
     identity-stable across re-runs.
     """
-    from datetime import datetime
+    from datetime import UTC, datetime
     from pathlib import Path
 
     sb = db._sb
@@ -1036,7 +1036,7 @@ def _append_event_to_seed(db, event_code: str) -> int:
         )
 
     lines: list[str] = []
-    ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    ts = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     lines.append("")
     lines.append(f"-- ========= Event {event_code} (committed {ts}) =========")
     lines.append("")

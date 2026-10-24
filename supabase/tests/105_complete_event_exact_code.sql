@@ -17,12 +17,14 @@ CREATE TEMP TABLE cx AS
 SELECT (SELECT id_season FROM tbl_season s WHERE s.bool_active LIMIT 1) AS s,
        (SELECT id_organizer FROM tbl_organizer WHERE txt_code = 'SPWS') AS o;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 INSERT INTO tbl_event (txt_code, txt_name, id_season, id_organizer, dt_start, dt_end, enum_status)
 SELECT c, 'COMPLETE fixture', s, o, d, d, st::enum_event_status
   FROM cx, (VALUES ('PPW96-2026-2027', DATE '2026-09-26', 'IN_PROGRESS'),
                    ('PPW96B-2026-2027', DATE '2026-09-26', 'IN_PROGRESS'),
                    ('PPW95-2026-2027', DATE '2099-12-31', 'IN_PROGRESS'),
                    ('PPW94-2026-2027', DATE '2026-09-26', 'PLANNED')) v(c, d, st);
+-- pgt-ignore-end typecheck
 
 SELECT throws_like(
   $$SELECT fn_complete_event('PPW96')$$,

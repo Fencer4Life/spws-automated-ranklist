@@ -20,7 +20,7 @@
 #
 # Usage:
 #   scripts/preflight.sh              # everything
-#   scripts/preflight.sh --fast       # skip pgTAP (needs the local stack up)
+#   scripts/preflight.sh --fast       # skip pgTAP only; postgrestools still needs the stack
 #   scripts/preflight.sh --ci-only    # only what .github/workflows/ci.yml runs
 
 set -uo pipefail
@@ -61,7 +61,7 @@ if [[ -f .venv/bin/activate ]]; then
   source .venv/bin/activate
 fi
 
-PYTOOL_PATHS=(python/ scripts/render_adrs.py scripts/render_docs.py scripts/check_docs.py scripts/build_doc_inventory.py)
+PYTOOL_PATHS=(python/ scripts/ tools/)
 
 # ---------------------------------------------------------------------------
 # CI-blocking gates — .github/workflows/ci.yml, job by job.
@@ -82,7 +82,12 @@ gate "vitest (CI)"                    bash -c 'cd frontend && npm test --silent'
 # coherence
 gate "check-coherence.sh (CI)"        bash scripts/check-coherence.sh
 
-# test-db — needs the local Supabase stack, so it is the one gate --fast drops.
+# test-db — the Supabase stack is needed by both gates below. pgTAP is slow, so
+# it is the one gate --fast drops. postgrestools is never dropped: it takes
+# seconds, and the script fails (rather than passing quietly) when the stack is
+# down, the version differs from the config's pin, or a positive control shows
+# the database checks did not run. GATE.01–03.
+gate "postgrestools (CI)"             bash scripts/check-postgrestools.sh
 if [[ $FAST -eq 1 ]]; then
   RESULTS+=("SKIP  supabase test db (CI) — --fast")
 else
@@ -98,7 +103,8 @@ if [[ $CI_ONLY -eq 0 ]]; then
   # The anon allowlist lives in two files. pgTAP only reads one of them, so a
   # drift stays green through all of CI and fails in the deploy job instead.
   gate "anon allowlist in sync (deploy)" bash scripts/check-anon-allowlist-sync.sh
-  gate "svelte-check (AGENTS)"        bash -c 'cd frontend && npm run check'
+  # Warnings fail too (GATE.05): svelte-check alone exits 0 on them.
+  gate "svelte-check (AGENTS)"        bash -c 'cd frontend && npm run check -- --fail-on-warnings'
   # The published calculator and scoring-table annex carry a GENERATED copy of
   # frontend/src/lib/scoring.ts. Nothing else may write between their markers,
   # and a stale copy means the pages and the database disagree about the
@@ -122,5 +128,4 @@ if [[ $FAILED -eq 1 ]]; then
 fi
 
 echo "All gates passed."
-echo "Still owed before a push: scripts/refresh-graph.sh, and postgrestools"
-echo "check <file> for any .sql you touched (both are per-change, not global)."
+echo "Still owed before a push: scripts/refresh-graph.sh (per-change, not global)."

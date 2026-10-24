@@ -233,6 +233,7 @@ BEGIN
     SELECT v_r AS id_registration, v_f AS id_fencer, v_e AS id_event;
 END $adopt$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT r.id_fencer FROM tbl_registration r
      JOIN t75_adopt a ON a.id_registration = r.id_registration),
@@ -269,6 +270,7 @@ SELECT ok(
                 JOIN t75_adopt a ON a.id_fencer = l.id_row
                WHERE l.txt_table_name = 'tbl_fencer' AND l.txt_action = 'UPDATE'),
   '75.8e and trg_audit_fencer has nothing to record');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 75.9 — FIX_REGISTRATION. The mirror image: the registration is corrected to
@@ -291,6 +293,7 @@ BEGIN
     SELECT v_r AS id_registration, v_f AS id_fencer;
 END $fix$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT r.int_birth_year FROM tbl_registration r
      JOIN t75_fix x ON x.id_registration = r.id_registration),
@@ -307,6 +310,7 @@ SELECT is(
      JOIN t75_fix x ON x.id_registration = r.id_registration),
   (SELECT id_fencer FROM t75_fix),
   '75.9c linking the registration — it is now an ordinary exact match');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 75.10 — THE AUTHORISATION GUARDS. Each closes a specific hole, and the
@@ -371,6 +375,7 @@ BEGIN
     SELECT v_r AS id_registration, v_f AS id_fencer;
 END $diff$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT r.id_fencer FROM tbl_registration r
      JOIN t75_diff d ON d.id_registration = r.id_registration),
@@ -434,6 +439,7 @@ SELECT is(
      JOIN t75_fix x ON x.id_fencer = o.id_fencer),
   0,
   '75.13b nor does FIX_REGISTRATION, which never touches the fencer at all');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 75.14 — the administrator applies the proposal. This is where the master row
@@ -453,6 +459,7 @@ BEGIN
   RESET ROLE;
 END $apply$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT f.int_birth_year FROM tbl_fencer f JOIN t75_adopt a ON a.id_fencer = f.id_fencer),
   1982::SMALLINT,
@@ -475,6 +482,7 @@ SELECT is(
      JOIN t75_adopt a ON a.id_fencer = o.id_fencer),
   'APPLIED',
   '75.14d and the proposal is closed, so it cannot be applied twice');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 75.15 — rejecting one writes nothing at all. This is the attacker's path,
@@ -499,6 +507,7 @@ BEGIN
   CREATE TEMP TABLE t75_reject AS SELECT v_f AS id_fencer, v_o AS id_override;
 END $reject$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT f.int_birth_year FROM tbl_fencer f JOIN t75_reject x ON x.id_fencer = f.id_fencer),
   1951::SMALLINT,
@@ -509,6 +518,7 @@ SELECT is(
      JOIN t75_reject x ON x.id_override = o.id_override),
   'REJECTED',
   '75.15b and the proposal is closed');
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 75.16 — and the whole fix is worthless if the public can apply its own

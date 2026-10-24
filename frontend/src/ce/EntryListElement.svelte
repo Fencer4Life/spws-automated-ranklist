@@ -44,6 +44,7 @@
 
   // initClient runs synchronously (module init), matching RegistrationElement
   // — see that file's comment for why this can't safely live in an $effect.
+  // svelte-ignore state_referenced_locally
   if (!demo) {
     const url = supabaseCertUrl || supabaseProdUrl
     const key = supabaseCertKey || supabaseProdKey

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="086-evf-weapon-evidence-ladder-strict-skip.md">
-<meta name="adr-source-sha256" content="555b85d870b88f508a1313bf4bf1b52ca538974ce935bdfb90171bea255b4927">
+<meta name="adr-source-sha256" content="3a0a63d29cb8cf29a5239f6cfb928d9f5ea5bac1621525e51657339556a9a296">
 <title>ADR-086 · EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -105,7 +105,7 @@ Key (id_season, txt_evf_slug)=(4, levi-open-fin) already exists
 <p><strong>Three things stay excluded, because pushing CERT's value would destroy or falsify a PROD-owned fact:</strong></p>
 <ul>
 <li><s><code>enum_status</code></s> — <strong>this exclusion was wrong and is reversed by the 2026-08-28 amendment below.</strong> <code>promote_event</code> does advance PROD's <em>results</em> lifecycle, but the reasoning was generalised to the <em>planning</em> lifecycle as well, which CERT owns.</li>
-<li><code>ts_ftl_sent</code> — stamped per environment by <code>ftl_feed_seed_send.py</code> (<code>--target cert|prod</code>); overwriting would falsify the record of a seed actually sent from PROD.</li>
+<li><code>ts_ftl_sent</code> — stamped per environment by <code>ftl_feed_seed_send.py</code> (<code>--target cert|prod</code>); overwriting would falsify the record of a seed actually sent from PROD. <em>(2026-10-24: that sender is removed and the column is retired, never written — <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> amendment 2026-10-24. It stays unsynced.)</em></li>
 <li>The ingestion provenance block (<code>txt_source_status</code>, <code>enum_parser_kind</code>, <code>dt_last_scraped</code>, <code>txt_source_url_used</code>, <code>txt_parity_notes</code>, <code>json_ingest_sources</code>, <code>json_source_overrides</code>) — CERT-side scrape diagnostics describing how CERT obtained the row, not facts about the event.</li>
 </ul>
 <h3 id="5-a-calendar-failure-no-longer-blocks-results-ingestion">5 · A calendar failure no longer blocks results ingestion</h3>
@@ -232,5 +232,5 @@ real end dates. Pinned by <code>python/tests/test_evf_calendar.py</code> evf.76�
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="085-points-calculator-temporary-static-page.html">← ADR-085: Points Calculator as a Temporary Static Page — a One-Off Exception with an Expiry Condition</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="087-pzsz-senior-calendar-source.html">→ ADR-087: PZSz as a fourth event source — Polish national senior events on the calendar</a></nav>
-<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>555b85d870b88f508a1313bf4bf1b52ca538974ce935bdfb90171bea255b4927</code></footer>
+<footer class="foot">Generated from <code>086-evf-weapon-evidence-ladder-strict-skip.md</code> · source SHA-256 <code>3a0a63d29cb8cf29a5239f6cfb928d9f5ea5bac1621525e51657339556a9a296</code></footer>
 </div></body></html>

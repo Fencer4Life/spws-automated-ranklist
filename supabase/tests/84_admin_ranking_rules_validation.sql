@@ -29,6 +29,7 @@ SELECT plan(11);
 CREATE TEMP TABLE adm27_season AS
 SELECT fn_create_season('ADM27-RULES', '2052-08-01', '2053-07-15') AS id_season;
 
+-- pgt-ignore-start plpgsql_check: temp tables/views this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.try_import(p_rules JSONB) RETURNS TEXT
 LANGUAGE plpgsql AS $ti$
 BEGIN
@@ -39,11 +40,13 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN SQLERRM;
 END $ti$;
+-- pgt-ignore-end plpgsql_check
 
 -- -----------------------------------------------------------------------------
 -- A domestic type in the international pool: the bucket PROD carried, which
 -- the adapter drops when the ranking is read.
 -- -----------------------------------------------------------------------------
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates; temp tables/views this file creates (the checker sees only the live schema)
 SELECT matches(
   pg_temp.try_import($j$
     {"domestic":[{"types":["PPW"],"best":2},{"types":["MPW"],"always":true}],
@@ -118,6 +121,7 @@ SELECT is(
   $j$::jsonb),
   'ok',
   'ADM27.RULES.08 unchanged legacy-shaped rules are re-saved without complaint');
+-- pgt-ignore-end typecheck
 
 SELECT ok(
   CASE WHEN to_regprocedure('fn_validate_ranking_rules_write(jsonb)') IS NULL THEN FALSE

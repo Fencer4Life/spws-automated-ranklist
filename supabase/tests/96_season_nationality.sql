@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- NAT.SEASON / NAT.EVID / ADM.ID.09 — nationality per season, fixed for the season
 -- =============================================================================
@@ -68,6 +69,7 @@ BEGIN
   INSERT INTO nat_ids VALUES ('kollar', v_f);
 END $fx$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates; pg_temp helpers this file creates (the checker sees only the live schema)
 CREATE FUNCTION pg_temp.id(p_k TEXT) RETURNS INT LANGUAGE sql AS $$
   SELECT v FROM nat_ids WHERE k = p_k;
 $$;
@@ -82,10 +84,12 @@ CREATE FUNCTION pg_temp.conflicts(p_f TEXT) RETURNS TEXT LANGUAGE sql AS $$
     FROM vw_fencer_nationality_conflict
    WHERE id_fencer = pg_temp.id(p_f) AND id_season = pg_temp.id('season');
 $$;
+-- pgt-ignore-end typecheck
 
 -- NAT.SEASON.01 — the shape
 SELECT col_is_pk('tbl_fencer_nationality', ARRAY['id_fencer', 'id_season'],
   'NAT.SEASON.01 one nationality per fencer and season: the key is (id_fencer, id_season)');
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT throws_ok(
   format($$INSERT INTO tbl_fencer_nationality (id_fencer, id_season, txt_country, enum_source)
            VALUES (%s, %s, 'Poland', 'ADMIN')$$, pg_temp.id('kollar'), pg_temp.id('season')),
@@ -138,6 +142,7 @@ VALUES (pg_temp.id('kollar'), pg_temp.id('t_ppw'), 3, 'NAT-KOLLAR Test', 'CZE');
 DELETE FROM tbl_result WHERE id_tournament = pg_temp.id('t_ppw');
 SELECT is(pg_temp.season_country('kollar'), 'SVK',
   'NAT.SEASON.05 an admin entry is kept as entered');
+-- pgt-ignore-end typecheck
 
 -- NAT.EVID.02 — a committed draft carries the evidence into tbl_result
 DO $draft$
@@ -161,6 +166,7 @@ SELECT is(
   'NAT.EVID.02 fn_commit_event_draft copies txt_entered_for into tbl_result');
 
 -- ADM.ID.09 — the SPWS starters: a PPW or MPW result, any season
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 INSERT INTO tbl_tournament (id_event, txt_code, txt_name, enum_type, enum_weapon, enum_gender,
   enum_age_category, dt_tournament, int_participant_count, enum_import_status)
 VALUES (pg_temp.id('ppw_event'), 'NAT-PPW2', 'NAT PPW 2', 'PPW', 'FOIL', 'M', 'V1', '2025-10-05', 12, 'PLANNED');
@@ -170,6 +176,7 @@ SELECT ok(
   pg_temp.id('kollar') = ANY (fn_spws_starter_ids())
   AND NOT (pg_temp.id('kulka') = ANY (fn_spws_starter_ids())),
   'ADM.ID.09 fn_spws_starter_ids lists a fencer with a PPW result, not one with international results only');
+-- pgt-ignore-end typecheck
 
 -- NAT.SEASON.06 — grants
 SELECT ok(

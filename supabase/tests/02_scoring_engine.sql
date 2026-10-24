@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- M2: Scoring Engine, Configuration & Calibration — Acceptance Tests
 -- =============================================================================
@@ -283,6 +284,7 @@ SELECT ok(
 
 -- 1st place receives the full base, the season's int_mp_value, under EVF
 -- classic whatever the size of the field.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
@@ -292,6 +294,7 @@ SELECT is(
   (pg_temp.cfg()).int_mp_value::NUMERIC(10,2),
   '2.1b 1st place gets the EVF classic base, the configured MP, in place points'
 );
+-- pgt-ignore-end typecheck
 
 -- Last place (24th of 24): MP - (MP-1)*ln(24)/ln(24) = MP - (MP-1) = 1.00,
 -- whatever MP is.
@@ -370,6 +373,7 @@ SELECT throws_like(
 
 -- The raise aborts the whole UPDATE, so no row is left half-scored: 1st place
 -- still holds the value the earlier successful run wrote.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT num_place_pts
    FROM tbl_result r
@@ -379,6 +383,7 @@ SELECT is(
   (pg_temp.cfg()).int_mp_value::NUMERIC(10,2),
   '2.3b a rejected rescore leaves the previously scored rows untouched'
 );
+-- pgt-ignore-end typecheck
 
 -- Remove the corrupt row so the rest of this file scores a valid tournament;
 -- 2.10 re-scores SCORE-PEW-N24 and would otherwise inherit the rejection.
@@ -421,6 +426,7 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 -- bonus_per_round for N=24 = 3 * 24^(1/3) ≈ 8.65; gold, silver and bronze are
 -- the season's configured podium points.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT num_podium_bonus
    FROM tbl_result r
@@ -450,6 +456,7 @@ SELECT is(
   (SELECT ROUND((pg_temp.cfg()).int_podium_bronze * (3 * POWER(24, 1.0/3)), 2))::NUMERIC,
   '2.6c 3rd place podium bonus = the configured bronze points * bonus_per_round'
 );
+-- pgt-ignore-end typecheck
 
 SELECT is(
   (SELECT num_podium_bonus
@@ -468,6 +475,7 @@ SELECT is(
 -- rounds, podium) should be identical; each final score is the components
 -- times its type's configured multiplier (rounding applied at the end). N=24
 -- place 1 is EVF classic under every 2026/2027 engine, since 24 is at least 16.
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT ok(
   (SELECT
     ppw.num_place_pts = mpw.num_place_pts
@@ -490,6 +498,7 @@ SELECT ok(
   ),
   '2.7 MPW has the same components as PPW; each final score uses its configured multiplier'
 );
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 2.8  After scoring: ts_points_calc is set to a recent timestamp
@@ -524,6 +533,7 @@ UPDATE tbl_tournament SET enum_import_status = 'IMPORTED' WHERE txt_code = 'SCOR
 SELECT fn_calc_tournament_scores(id_tournament) FROM tbl_tournament WHERE txt_code = 'SCORE-PEW-N24';
 
 -- Final score should still use PEW's configured multiplier, not 999.0
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT ok(
   (SELECT r.num_final_score = ROUND(
     (r.num_place_pts + r.num_de_bonus + r.num_podium_bonus) * (pg_temp.cfg()).num_pew_multiplier, 2)
@@ -533,6 +543,7 @@ SELECT ok(
    WHERE t.txt_code = 'SCORE-PEW-N24' AND f.txt_surname = 'SC-FENCER-1'),
   '2.10 Scoring uses the PEW multiplier from tbl_scoring_config, not tbl_tournament (999.0)'
 );
+-- pgt-ignore-end typecheck
 
 -- ---------------------------------------------------------------------------
 -- 2.11  Changing int_mp_value does NOT change already-scored values

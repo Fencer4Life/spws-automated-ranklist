@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
-<meta name="adr-source-sha256" content="945ce844966fb90b5634edd42bca498e3a326b1698eea2a18ca6debb8b09292c">
+<meta name="adr-source-sha256" content="a41058fd856f8950bf8cee9e2e0e823c460e11eb1190aab9a44c34059935640c">
 <title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 087</p><h1>PZSz as a fourth event source — Polish national senior events on the calendar</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started). Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: the daily job also captures start lists, and the JavaScript check no longer blocks an ingest once a list is stored.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">533 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started). Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: the daily job also captures start lists, and the JavaScript check no longer blocks an ingest once a list is stored.</dd></div><div><dt>Date</dt><dd class="">2026-09-03</dd></div><div><dt>Source</dt><dd class=""><code>087-pzsz-senior-calendar-source.md</code></dd></div><div><dt>Length</dt><dd class="">535 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (proposed 2026-09-03, accepted 2026-09-04). Implemented and released to CERT and PROD. Amended 2026-10-06 (the JavaScript check fails the run; the PZSz id reaches PROD), released and verified on PROD. Amended 2026-10-07 (the sync keeps the dates of an event that has started). Amended 2026-10-07 by <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>: the daily job also captures start lists, and the JavaScript check no longer blocks an ingest once a list is stored.
 <strong>Date:</strong> 2026-09-03
 <strong>Amends:</strong> <a href="084-calendar-quarter-barrel-event-card.html">ADR-084</a> §F and §11 (<code>registryOf()</code> widens from three registries to four; a fourth hue enters the organizer channel; <code>PanelType</code> gains a fifth member)
@@ -400,6 +400,7 @@ members, and all eight now carry the setting:</p>
 <code>evf-sync.yml::promote-calendar</code>, <code>ftl-seed.yml::deadline-sweep</code>,
 <code>promote-season.yml</code> (workflow-level), <code>promote.yml</code> (workflow-level),
 <code>pzsz-sync.yml::promote-calendar</code>, <code>recompute-drain-prod.yml::drain</code>.</p>
+<p><em>(2026-10-24: <code>ftl-seed.yml::deadline-sweep</code> is no longer a member; the workflow is deleted with the e-mail delivery — <a href="080-clean-roster-ftl-seeding.html">ADR-080</a> amendment 2026-10-24.)</em></p>
 <p>If <code>queue: max</code> proves unavailable on this runner it fails as a workflow validation error
 on the first run — loudly, immediately, cheap to detect. The fallback is a 15-minute
 stagger (<code>45 5 * * *</code>), which costs nothing real.</p>
@@ -650,5 +651,5 @@ clears.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="088-calendar-location-contract.html">→ ADR-088: One location contract for every calendar scraper — city, venue and address</a></nav>
-<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>945ce844966fb90b5634edd42bca498e3a326b1698eea2a18ca6debb8b09292c</code></footer>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>a41058fd856f8950bf8cee9e2e0e823c460e11eb1190aab9a44c34059935640c</code></footer>
 </div></body></html>

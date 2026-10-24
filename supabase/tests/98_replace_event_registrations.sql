@@ -71,9 +71,11 @@ SELECT results_eq(
   $$VALUES (2)$$,
   'REG.04 after the refusals the target''s entries are untouched');
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is(fn_replace_event_registrations('PPW9-2025-2026', (SELECT j FROM reg_rows)),
           '{"deleted": 2, "inserted": 3}'::JSONB,
   'REG.05 the target''s entries for the event are replaced by PROD''s');
+-- pgt-ignore-end typecheck
 
 SELECT results_eq(
   $$SELECT r.txt_surname, r.int_birth_year::INT, r.arr_weapons::TEXT, r.txt_ftl_name, r.txt_club, r.id_fencer

@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- M1: Database Foundation & Season Lifecycle — Acceptance Tests
 -- =============================================================================

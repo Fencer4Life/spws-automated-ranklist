@@ -14,6 +14,12 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist-ce',
+    // A size budget, not a silencer. This build is ONE file by contract (the
+    // stable name below, and shadow-root styles need the whole graph compiled
+    // together), so Vite's generic 500 kB advice to split cannot apply.
+    // Measured 2026-10-24: main.ce.js 1,226 kB (363 kB gzip). The warning
+    // returns as soon as the bundle grows past the budget.
+    chunkSizeWarningLimit: 1300,
     rollupOptions: {
       // PROD deployment step 1 — a STABLE entry file name.
       //

@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- INTL — an international result keeps the whole source field (ADR-105)
 -- =============================================================================
@@ -59,6 +60,7 @@ BEGIN
   END LOOP;
 END $fx$;
 
+-- pgt-ignore-start typecheck: temp tables/views this file creates; checker substitutes literals for a pg_temp helper's parameters (the checker sees only the live schema)
 CREATE FUNCTION pg_temp.id(p_k TEXT) RETURNS INT LANGUAGE sql AS $$
   SELECT v FROM intl_ids WHERE k = p_k;
 $$;
@@ -70,6 +72,7 @@ CREATE FUNCTION pg_temp.two_poles(p_places INT[]) RETURNS JSONB LANGUAGE sql AS 
                    ORDER BY i)
     FROM generate_subscripts(p_places, 1) AS i;
 $$;
+-- pgt-ignore-end typecheck
 
 -- The error text of a statement, or 'OK' when it runs.
 CREATE FUNCTION pg_temp.err(p_sql TEXT) RETURNS TEXT LANGUAGE plpgsql AS $$
@@ -82,6 +85,7 @@ END $$;
 
 -- A draft commit of one joint-pool sibling holding ``p_rows`` rows whose draft
 -- N is ``p_n``; returns the committed N.
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.commit_sibling(p_event TEXT, p_code TEXT, p_type TEXT, p_n INT, p_places INT[])
 RETURNS TEXT LANGUAGE plpgsql AS $dc$
 DECLARE v_run UUID := gen_random_uuid(); v_td INT; v_out TEXT;
@@ -102,10 +106,12 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $dc$;
+-- pgt-ignore-end plpgsql_check
 
 -- =============================================================================
 -- INTL.RPC.01-02 — the commit's joint-sibling recount is domestic only
 -- =============================================================================
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.commit_sibling('pew_event', 'INTL-PEW-DRAFT', 'PEW', 60, ARRAY[31, 48]), '60',
   'INTL.RPC.01 an international joint sibling keeps its source N (60), not the 2 Poles it holds');
 
@@ -122,7 +128,9 @@ SELECT ok(pg_temp.err(format('SELECT fn_ingest_tournament_results(%s, %L::jsonb,
 SELECT ok(pg_temp.err(format('SELECT fn_ingest_tournament_results(%s, %L::jsonb, 60)',
             pg_temp.id('pew_live'), pg_temp.two_poles(ARRAY[31, 61]))) LIKE '%exceeds the source bracket%',
   'INTL.RPC.04 an international place above its source N is refused');
+-- pgt-ignore-end typecheck
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.ingest_ok() RETURNS TEXT LANGUAGE plpgsql AS $$
 DECLARE v_out TEXT;
 BEGIN
@@ -136,10 +144,14 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.ingest_ok(), '60|31,48',
   'INTL.RPC.05 an international write stores the source N and each Pole''s own place');
+-- pgt-ignore-end typecheck
 
+-- pgt-ignore-start plpgsql_check: pg_temp helpers this file creates (plpgsql_check sees only the live schema)
 CREATE FUNCTION pg_temp.domestic_fallback() RETURNS TEXT LANGUAGE plpgsql AS $$
 DECLARE v_out TEXT;
 BEGIN
@@ -149,9 +161,12 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   RETURN 'ERROR: ' || SQLERRM;
 END $$;
+-- pgt-ignore-end plpgsql_check
 
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(pg_temp.domestic_fallback(), '3',
   'INTL.RPC.06 a domestic write without a count still stores its rows as N, as before');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

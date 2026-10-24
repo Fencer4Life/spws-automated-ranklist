@@ -1,3 +1,4 @@
+-- pgt-ignore-all lint/safety: pgTAP runs this file in one rolled-back transaction on LOCAL/CI, never on CERT/PROD
 -- =============================================================================
 -- T8.2: Calendar API View — Acceptance Tests
 -- =============================================================================
@@ -374,8 +375,10 @@ END;
 $t824$;
 SELECT pass('8.24: fn_update_event persists url_entry_list (set + clear); vw_calendar exposes it');
 
--- FTLDEL-DB-03 — the EXISTING fn_update_event is the organizer-email write
--- path. NULL means legacy caller/no-change; a trimmed value sets; '' clears.
+-- FR121.ORGMAIL.01 (was FTLDEL-DB-03) — fn_update_event keeps its organizer-email
+-- parameter although the column is retired (ADR-080 amendment 2026-10-24):
+-- NULL leaves it unchanged, which is what the admin form relies on now that it
+-- no longer sends the parameter; a trimmed value sets; '' clears.
 DO $ftldel_db03$
 DECLARE
   v_eid INT := (SELECT id_event FROM tbl_event WHERE txt_code = 'CAL-TEST-1');
@@ -392,6 +395,18 @@ BEGIN
     RAISE EXCEPTION 'organizer email was not trimmed/persisted';
   END IF;
 
+  -- The admin form's call shape: the parameter omitted, so it defaults to NULL.
+  PERFORM fn_update_event(
+    v_eid, 'Calendar Test Event 1', 'Warszawa', '2024-11-15'::DATE, '2024-11-16'::DATE,
+    NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
+    NULL, NULL::DATE, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL
+  );
+  IF (SELECT txt_organizer_email FROM tbl_event WHERE id_event = v_eid)
+       IS DISTINCT FROM 'organizer@example.org' THEN
+    RAISE EXCEPTION 'an omitted organizer email must leave the column unchanged';
+  END IF;
+
   PERFORM fn_update_event(
     v_eid, 'Calendar Test Event 1', 'Warszawa', '2024-11-15'::DATE, '2024-11-16'::DATE,
     NULL, 'POL', NULL, NULL, NULL::NUMERIC, NULL, NULL, NULL::enum_weapon_type[],
@@ -404,7 +419,7 @@ BEGIN
   END IF;
 END;
 $ftldel_db03$;
-SELECT pass('FTLDEL-DB-03: fn_update_event trims, persists and clears organizer email');
+SELECT pass('FR121.ORGMAIL.01: fn_update_event trims, persists, keeps on NULL and clears organizer email');
 
 -- 8.25 — txt_entry_fee_currency reaches the public registration page.
 -- Regression for the 2026-09-02 defect: the column has existed on tbl_event since

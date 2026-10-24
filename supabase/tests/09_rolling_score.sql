@@ -152,6 +152,7 @@ INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, enum_gender
 -- ---- EPEE/M lane (TSTMAIN): the rich rolling scenario -------------------
 -- PREV results. Positions PPW1+PPW3 will be "completed" in CURR (so their prev
 -- is suppressed); PPW2, PPW4, MPW, IMEW have no current result (so they carry).
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT pg_temp.mk('PPW1-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW1-V2-M-EPEE-TST-PREV', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 3, 20);
 SELECT pg_temp.mk('PPW2-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW2-V2-M-EPEE-TST-PREV', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 2, 18);
 SELECT pg_temp.mk('PPW4-TST-PREV', pg_temp.sid('TST-PREV'), 'COMPLETED', 'PPW4-V2-M-EPEE-TST-PREV', 'PPW', 'EPEE', 'M', 'V2', pg_temp.fid('TSTMAIN'), 4, 16);
@@ -263,22 +264,26 @@ SELECT is(
     WHERE bool_carried_over = TRUE AND txt_tournament_code LIKE 'PPW5-%'),
   0,
   'R.10: PPW5-prev stops carrying once current PPW5 has a result (SCHEDULED event)');
+-- pgt-ignore-end typecheck
 
 -- R.11 — event deletion when the prior season has nothing to carry. Deleting
 -- TSTDEL''s current PPW3 (no PPW3-prev) leaves the position with no row at all.
 DELETE FROM tbl_result WHERE id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-TST-CURR');
 DELETE FROM tbl_tournament WHERE txt_code = 'PPW3-V2-F-EPEE-TST-CURR';
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
       pg_temp.fid('TSTDEL'), 'EPEE','F','V2', pg_temp.sid('TST-CURR'))
     WHERE txt_tournament_code LIKE 'PPW3-%'),
   0,
   'R.11: current event deleted, no prior to carry — position disappears');
+-- pgt-ignore-end typecheck
 
 -- R.12 — event deletion → position carry-over RESUMES (ADR-021). Deleting
 -- TSTDEL''s current PPW1 un-completes the position, so PPW1-prev now carries.
 DELETE FROM tbl_result WHERE id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-TST-CURR');
 DELETE FROM tbl_tournament WHERE txt_code = 'PPW1-V2-F-EPEE-TST-CURR';
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT COUNT(*)::INT FROM fn_fencer_scores_rolling(
       pg_temp.fid('TSTDEL'), 'EPEE','F','V2', pg_temp.sid('TST-CURR'))
@@ -343,6 +348,7 @@ SELECT is(
     WHERE bool_carried_over = TRUE),
   3,
   'R.18: current IMEW result (SCHEDULED event) blocks carry — IMEW-prev dropped');
+-- pgt-ignore-end typecheck
 
 -- Remove the test IMEW current result so R.19–R.21 see IMEW-prev carrying again.
 DELETE FROM tbl_result WHERE id_tournament = (SELECT id_tournament FROM tbl_tournament WHERE txt_code = 'IMEW-V2-M-EPEE-TST-CURR');
@@ -356,6 +362,7 @@ DELETE FROM tbl_event WHERE txt_code = 'IMEW-TST-CURR';
 -- json_ranking_rules->international, so IMEW carries with no current event.
 
 -- R.19 — carried IMEW reports the SOURCE season code (TST-PREV).
+-- pgt-ignore-start typecheck: pg_temp helpers this file creates (the checker sees only the live schema)
 SELECT is(
   (SELECT txt_source_season_code FROM fn_fencer_scores_rolling(
       pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
@@ -419,6 +426,7 @@ SELECT is(
       pg_temp.fid('TSTMAIN'), 'EPEE','M','V2', pg_temp.sid('TST-CURR'))
     WHERE enum_type = 'MPW' AND bool_carried_over = FALSE),
   'R.24: ranking mpw_score = current-season MPW (carried no longer double-counts)');
+-- pgt-ignore-end typecheck
 
 SELECT * FROM finish();
 ROLLBACK;

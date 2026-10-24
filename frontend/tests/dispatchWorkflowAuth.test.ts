@@ -3,7 +3,8 @@
 // The Edge Function shipped with `verify_jwt = true` and a hard-coded workflow
 // allowlist, but never inspected WHO was calling. verify_jwt is satisfied by
 // the public anon key — which ships in the frontend bundle — so anyone could
-// dispatch promote-season.yml or ftl-seed.yml against PROD. Verified live on
+// dispatch promote-season.yml, or the e-mail delivery workflow allowlisted at
+// the time (removed 2026-10-24, ADR-080 amendment), against PROD. Verified live on
 // CERT and PROD 2026-07-23: the anon key reached handler logic and returned
 // 400 invalid_workflow, not 401.
 //

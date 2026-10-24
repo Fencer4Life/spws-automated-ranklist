@@ -297,6 +297,8 @@ members, and all eight now carry the setting:
 `promote-season.yml` (workflow-level), `promote.yml` (workflow-level),
 `pzsz-sync.yml::promote-calendar`, `recompute-drain-prod.yml::drain`.
 
+*(2026-10-24: `ftl-seed.yml::deadline-sweep` is no longer a member; the workflow is deleted with the e-mail delivery — [ADR-080](080-clean-roster-ftl-seeding.md) amendment 2026-10-24.)*
+
 If `queue: max` proves unavailable on this runner it fails as a workflow validation error
 on the first run — loudly, immediately, cheap to detect. The fallback is a 15-minute
 stagger (`45 5 * * *`), which costs nothing real.

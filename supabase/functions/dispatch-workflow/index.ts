@@ -41,23 +41,27 @@ const corsHeaders = {
   "Vary": "Origin",
 }
 
-// Phase 5.5 (ADR-061): added phase5-event-runner.yml + regen-report.yml so
-// the admin UI's "Stage event" button and the alias-mutation regen cascade
-// can dispatch via this same allowlist. GAS dispatches directly with its own
-// PAT and bypasses this allowlist (different auth surface).
+// Phase 5.5 (ADR-061): added phase5-event-runner.yml + regen-report.yml.
+// regen-report.yml is dispatched by the alias-mutation regen cascade; no
+// screen dispatches phase5-event-runner.yml today (it is started by hand).
+// GAS dispatches directly with its own PAT and bypasses this allowlist
+// (different auth surface).
+//
+// No e-mail delivery workflow belongs here: outbound e-mail was removed
+// (ADR-080 amendment 2026-10-24), and python/tests/test_no_outbound_email.py
+// fails if one is added.
 const ALLOWED_WORKFLOWS = new Set([
   "populate-urls.yml",
   "scrape-tournament.yml",
   "phase5-event-runner.yml",
   "regen-report.yml",
-  // N13.6: NEW-pipeline from-URL re-ingest (keep-rule + source overrides) — the
-  // "Re-ingest event" button in the event accordion dispatches this.
+  // N13.6: NEW-pipeline from-URL re-ingest (keep-rule + source overrides).
+  // frontend/src/lib/api.ts reingestEvent() dispatches it; no screen calls
+  // that function today, so the Telegram `ingest` command is the route in use.
   "ingest-event.yml",
   // ADR-077: SeasonManager "⬆ Promote to PROD" / "Remove from PROD" — promote a
   // childless season skeleton CERT→PROD (or delete it), server-side, no PROD PAT.
   "promote-season.yml",
-  // ADR-080 §5: EventManager organizer delivery button.
-  "ftl-seed.yml",
 ])
 
 Deno.serve(async (req) => {

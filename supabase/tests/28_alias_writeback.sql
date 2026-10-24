@@ -59,6 +59,7 @@ $fix$;
 
 
 -- ===== 28.3 — appends to existing array =====
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_update_fencer_aliases(
   (SELECT id_fencer FROM tbl_fencer WHERE txt_first_name='F2-Existing' AND txt_surname='ALIAS28'),
   'New Alias'
@@ -73,6 +74,7 @@ SELECT is(
 
 
 -- ===== 28.4 — initializes NULL as ['<alias>'] =====
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_update_fencer_aliases(
   (SELECT id_fencer FROM tbl_fencer WHERE txt_first_name='F1-NullArr' AND txt_surname='ALIAS28'),
   'First Alias'
@@ -87,6 +89,7 @@ SELECT is(
 
 
 -- ===== 28.5 — deduplicates case-insensitively =====
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_update_fencer_aliases(
   (SELECT id_fencer FROM tbl_fencer WHERE txt_first_name='F2-Existing' AND txt_surname='ALIAS28'),
   'EXISTING ALIAS'  -- different case from existing 'Existing Alias'
@@ -101,6 +104,7 @@ SELECT is(
 
 
 -- ===== 28.6 — trims whitespace =====
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_update_fencer_aliases(
   (SELECT id_fencer FROM tbl_fencer WHERE txt_first_name='F3-Whitespace' AND txt_surname='ALIAS28'),
   '  Padded Alias  '
@@ -115,6 +119,7 @@ SELECT is(
 
 
 -- ===== 28.7 — empty alias is no-op =====
+-- pgt-ignore syntax: psql \gset meta-command; pg_prove runs this file through psql
 SELECT fn_update_fencer_aliases(
   (SELECT id_fencer FROM tbl_fencer WHERE txt_first_name='F3-Whitespace' AND txt_surname='ALIAS28'),
   '   '

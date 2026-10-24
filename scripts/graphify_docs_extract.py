@@ -25,6 +25,7 @@ that is free: which document talks about which file, ADR, and section.
 Every edge is only emitted when its target already exists in the graph, so a
 mention of a path that was never indexed produces nothing rather than a ghost.
 """
+
 from __future__ import annotations
 
 import json
@@ -36,8 +37,21 @@ from pathlib import Path
 # Only paths with one of these suffixes are treated as source references. A
 # bare word with a dot in it ("e.g", "v0.2") must never become an edge.
 SOURCE_SUFFIXES = (
-    "ts", "tsx", "js", "mjs", "svelte", "py", "sql", "md", "html",
-    "json", "sh", "yml", "yaml", "toml", "css",
+    "ts",
+    "tsx",
+    "js",
+    "mjs",
+    "svelte",
+    "py",
+    "sql",
+    "md",
+    "html",
+    "json",
+    "sh",
+    "yml",
+    "yaml",
+    "toml",
+    "css",
 )
 PATH_RE = re.compile(
     r"(?<![\w./-])((?:[\w.-]+/)+[\w.-]+\.(?:" + "|".join(SOURCE_SUFFIXES) + r"))(?![\w/])"
@@ -186,36 +200,60 @@ def extract_docs(
     def add_edge(src: str, tgt: str, relation: str, source_file: str) -> None:
         if tgt == src or (tgt not in known and tgt not in seen_nodes and tgt not in batch_ids):
             return
-        if any(e["source"] == src and e["target"] == tgt and e["relation"] == relation
-               for e in edges):
+        if any(
+            e["source"] == src and e["target"] == tgt and e["relation"] == relation for e in edges
+        ):
             return
-        edges.append({
-            "source": src, "target": tgt, "relation": relation,
-            "confidence": "EXTRACTED", "confidence_score": 1.0,
-            "source_file": source_file, "source_location": None, "weight": 1.0,
-        })
+        edges.append(
+            {
+                "source": src,
+                "target": tgt,
+                "relation": relation,
+                "confidence": "EXTRACTED",
+                "confidence_score": 1.0,
+                "source_file": source_file,
+                "source_location": None,
+                "weight": 1.0,
+            }
+        )
 
     for path in docs:
         rel = str(path.resolve().relative_to(root))
         doc_id = node_id_for_path(rel)
         title, headings, text = _parse(path)
 
-        add_node({
-            "id": doc_id, "label": title, "file_type": "document",
-            "source_file": rel, "source_location": None, "source_url": None,
-            "captured_at": None, "author": None, "contributor": None,
-        })
+        add_node(
+            {
+                "id": doc_id,
+                "label": title,
+                "file_type": "document",
+                "source_file": rel,
+                "source_location": None,
+                "source_url": None,
+                "captured_at": None,
+                "author": None,
+                "contributor": None,
+            }
+        )
 
         for h in headings:
             slug = _slug(h)
             if not slug:
                 continue
             sec_id = f"{doc_id}_{slug}"
-            add_node({
-                "id": sec_id, "label": h, "file_type": "concept",
-                "source_file": rel, "source_location": None, "source_url": None,
-                "captured_at": None, "author": None, "contributor": None,
-            })
+            add_node(
+                {
+                    "id": sec_id,
+                    "label": h,
+                    "file_type": "concept",
+                    "source_file": rel,
+                    "source_location": None,
+                    "source_url": None,
+                    "captured_at": None,
+                    "author": None,
+                    "contributor": None,
+                }
+            )
             add_edge(doc_id, sec_id, "references", rel)
 
         # Literal repo-relative source paths written in the prose.
@@ -263,8 +301,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     text = json.dumps(result, ensure_ascii=False, indent=2)
     if args.out:
         args.out.write_text(text, encoding="utf-8")
-        print(f"docs-extract: {len(result['nodes'])} nodes, {len(result['edges'])} edges "
-              f"-> {args.out} (0 tokens)")
+        print(
+            f"docs-extract: {len(result['nodes'])} nodes, {len(result['edges'])} edges "
+            f"-> {args.out} (0 tokens)"
+        )
     else:
         print(text)
     return 0
