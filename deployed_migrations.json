@@ -229,8 +229,8 @@
     "schema_fingerprint": "f778e5755928c43064b749ed45f06e8c"
   },
   "prod": {
-    "last_updated": "2026-10-22T05:25:25Z",
-    "last_sha": "1347ec1dc0a2a369de03713976cb5e3fa5058938",
+    "last_updated": "2026-10-24T18:49:17Z",
+    "last_sha": "d1c7274784da21c636f5f06bdcb71c1ead3eb0f7",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -451,8 +451,10 @@
       "20261017000003_promote_apply_source_slots.sql",
       "20261018000001_equal_totals_share_place.sql",
       "20261021000001_pzsz_calendar_provenance.sql",
-      "20261021000002_pzsz_mirror_address_overwrite.sql"
+      "20261021000002_pzsz_mirror_address_overwrite.sql",
+      "20261024000001_remove_ftl_seed_email_delivery.sql",
+      "20261024000002_fix_evf_create_ambiguous_id_event.sql"
     ],
-    "schema_fingerprint": "274acedc8b3f28401ae5844211d9dab0"
+    "schema_fingerprint": "f778e5755928c43064b749ed45f06e8c"
   }
 }
