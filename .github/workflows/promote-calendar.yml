@@ -37,7 +37,8 @@ jobs:
     permissions:
       contents: write
     # Serialise with every other prod-write member (promote.yml, promote-season,
-    # event-close, the parity sweep, and the other syncs' mirror calls). The
+    # event-close, the parity sweep, the PROD recompute drain, and the other
+    # syncs' calls of this workflow). The
     # group is repo-global by name, so centralising it here keeps the guarantee
     # the three old copies each carried.
     concurrency:

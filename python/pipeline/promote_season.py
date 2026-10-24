@@ -96,9 +96,10 @@ def promote_season(
     when it isn't one; it is not itself protecting event data, since this
     function never touches events regardless. Live use: 2026-07-14, PROD
     stuck on SPWS-2025-2026 while CERT had already rolled to
-    SPWS-2026-2027 with 62 tournament children, because the EVF sync
-    workflow's calendar-promote guard (correctly) refuses to reconcile
-    events across an active-season mismatch -- this is the one sanctioned
+    SPWS-2026-2027 with 62 tournament children, because the calendar
+    mirror's guard (promote.py --mode calendar, run by promote-calendar.yml
+    after every sync) (correctly) refuses to reconcile events across an
+    active-season mismatch -- this is the one sanctioned
     way to clear that mismatch after the fact.
     """
     _validate_season_code(season_code)

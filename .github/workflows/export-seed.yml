@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Trigger reason (promote/manual)'
+        description: 'Why it runs: manual, or complete / rollback when the Telegram command starts it'
         default: 'manual'
       source:
         description: 'Source environment'

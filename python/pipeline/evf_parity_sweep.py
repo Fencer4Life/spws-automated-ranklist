@@ -168,11 +168,14 @@ def run_sweep(
 
 
 def _default_fetch_evf_api(event: dict) -> list[dict]:
-    """Probe the EVF API per-event and shape into [{name, pos, points}] rows.
+    """Fetch the event's url_event, read it as EVF results JSON, and shape
+    the rows into [{name, pos, points}] with evf_results.parse_results.
 
-    Real impl reuses python.scrapers.evf_results.parse_results, which knows
-    how to build the EVF API URL from event_code/dt_start. Empty list when
-    EVF hasn't yet published for this event.
+    It builds no EVF API URL: it GETs url_event as stored, which for an EVF
+    event is the organiser's page, not JSON, so the parse fails and it
+    returns [] as it does for any error. The sweep therefore compares
+    nothing today; what it should do is decision W2 #5 of
+    doc/plans/github-actions-workflows-page-2026-10-24.html.
     """
     url = (event or {}).get("url_event")
     if not url:

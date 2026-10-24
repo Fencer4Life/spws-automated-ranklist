@@ -2,7 +2,7 @@ name: EVF Calendar + Results Sync
 
 on:
   schedule:
-    # Daily at 06:00 UTC. The --filter-stale flag (passed only on scheduled
+    # Daily at 06:23 UTC. The --filter-stale flag (passed only on scheduled
     # runs) skips events that already have results in CERT, so the daily
     # cadence is cheap. Manual workflow_dispatch keeps full-scrape semantics.
     - cron: '23 6 * * *'   # off the hour (WFCRON.01); same minute as pzsz-sync.yml
@@ -22,7 +22,8 @@ on:
 # ADR-083: least-privilege GITHUB_TOKEN. Default repo scope is far wider than
 # any job here needs; an injected step should not inherit write access.
 permissions:
-  contents: write   # commits + pushes the CERT->PROD reconcile run log
+  contents: read   # checkout only; the promote-calendar job grants itself write for
+                   # the reconcile-log push (WFPERM.01)
 
 jobs:
   sync:

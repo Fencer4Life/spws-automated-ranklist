@@ -1,7 +1,10 @@
 """
 Schema-driven monolithic PROD export (ADR-036).
 
-Generates a single timestamped SQL file that recreates all data.
+Generates a single timestamped SQL file that recreates all data. The file is
+always named supabase/seed_prod_<date>.sql and becomes seed_prod_latest.sql,
+whichever project --ref names: export-seed.yml with source=cert writes CERT's
+data under that name (question E1 on the W2 sign-off sheet).
 Discovers columns at runtime — future-proof.
 
 Usage:

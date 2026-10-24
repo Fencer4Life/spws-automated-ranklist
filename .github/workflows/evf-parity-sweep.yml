@@ -4,10 +4,15 @@ name: EVF Parity Sweep
 # ENGINE_COMPUTED status. PASS → promote to EVF_PUBLISHED, overwrite
 # scores with EVF API verbatim. FAIL → annotate txt_parity_notes.
 # Empty after 30 days → annotate and stop probing.
+#
+# As it stands nothing is ever compared: the fetch reads each event's url_event,
+# the organiser's page rather than EVF's results API, and returns no rows
+# (python/pipeline/evf_parity_sweep.py _default_fetch_evf_api). What the sweep
+# should do is decision W2 #5 of doc/plans/github-actions-workflows-page-2026-10-24.html.
 
 on:
   schedule:
-    # Daily at 04:00 UTC. Cheap — only EVF events at ENGINE_COMPUTED
+    # Daily at 04:17 UTC. Cheap — only EVF events at ENGINE_COMPUTED
     # within the last 60 days are probed.
     - cron: '17 4 * * *'   # off the hour (WFCRON.01); same minute as event-close.yml
   workflow_dispatch:
@@ -35,7 +40,7 @@ jobs:
       # queue: max on EVERY member of prod-write. The setting is per-job and
       # GitHub queues only ONE pending job per group, cancelling the pending one
       # when a new job arrives -- so a member without it can silently cancel a
-      # sibling's pending promote. Rationale in full: pzsz-sync.yml.
+      # sibling's pending promote. Enforced and explained by python/tests/test_workflow_lanes.py (WFLANE.01).
       queue: max
     steps:
       - uses: actions/checkout@v5

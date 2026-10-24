@@ -26,14 +26,16 @@ on:
 permissions:
   contents: write
 
-# Serialise PROD writes with promote.yml + the evf-sync calendar-promote job.
+# Serialise PROD writes with every other prod-write member: promote.yml,
+# promote-calendar.yml (the syncs' mirror), event-close.yml, evf-parity-sweep.yml
+# and recompute-drain-prod.yml.
 concurrency:
   group: prod-write
   cancel-in-progress: false
   # queue: max on EVERY member of prod-write. GitHub queues only ONE pending run
   # per group, cancelling the pending one when a new one arrives -- so a member
   # without it can silently cancel a sibling's pending promote. Cancelled is not
-  # failed, so nothing alerts. Rationale in full: pzsz-sync.yml.
+  # failed, so nothing alerts. Enforced and explained by python/tests/test_workflow_lanes.py (WFLANE.01).
   queue: max
 
 jobs:

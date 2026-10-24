@@ -61,3 +61,30 @@ def test_WFCRON_02_start_list_first_and_final_flags_name_its_own_crons():
     workflow = (WORKFLOWS / "pzsz-start-lists.yml").read_text(encoding="utf-8")
     assert f'"{crons[0]}")  FLAGS="--first-run"' in workflow
     assert f'"{crons[-1]}") FLAGS="--final-run"' in workflow
+
+
+def _cron_times(cron: str) -> set[str]:
+    """Every HH:MM UTC a cron with plain minute and hour lists fires at."""
+    minute, hour = cron.split()[:2]
+    if not re.fullmatch(r"[\d,|]+", minute) or not re.fullmatch(r"[\d,|]+", hour):
+        return set()
+    return {
+        f"{int(h):02d}:{int(m):02d}"
+        for h in re.split(r"[,|]", hour)
+        for m in re.split(r"[,|]", minute)
+    }
+
+
+def test_WFCRON_03_a_time_a_workflow_names_is_one_of_its_crons():
+    """WFCRON.01 moved every cron off the hour; three comments kept the old hour
+    ("Daily at 06:00 UTC" over a '23 6 * * *' cron). Any HH:MM UTC a scheduled
+    workflow names must be a time one of its own crons fires at."""
+    stale: list[str] = []
+    for name, crons in _crons().items():
+        times: set[str] = set().union(*(_cron_times(c) for c in crons))
+        text = (WORKFLOWS / name).read_text(encoding="utf-8")
+        for named in re.findall(r"\b(\d{1,2}:\d{2}) UTC\b", text):
+            hour, minute = named.split(":")
+            if f"{int(hour):02d}:{minute}" not in times:
+                stale.append(f"{name}: {named} UTC")
+    assert stale == []

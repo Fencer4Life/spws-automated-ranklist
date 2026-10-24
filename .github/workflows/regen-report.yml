@@ -5,8 +5,9 @@ name: Regen Verdict Report (.md)
 # document to the operator.
 #
 # Triggered by:
-#   * Admin UI alias-mutation cascade → dispatch-workflow edge fn (per ADR-061)
-#   * Telegram /regen <event_code> command from GAS (per ADR-061)
+#   * Admin → Fencers → Aliases, after "Create new fencer" → dispatch-workflow
+#     edge fn (per ADR-061). No Telegram command starts it (withdrawn,
+#     ADR-061 amendment 2026-10-03).
 #   * Manual: gh workflow run regen-report.yml -f event_code=<X> -f target=<env>
 #
 # Security: all user-controlled inputs (event_code, target) are validated

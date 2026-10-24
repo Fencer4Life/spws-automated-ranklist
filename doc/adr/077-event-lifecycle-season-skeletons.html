@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="077-event-lifecycle-season-skeletons.md">
-<meta name="adr-source-sha256" content="bd612a8b9dab10dd06be5e4dd2e56aaea6e15035a689985c799966292716e90b">
+<meta name="adr-source-sha256" content="5db8cf9f6ac295b988bf2bf93fce01753a8cac6c669028c98c57c4e8f9a1c789">
 <title>ADR-077 · Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 077</p><h1>Event lifecycle, season-skeleton provisioning &amp; CERT→PROD calendar promotion</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-07-11, 2026-08-28 and 2026-10-03; the last by ADR-108: results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule) ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">321 lines</dd></div></dl></aside>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-07-11, 2026-08-28 and 2026-10-03; the last by ADR-108: results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule) ·</dd></div><div><dt>Date</dt><dd class="">2026-06-28</dd></div><div><dt>Source</dt><dd class=""><code>077-event-lifecycle-season-skeletons.md</code></dd></div><div><dt>Length</dt><dd class="">323 lines</dd></div></dl></aside>
   <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-07-11, 2026-08-28 and 2026-10-03; the last by ADR-108: results are replayed, IN_PROGRESS lasts, COMPLETED is set by rule) · <strong>Date:</strong> 2026-06-28</p>
 <p><strong>Relates to:</strong> <strong>narrows</strong> ADR-050's supersession of <strong>ADR-025</strong> to its <em>ingestion mechanism</em> only
 (the event-status lifecycle + Telegram admin surface live on <strong>here</strong>); <strong>ADR-044</strong> (wizard introduced
@@ -469,7 +469,9 @@ when <code>dualEnv</code>). The button is <strong>computed from PROD presence + 
 </code></pre>
 <ul>
 <li><strong>No PROD write credentials in the browser</strong> — reuse the existing <code>requestDispatch</code> → <code>dispatch-workflow</code>
-Edge Function path (same as the Re-ingest + regen-report buttons).</li>
+Edge Function path (same as the regen-report dispatch). <em>(Note 2026-10-25: this
+also named a Re-ingest button; no admin screen dispatches <code>ingest-event.yml</code>, which
+the Telegram <code>ingest</code> command starts.)</em></li>
 <li><strong>Create-flow convenience (optional):</strong> after the wizard commits on CERT, surface the same
 <code>⬆ Promote to PROD</code> affordance inline — one-shot if the admin wants — but the <strong>default lands on CERT
 for review</strong>; never &quot;create on both by default&quot; (that would break id-identity + skip the review gate).</li>
@@ -575,5 +577,5 @@ its coverage migrated to <code>51_prod_event_reconcile.sql</code> 51.1c. See ADR
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="076-pool-round-discard-and-listing-keep-rule.html">← ADR-076: Overlapping FTL listings — discard pool-only rounds, keep one listing per category, flag duplicates (UI-resolvable)</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="078-gdpr-data-handling.html">→ ADR-078: GDPR Data Handling &amp; Data-Subject Rights</a></nav>
-<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>bd612a8b9dab10dd06be5e4dd2e56aaea6e15035a689985c799966292716e90b</code></footer>
+<footer class="foot">Generated from <code>077-event-lifecycle-season-skeletons.md</code> · source SHA-256 <code>5db8cf9f6ac295b988bf2bf93fce01753a8cac6c669028c98c57c4e8f9a1c789</code></footer>
 </div></body></html>

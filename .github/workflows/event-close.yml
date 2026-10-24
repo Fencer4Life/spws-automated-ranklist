@@ -1,15 +1,15 @@
 name: Daily Event Close
 
-# ADR-108 §7 (decision P4b A): the last promote of a domestic event usually runs
-# on its final day, before the end date has passed, so the event stays
+# ADR-108 §7 (decision P4b A): the last promote of an event usually runs on
+# its final day, before the end date has passed, so the event stays
 # IN_PROGRESS. Every morning this completes, on CERT and then on PROD, each
-# domestic event of the active season still IN_PROGRESS whose end date has
+# event of the active season, of every organizer (ADR-113), still IN_PROGRESS whose end date has
 # passed, once every listing is final, the organiser has published nothing new
 # since the CERT run, and both environments hold that run's result. Otherwise it
 # changes nothing and says on Telegram what to do. Idempotent; a failure alerts.
 on:
   schedule:
-    # 04:00 UTC is 05:00 or 06:00 in Warsaw: the day after an event ends.
+    # 04:17 UTC is 05:17 or 06:17 in Warsaw: the day after an event ends.
     - cron: '17 4 * * *'   # off the hour: GitHub delays runs at the start of an hour (WFCRON.01)
   workflow_dispatch:
     inputs:
@@ -25,7 +25,7 @@ permissions:
 concurrency:
   group: prod-write
   cancel-in-progress: false
-  # queue: max on EVERY member of prod-write (rationale: pzsz-sync.yml).
+  # queue: max on EVERY member of prod-write. Enforced and explained by python/tests/test_workflow_lanes.py (WFLANE.01).
   queue: max
 
 jobs:

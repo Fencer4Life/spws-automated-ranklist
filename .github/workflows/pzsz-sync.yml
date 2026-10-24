@@ -1,9 +1,10 @@
 name: PZSz Senior Calendar Sync
 
 # Polish veterans also enter senior national competitions run by Polski Zwiazek
-# Szermierczy. This scrapes the PPS and MPS calendar into CERT and promotes it
-# to PROD. Scoring those results is a separate deliverable; nothing here
-# anticipates it.
+# Szermierczy. This scrapes the PPS and MPS calendar into CERT, and
+# promote-calendar.yml mirrors it to PROD. Their results reach CERT through
+# ingest-event.yml and PROD through promote.yml like every organizer's
+# (ADR-111, ADR-113); this workflow carries the calendar only.
 #
 # WHY A SEPARATE WORKFLOW AND NOT A JOB INSIDE evf-sync.yml. A job there would
 # share one run identity: a single red/green, one re-run button, and a set of

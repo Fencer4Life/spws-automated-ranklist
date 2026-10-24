@@ -6,13 +6,15 @@ as people half their age. The calendar carried SPWS (PPW/MPW), EVF (PEW) and FIE
 (MEW/MSW/PSW) events and nothing at all from Polski Zwiazek Szermierczy, so those
 outings were invisible to the system. This module makes them readable.
 
-It is pure: every function here takes text or dicts and returns text or dicts.
-Nothing in it touches our database. `fetch_series` is the single exception and
-speaks only to the public pzszerm.pl listing.
+Its parsers are pure: text or dicts in, text or dicts out, and nothing here
+touches our database. `fetch_series` and `collect_season_candidates` read the
+public listing over plain HTTP; pzsz_sync.py does not use them. The site
+answers plain HTTP with a JavaScript check, so the sync reads the same pages
+in a headless browser (pzsz_browser.py, ADR-116) and parses them here.
 
 Scope is PPS (Puchar Polski Seniorow) and MPS (Mistrzostwa Polski Seniorow) in
-the Seniorzy (S) age category. Scoring those results is a separate deliverable
-and nothing here anticipates it.
+the Seniorzy (S) age category. This module reads their calendar only; their
+results are ingested and promoted like every organizer's (ADR-111, ADR-113).
 
 WHY THIS IS NOT evf_calendar.py WITH A FLAG. That module's length is EVF-specific
 pathology -- invitation-PDF weapon archaeology, slug dedup, future-COMPLETED
@@ -24,9 +26,10 @@ THE FINDING THAT SHAPES EVERYTHING HERE. The listing caps at 70 rows with no
 pagination, no error, and no outward sign. Different filters return entirely
 different 70-row windows: the default view renders descending and its earliest
 row is 14.11.2026, so simply reading it would have silently dropped every round I
-event of 2026/2027. Any response of exactly 70 rows is presumed truncated and
-raises -- see `assert_not_truncated`, which is the one assertion that stops this
-scraper failing quietly.
+event of 2026/2027. A response of 70 rows or more is presumed truncated:
+`assert_not_truncated` raises on it in the HTTP path, and the sync, which
+cannot narrow its queries further, uses the page but warns in its digest that
+events missing from it are not judged gone (pzsz_sync.discover_listing).
 """
 
 from __future__ import annotations

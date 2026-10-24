@@ -51,3 +51,24 @@ def test_WFINJ_01_no_script_expands_a_workflow_input():
         if INPUT_EXPR.search(step["run"])
     ]
     assert offenders == []
+
+
+def _pushes(job: dict) -> bool:
+    runs = " ".join(str(step.get("run", "")) for step in job.get("steps") or [])
+    return "git push" in runs or "commit-tracking.sh" in runs
+
+
+def test_WFPERM_01_write_access_at_the_top_only_where_a_job_uses_it():
+    """WFPERM.01 (ADR-083, least privilege): a top-level `contents: write` reaches every
+    job that sets no permissions of its own, so it is there only if such a job pushes.
+    evf-sync.yml kept it for "the reconcile run log", whose push had moved into the
+    promote-calendar job, which grants itself write."""
+    offenders: list[str] = []
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if (spec.get("permissions") or {}).get("contents") != "write":
+            continue
+        inheriting = [j for j in (spec.get("jobs") or {}).values() if "permissions" not in j]
+        if not any(_pushes(job) for job in inheriting):
+            offenders.append(path.name)
+    assert offenders == []

@@ -143,7 +143,8 @@ class DbConnector:
 
     def set_event_url_event(self, id_event: int, url_event: str) -> None:
         """Persist an admin-supplied event URL to tbl_event.url_event (N15 — the
-        Telegram `ingest <prefix> <url>` command provides the FTL eventSchedule URL).
+        url_event input of ingest-event.yml, given by hand; the Telegram `ingest`
+        command never sends a URL).
         Admin-managed write; url_event stays operator-entered, never auto-scraped."""
         (
             self._sb.table("tbl_event")
@@ -461,9 +462,9 @@ class DbConnector:
 
         Claims every row that is not yet DONE — both PENDING (newly enqueued) and
         CLAIMED. A row can only still be CLAIMED at the *start* of a drain if a
-        previous worker died mid-run: CERT drains are serialised (the
-        `recompute-drain` workflow's `cert-recompute` concurrency group runs one at
-        a time, and the worker debounces 120s), so no live worker owns a CLAIMED
+        previous worker died mid-run: drains are serialised (CERT's in the
+        `cert-write` lane, PROD's in `prod-write`, one job at a time, and the worker
+        debounces 120s), so no live worker owns a CLAIMED
         row when a new drain begins. Reclaiming it is therefore deterministic crash
         recovery — no time-based heuristic.
 
