@@ -5,7 +5,7 @@ on:
     # Daily at 06:00 UTC. The --filter-stale flag (passed only on scheduled
     # runs) skips events that already have results in CERT, so the daily
     # cadence is cheap. Manual workflow_dispatch keeps full-scrape semantics.
-    - cron: '0 6 * * *'
+    - cron: '23 6 * * *'   # off the hour (WFCRON.01); same minute as pzsz-sync.yml
   workflow_dispatch:
     inputs:
       mode:

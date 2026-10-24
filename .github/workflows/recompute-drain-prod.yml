@@ -20,7 +20,7 @@ on:
   schedule:
     # Same cadence as the CERT drain. Combined with the worker's 120s debounce, a
     # single edit or a multi-fencer DEDUP_SWEEP coalesces into one rerun per event.
-    - cron: '*/15 * * * *'
+    - cron: '7,22,37,52 * * * *'   # every 15 min, off the hour (WFCRON.01)
   workflow_dispatch:
     inputs:
       debounce:

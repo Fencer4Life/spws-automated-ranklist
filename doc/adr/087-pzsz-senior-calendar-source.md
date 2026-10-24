@@ -273,7 +273,7 @@ a toggle.
 
 ### 9 · A separate workflow, the same cron, and `queue: max` across `prod-write`
 
-`.github/workflows/pzsz-sync.yml` runs at `'0 6 * * *'`, the same minute as
+`.github/workflows/pzsz-sync.yml` runs at `'0 6 * * *'` *(since 2026-10-24 `'23 6 * * *'`, still with `evf-sync.yml`, off the start of the hour where GitHub delays scheduled runs; WFCRON.01)*, the same minute as
 `evf-sync.yml`. **Not a job inside `evf-sync.yml`:** a job there shares one run identity —
 a single red/green, one re-run button, one set of EVF-specific `workflow_dispatch` inputs.
 Job-level independence would be real; run-level independence would not, and the run is what

@@ -22,7 +22,7 @@ name: PZSz Senior Calendar Sync
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '23 6 * * *'   # off the hour (WFCRON.01); same minute as evf-sync.yml
   workflow_dispatch:
     inputs:
       dry_run:

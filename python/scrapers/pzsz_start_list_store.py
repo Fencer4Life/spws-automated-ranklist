@@ -506,8 +506,12 @@ def main(argv: list[str] | None = None) -> int:
         help="a saved tournament page, by its PZSz tournament id (repeat for each)",
     )
     cap = sub.add_parser("capture", help="capture every in-window start list to CERT")
-    cap.add_argument("--first-run", action="store_true", help="the day's first run (06:00 Warsaw)")
-    cap.add_argument("--final-run", action="store_true", help="the day's last run (21:00 Warsaw)")
+    cap.add_argument(
+        "--first-run", action="store_true", help="the day's first run (cron 11 5 * * *)"
+    )
+    cap.add_argument(
+        "--final-run", action="store_true", help="the day's last run (cron 11 19 * * *)"
+    )
     args = parser.parse_args(argv)
     if args.command == "capture":
         return _capture_command(args)

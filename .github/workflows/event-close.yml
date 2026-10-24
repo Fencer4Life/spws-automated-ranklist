@@ -10,7 +10,7 @@ name: Daily Event Close
 on:
   schedule:
     # 04:00 UTC is 05:00 or 06:00 in Warsaw: the day after an event ends.
-    - cron: '0 4 * * *'
+    - cron: '17 4 * * *'   # off the hour: GitHub delays runs at the start of an hour (WFCRON.01)
   workflow_dispatch:
     inputs:
       dry_run:

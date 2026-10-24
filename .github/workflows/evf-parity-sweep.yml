@@ -9,7 +9,7 @@ on:
   schedule:
     # Daily at 04:00 UTC. Cheap — only EVF events at ENGINE_COMPUTED
     # within the last 60 days are probed.
-    - cron: '0 4 * * *'
+    - cron: '17 4 * * *'   # off the hour (WFCRON.01); same minute as event-close.yml
   workflow_dispatch:
     inputs:
       max_age_days:

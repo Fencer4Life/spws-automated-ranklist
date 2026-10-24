@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="087-pzsz-senior-calendar-source.md">
-<meta name="adr-source-sha256" content="a41058fd856f8950bf8cee9e2e0e823c460e11eb1190aab9a44c34059935640c">
+<meta name="adr-source-sha256" content="eaf6f3dac2ee213867bdc6749027c6a20d7d2fff2e03aec0d9d45f417abd55b2">
 <title>ADR-087 · PZSz as a fourth event source — Polish national senior events on the calendar</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
@@ -380,7 +380,7 @@ while staying recognisably theirs.</p>
 the default <code>ppw</code> scope — which is the point. A veteran should see them without hunting for
 a toggle.</p>
 <h3 id="9-a-separate-workflow-the-same-cron-and-queue-max-across-prod-write">9 · A separate workflow, the same cron, and <code>queue: max</code> across <code>prod-write</code></h3>
-<p><code>.github/workflows/pzsz-sync.yml</code> runs at <code>'0 6 * * *'</code>, the same minute as
+<p><code>.github/workflows/pzsz-sync.yml</code> runs at <code>'0 6 * * *'</code> <em>(since 2026-10-24 <code>'23 6 * * *'</code>, still with <code>evf-sync.yml</code>, off the start of the hour where GitHub delays scheduled runs; WFCRON.01)</em>, the same minute as
 <code>evf-sync.yml</code>. <strong>Not a job inside <code>evf-sync.yml</code>:</strong> a job there shares one run identity —
 a single red/green, one re-run button, one set of EVF-specific <code>workflow_dispatch</code> inputs.
 Job-level independence would be real; run-level independence would not, and the run is what
@@ -651,5 +651,5 @@ clears.</li>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="086-evf-weapon-evidence-ladder-strict-skip.html">← ADR-086: EVF weapon evidence ladder, strict skip for unannounced stubs, and anchored-code renumbering</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="088-calendar-location-contract.html">→ ADR-088: One location contract for every calendar scraper — city, venue and address</a></nav>
-<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>a41058fd856f8950bf8cee9e2e0e823c460e11eb1190aab9a44c34059935640c</code></footer>
+<footer class="foot">Generated from <code>087-pzsz-senior-calendar-source.md</code> · source SHA-256 <code>eaf6f3dac2ee213867bdc6749027c6a20d7d2fff2e03aec0d9d45f417abd55b2</code></footer>
 </div></body></html>
