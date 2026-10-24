@@ -1,24 +1,34 @@
 #!/usr/bin/env bash
-# ADR-094: skip Release's build/deploy chain when a CI run carried
-# documentation only. release.yml is triggered by `workflow_run`, whose
-# payload has no `before` SHA (unlike `push`, which ci.yml reads for
-# check_docs.py), so this script derives the range itself and writes a
-# single `deploy` boolean to GITHUB_OUTPUT.
+# ADR-094: skip Release's build/deploy chain when everything that changed
+# since PROD last deployed is documentation. release.yml is triggered by
+# `workflow_run`, whose payload has no `before` SHA, so this script derives
+# the range itself and writes a single `deploy` boolean to GITHUB_OUTPUT.
+#
+# The range starts at the commit PROD last deployed, which deploy-prod records
+# in deployed_migrations.json (.prod.last_sha), not at the previous CI run: a
+# code change whose release never ran (red CI, or cancelled while waiting
+# behind a PROD approval) stays in the range until it is deployed (ADR-094
+# amendment 2026-10-24). PROD deploys after CERT, so its commit is the oldest.
 #
 # Fails OPEN by design: anything it cannot classify with confidence deploys.
 # A missed skip costs a routine, low-risk release run; a wrong skip would
 # silently leave a real change stuck on CERT/PROD.
 #
 # Env (all overridable for tests; production values come from the workflow):
-#   RELEASE_GATE_EVENT      github.event_name          (default: workflow_run)
-#   RELEASE_GATE_BASE_SHA   base of the range to diff  (default: workflow_run.before)
-#   RELEASE_GATE_HEAD_SHA   head of the range to diff  (default: workflow_run.head_sha)
-#   GITHUB_OUTPUT           where to write deploy=true|false
+#   RELEASE_GATE_EVENT          github.event_name   (default: workflow_run)
+#   RELEASE_GATE_HEAD_SHA       head of the range   (default: workflow_run.head_sha)
+#   RELEASE_GATE_BASE_SHA       base of the range   (default: .prod.last_sha of the tracking file)
+#   RELEASE_GATE_TRACKING_FILE  the tracking file   (default: deployed_migrations.json)
+#   GITHUB_OUTPUT               where to write deploy=true|false
 set -euo pipefail
 
 event="${RELEASE_GATE_EVENT:-${GITHUB_EVENT_NAME:-workflow_run}}"
-base_sha="${RELEASE_GATE_BASE_SHA:-${GITHUB_EVENT_WORKFLOW_RUN_BEFORE:-}}"
 head_sha="${RELEASE_GATE_HEAD_SHA:-${GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA:-}}"
+tracking="${RELEASE_GATE_TRACKING_FILE:-deployed_migrations.json}"
+base_sha="${RELEASE_GATE_BASE_SHA:-}"
+if [ -z "$base_sha" ] && [ -f "$tracking" ]; then
+    base_sha="$(jq -r '.prod.last_sha // empty' "$tracking" 2>/dev/null || true)"
+fi
 
 deploy() {
     echo "deploy=$1" >>"$GITHUB_OUTPUT"
@@ -38,6 +48,11 @@ fi
 
 if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
     deploy true "release-gate: base commit $base_sha not resolvable — deploying (fail open)"
+    exit 0
+fi
+
+if ! git merge-base --is-ancestor "$base_sha" "$head_sha" 2>/dev/null; then
+    deploy true "release-gate: base commit $base_sha is not an ancestor of $head_sha — deploying (fail open)"
     exit 0
 fi
 

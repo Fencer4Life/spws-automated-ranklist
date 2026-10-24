@@ -177,6 +177,37 @@ paragraph is itself that live proof: a follow-up, docs-only-by-construction
 commit, pushed to observe the gate's actual verdict on `main` with no other
 Release run's tracking commit interleaved.
 
+## Amendment (2026-10-24) — the range starts at the commit PROD last deployed
+
+**Supersedes §2.** Measuring from the previous completed CI run, whatever its
+result, left a gap, found while writing the workflow catalog
+(`doc/plans/github-actions-workflows-page-2026-10-24.html`, W2 #4). Take a
+code change whose release never ran: its CI was red, so the gate skipped it,
+or its release was cancelled while it waited in the `release` lane behind
+another run's PROD approval. If the next push was documentation only, its
+range was documentation only too, so that code was not deployed until the
+next code change or a manual dispatch.
+
+**Decision:** `scripts/release-gate.sh` takes its base from
+`deployed_migrations.json` on `main`: `.prod.last_sha`, the commit
+`deploy-prod` last recorded through `scripts/update-tracking.sh`. PROD deploys
+after CERT, so its commit is the oldest deployed state, and a change stays in
+the range until PROD has it. The gate's "Resolve base commit" step and its
+Actions API call are gone, and so is `release.yml`'s `actions: read`
+permission (§2), which nothing else uses: `actions/deploy-pages` documents
+`pages: write` and `id-token: write` as its minimum.
+
+One fail-open rule joins §3: a base that is not an ancestor of the head
+deploys. That is the case right after the history rewrite of 24 October 2026,
+whose recorded SHA is no longer on `main`; the next release deploys and
+records a valid one.
+
+Tests in `python/tests/test_release_docs_only_gate.py`:
+`test_code_that_never_deployed_is_deployed_by_the_next_docs_only_change`,
+`test_docs_only_change_after_the_last_deploy_skips` and
+`test_base_not_an_ancestor_of_head_fails_open`; the wiring test now asserts
+that `release.yml` reads no CI run history and holds no `actions: read`.
+
 ## Open items
 
 - Whether the same gate should also suppress `evf-sync.yml`/`pzsz-sync.yml`'s

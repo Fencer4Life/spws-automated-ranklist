@@ -210,6 +210,54 @@ def test_empty_diff_fails_open(repo: Path, tmp_path: Path) -> None:
     assert deploy == "true", log
 
 
+def test_base_not_an_ancestor_of_head_fails_open(repo: Path, tmp_path: Path) -> None:
+    """A base off the head's history (a rewritten or foreign commit) proves nothing, even
+    when the two trees differ only in documentation."""
+    root = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-q", "-b", "side")
+    side = _commit(repo, ["doc/side.html"], "side branch, docs only")
+    _git(repo, "checkout", "-q", "main")
+    _git(repo, "reset", "-q", "--hard", root)
+    head = _commit(repo, ["doc/handbook/index.html"], "docs only")
+    deploy, log = _run_gate(repo, tmp_path, **_range_env(side, head))
+    assert deploy == "true", log
+
+
+# ─── Base: the commit PROD last deployed (ADR-094 amendment 2026-10-24) ─────
+
+
+def _record_prod_deploy(repo: Path, sha: str) -> str:
+    """Commit deployed_migrations.json saying PROD last deployed `sha`, as deploy-prod does."""
+    (repo / "deployed_migrations.json").write_text(
+        f'{{"cert": {{"last_sha": "{sha}"}}, "prod": {{"last_sha": "{sha}"}}}}\n'
+    )
+    _git(repo, "add", "deployed_migrations.json")
+    _git(repo, "commit", "-q", "-m", "chore: update PROD tracking [skip ci]")
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def test_code_that_never_deployed_is_deployed_by_the_next_docs_only_change(
+    repo: Path, tmp_path: Path
+) -> None:
+    """PROD deployed X; code A never deployed (its CI red, or its release cancelled while
+    waiting); then a docs-only B. Measured from the last CI run, B's range held only docs
+    and A stayed undeployed. Measured from PROD's last deploy, A is in the range."""
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    _commit(repo, ["python/app.py"], "code A, never deployed")
+    head = _commit(repo, ["doc/handbook/index.html"], "docs B")
+    deploy, log = _run_gate(repo, tmp_path, RELEASE_GATE_HEAD_SHA=head)
+    assert deploy == "true", log
+
+
+def test_docs_only_change_after_the_last_deploy_skips(repo: Path, tmp_path: Path) -> None:
+    deployed = _git(repo, "rev-parse", "HEAD")
+    _record_prod_deploy(repo, deployed)
+    head = _commit(repo, ["doc/handbook/index.html"], "docs only")
+    deploy, log = _run_gate(repo, tmp_path, RELEASE_GATE_HEAD_SHA=head)
+    assert deploy == "false", log
+
+
 # ─── Workflow wiring contract ────────────────────────────────────────
 
 
@@ -221,8 +269,12 @@ def test_release_workflow_gates_build_on_the_relevance_job() -> None:
     assert "gate:" in workflow
     assert "needs: gate" in workflow
     assert "needs.gate.outputs.deploy == 'true'" in workflow
-    # Reading the previous CI run needs the Actions API.
-    assert "actions: read" in workflow
+    # The base is the commit PROD last deployed, which the gate reads from
+    # deployed_migrations.json; it no longer asks the Actions API for the
+    # previous CI run, so the workflow needs no `actions: read`.
+    assert "actions/workflows/ci.yml/runs" not in workflow
+    assert "RELEASE_GATE_BASE_SHA" not in workflow
+    assert "actions: read" not in workflow
     # The CI-conclusion condition moved onto the gate; build must not keep a
     # second copy that could let it run when the gate said no.
     assert workflow.count("github.event.workflow_run.conclusion == 'success'") == 1
