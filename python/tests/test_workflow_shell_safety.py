@@ -1,4 +1,5 @@
-"""WFPIPE.01, WFINJ.01 — a workflow step fails when its command fails, and no input runs as code.
+"""WFPIPE.01, WFINJ.01, WFEXPR.01, WFPERM.01 — a step fails when its command fails, no input
+runs as code, GitHub accepts every expression, and write access goes only where it is used.
 
 WFPIPE.01: a `run:` step without `shell:` runs under `bash -e`, without pipefail, so in
 `python … | tee log` the step's status is tee's, always 0: scrape-tournament.yml and
@@ -49,6 +50,28 @@ def test_WFINJ_01_no_script_expands_a_workflow_input():
         f"{file}:{where}: {INPUT_EXPR.findall(step['run'])}"
         for file, where, step in _steps()
         if INPUT_EXPR.search(step["run"])
+    ]
+    assert offenders == []
+
+
+def _values(node: object, where: str = "") -> list[tuple[str, str]]:
+    if isinstance(node, dict):
+        return [v for key, child in node.items() for v in _values(child, f"{where}.{key}")]
+    if isinstance(node, list):
+        return [v for i, child in enumerate(node) for v in _values(child, f"{where}[{i}]")]
+    return [(where, node)] if isinstance(node, str) else []
+
+
+def test_WFEXPR_01_every_expression_in_a_value_holds_an_expression():
+    """WFEXPR.01: GitHub evaluates `${{ }}` anywhere in a value, a `#` line inside a `run:`
+    script included, and refuses the whole file over an empty one: evf-sync.yml did not
+    start on 25 Oct 2026 ("workflow file issue") over a script comment saying "never as
+    ${{ }}". A `#` comment between YAML keys is not a value and is never evaluated."""
+    offenders = [
+        f"{path.name}:{where}"
+        for path in sorted(WORKFLOWS.glob("*.yml"))
+        for where, text in _values(yaml.safe_load(path.read_text(encoding="utf-8")))
+        if any(not body.strip() for body in re.findall(r"\$\{\{(.*?)\}\}", text, re.S))
     ]
     assert offenders == []
 
