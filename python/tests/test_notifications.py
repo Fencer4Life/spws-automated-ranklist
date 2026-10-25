@@ -339,7 +339,8 @@ class TestPhase4Notifications:
             assert "PEW3ef-2025-2026" in msg
 
     def test_notify_event_commit_with_parity_pass(self):
-        """P4.NT.3 parity-pass shows promotion line."""
+        """P4.NT.3, REVCHK.04: a pass is shown as a pass; nothing is promoted any more,
+        so the line no longer says EVF_PUBLISHED (ADR-053 amendment 2026-10-25)."""
         from python.pipeline.notifications import TelegramNotifier
 
         with patch("python.pipeline.notifications.send_telegram_alert") as mock_send:
@@ -351,7 +352,8 @@ class TestPhase4Notifications:
             )
             msg = self._last_msg(mock_send)
             assert "EVF parity" in msg
-            assert "EVF_PUBLISHED" in msg
+            assert "nothing written" in msg
+            assert "EVF_PUBLISHED" not in msg
 
     def test_notify_evf_parity_fail_lists_all_fencers(self):
         """P4.NT.4 parity-fail enumerates every failing fencer (no truncation)."""

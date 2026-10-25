@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="adr-source" content="053-evf-parity-gate.md">
-<meta name="adr-source-sha256" content="e423967867b25fe3492b777cd9b186649dd627be3140c99ef87fc919e3d95d0f">
+<meta name="adr-source-sha256" content="b6f46ec63bcbae4e180b5430019cfdf0aa91625b6903cee7da6a6269d47b79fa">
 <title>ADR-053 · EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle</title>
 <link rel="stylesheet" href="assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">Architecture Decision Record · 053</p><h1>EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
-  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-10-25 — the daily sweep is a read-only parity check: it reports on Telegram and promotes and annotates nothing; see the amendment)</dd></div><div><dt>Date</dt><dd class="">2026-05-02 <strong>Relates to:</strong> ADR-028 (EVF calendar/results import — amended), ADR-038 (EVF intake POL-only — affirmed and clarified), ADR-050 (unified ingestion pipeline — complemented), ADR-052 (URL→data validation — runs at Stage 7, complementary)</dd></div><div><dt>Source</dt><dd class=""><code>053-evf-parity-gate.md</code></dd></div><div><dt>Length</dt><dd class="">183 lines</dd></div></dl></aside>
-  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-10-25 — the daily sweep is a read-only parity check: it reports on Telegram and promotes and annotates nothing; see the amendment)
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (amended 2026-10-25 — the daily sweep and the review's post-commit gate are read-only parity checks: they report and promote and annotate nothing; see the amendment)</dd></div><div><dt>Date</dt><dd class="">2026-05-02 <strong>Relates to:</strong> ADR-028 (EVF calendar/results import — amended), ADR-038 (EVF intake POL-only — affirmed and clarified), ADR-050 (unified ingestion pipeline — complemented), ADR-052 (URL→data validation — runs at Stage 7, complementary)</dd></div><div><dt>Source</dt><dd class=""><code>053-evf-parity-gate.md</code></dd></div><div><dt>Length</dt><dd class="">183 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (amended 2026-10-25 — the daily sweep and the review's post-commit gate are read-only parity checks: they report and promote and annotate nothing; see the amendment)
 <strong>Date:</strong> 2026-05-02
 <strong>Relates to:</strong> ADR-028 (EVF calendar/results import — amended), ADR-038 (EVF intake POL-only — affirmed and clarified), ADR-050 (unified ingestion pipeline — complemented), ADR-052 (URL→data validation — runs at Stage 7, complementary)</p>
 </div>
@@ -182,11 +182,11 @@
 <li><strong>What it writes.</strong> Nothing: no promotion to <code>EVF_PUBLISHED</code>, no <code>txt_parity_notes</code>, no audit row. The database functions for those writes stay; the sweep no longer calls them. An EVF event's <code>txt_source_status</code> therefore stays <code>ENGINE_COMPUTED</code>.</li>
 <li><strong>Lane and colour.</strong> It stays in <code>prod-write</code>, so it never reads PROD while a promote or the PROD drain is part-way through. A run is red only when a read fails.</li>
 <li><strong>Superseded here:</strong> for the daily sweep, the promotion on PASS, the annotation on FAIL, the 30-day EVF-empty annotation and their audit rows. <a href="060-evf-parity-delta-md.html">ADR-060</a>'s delta report, proposed for the sweep, was never built; the check reports on Telegram only.</li>
-<li><strong>Not changed:</strong> the post-commit gate of the interactive review (<code>commit_lifecycle.run_post_commit_hooks</code>), which runs when an operator reads an event from EVF's API in <code>review_cli</code>.</li>
+<li><strong>The review's post-commit gate reports too</strong> (R1 A on <code>doc/plans/w2-follow-up-2026-10-25.html</code>, the same day). When an operator commits an event read from EVF's API in <code>review_cli</code>, <code>commit_lifecycle.run_post_commit_hooks</code> still runs <code>check_parity</code> and reports the outcome on Telegram and in the review, but overwrites no score, sets no <code>EVF_PUBLISHED</code> and writes no <code>txt_parity_notes</code>. The batch ingest never reaches that path. Nothing sets <code>EVF_PUBLISHED</code> any more; the value and its database functions stay. Tests: pytest REVCHK.01–04 (<code>test_commit_lifecycle.py</code>, <code>test_notifications.py</code>) replace P4.CL.3–4.</li>
 <li><strong>Tests.</strong> pytest EVFCHK.01–07 (<code>python/tests/test_evf_parity_sweep.py</code>) replace P4.SW.1–6; EVFCHK.07 also covers <code>read_committed</code> for an event that has no tournament yet.</li>
 </ul>
 </section></main>
 </div>
 <nav class="pager" aria-label="ADR navigation"><a class="previous" href="052-url-data-validation.html">← ADR-052: URL→data validation enforcement at Stage 7</a><a class="registry" href="index.html">ADR registry</a><a class="next" href="055-ingest-traceability.html">→ ADR-055: Ingest Traceability — Per-Parser Provenance + Bounded History</a></nav>
-<footer class="foot">Generated from <code>053-evf-parity-gate.md</code> · source SHA-256 <code>e423967867b25fe3492b777cd9b186649dd627be3140c99ef87fc919e3d95d0f</code></footer>
+<footer class="foot">Generated from <code>053-evf-parity-gate.md</code> · source SHA-256 <code>b6f46ec63bcbae4e180b5430019cfdf0aa91625b6903cee7da6a6269d47b79fa</code></footer>
 </div></body></html>

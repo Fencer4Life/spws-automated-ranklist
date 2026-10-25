@@ -1354,8 +1354,8 @@ class ReviewSession:
                     )
                 if lifecycle.parity_ran and lifecycle.parity_passed:
                     self._say(
-                        f"✅ EVF parity passed — promoted to EVF_PUBLISHED "
-                        f"({lifecycle.fencers_overwritten} fencers overwritten)"
+                        "✅ EVF parity passed — every result carries EVF's place and "
+                        "points; nothing written"
                     )
                 elif lifecycle.parity_ran and not lifecycle.parity_passed:
                     self._say(
