@@ -29,7 +29,7 @@ permissions:
 jobs:
   parity-sweep:
     name: EVF Parity Sweep
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # In prod-write although it writes nothing, so it never reads PROD while a
     # promote or the PROD recompute drain is part-way through.
     concurrency:

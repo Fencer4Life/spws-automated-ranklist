@@ -37,7 +37,7 @@ permissions:
 jobs:
   drain:
     name: Drain recompute queue (PROD)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Serialise with every other PROD writer (season/calendar/event-result
     # promotion) so a recompute never races a live promotion write.
     concurrency:

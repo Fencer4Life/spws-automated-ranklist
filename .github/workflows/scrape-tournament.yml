@@ -18,7 +18,7 @@ permissions:
 jobs:
   scrape:
     name: Scrape & Ingest (${{ github.event.inputs.target }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # ADR-113 (Q2 A): results reach PROD only through promote, which replays
       # a verified CERT run. This workflow holds no PROD secret and refuses a

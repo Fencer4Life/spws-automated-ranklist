@@ -14,7 +14,7 @@ permissions:
 jobs:
   test-db:
     name: pgTAP (database)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
 
@@ -60,7 +60,7 @@ jobs:
 
   test-python:
     name: pytest (Python)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
         with:
@@ -104,7 +104,7 @@ jobs:
 
   test-frontend:
     name: Vitest (frontend)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
 
@@ -130,7 +130,7 @@ jobs:
 
   coherence:
     name: Coherence Checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
         with:

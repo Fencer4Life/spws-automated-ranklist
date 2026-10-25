@@ -31,7 +31,7 @@ permissions:
 jobs:
   regen:
     name: Regen verdict .md
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EVENT_CODE: ${{ inputs.event_code }}
       TARGET_ENV: ${{ inputs.target }}

@@ -30,7 +30,7 @@ on:
 jobs:
   mirror:
     name: Promote calendar CERT → PROD
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # contents: write so the reconcile run log can be committed back. Capped by
     # the caller's GITHUB_TOKEN, so the calling job must also grant it (ADR-083
     # least-privilege leaves pzsz-sync at contents: read by default).
