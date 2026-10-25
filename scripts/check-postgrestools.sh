@@ -53,7 +53,7 @@ probe=$(postgrestools check --colors=off --max-diagnostics=none \
 grep -Eq 'typecheck\.sql:[0-9]+:[0-9]+ typecheck' <<<"$probe" \
   || fail "type checking did not run: is LOCAL Supabase up on the configured port? (./scripts/reset-dev.sh)"
 grep -Eq 'plpgsql\.sql:[0-9]+:[0-9]+ plpgsql_check' <<<"$probe" \
-  || fail "plpgsql_check did not run: the extension is missing (supabase/seed_dev_tooling.sql; ./scripts/reset-dev.sh)"
+  || fail "plpgsql_check did not run: the extension is missing or cannot load its library (a stale version after a CLI change: python scripts/check_supabase_cli.py names it and its update; a missing one comes from supabase/seed_dev_tooling.sql via ./scripts/reset-dev.sh)"
 if grep -Eq 'pgtap\.sql:[0-9]+:[0-9]+ ' <<<"$probe"; then
   echo "$probe" >&2
   fail "pgTAP calls do not resolve: pgTAP is missing from the extensions schema (./scripts/reset-dev.sh)"
