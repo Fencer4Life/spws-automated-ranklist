@@ -1,7 +1,7 @@
 {
   "cert": {
-    "last_updated": "2026-10-25T14:36:38Z",
-    "last_sha": "655431a24821548531a8e5f99eeeed9977deb133",
+    "last_updated": "2026-10-25T15:03:03Z",
+    "last_sha": "09179f2cb73a95b304b819de97c9886ceb65ceb9",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
@@ -225,9 +225,12 @@
       "20261021000002_pzsz_mirror_address_overwrite.sql",
       "20261024000001_remove_ftl_seed_email_delivery.sql",
       "20261024000002_fix_evf_create_ambiguous_id_event.sql",
-      "20261025000001_calendar_never_writes_results_link.sql"
+      "20261025000001_calendar_never_writes_results_link.sql",
+      "20261025000002_refresh_copies_result_links.sql",
+      "20261025000003_mirror_replaces_calendar_page_letter.sql",
+      "20261025000004_first_name_initial_capitals.sql"
     ],
-    "schema_fingerprint": "aa13d7be0739cf98cab4e49d4d737cd5"
+    "schema_fingerprint": "8f1420e4c02c9b1fcf8274713df425ad"
   },
   "prod": {
     "last_updated": "2026-10-25T14:38:48Z",
