@@ -31,8 +31,9 @@ jobs:
       - name: Install dependencies
         run: pip install httpx
 
-      # Inputs reach the scripts only through env, never as ${{ }} in a script
-      # (test_workflow_shell_safety.py WFINJ.01).
+      # Inputs reach the scripts only through env, never as an expression in a
+      # script (test_workflow_shell_safety.py WFINJ.01). The file is named for its
+      # source, and only a PROD export moves seed_prod_latest.sql (SEEDNAME.01-04).
       - name: Export seed
         run: |
           if [ "$SOURCE" = "cert" ]; then
@@ -40,7 +41,7 @@ jobs:
           else
             REF="${{ secrets.SUPABASE_PROD_REF }}"
           fi
-          python -m python.pipeline.export_seed --ref "$REF"
+          python -m python.pipeline.export_seed --ref "$REF" --env "$SOURCE"
         env:
           SOURCE: ${{ github.event.inputs.source }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -52,7 +53,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add supabase/seed_prod_*.sql supabase/seed_prod_latest.sql
+          git add "supabase/seed_${SOURCE}_"*.sql
           if git diff --cached --quiet; then
             echo "No seed changes to commit"
             exit 0

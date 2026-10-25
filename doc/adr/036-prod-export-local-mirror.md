@@ -1,6 +1,6 @@
 # ADR-036: PROD Export & Local Mirror (Single Monolithic Dump)
 
-**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; 2026-10-04 — the mirror loads registrations by the refresh's copy, §3 of the 2026-10-03 amendment; see the amendments)
+**Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; 2026-10-04 — the mirror loads registrations by the refresh's copy, §3 of the 2026-10-03 amendment; 2026-10-25 — a CERT export is `seed_cert_<date>.sql` and never moves `seed_prod_latest.sql`; see the amendments)
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
 
@@ -280,6 +280,15 @@ It reads PROD over a read-only connection and never writes it. Results still flo
 - **Why.** Step 5 used to build its own `INSERT`s. They left out the club and FTL name and added the consent stamp. Both sides held 90 PPW1 entries, yet the registrations part differed. On 3 October 2026 promote's LOCAL rehearsal therefore stopped at `input.registrations` until the refresh's copy was run by hand (`doc/plans/promote-rehearsal-2026-10-03.html`, step 7).
 - **Verified 2026-10-04.** The copy loaded PROD's 108 entries: PPW1 2026/27 with 90 and PEW5efs 2026/27 with 18. Afterwards LOCAL's whole input fingerprint for both events equals PROD's. The whole pgTAP suite passes on that mirror, PROD's registrations included (106 files, 1,395 assertions), once test 101 scoped its lookups by name to its own fixture event.
 - **Tests.** pytest PROMO.REFRESH.24–28 (`test_promotion_refresh.py`); .28 pins that the mirror script calls the copy and writes no registration SQL.
+
+## Amendment (2026-10-25) — a CERT export is named for CERT and never becomes the PROD seed
+
+`export-seed.yml` has a `source` choice, `prod` by default or `cert` by hand. `export_seed.py` named every file `seed_prod_<date>.sql` and pointed `seed_prod_latest.sql` at it, whichever project `--ref` named. A CERT export therefore became the seed that CI, a LOCAL boot (`config.toml` `[db.seed]`) and `seed-remote.sh` load, under PROD's name, against this ADR's rule that the seed is PROD's data. The user answered question E1 on the W2 sign-off sheet (`doc/plans/github-actions-w2-sign-off-2026-10-25.html`) with A on 25 October 2026.
+
+- **Naming.** `export_seed.py --env cert` writes `supabase/seed_cert_<date>.sql` and leaves `seed_prod_latest.sql` where it pointed. `--env` takes `prod` (the default) or `cert` and refuses anything else. A PROD export is unchanged.
+- **Workflow.** `export-seed.yml` passes its `source` as `--env` and stages only `supabase/seed_<source>_*.sql`, so a CERT export never stages the PROD pointer. `promote.yml` and `promote-season.yml` export PROD and are unchanged.
+- **A CERT seed is a snapshot.** Nothing loads `seed_cert_<date>.sql`. It has no `latest` pointer of its own.
+- **Tests.** pytest SEEDNAME.01–04 (`python/tests/test_seed_export_naming.py`).
 
 ## Related ADRs
 
