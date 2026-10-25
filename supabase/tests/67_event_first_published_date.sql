@@ -81,6 +81,10 @@ SELECT results_eq(
 -- Salzburg event PEW15ef-2026-2027, and EVF moved Athens (PEW13es-2026-2027)
 -- from 2027-05-22 to 2027-03-27. Both fire the pill on PROD.
 --
+-- Updated 2026-10-25 with the seed export after PPS1e-2026-2027's promote: the
+-- PZSz calendar moved the Konin sabre cup (PPS2s-2026-2027) from 2026-11-21,
+-- the date it first published, to 2026-11-22. It fires the pill on PROD.
+--
 -- So the assertion becomes "nothing UNEXPECTED shows the pill". That keeps what
 -- 67.4 is actually for — a backfill that anchored rows wrongly would light up
 -- the calendar, and any such row fails this — while surviving two things a hard
@@ -93,7 +97,7 @@ SELECT is_empty(
        AND dt_start > CURRENT_DATE
        AND dt_start_first_published IS NOT NULL
        AND dt_start IS DISTINCT FROM dt_start_first_published
-       AND txt_code NOT IN ('PEW13es-2026-2027', 'PEW15ef-2026-2027')$$,
+       AND txt_code NOT IN ('PEW13es-2026-2027', 'PEW15ef-2026-2027', 'PPS2s-2026-2027')$$,
   '67.4 — no unexpected event would show the moved-date pill'
 );
 

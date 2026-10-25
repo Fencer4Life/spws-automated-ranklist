@@ -155,7 +155,7 @@
       <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
       <tbody>
         <tr><td><b>S1</b></td><td>The upgrade as shown on this sheet: the versions in § 1, including five points the plan did not spell out (marked <b>new</b> there), and screens and exports unchanged.</td><td><b>A</b> push it<br><b>B</b> changes first</td><td><span class="chip never">A</span> <b>released</b></td></tr>
-        <tr><td><b>S2</b></td><td>F9, F11, F13 and F14, fixed test first on pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/23">#23</a>. Its CI on Node 24 prints none of the lines they removed. Nothing visible changes: the workflows&rsquo; Node action, <code>package.json</code>&rsquo;s script approvals, one test&rsquo;s mechanics and the documentation.</td><td><b>A</b> push it: integration, main, CI and the Release, watched to the end; the bundles stay byte-identical, which I check on Pages<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>S2</b></td><td>F9, F11, F13, F14 and F15, fixed test first on pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/23">#23</a>. Its CI on Node 24 prints none of the lines they removed. Nothing visible changes: the workflows&rsquo; Node action, <code>package.json</code>&rsquo;s script approvals, two tests and the documentation.</td><td><b>A</b> push it: integration, main, CI and the Release, watched to the end; the bundles stay byte-identical, which I check on Pages<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
         <tr><td><b>F7</b></td><td>Finding F7 below: on three elements a bare <code>demo</code> attribute reads as off. No page uses it, so nothing on the site changes either way; the fix changes how those elements read the attribute.</td><td><b>A</b> fix it in this session: a failing test first, <code>demo</code> declared Boolean on the three elements, its own before/after sheet<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
         <tr><td><b>F10</b></td><td>Findings F10 and F12: the Supabase CLI warns <code>[inbucket] is deprecated</code> in pgTAP, the build and both deploys. The rename to <code>[local_smtp]</code> needs CLI 2.108 or later, and this Mac runs 2.84.2 from Homebrew while CI pins 2.116.0, the version that decides which Postgres boots (WFSETUP.01). Homebrew installs only the newest CLI (2.122.0).</td><td><b>A</b> bring this Mac to CI&rsquo;s 2.116.0, installed with npm as CI installs it, in place of the Homebrew copy; check LOCAL starts with its data and pgTAP passes on it (I stop and report if it does not); then the rename, test first, with its own sign-off before the push<br><b>B</b> move both to 2.122.0: Homebrew upgrade here and CI&rsquo;s pin moved, then the rename<br><b>C</b> leave both</td><td><span class="chip never">A</span></td></tr>
       </tbody>
@@ -165,7 +165,7 @@
 
   <section id="found">
     <p class="kicker">§ 0a · found along the way</p>
-    <h2>Fourteen issues met during the work: six fixed in the release, four fixed on #23 (S2), two open questions (F7, F10), one GitHub&rsquo;s, one step for you</h2>
+    <h2>Fifteen issues met during the work: six fixed in the release, five fixed on #23 (S2), two open questions (F7, F10), one GitHub&rsquo;s, one step for you</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Issue</th><th>Cause</th><th>State</th></tr></thead>
       <tbody>
@@ -184,6 +184,7 @@
         <tr><td>F12</td><td>This Mac&rsquo;s Supabase CLI is 2.84.2; CI pins 2.116.0</td><td>Homebrew installed it before the pin moved; nothing checks LOCAL&rsquo;s CLI</td><td><b>open: part of question F10</b></td></tr>
         <tr><td>F13</td><td>Preflight&rsquo;s Vitest gate failed once, then passed</td><td>&ldquo;SE27.JOIN — every finishing order&rdquo; scored 37,800 orders through about a million <code>expect()</code> calls: 1.9 s alone, past the 5 s timeout under load. Reproduced with two suites and pytest at once</td><td>fixed on #23: plain comparisons, one <code>expect</code>; 95 ms, the same checks; passes under the same load</td></tr>
         <tr><td>F14</td><td>The RTM had no row for FETOOL.05</td><td>my omission in the toolchain change</td><td>fixed on #23</td></tr>
+        <tr><td>F15</td><td>pgTAP 67.4 (&ldquo;no unexpected event would show the moved-date pill&rdquo;) failed on #23&rsquo;s CI, with <code>PPS2s-2026-2027</code></td><td>main&rsquo;s PROD seed export at 14:08 (<code>[skip ci]</code>, after PPS1e&rsquo;s promote) carries a genuine move: the PZSz calendar moved the Konin sabre cup from 21 Nov, first published, to 22 Nov (PROD, updated 11:52 UTC). Main&rsquo;s next CI would have failed the same way. Docker&rsquo;s &ldquo;Rate exceeded&rdquo; in that log was not fatal</td><td>fixed on #23: added to the test&rsquo;s allowance of genuine movers, with a dated note, as its header prescribes</td></tr>
       </tbody>
     </table></div>
   </section>
