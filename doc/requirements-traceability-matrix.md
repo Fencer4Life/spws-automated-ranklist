@@ -184,7 +184,7 @@ For ADR-to-FR cross-references, see Project Specification Appendix C — Archite
 | NFR-06 | RLS: authenticated full CRUD | §9.2.1 | 1.11 | Covered |
 | NFR-07 | RLS: audit log not publicly readable | §9.2.1 | 1.26 | Covered |
 | NFR-08 | Browser compatibility (Chrome, Firefox, Safari, Edge) | §10 | — | Not tested |
-| NFR-09 | Mobile responsive ≥ 375 px | §10, ADR-032 | C.1–C.14 (drilldown cards); `frontend/tests/EventManager.layout.test.ts` LAYOUT.01 (admin event list wraps below 600 px; page width at a 375 px viewport 694 → 375 px, measured on LOCAL 2026-10-24) | Covered |
+| NFR-09 | Mobile responsive ≥ 375 px | §10, ADR-032 | C.1–C.14 (drilldown cards); `frontend/tests/EventManager.layout.test.ts` LAYOUT.01 (admin event list wraps below 600 px; page width at a 375 px viewport 694 → 375 px, measured on LOCAL 2026-10-24); `frontend/tests/FencerAliasManager.layout.test.ts` LAYOUT.02 (Admin → Fencers → Aliases: columns shrink and an expanded alias wraps below 600 px; page width at a 375 px viewport 425 → 375 px, an expanded fencer included, measured on LOCAL 2026-10-25) | Covered |
 | NFR-10 | Pipeline observability (structured logs + Telegram) | §10 | 3.6 (Telegram only) | Partial |
 | NFR-11 | Database migration strategy (numbered SQL files) | §9.9 | 1.1a–1.2i (schema verification) | Covered |
 | NFR-12 | Data integrity (Supabase daily backups) | §10 | — | Infrastructure (not testable) |

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>W2 follow-up</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  .pair{display:grid;grid-template-columns:repeat(2,minmax(0,330px));gap:16px;margin:12px 0 22px}
+  figure{margin:0 0 20px}
+  figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block}
+  figcaption{font:600 13px var(--mono);color:var(--muted);margin:0 0 6px}
+  .wide img{max-width:900px}
+  td ul{margin:0;padding-left:18px}
+  @media (max-width:700px){.pair{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">W2 · after &ldquo;go ahead&rdquo; · 25 Oct 2026</p>
+  <h1>Four answers are on main; the phone fix waits for your eye, and P5&rsquo;s first real run found wrong field sizes.</h1>
+  <p class="dek">The twelve commits, a fix their push turned up, E1, P6 and P5 are on <code>main</code>, each test-first with the whole preflight green. Two releases wait for your PROD approval. T2 is built and measured but not pushed: a screen change goes out only after you approve its before and after. Running the new parity check for real turned up wrong data in closed events; that and four other findings are questions below.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>5 pushes · CI green on each</span>
+    <span class="pill warn"><span class="dot"></span>2 PROD approvals waiting · 6 questions</span>
+    <span class="pill">pytest 2160 · Vitest 1251 · pgTAP 1494</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="released">
+    <p class="kicker">§ 1 · on main</p>
+    <h2>What went out, and what each release proved</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Main</th><th>What</th><th>Release</th><th>Verified</th></tr></thead>
+      <tbody>
+        <tr><td><code>e824372d</code></td><td>The twelve commits and the sign-off sheet (S1 A)</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40143510756">40143510756</a> success</td><td>The gate failed open once, as predicted. Both deploy jobs checked out <code>e824372d</code>; CERT and PROD fingerprints <code>f778e575&hellip;</code>; <code>commit-tracking.sh</code> pushed on attempt 1 both times; the manifest describes this release (it described March&rsquo;s). The live bundle carries both #9 texts.</td></tr>
+        <tr><td><code>075aa3b2</code></td><td>The push showed GitHub refusing <code>evf-sync.yml</code> (run <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40143394493">40143394493</a>): a comment inside its script held an empty <code>${{ }}</code>, and GitHub evaluates expressions in comments too. The daily EVF sync would not have started. Fixed with WFEXPR.01, which checks every value of every workflow.</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40144164514">40144164514</a> success</td><td>The gate measured from <code>e824372d</code> and named only the workflow and its test. No failed run on later pushes.</td></tr>
+        <tr><td><code>c3a8982c</code></td><td>E1: a CERT export is <code>seed_cert_&lt;date&gt;.sql</code> and never moves <code>seed_prod_latest.sql</code> (SEEDNAME.01&ndash;04; ADR-036 amendment)</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40145204599">40145204599</a> success</td><td>Deploys and fingerprints as above. Not run live: a CERT export commits a file to main, so it runs only when you start one.</td></tr>
+        <tr><td><code>24779589</code></td><td>P6: a scheduled start-list capture works on the Warsaw date it was due (PZSZ.SL.10&ndash;12; ADR-116 amendment). ADR-116&rsquo;s status still said &ldquo;not yet released&rdquo;; corrected.</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40146148809">40146148809</a></td><td><b>CERT deployed; PROD waits for your approval.</b> The next scheduled capture is the first live run.</td></tr>
+        <tr><td><code>4b1699a5</code></td><td>P5: the parity sweep reads EVF&rsquo;s results API, compares N and points, reports on Telegram and writes nothing (EVFCHK.01&ndash;07; ADR-053 amendment)</td><td><a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40148293688">40148293688</a></td><td><b>Queued behind the P6 release; it needs your approval after that one.</b> Run on LOCAL against EVF&rsquo;s live API: see § 3.</td></tr>
+      </tbody>
+    </table></div>
+    <p>One deviation from the P5 wording you approved: EVF&rsquo;s results are read with <code>compare_evf_points.read_evf</code>, not <code>scrape_event_results</code>. Both use the same EVF API client; <code>read_evf</code> also carries each competition&rsquo;s field size, which a check of N needs.</p>
+  </section>
+
+  <section id="t2">
+    <p class="kicker">§ 2 · T2 · approve before it goes out</p>
+    <h2>Admin → Fencers → Aliases on a phone: 425 px wide before, 375 px after</h2>
+    <p>The table kept its desktop column widths (200 px and 90 px, 14 px padding) on a phone, so it grew to 393 px inside a 375 px screen. A rule for screens up to 600 px lets those two columns shrink, narrows the cell padding to 8 px, and puts an expanded alias on its own line with its four buttons below. LAYOUT.02 pins the rule and that the desktop rules stay as they are, as LAYOUT.01 does for the event list. Measured on LOCAL with the first fencer expanded: 425 &rarr; 375 px, nothing past the edge.</p>
+    <div class="pair"><figure class=""><figcaption>BEFORE · 375 px (page 425 px)</figcaption><img loading="lazy" src="w2-follow-up-2026-10-25/aliases-375-before.png" alt="BEFORE · 375 px (page 425 px)"></figure><figure class=""><figcaption>AFTER · 375 px</figcaption><img loading="lazy" src="w2-follow-up-2026-10-25/aliases-375-after.png" alt="AFTER · 375 px"></figure></div>
+    <figure class="wide"><figcaption>1280 px · before and after, identical</figcaption><img loading="lazy" src="w2-follow-up-2026-10-25/aliases-1280.png" alt="1280 px · before and after, identical"></figure>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Capture, LOCAL</th><th>Before</th><th>After</th><th>Changed pixels</th></tr></thead>
+      <tbody>
+        <tr><td>Aliases, 1280 px</td><td>1280 × 2641</td><td>1280 × 2641</td><td>0</td></tr>
+        <tr><td>Aliases, 375 px</td><td>425 × 3521</td><td>375 × 3412</td><td>the change shown above</td></tr>
+        <tr><td>Events, 1280 px</td><td>1280 × 2157</td><td>1280 × 2157</td><td>0</td></tr>
+        <tr><td>Events, 375 px</td><td>375 × 4829</td><td>375 × 4829</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="evf">
+    <p class="kicker">§ 3 · P5&rsquo;s first real run</p>
+    <h2>Closed EVF events hold field sizes one short of EVF&rsquo;s</h2>
+    <p>On LOCAL (PROD&rsquo;s data) with a 400-day reach, against EVF&rsquo;s live results API, reading only: 33 events, <b>10 match EVF, 3 differ</b>, 20 hold no results yet.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>What differs (ours — EVF&rsquo;s)</th></tr></thead>
+      <tbody>
+        <tr><td>PEW4efs-2025-2026</td><td>19 of 28 match. Six results short on N (by one; by two for KORONA&rsquo;s épée), so slightly fewer points: KUZMICHOVA women&rsquo;s épée V2 3/48, 87.00 — 3/49, 87.15; KORONA men&rsquo;s épée V2 5/77 — 5/79 (two short). Three results EVF does not list at that place: STAŃCZYK and GANSZCZYK (women&rsquo;s épée V2, 17th and 27th of 48), PARDUS (men&rsquo;s épée V2, 56th of 77).</td></tr>
+        <tr><td>PEW9efs-2025-2026</td><td>14 of 16 match. KORONA and ALCSER, men&rsquo;s épée V1: N 11 — 12, points 54.22 — 55.20 and 20.24 — 21.63.</td></tr>
+        <tr><td>PEW10efs-2025-2026</td><td>18 of 19 match. KORONA men&rsquo;s foil V2, 29th: N 32 — 33, <b>points 2.39 — 12.81</b>, a gap one fencer of N does not explain.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Not a difference of definition: EVF lists all 49 women&rsquo;s épée V2 fencers of that event with a place (1&ndash;49), so its N counts placed fencers, as ours should. One placed fencer is missing from our count. These are closed 2025/26 events, so nothing was changed. The daily run looks back 60 days, so it will not report them; on PROD the first event it compares will be PEW2efs (ends 1 November), once its results are on PROD.</p>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 4 · decide this</p>
+    <h2>Six questions</h2>
+    <p>Answer like <b>T2 A, D1 A, N1 A, N2 A, R1 A, C1 A</b>. Each A is built test-first in its own commit, and each goes out as its own release.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>T2</b></td><td>The Aliases phone layout in § 2</td><td><b>A</b> approved: push and release it (one more PROD approval)<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>D1</b></td><td>The closed-event differences in § 3</td><td><b>A</b> a read-only report of every difference in every closed EVF event (PROD, CERT and EVF read; nothing written), then a decision per event<br><b>B</b> leave closed seasons as they are</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>N1</b></td><td>Every CI and Release run warns that <code>supabase/setup-cli@v1</code> targets Node.js 20, which GitHub has deprecated and already overrides with Node 24. v2 and v3 run without Node. The pinned CLI 2.116.0 stays either way. <code>ci.yml</code> says a change to what boots the stack is tested on a PR, never straight on main.</td><td><b>A</b> v1 &rarr; v3.0.1 in all four places, tested on a pull request first, then released<br><b>B</b> v1 &rarr; v2.1.2, the same way<br><b>C</b> leave the warning</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>N2</b></td><td>Every run notes that <code>ubuntu-latest</code> moves to Ubuntu 26 from 19 October; today&rsquo;s runs are still on <code>ubuntu-24.04</code>. The move happens without notice, mid-release if it falls that way.</td><td><b>A</b> name <code>ubuntu-24.04</code> in every job now, and move to 26.04 deliberately later, on a pull request<br><b>B</b> leave <code>ubuntu-latest</code></td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>R1</b></td><td>The interactive review CLI, when an operator commits an event read from EVF&rsquo;s API, still overwrites its scores with EVF&rsquo;s and sets <code>EVF_PUBLISHED</code> (<code>commit_lifecycle</code>, ADR-053). The batch ingest never reaches that path. On CERT it would leave scores promote&rsquo;s replay does not produce, and <a href="../adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §8 says results have no other writer.</td><td><b>A</b> make it report like the daily check, writing nothing<br><b>B</b> keep it, and record it in ADR-113 as the one exception</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>C1</b></td><td>On CERT and PROD, PEW8es-2025-2026 (ended 3 May) and PEW9efs-2025-2026 (31 May) are still IN_PROGRESS, and DMEW-2025-2026 (14 May, never scraped by design) is still PLANNED. The daily close takes only the active season&rsquo;s events, so nothing will ever close them.</td><td><b>A</b> set each to COMPLETED by hand on CERT then PROD, after a read-only check, each on your word by name (or &ldquo;accept all&rdquo;)<br><b>B</b> leave them</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="you">
+    <p class="kicker">§ 5 · your steps</p>
+    <h2>Waiting on you</h2>
+    <ul>
+      <li>Approve the PROD job of <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40146148809">40146148809</a> (P6), then of <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40148293688">40148293688</a> (P5).</li>
+      <li>Paste <code>scripts/gas_telegram_bot.js</code> into the Apps Script project, so the bot&rsquo;s plain-text retry takes effect.</li>
+      <li>Ask GitHub Support to purge the old commits and the 19 <code>refs/pull/*</code>; reset other local checkouts to <code>origin</code> before working in them.</li>
+    </ul>
+  </section>
+
+  <p class="foot">w2-follow-up-2026-10-25 · 25 Oct 2026 · branch claude/ftl-seed-email-removal · T2 built on the branch, not pushed · § 3 read with python/pipeline/evf_parity_sweep.py against LOCAL and EVF&rsquo;s public results API · § 4 C1 read with scripts/cloud-sql.sh, SELECT only</p>
+</div>
+</body></html>
