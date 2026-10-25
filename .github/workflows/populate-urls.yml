@@ -18,7 +18,7 @@ permissions:
 jobs:
   populate:
     name: Discover & Populate URLs (${{ github.event.inputs.target }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Inputs reach the scripts only through env, never as ${{ }} in a script
       # (test_workflow_shell_safety.py WFINJ.01).

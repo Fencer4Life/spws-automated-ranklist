@@ -45,7 +45,7 @@ permissions:
 jobs:
   ingest-event:
     name: Re-ingest event (from URL)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: cert-write
       cancel-in-progress: false

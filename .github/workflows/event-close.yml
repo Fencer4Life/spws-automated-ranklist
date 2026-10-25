@@ -31,7 +31,7 @@ concurrency:
 jobs:
   close:
     name: Close finished events
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
 

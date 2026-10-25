@@ -28,7 +28,7 @@ permissions:
 jobs:
   resolve:
     name: The CERT run and its commit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       EVENT_CODE: ${{ inputs.event_code }}
     outputs:
@@ -79,7 +79,7 @@ jobs:
   promote:
     name: Replay on PROD
     needs: resolve
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Serialise with every other PROD writer (the PROD drain, the daily close, the
     # parity sweep, the calendar and season promotions). cancel-in-progress: false so a run is never
     # cut off mid-flight.
@@ -134,7 +134,7 @@ jobs:
     # The promote has committed; a failed export alerts but does not mark it failed.
     if: always() && needs.promote.outputs.applied == 'true'
     continue-on-error: true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -190,7 +190,7 @@ jobs:
     name: Notify failure
     needs: [resolve, promote]
     if: failure()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Telegram
         env:

@@ -28,7 +28,7 @@ jobs:
   # deploys.
   gate:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       deploy: ${{ steps.gate.outputs.deploy }}
     steps:
@@ -48,7 +48,7 @@ jobs:
   build:
     needs: gate
     if: needs.gate.outputs.deploy == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       schema_fingerprint: ${{ steps.fingerprint.outputs.fingerprint }}
       sha: ${{ steps.head.outputs.sha }}
@@ -68,7 +68,7 @@ jobs:
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # --- Schema fingerprint from LOCAL Docker Supabase ---
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Pinned, not `latest`. `latest` makes the action resolve the version
           # through the GitHub releases API on every job, unauthenticated, and
@@ -249,7 +249,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
@@ -259,7 +259,7 @@ jobs:
   deploy-cert:
     needs: build
     environment: cert
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # The commit build fingerprinted, not the triggering one or a later main.
       - uses: actions/checkout@v5
@@ -297,7 +297,7 @@ jobs:
 
       # ADR-041: deploy Edge Functions to CERT. Idempotent — Supabase replaces
       # the function on each deploy. Function source: supabase/functions/.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Pinned for the same reason as the build job above: `latest` costs a
           # rate-limited GitHub API lookup per job. Keep all three in step.
@@ -368,7 +368,7 @@ jobs:
   deploy-prod:
     needs: [build, deploy-cert, deploy-pages]
     environment: production
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # The commit build fingerprinted, however far main moved during the approval
       # wait: a later commit is deployed by its own release. The record of this
@@ -407,7 +407,7 @@ jobs:
           echo "PROD fingerprint verified: $CLOUD_FP"
 
       # ADR-041: deploy Edge Functions to PROD.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Pinned for the same reason as the build job above: `latest` costs a
           # rate-limited GitHub API lookup per job. Keep all three in step.

@@ -31,7 +31,7 @@ permissions:
 jobs:
   drain:
     name: Drain recompute queue (CERT)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Serialise with other CERT writers so a recompute never races an ingest:
     # cert-write is shared with ingest-event.yml and the refresh (ADR-108 §9).
     concurrency:

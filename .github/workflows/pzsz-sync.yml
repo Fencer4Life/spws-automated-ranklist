@@ -38,7 +38,7 @@ permissions:
 jobs:
   sync:
     name: PZSz Sync → CERT
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # No concurrency group on purpose. This job touches nothing on PROD, so it
     # runs genuinely in parallel with the EVF scrape rather than queueing behind
     # a promote that has nothing to do with it.
