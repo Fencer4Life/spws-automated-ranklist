@@ -18,6 +18,11 @@ Every setup-node step now runs Node 24, and every action is at a release whose
 action.yml runs on Node 24 or is a composite of such actions (read from each action's
 repository, 25 Oct 2026). An action not in the table fails the test until its runtime
 has been read and it is added.
+
+WFNODE.02 (F11 on doc/plans/frontend-toolchain-before-after-2026-10-25.html): after
+WFNODE.01 the logs still printed `[DEP0040] punycode` and `[DEP0169] url.parse()`, from
+actions/setup-node@v5's own step and post-step. setup-node runs at a release that
+prints neither.
 """
 
 from __future__ import annotations
@@ -82,6 +87,27 @@ def test_WFNODE_01_node_24_and_no_action_on_the_node_20_runtime():
         major = int(ref.lstrip("v").split(".")[0]) if ref.lstrip("v")[:1].isdigit() else -1
         if action not in NODE24_FROM or major < NODE24_FROM[action]:
             offenders.append(f"{where}: {step['uses']}")
+    assert offenders == []
+
+
+# The first major of an action whose own bundled code prints no Node deprecation on
+# Node 24 (read from each release's dist, 25 Oct 2026). setup-node v5 bundles a cache
+# library that requires the core punycode module (DEP0040) and an Azure SDK whose
+# URLBuilder calls url.parse (DEP0169), both printed in every CI and Release job that
+# sets up Node; v7.1.0 bundles neither. deploy-pages v5.0.1, the newest release,
+# still requires punycode, so it is not listed until GitHub releases a fix.
+QUIET_FROM = {"actions/setup-node": 7}
+
+
+def test_WFNODE_02_no_action_at_a_release_that_prints_node_deprecations():
+    offenders = []
+    for file, job_name, job in _jobs():
+        for step in job.get("steps") or []:
+            action, _, ref = str(step.get("uses", "")).partition("@")
+            if action in QUIET_FROM:
+                major = int(ref.lstrip("v").split(".")[0]) if ref.lstrip("v")[:1].isdigit() else -1
+                if major < QUIET_FROM[action]:
+                    offenders.append(f"{file}:{job_name}: {step['uses']}")
     assert offenders == []
 
 

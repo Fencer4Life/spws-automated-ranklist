@@ -136,14 +136,14 @@
     <span class="pill good"><span class="dot"></span>25 events match EVF · 461 results</span>
     <span class="pill good"><span class="dot"></span>Signed off · C1 done on CERT + PROD</span>
     <span class="pill good"><span class="dot"></span>H2b, U1 answered</span>
-    <span class="pill warn"><span class="dot"></span>1 new question · G1</span>
+    <span class="pill good"><span class="dot"></span>G1 answered · nothing open here</span>
   </div>
 
   <hr class="rule">
 
   <section id="since">
     <p class="kicker">§ 0 · since your sign-off (&ldquo;accept all your recommendations&rdquo;, 25 Oct)</p>
-    <h2>Every answer is applied: C1 and U1 on CERT and PROD, P7 released; one new question</h2>
+    <h2>Every answer is applied: C1 and U1 on CERT and PROD, P7 and G1 released</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>What happened</th></tr></thead>
       <tbody>
@@ -158,7 +158,7 @@
       <tbody>
         <tr><td><b>H2b</b></td><td>KRZEMIŃSKI&rsquo;s row at Stockholm 2024 (ours 1st, 126.66; EVF 3rd, 72.36, WENDT 1st), with no organiser page found</td><td><b>A</b> leave it as stored, as R1 A does for every event without an organiser source<br><b>B</b> correct it from EVF as a one-off exception to R1 B: place 3, 72.36, CERT then PROD</td><td><span class="chip never">A</span> (25 Oct, &ldquo;proceed as recommended&rdquo;): the row stays as stored; nothing written.</td></tr>
         <tr><td><b>U1</b></td><td>The address stored on PEW9ef-2023-2024 is Guildford 2024&rsquo;s FTL schedule, so a later repair from it would read another event</td><td><b>A</b> clear it (<code>url_event</code> to NULL) on CERT then PROD, read first and read back<br><b>B</b> leave it</td><td><span class="chip never">A</span> (25 Oct): <b>done.</b> Read first on both (the one address, no other link, no bracket address); cleared with an update guarded on the exact stored address, CERT 09:50, then PROD 09:51 UTC; reads NULL in <code>tbl_event</code> and in <code>vw_calendar</code> on both. PEW25e-2023-2024 and the six brackets are untouched.</td></tr>
-        <tr><td><b>G1</b></td><td><b>Found while making this update:</b> 4,577 files of <code>frontend/node_modules</code> are tracked in git (added in <code>3b029e44</code> on 3 Jul, <code>02550d90</code> on 5 Jul and <code>323d685e</code> on 5 Sep), although <code>.gitignore</code> lists <code>node_modules/</code>. Every new worktree checks out that partial copy (148 of the 169 packages; <code>@supabase/supabase-js</code> is missing), so Vitest and svelte-check fail there until the shared <code>node_modules</code> is linked in its place, which I did for this update, committing nothing of it.</td><td><b>A</b> stop tracking them: <code>git rm -r --cached frontend/node_modules</code>, so the files stay on disk and only git forgets them; its own commit and release<br><b>B</b> leave them tracked, and link the shared <code>node_modules</code> into each new worktree by hand</td><td><span class="chip never">A</span> (rec.)</td></tr>
+        <tr><td><b>G1</b></td><td><b>Found while making this update:</b> 4,577 files of <code>frontend/node_modules</code> are tracked in git (added in <code>3b029e44</code> on 3 Jul, <code>02550d90</code> on 5 Jul and <code>323d685e</code> on 5 Sep), although <code>.gitignore</code> lists <code>node_modules/</code>. Every new worktree checks out that partial copy (148 of the 169 packages; <code>@supabase/supabase-js</code> is missing), so Vitest and svelte-check fail there until the shared <code>node_modules</code> is linked in its place, which I did for this update, committing nothing of it.</td><td><b>A</b> stop tracking them: <code>git rm -r --cached frontend/node_modules</code>, so the files stay on disk and only git forgets them; its own commit and release<br><b>B</b> leave them tracked, and link the shared <code>node_modules</code> into each new worktree by hand</td><td><span class="chip never">A</span> (25 Oct, &ldquo;G1 A, go ahead&rdquo;): <b>done.</b> Untracked in <code>ffa6152f</code> (REPO.01 seen failing first), with Node 24 for the frontend and every action; released as main <code>aacac718</code>, CERT and PROD verified. The follow-up is <code>doc/plans/frontend-toolchain-warnings-and-audit-2026-10-25.html</code>.</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -274,7 +274,6 @@
     <p class="kicker">§ 7 · your steps</p>
     <h2>Waiting on you</h2>
     <ul>
-      <li>G1 in § 0.</li>
       <li>Paste <code>scripts/gas_telegram_bot.js</code> into the Apps Script project; ask GitHub Support to purge the old commits and the 19 <code>refs/pull/*</code>.</li>
     </ul>
   </section>
