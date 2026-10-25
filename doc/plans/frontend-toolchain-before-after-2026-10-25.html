@@ -148,13 +148,16 @@
   <hr class="rule">
 
   <section id="decide">
-    <p class="kicker">§ 0 · decided, and one question</p>
-    <h2>S1 A: signed off on 25 Oct, the push is under way</h2>
+    <p class="kicker">§ 0 · released, and three questions</p>
+    <h2>S1 A: released and verified on 25 Oct; three questions on what the logs showed after</h2>
+    <p><b>Released.</b> Pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/22">#22</a> passed CI; main <code>86016bdc</code>: CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40198665199">40198665199</a> green, Release <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40198834073">40198834073</a> green on every job. Pages serves <code>index-BD0qUYpz.js</code> and <code>main.ce.js</code> byte for byte as captured on this sheet; every other served page equals the local build except the credentials the Release writes in. CERT and PROD are on <code>86016bd</code>, fingerprint <code>aa13d7be&hellip;</code>, deploy records on attempt 1.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
       <tbody>
-        <tr><td><b>S1</b></td><td>The upgrade as shown on this sheet: the versions in § 1, including five points the plan did not spell out (marked <b>new</b> there), and screens and exports unchanged.</td><td><b>A</b> push it: pull request, CI on Node 24, where I also read the log for the two Node deprecation lines (§ 6); then integration, main, CI and the Release, watched to the end, and the bundles checked on Pages<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span> <b>signed off</b></td></tr>
-        <tr><td><b>F7</b></td><td>Finding F7 below: on three elements a bare <code>demo</code> attribute reads as off. No page uses it, so nothing on the site changes either way; the fix changes how those elements read the attribute.</td><td><b>A</b> fix it in this session, right after this release: a failing test first, <code>demo</code> declared Boolean on the three elements, its own before/after sheet<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>S1</b></td><td>The upgrade as shown on this sheet: the versions in § 1, including five points the plan did not spell out (marked <b>new</b> there), and screens and exports unchanged.</td><td><b>A</b> push it<br><b>B</b> changes first</td><td><span class="chip never">A</span> <b>released</b></td></tr>
+        <tr><td><b>S2</b></td><td>F9, F11, F13 and F14, fixed test first on pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/23">#23</a>. Its CI on Node 24 prints none of the lines they removed. Nothing visible changes: the workflows&rsquo; Node action, <code>package.json</code>&rsquo;s script approvals, one test&rsquo;s mechanics and the documentation.</td><td><b>A</b> push it: integration, main, CI and the Release, watched to the end; the bundles stay byte-identical, which I check on Pages<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>F7</b></td><td>Finding F7 below: on three elements a bare <code>demo</code> attribute reads as off. No page uses it, so nothing on the site changes either way; the fix changes how those elements read the attribute.</td><td><b>A</b> fix it in this session: a failing test first, <code>demo</code> declared Boolean on the three elements, its own before/after sheet<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>F10</b></td><td>Findings F10 and F12: the Supabase CLI warns <code>[inbucket] is deprecated</code> in pgTAP, the build and both deploys. The rename to <code>[local_smtp]</code> needs CLI 2.108 or later, and this Mac runs 2.84.2 from Homebrew while CI pins 2.116.0, the version that decides which Postgres boots (WFSETUP.01). Homebrew installs only the newest CLI (2.122.0).</td><td><b>A</b> bring this Mac to CI&rsquo;s 2.116.0, installed with npm as CI installs it, in place of the Homebrew copy; check LOCAL starts with its data and pgTAP passes on it (I stop and report if it does not); then the rename, test first, with its own sign-off before the push<br><b>B</b> move both to 2.122.0: Homebrew upgrade here and CI&rsquo;s pin moved, then the rename<br><b>C</b> leave both</td><td><span class="chip never">A</span></td></tr>
       </tbody>
     </table></div>
     <p><b>One step for you after the release:</b> run <code>npm ci</code> in <code>/Users/aleks/coding/SPWSranklist/frontend</code> once the primary checkout is updated to main. Every new worktree links that folder, and with the old Vite 5 and Vitest 1.6 in it, the new configuration would not run there.</p>
@@ -162,7 +165,7 @@
 
   <section id="found">
     <p class="kicker">§ 0a · found along the way</p>
-    <h2>Eight issues met during the work: six fixed here, one open (F7), one step for you</h2>
+    <h2>Fourteen issues met during the work: six fixed in the release, four fixed on #23 (S2), two open questions (F7, F10), one GitHub&rsquo;s, one step for you</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Issue</th><th>Cause</th><th>State</th></tr></thead>
       <tbody>
@@ -174,6 +177,13 @@
         <tr><td>F6</td><td>Three pgTAP tests failed on LOCAL</td><td>LOCAL already ran main&rsquo;s ADR-117 migration while this branch was behind main</td><td>fixed: main merged in; 17 of 17 gates</td></tr>
         <tr><td>F7</td><td>On <code>&lt;spws-registration&gt;</code>, <code>&lt;spws-entry-list&gt;</code> and <code>&lt;spws-ftl-export&gt;</code> a bare <code>demo</code> attribute reads as off; on the ranking and the calendar it reads as on</td><td>the three declare <code>demo</code> as a boolean prop but not as a Boolean attribute, so the attribute arrives as the empty string</td><td><b>open: question F7 in § 0</b>. No page or document uses the attribute; the tests pass the property</td></tr>
         <tr><td>F8</td><td>The primary checkout&rsquo;s <code>node_modules</code> still holds the old tools</td><td>every worktree links it; it is installed by hand</td><td>your step after the release (§ 0)</td></tr>
+        <tr><td>F9</td><td>Every <code>npm ci</code> warned &ldquo;1 package has install scripts not yet covered by allowScripts&rdquo; (esbuild; on main before this change too, for esbuild 0.21.5)</td><td>npm&rsquo;s new <code>allowScripts</code> list; npm 12 skips any install script it does not approve</td><td>fixed on #23: esbuild and the macOS-only fsevents approved, pinned; FETOOL.06 (seen red). The warning is gone from #23&rsquo;s CI</td></tr>
+        <tr><td>F10</td><td>The Supabase CLI warns <code>config section [inbucket] is deprecated</code> in pgTAP, the build and both deploys (on main before this change too)</td><td><code>supabase/config.toml</code> still uses the old section name</td><td><b>open: question F10 in § 0</b></td></tr>
+        <tr><td>F11</td><td><code>DEP0040 punycode</code> and <code>DEP0169 url.parse()</code> in every job that sets up Node</td><td><code>actions/setup-node@v5</code>&rsquo;s own step and post-step: its bundled cache library requires the core <code>punycode</code>, its Azure SDK calls <code>url.parse</code>. Not Vitest or svelte-check: their steps print none</td><td>fixed on #23: setup-node v7.1.0, which bundles neither; WFNODE.02 (seen red). Both lines are gone from #23&rsquo;s CI</td></tr>
+        <tr><td>F11b</td><td><code>DEP0040</code> in the Release&rsquo;s deploy-pages job</td><td><code>actions/deploy-pages@v5</code>&rsquo;s own bundle; v5.0.1 is the newest release</td><td>GitHub&rsquo;s; recorded in the workflow catalog until they release a fix</td></tr>
+        <tr><td>F12</td><td>This Mac&rsquo;s Supabase CLI is 2.84.2; CI pins 2.116.0</td><td>Homebrew installed it before the pin moved; nothing checks LOCAL&rsquo;s CLI</td><td><b>open: part of question F10</b></td></tr>
+        <tr><td>F13</td><td>Preflight&rsquo;s Vitest gate failed once, then passed</td><td>&ldquo;SE27.JOIN — every finishing order&rdquo; scored 37,800 orders through about a million <code>expect()</code> calls: 1.9 s alone, past the 5 s timeout under load. Reproduced with two suites and pytest at once</td><td>fixed on #23: plain comparisons, one <code>expect</code>; 95 ms, the same checks; passes under the same load</td></tr>
+        <tr><td>F14</td><td>The RTM had no row for FETOOL.05</td><td>my omission in the toolchain change</td><td>fixed on #23</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -296,7 +306,7 @@
       <li><b>FETOOL.00&ndash;05</b> (<code>python/tests/test_frontend_toolchain.py</code>), each seen failing before the change: no package in a range from today&rsquo;s <code>npm audit</code>; no <code>whatwg-encoding</code>; every engine range accepts the first Node 24 release; <code>xlsx</code> from SheetJS by its hash; every package a frontend script imports is declared. RTM rows added.</li>
       <li>Vitest: 72 files, 1,251 tests before and after, and no warning lines. Playwright: 62 of 62. svelte-check: 0 errors, 0 warnings.</li>
       <li><code>scripts/preflight.sh</code>: 17 of 17 after merging main (which had moved on with ADR-117; nothing of it under <code>frontend/</code>).</li>
-      <li>The two Node deprecation lines CI printed, <code>DEP0040 punycode</code> and <code>DEP0169 url.parse()</code>, do not show under Node 25 here. No package left calls the core <code>punycode</code>. The <code>url.parse</code> calls left are fallbacks: Vite&rsquo;s runs only without a native <code>URL</code>, and svelte-check&rsquo;s is a language-server helper. The pull request&rsquo;s CI log on Node 24 is the proof; if a line is still there, I trace it before anything merges.</li>
+      <li>The CI log on Node 24, read line by line and step by step: <code>npm warn deprecated whatwg-encoding</code> and the 15 audit findings are gone, and Vitest and svelte-check print no deprecation. The <code>DEP0040</code> / <code>DEP0169</code> lines that remained came from <code>actions/setup-node@v5</code> itself (F11), now fixed on #23.</li>
     </ul>
   </section>
 
