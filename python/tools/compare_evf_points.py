@@ -71,6 +71,8 @@ def read_committed(sb, event_code: str) -> list[dict]:
         .data
     )
     by_id = {t["id_tournament"]: t for t in tournaments}
+    if not by_id:  # an event not yet held has no tournament and no result (EVFCHK.07)
+        return []
     results = (
         sb.table("tbl_result")
         .select("id_tournament, int_place, num_final_score, tbl_fencer(txt_surname)")

@@ -1,19 +1,16 @@
 name: EVF Parity Sweep
 
-# Phase 4 (ADR-053) — daily probe of every EVF event still at
-# ENGINE_COMPUTED status. PASS → promote to EVF_PUBLISHED, overwrite
-# scores with EVF API verbatim. FAIL → annotate txt_parity_notes.
-# Empty after 30 days → annotate and stop probing.
-#
-# As it stands nothing is ever compared: the fetch reads each event's url_event,
-# the organiser's page rather than EVF's results API, and returns no rows
-# (python/pipeline/evf_parity_sweep.py _default_fetch_evf_api). What the sweep
-# should do is decision W2 #5 of doc/plans/github-actions-workflows-page-2026-10-24.html.
+# The daily EVF parity check (ADR-053, amended 2026-10-25). It reads only: for
+# every EVF event at ENGINE_COMPUTED that holds results on PROD it reads EVF's
+# results API, pairs the event with the EVF event starting within three days,
+# compares every PROD result's N and points with EVF's and reports each
+# difference on Telegram, with one summary per run (EVFCHK.01-07). It promotes
+# and annotates nothing: results reach PROD only through promote (ADR-113 §8).
 
 on:
   schedule:
-    # Daily at 04:17 UTC. Cheap — only EVF events at ENGINE_COMPUTED
-    # within the last 60 days are probed.
+    # Daily at 04:17 UTC. Cheap — only EVF events at ENGINE_COMPUTED that
+    # ended within the last 60 days (or are still to come) are looked at.
     - cron: '17 4 * * *'   # off the hour (WFCRON.01); same minute as event-close.yml
   workflow_dispatch:
     inputs:
@@ -21,19 +18,20 @@ on:
         description: 'Skip events older than N days (default 60)'
         default: '60'
       evf_empty_stop_days:
-        description: 'Annotate "EVF API empty" after N days past dt_end (default 30)'
+        description: 'Name an event with nothing from EVF N days after its end (default 30)'
         default: '30'
 
 # ADR-083: least-privilege GITHUB_TOKEN. Default repo scope is far wider than
 # any job here needs; an injected step should not inherit write access.
 permissions:
-  contents: read   # checkout only; all DB writes use SUPABASE_* service-role secrets
+  contents: read   # checkout only; PROD is read with the SUPABASE_* service-role secrets
 
 jobs:
   parity-sweep:
     name: EVF Parity Sweep
     runs-on: ubuntu-latest
-    # Serialise with other ingestion writers (commits, ingest, promote).
+    # In prod-write although it writes nothing, so it never reads PROD while a
+    # promote or the PROD recompute drain is part-way through.
     concurrency:
       group: prod-write
       cancel-in-progress: false
@@ -75,4 +73,4 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             -d chat_id="${TG_CHAT}" \
-            -d text="🚨 EVF parity sweep FAILED. Check: https://github.com/${REPO}/actions/runs/${RUN_ID}"
+            -d text="🚨 EVF parity check FAILED (a read failed). Check: https://github.com/${REPO}/actions/runs/${RUN_ID}"

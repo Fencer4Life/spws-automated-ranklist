@@ -201,7 +201,7 @@
 <p>Three other status columns live nearby and share value names, which is a reliable source of misreading a query result:</p>
 <ul>
 <li><code>enum_import_status</code> on <b>tournaments</b> — <code>PLANNED · PENDING · IMPORTED · SCORED · REJECTED</code>. Shares <code>PLANNED</code> and <code>SCORED</code> with the event enum and means something different: it tracks one tournament's ingestion, not the event's lifecycle.</li>
-<li><code>tbl_event.txt_source_status</code> — <code>ENGINE_COMPUTED · EVF_PUBLISHED</code>. A <em>provenance</em> axis: where the stored placings came from. Orthogonal to the lifecycle, and not carried to PROD.</li>
+<li><code>tbl_event.txt_source_status</code> — <code>ENGINE_COMPUTED · EVF_PUBLISHED</code>. A <em>provenance</em> axis: where the stored placings came from. Orthogonal to the lifecycle, and not carried to PROD. The daily EVF parity check only reads, so it leaves every EVF event at <code>ENGINE_COMPUTED</code>; only the interactive review&rsquo;s post-commit gate still sets <code>EVF_PUBLISHED</code> (<a href="../../adr/053-evf-parity-gate.html">ADR-053</a> amendment, 2026-10-25).</li>
 <li><code>enum_match_status</code> — fencer identity matching during ingestion. Unrelated.</li>
 </ul>
 </section>
