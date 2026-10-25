@@ -263,4 +263,15 @@
   .alias-btn.create { color: #1a7f37; }
   .alias-btn.discard { color: #b04040; border-color: #e8c0c0; background: #fff8f8; }
   .alias-btn:hover { filter: brightness(0.95); }
+
+  /* LAYOUT.02 — on a phone the columns shrink and an expanded alias wraps: the
+     alias on its own line, its buttons below, so the table fits the screen. */
+  @media (max-width: 600px) {
+    .alias-table th, .alias-table td { padding-left: 8px; padding-right: 8px; }
+    .col-meta { width: auto; }
+    .col-count { width: auto; }
+    .alias-detail-row td { padding-left: 14px; }
+    .alias-row { flex-wrap: wrap; }
+    .alias-string { flex-basis: 100%; }
+  }
 </style>
