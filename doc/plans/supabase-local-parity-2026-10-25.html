@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LOCAL Supabase parity</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  pre.out{font:12px/1.5 var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre}
+  td.num{text-align:right;white-space:nowrap}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">F10 · LOCAL on CI&rsquo;s Supabase stack · 25 Oct 2026</p>
+  <h1>LOCAL now runs the Supabase stack CI tests on, and preflight keeps it that way; <code>[inbucket]</code> is <code>[local_smtp]</code>. Two sign-offs, then one push for both.</h1>
+  <p class="dek">F10 A, as signed off on the <a href="frontend-toolchain-before-after-2026-10-25.html#decide">toolchain sheet</a>. Built on branch <code>claude/supabase-local-smtp</code> (commit <code>4c54e78c</code>), test first. It is <b>not pushed</b>: F10 A asks for your sign-off before the push. F7, built earlier in this session, waits on its own sheet; its pull request now passes CI.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>preflight 18 of 18 (one new gate)</span>
+    <span class="pill good"><span class="dot"></span>pgTAP 117 files, 1,519 tests</span>
+    <span class="pill good"><span class="dot"></span>LOCAL data identical, 33 of 33 lines</span>
+    <span class="pill warn"><span class="dot"></span>2 questions</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">§ 0 · decide these</p>
+    <h2>Two sign-offs; with both A, one push to main and one Release</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>S3</b></td><td>F7 as shown on <a href="ce-demo-attribute-before-after-2026-10-25.html">its before/after sheet</a>: <code>&lt;spws-registration&gt;</code>, <code>&lt;spws-entry-list&gt;</code> and <code>&lt;spws-ftl-export&gt;</code> read a bare <code>demo</code> as on. 100 screens: 88 identical, 4 noise, 8 changed, all of them the states that set the attribute, which no page does. Pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/24">#24</a>: CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40207585857">40207585857</a> green on all four jobs, after main was merged in (F19).</td><td><b>A</b> push it<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>S4</b></td><td>F10, F12, F16 and F17 as in § 1 and § 2. Nothing a fencer or an admin sees changes: one section of <code>supabase/config.toml</code> renamed, a preflight gate added, one gate message corrected, tests and documentation. CI&rsquo;s stack starts from an empty database and does not change.</td><td><b>A</b> push it: pull request, its CI read for the missing <code>[inbucket]</code> warning<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+    <p><b>With both A:</b> both branches are integrated in the integration checkout, preflight runs there, main is pushed once, and CI and the Release are watched to the end. I check that Pages serves the new <code>main.ce.js</code> and that the pgTAP, build and deploy logs no longer print <code>[inbucket] is deprecated</code>. With one A, that one goes alone.</p>
+  </section>
+
+  <section id="what">
+    <p class="kicker">§ 1 · what changed</p>
+    <h2>The rename, and a gate that keeps LOCAL on CI&rsquo;s stack</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>supabase/config.toml</code></td><td><code>[inbucket]</code> becomes <code>[local_smtp]</code>, same keys: still off, port 54324. F10; <b>WFSETUP.02</b>.</td></tr>
+        <tr><td><code>scripts/check_supabase_cli.py</code> (new)</td><td>Fails unless (1) the local CLI is the version every workflow pins (read from the workflows, not written twice; F12, <b>WFSETUP.03</b>), and (2) every extension in LOCAL&rsquo;s database is the version its image ships and the library file behind each of its C functions exists (F16, <b>WFSETUP.04</b>). On a failure it prints the command that fixes it.</td></tr>
+        <tr><td><code>scripts/preflight.sh</code></td><td>The gate &ldquo;LOCAL stack = CI&rsquo;s (CLI pin, extensions)&rdquo;, before postgrestools and pgTAP; neither <code>--fast</code> nor <code>--ci-only</code> skips it.</td></tr>
+        <tr><td><code>scripts/check-postgrestools.sh</code></td><td>The plpgsql_check canary says &ldquo;missing or cannot load its library&rdquo; and points to the gate above, instead of &ldquo;missing&rdquo; and a reset (F17; <b>GATE.02</b>).</td></tr>
+        <tr><td><code>python/tests/test_workflow_runners.py</code>, <code>test_static_check_gates.py</code></td><td>WFSETUP.02&ndash;04 run the gate with a fake <code>supabase</code> and a fake <code>docker</code> on <code>PATH</code>, so they run in CI&rsquo;s Python job too: the pinned CLI passes; 2.84.2, 2.122.0 and no CLI fail; an older extension gets its update; a missing library or no update path gets a drop and a create in its own schema; an unreadable database fails.</td></tr>
+        <tr><td>Docs</td><td>RTM rows WFSETUP.02&ndash;04; handbook <i>Local development</i> (the CLI prerequisite with its version and npm install, the gate, a troubleshooting line) and <i>GitHub Actions workflows</i>; <code>AGENTS.md</code>; the pin comment in <code>ci.yml</code>.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="found">
+    <p class="kicker">§ 2 · found along the way</p>
+    <h2>Four more issues, numbered on from the toolchain sheet&rsquo;s fifteen</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Issue</th><th>Cause</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>F16</td><td>After the move to CLI 2.116.0, the postgrestools gate failed: plpgsql_check did not run. My earlier check (&ldquo;LOCAL starts with its data, pgTAP passes&rdquo;) was true and missed it, since pgTAP never calls plpgsql_check</td><td>LOCAL keeps its database when the CLI changes. It still had plpgsql_check 2.7, whose 22 functions name <code>plpgsql_check-2.7.so</code>, which the new image does not ship (it has 2.8), and pg_graphql 1.5.11 against the image&rsquo;s 1.6.1. CI starts from an empty database and gets both at the image&rsquo;s version</td><td>fixed: WFSETUP.04 (seen red). LOCAL repaired as the gate prescribes: plpgsql_check and pg_graphql dropped and created again as <code>supabase_admin</code>, each in its own schema. pg_graphql&rsquo;s event triggers and the grants on <code>graphql_public.graphql</code> are the same before and after; nothing else depended on either</td></tr>
+        <tr><td>F17</td><td>The postgrestools gate called the stale plpgsql_check &ldquo;missing&rdquo; and advised <code>./scripts/reset-dev.sh</code></td><td>The canary cannot tell missing from unloadable. The reset would have replaced LOCAL&rsquo;s data, which other sessions write to, with the seed</td><td>fixed: the message names both cases and the gate that tells them apart; GATE.02 (seen red)</td></tr>
+        <tr><td>F18</td><td>One of my checks printed LOCAL&rsquo;s development keys into this session&rsquo;s tool output</td><td>I discarded <code>supabase status -o json</code>&rsquo;s standard output; this CLI writes it to standard error. These are the CLI&rsquo;s public local demo keys, the same for every install and already in <code>frontend/index.html</code> (see the 22 Jul security plan); no CERT or PROD key</td><td>nothing was stored or committed. Since then every CLI call has been filtered to its <code>WARN</code> lines</td></tr>
+        <tr><td>F19</td><td>Pull request #24 (F7) had no CI run</td><td>Main moved after the push (ADR-117), and #24 then conflicted on two generated files, the RTM&rsquo;s HTML twin and the generated-documents index. GitHub runs no <code>pull_request</code> workflow on a conflicting PR, and I had not checked that the run started</td><td>fixed: main merged into the branch, both files regenerated from their sources, preflight 17 of 17; CI 40207585857 green</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="proof">
+    <p class="kicker">§ 3 · evidence</p>
+    <h2>Red first, then each check on the real stack</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Tests before the code</td><td>WFSETUP.02&ndash;03: 6 red, then 10 of 10. WFSETUP.04 and GATE.02: 5 red, then green. Twice more as the real stack taught me: the remedy as <code>postgres</code> (2 red), and the missing library (4 red). Finally 21 of 21 in the two files</td></tr>
+        <tr><td>The CLI&rsquo;s warning, same CLI 2.116.0</td><td>main&rsquo;s config: <code>WARN: config section [inbucket] is deprecated. Please use [local_smtp] instead.</code> The branch&rsquo;s config: no warning</td></tr>
+        <tr><td>LOCAL restarted on the renamed config</td><td>The same five services as before (db, auth, rest, kong, edge runtime); the mail catcher stays off</td></tr>
+        <tr><td>LOCAL&rsquo;s data</td><td>Every public table&rsquo;s row count, the migration count and the newest migration, and the auth users: identical to the snapshot after the CLI switch, 33 of 33 lines, after the restart and after the extension repair</td></tr>
+        <tr><td>LOCAL&rsquo;s API, with the key the frontend ships for LOCAL</td><td><code>vw_calendar</code> HTTP 200 (104 rows), <code>tbl_season</code> HTTP 200 (4 rows)</td></tr>
+        <tr><td>The new gate on the real stack</td><td>Before the repair: names pg_graphql (no update path) and plpgsql_check; after <code>ALTER EXTENSION &hellip; UPDATE</code>: still names plpgsql_check (&ldquo;cannot load its library&rdquo;); after the drop and create: passes</td></tr>
+        <tr><td>postgrestools</td><td>FAIL (plpgsql_check did not run), then PASS: 123 files, 0 findings, type checking, plpgsql_check and pgTAP proven live</td></tr>
+        <tr><td>pgTAP</td><td>117 files, 1,519 tests, PASS. Its four <code>WARNING:</code> lines are the functions&rsquo; own notices, which three test files provoke on purpose (an empty alias, a split collision, two birth-year proposals)</td></tr>
+        <tr><td>Preflight</td><td>18 of 18</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="mac">
+    <p class="kicker">§ 4 · this Mac</p>
+    <h2>Where the CLI comes from now</h2>
+    <ul>
+      <li><code>supabase</code> on <code>PATH</code> is 2.116.0, installed with <code>npm install -g supabase@2.116.0</code>, as CI&rsquo;s <code>setup-cli</code> installs it.</li>
+      <li>Homebrew&rsquo;s 2.84.2 is unlinked, not removed; <code>brew link supabase</code> would bring it back, and the new gate would then fail.</li>
+      <li>Every CLI call prints &ldquo;A new version of Supabase CLI is available: v2.122.0&rdquo;. That is expected: the pin is deliberate, and <code>ci.yml</code> says why. Moving it is a stack change, tested on a pull request.</li>
+      <li>The integration checkout uses the same CLI and the same LOCAL stack, so its preflight runs this gate too.</li>
+    </ul>
+  </section>
+
+  <p class="foot">supabase-local-parity-2026-10-25 · 25 Oct 2026 · branch claude/supabase-local-smtp (4c54e78c) · LOCAL Supabase on CLI 2.116.0 · from: frontend-toolchain-before-after-2026-10-25.html F10, F12</p>
+</div>
+</body></html>
