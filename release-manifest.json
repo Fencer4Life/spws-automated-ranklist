@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
-  "sha": "c3a8982c22d91626801d90f7d8f47ae0ec4712a8",
-  "created": "2026-10-25T00:06:19Z",
+  "sha": "24779589cdcc2ceeb4481e70a82f469358084f80",
+  "created": "2026-10-25T00:20:29Z",
   "schema_fingerprint": "f778e5755928c43064b749ed45f06e8c",
   "migrations": {
     "total": 222,
@@ -21,8 +21,8 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-10-25T00:06:20Z",
-      "sha": "c3a8982c22d91626801d90f7d8f47ae0ec4712a8",
+      "at": "2026-10-25T00:20:31Z",
+      "sha": "24779589cdcc2ceeb4481e70a82f469358084f80",
       "schema_fingerprint": "f778e5755928c43064b749ed45f06e8c"
     },
     "prod": {
