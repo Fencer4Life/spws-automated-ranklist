@@ -1,4 +1,6 @@
-<svelte:options customElement="spws-registration" />
+<!-- `demo` is a Boolean attribute, as on <spws-ranklist>: a bare `demo` reads
+     as on (CE.DEMO.01). Undeclared, it arrived as "" and read as off. -->
+<svelte:options customElement={{ tag: 'spws-registration', props: { demo: { type: 'Boolean' } } }} />
 
 <RegistrationForm eventCode={event} {payee} {iban} />
 

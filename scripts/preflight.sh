@@ -88,6 +88,11 @@ gate "check-coherence.sh (CI)"        bash scripts/check-coherence.sh
 # seconds, and the script fails (rather than passing quietly) when the stack is
 # down, the version differs from the config's pin, or a positive control shows
 # the database checks did not run. GATE.01–03.
+# The CLI version decides which images the stack boots, so LOCAL runs the one
+# every workflow pins, and its extensions are the versions those images ship,
+# as on CI's empty database; otherwise LOCAL's checks prove nothing about CI's
+# (WFSETUP.03–04).
+gate "LOCAL stack = CI's (CLI pin, extensions)" python scripts/check_supabase_cli.py
 gate "postgrestools (CI)"             bash scripts/check-postgrestools.sh
 if [[ $FAST -eq 1 ]]; then
   RESULTS+=("SKIP  supabase test db (CI) — --fast")

@@ -54,7 +54,7 @@ list (see `doc/claude/planning.md` rule 5a for what a copied list cost).
 - Python types: `source .venv/bin/activate && basedpyright python/ scripts/ tools/`
 - Frontend: `cd frontend && npm test && npm run check -- --fail-on-warnings`
 - Browser tests: `cd frontend && npm run test:e2e`
-- Database: `supabase test db`
+- Database: `supabase test db`, on the CLI version every workflow pins, with the extensions its image ships (`python scripts/check_supabase_cli.py`, a preflight gate)
 - Coherence: `bash scripts/check-coherence.sh && bash scripts/check-spec-sync.sh`
 - PL/pgSQL: `postgrestools check <changed SQL path>` with local Supabase running; `bash scripts/check-postgrestools.sh` is the hard gate (preflight and CI): every checked migration and pgTAP file, zero findings, with canaries proving the database checks ran
 

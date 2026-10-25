@@ -37,6 +37,8 @@ jobs:
           # config.toml has no image-pinning knob (only major_version = 17), so
           # THIS VERSION is what decides which Postgres/gotrue/kong images boot.
           # A bump is a stack change: test it on a PR, never straight on main.
+          # LOCAL runs it too: preflight fails on any other local CLI
+          # (scripts/check_supabase_cli.py, WFSETUP.03).
           version: 2.116.0
 
       - name: Start Supabase local stack

@@ -60,6 +60,11 @@ def test_GATE_02_the_gate_proves_the_database_checks_ran():
     assert "txt_pgt_canary_missing" in script
     assert "plpgsql_check" in script
     assert "plan(1)" in script
+    # F17: a stale extension (installed, its library gone) is not "missing", and
+    # the reset the old message advised replaces LOCAL's data; the LOCAL stack
+    # gate (WFSETUP.04) names the version and its update.
+    assert "the extension is missing (" not in script
+    assert "missing or cannot load its library" in script
     # The pinned version and an exact file count: an upgrade or a config
     # ignore cannot silently change what is checked.
     assert PIN_FROM_CONFIG.search(script)
