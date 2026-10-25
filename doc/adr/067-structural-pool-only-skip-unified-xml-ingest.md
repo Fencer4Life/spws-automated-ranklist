@@ -50,6 +50,6 @@ Three coordinated changes:
 
 ## Implementation
 
-- Commits: `b4dc173`, `93a2771`, `347eb19` on branch `fix/xml-ingest-unified-pipeline`.
+- Commits: `300bb0b`, `ace47ce`, `3572659` on branch `fix/xml-ingest-unified-pipeline`.
 - Tests: `python/tests/test_ingest_cli_unified.py` (4 assertions), `python/tests/test_pool_only_skip.py` (8 assertions), updated `python/tests/test_ir.py` (contract).
 - LOCAL re-ingest verified: PPW4 24 tournaments / 87 results, PPW5 22 tournaments / 81 results. CERT/PROD promotion is operator-driven and out of scope for this ADR.

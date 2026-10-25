@@ -88,3 +88,46 @@ def test_stale_paths_reports_the_documents_that_left_the_corpus(ingest) -> None:
         "doc/plans/gone.html",
         "doc/plans/shortened.html",
     ]
+
+
+def test_a_page_only_another_worktree_holds_is_kept(ingest) -> None:
+    """The index is shared by every worktree of the repository. A page a
+    parallel session wrote in its own worktree is not in this checkout, and
+    pruning it deleted that session's work from search (25 Oct 2026: two
+    frontend-toolchain plan pages)."""
+    indexed = [
+        ("doc/plans/theirs.html", 0),
+        ("doc/plans/theirs.html", 1),
+        ("doc/plans/gone.html", 0),
+    ]
+    live = set()
+    held = {"doc/plans/theirs.html"}
+
+    assert ingest.stale_ids(indexed, live, held) == [ingest.chunk_id("doc/plans/gone.html", 0)]
+    assert ingest.stale_paths(indexed, live, held) == ["doc/plans/gone.html"]
+
+
+def test_a_page_this_checkout_holds_still_loses_its_tail(ingest) -> None:
+    """Another worktree holding the same page does not protect the tail of the
+    version this run produced: the run's own corpus decides that page."""
+    indexed = [("doc/plans/shared.html", i) for i in range(3)]
+    live = {("doc/plans/shared.html", 0)}
+    held = {"doc/plans/shared.html"}
+
+    assert ingest.stale_ids(indexed, live, held) == [
+        ingest.chunk_id("doc/plans/shared.html", 1),
+        ingest.chunk_id("doc/plans/shared.html", 2),
+    ]
+
+
+def test_paths_held_by_other_worktrees(ingest, tmp_path: Path) -> None:
+    """Only a page that exists as a file in another worktree counts."""
+    here, there = tmp_path / "here", tmp_path / "there"
+    (there / "doc/plans").mkdir(parents=True)
+    (there / "doc/plans/theirs.html").write_text("x")
+    here.mkdir()
+
+    held = ingest.paths_in_other_worktrees(
+        ["doc/plans/theirs.html", "doc/plans/gone.html"], [here, there], here=here
+    )
+    assert held == {"doc/plans/theirs.html"}

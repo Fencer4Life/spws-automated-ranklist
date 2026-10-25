@@ -118,7 +118,9 @@ delete or rename the file, run the ingest, and the chunks go with it. Chunks are
 upserted under an id derived from path and ordinal, and whatever the index still
 holds that the run did not produce is deleted afterwards. Shortening a page
 drops its tail; deleting or renaming one leaves nothing behind under the old
-path.
+path. A page that another worktree of the repository still holds is kept and
+listed as "Kept … another worktree still holds": the index is shared, and that
+page is a parallel session's work. It goes once no worktree holds it.
 
 The run says what it removed:
 

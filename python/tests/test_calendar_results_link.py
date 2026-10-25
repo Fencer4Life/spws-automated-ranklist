@@ -228,6 +228,52 @@ class TestPzszCalendar:
             assert ("📋 Send ingest PPS1f-2026-2027" in digest.plain) is told, (url, digest.plain)
 
 
+class TestNoticeReadsProd:
+    def test_the_ingest_notice_reads_the_link_set_in_prods_admin(self):
+        """CALURL.21 (D2 A): CERT holds no results link, PROD's Admin holds
+        one: the digest names the ingest command, which the refresh then
+        carries to CERT. Without a PROD reference only CERT is read."""
+        today = dt.date(2026, 10, 26)
+        cert_rows = [
+            {
+                "txt_code": "PPS1f-2026-2027",
+                "id_pzsz_event": 4581,
+                "dt_end": "2026-10-25",
+                "dt_start": "2026-10-24",
+                "url_event": None,
+                "has_list": True,
+                "has_cert_run": False,
+                "notice_state": None,
+            }
+        ]
+        prod_rows = [
+            {
+                "txt_code": "PPS1f-2026-2027",
+                "url_event": "https://www.fencingtimelive.com/tournaments/eventSchedule/B547",
+            }
+        ]
+        seen: list[str] = []
+
+        def query(ref, _token, sql):
+            seen.append(ref)
+            if ref == "prod-ref":
+                assert "PPS1f-2026-2027" in sql
+                return prod_rows
+            return cert_rows if "FROM tbl_event e" in sql else []
+
+        digest = pzsz_sync._Digest()
+        pzsz_sync._ingest_notice(
+            "cert-ref", "tok", query, {"id_season": 4}, today, digest, prod_ref="prod-ref"
+        )
+        assert "📋 Send ingest PPS1f-2026-2027" in digest.plain
+        assert "prod-ref" in seen
+
+        digest = pzsz_sync._Digest()
+        seen.clear()
+        pzsz_sync._ingest_notice("cert-ref", "tok", query, {"id_season": 4}, today, digest)
+        assert digest.plain == [] and "prod-ref" not in seen
+
+
 def _cert_row(**kw) -> dict:
     row = {
         "txt_code": "PEW3ef-2026-2027",

@@ -5,6 +5,7 @@
 **Amends:** [ADR-108](108-promote-replays-verified-cert-ingestion.md) (§2: `ingest` runs the refresh from PROD itself; §9 and the amendment of 2026-10-06: EVF and FIE events are on the route, nothing refuses them), [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md) (§6: "EVF moves onto it in the next plan" is done, and FIE with it; Open items, out of scope: the daily close now covers PZSz, EVF and FIE events), [ADR-105](105-international-results-keep-source-bracket.md) (§5.6: the international flow exists and the URL path ingests an international event; §5.3 and §5.4 hold on the new path), [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (the paths that store an international row: the EVF sync no longer stores one), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (§5: the EVF results pass compares and reports, it writes no result), [ADR-028](028-evf-calendar-results-import.md) (Results Scraping and `evf-results-import`: EVF's results are read by `ingest` when an event has no result URL; the sync imports none)
 **Relates to:** [ADR-025](025-event-centric-ingestion-telegram.md) (the `ingest` and `promote` commands, whose texts now name every organizer), [ADR-066](066-min-participants-ingestion-gate.md) (the minimum of 1 that marks a bracket with no fencer of ours), [ADR-072](072-cdc-recompute-debounce.md) (the refresh and the ingest share `cert-write`), [ADR-077](077-event-lifecycle-season-skeletons.md) (the lifecycle the daily close applies), [ADR-112](112-pzsz-start-lists-are-stored-inputs.md) (the stored PZSz inputs, unchanged), [ADR-008](008-psw-msw-international-pool.md) (MSW and PSW are the FIE's)
 **Source:** `doc/plans/ingest-and-promote-every-organizer-2026-10-17.html`
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (§7, D2 A: the refresh `ingest` runs first also copies the event's results links from PROD's Admin).
 
 ## Context
 
@@ -130,3 +131,7 @@ The runner stays, for LOCAL work and for repairing a past-season event at the us
 **Not changed:** team results; past-season events (never re-ingested); the domestic and PZSz drivers; ADR-106's admission rule; scoring.
 
 **Not proved live before the first event of each kind:** Engarde, 4fence, Ophardt, d'Artagnan and the EVF fallback are proved by fixtures only, because no closed season is re-ingested, LOCAL included. The first 2026/27 EVF event is their first live run.
+
+## Amendment (2026-10-25, [ADR-117](117-results-links-admin-only.md) D2 A) — the refresh also copies the event's results links
+
+The refresh of §7 now copies, in an apply with an event and after the registrations, the event's five results slots from PROD to CERT through `fn_copy_event_result_links`: PROD's links replace CERT's, compacted, and a PROD without a link leaves CERT's alone. A plain `ingest <code>` therefore reads the link an administrator set in PROD's Admin. The refresh report gains a `results links:` line. Tests: CALURL.20, pgTAP CALURL.22.

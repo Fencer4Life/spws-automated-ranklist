@@ -6,7 +6,8 @@ hour; measured 10–24 Oct 2026 the daily runs started 4–9 hours late and the 
 drains ran 5–6 times a day. No cron fires at minute 0.
 
 WFCRON.02: pzsz-start-lists.yml tells the capture which run is the day's first and which
-its final by the cron string that fired, so those strings are its earliest and latest crons.
+is the window's last attempt by the cron string that fired: its earliest cron, and its
+latest cron due before noon in Warsaw (K2 A).
 """
 
 from __future__ import annotations
@@ -54,13 +55,18 @@ def test_WFCRON_01_no_cron_fires_at_the_start_of_an_hour():
     assert {f: cs for f, cs in on_the_hour.items() if cs} == {}
 
 
-def test_WFCRON_02_start_list_first_and_final_flags_name_its_own_crons():
+def test_WFCRON_02_start_list_first_run_and_last_attempt_flags_name_its_own_crons():
+    """The first-run flag names the earliest cron; the last-attempt flag the
+    latest cron due before noon in Warsaw, in summer (UTC+2) and winter (UTC+1)
+    alike, the window's close on the event's last day (K2 A)."""
     crons = sorted(
         _crons()["pzsz-start-lists.yml"], key=lambda c: (int(c.split()[1]), int(c.split()[0]))
     )
+    morning = [c for c in crons if (int(c.split()[1]) + 2) * 60 + int(c.split()[0]) < 12 * 60]
     workflow = (WORKFLOWS / "pzsz-start-lists.yml").read_text(encoding="utf-8")
     assert f'"{crons[0]}")  ARGS+=(--first-run)' in workflow
-    assert f'"{crons[-1]}") ARGS+=(--final-run)' in workflow
+    assert f'"{morning[-1]}")  ARGS+=(--last-attempt)' in workflow
+    assert "--final-run" not in workflow
 
 
 def _cron_times(cron: str) -> set[str]:

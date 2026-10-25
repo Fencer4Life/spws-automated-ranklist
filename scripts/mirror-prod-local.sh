@@ -57,7 +57,7 @@ trap restore_symlink EXIT
 # expired credential (see the cloud-db-ops skill's "phantom 401").
 read_env() { grep -E "^$1=" .env | cut -d= -f2- | tr -d '"'\''' ; }
 
-echo "=== 1/5 Exporting PROD (read-only) ==="
+echo "=== 1/6 Exporting PROD (read-only) ==="
 SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 PROD_REF="$(read_env SUPABASE_PROD_REF)" \
 .venv/bin/python -c "
@@ -66,18 +66,18 @@ sys.argv = ['export_seed', '--ref', os.environ['PROD_REF']]
 from python.pipeline.export_seed import main
 main()"
 
-echo "=== 2/5 Pointing the seed at ${FRESH} for this reset only ==="
+echo "=== 2/6 Pointing the seed at ${FRESH} for this reset only ==="
 rm -f "$SEED_LINK"
 ln -s "$FRESH" "$SEED_LINK"
 
-echo "=== 3/5 Resetting LOCAL ==="
+echo "=== 3/6 Resetting LOCAL ==="
 ./scripts/reset-dev.sh > /dev/null
 
-echo "=== 4/5 Checking LOCAL's roster against PROD's, id for id ==="
+echo "=== 4/6 Checking LOCAL's roster against PROD's, id for id ==="
 SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 .venv/bin/python -m python.pipeline.promotion.refresh --target local --mode verify
 
-echo "=== 5/5 Loading registrations ==="
+echo "=== 5/6 Loading registrations ==="
 # tbl_registration is deliberately absent from the seed: ADR-079 makes it
 # EPHEMERAL — purged once results are ingested and reconciled — so baking real
 # declarations into the shared dump would push 57 people's entries into every
@@ -92,6 +92,15 @@ echo "=== 5/5 Loading registrations ==="
 # LOCAL rehearsal stopped at input.registrations (3 Oct 2026).
 SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
 .venv/bin/python -m python.pipeline.promotion.refresh --target local --mode registrations
+
+echo "=== 6/6 Loading CERT's PZSz start lists ==="
+# The start lists are CERT's stored inputs (ADR-112), in no seed, so without
+# them a LOCAL PZSz ingest cannot run. Read from CERT read-only, in CERT's id
+# order, and replayed through LOCAL's fn_pzsz_start_list_store, so the newest
+# version of each list is CERT's newest; the step fails otherwise (D4 A). A
+# copy by hand out of order once fed an ingest an older list (25 Oct 2026).
+SUPABASE_ACCESS_TOKEN="$(read_env SUPABASE_ACCESS_TOKEN)" \
+.venv/bin/python -m python.tools.mirror_start_lists
 
 echo ""
 echo "=== LOCAL now mirrors PROD ==="
