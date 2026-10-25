@@ -13,13 +13,14 @@ name: PZSz Start Lists → CERT
 # PROD receives start lists only through the verified promote replay
 # (ADR-108, ADR-112 §4).
 #
-# WINDOW, TWO INDEPENDENT CHECKS (ADR-112 §2). "Today" is the Warsaw date at run
-# time (zoneinfo Europe/Warsaw), so the 25 October clock change cannot shift
-# it. The five crons are set in UTC, eleven minutes past the hour, so every
+# WINDOW, TWO INDEPENDENT CHECKS (ADR-112 §2). "Today" is the Warsaw date the
+# run was due on (zoneinfo Europe/Warsaw), so the 25 October clock change cannot
+# shift it. The five crons are set in UTC, eleven minutes past the hour, so every
 # attempt is due between 06:11 and 21:11 Warsaw in both summer (UTC+2 →
 # 07:11..21:11) and winter time (UTC+1 → 06:11..20:11). GitHub starts scheduled
 # runs late (measured 0.2-3.5 hours), so a late final run can start after
-# midnight Warsaw time, on day D. Check 1 is the run's
+# midnight Warsaw time; it still works on the day it was due, for the window
+# and its alarms (PZSZ.SL.10). A manual run works on today. Check 1 is the run's
 # selection (select_window_events); check 2 is the reader
 # (read_event_start_lists_for_capture), which refuses any page of an
 # out-of-window event whoever asks.
@@ -79,12 +80,16 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          FLAGS=""
+          ARGS=(capture)
           case "$SCHEDULE" in
-            "11 5 * * *")  FLAGS="--first-run" ;;
-            "11 19 * * *") FLAGS="--final-run" ;;
+            "11 5 * * *")  ARGS+=(--first-run) ;;
+            "11 19 * * *") ARGS+=(--final-run) ;;
           esac
-          python -m python.scrapers.pzsz_start_list_store capture $FLAGS
+          # The cron that fired, so a late run works on the day it was due (PZSZ.SL.10-12).
+          if [ -n "$SCHEDULE" ]; then
+            ARGS+=(--cron "$SCHEDULE")
+          fi
+          python -m python.scrapers.pzsz_start_list_store "${ARGS[@]}"
 
       # The capture alerts on Telegram itself (ADR-116 §11-§12, one digest), so
       # this speaks only when it never ran: a failed install (WFALERT.01).

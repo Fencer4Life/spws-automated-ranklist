@@ -27,10 +27,11 @@ import re
 import sys
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from python.pipeline.promotion.lifecycle import WARSAW, warsaw_today
 from python.pipeline.promotion.run_record import start_list_sha256
 from python.scrapers.pzsz_start_list import (
     PZSZ_EVENT_PAGE,
@@ -163,6 +164,29 @@ class CaptureOutcome:
     missing: list[tuple[str, str, str]]
     not_served: bool
     error: str | None
+
+
+_DAILY_CRON = re.compile(r"(\d{1,2}) (\d{1,2}) \* \* \*")
+
+
+def scheduled_day(cron: str, now: datetime) -> date:
+    """The Warsaw date a scheduled run was due on (PZSZ.SL.10): the latest moment
+    at or before ``now`` matching the cron's minute and hour in UTC, read in
+    Warsaw. GitHub starts scheduled runs hours late (0.2-3.5 hours measured), so
+    the final run can start after midnight in Warsaw; it still belongs to the day
+    it was due, for both the window and its alarms. Pure."""
+    match = _DAILY_CRON.fullmatch(cron.strip())
+    if match is None:
+        raise ValueError(f"not one daily UTC time: {cron!r}")
+    minute, hour = int(match.group(1)), int(match.group(2))
+    due = now.astimezone(UTC).replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if due > now:
+        due -= timedelta(days=1)
+    return due.astimezone(WARSAW).date()
+
+
+def _now_utc() -> datetime:
+    return datetime.now(UTC)
 
 
 def select_window_events(rows: Iterable[Mapping[str, Any]], today: date) -> list[dict]:
@@ -472,15 +496,17 @@ def _capture_command(args: argparse.Namespace) -> int:
     if not ref or not token:
         print("SUPABASE_CERT_REF and SUPABASE_ACCESS_TOKEN are required", file=sys.stderr)
         return 2
-    from python.pipeline.promotion.lifecycle import warsaw_today
-
     try:
+        now = _now_utc()
+        # A scheduled run works on the day it was due, a manual run on today (PZSZ.SL.11).
+        today = scheduled_day(args.cron, now) if args.cron else warsaw_today(now)
+        print(f"capture for {today} (cron {args.cron or 'none: manual run'})", file=sys.stderr)
         return run_capture(
             ref,
             token,
             bot,
             chat,
-            today=warsaw_today(),
+            today=today,
             first_run=args.first_run,
             final_run=args.final_run,
         )
@@ -511,6 +537,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     cap.add_argument(
         "--final-run", action="store_true", help="the day's last run (cron 11 19 * * *)"
+    )
+    cap.add_argument(
+        "--cron",
+        default="",
+        help="the cron that fired; the run works on the Warsaw date it was due (PZSZ.SL.10)",
     )
     args = parser.parse_args(argv)
     if args.command == "capture":
