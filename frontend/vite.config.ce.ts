@@ -20,6 +20,9 @@ export default defineConfig({
     // Measured 2026-10-24: main.ce.js 1,226 kB (363 kB gzip). The warning
     // returns as soon as the bundle grows past the budget.
     chunkSizeWarningLimit: 1300,
+    // Vite 5's default browsers, as in vite.config.ts: Vite 8's default
+    // (Safari 16.4, Chrome 111) would drop phones the WordPress pages served.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
     rollupOptions: {
       // PROD deployment step 1 — a STABLE entry file name.
       //

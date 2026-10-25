@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Toolchain before/after</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  td ul{margin:0;padding-left:18px}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0 26px}
+  .pair.phone{grid-template-columns:repeat(2,minmax(0,300px))}
+  .pair figure{margin:0}
+  .pair img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+  .pair figcaption{font:12px/1.4 var(--sans);color:var(--muted);margin-top:4px}
+  .noise img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px}
+  .same{color:var(--good);font-weight:600}
+  .nz{color:var(--warn);font-weight:600}
+  h3.state{margin:28px 0 4px;font-size:17px}
+  @media (max-width:640px){.pair,.pair.phone{grid-template-columns:1fr}}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">Frontend toolchain · before and after · 25 Oct 2026</p>
+  <h1>The new toolchain changes nothing you can see: 83 of 88 screens are pixel-identical, the other 5 differ only as two captures of the old build differ from each other, and every exported cell is the same.</h1>
+  <p class="dek">T2, T1, T3 and X1 are built as you signed them off, test first, and committed on the branch <code>claude/frontend-toolchain-plan</code>. <code>npm audit</code> went from 15 findings to 0. Nothing is pushed. A push to main puts the new bundle on PROD&rsquo;s WordPress pages with no approval step, so your approval of this sheet comes first.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>npm audit 15 &rarr; 0</span>
+    <span class="pill good"><span class="dot"></span>88 screens: 83 identical, 5 capture noise, 0 changed</span>
+    <span class="pill good"><span class="dot"></span>8 exports, 642 cells, 0 differ</span>
+    <span class="pill good"><span class="dot"></span>preflight 17 of 17</span>
+    <span class="pill warn"><span class="dot"></span>1 question</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="decide">
+    <p class="kicker">§ 0 · decided, and one question</p>
+    <h2>S1 A: signed off on 25 Oct, the push is under way</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>S1</b></td><td>The upgrade as shown on this sheet: the versions in § 1, including five points the plan did not spell out (marked <b>new</b> there), and screens and exports unchanged.</td><td><b>A</b> push it: pull request, CI on Node 24, where I also read the log for the two Node deprecation lines (§ 6); then integration, main, CI and the Release, watched to the end, and the bundles checked on Pages<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span> <b>signed off</b></td></tr>
+        <tr><td><b>F7</b></td><td>Finding F7 below: on three elements a bare <code>demo</code> attribute reads as off. No page uses it, so nothing on the site changes either way; the fix changes how those elements read the attribute.</td><td><b>A</b> fix it in this session, right after this release: a failing test first, <code>demo</code> declared Boolean on the three elements, its own before/after sheet<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+    <p><b>One step for you after the release:</b> run <code>npm ci</code> in <code>/Users/aleks/coding/SPWSranklist/frontend</code> once the primary checkout is updated to main. Every new worktree links that folder, and with the old Vite 5 and Vitest 1.6 in it, the new configuration would not run there.</p>
+  </section>
+
+  <section id="found">
+    <p class="kicker">§ 0a · found along the way</p>
+    <h2>Eight issues met during the work: six fixed here, one open (F7), one step for you</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Issue</th><th>Cause</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td><td>Preflight&rsquo;s &ldquo;published pages match scoring.ts&rdquo; failed under Vite 8</td><td><code>build-scoring-pages.mjs</code> imports <code>esbuild</code>, which <code>package.json</code> never declared; only Vite 5 installed it</td><td>fixed: declared, FETOOL.05 (seen red); pages byte-identical</td></tr>
+        <tr><td>F2</td><td>Vite 8&rsquo;s default browsers would drop older iPhones and iPads (the register page&rsquo;s phone rule became <code>width&lt;=480px</code>)</td><td>Vite 8 defaults to Safari 16.4 / Chrome 111</td><td>fixed: both builds name Vite 5&rsquo;s list</td></tr>
+        <tr><td>F3</td><td><code>tests/assets.test.ts</code> failed to load its two sources</td><td>Vite 6+ refuses a <code>?raw</code> import outside the allowed folders</td><td>fixed: <code>server.fs.allow</code> adds <code>doc/tools/</code></td></tr>
+        <tr><td>F4</td><td>Every Vitest worker warned about <code>--localstorage-file</code></td><td>Vitest 4 ignores <code>poolOptions</code>, so Node 25&rsquo;s Web Storage was no longer switched off</td><td>fixed: <code>execArgv</code> at the top level; no warning lines</td></tr>
+        <tr><td>F5</td><td>The frontend handbook page described a send button that no longer exists</td><td>left from the FTL e-mail delivery (22898398), removed on 24 Oct</td><td>fixed: the sentence is gone</td></tr>
+        <tr><td>F6</td><td>Three pgTAP tests failed on LOCAL</td><td>LOCAL already ran main&rsquo;s ADR-117 migration while this branch was behind main</td><td>fixed: main merged in; 17 of 17 gates</td></tr>
+        <tr><td>F7</td><td>On <code>&lt;spws-registration&gt;</code>, <code>&lt;spws-entry-list&gt;</code> and <code>&lt;spws-ftl-export&gt;</code> a bare <code>demo</code> attribute reads as off; on the ranking and the calendar it reads as on</td><td>the three declare <code>demo</code> as a boolean prop but not as a Boolean attribute, so the attribute arrives as the empty string</td><td><b>open: question F7 in § 0</b>. No page or document uses the attribute; the tests pass the property</td></tr>
+        <tr><td>F8</td><td>The primary checkout&rsquo;s <code>node_modules</code> still holds the old tools</td><td>every worktree links it; it is installed by hand</td><td>your step after the release (§ 0)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="what">
+    <p class="kicker">§ 1 · what changed</p>
+    <h2>Packages, before and after</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Package</th><th>Before</th><th>After</th><th>Step</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td><code>vitest</code></td><td>1.6.1</td><td>4.1.12</td><td>T2</td><td>Clears the two critical findings (tinypool) and vite-node. <b>4, not 5:</b> Vitest 5 leaves out Node 25, which this Mac runs.</td></tr>
+        <tr><td><code>jsdom</code></td><td>24</td><td>29.1.1</td><td>T2</td><td>No more <code>whatwg-encoding</code>. <b>New: 29, not 30.</b> jsdom 30 needs Node 24.15 or later and leaves out Node 25.</td></tr>
+        <tr><td><code>vite</code></td><td>5.4.21</td><td>8.3.5</td><td>T3</td><td>Done with T2: Vitest 4 needs Vite 6 or later, so T2 could not go first on its own.</td></tr>
+        <tr><td><code>@sveltejs/vite-plugin-svelte</code></td><td>4.0.4</td><td>7.3.1</td><td>T3</td><td>Its inspector, flagged with it, is gone.</td></tr>
+        <tr><td><code>svelte-check</code></td><td>4.7.1</td><td>4.7.7</td><td>T3</td><td>Pinned exactly, as before.</td></tr>
+        <tr><td><code>svelte</code>, <code>postcss</code>, <code>nanoid</code>, <code>source-map-js</code>, <code>devalue</code>, <code>ws</code></td><td>5.53.6, 8.5.6, 3.3.11, 1.2.1, 5.6.3, 8.19.0</td><td>5.57.2, 8.5.31, 3.3.20, 1.2.2, 5.9.4, 8.22.0</td><td>T1</td><td><code>npm audit fix</code> without <code>--force</code>. <code>form-data</code> is no longer installed: jsdom 29 does not use it.</td></tr>
+        <tr><td><code>xlsx</code></td><td>0.18.5 (npm)</td><td>0.20.3 (SheetJS)</td><td>X1</td><td>From <code>cdn.sheetjs.com</code>, pinned by its sha512 in the lockfile.</td></tr>
+        <tr><td><code>esbuild</code></td><td>0.21.5, undeclared</td><td>0.28.2, declared</td><td><b>new</b></td><td>The points-table and calculator generator imports it; only Vite 5 had installed it, so preflight failed under Vite 8. The generated pages are byte-identical.</td></tr>
+        <tr><td><code>@supabase/supabase-js</code>, <code>@playwright/test</code></td><td>2.98.0, 1.58.2</td><td>unchanged</td><td></td><td>The lockfile was updated in place, not regenerated.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>New: the browsers stay where they were.</b> Vite 8 compiles for Safari 16.4 and Chrome 111 unless told otherwise; Vite 5 compiled for Safari 14, Chrome 87, Firefox 78 and Edge 88. Left at Vite 8&rsquo;s default, <code>register.html</code>&rsquo;s phone rule became <code>@media (width&lt;=480px)</code>, which older iPhones and iPads ignore. Both builds now name Vite 5&rsquo;s list, so the site keeps serving the devices it served. A search of both bundles, before and after, for syntax newer than ES2020 (logical assignment, class static blocks, <code>#x in</code>) finds none.</p>
+    <p><b>New: <code>vite.config.ts</code> for Vitest 4.</b> <code>execArgv</code> moved to the top level and the config types to <code>vitest/config</code>. Vite 6 and later refuse a <code>?raw</code> import from outside the allowed folders, and <code>tests/assets.test.ts</code> compares the published pages with their sources in <code>doc/tools/</code>, so that folder is allowed for the test runner and the dev server.</p>
+    <p><b>New, in the handbook:</b> the frontend page said &ldquo;The send button is disabled until the persisted organizer address matches the current draft&rdquo;. That button left with the FTL e-mail delivery on 24 Oct (it came in with 22898398), so the sentence is gone; nothing in the code changed for it.</p>
+  </section>
+
+  <section id="screens">
+    <p class="kicker">§ 2 · every screen</p>
+    <h2>88 screens, 83 pixel-identical, 5 capture noise</h2>
+    <p>Each build was assembled as the Release job builds it and served as it is, with LOCAL&rsquo;s data, the clock fixed at 25 Oct 2026 12:00 in Warsaw, and each state captured in Polish and English at 375 and 1280 px. The WordPress pages are their page bodies, one SPWS element each, loading <code>assets/main.ce.js</code>. Each build was captured twice. A pixel counts as changed by the upgrade only if it differs in all four before/after pairings and in neither repeat. For the drawer screens, transitions are switched off in both builds: the slide&rsquo;s last frame otherwise lands differently from one capture to the next.</p>
+    <p>Numbers are pixels that differ, before vs after. Page widths are the same everywhere; no screen scrolls sideways that did not before.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Where</th><th>State</th><th>PL 375</th><th>EN 375</th><th>PL 1280</th><th>EN 1280</th></tr></thead>
+      <tbody>
+        <tr><td>github.io</td><td>Ranking list, as it opens</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io</td><td>PPW view of the list</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io</td><td>A fencer&rsquo;s drilldown</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io</td><td>The drawer open</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="nz">37</span> noise</td></tr>
+        <tr><td>github.io</td><td>The calendar (Znajdź zawody)</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io</td><td>The season rules</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io admin</td><td>Seasons</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io admin</td><td>Events</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io admin</td><td>The event form</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>github.io admin</td><td>Fencers</td><td><span class="nz">1</span> noise</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress /ranking/</td><td>The ranking page</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress /ranking/</td><td>Its drawer open</td><td><span class="same">0</span></td><td><span class="nz">67</span> noise</td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress /ranking/</td><td>A fencer&rsquo;s drilldown</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress /znajdz-zawody/</td><td>The calendar page</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress /kalkulator-punktow/</td><td>The calculator under the SPWS bar</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress /tabela-punktacji/</td><td>The points table under the SPWS bar</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress element</td><td>Registration form, PEW5efs-2026-2027</td><td><span class="nz">9</span> noise</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress element</td><td>Entry list, same event</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>WordPress element</td><td>FTL download page (demo data: LOCAL has no export link)</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>register.html</td><td>Registration form</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="nz">24</span> noise</td><td><span class="same">0</span></td></tr>
+        <tr><td>register.html</td><td>Entry list</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+        <tr><td>register.html</td><td>Export page without a link</td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td><td><span class="same">0</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>The static calculator and points table, and their WordPress copies, are byte-identical files before and after.</p>
+  </section>
+
+  <section id="noise">
+    <p class="kicker">§ 3 · the 5 screens that differ</p>
+    <h2>Each differs by the same pixels between two captures of one build</h2>
+    <h3 class="state">wp-registration · pl · 375</h3>
+    <p>Before vs after: <b>9</b> pixels. The same pixels differ between the two captures of one build: before vs before and after vs after, <b>9</b>. None differs in all four before/after pairings and in neither repeat. Left to right: before, before again, after, after again.</p>
+    <div class="noise"><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-registration_pl_375.noise.png" alt="wp-registration_pl_375: before, before again, after, after again, magnified"></div>
+    <h3 class="state">admin-fencers · pl · 375</h3>
+    <p>Before vs after: <b>1</b> pixels. The same pixels differ between the two captures of one build: before vs before and after vs after, <b>1</b>. None differs in all four before/after pairings and in neither repeat. Left to right: before, before again, after, after again.</p>
+    <div class="noise"><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-fencers_pl_375.noise.png" alt="admin-fencers_pl_375: before, before again, after, after again, magnified"></div>
+    <h3 class="state">wp-ranking-drawer · en · 375</h3>
+    <p>Before vs after: <b>67</b> pixels. The same pixels differ between the two captures of one build: before vs before and after vs after, <b>67</b>. None differs in all four before/after pairings and in neither repeat. Left to right: before, before again, after, after again.</p>
+    <div class="noise"><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drawer_en_375.noise.png" alt="wp-ranking-drawer_en_375: before, before again, after, after again, magnified"></div>
+    <h3 class="state">reg-form · pl · 1280</h3>
+    <p>Before vs after: <b>24</b> pixels. The same pixels differ between the two captures of one build: before vs before and after vs after, <b>24</b>. None differs in all four before/after pairings and in neither repeat. Left to right: before, before again, after, after again.</p>
+    <div class="noise"><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-form_pl_1280.noise.png" alt="reg-form_pl_1280: before, before again, after, after again, magnified"></div>
+    <h3 class="state">app-drawer · en · 1280</h3>
+    <p>Before vs after: <b>37</b> pixels. The same pixels differ between the two captures of one build: before vs before and after vs after, <b>37</b>. None differs in all four before/after pairings and in neither repeat. Left to right: before, before again, after, after again.</p>
+    <div class="noise"><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drawer_en_1280.noise.png" alt="app-drawer_en_1280: before, before again, after, after again, magnified"></div>
+  </section>
+
+  <section id="exports">
+    <p class="kicker">§ 4 · X1, the ODS exports</p>
+    <h2>Eight real exports, compared cell by cell: none differs</h2>
+    <p>Every ODS the app offers was downloaded from both builds: the list in both views and the first fencer&rsquo;s drilldown in both views, in Polish and English. Each cell&rsquo;s type, value and text was compared.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Export</th><th>Lang.</th><th>Sheet</th><th>Rows</th><th>Cells</th><th>Differ</th></tr></thead>
+      <tbody>
+        <tr><td>Drilldown, PPW view (KAMIŃSKA Gabriela)</td><td>EN</td><td>KAMIŃSKA Gabriela</td><td>7</td><td>98</td><td class="same">0</td></tr>
+        <tr><td>Drilldown, Ranking view (KAMIŃSKA Gabriela)</td><td>EN</td><td>KAMIŃSKA Gabriela</td><td>11</td><td>154</td><td class="same">0</td></tr>
+        <tr><td>List, PPW view</td><td>EN</td><td>PPW Ranking</td><td>8</td><td>24</td><td class="same">0</td></tr>
+        <tr><td>List, Ranking view</td><td>EN</td><td>Ranking</td><td>9</td><td>45</td><td class="same">0</td></tr>
+        <tr><td>Drilldown, PPW view (KAMIŃSKA Gabriela)</td><td>PL</td><td>KAMIŃSKA Gabriela</td><td>7</td><td>98</td><td class="same">0</td></tr>
+        <tr><td>Drilldown, Ranking view (KAMIŃSKA Gabriela)</td><td>PL</td><td>KAMIŃSKA Gabriela</td><td>11</td><td>154</td><td class="same">0</td></tr>
+        <tr><td>List, PPW view</td><td>PL</td><td>PPW Ranking</td><td>8</td><td>24</td><td class="same">0</td></tr>
+        <tr><td>List, Ranking view</td><td>PL</td><td>Ranking</td><td>9</td><td>45</td><td class="same">0</td></tr>
+      </tbody>
+    </table></div>
+    <p>File names and sizes are the same. Inside the files, two things differ, neither of them data: the generator line reads <code>SheetJS 0.20.3</code> instead of <code>0.18.5</code>, and the same two style definitions are written in the other order. The sheet itself (<code>office:body</code>) is byte-identical in all eight.</p>
+  </section>
+
+  <section id="bundles">
+    <p class="kicker">§ 5 · what Pages and WordPress will load</p>
+    <h2>Larger files, smaller downloads</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>File</th><th>Before</th><th>After</th><th>gzip before</th><th>gzip after</th></tr></thead>
+      <tbody>
+        <tr><td>github.io app</td><td><code>index-CIw6KV5d.js</code>, 1,191,996 B</td><td><code>index-BD0qUYpz.js</code>, 1,207,774 B</td><td>351.6 kB</td><td>348.1 kB</td></tr>
+        <tr><td>WordPress embed</td><td><code>main.ce.js</code>, 1,229,447 B</td><td><code>main.ce.js</code>, 1,243,747 B</td><td>363.5 kB</td><td>359.0 kB</td></tr>
+        <tr><td><code>register.html</code></td><td>3,845 B</td><td>3,536 B</td><td colspan="2">its inline style is minified now; the same rules</td></tr>
+      </tbody>
+    </table></div>
+    <p><code>main.ce.js</code> keeps its stable name, as the Release guard requires, and both stay under the 1,300 kB budget. Built for Vite 8&rsquo;s own default browsers, the app bundle measured 1,193,140 B; naming Vite 5&rsquo;s older browsers adds the other 14.6 kB, code rewritten for them.</p>
+  </section>
+
+  <section id="checks">
+    <p class="kicker">§ 6 · tests and gates</p>
+    <h2>Test first, then every gate</h2>
+    <ul>
+      <li><b>FETOOL.00&ndash;05</b> (<code>python/tests/test_frontend_toolchain.py</code>), each seen failing before the change: no package in a range from today&rsquo;s <code>npm audit</code>; no <code>whatwg-encoding</code>; every engine range accepts the first Node 24 release; <code>xlsx</code> from SheetJS by its hash; every package a frontend script imports is declared. RTM rows added.</li>
+      <li>Vitest: 72 files, 1,251 tests before and after, and no warning lines. Playwright: 62 of 62. svelte-check: 0 errors, 0 warnings.</li>
+      <li><code>scripts/preflight.sh</code>: 17 of 17 after merging main (which had moved on with ADR-117; nothing of it under <code>frontend/</code>).</li>
+      <li>The two Node deprecation lines CI printed, <code>DEP0040 punycode</code> and <code>DEP0169 url.parse()</code>, do not show under Node 25 here. No package left calls the core <code>punycode</code>. The <code>url.parse</code> calls left are fallbacks: Vite&rsquo;s runs only without a native <code>URL</code>, and svelte-check&rsquo;s is a language-server helper. The pull request&rsquo;s CI log on Node 24 is the proof; if a line is still there, I trace it before anything merges.</li>
+    </ul>
+  </section>
+
+  <section id="gallery">
+    <p class="kicker">§ 7 · the screens</p>
+    <h2>Every state, before and after: Polish at 1280 px, English at 375 px</h2>
+    <p>Cut at 1,600 px tall for this page; the comparison covers each whole page. All 88 captures of each run are kept with the comparison data.</p>
+    <h3 class="state">github.io · Ranking list, as it opens</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ranklist_pl_1280.before.webp" alt="Before · app-ranklist · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ranklist_pl_1280.after.webp" alt="After · app-ranklist · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ranklist_en_375.before.webp" alt="Before · app-ranklist · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ranklist_en_375.after.webp" alt="After · app-ranklist · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io · PPW view of the list</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ppw_pl_1280.before.webp" alt="Before · app-ppw · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ppw_pl_1280.after.webp" alt="After · app-ppw · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ppw_en_375.before.webp" alt="Before · app-ppw · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-ppw_en_375.after.webp" alt="After · app-ppw · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io · A fencer&rsquo;s drilldown</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drilldown_pl_1280.before.webp" alt="Before · app-drilldown · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drilldown_pl_1280.after.webp" alt="After · app-drilldown · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drilldown_en_375.before.webp" alt="Before · app-drilldown · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drilldown_en_375.after.webp" alt="After · app-drilldown · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io · The drawer open</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drawer_pl_1280.before.webp" alt="Before · app-drawer · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drawer_pl_1280.after.webp" alt="After · app-drawer · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drawer_en_375.before.webp" alt="Before · app-drawer · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-drawer_en_375.after.webp" alt="After · app-drawer · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io · The calendar (Znajdź zawody)</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-calendar_pl_1280.before.webp" alt="Before · app-calendar · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-calendar_pl_1280.after.webp" alt="After · app-calendar · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-calendar_en_375.before.webp" alt="Before · app-calendar · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-calendar_en_375.after.webp" alt="After · app-calendar · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io · The season rules</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-rules_pl_1280.before.webp" alt="Before · app-rules · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-rules_pl_1280.after.webp" alt="After · app-rules · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-rules_en_375.before.webp" alt="Before · app-rules · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/app-rules_en_375.after.webp" alt="After · app-rules · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io admin · Seasons</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-seasons_pl_1280.before.webp" alt="Before · admin-seasons · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-seasons_pl_1280.after.webp" alt="After · admin-seasons · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-seasons_en_375.before.webp" alt="Before · admin-seasons · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-seasons_en_375.after.webp" alt="After · admin-seasons · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io admin · Events</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-events_pl_1280.before.webp" alt="Before · admin-events · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-events_pl_1280.after.webp" alt="After · admin-events · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-events_en_375.before.webp" alt="Before · admin-events · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-events_en_375.after.webp" alt="After · admin-events · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io admin · The event form</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-event-form_pl_1280.before.webp" alt="Before · admin-event-form · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-event-form_pl_1280.after.webp" alt="After · admin-event-form · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-event-form_en_375.before.webp" alt="Before · admin-event-form · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-event-form_en_375.after.webp" alt="After · admin-event-form · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">github.io admin · Fencers</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-fencers_pl_1280.before.webp" alt="Before · admin-fencers · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-fencers_pl_1280.after.webp" alt="After · admin-fencers · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-fencers_en_375.before.webp" alt="Before · admin-fencers · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/admin-fencers_en_375.after.webp" alt="After · admin-fencers · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress /ranking/ · The ranking page</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking_pl_1280.before.webp" alt="Before · wp-ranking · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking_pl_1280.after.webp" alt="After · wp-ranking · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking_en_375.before.webp" alt="Before · wp-ranking · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking_en_375.after.webp" alt="After · wp-ranking · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress /ranking/ · Its drawer open</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drawer_pl_1280.before.webp" alt="Before · wp-ranking-drawer · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drawer_pl_1280.after.webp" alt="After · wp-ranking-drawer · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drawer_en_375.before.webp" alt="Before · wp-ranking-drawer · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drawer_en_375.after.webp" alt="After · wp-ranking-drawer · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress /ranking/ · A fencer&rsquo;s drilldown</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drilldown_pl_1280.before.webp" alt="Before · wp-ranking-drilldown · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drilldown_pl_1280.after.webp" alt="After · wp-ranking-drilldown · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drilldown_en_375.before.webp" alt="Before · wp-ranking-drilldown · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ranking-drilldown_en_375.after.webp" alt="After · wp-ranking-drilldown · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress /znajdz-zawody/ · The calendar page</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calendar_pl_1280.before.webp" alt="Before · wp-calendar · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calendar_pl_1280.after.webp" alt="After · wp-calendar · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calendar_en_375.before.webp" alt="Before · wp-calendar · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calendar_en_375.after.webp" alt="After · wp-calendar · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress /kalkulator-punktow/ · The calculator under the SPWS bar</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calculator_pl_1280.before.webp" alt="Before · wp-calculator · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calculator_pl_1280.after.webp" alt="After · wp-calculator · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calculator_en_375.before.webp" alt="Before · wp-calculator · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-calculator_en_375.after.webp" alt="After · wp-calculator · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress /tabela-punktacji/ · The points table under the SPWS bar</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-table_pl_1280.before.webp" alt="Before · wp-table · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-table_pl_1280.after.webp" alt="After · wp-table · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-table_en_375.before.webp" alt="Before · wp-table · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-table_en_375.after.webp" alt="After · wp-table · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress element · Registration form, PEW5efs-2026-2027</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-registration_pl_1280.before.webp" alt="Before · wp-registration · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-registration_pl_1280.after.webp" alt="After · wp-registration · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-registration_en_375.before.webp" alt="Before · wp-registration · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-registration_en_375.after.webp" alt="After · wp-registration · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress element · Entry list, same event</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-entry-list_pl_1280.before.webp" alt="Before · wp-entry-list · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-entry-list_pl_1280.after.webp" alt="After · wp-entry-list · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-entry-list_en_375.before.webp" alt="Before · wp-entry-list · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-entry-list_en_375.after.webp" alt="After · wp-entry-list · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">WordPress element · FTL download page (demo data: LOCAL has no export link)</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ftl-export-demo_pl_1280.before.webp" alt="Before · wp-ftl-export-demo · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ftl-export-demo_pl_1280.after.webp" alt="After · wp-ftl-export-demo · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ftl-export-demo_en_375.before.webp" alt="Before · wp-ftl-export-demo · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/wp-ftl-export-demo_en_375.after.webp" alt="After · wp-ftl-export-demo · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">register.html · Registration form</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-form_pl_1280.before.webp" alt="Before · reg-form · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-form_pl_1280.after.webp" alt="After · reg-form · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-form_en_375.before.webp" alt="Before · reg-form · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-form_en_375.after.webp" alt="After · reg-form · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">register.html · Entry list</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-list_pl_1280.before.webp" alt="Before · reg-list · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-list_pl_1280.after.webp" alt="After · reg-list · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-list_en_375.before.webp" alt="Before · reg-list · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-list_en_375.after.webp" alt="After · reg-list · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+    <h3 class="state">register.html · Export page without a link</h3>
+    <div class="pair">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-export-no-link_pl_1280.before.webp" alt="Before · reg-export-no-link · PL · 1280"><figcaption>Before · PL · 1280 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-export-no-link_pl_1280.after.webp" alt="After · reg-export-no-link · PL · 1280"><figcaption>After · PL · 1280 px</figcaption></figure>
+    </div>
+    <div class="pair phone">
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-export-no-link_en_375.before.webp" alt="Before · reg-export-no-link · EN · 375"><figcaption>Before · EN · 375 px</figcaption></figure>
+      <figure><img loading="lazy" src="frontend-toolchain-before-after-2026-10-25/reg-export-no-link_en_375.after.webp" alt="After · reg-export-no-link · EN · 375"><figcaption>After · EN · 375 px</figcaption></figure>
+    </div>
+  </section>
+
+  <p class="foot">frontend-toolchain-before-after-2026-10-25 · 25 Oct 2026 · branch claude/frontend-toolchain-plan, commits 3aa5f27e and the merge of main 243716ad · LOCAL Supabase, headless Chromium (Playwright), the Release job&rsquo;s build steps without credential injection · plan: frontend-toolchain-warnings-and-audit-2026-10-25.html</p>
+</div>
+</body></html>
