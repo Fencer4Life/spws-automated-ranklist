@@ -68,7 +68,7 @@ jobs:
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       # --- Schema fingerprint from LOCAL Docker Supabase ---
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Pinned, not `latest`. `latest` makes the action resolve the version
           # through the GitHub releases API on every job, unauthenticated, and
@@ -297,7 +297,7 @@ jobs:
 
       # ADR-041: deploy Edge Functions to CERT. Idempotent — Supabase replaces
       # the function on each deploy. Function source: supabase/functions/.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Pinned for the same reason as the build job above: `latest` costs a
           # rate-limited GitHub API lookup per job. Keep all three in step.
@@ -407,7 +407,7 @@ jobs:
           echo "PROD fingerprint verified: $CLOUD_FP"
 
       # ADR-041: deploy Edge Functions to PROD.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # Pinned for the same reason as the build job above: `latest` costs a
           # rate-limited GitHub API lookup per job. Keep all three in step.

@@ -18,7 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: supabase/setup-cli@v1
+      # v3 is a composite action and needs no Node runtime; v1 targeted the
+      # deprecated Node.js 20 (WFSETUP.01). The CLI version below is separate.
+      - uses: supabase/setup-cli@v3
         with:
           # PINNED ON PURPOSE — read this before changing it.
           #
