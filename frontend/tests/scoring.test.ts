@@ -363,24 +363,34 @@ describe('SE27.JOIN — the guarantees hold in every finishing order', () => {
     const label = Object.entries(sizes)
       .map(([c, k]) => `V${c} ${k}`)
       .join(' + ')
+    // The five-category line-up has 37,800 finishing orders. One expect() per
+    // check made about a million assertion objects: 2 s alone, past Vitest's 5 s
+    // timeout whenever the machine was busy. Plain comparisons collect what
+    // breaks, with toBeCloseTo(…, 9)'s tolerance, and one expect reports it.
     it(`${label}: Z1 youngest is EVF, Z3/Z4 at least 1 below the fencer ahead, Z2 small categories never below their meeting`, () => {
       const youngest = Math.min(...Object.keys(sizes).map(Number))
+      const broken: string[] = []
       for (const order of allOrders(sizes)) {
         const lines = scoreBracket(PARAMS, order, 1)
         const n = order.length
         const seen: Record<number, number> = {}
         lines.forEach((line, i) => {
+          const at = `${order.join('')} place ${i + 1}`
           seen[line.category] = (seen[line.category] ?? 0) + 1
           if (line.category === youngest) {
             const evf = scoreComponents(PARAMS, CLASSIC_ENGINE, n, i + 1, 1).rawTotal
-            expect(line.rawTotal).toBeCloseTo(evf, 9)
+            if (!(Math.abs(line.rawTotal - evf) < 0.5e-9)) broken.push(`${at}: Z1 ${line.rawTotal}, EVF ${evf}`)
           }
-          if (i > 0) expect(lines[i - 1].rawTotal - line.rawTotal).toBeGreaterThanOrEqual(1 - 1e-9)
-          if (sizes[line.category] <= 3) {
-            expect(line.finalScore).toBeGreaterThanOrEqual(meeting(sizes[line.category], seen[line.category]))
+          if (i > 0 && !(lines[i - 1].rawTotal - line.rawTotal >= 1 - 1e-9)) {
+            broken.push(`${at}: Z3/Z4 ${line.rawTotal} after ${lines[i - 1].rawTotal}`)
+          }
+          const floor = meeting(sizes[line.category], seen[line.category])
+          if (sizes[line.category] <= 3 && !(line.finalScore >= floor)) {
+            broken.push(`${at}: Z2 ${line.finalScore} below its meeting ${floor}`)
           }
         })
       }
+      expect(broken.length, broken.slice(0, 10).join('\n')).toBe(0)
     })
   }
 

@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="b6ed894554447f3bd71030efa4f54fdcaf0ce0427def6e1ae2567c2b77892346">
+<meta name="doc-source-sha256" content="c8682ea5c85df839b299ee6bd60cd9f0559490bd99ad68406c379134c6c89cd3">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>615 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>618 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -3161,6 +3161,13 @@
 <td><strong>Landed</strong> (2026-10-25)</td>
 </tr>
 <tr>
+<td>WFNODE.02</td>
+<td><code>actions/setup-node</code> runs at a release whose own bundle prints no Node deprecation on Node 24 (v7 and later); v5 printed <code>DEP0040 punycode</code> and <code>DEP0169 url.parse()</code> in every job that sets up Node (F11).</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_runners.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
 <td>REPO.01</td>
 <td>No dependency folder is tracked: no path under <code>node_modules/</code> or <code>.venv/</code> is in git, so a new worktree links the shared folder (G1 A).</td>
 <td>pytest</td>
@@ -3198,6 +3205,20 @@
 <tr>
 <td>FETOOL.04</td>
 <td><code>xlsx</code> is SheetJS's fixed 0.20.3 from <code>cdn.sheetjs.com</code>, pinned by its sha512 in the lockfile; npm's last version, 0.18.5, carries two advisories (X1 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_frontend_toolchain.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>FETOOL.05</td>
+<td>Every package a script under <code>frontend/scripts/</code> imports is declared in <code>frontend/package.json</code>; <code>build-scoring-pages.mjs</code> imported an undeclared <code>esbuild</code> that only Vite 5 installed (F1).</td>
+<td>pytest</td>
+<td><code>python/tests/test_frontend_toolchain.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>FETOOL.06</td>
+<td>Every package in the lockfile with an install script is approved in <code>frontend/package.json</code>'s <code>allowScripts</code>, pinned to the reviewed version; npm warned on every install and npm 12 skips unapproved scripts (F9).</td>
 <td>pytest</td>
 <td><code>python/tests/test_frontend_toolchain.py</code></td>
 <td><strong>Landed</strong> (2026-10-25)</td>
@@ -3343,5 +3364,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b6ed894554447f3bd71030efa4f54fdcaf0ce0427def6e1ae2567c2b77892346</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>c8682ea5c85df839b299ee6bd60cd9f0559490bd99ad68406c379134c6c89cd3</code></footer>
 </div></body></html>

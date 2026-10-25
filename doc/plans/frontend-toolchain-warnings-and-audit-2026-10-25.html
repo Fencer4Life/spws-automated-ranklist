@@ -129,10 +129,10 @@
   <h1>CI prints three deprecation warnings and npm finds 15 vulnerabilities in the frontend&rsquo;s packages; clearing them means upgrading the toolchain that builds the site.</h1>
   <p class="dek">G1 and Node 24 are released and verified. The warnings left in the CI log, and the 15 findings <code>npm audit</code> reports, all come from the frontend&rsquo;s packages, most of them from the test and build tools. Four steps clear them. Two of those steps change what the site ships, so they come with a before-and-after sheet for your approval before anything is pushed.</p>
   <div class="meta">
-    <span class="pill good"><span class="dot"></span>G1 + Node 24 released · bundle byte-identical</span>
-    <span class="pill warn"><span class="dot"></span>15 audit findings · 2 critical, 8 high, 5 moderate</span>
-    <span class="pill warn"><span class="dot"></span>4 questions</span>
+    <span class="pill good"><span class="dot"></span>T2, T1, T3, X1: all A · released 25 Oct, main 86016bdc</span>
+    <span class="pill good"><span class="dot"></span>npm audit 15 &rarr; 0</span>
   </div>
+  <p class="note"><b>Outcome.</b> Signed off as T2 A, T1 A, T3 A, X1 A and built as one change (T2 could not go alone: Vitest 4 needs Vite 6 or later); released on 25 Oct after the before/after sheet&rsquo;s S1 A. Results, what differed from this plan, and the issues found after: <a href="frontend-toolchain-before-after-2026-10-25.html">frontend-toolchain-before-after-2026-10-25.html</a>.</p>
 
   <hr class="rule">
 

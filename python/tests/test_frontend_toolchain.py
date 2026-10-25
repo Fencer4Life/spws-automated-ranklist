@@ -1,4 +1,4 @@
-"""FETOOL.00-05 — the front end's packages, read from frontend/package-lock.json.
+"""FETOOL.00-06 — the front end's packages, read from frontend/package-lock.json.
 
 T2 A, T1 A, T3 A and X1 A on doc/plans/frontend-toolchain-warnings-and-audit-2026-10-25.html
 (25 Oct 2026). `npm audit` reported 15 findings, two of them critical, and every CI run
@@ -21,6 +21,11 @@ its fixed releases only on its own CDN; the lockfile pins the tarball by its sha
 FETOOL.05: frontend/scripts/build-scoring-pages.mjs imported esbuild, which package.json
 never declared; Vite 5 happened to install it, Vite 8 does not, and the preflight gate
 "published pages match scoring.ts" failed. Every package a script imports is declared.
+
+FETOOL.06 (F9 on doc/plans/frontend-toolchain-before-after-2026-10-25.html): every
+`npm ci` warned "1 package has install scripts not yet covered by allowScripts" for
+esbuild. npm 12 skips an install script that package.json's allowScripts does not
+approve; every package with one is approved, pinned to the version reviewed.
 """
 
 from __future__ import annotations
@@ -192,3 +197,15 @@ def test_FETOOL_05_every_package_a_frontend_script_imports_is_declared():
         if not match.group(1).startswith("node")
     }
     assert imported - declared == set()
+
+
+def test_FETOOL_06_every_install_script_is_approved_in_allow_scripts():
+    manifest = json.loads((FRONTEND / "package.json").read_text(encoding="utf-8"))
+    allowed = manifest.get("allowScripts", {})
+    unapproved = [
+        f"{_name(path)}@{entry['version']}"
+        for path, entry in _packages().items()
+        if entry.get("hasInstallScript")
+        and allowed.get(f"{_name(path)}@{entry['version']}") is not True
+    ]
+    assert unapproved == []
