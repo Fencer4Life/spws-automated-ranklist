@@ -1,6 +1,6 @@
 # ADR-111: PZSz Results Are Admitted Only on Surname, First Name and Birth Year; Ingest for CERT, Promote for PROD, for Every Organizer
 
-**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a), and released to CERT and PROD the same day (main `2bc34500`). The first CERT ingest, of `PPS1s-2026-2027`, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): the start list is a stored input. The CERT ingest reads the newest stored version on a gated day, and promote reads the lists CERT used from CERT by their hashes and never contacts pzszerm.pl (§6). D1's "send it again later" applies only while no list of the event has ever been stored. Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md): EVF and FIE are on the route (§6), and the daily close covers PZSz, EVF and FIE events.
+**Status:** Accepted (decided by the user in chat on 2026-10-06: the admission rule, the copy of the EVF admission, Q1 "ingest for CERT, promote for PROD — the same thing", Q2 A, Q3 A, Q4 A). Implemented and rehearsed on LOCAL on 2026-10-06 (`doc/plans/pzsz-results-plugin-2026-10-06.html` §5a), and released to CERT and PROD the same day (main `2bc34500`). The first CERT ingest, of `PPS1s-2026-2027`, met pzszerm.pl's JavaScript check and wrote nothing; under D1 A it is sent again later. Amended 2026-10-07 by [ADR-112](112-pzsz-start-lists-are-stored-inputs.md): the start list is a stored input. The CERT ingest reads the newest stored version on a gated day, and promote reads the lists CERT used from CERT by their hashes and never contacts pzszerm.pl (§6). D1's "send it again later" applies only while no list of the event has ever been stored. Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md): EVF and FIE are on the route (§6), and the daily close covers PZSz, EVF and FIE events. Amended 2026-10-25 (K1 A, signed off in chat): a user-confirmed alias counts when no fencer of ours carries the name, with the start list's birth year read under our canonical name; see the amendment at the end.
 **Date:** 2026-10-06
 **Amends:** [ADR-100](100-pzsz-senior-result-ingestion.md) (the matching rule for a PZSz bracket, the review queue no longer written, the source of the birth year), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays a PZSz run too; one route to PROD for every organizer)
 **Relates to:** [ADR-106](106-international-intake-by-identity-nationality-per-season.md) (the EVF admission that is copied, left unchanged), [ADR-105](105-international-results-keep-source-bracket.md) (the whole field's N and the original place), [ADR-110](110-ranking-entry-by-roster.md) (the fencer table is the ranking entry), [ADR-087](087-pzsz-senior-calendar-source.md) (the PZSz calendar and `id_pzsz_event`), [ADR-103](103-spws-place-medal-engine-per-type.md) and [ADR-104](104-spws-evf-joined-engine-replaces-place-medal.md) (PPS and MPS stay on EVF classic, unchanged), [ADR-025](025-event-centric-ingestion-telegram.md) (the `ingest` and `promote` commands, unchanged)
@@ -35,6 +35,8 @@ Three further rules, decided in chat:
 - **No PPW or MPW start is required** (unlike EVF, ADR-106). Being in the fencer table is enough.
 - **An estimated birth year of ours is still compared exactly (Q3 A).** A mismatch is skipped and shown first in the report; the administrator confirms the year in Admin and ingests again.
 - **Only our canonical surname and first name count (Q4 A).** Approved aliases are not used.
+
+*Amended 2026-10-25 (K1 A):* a user-confirmed, unrevoked alias counts when no fencer of ours carries the source's name; the birth year is still the start list's, read under our canonical name. A plain matcher alias still does not count. See the amendment at the end.
 
 ### 3 · The birth year comes from the PZSz start list
 
@@ -125,3 +127,21 @@ Both arose from the LOCAL rehearsal of PPS1s-2026-2027 on 2026-10-06. The user d
 - team results.
 
 *Amended 2026-10-17 by [ADR-113](113-ingest-and-promote-carry-every-organizer.md):* the first two are done. Team results remain out of scope.
+
+## Amendment (2026-10-25) — a confirmed alias, read under our canonical name (K1 A)
+
+In PPS1e-2026-2027 (men's épée, Szczecin) FencingTimeLive printed `KORONA-TRZEBSKI Przemysław` at place 37. The PZSz start list printed our canonical `Korona Przemysław`, 1976, on every stored version. Our fencer has `KORONA-TRZEBSKI Przemysław` as a **user-confirmed** alias, unrevoked, on LOCAL, CERT and PROD. §2 looked the FTL name up on the start list, found nothing, and skipped the row as "not on the start list". The user signed off K1 A on 25 October 2026 (`doc/plans/pzsz-results-url-rca-2026-10-25.html` §08).
+
+**Rule.** When no fencer of ours carries the source row's surname and first name, the name may be **exactly one** fencer's user-confirmed, unrevoked alias (`json_user_confirmed_aliases` minus `json_revoked_aliases`), matched as FIE does (ADR-106): whole words, Polish letters folded, a further given name in the source dropped. Then:
+
+- the start list's birth year is read under **our canonical surname and first name**, and it must equal ours exactly, so §2's protection against a junior namesake holds;
+- the row is skipped when another FTL row of the listing prints that canonical name, because the start-list entry would then belong to that row;
+- the row is skipped when two of our fencers share the alias, when our canonical name is missing from the start list or printed there twice, or when the years differ. A different year is reported as a namesake, as in §2.
+
+**Once per listing.** A fencer is stored at most once per listing: when two rows resolve to one fencer, by any route, both are skipped and reported with the fencer's id.
+
+**Unchanged.** A fencer of ours who carries the name canonically decides the row as before, and no alias is consulted. A plain matcher alias that nobody confirmed (`json_name_aliases`) never counts (PZSZ.ADM.05, rewritten). The plugin still imports nothing from the EVF admission (PZSZ.ADM.08): the alias reader is a copy. Nothing creates a fencer, writes an alias, changes a birth year or queues a review.
+
+**Effect.** PPS1e-2026-2027 men's épée stores one more row: place 37, our #139, born 1976. Both events were re-ingested on LOCAL under the rule: PPS1e gains only this row, and PPS1f is unchanged (2 rows).
+
+**Tests.** pytest PZSZ.ADM.09–11 (`python/tests/test_pzsz_admission.py`): stored through a confirmed alias; a revoked alias, a wrong year under our name, our name missing from the start list and an alias shared by two fencers are skipped; a canonical namesake is not overridden; our name printed by another FTL row is skipped; two rows resolving to one fencer are both skipped.

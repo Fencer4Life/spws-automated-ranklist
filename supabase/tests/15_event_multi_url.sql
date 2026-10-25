@@ -153,11 +153,11 @@ SELECT is(
 
 
 -- =========================================================================
--- 15.6 — fn_refresh_evf_event_urls accepts new keys, applies per-slot
---          NULL-only invariant, then re-compacts.
+-- 15.6 — fn_refresh_evf_event_urls writes no results slot (CALURL.11):
+--          the slots are set in Admin only.
 --   Existing event slots: [A, NULL, NULL, NULL, NULL]
---   Refresh payload offers slot #2 = X, slot #3 = Y
---   After refresh: [A, X, Y, NULL, NULL]
+--   Refresh payload offers slot #1 = stomp, slot #2 = X, slot #3 = Y
+--   After refresh: [A, NULL, NULL, NULL, NULL]
 -- =========================================================================
 DO $t156$
 DECLARE
@@ -179,9 +179,9 @@ BEGIN
   );
   v_payload := jsonb_build_array(jsonb_build_object(
     'id_event',     v_id,
-    'url_event',    'https://stomp.example/',  -- should NOT overwrite (slot full)
-    'url_event_2',  'https://x.example/',
-    'url_event_3',  'https://y.example/'
+    'url_event',    'https://stomp.example/',  -- ignored: results slots are Admin's
+    'url_event_2',  'https://x.example/',      -- ignored
+    'url_event_3',  'https://y.example/'       -- ignored
   ));
   PERFORM fn_refresh_evf_event_urls(v_payload);
 END;
@@ -190,8 +190,8 @@ $t156$;
 SELECT is(
   (SELECT ARRAY[url_event, url_event_2, url_event_3, url_event_4, url_event_5]
      FROM tbl_event WHERE txt_code = 'MURL-EV-15-6'),
-  ARRAY['https://a.example/','https://x.example/','https://y.example/',NULL,NULL]::TEXT[],
-  '15.6: fn_refresh_evf_event_urls fills NULL slots #2,#3 and preserves slot #1 (admin-edit protection)'
+  ARRAY['https://a.example/',NULL,NULL,NULL,NULL]::TEXT[],
+  '15.6: fn_refresh_evf_event_urls writes no results slot and keeps the admin''s slot #1'
 );
 
 

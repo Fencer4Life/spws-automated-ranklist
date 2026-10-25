@@ -2,11 +2,11 @@
 -- EVF.URL — an EVF archive page never replaces an event's organiser URL
 -- =============================================================================
 -- The organiser's results page (FTL, Engarde, Ophardt, ...) is the source EVF
--- itself publishes from; the EVF archive page (veteransfencing.eu/event/...)
--- is used only when no organiser URL is stored. The daily EVF sync writes
--- url_event through fn_refresh_evf_event_urls (CERT) and
--- fn_mirror_events_to_prod (PROD), and both fill a blank slot only. The
--- identity sync, fn_sync_evf_event_fields, does not write url_event at all.
+-- itself publishes from. Since 25 Oct 2026 (CALURL, 114_…) no calendar
+-- function writes a results link at all: fn_refresh_evf_event_urls (CERT),
+-- fn_mirror_events_to_prod (PROD) and the identity sync,
+-- fn_sync_evf_event_fields, leave url_event to Admin, so an empty one stays
+-- empty and a stored organiser URL survives them.
 --
 -- On 8 Aug 2026 a one-off migration (20260808000003) replaced the organiser
 -- URLs of Guildford and Stockholm 2025/26 with EVF archive pages; the daily
@@ -69,8 +69,8 @@ SELECT results_eq(
 
 SELECT is(
   (SELECT url_event FROM tbl_event WHERE txt_code = 'PEW2efs-9500-9501'),
-  'https://www.veteransfencing.eu/event/evf-url-02/',
-  'EVF.URL.02 an event with no organiser URL takes the EVF archive page');
+  NULL,
+  'EVF.URL.02 an event with no organiser URL keeps an empty results link (Admin sets it, CALURL.13)');
 
 SELECT ok(
   pg_get_functiondef('fn_sync_evf_event_fields(jsonb)'::regprocedure) !~ 'url_event',

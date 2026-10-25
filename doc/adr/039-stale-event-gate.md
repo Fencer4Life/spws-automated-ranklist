@@ -4,6 +4,7 @@
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — amended by this ADR), ADR-025 (Event-Centric Ingestion + Telegram), ADR-014 (Delete-Reimport Strategy), ADR-069 (FTL URL validator / authed FTL session reuse)
 **Amended by:** [ADR-088](088-calendar-location-contract.md) (the MEDIUM location dedup rung now compares cities to cities on both sides rather than a scraped venue to a stored city; country is present on every affected row, so the STRONG rung decides them during the single transitional run).
+**Superseded in part by:** [ADR-117](117-results-links-admin-only.md) (rev 4's `url_event` date gate and `url_event_if_concluded`, and rev 2's step 2 "populate `url_event`": no calendar automation writes a results slot, and the self-heal rewrites the dates only).
 
 ## Context
 
@@ -45,7 +46,7 @@ Rev 2 replaces the halt with a **self-heal pass** keyed on the **event URL** (`t
    - **(b) primary — EVF calendar:** match the violator to the event the sync already scraped that run (via `match_scraped_to_existing` with the **date gate disabled** — the date is the broken field — so it keys on country/location per Steps 3–4) and take that event's URL + date;
    - **(c) fallback — FTL:** the event's tournament results pages.
    The event URL (FTL `eventSchedule` or `events/results`) is fetched with the authed ADR-069 session (`get_authed_ftl_client` → `fetch_ftl_event_metadata`, which now accepts both URL forms).
-2. **Date-healable** (a valid date `≤ today` was recovered) → rewrite `dt_start`/`dt_end` + the FTL-backed `dt_tournament`, and **populate `url_event`** with the resolved URL. Status stays `COMPLETED`.
+2. **Date-healable** (a valid date `≤ today` was recovered) → rewrite `dt_start`/`dt_end` + the FTL-backed `dt_tournament`, and **populate `url_event`** with the resolved URL. Status stays `COMPLETED`. *Superseded 2026-10-25 by [ADR-117](117-results-links-admin-only.md): the heal rewrites the dates only; the resolved URL is read for its date and not stored.*
 3. **Not date-healable** (no event URL, no calendar match, no FTL date, or auth failure) → **demote `enum_status` `COMPLETED` → `PLANNED`** so the row is no longer future-COMPLETED. `url_event`/date get populated later by the calendar / `populate_tournament_urls` flow; the demotion is logged via the informational **EVF Sync self-heal** Telegram notice.
 
 The status demotion must bypass `fn_validate_event_transition` (Section 3 of `lifecycle_triggers`), which makes `COMPLETED` terminal — the heal disables `trg_event_transition` for that single `UPDATE` (a deliberate system-level reconciliation; the everyday lifecycle contract is unchanged).
@@ -131,11 +132,11 @@ The full outbound-message catalogue lives in the operations manual.
 | `evf.44` | rev 2: `compute_future_completed_corrections` heals a violator from a recovered past date (earliest→dt_start, latest→dt_end); no status flip. |
 | `evf.45` | rev 2: no date recovered → violator returned as a `status_flip` (not a halt). |
 | `evf.46` | rev 2: recovered date still in the future → `status_flip` (no swapping one bad date for another). |
-| `evf.47` | rev 2: `_heal_future_completed` heals from the **event URL** — `UPDATE tbl_event` sets dt + populates `url_event`; no flip. |
+| `evf.47` | rev 2: `_heal_future_completed` heals from the **event URL** — `UPDATE tbl_event` sets dt; no flip. Since ADR-117 it writes no `url_event`. |
 | `evf.48` | rev 2: no recoverable date → no date `UPDATE`; the row's status is demoted instead. |
 | `evf.49` | rev 2: the demotion bypasses the lifecycle trigger (`DISABLE`/`ENABLE TRIGGER trg_event_transition` around `enum_status='PLANNED'`). |
 | `evf.50` | rev 2: `fetch_ftl_event_metadata` parses the date from a `/tournaments/eventSchedule/` event URL (not only `/events/results/`). |
-| `evf.63` | rev 4: `url_event_if_concluded` returns the link only when `dt_end < today`; future / in-progress / ends-today / undated / url-less inputs → `''`. |
+| `evf.63` | rev 4: `url_event_if_concluded` returns the link only when `dt_end < today`. Removed 2026-10-25 with the helper (ADR-117). |
 
 (Plus existing `evf.4`, `evf.5`, `evf.13`, `evf.14`–`evf.18` updated to align with the new ladder.)
 
@@ -157,6 +158,8 @@ so a venue-less repeat scrape can never mint a second row even if the Python ded
 (regression evf.56). Closes `fn_allocate_evf_event_code`'s blank-location blind spot. See ADR-081.
 
 ## Amendment — rev 4 (2026-07-26, evf.63)
+
+*Superseded 2026-10-25 by [ADR-117](117-results-links-admin-only.md).* The gate below still wrote the calendar page once the event had ended, and its one-time clean-up ran before the code was deployed, so the scheduled sync refilled the pages the same morning. No calendar automation writes a results slot now, before or after the event.
 
 `url_event` is an event's **results pointer**: the operator clicks it to reach results, and
 `ingest_cli` uses it as the results source when no explicit `url_results` is set. The calendar
@@ -253,3 +256,7 @@ repair when the supposed duplicates themselves own genuine results.
 ## Amendment (2026-08-28) — `SCHEDULED` and `CHANGED` are not set by this sync
 
 ADR-077 recorded both statuses as "Set by: EVF sync (ADR-039)". Neither ever was: zero rows have carried either in any environment, and no code path in this sync sets them. Both are retired, and every transition reaching them is removed from the validator. What `CHANGED` was intended to flag — EVF moving a date — is now a chip on the event card. See [Event status lifecycle](../handbook/reference/event-status-lifecycle.html).
+
+## Amendment (2026-10-25, ADR-117) — the sync writes no results link
+
+[ADR-117](117-results-links-admin-only.md) supersedes rev 4 and rev 2's step 2. The EVF sync writes no `url_event` … `url_event_5` on create, reuse, refresh or self-heal. The self-heal still recovers an event's date from its event URL, its calendar match or FTL, and rewrites `dt_start`, `dt_end` and `dt_tournament`; the URL it resolved is used for the date only. Results links are set in Admin. `url_event_if_concluded` and its test `evf.63` are removed; `evf.47` asserts that the heal writes the dates and no `url_event`.

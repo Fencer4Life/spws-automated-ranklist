@@ -4,6 +4,7 @@
 **Date:** 2026-04-26
 **Relates to:** ADR-021 (IMEW biennial), ADR-028 (EVF calendar/results import), ADR-039 (stale-event gate / dedup ladder rev 2), ADR-042 (Carry-over engine dispatcher)
 **Amended by:** [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (an unestablished weapon set is skipped rather than fatal; a later cancellation may shift when nothing is anchored to its code).
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (a `CURRENT_SLOT_REUSE` write carries no results slot).
 
 ## Context
 
@@ -258,3 +259,7 @@ description now names the team *European Championship*; its assertion is unchang
 See [`20261006000002_evf_singleton_championships.sql`](../../supabase/migrations/20261006000002_evf_singleton_championships.sql),
 [`107_evf_singleton_championships.sql`](../../supabase/tests/107_evf_singleton_championships.sql)
 (107.1–107.9) and `python/tests/test_evf_calendar.py` (evf.79–evf.83).
+
+## Amendment (2026-10-25, ADR-117) — reuse writes no results link
+
+[ADR-117](117-results-links-admin-only.md): on a `CURRENT_SLOT_REUSE` path the detail-page enrichment no longer includes `url_event`. The other enrichment fields keep the "admin wins for non-empty fields" rule of the Consequences.

@@ -1,19 +1,21 @@
 {
   "version": "0.1.0",
-  "sha": "aacac71890674bbe1bb914b31ace0988d0b4d80d",
-  "created": "2026-10-25T10:32:01Z",
-  "schema_fingerprint": "f778e5755928c43064b749ed45f06e8c",
+  "sha": "3bd13c4e746151b7e7d267028bbb6ef665be7a28",
+  "created": "2026-10-25T12:04:31Z",
+  "schema_fingerprint": "aa13d7be0739cf98cab4e49d4d737cd5",
   "migrations": {
-    "total": 222,
-    "new_since_last": []
+    "total": 223,
+    "new_since_last": [
+      "20261025000001_calendar_never_writes_results_link.sql"
+    ]
   },
   "tests": {
     "pgtap": {
-      "files": 114,
-      "assertions": 1494
+      "files": 115,
+      "assertions": 1503
     },
     "pytest": {
-      "files": 151
+      "files": 152
     },
     "vitest": {
       "files": 72
@@ -21,9 +23,9 @@
   },
   "deployed": {
     "cert": {
-      "at": "2026-10-25T10:32:02Z",
-      "sha": "aacac71890674bbe1bb914b31ace0988d0b4d80d",
-      "schema_fingerprint": "f778e5755928c43064b749ed45f06e8c"
+      "at": "2026-10-25T12:04:32Z",
+      "sha": "3bd13c4e746151b7e7d267028bbb6ef665be7a28",
+      "schema_fingerprint": "aa13d7be0739cf98cab4e49d4d737cd5"
     },
     "prod": {
       "at": "2026-10-25T10:33:05Z",

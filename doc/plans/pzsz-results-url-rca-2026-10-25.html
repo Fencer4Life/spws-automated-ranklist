@@ -1,0 +1,444 @@
+<meta charset="utf-8">
+<title>Results link RCA and fix</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">PZSz · EVF · SPWS · Results link · RCA, signed off, built on LOCAL · 25 Oct 2026 · revision 3</p>
+  <h1>URL wyników stays empty until Admin fills it</h1>
+  <p class="dek">Two calendar scrapers put a <b>calendar page</b> into URL wyników: <b>PZSz</b> since 3 September, and <b>EVF</b> again on PROD since 26 July. Your rule is now built and tested on LOCAL. No scraper and no CERT→PROD mirror writes URL wyników, and they write only the organizer's letter to URL komunikatu. The release clears the stale pages on CERT (7) and PROD (17). <b>You signed it off</b> on 25 October: S1, R1, O1, K1, K2 and D2–D7, all A.</p>
+  <div class="meta">
+    <span class="pill"><span class="dot"></span>signed off · all A</span>
+    <span class="pill"><span class="dot"></span>ADR-117 written · K1 built (+1 row)</span>
+    <span class="pill"><span class="dot"></span>issues #3–#6 built</span>
+    <span class="pill warn"><span class="dot"></span>next: release 1</span>
+  </div>
+
+  <hr class="rule">
+
+  <section>
+    <p class="kicker">00 · Since your sign-off</p>
+    <h2>What is built, and what comes next</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Item</th><th>State</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>S1 · ADR-117</td><td><span class="chip never">written</span></td><td><code>doc/adr/117-results-links-admin-only.md</code> and its HTML twin. Amendments in ADR-028, 039 (rev 4 and rev 2 step 2 superseded), 040, 043, 081, 087 and 116; specification Appendix C; RTM FR-160 and CALURL.01–08, 10–19; handbook: events invariant, lifecycle tiers, runbooks, workflow catalog, ingestion.</td></tr>
+        <tr><td>K1 · confirmed aliases</td><td><span class="chip never">built</span></td><td>ADR-111 amended. PZSZ.ADM.09–11 seen red, now green; PZSZ.ADM.05 rewritten. LOCAL PPS1e re-ingested: KOLER 32, <b>KORONA 37 (#139, 1976)</b>, SPŁAWA-NEYMAN 65, DZIUBIŃSKI 98. PPS1f re-ingested: unchanged, 2 rows.</td></tr>
+        <tr><td>#3 · non-schedule link</td><td><span class="chip never">built</span></td><td>A link that is not an FTL event schedule, and a schedule that lists nothing, are refused before anything is saved or wiped; the run closes FAILED (CALURL.16–17, domestic and PZSz paths).</td></tr>
+        <tr><td>#4 · D3 · <code>--dry-run</code></td><td><span class="chip never">built</span></td><td>Refused with <code>--flow</code>, the URL and the XML path alike: both write live (CALURL.18). The <code>ftl-scrape</code> skill says so.</td></tr>
+        <tr><td>#5 · help text</td><td><span class="chip never">built</span></td><td><code>--url-event</code> and the <code>ingest-event.yml</code> input say the link is saved as URL wyników (CALURL.19).</td></tr>
+        <tr><td>#6 · <code>.env</code> in worktrees</td><td><span class="chip never">built</span></td><td>A new worktree links the primary's <code>.env</code>, kept out of git status (SS.18).</td></tr>
+        <tr><td>R1 · release 1</td><td><span class="chip warn">next</span></td><td><code>scripts/preflight.sh</code> to exit 0, commit, push to main, CI and the Release watched in the foreground; then CERT and PROD checked through what the site reads.</td></tr>
+        <tr><td>O1 · PPS1f, then PPS1e</td><td><span class="chip plain">after R1</span></td><td><code>ingest-event.yml</code> with PROD's FTL link; you send <code>promote</code>.</td></tr>
+        <tr><td>K2, D2, D7, D5, D4</td><td><span class="chip plain">after R1</span></td><td>Built test-first as the second batch, then release 2.</td></tr>
+        <tr><td>D6</td><td><span class="chip plain">yours</span></td><td>Update <code>~/.supabase_secrets</code>; remove the two plaintext tokens from <code>~/.claude/settings.json</code>.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Full pytest after these changes: 2,189 passed, 14 skipped. Two old fixtures used a made-up host or an empty schedule; they now carry a real FTL schedule shape, with each test's intent kept.</p>
+  </section>
+
+  <section>
+    <p class="kicker">01 · Your question</p>
+    <h2>Why the event's page was written to URL wyników</h2>
+    <div class="note danger">
+      <p class="lede"><span class="tick">×</span> PZSz: <code>pzsz-sync.yml</code> wrote it when it created each event</p>
+      <p>The listing parser built <code>https://pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=&lt;id&gt;</code> for every row (<code>pzsz_calendar.py:221</code>), and the create <code>INSERT</code> put it into <code>url_event</code> (<code>pzsz_sync.py:134</code>). It has been there since the first PZSz commit, <code>034f41fa</code> on 3 September. No ADR or plan ever decided it, and no comment explains it.</p>
+      <p>The value is PZSz's event page, which links the invitation letter and the start lists. The letter itself has always gone to URL komunikatu, correctly. The CERT→PROD mirror copied the page to PROD at creation. PROD's audit log shows <code>url_event</code> changing exactly once since then, when you saved the FTL link at 09:57 today.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">02 · Your question</p>
+    <h2>The same problem for EVF and SPWS?</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Organizer · 2026/27</th><th>PROD</th><th>CERT</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>EVF (19 events)</td><td><span class="chip over">14</span> with the EVF event page in URL wyników; 12 of them are the same link as URL komunikatu</td><td>2 (Samorin, Budapest foil)</td><td><span class="chip over">yes, on PROD</span></td></tr>
+        <tr><td>PZSz (6)</td><td>3 pzszerm.pl pages (round II); your FTL links on round I</td><td>5 pzszerm.pl pages</td><td><span class="chip over">yes</span></td></tr>
+        <tr><td>SPWS (6)</td><td>1 link, FTL, set in Admin</td><td>same</td><td><span class="chip never">no</span></td></tr>
+        <tr><td>FIE (1)</td><td>1 link, FTL</td><td>same</td><td><span class="chip never">no</span></td></tr>
+      </tbody>
+    </table></div>
+    <p>SPWS events have no calendar scraper; their links come only from Admin. The 2025/26 season is clean for every organizer.</p>
+    <h3>How EVF came back on PROD</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>26 Jul, UTC</th><th>What happened</th></tr></thead>
+      <tbody>
+        <tr><td>07:37 · 07:44</td><td>ADR-039 rev 4's one-time cleanup clears the EVF pages on CERT, then on PROD.</td></tr>
+        <tr><td>08:30</td><td>The scheduled <code>evf-sync.yml</code> runs on the <b>old</b> code. The fix was committed only at 18:36 (<code>260b4c36</code>).</td></tr>
+        <tr><td>08:31</td><td>That run writes the EVF pages back on CERT.</td></tr>
+        <tr><td>08:33</td><td>Its reconcile fills PROD's now-empty slots with them: 14 events, “trigger: schedule” (run log <code>doc/staging/reconcile/SPWS-2026-2027.20260726-083331Z.md</code>).</td></tr>
+        <tr><td>9 Aug</td><td>An admin moves them by hand from URL wyników to URL komunikatu, <b>on CERT only</b>. The mirror never carries a clear, so PROD kept them.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> On EVF events this also misleads the ingest</p>
+      <p>The EVF/FIE ingest reads <em>every</em> filled results slot as a source, and EVF's own results only when all slots are empty (<code>international_sources.event_sources</code>). A calendar page in URL wyników therefore replaces EVF's results as the source. Budapest foil (PEW1f, 19 Sep) still carries one on CERT.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">03 · Your rule, 25 Oct</p>
+    <h2>URL wyników stays empty until the Admin UI populates it</h2>
+    <p>Calendar automation writes only URL komunikatu, and only with the organizer's letter, under the same fill rules as before. Your 9 Aug hand move on CERT, the calendar page into URL komunikatu, stays as it is. The scrapers do not repeat it, for two reasons:</p>
+    <ul>
+      <li>The PZSz letter passes <em>read</em> URL komunikatu as the letter to download.</li>
+      <li>The EVF refresh and the mirror fill URL komunikatu only while it is empty.</li>
+    </ul>
+    <p>A calendar page there would be read as the letter and would block the real one. The PZSz page is never lost: it can always be rebuilt from <code>id_pzsz_event</code>.</p>
+    <p>Results links still reach the database from three places, all supplied by a person:</p>
+    <ul>
+      <li>Admin (<code>fn_create_event</code>, <code>fn_update_event</code>);</li>
+      <li>the <code>url_event</code> input of <code>ingest-event.yml</code>;</li>
+      <li>promote, which copies the CERT run's link to an empty PROD slot.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">04 · Built and tested on LOCAL</p>
+    <h2>Every automated writer is closed</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Writer</th><th>Before</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr><td>PZSz create (<code>pzsz_sync.build_insert_sql</code>)</td><td>pzszerm.pl page</td><td>no results slot; the parser's key is renamed <code>url_page</code></td></tr>
+        <tr><td>PZSz “Send ingest” notice (R5)</td><td>“URL no longer pzszerm.pl”</td><td>“an admin has set URL wyników”</td></tr>
+        <tr><td>EVF create/reuse payload</td><td>EVF page once the event ended</td><td>no results slot (<code>url_event_if_concluded</code> removed)</td></tr>
+        <tr><td><code>fn_refresh_evf_event_urls</code></td><td>filled empty slots 1–5</td><td>writes no results slot</td></tr>
+        <tr><td>EVF date heal</td><td>stored the matched calendar link</td><td>uses it for the date only</td></tr>
+        <tr><td><code>fn_mirror_events_to_prod</code> + <code>promote.py</code></td><td>CREATE copied slots 1–5; UPDATE filled empty ones</td><td>neither carries a results slot</td></tr>
+        <tr><td><code>fn_ingest_evf_calendar(JSONB, INT)</code> (older overload)</td><td>wrote the page</td><td>writes no results slot; two dead variables removed</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Clean-up:</strong> <code>fn_clear_calendar_results_links()</code> removes a calendar page from the results slots, and closes the gaps, under three conditions:</p>
+    <ul>
+      <li>the event's season has not ended;</li>
+      <li>the value is a pzszerm.pl or veteransfencing.eu event page;</li>
+      <li>no admin save ever changed the slot to that value.</li>
+    </ul>
+    <p>Migration <code>20261025000001</code> runs it on CERT and PROD. <code>seed_post_backfill.sql</code> runs it after a fresh bootstrap, because there the seed loads after the migrations.</p>
+    <p><strong>Tests:</strong></p>
+    <ul>
+      <li>pytest <code>test_calendar_results_link.py</code> (CALURL.01–07) and CALURL.08: all seen red first, now green.</li>
+      <li>pgTAP <code>114_calendar_never_writes_results_link.sql</code> (CALURL.10–15, 9 assertions): seen red, now green.</li>
+      <li>Five old assertions rewritten to the new rule: <code>prom.8</code>, <code>evf.47</code>, <code>12.5</code>, <code>15.6</code>, <code>EVF.URL.02</code>.</li>
+      <li>Full pytest: 2,172 passed. Eleven affected pgTAP files: green.</li>
+      <li>ruff, format, basedpyright and postgrestools: zero findings.</li>
+    </ul>
+    <div class="note accent">
+      <p class="lede"><span class="tick">i</span> Caught before release</p>
+      <p>My first admin guard counted any admin audit row that contained the link. On PROD that would have kept 11 EVF pages: an admin had saved those events on 5 Sep to change only the fee currency, and the audit row repeats the unchanged link. CALURL.14d pins the corrected rule, under which only a save that changed the slot counts.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">05 · What the release does</p>
+    <h2>Seven slots cleared on CERT, seventeen on PROD, none kept</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Env</th><th>Cleared from URL wyników</th></tr></thead>
+      <tbody>
+        <tr><td>CERT</td><td>PEW0efs, PEW1f, PPS1e, PPS1f, PPS2e, PPS2f, PPS2s</td></tr>
+        <tr><td>PROD</td><td>PEW0efs, PEW1f, PEW2efs, PEW3ef, PEW4fs, PEW6efs, PEW9fs, PEW10e, PEW11efs, PEW12ef, PEW13es, PEW14s, PEW15ef, PEW16efs, PPS2e, PPS2f, PPS2s</td></tr>
+      </tbody>
+    </table></div>
+    <p>Your FTL links on PROD's PPS1e and PPS1f are not calendar pages, so they stay. Closed seasons are untouched; that leaves DMEW-2025-2026 on CERT as it is.</p>
+    <p>On CERT, PPS1e and PPS1f end up with an empty URL wyników. A Telegram <code>ingest</code> of them then stops with “no url_event” instead of today's silent green run. CERT still needs the FTL link, which O1 provides.</p>
+  </section>
+
+  <section>
+    <p class="kicker">06 · Men's épée, Szczecin</p>
+    <h2>Why KORONA-TRZEBSKI Przemysław was not stored</h2>
+    <p>Analysed by a subagent; the three facts that decide it I checked myself:</p>
+    <ul>
+      <li>FTL: place 37, <code>KORONA-TRZEBSKI Przemysław</code>.</li>
+      <li>PZSz start list: <code>Korona Przemysław</code>, 1976, on every stored version.</li>
+      <li>Ours: #139 KORONA Przemysław, born 1976, with <code>KORONA-TRZEBSKI Przemysław</code> as a <b>user-confirmed alias</b> on LOCAL, CERT and PROD (none revoked; confirmed 17 Oct from six signed-off override files).</li>
+    </ul>
+    <p>The admission rule matches the FTL name against the start list, so “KORONA-TRZEBSKI” finds no entry and the row is skipped as “not on the start list”. ADR-111 excludes aliases on purpose (line 37: <em>“Approved aliases are not used”</em>, your Q4 A on 6 Oct). The PZSz path also reads no override file. Nothing stores him without a rule change, which is decision K1.</p>
+    <p>A simulation of K1 A on both LOCAL runs adds exactly one row: place 37, #139, 1976. No other skipped row in either run matches a confirmed alias.</p>
+    <div class="note warn">
+      <p class="lede"><span class="tick">!</span> Two more of ours, printed exactly as our names, are missing for another reason</p>
+      <p>Two FTL rows carry our exact names but appear on none of the four stored men's épée start lists (97 starters, against 103 placed). Without a birth year from the start list, ADR-111 skips both:</p>
+      <ul>
+        <li>POPOVIĆ Milos, place 55 (ours: #232, 1994);</li>
+        <li>SOBCZAK Sławomir, place 88 (ours: #270, 1990, estimated).</li>
+      </ul>
+      <p>They most likely entered after the last capture on 23 Oct. This is decision K2.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="kicker">07 · LOCAL runs from PROD's FTL links</p>
+    <h2>What PPS1f and PPS1e store today</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event · listing</th><th>Field N</th><th>Stored</th></tr></thead>
+      <tbody>
+        <tr><td>PPS1f · Floret Mężczyzn (final)</td><td>92</td><td>SZUMIELEWICZ Paweł (1986) 22nd, 40.15 · PRZYSTAJKO Daniel (1985) 77th, 3.22</td></tr>
+        <tr><td>PPS1f · Floret Kobiet (final)</td><td>52</td><td>nobody of ours</td></tr>
+        <tr><td>PPS1e · Senior Men's Épée (final)</td><td>103</td><td>KOLER Jarosław (1989) 32nd, 36.69 · SPŁAWA-NEYMAN Maciej (1988) 65th, 6.45 · DZIUBIŃSKI Mateusz (1988) 98th, 1.68 <span class="chip warn">+ KORONA with K1</span> <span class="chip warn">+ 2 with K2</span></td></tr>
+        <tr><td>PPS1e · Senior Women's Épée</td><td colspan="2">not final at the run; validated: nobody of ours on the start list (76) or on FTL's seeding (80)</td></tr>
+      </tbody>
+    </table></div>
+    <p>On LOCAL (<code>http://localhost:5199/</code>) the points show in the EVF+ column: foil, men, V1 and épée, men, V0.</p>
+  </section>
+
+  <section>
+    <p class="kicker">08 · Decide this first</p>
+    <h2>Your decisions, each with a recommendation</h2>
+
+    <h3>S1 · ADR-117 (draft in §09)</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>Signed off as drafted. I then write it to <code>doc/adr/</code> and finish the documentation gate: ADR-039, ADR-040 and ADR-116 amendments, the handbook invariants, the runbook, the workflow catalog, specification Appendix C and the RTM rows for CALURL.01–15.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>Changes first; tell me which.</td></tr>
+    </tbody></table></div>
+
+    <h3>R1 · Release</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>After S1: <code>scripts/preflight.sh</code> to exit 0, commit, integration, push to main, then CI and the Release watched in the foreground until green. Then I check CERT and PROD through what the site reads: the §05 lists cleared, and your PPS1e/PPS1f links intact.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>Hold the release.</td></tr>
+    </tbody></table></div>
+
+    <h3>O1 · PPS1f and PPS1e onto CERT and PROD</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>After R1 and K1, I dispatch <code>ingest-event.yml</code> for PPS1f with <code>url_event</code> set to PROD's FTL link. You read the report and send <code>promote PPS1f-2026-2027</code>. PPS1e follows once women's épée shows Finished: one run reads every listing, and the daily close completes the event.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>PPS1f now, before R1. PPS1e men's now, plus a second ingest and promote once women's is final.</td></tr>
+    </tbody></table></div>
+
+    <h3>K1 · KORONA-TRZEBSKI: confirmed aliases in PZSz admission</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>Amend ADR-111. When the canonical match fails, the FTL name may be <b>one</b> fencer's user-confirmed, unrevoked alias, as for FIE (ADR-106 D9). The start-list year is then read under <b>our canonical name</b> and must equal ours exactly, so ADR-111's junior-namesake protection holds. Two guards: the start-list entry is not also printed by another FTL row, and a fencer is stored at most once per listing. Test-first; PZSZ.ADM.05 is rewritten so plain name aliases still do not count. Effect today: +1 row (place 37).</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>An identity entry in <code>doc/overrides/PPS1e-2026-2027.yaml</code>. This also needs code, because the PZSz path reads no override, and it means a file for every event he fences.</td></tr>
+      <tr><td><span class="chip over">C · not advised</span></td><td>Match one part of a hyphenated surname plus the birth year: a fuzzy rule ADR-111 rejects, wider than A.</td></tr>
+    </tbody></table></div>
+
+    <h3>K2 · Our fencers missing from the start list</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>Extend the start-list capture to the morning of the event's last day (your 22 Oct directive, still unplanned), so late entrants are captured with a birth year. For PPS1e now, I check whether pzszerm.pl's current page shows POPOVIĆ and SOBCZAK. If it does, the run's own capture picks them up.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>As A, plus an admin confirmation path: an override entry naming our fencer for an FTL row that is not on the start list.</td></tr>
+      <tr><td><span class="chip plain">C</span></td><td>Leave them skipped.</td></tr>
+    </tbody></table></div>
+
+    <h3>D2 · Your PROD Admin edits reaching CERT</h3>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>The ingest's existing PROD→CERT refresh step also copies the event's results links from PROD before reading, so a plain Telegram <code>ingest &lt;code&gt;</code> uses the link you set in PROD's Admin. The “Send ingest” notice reads PROD's link the same way. This is not a calendar write: it copies your Admin value.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>Set every results link in both Admins.</td></tr>
+    </tbody></table></div>
+
+    <h3>D7 · PROD's URL komunikatu lags behind CERT's letters</h3>
+    <p>PROD still shows the EVF event page for Munich, Budapest and Drzonków, and older PDFs for Madrid and Skopje. CERT has the newer letters, but the mirror fills an empty PROD field only.</p>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>The mirror replaces PROD's URL komunikatu when it holds a calendar page and CERT has a letter. Any other PROD value stays.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>Also follow a newer letter version when PROD holds an older EVF PDF.</td></tr>
+      <tr><td><span class="chip plain">C</span></td><td>Leave as is.</td></tr>
+    </tbody></table></div>
+
+    <h3>D3 · D4 · D5 · D6 · unchanged from the first version of this page</h3>
+    <ul>
+      <li><strong>D3 · A:</strong> refuse <code>--dry-run</code> with <code>--flow --from-url</code> and fix the <code>ftl-scrape</code> skill.</li>
+      <li><strong>D4 · A:</strong> the LOCAL mirror copies CERT's stored start lists in id order.</li>
+      <li><strong>D5 · A:</strong> correct the three capitalised first names (#117, #276, #348) and normalise at the writer.</li>
+      <li><strong>D6 · A:</strong> you update <code>~/.supabase_secrets</code> and remove the two plaintext tokens from <code>~/.claude/settings.json</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">09 · Signed off 25 Oct (S1 A) · now <code>doc/adr/117-results-links-admin-only.md</code></p>
+    <h2>ADR-117: results links are set in Admin only; calendar automation writes only the organizer's letter</h2>
+    <h3>Context</h3>
+    <p><code>url_event</code> … <code>url_event_5</code> serve three purposes:</p>
+    <ul>
+      <li>the calendar card's “Wyniki” link;</li>
+      <li>the domestic and PZSz ingest's FTL schedule;</li>
+      <li>the EVF/FIE ingest's list of sources.</li>
+    </ul>
+    <p>A calendar page written there by automation sent fencers and the ingest to the wrong place three times:</p>
+    <ul>
+      <li>EVF before the event, until 26 Jul (ADR-039 rev 4);</li>
+      <li>EVF again, refilled within the hour of the cleanup on 26 Jul and still on PROD;</li>
+      <li>PZSz from creation, since 3 Sep.</li>
+    </ul>
+    <p>ADR-039 rev 4's date gate still wrote the page once the event had ended, and its cleanup ran before its code was deployed.</p>
+    <h3>Decision</h3>
+    <ol>
+      <li>No calendar automation writes a results slot, before or after the event. That covers the EVF sync (create, reuse, refresh, date heal), the PZSz sync and the CERT→PROD calendar mirror, in both the Python payloads and the SQL functions.</li>
+      <li>Calendar automation writes the organizer's letter to <code>url_invitation</code> under the existing fill rules, and no calendar page.</li>
+      <li>Results slots are filled in Admin. The results pipeline carries an operator-supplied link: the <code>url_event</code> input of <code>ingest-event.yml</code>, and promote's fill of an empty PROD slot from the CERT run. Both are unchanged.</li>
+      <li>A one-time clean-up, <code>fn_clear_calendar_results_links()</code> (§04 rules), shipped in the same migration as the function changes so it cannot run before the fix.</li>
+      <li>The PZSz “Send ingest” notice fires when an administrator has set <code>url_event</code>.</li>
+    </ol>
+    <h3>Alternatives</h3>
+    <ul>
+      <li><strong>A date gate (ADR-039 rev 4):</strong> rejected. A calendar page never holds results, and the gate refilled the cleaned data.</li>
+      <li><strong>The calendar page as a URL komunikatu placeholder:</strong> rejected. The letter passes would read it as the letter, and fill-blank rules would block the real letter.</li>
+      <li><strong>A database CHECK on the page patterns:</strong> not now. The seed loads after the migrations, and a pattern cannot express “Admin only”. The tests and the functions are the guard.</li>
+    </ul>
+    <h3>Consequences</h3>
+    <ul>
+      <li>An EVF event without an Admin link is ingested from EVF's own results.</li>
+      <li>The calendar card shows no “Wyniki” link until Admin fills one.</li>
+      <li>A CERT ingest needs the link on CERT (O1, D2).</li>
+      <li>Supersedes the <code>url_event</code> rule of ADR-039 rev 4. Amends ADR-040 (the refresh and the mirror no longer fill slots 2–5), ADR-087/ADR-116 (the PZSz create and R5) and the lifecycle page's admin-enrichment tier.</li>
+      <li>Tests: CALURL.01–15.</li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="kicker">10 · Issues register</p>
+    <h2>Every issue met on the way</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Issue</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>The PZSz sync wrote the pzszerm.pl page into URL wyników.</td><td><span class="chip never">built</span> R1</td></tr>
+        <tr><td>1b</td><td>EVF pages back in PROD's URL wyników since 26 Jul (14 events).</td><td><span class="chip never">built</span> R1 clears them</td></tr>
+        <tr><td>2</td><td>Results links set in PROD's Admin never reach CERT.</td><td><span class="chip fill">D2</span></td></tr>
+        <tr><td>3</td><td>An ingest whose <code>url_event</code> is not an FTL schedule finishes green with 0 listings (LOCAL run 403).</td><td><span class="chip never">built</span> CALURL.16–17</td></tr>
+        <tr><td>4</td><td><code>--dry-run</code> is ignored by <code>--flow --from-url</code>.</td><td><span class="chip never">built</span> D3 A, CALURL.18</td></tr>
+        <tr><td>5</td><td>The <code>--url-event</code> help text says “for this run”, but the value is saved.</td><td><span class="chip never">built</span> CALURL.19</td></tr>
+        <tr><td>6</td><td>Worktrees get no <code>.env</code>, so <code>cloud-sql.sh</code> returned 401.</td><td><span class="chip never">built</span> SS.18</td></tr>
+        <tr><td>7 · 8</td><td>An outdated token in <code>~/.supabase_secrets</code>; old plaintext tokens in <code>~/.claude/settings.json</code>.</td><td><span class="chip fill">D6</span> yours</td></tr>
+        <tr><td>9</td><td>LOCAL has no PZSz start lists.</td><td><span class="chip fill">D4</span></td></tr>
+        <tr><td>10</td><td>Three first names stored in capitals.</td><td><span class="chip fill">D5</span></td></tr>
+        <tr><td>11 · 12</td><td>The “Wyniki” card link to a calendar page (latent); the seed carrying the pages.</td><td><span class="chip never">built</span> rule + <code>seed_post_backfill</code></td></tr>
+        <tr><td>13</td><td>PROD's URL komunikatu lags behind CERT's letters.</td><td><span class="chip fill">D7</span></td></tr>
+        <tr><td>14</td><td>LOCAL PZSz ingest reports, which list non-members' start-list birth years, were committable.</td><td><span class="chip never">built</span> <code>.gitignore</code>; today's 8 moved out of the repo</td></tr>
+        <tr><td>15</td><td>KORONA-TRZEBSKI skipped despite a confirmed alias.</td><td><span class="chip never">built</span> K1 A, PZSZ.ADM.09–11</td></tr>
+        <tr><td>16</td><td>Our fencers who are not on the start list are skipped (POPOVIĆ, SOBCZAK).</td><td><span class="chip fill">K2</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <p class="kicker">11 · State right now</p>
+    <h2>What changed, and where</h2>
+    <ul>
+      <li><strong>CERT and PROD:</strong> read only, nothing written yet; release 1 is next.</li>
+      <li><strong>LOCAL:</strong>
+        <ul>
+          <li>migration <code>20261025000001</code> applied, with 17 calendar pages cleared;</li>
+          <li>PPS1f and PPS1e re-ingested from PROD's FTL links with K1 in place (PPS1e men's épée: 4 rows);</li>
+          <li>CERT's start lists for both events copied into the database only;</li>
+          <li>frontend dev server on <code>http://localhost:5199/</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Repository:</strong> branch <code>claude/pzsz-url-event-rca</code>, uncommitted until preflight passes: the fix, K1, the ingest guards, ADR-117 and the amendments, the specification, the RTM and the handbook.</li>
+    </ul>
+  </section>
+
+  <p class="foot">pzsz-results-url-rca-2026-10-25 · revision 3 (signed off; built) · CERT/PROD read through scripts/cloud-sql.sh · no start-list personal data on this page</p>
+</div>

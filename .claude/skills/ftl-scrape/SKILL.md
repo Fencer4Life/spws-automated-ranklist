@@ -73,7 +73,10 @@ if any resource fetch is bounced to the login page.
   weapon / title), `extract_ftl_uuid(url)`.
 - **Full ingestion of a whole event from its URL** (DB-writing; use only for
   real ingestion, not research):
-  `python -m python.pipeline.ingest_cli --flow ingest_domestic --from-url --event-code <CODE> [--replace] [--dry-run]`.
+  `python -m python.pipeline.ingest_cli --season-end-year <YYYY> --flow ingest_domestic --from-url --event-code <CODE> [--replace] [--url-event <FTL eventSchedule URL>]`.
+  It writes live: there is no dry run (`--dry-run` with `--flow` is refused).
+  `--url-event` is saved as the event's results link (URL wyników) and must be
+  an FTL `eventSchedule` page; anything else is refused before it is saved.
 
 ## FTL URL shapes & data endpoints
 

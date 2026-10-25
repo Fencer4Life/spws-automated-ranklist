@@ -1,6 +1,6 @@
-"""PZSz admission — surname, first name and birth year; nothing else (ADR-111).
+"""PZSz admission — surname, first name and birth year, or a confirmed alias (ADR-111).
 
-RTM PZSZ.ADM.01–08. A PZSz (PPS, MPS) row is kept only when exactly one
+RTM PZSZ.ADM.01–11. A PZSz (PPS, MPS) row is kept only when exactly one
 fencer in the fencer table matches its surname, its first name and the birth
 year from the PZSz start list. Everything else is skipped: no fencer is
 created, no alias written, no birth year changed and nothing queued for
@@ -35,7 +35,7 @@ from python.scrapers.pzsz_start_list import Starter
 PLUGIN_SOURCE = Path(__file__).resolve().parents[1] / "pipeline" / "plugins" / "pzsz_admission.py"
 
 
-def _fencer(id_, surname, first, by, *, estimated=False, aliases=()):
+def _fencer(id_, surname, first, by, *, estimated=False, aliases=(), confirmed=(), revoked=()):
     return {
         "id_fencer": id_,
         "txt_surname": surname,
@@ -45,6 +45,8 @@ def _fencer(id_, surname, first, by, *, estimated=False, aliases=()):
         "txt_nationality": "POL",
         "enum_gender": "M",
         "json_name_aliases": list(aliases),
+        "json_user_confirmed_aliases": list(confirmed),
+        "json_revoked_aliases": list(revoked),
     }
 
 
@@ -115,11 +117,98 @@ class TestAdmit:
         a = admit("ŁĘGOWSKI Paweł", years=_years(_starter("Łęgowski Paweł", 1966)), roster=roster)
         assert (a.decision, a.id_fencer) == (STORED, 103)
 
-    def test_an_approved_alias_does_not_count(self):
-        """PZSZ.ADM.05 (Q4 A): only the canonical surname and first name."""
+    def test_a_plain_name_alias_does_not_count(self):
+        """PZSZ.ADM.05 (Q4 A, kept by K1 A): a matcher alias nobody confirmed
+        (json_name_aliases) is not identity, even with our canonical name on
+        the start list in the right year."""
         roster = [_fencer(104, "WZORCOWY", "Jan", 1971, aliases=["ALIAS Jan"])]
-        a = admit("ALIAS Jan", years=_years(_starter("Alias Jan", 1971)), roster=roster)
+        years = _years(_starter("Alias Jan", 1971), _starter("Wzorcowy Jan", 1971))
+        a = admit("ALIAS Jan", years=years, roster=roster)
         assert (a.decision, a.id_fencer) == (SKIPPED, None)
+
+
+# ---------------------------------------------------------------------------
+# admit() — a user-confirmed alias (ADR-111 amendment K1 A, 25 Oct 2026)
+# ---------------------------------------------------------------------------
+
+
+def _hyphenated(**kw):
+    """Mirrors PPS1e 2026/27 with synthetic names: FTL prints a hyphenated
+    surname, the start list our canonical one, 1976."""
+    return _fencer(139, "WZOROWY", "Adam", 1976, confirmed=["WZOROWY-DŁUGI Adam"], **kw)
+
+
+class TestConfirmedAlias:
+    def test_a_confirmed_alias_is_stored_under_our_names_start_list_year(self):
+        """PZSZ.ADM.09: the FTL name is one fencer's confirmed alias; the
+        start list prints our canonical name with our birth year: stored."""
+        a = admit(
+            "WZOROWY-DŁUGI Adam",
+            years=_years(_starter("Wzorowy Adam", 1976)),
+            roster=[_hyphenated()],
+        )
+        assert (a.decision, a.id_fencer, a.birth_year) == (STORED, 139, 1976)
+        assert "alias" in a.reason
+
+    def test_a_revoked_alias_is_not_used(self):
+        """PZSZ.ADM.09: an alias in json_revoked_aliases is not identity."""
+        a = admit(
+            "WZOROWY-DŁUGI Adam",
+            years=_years(_starter("Wzorowy Adam", 1976)),
+            roster=[_hyphenated(revoked=["WZOROWY-DŁUGI Adam"])],
+        )
+        assert (a.decision, a.id_fencer) == (SKIPPED, None)
+
+    def test_the_start_list_year_under_our_name_must_equal_ours(self):
+        """PZSZ.ADM.10: our canonical name on the start list with another
+        birth year (a junior namesake) — skipped, as without the alias."""
+        a = admit(
+            "WZOROWY-DŁUGI Adam",
+            years=_years(_starter("Wzorowy Adam", 2008)),
+            roster=[_hyphenated()],
+        )
+        assert (a.decision, a.id_fencer) == (SKIPPED, None)
+        assert a.namesakes == ((139, 1976),)
+
+    def test_our_name_missing_from_the_start_list_is_skipped(self):
+        """PZSZ.ADM.10: no birth year under our canonical name, nothing to
+        compare: skipped."""
+        a = admit(
+            "WZOROWY-DŁUGI Adam",
+            years=_years(_starter("Szybki Adam", 1976)),
+            roster=[_hyphenated()],
+        )
+        assert (a.decision, a.id_fencer) == (SKIPPED, None)
+
+    def test_an_alias_shared_by_two_fencers_is_skipped(self):
+        """PZSZ.ADM.10: the alias must name exactly one fencer of ours."""
+        other = _fencer(140, "DŁUGI", "Adam", 1976, confirmed=["WZOROWY-DŁUGI Adam"])
+        years = _years(_starter("Wzorowy Adam", 1976), _starter("Długi Adam", 1976))
+        a = admit("WZOROWY-DŁUGI Adam", years=years, roster=[_hyphenated(), other])
+        assert (a.decision, a.id_fencer) == (SKIPPED, None)
+
+    def test_our_name_also_printed_by_another_ftl_row_is_skipped(self):
+        """PZSZ.ADM.11: the start-list entry under our name belongs to
+        another FTL row, so the alias row cannot claim its birth year."""
+        a = admit(
+            "WZOROWY-DŁUGI Adam",
+            years=_years(_starter("Wzorowy Adam", 1976)),
+            roster=[_hyphenated()],
+            listing=["WZOROWY-DŁUGI Adam", "WZOROWY Adam"],
+        )
+        assert (a.decision, a.id_fencer) == (SKIPPED, None)
+
+    def test_a_canonical_namesake_is_not_overridden_by_an_alias(self):
+        """PZSZ.ADM.10: when our fencers carry the FTL name canonically, the
+        canonical decision stands and no alias is consulted."""
+        roster = [
+            _fencer(150, "ALIAS", "Jan", 1960),
+            _fencer(104, "WZORCOWY", "Jan", 1971, confirmed=["ALIAS Jan"]),
+        ]
+        years = _years(_starter("Alias Jan", 2008), _starter("Wzorcowy Jan", 1971))
+        a = admit("ALIAS Jan", years=years, roster=roster)
+        assert (a.decision, a.id_fencer) == (SKIPPED, None)
+        assert a.namesakes == ((150, 1960),)
 
     def test_an_estimated_roster_year_is_compared_exactly(self):
         """PZSZ.ADM.05 (Q3 A): our estimated 1970 against a printed 1971 is a
@@ -257,6 +346,35 @@ class TestPluginAndCommit:
         committed = ctx.get("committed")
         assert committed["persisted"] is False
         assert committed["tournaments"] == []
+
+    def test_a_confirmed_alias_row_is_committed(self):
+        """PZSZ.ADM.09: as PPS1e 2026/27 place 37 — WZOROWY-DŁUGI Adam
+        on FTL is stored as our #139 with the start list's 1976."""
+        parsed = _parsed([("WZORCOWY Jan", 3), ("WZOROWY-DŁUGI Adam", 37)])
+        start = [*START, _starter("Wzorowy Adam", 1976)]
+        _, db = _run(parsed, [*ROSTER, _hyphenated()], start)
+        (_, rows), _kwargs = db.ingest_results.call_args
+        assert [(r["id_fencer"], r["int_place"]) for r in rows] == [(101, 3), (139, 37)]
+
+    def test_a_fencer_is_stored_at_most_once_per_listing(self):
+        """PZSZ.ADM.11: two rows resolving to one fencer (here a canonical row
+        with a second given name and an alias row) are both skipped and
+        reported; the rest of the listing is stored."""
+        parsed = _parsed(
+            [("WZORCOWY Jan", 3), ("WZOROWY Adam Jan", 10), ("WZOROWY-DŁUGI Adam", 37)]
+        )
+        start = [
+            *START,
+            _starter("Wzorowy Adam Jan", 1976),
+            _starter("Wzorowy Adam", 1976),
+        ]
+        ctx, db = _run(parsed, [*ROSTER, _hyphenated()], start)
+        (_, rows), _kwargs = db.ingest_results.call_args
+        assert [(r["id_fencer"], r["int_place"]) for r in rows] == [(101, 3)]
+        (identity,) = [f for f in ctx.report if f.section == "IDENTITY"]
+        twice = [s for s in identity.payload["skipped"] if s["place"] in (10, 37)]
+        assert len(twice) == 2
+        assert all("#139" in s["reason"] for s in twice)
 
     def test_a_run_without_a_start_list_refuses(self):
         """PZSZ.ADM.07: without a start list there is no birth year to

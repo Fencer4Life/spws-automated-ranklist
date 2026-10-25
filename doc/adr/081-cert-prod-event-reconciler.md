@@ -3,6 +3,7 @@
 **Status:** Accepted (2026-07-11, shipped to CERT+PROD)
 **Date:** 2026-07-11
 **Source:** CERT→PROD calendar promotion (spec §; migrations `20260711000001`, `20260711000002`). Supersedes the calendar-delta half of ADR-026; amends ADR-028, ADR-039 (rev 3), ADR-077.
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (§3: the mirror carries no results slot, in CREATE or UPDATE).
 
 ## Context
 
@@ -144,3 +145,7 @@ The mirror job is now one reusable workflow, `.github/workflows/promote-calendar
 Scope unchanged — the calendar only (`fn_mirror_events_to_prod`). Start lists reach PROD by hash replay in `promote_event` (ADR-108/112), so `pzsz-start-lists.yml` does not call this workflow. No change to the reconciler's diff, its field-ownership split, or the season guard.
 
 **Source:** `doc/plans/shared-calendar-mirror-reuse-2026-10-22.html`, `.github/workflows/promote-calendar.yml`, `.github/workflows/evf-sync.yml`, `.github/workflows/pzsz-sync.yml`.
+
+## Amendment (2026-10-25, ADR-117) — the mirror carries no results link
+
+[ADR-117](117-results-links-admin-only.md): `fn_mirror_events_to_prod` and `promote.py --mode calendar` carry none of `url_event` … `url_event_5`. A CREATE lands with empty results slots, and an UPDATE leaves PROD's as they are. Results links are set in each environment's Admin, or reach PROD through promote's fill of an empty slot from the CERT run (ADR-108 §9, ADR-113). In §3 the admin-owned fill-blank tier keeps `url_invitation`, `url_registration`, the fee and the deadline. The calendar promotion still reads CERT's slots, for its divergence report only.

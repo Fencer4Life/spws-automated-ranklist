@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="d0705aa442bc2ed4caee912f950b1308845e499d490534074dfb2a948d61956c">
+<meta name="doc-source-sha256" content="b6ed894554447f3bd71030efa4f54fdcaf0ce0427def6e1ae2567c2b77892346">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>588 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>615 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo-fetool">GitHub Actions workflows and the repository (WF*, REPO.*, FETOOL.*)</a></li><li class="depth-2"><a href="#results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -698,15 +698,15 @@
 </tr>
 <tr>
 <td>FR-97</td>
-<td>EVF logical-integrity guard: a <code>tbl_event</code> row with <code>dt_start &gt; today AND enum_status = 'COMPLETED'</code> is data corruption. <strong>ADR-039 rev 2 (2026-06-13):</strong> <code>sync_calendar</code> self-heals each violator via <code>_heal_future_completed</code> — recover the real date from the <strong>event URL</strong> (<code>url_event</code> → EVF-calendar match → FTL fallback; authed FTL session, ADR-069; <code>fetch_ftl_event_metadata</code> accepts <code>eventSchedule</code> + <code>results</code> forms), then rewrite <code>dt_start</code>/<code>dt_end</code>, <code>dt_tournament</code> and <strong>populate <code>url_event</code></strong> (status stays COMPLETED). When no date is recoverable, demote <code>enum_status</code> COMPLETED → PLANNED (bypassing the terminal-COMPLETED lifecycle trigger) so the guard clears. <code>compute_future_completed_corrections</code> returns <code>(corrections, status_flips)</code> (pure). The sync no longer hard-halts on this class; <code>assert_no_future_completed</code> remains only as a post-heal assertion.</td>
+<td>EVF logical-integrity guard: a <code>tbl_event</code> row with <code>dt_start &gt; today AND enum_status = 'COMPLETED'</code> is data corruption. <strong>ADR-039 rev 2 (2026-06-13):</strong> <code>sync_calendar</code> self-heals each violator via <code>_heal_future_completed</code> — recover the real date from the <strong>event URL</strong> (<code>url_event</code> → EVF-calendar match → FTL fallback; authed FTL session, ADR-069; <code>fetch_ftl_event_metadata</code> accepts <code>eventSchedule</code> + <code>results</code> forms), then rewrite <code>dt_start</code>/<code>dt_end</code>, <code>dt_tournament</code> (status stays COMPLETED); <strong>since 2026-10-25 (<a href="adr/117-results-links-admin-only.html">ADR-117</a>) the resolved URL is used for the date only and <code>url_event</code> is not written</strong>. When no date is recoverable, demote <code>enum_status</code> COMPLETED → PLANNED (bypassing the terminal-COMPLETED lifecycle trigger) so the guard clears. <code>compute_future_completed_corrections</code> returns <code>(corrections, status_flips)</code> (pure). The sync no longer hard-halts on this class; <code>assert_no_future_completed</code> remains only as a post-heal assertion.</td>
 <td>UC25, UC27, ADR-039, ADR-069</td>
 <td>pytest evf.23, evf.44–evf.50</td>
 <td>Covered</td>
 </tr>
 <tr>
 <td>FR-98</td>
-<td>Multi-slot event result URLs: <code>tbl_event</code> carries up to 5 nullable result-platform URL slots (<code>url_event</code>, <code>url_event_2..5</code>); admin enters them via the Event Edit form (slot #1 visible, slots #2–5 behind a disclosure with filled-count). On every save the 5 inputs are compacted (trim → drop empty → dedupe first-occurrence → pad NULL) so any non-null URL always lives in slot #1, preserving every existing <code>url_event</code>-as-primary code path (calendar 🔗 link, ⬇ Import button, ADR-029 auto-populate seed, ADR-028 EVF refresh write order). Tournament URL discovery iterates all non-null slots and merges per-(weapon,gender,category) results dedupe-first. <code>tbl_tournament.url_results</code> unchanged (drilldown leaf). Implemented as <code>fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]</code> shared by <code>fn_create_event</code> / <code>fn_update_event</code> / <code>fn_refresh_evf_event_urls</code>.</td>
-<td>UC21, UC22(c), ADR-040</td>
+<td>Multi-slot event result URLs: <code>tbl_event</code> carries up to 5 nullable result-platform URL slots (<code>url_event</code>, <code>url_event_2..5</code>); admin enters them via the Event Edit form (slot #1 visible, slots #2–5 behind a disclosure with filled-count). On every save the 5 inputs are compacted (trim → drop empty → dedupe first-occurrence → pad NULL) so any non-null URL always lives in slot #1, preserving every existing <code>url_event</code>-as-primary code path (calendar 🔗 link, ⬇ Import button, ADR-029 auto-populate seed, ADR-028 EVF refresh write order). Tournament URL discovery iterates all non-null slots and merges per-(weapon,gender,category) results dedupe-first. <code>tbl_tournament.url_results</code> unchanged (drilldown leaf). Implemented as <code>fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]</code> shared by <code>fn_create_event</code> / <code>fn_update_event</code> and the one-time clean-up <code>fn_clear_calendar_results_links()</code>. <strong>Amended 2026-10-25 (<a href="adr/117-results-links-admin-only.html">ADR-117</a>):</strong> <code>fn_refresh_evf_event_urls</code> and the calendar mirror write no slot (15.6, prom.8).</td>
+<td>UC21, UC22(c), ADR-040, ADR-117</td>
 <td>15.1–15.6, 9.44a–9.44f, pytest 3.16k–m, prom.8</td>
 <td>Covered</td>
 </tr>
@@ -978,11 +978,12 @@
 | FR-152 | <strong>From 2026/2027 the fencer table is the ranking entry; everyone in it with points in the ranking's window is ranked</strong> (ADR-110). A fencer enters the fencer table through a PPW or MPW result (ADR-020) or an administrator's add-fencer migration with a confirmed birth year (ADR-110 amendment of 2026-10-17); ADR-106 and ADR-100 never create one. The 2026/2027 Season Scoring Rules carry no <code>entry_types</code>, so <code>fn_ranking_full</code> ranks every fencer with points in the window — the ranked season, plus the previous season's carried results when rolling — EVF+ points included. Changed on CERT and PROD through <code>fn_revise_and_rescore_season</code> (revisions 8 and 10). | ADR-110, ADR-106, ADR-097 | ROSTER.01–04 (<code>85_spws_evf_joined_engine.sql</code>); ADM27.RULES.14 (<code>84_admin_ranking_rules_validation.sql</code>) | Covered (CERT and PROD 2026-10-04) |
 | FR-153 | <strong>The calendar drum reads downward in time and shows how it turns.</strong> Earlier months above the focused month, later below; ▲/▼ step to the nearest earlier/later month with competitions, as a tap on the neighbouring month does, and disappear where nothing lies further; the „najbliższe zawody” arrow points to where the opening month is drawn; turned-away months are inert; month labels are in the page's language; crowded previews stop before the buttons; the buttons sit at the drum's right edge at every width; ↑/↓ keys step. | ADR-084 (amendment 2026-10-06) | CM.40–CM.44; CB.3, CB.26–CB.27c, CB.29, CB.35–CB.50, CB.53; CB.E1–CB.E5 | Covered (2026-10-06, LOCAL) |
 | FR-154 | <strong>Every interface string and screen-reader label is in the reader's language.</strong> Every key the code uses exists in both locales, runtime key families are complete, identical PL/EN values are allowlisted with a reason, and the calendar surfaces render no word of the other language. | ADR-005 | TR.01–TR.06 | Covered (2026-10-06, LOCAL) |
-| FR-155 | <strong>A PZSz result (PPS, MPS) is kept only on surname, first name and birth year.</strong> A row is stored only when exactly one fencer in the fencer table matches its surname, its first name and the year of the birth date on the PZSz start list (FencingTimeLive carries no birth year). Polish letters are folded and case ignored; approved aliases do not count; an estimated birth year of ours is compared exactly. Everything else is skipped, and no fencer, alias, birth-year change or review row is ever written. No PPW or MPW start is required. A stored row keeps its original place and the whole field's N in one <code>SENIOR</code> tournament per weapon and gender. Nobody matched → nothing is written and the event is <code>COMPLETED</code>. The plugin <code>AdmitPzszRoster</code> begins as a copy of the EVF admission and shares nothing with it. | <a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>, ADR-100, ADR-105, ADR-110 | PZSZ.ADM.01–08, PZSZ.SL.01–02 | Covered (2026-10-06, LOCAL) |
+| FR-155 | <strong>A PZSz result (PPS, MPS) is kept only on surname, first name and birth year.</strong> A row is stored only when exactly one fencer in the fencer table matches its surname, its first name and the year of the birth date on the PZSz start list (FencingTimeLive carries no birth year). Polish letters are folded and case ignored; a plain matcher alias does not count; an estimated birth year of ours is compared exactly. <strong>Amended 2026-10-25 (K1 A):</strong> when no fencer of ours carries the name, it may be exactly one fencer's user-confirmed, unrevoked alias; the start list's birth year is then read under our canonical name and must equal ours, and no other FTL row may print that name. A fencer is stored at most once per listing. Everything else is skipped, and no fencer, alias, birth-year change or review row is ever written. No PPW or MPW start is required. A stored row keeps its original place and the whole field's N in one <code>SENIOR</code> tournament per weapon and gender. Nobody matched → nothing is written and the event is <code>COMPLETED</code>. The plugin <code>AdmitPzszRoster</code> begins as a copy of the EVF admission and shares nothing with it. | <a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a>, ADR-100, ADR-105, ADR-110, ADR-106 | PZSZ.ADM.01–11, PZSZ.SL.01–02 | Covered (2026-10-06, LOCAL; K1 2026-10-25, LOCAL) |
 | FR-156 | <strong>One route to PROD for every organizer: ingest for CERT, promote for PROD, the same ingestion.</strong> <code>ingest &lt;code&gt;</code> runs on CERT; <code>promote &lt;code&gt;</code> runs the same flow and plugins on PROD and applies only a result equal to the verified CERT run. SPWS (PPW, MPW) takes the domestic keep-rule; PZSz (PPS, MPS) the PZSz flow, with the start-list hash in the run record; EVF (PEW, MEW, IMEW) and FIE (MSW, PSW, IMSW) the international flow, which reads every result URL slot, or EVF's results when none is set, files one tournament per source bracket with the source N and place, and records a bracket with no fencer of ours as dropped. Promote reads the slots the CERT run read and fills a blank PROD slot; the daily close covers every organizer. <code>ingest &lt;code&gt; prod</code> stays refused. | <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a>, <a href="adr/111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> §6, ADR-108, ADR-105 | PZSZ.ROUTE.01–03, ROUTE.FLOW.01–04, ROUTE.SRC.01–10, ROUTE.INTL.01–04, ROUTE.PLAN.01–06, ROUTE.LIFE.01, ROUTE.CLOSE.01–02, ROUTE.REPORT.01–03, ROUTE.APPLY.01–05 | Covered (PZSz 2026-10-06; EVF and FIE 2026-10-17, LOCAL) |
 | FR-157 | <strong>PZSz start lists are stored inputs, captured while pzszerm.pl serves them.</strong> Each version of a tournament's start list is stored on CERT, insert-only, as printed name and birth year (never the date), with its hash and source, and only when it differs from the newest version for the same event, weapon and gender. A daily capture stores the lists of the PZSz events within 14 days of today, stops at the first JavaScript check page, deletes the lists of events outside the active season, and sends Telegram the <code>ingest</code> command when a list is stored for an ended event without a finished CERT run. The CERT ingest captures, then reads the newest stored version, and fails with nothing written only when none was ever stored. Promote reads the lists the CERT run used from CERT by their hashes, refuses a missing or altered one, and never contacts pzszerm.pl. Pages saved in a browser are stored by the <code>store</code> command through the same parsers. <strong>Amended 2026-10-21 (<a href="adr/116-pzsz-calendar-browser-read-and-letter-passes.html">ADR-116</a>):</strong> the daily ±14-day capture becomes a D−4..D−1 window of five runs a day (06:00–21:00 Warsaw, both DST) in its own CERT-only workflow <code>pzsz-start-lists.yml</code>, with two independent window checks; the capture step is removed from <code>pzsz-sync.yml</code> and the &quot;send the ingest&quot; notice moves into the rewritten calendar run's single digest. (PZSZ.CAP.07) | <a href="adr/112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a>, ADR-111, ADR-108, ADR-078 | PZSZ.SL.03–04, PZSZ.CAP.01–05, PZSZ.CAP.06 (pzsz.49–pzsz.53), PZSZ.CAP.07, PZSZ.SL.05–12, PZSZ.STORE.01 (pgTAP 109.1–109.6), PZSZ.ROUTE.04–07, PROMO.REPLAY.29–31 | Covered (CERT and PROD 2026-10-07; window and workflow released 2026-10-22, ADR-116; the due-date rule PZSZ.SL.10–12 built 2026-10-25) |
 | FR-158 | <strong><code>ingest</code> starts from PROD's master data, and only ingest and promote write results.</strong> <code>ingest-event.yml</code> refreshes CERT from PROD before the ingestion and applies the refresh only when it renumbers nobody and leaves nobody unpaired; otherwise it stops before any write and Telegram reports why. The daily EVF sync writes no result and tells the operator to ingest; <code>evf-results-import</code> only compares; <code>scrape-tournament.yml</code> writes CERT only. The bot's <code>ingest</code>, <code>promote</code> and <code>/help</code> texts name every organizer. | <a href="adr/113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> §7–§8, ADR-108 §2 | ROUTE.REFRESH.01–04, ROUTE.WRITERS.01–04, ROUTE.BOT.01 | Covered (2026-10-17, LOCAL) |
-| FR-159 | <strong>Equal totals share a place; the next place skips.</strong> Every ranking function returns <code>RANK() OVER (ORDER BY total DESC)</code>, so two fencers on the same total share a place and the next place is further down by the number sharing it (16, 16, 18). A shared place lists alphabetically by the shown name in Polish order. The rule applies to every season, and the season rules modal states it. In the FTL seed files a shared place is one tier, in the ranking's row order, in both generators. | <a href="adr/115-equal-totals-share-a-place.html">ADR-115</a> | RANK.TIE.01–08 | Covered (2026-10-18, LOCAL) |</p>
+| FR-159 | <strong>Equal totals share a place; the next place skips.</strong> Every ranking function returns <code>RANK() OVER (ORDER BY total DESC)</code>, so two fencers on the same total share a place and the next place is further down by the number sharing it (16, 16, 18). A shared place lists alphabetically by the shown name in Polish order. The rule applies to every season, and the season rules modal states it. In the FTL seed files a shared place is one tier, in the ranking's row order, in both generators. | <a href="adr/115-equal-totals-share-a-place.html">ADR-115</a> | RANK.TIE.01–08 | Covered (2026-10-18, LOCAL) |
+| FR-160 | <strong>Results links (URL wyników) are set by a person; calendar automation writes only the organizer's letter.</strong> No calendar automation writes <code>url_event</code> … <code>url_event_5</code>, before or after the event: not the EVF sync (create, reuse, refresh, date self-heal), the PZSz create or the CERT→PROD calendar mirror. A results link comes from Admin, the <code>url_event</code> input of <code>ingest-event.yml</code>, or promote's fill of an empty PROD slot from the CERT run. Calendar pages already stored in an open season's results slots are cleared once, unless an admin save set them. The URL ingestion refuses a link that is not an FTL schedule and a schedule that lists nothing, before anything is saved or wiped. | <a href="adr/117-results-links-admin-only.html">ADR-117</a>, ADR-039, ADR-040, ADR-081, ADR-087, ADR-116 | CALURL.01–08, CALURL.10–19 | Covered (2026-10-25, LOCAL) |</p>
 <blockquote>
 <p><strong>Note:</strong> FR-69 was retired before assignment; gap is intentional. FR-134 added 2026-09-02 (ADR-084 amendment) after the PROD calendar defect. FR-102–FR-108 added Phase 5.5 (2026-05-03). FR-109 added Phase 5.5 follow-up (2026-05-03, ADR-062). FR-110 added same day (2026-05-03, ADR-063). FR-111 added 2026-05-10 (ADR-066). <strong>FR-112–FR-117 added 2026-06-14 (NEW pipeline design, ADR-070–074); implemented + tested 2026-06-15 (build M1–M5) — now Covered.</strong> <strong>FR-118 added 2026-06-16 (staging report, ADR-075); implemented + tested same day — Covered.</strong> <strong>FR-119 added 2026-06-18 (overlap-clobber dedup, ADR-076); implemented + tested same day — Covered.</strong> <strong>FR-120–FR-124 added 2026-07-04 (event registration Phase 1 — DB schema, ADR-079/080); implemented + tested same day — Covered. FR-124 invocation-gap resolved 2026-07-05: the form-side matcher is exact-only (Path A vs email-verify); fuzzy B/C/D reconciliation stays at ingestion (existing Python <code>find_best_match</code>), so no Python-from-frontend bridge is needed — pgTAP 49.22 pins the contract (ADR-079 §2 implementation note).</strong> <strong>FR-125–FR-129 added 2026-07-04 (event registration Phase 3 — FTL seed export pure logic, ADR-080); implemented + tested same day — Covered. DB-querying orchestration layer built 2026-07-05 (<code>python/pipeline/ftl_seed_export.py</code> pure functions <code>registration_subranking_key</code>/<code>assemble_mixall_subrankings</code>/<code>mixall_tireurs</code>/<code>build_event_mixall_files</code>/<code>bundle_seed_zip</code> + thin Supabase glue <code>python/pipeline/ftl_seed_export_db.py::FtlSeedExporter</code>): POPULATION = every declared <code>tbl_registration</code> row (no payment gate), ORDERING from <code>fn_ranking_ppw</code> (ranked-then-unranked-by-<code>ts_created</code>), <code>(N)</code> from the DECLARED BY — <code>python/tests/test_ftl_seed_orchestration.py</code>, 15 tests, pytest 1003→1018. Mix-all seed files match the validated reference <code>doc/external_files/FTL_SRC/SPWS_ppw_epee_mixall_noBY.xml</code>. Per-bracket DE seed files deferred (no validated DE reference; <code>predict_combined_brackets</code>/<code>combined_bracket_scope</code> ready for when there is one).</strong> <strong>FR-130 added 2026-07-05 (event registration Phase 2 — public registration UI + calendar integration, ADR-079/080); implemented + tested same day — Covered. FR-131 added 2026-07-13 (organizer seed delivery by e-mail, ADR-080 §5); removed 2026-10-24 — the e-mail path is closed, and the seed files stay generated and downloadable from the shared link (FR-136).</strong> <strong>FR-136 added 2026-09-12 (the public FTL export page, ADR-080 amendment (g)); implemented + tested same day — Covered, with the roster file and the club deliberately outstanding (the roster file was built later the same day; see FR-127 below). FR-127 superseded the same day: predicted combined brackets are replaced by the maximal DE split, and FR-128's naming is replaced wholesale. The club (ADR-080 amendment (f)) was built 2026-09-13, migration <code>20260913000001</code> — see FR-120/FR-129.</strong> Current totals are in the Coverage Summary below, computed from the rows. <strong>FR-137–FR-142 added 2026-09-28 (ADR-103). 2026-09-30 (ADR-104): FR-138 superseded, FR-137 and FR-139–FR-142 amended, FR-143–FR-145 added — all Planned until the joined engine lands.</strong> <strong>FR-155–FR-156 added 2026-10-06 (ADR-111); covered on LOCAL the same day, with a rehearsal on Poznań's real start lists.</strong> <strong>NFR-15 added 2026-10-24 (static checks are hard gates).</strong></p>
 </blockquote>
@@ -1119,8 +1120,8 @@
 <tbody>
 <tr>
 <td>Covered</td>
-<td>139</td>
-<td>FR-01–FR-14, FR-17–FR-33, FR-35–FR-41, FR-43, FR-45–FR-52, FR-55–FR-68, FR-70–FR-74, FR-78–FR-86, FR-88–FR-101, FR-103–FR-104, FR-107, FR-109–FR-126, FR-128–FR-130, FR-132–FR-137, FR-139–FR-140, FR-142–FR-159</td>
+<td>140</td>
+<td>FR-01–FR-14, FR-17–FR-33, FR-35–FR-41, FR-43, FR-45–FR-52, FR-55–FR-68, FR-70–FR-74, FR-78–FR-86, FR-88–FR-101, FR-103–FR-104, FR-107, FR-109–FR-126, FR-128–FR-130, FR-132–FR-137, FR-139–FR-140, FR-142–FR-160</td>
 </tr>
 <tr>
 <td>Partial</td>
@@ -1169,7 +1170,7 @@
 </tr>
 </tbody>
 </table></div>
-<p>Totals: 158 FR, 15 NFR. Computed from the rows above (2026-10-24); a row's status is the first word of its last column.</p>
+<p>Totals: 159 FR, 15 NFR. Computed from the rows above (2026-10-25); a row's status is the first word of its last column.</p>
 </section>
 <section class="section-card detail"><h2 id="rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</h2>
 <p>The rebuild introduces infrastructure tests that don't map to user-facing FRs. They are catalogued here for traceability against the architecture decisions that introduced them. For the rebuild's per-sub-phase status, see <a href="archive/legacy-2026-07/development_history.html">doc/archive/legacy-2026-07/development_history.md</a> §Phase 2b.</p>
@@ -1981,7 +1982,7 @@
 </tr>
 <tr>
 <td>EVF.URL.01–03</td>
-<td>An EVF archive page (<code>veteransfencing.eu/event/…</code>) never replaces a stored organiser URL: <code>fn_refresh_evf_event_urls</code> (CERT) and <code>fn_mirror_events_to_prod</code> (PROD) fill a blank <code>url_event</code> only, and <code>fn_sync_evf_event_fields</code> does not write it; an event with no organiser URL takes the EVF page.</td>
+<td>An EVF archive page (<code>veteransfencing.eu/event/…</code>) never replaces a stored organiser URL: <code>fn_refresh_evf_event_urls</code> (CERT) and <code>fn_mirror_events_to_prod</code> (PROD) fill a blank <code>url_event</code> only, and <code>fn_sync_evf_event_fields</code> does not write it. <strong>Amended 2026-10-25 (<a href="adr/117-results-links-admin-only.html">ADR-117</a>):</strong> no calendar function writes a results link, so an empty <code>url_event</code> stays empty (EVF.URL.02).</td>
 <td>pgTAP</td>
 <td><code>supabase/tests/95_evf_url_fill_blank_only.sql</code></td>
 <td><strong>Landed</strong> (2026-10-02, LOCAL)</td>
@@ -2495,7 +2496,7 @@
 </tr>
 <tr>
 <td>PZSZ.ADM.05</td>
-<td>Polish letters and case are folded; an approved alias does not count; an estimated roster year is compared exactly and a mismatch is skipped and reported.</td>
+<td>Polish letters and case are folded; a plain matcher alias (<code>json_name_aliases</code>) does not count, even with our canonical name on the start list; an estimated roster year is compared exactly and a mismatch is skipped and reported.</td>
 <td>pytest</td>
 <td><code>python/tests/test_pzsz_admission.py</code></td>
 <td><strong>Landed</strong> (2026-10-06, LOCAL)</td>
@@ -2520,6 +2521,27 @@
 <td>pytest</td>
 <td><code>python/tests/test_pzsz_admission.py</code></td>
 <td><strong>Landed</strong> (2026-10-06, LOCAL)</td>
+</tr>
+<tr>
+<td>PZSZ.ADM.09</td>
+<td>A source name that is exactly one fencer's user-confirmed, unrevoked alias is stored with the start list's birth year read under our canonical name (PPS1e 2026/27: KORONA-TRZEBSKI → #139, 1976, place 37); a revoked alias is not used.</td>
+<td>pytest</td>
+<td><code>python/tests/test_pzsz_admission.py</code></td>
+<td><strong>Landed</strong> (K1 A, 2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>PZSZ.ADM.10</td>
+<td>Through an alias: another birth year under our name is skipped as a namesake; our name missing from the start list, or an alias shared by two fencers, is skipped; a fencer of ours who carries the name canonically decides the row and no alias is consulted.</td>
+<td>pytest</td>
+<td><code>python/tests/test_pzsz_admission.py</code></td>
+<td><strong>Landed</strong> (K1 A, 2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>PZSZ.ADM.11</td>
+<td>An alias row is skipped when another FTL row prints our canonical name; two rows resolving to one fencer are both skipped and reported with the fencer's id.</td>
+<td>pytest</td>
+<td><code>python/tests/test_pzsz_admission.py</code></td>
+<td><strong>Landed</strong> (K1 A, 2026-10-25, LOCAL)</td>
 </tr>
 <tr>
 <td>PZSZ.SL.01–02</td>
@@ -3183,6 +3205,134 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="results-links-set-in-admin-only-calurl">Results links set in Admin only (CALURL.*)</h2>
+<p>Acceptance IDs for <a href="adr/117-results-links-admin-only.html">ADR-117</a> and <a href="plans/pzsz-results-url-rca-2026-10-25.html">doc/plans/pzsz-results-url-rca-2026-10-25.html</a>. FR-160. CALURL.09 is not used.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CALURL.01</td>
+<td>The EVF create and reuse payload (<code>fn_ingest_evf_calendar</code>) carries no results slot, even for an event that has ended.</td>
+<td>pytest</td>
+<td><code>python/tests/test_calendar_results_link.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.02</td>
+<td>The EVF refresh payload (<code>fn_refresh_evf_event_urls</code>) carries no results slot.</td>
+<td>pytest</td>
+<td><code>python/tests/test_calendar_results_link.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.03</td>
+<td>The EVF date self-heal rewrites the dates only, never <code>url_event</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_calendar_results_link.py</code>, <code>test_evf_sync_heal.py</code> (evf.47)</td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.04</td>
+<td>The PZSz create (<code>build_insert_sql</code>) writes no <code>url_event</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_calendar_results_link.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.05</td>
+<td>The PZSz &quot;send the ingest&quot; notice fires once an administrator has set <code>url_event</code>, whatever its host.</td>
+<td>pytest</td>
+<td><code>python/tests/test_calendar_results_link.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.06–07</td>
+<td>The calendar mirror's CREATE and UPDATE payloads (<code>promote.py --mode calendar</code>) carry no results slot.</td>
+<td>pytest</td>
+<td><code>python/tests/test_calendar_results_link.py</code>, <code>test_promote.py</code> (prom.8)</td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.08</td>
+<td>The PZSz listing parser keeps the event page as <code>url_page</code>, never as <code>url_event</code>.</td>
+<td>pytest</td>
+<td><code>python/tests/test_pzsz_calendar.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.10</td>
+<td>No calendar function's definition names <code>url_event</code> (static check over the live functions).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/114_calendar_never_writes_results_link.sql</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.11</td>
+<td><code>fn_refresh_evf_event_urls</code> leaves the results slots as they are and fills the letter (also 15.6).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/114_calendar_never_writes_results_link.sql</code>, <code>15_event_multi_url.sql</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.12–13</td>
+<td><code>fn_mirror_events_to_prod</code> CREATE lands empty results slots; UPDATE leaves PROD's as they are (also 12.5 and EVF.URL.02).</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/114_calendar_never_writes_results_link.sql</code>, <code>12_evf_import.sql</code>, <code>95_evf_url_fill_blank_only.sql</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.14a–d</td>
+<td><code>fn_clear_calendar_results_links()</code> clears a pzszerm.pl or EVF page from an open season's slots and compacts; it keeps an organiser link, a link an admin save set, and a closed season's slots; an admin save that repeated the link while changing another field does not keep it.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/114_calendar_never_writes_results_link.sql</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.15</td>
+<td>After the clean-up no open-season event holds a calendar page in a results slot.</td>
+<td>pgTAP</td>
+<td><code>supabase/tests/114_calendar_never_writes_results_link.sql</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.16</td>
+<td>The URL ingestion refuses a link that is not an FTL schedule, on the domestic and the PZSz path, before the link is saved or anything is wiped; the run closes FAILED.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ingest_run.py</code>, <code>test_pzsz_routing.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.17</td>
+<td>An FTL schedule that lists nothing is refused before the wipe; the run closes FAILED.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ingest_run.py</code>, <code>test_pzsz_routing.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.18</td>
+<td><code>--dry-run</code> with <code>--flow</code> is refused before anything runs (D3 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_ingest_run.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+<tr>
+<td>CALURL.19</td>
+<td>The <code>--url-event</code> help says the link is saved as the event's results link.</td>
+<td>pytest</td>
+<td><code>python/tests/test_ingest_run.py</code></td>
+<td><strong>Landed</strong> (2026-10-25, LOCAL)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -3193,5 +3343,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>d0705aa442bc2ed4caee912f950b1308845e499d490534074dfb2a948d61956c</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>b6ed894554447f3bd71030efa4f54fdcaf0ce0427def6e1ae2567c2b77892346</code></footer>
 </div></body></html>

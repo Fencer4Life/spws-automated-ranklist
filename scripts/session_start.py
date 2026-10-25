@@ -60,7 +60,9 @@ GRAPH_REFRESH = HERE / "graphify_refresh.py"
 GRAPHIFY_PYTHON_FALLBACK = "/Users/aleks/.local/share/uv/tools/graphifyy/bin/python"
 # Shared from the primary checkout into a new worker, as the existing workers do.
 # The RAG's key lives in an untracked .env beside ingest.py, so it is shared too.
-SHARED_LINKS = (".venv", "frontend/node_modules", "tools/docs-search/.env")
+# The root .env is linked, never copied: cloud-sql.sh reads it in preference to the
+# shell, and a worker without it fell back to a stale exported token (25 Oct 2026).
+SHARED_LINKS = (".venv", "frontend/node_modules", "tools/docs-search/.env", ".env")
 # The portable baseline a new worker is seeded with — exactly the handbook's list
 # (claude-codex-collaboration, "Give each worker its own Graphify cache"). Never
 # .graphify_root, which names the source checkout, nor .graphify_python, logs or cost.

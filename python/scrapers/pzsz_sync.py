@@ -132,21 +132,21 @@ class _Digest:
 
 
 def build_insert_sql(scraped: dict, season: dict) -> str:
-    """One INSERT for a new PZSz event, returning its id_event. Dates, city and
-    the pzszerm page URL come from the listing; the letter fields are left for
-    the per-event passes. The organizer is resolved by code, exactly as
-    promote.py does onto PROD; a missing organizer fails loudly."""
+    """One INSERT for a new PZSz event, returning its id_event. Dates and city
+    come from the listing; the letter fields are left for the per-event
+    passes. No results link: url_event stays empty until an administrator sets
+    it in Admin. The organizer is resolved by code, exactly as promote.py does
+    onto PROD; a missing organizer fails loudly."""
     weapons = ",".join(scraped.get("weapons") or [])
     return (
         "INSERT INTO tbl_event ("
         "txt_code, txt_name, id_season, id_organizer, txt_location, txt_country, "
-        "dt_start, dt_end, url_event, arr_weapons, id_pzsz_event) VALUES ("
+        "dt_start, dt_end, arr_weapons, id_pzsz_event) VALUES ("
         f"{_sql(scraped['desired_code'])}, {_sql(scraped['name'])}, {int(season['id_season'])}, "
         f"(SELECT id_organizer FROM tbl_organizer WHERE txt_code = '{ORGANIZER_CODE}'), "
         f"{_sql(scraped.get('location'))}, {_sql(scraped.get('txt_country') or 'PL')}, "
         f"{_sql(scraped.get('dt_start'))}::DATE, "
         f"{_sql(scraped.get('dt_end') or scraped.get('dt_start'))}::DATE, "
-        f"{_sql(scraped.get('url_event'))}, "
         f"'{{{weapons}}}'::enum_weapon_type[], {int(scraped['id_pzsz_event'])}) "
         "RETURNING id_event"
     )
@@ -440,7 +440,7 @@ def run_calendar(
         "SELECT e.id_event, e.txt_code, e.id_pzsz_event, e.dt_start::TEXT AS dt_start, "
         "e.dt_end::TEXT AS dt_end, e.txt_location, e.txt_venue_address, "
         "e.num_entry_fee::TEXT AS num_entry_fee, e.txt_entry_fee_currency, e.url_invitation, "
-        "e.url_event, e.enum_status::TEXT AS enum_status "
+        "e.enum_status::TEXT AS enum_status "
         "FROM tbl_event e JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
         f"WHERE e.id_season = {int(season['id_season'])} AND o.txt_code = '{ORGANIZER_CODE}' "
         "AND e.id_pzsz_event IS NOT NULL ORDER BY e.dt_start, e.txt_code",
@@ -487,7 +487,6 @@ def run_calendar(
                     "num_entry_fee": None,
                     "txt_entry_fee_currency": None,
                     "url_invitation": None,
-                    "url_event": row.get("url_event"),
                     "enum_status": "PLANNED",
                 }
             )
@@ -584,8 +583,8 @@ def _ingest_notice(
     ref: str, token: str, query: Query, season: dict, today: dt.date, digest: _Digest
 ) -> None:
     """R5 (ADR-112 §5, corrected): a CERT-only check — a past PZSz event whose
-    url_event is now the FencingTimeLive link (no longer the pzszerm.pl page),
-    that has a stored start list and no FINISHED CERT run, is ready to ingest.
+    url_event an administrator has set (no calendar run writes it), that has a
+    stored start list and no FINISHED CERT run, is ready to ingest.
     Told once (tbl_pzsz_check keyed on the event). With no stored list it says
     the ingest will stop instead. pzszerm.pl is never touched here."""
     rows = query(
@@ -607,8 +606,8 @@ def _ingest_notice(
         if _blank(end) or dt.date.fromisoformat(str(end)[:10]) >= today:
             continue  # not past yet
         url = str(r.get("url_event") or "")
-        if not url or "pzszerm.pl" in url:
-            continue  # still the pzszerm.pl page — the operator has not added the FTL link
+        if not url:
+            continue  # no results link yet — an administrator sets it in Admin
         if r.get("has_cert_run"):
             continue  # already ingested
         state = "ready" if r.get("has_list") else "no_list"

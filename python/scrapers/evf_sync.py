@@ -37,7 +37,6 @@ from python.scrapers.evf_calendar import (
     partition_championships,
     plan_calendar_codes,
     scrape_full_season_calendar,
-    url_event_if_concluded,
 )
 from python.scrapers.evf_results import (
     EvfApiClient,
@@ -107,8 +106,8 @@ def _resolve_event_date(
 
     Priority: (a) the row's own `url_event`; (b) the matched EVF calendar event's
     URL; (c) FTL fallback via the event's tournament results URLs. Returns
-    `(iso_dates, resolved_url)` — `resolved_url` is populated into
-    `tbl_event.url_event` on a successful date heal.
+    `(iso_dates, resolved_url)`. The URL is only read for its date; it is never
+    stored, because `tbl_event.url_event` is set in Admin only.
     """
     code = violator.get("txt_code", "?")
     url_event = violator.get("url_event")  # (a) stored event URL
@@ -171,11 +170,11 @@ def _heal_future_completed(
     """Self-heal future-COMPLETED rows (ADR-039 rev 2 — Step 0).
 
     For each violator: recover the real date from the event URL (calendar /
-    FTL) and rewrite dt_start/dt_end + populate url_event (status stays
-    COMPLETED). When no date can be recovered, demote enum_status
-    COMPLETED → PLANNED so the Step 0 guard stops erroring — the URL/date get
-    populated later by the calendar/populate-urls flow. The sync no longer
-    hard-halts on this class of corruption.
+    FTL) and rewrite dt_start/dt_end (status stays COMPLETED); the URL itself
+    is not stored. When no date can be recovered, demote enum_status
+    COMPLETED → PLANNED so the Step 0 guard stops erroring — the date gets
+    populated later by the calendar flow. The sync no longer hard-halts on
+    this class of corruption.
     """
     violators = find_future_completed(existing)
     if not violators:
@@ -185,15 +184,12 @@ def _heal_future_completed(
         f"  Self-heal: {len(violators)} future-COMPLETED row(s) detected; "
         f"resolving via event URL..."
     )
-    resolved_urls: dict[int, str] = {}
 
     try:
         with get_authed_ftl_client() as ftl_client:
 
             def date_lookup(ev):
-                dates, url = _resolve_event_date(ref, token, ev, cal_events, ftl_client)
-                if url:
-                    resolved_urls[ev["id_event"]] = url
+                dates, _url = _resolve_event_date(ref, token, ev, cal_events, ftl_client)
                 return dates
 
             corrections, status_flips = compute_future_completed_corrections(violators, date_lookup)
@@ -203,19 +199,17 @@ def _heal_future_completed(
         print(f"  Self-heal: FTL auth failed ({exc}); demoting all violators")
         corrections, status_flips = [], violators
 
-    # Date corrections — status stays COMPLETED, url_event populated when known.
+    # Date corrections — status stays COMPLETED; the results link is Admin's.
     for c in corrections:
         span = c["dt_start"] + (f"..{c['dt_end']}" if c["dt_end"] != c["dt_start"] else "")
         print(f"    {c['txt_code']}: dt → {span} [date healed]")
         if dry_run:
             continue
-        url = resolved_urls.get(c["id_event"])
-        set_url = f", url_event = '{url}'" if url else ""
         _management_query(
             ref,
             token,
             f"UPDATE tbl_event SET dt_start = '{c['dt_start']}', "
-            f"dt_end = '{c['dt_end']}'{set_url} WHERE id_event = {int(c['id_event'])}",
+            f"dt_end = '{c['dt_end']}' WHERE id_event = {int(c['id_event'])}",
         )
         _management_query(
             ref,
@@ -537,13 +531,9 @@ def _sync_calendar_snapshot(
                         "country": evt.get("country", ""),
                         "weapons": evt.get("weapons", []),
                         "is_team": bool(evt.get("is_team", False)),
-                        # url_event is the *results* pointer: only record the EVF
-                        # link once the event has concluded. Future/in-progress
-                        # events land with a blank url_event and the daily refresh
-                        # fills it (fill-blank) the day after they end. Invitation
-                        # and registration below are unaffected — wanted before the
-                        # event. (evf.63)
-                        "url_event": url_event_if_concluded(evt),
+                        # No results link (url_event): it stays empty until an
+                        # administrator sets it in Admin, before or after the
+                        # event. The organizer's letter goes to url_invitation.
                         "url_invitation": evt.get("url_invitation") or "",
                         "url_registration": evt.get("url_registration") or "",
                         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
@@ -658,11 +648,7 @@ def _sync_calendar_snapshot(
             refresh_payload.append(
                 {
                     "id_event": existing_row["id_event"],
-                    # Same gate as the create path: withhold the results pointer
-                    # until the event ends. fn_refresh_evf_event_urls is
-                    # fill-blank-only, so once concluded this fills a still-empty
-                    # url_event, and a later manual edit is never overwritten. (evf.63)
-                    "url_event": url_event_if_concluded(scraped),
+                    # As the create path: no results link, ever; Admin sets it.
                     "url_invitation": scraped.get("url_invitation") or "",
                     "url_registration": scraped.get("url_registration") or "",
                     "dt_registration_deadline": scraped.get("dt_registration_deadline") or "",

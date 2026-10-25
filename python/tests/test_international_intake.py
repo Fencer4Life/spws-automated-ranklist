@@ -341,7 +341,7 @@ class TestEventUrlPath:
         db.find_event_by_code.return_value = {
             "id_event": 1,
             "txt_code": "PPW3-2025-2026",
-            "url_event": "https://example.test/e",
+            "url_event": "https://www.fencingtimelive.com/tournaments/eventSchedule/ABC",
         }
         with pytest.raises(Reached):
             ingest_event_from_url("PPW3-2025-2026", 2026, db=db)

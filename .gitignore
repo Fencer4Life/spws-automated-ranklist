@@ -36,3 +36,10 @@ frontend/index.local.html
 
 # Local search tool: Meilisearch read-only key (generated, never committed)
 tools/docs-search/.readonly-key
+
+# A PZSz ingest report (PPS, MPS) lists every skipped starter with the birth
+# year from the PZSz start list: personal data of people who are not ours, many
+# of them young. It goes to Storage and Telegram on CERT; the LOCAL copy is never
+# committed (public repository, ADR-111).
+doc/staging/PPS*
+doc/staging/MPS*
