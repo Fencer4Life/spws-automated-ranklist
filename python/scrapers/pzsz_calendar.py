@@ -218,7 +218,9 @@ def parse_calendar_html(html: str) -> list[dict]:
             {
                 "id_pzsz_event": int(id_match.group(1)),
                 "name": anchor.get_text(" ", strip=True),
-                "url_event": f"{PZSZ_EVENT}?id={id_match.group(1)}",
+                # The event's pzszerm.pl page: a calendar page, never a results
+                # link, so it is never written to tbl_event.url_event.
+                "url_page": f"{PZSZ_EVENT}?id={id_match.group(1)}",
                 "age_category": texts[1],
                 "weapons": _weapons_from_cell(texts[2]),
                 # Provenance only. Membership is decided by our own season

@@ -125,7 +125,15 @@ def _committed_ctx(*a, **k):
     return ctx
 
 
-def _ingest(db, *, record_run, run_flow=_committed_ctx, env=None):
+_SCHEDULE = (
+    [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
+    [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}],
+)
+
+
+def _ingest(
+    db, *, record_run, run_flow=_committed_ctx, env=None, url=SCHEDULE_URL, schedule=_SCHEDULE
+):
     from python.pipeline import ingest_cli
 
     environ = {
@@ -138,13 +146,7 @@ def _ingest(db, *, record_run, run_flow=_committed_ctx, env=None):
         patch.dict("os.environ", env if env is not None else environ, clear=False),
         patch("python.scrapers.ftl_auth.get_authed_ftl_client", return_value=_Client()),
         patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u),
-        patch(
-            "python.tools.scrape_ftl_event_urls.parse_event_schedule",
-            return_value=(
-                [{"uuid": "U1", "name": "Szpada Mężczyzn kat. 2", "finished": True, "day": None}],
-                [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}],
-            ),
-        ),
+        patch("python.tools.scrape_ftl_event_urls.parse_event_schedule", return_value=schedule),
         patch("python.pipeline.ingest_cli._run_parsed_through_flow", side_effect=run_flow),
         patch("python.pipeline.ingest_cli._fire_staging_report", return_value=None),
         patch("python.pipeline.ingest_cli._after_event_run"),
@@ -154,7 +156,7 @@ def _ingest(db, *, record_run, run_flow=_committed_ctx, env=None):
             season_end_year=2027,
             db=db,
             replace=True,
-            url_event_override=SCHEDULE_URL,
+            url_event_override=url,
             record_run=record_run,
         )
 
@@ -228,6 +230,61 @@ class TestRecordedRun:
         db.set_event_url_event.assert_not_called()
 
 
+class TestTheSourceIsAnFtlSchedule:
+    """CALURL.16–17 (issue #3 of the 25 Oct results-link RCA): LOCAL run 403
+    took a pzszerm.pl page as its event URL and finished green with nothing
+    read. The ingest now refuses it, before the URL is saved or anything is
+    wiped, and closes the run FAILED."""
+
+    def test_a_url_that_is_not_an_ftl_schedule_is_refused_and_not_saved(self):
+        """CALURL.16"""
+        db = _db()
+        page = "https://www.pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4596"
+        with (
+            patch("python.pipeline.ingest_cli._wipe_event_live") as wipe,
+            pytest.raises(ValueError, match="not an FTL event schedule"),
+        ):
+            _ingest(db, record_run="cert", url=page)
+        db.set_event_url_event.assert_not_called()
+        wipe.assert_not_called()
+        _run_id, error, _listings = db.fail_ingest_run.call_args.args
+        assert "not an FTL event schedule" in error
+        db.finish_ingest_run.assert_not_called()
+
+    def test_a_schedule_that_lists_nothing_is_refused_before_the_wipe(self):
+        """CALURL.17"""
+        db = _db()
+        with (
+            patch("python.pipeline.ingest_cli._wipe_event_live") as wipe,
+            pytest.raises(ValueError, match="lists no events"),
+        ):
+            _ingest(db, record_run="cert", schedule=([], []))
+        wipe.assert_not_called()
+        _run_id, error, _listings = db.fail_ingest_run.call_args.args
+        assert "lists no events" in error
+        db.finish_ingest_run.assert_not_called()
+
+    def test_every_ftl_schedule_shape_is_accepted(self):
+        """CALURL.16: www or apex host, a fragment or a query after the id."""
+        from python.pipeline.ingest_cli import is_ftl_schedule
+
+        for url in (
+            "https://www.fencingtimelive.com/tournaments/eventSchedule/B5472ECF655843AA8065B6DF3FFAEFD8#today",
+            "https://fencingtimelive.com/tournaments/eventSchedule/B5472ECF655843AA8065B6DF3FFAEFD8",
+            "http://www.fencingtimelive.com/tournaments/eventSchedule/ABC?x=1",
+        ):
+            assert is_ftl_schedule(url), url
+        for url in (
+            "https://www.pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4596",
+            "https://www.veteransfencing.eu/event/x/",
+            "https://www.fencingtimelive.com/events/results/B5472ECF655843AA8065B6DF3FFAEFD8",
+            "https://www.fencingtimelive.com/tournaments/eventSchedule/",
+            "https://evil.example/fencingtimelive.com/tournaments/eventSchedule/ABC",
+            "",
+        ):
+            assert not is_ftl_schedule(url), url
+
+
 class TestProvenance:
     def test_the_commit_and_the_run_come_from_github_actions(self):
         """PROMO.RUN.06"""
@@ -299,6 +356,52 @@ class TestWiring:
         )
         with pytest.raises(SystemExit):
             ingest_cli.main()
+
+
+class TestTheCliSaysWhatItDoes:
+    """CALURL.18–19 (issues #4 and #5 of the 25 Oct results-link RCA)."""
+
+    @pytest.mark.parametrize("source", [["--from-url"], ["x.xml"]], ids=["from-url", "xml"])
+    def test_dry_run_is_refused_with_flow(self, monkeypatch, capsys, source):
+        """CALURL.18 (D3 A): --flow writes live, so --dry-run would be a
+        false promise; the CLI refuses it before anything runs."""
+        from python.pipeline import ingest_cli
+
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "ingest_cli",
+                "--season-end-year",
+                "2027",
+                "--event-code",
+                EVENT,
+                "--flow",
+                "ingest_domestic",
+                "--dry-run",
+                *source,
+            ],
+        )
+        with (
+            patch.object(ingest_cli, "ingest_event_from_url") as from_url,
+            patch.object(ingest_cli, "ingest_via_flow") as via_flow,
+            pytest.raises(SystemExit),
+        ):
+            ingest_cli.main()
+        from_url.assert_not_called()
+        via_flow.assert_not_called()
+        assert "--dry-run" in capsys.readouterr().err
+
+    def test_the_url_event_help_says_the_link_is_saved(self, monkeypatch, capsys):
+        """CALURL.19: --url-event is written to the event's results link
+        (URL wyników), not used for one run only."""
+        from python.pipeline import ingest_cli
+
+        monkeypatch.setattr("sys.argv", ["ingest_cli", "--help"])
+        with pytest.raises(SystemExit):
+            ingest_cli.main()
+        out = " ".join(capsys.readouterr().out.split())
+        assert "for this run" not in out
+        assert "saves it as the event's results link" in out
 
 
 class TestWhatTheGateReads:

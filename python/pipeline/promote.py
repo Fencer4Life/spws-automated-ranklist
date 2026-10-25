@@ -123,11 +123,8 @@ def _build_create_payload(
         "txt_country": evt.get("txt_country") or "",
         "enum_status": evt.get("enum_status") or "PLANNED",
         "txt_venue_address": evt.get("txt_venue_address") or "",
-        "url_event": evt.get("url_event") or "",
-        "url_event_2": evt.get("url_event_2") or "",
-        "url_event_3": evt.get("url_event_3") or "",
-        "url_event_4": evt.get("url_event_4") or "",
-        "url_event_5": evt.get("url_event_5") or "",
+        # No results link (url_event … url_event_5): it stays empty until an
+        # administrator sets it in Admin; the calendar never carries one.
         "url_invitation": evt.get("url_invitation") or "",
         "url_registration": evt.get("url_registration") or "",
         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",
@@ -158,7 +155,8 @@ def _build_update_payload(
     id_prior_event: int | None = None,
 ) -> dict:
     """Shape the UPDATE branch's payload: identity fields overwrite, URL fields
-    fill-blank-only on the SQL side (see fn_mirror_events_to_prod). Keys are
+    fill-blank-only on the SQL side (see fn_mirror_events_to_prod), and no
+    results link at all. Keys are
     always present (empty string when source is NULL/empty) so payload shape
     is stable regardless of which fields a given event actually has.
     """
@@ -180,11 +178,7 @@ def _build_update_payload(
         # The PZSz calendar identity (ADR-087), with id_evf_event's rule: CERT's
         # id wins when it has one, PROD keeps its own otherwise (plan §6, Q5 A).
         "id_pzsz_event": evt.get("id_pzsz_event"),
-        "url_event": evt.get("url_event") or "",
-        "url_event_2": evt.get("url_event_2") or "",
-        "url_event_3": evt.get("url_event_3") or "",
-        "url_event_4": evt.get("url_event_4") or "",
-        "url_event_5": evt.get("url_event_5") or "",
+        # No results link (url_event … url_event_5): PROD's is set in Admin only.
         "url_invitation": evt.get("url_invitation") or "",
         "url_registration": evt.get("url_registration") or "",
         "dt_registration_deadline": evt.get("dt_registration_deadline") or "",

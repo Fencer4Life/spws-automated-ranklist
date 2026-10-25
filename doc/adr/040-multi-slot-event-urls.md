@@ -4,6 +4,7 @@
 **Date:** 2026-04-25
 **Relates to:** ADR-028 (EVF Calendar + Results Import — refresh invariant generalises), ADR-029 (Tournament URL Auto-Population — discovery loop becomes multi-URL), ADR-030 (Event Registration URL — same form), ADR-036 (PROD Export — schema-driven, auto-handles), ADR-039 (EVF Dedup — unaffected).
 **Amended by:** [ADR-084](084-calendar-quarter-barrel-event-card.md) (permits render-time day labels over the compacted slot list).
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (`fn_refresh_evf_event_urls` writes no slot; compact-on-save holds for the Admin saves).
 
 ## Amendment (2026-08-09 — day labels at render time)
 
@@ -108,3 +109,7 @@ No new Telegram messages, no new RPCs beyond `fn_compact_urls` (helper), no new 
 - Helper: `fn_compact_urls(VARIADIC TEXT[]) RETURNS TEXT[]` — pure, side-effect-free, idempotent.
 - Discovery: [`python/tools/populate_tournament_urls.py`](../../python/tools/populate_tournament_urls.py) — `main()` loop extended.
 - Promote: [`python/pipeline/promote.py`](../../python/pipeline/promote.py) — calendar-mode payload extension.
+
+## Amendment (2026-10-25, ADR-117) — the refresh writes no slot
+
+[ADR-117](117-results-links-admin-only.md): `fn_refresh_evf_event_urls` writes none of the five slots, so compact-on-save now applies to the Admin saves (`fn_create_event`, `fn_update_event`) and to the one-time clean-up `fn_clear_calendar_results_links()`, which compacts the slots it clears. The CERT→PROD mirror carries no slot either. The invariant "if any URL is set, slot #1 is set" is unchanged. pgTAP `15.6` now asserts that the refresh leaves the slots as they are.

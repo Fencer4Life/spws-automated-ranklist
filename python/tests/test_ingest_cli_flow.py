@@ -288,14 +288,19 @@ class TestIngestEventFromUrl:
         db.find_event_by_code.return_value = {
             "id_event": 9,
             "txt_code": "PPW3-2025-2026",
-            "url_event": "https://x/eventSchedule/ABC",
+            "url_event": "https://www.fencingtimelive.com/tournaments/eventSchedule/ABC",
             "dt_start": "2025-12-13",
         }
         wiped = {}
         with (
             patch("python.scrapers.ftl_auth.get_authed_ftl_client") as gc,
             patch("python.scrapers.ftl_auth.normalize_ftl_url", side_effect=lambda u: u),
-            patch("python.tools.scrape_ftl_event_urls.parse_event_schedule", return_value=([], [])),
+            # One skipped round: a schedule that lists nothing is refused
+            # before the wipe (CALURL.17).
+            patch(
+                "python.tools.scrape_ftl_event_urls.parse_event_schedule",
+                return_value=([], [{"uuid": "U9", "name": "ELIMINACJE", "reason": "pools round"}]),
+            ),
             patch(
                 "python.pipeline.ingest_cli._wipe_event_live",
                 side_effect=lambda d, ide: (wiped.__setitem__("id", ide), (5, 3))[1],

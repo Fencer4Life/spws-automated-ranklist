@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       event_code:
-        description: 'Event code, e.g. PPW3-2025-2026 (a domestic event needs its url_event; an EVF or FIE event reads its result links or EVF results)'
+        description: 'Event code, e.g. PPW3-2025-2026 (an SPWS or PZSz event needs its url_event, an FTL eventSchedule; an EVF or FIE event reads its result links or EVF results)'
         required: true
       season_end_year:
         description: 'Season end year, e.g. 2026'
@@ -33,7 +33,7 @@ on:
         description: 'Target env: cert (prod is refused: promote replays the CERT run on PROD)'
         default: 'cert'
       url_event:
-        description: 'Optional FTL eventSchedule URL — set as tbl_event.url_event (admin-managed) before ingest. Blank = use the stored url_event.'
+        description: 'Optional FTL eventSchedule URL — saved as the event results link (URL wyników, tbl_event.url_event) before ingest; anything else is refused (ADR-117). Blank = use the stored url_event.'
         required: false
         default: ''
 

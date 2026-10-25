@@ -7,6 +7,7 @@
 **Amended by:** [ADR-113](113-ingest-and-promote-carry-every-organizer.md) (Results Scraping and `evf-results-import`: the sync imports no result; `ingest` reads EVF's results for an event without a result URL, and `promote` carries them to PROD).
 **Amended by:** [ADR-088](088-calendar-location-contract.md) (closes the `txt_location` venue-where-a-city-belongs defect this ADR records but declines to fix: the city is now resolved at scrape time from an evidence ladder, and the render-time accommodation becomes a safety net for legacy rows only).
 **Amended by:** [ADR-096](096-no-bracket-stubs-before-results.md) (§Calendar Scraping's "Creates `tbl_event` ... + child `tbl_tournament` ... via `fn_import_evf_events`" no longer holds: the calendar ingest creates event-level facts only, and a bracket is created by results ingestion instead).
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (Refresh Semantics: `url_event` is no longer a refreshed column, and the create writes none; the detail page is still fetched for the letter).
 
 ## Amendment (2026-08-09 — curated enrichment is permitted, once)
 
@@ -253,3 +254,7 @@ The distinct `PEW8f-2024-2025` Guildford foil event and its 20 results are retai
 Implementation and acceptance evidence:
 [`20260809000001_evf_predecessor_event_fragment_repair.sql`](../../supabase/migrations/20260809000001_evf_predecessor_event_fragment_repair.sql)
 and [`56_evf_predecessor_event_fragment_repair.sql`](../../supabase/tests/56_evf_predecessor_event_fragment_repair.sql).
+
+## Amendment (2026-10-25, ADR-117) — the calendar writes no results link
+
+[ADR-117](117-results-links-admin-only.md): no calendar automation writes `url_event` … `url_event_5`. In Refresh Semantics, `url_event` leaves the list of columns refreshed when empty; `fn_refresh_evf_event_urls` still fills `url_invitation`, `url_registration`, `dt_registration_deadline`, `txt_venue_address`, the fee and `arr_weapons` when blank. The create (`fn_ingest_evf_calendar`) writes no results slot. The EVF event page is still fetched as the detail page, for the letter and the registration link, and is not stored. The Consequences line "Event-level URL fields are now populated automatically (`url_event`, …)" no longer holds for `url_event`: results links are set in Admin.

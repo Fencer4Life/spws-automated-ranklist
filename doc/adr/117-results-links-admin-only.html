@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="adr-source" content="117-results-links-admin-only.md">
+<meta name="adr-source-sha256" content="62a03193e4805f5b0009739a3929a83a73728e71e966e71cb3d6a8722c963079">
+<title>ADR-117 · Results Links Are Set in Admin Only; Calendar Automation Writes Only the Organizer&#x27;s Letter</title>
+<link rel="stylesheet" href="assets/adr.css">
+</head>
+<body><div class="page">
+<header class="mast">
+  <div><p class="eyebrow">Architecture Decision Record · 117</p><h1>Results Links Are Set in Admin Only; Calendar Automation Writes Only the Organizer's Letter</h1><p class="dek">Official architecture decision record for the SPWS Automated Ranklist System.</p></div>
+  <aside class="facts" aria-label="Decision metadata"><dl><div><dt>Status</dt><dd class="accepted">Accepted (signed off by the user in chat on 2026-10-25 as S1 A, &quot;ADR-117 as drafted&quot;, from <code>doc/plans/pzsz-results-url-rca-2026-10-25.html</code> §09). Implemented test-first and verified on LOCAL; released with migration <code>20261025000001</code>.</dd></div><div><dt>Date</dt><dd class="">2026-10-25</dd></div><div><dt>Source</dt><dd class=""><code>117-results-links-admin-only.md</code></dd></div><div><dt>Length</dt><dd class="">92 lines</dd></div></dl></aside>
+  <div class="source-note"><p><strong>Status:</strong> Accepted (signed off by the user in chat on 2026-10-25 as S1 A, &quot;ADR-117 as drafted&quot;, from <code>doc/plans/pzsz-results-url-rca-2026-10-25.html</code> §09). Implemented test-first and verified on LOCAL; released with migration <code>20261025000001</code>.
+<strong>Date:</strong> 2026-10-25
+<strong>Supersedes:</strong> <a href="039-stale-event-gate.html">ADR-039</a> rev 4 (the <code>url_event</code> date gate and <code>url_event_if_concluded</code>) and rev 2's step 2 &quot;populate <code>url_event</code> with the resolved URL&quot; (the self-heal now rewrites the dates only)
+<strong>Amends:</strong> <a href="028-evf-calendar-results-import.html">ADR-028</a> (Refresh Semantics: <code>url_event</code> is no longer a refreshed column; the detail page is still fetched for the letter), <a href="040-multi-slot-event-urls.html">ADR-040</a> (<code>fn_refresh_evf_event_urls</code> writes no slot; compact-on-save holds for the Admin saves), <a href="043-evf-event-allocator.html">ADR-043</a> (a <code>CURRENT_SLOT_REUSE</code> write carries no results slot), <a href="081-cert-prod-event-reconciler.html">ADR-081</a> (§3: the mirror carries no results slot, in CREATE or UPDATE), <a href="087-pzsz-senior-calendar-source.html">ADR-087</a> (§7: the PZSz create writes no results slot), <a href="116-pzsz-calendar-browser-read-and-letter-passes.html">ADR-116</a> (§8: the &quot;send the ingest&quot; notice fires when an administrator has set the link)
+<strong>Relates to:</strong> <a href="108-promote-replays-verified-cert-ingestion.html">ADR-108</a> (§9: promote fills an empty PROD slot from the CERT run, unchanged), <a href="113-ingest-and-promote-carry-every-organizer.html">ADR-113</a> (an EVF or FIE event with no link is ingested from EVF's own results, unchanged), <a href="086-evf-weapon-evidence-ladder-strict-skip.html">ADR-086</a> (the fill-blank tier of <code>url_event</code>), <a href="025-event-centric-ingestion-telegram.html">ADR-025</a> (<code>ingest &lt;code&gt;</code> reads the stored link), <a href="029-tournament-url-auto-population.html">ADR-029</a> (<code>populate-urls.yml</code> reads <code>url_event</code>), <a href="112-pzsz-start-lists-are-stored-inputs.html">ADR-112</a> (§5, the notice ADR-116 moved), <a href="053-evf-parity-gate.html">ADR-053</a> (the parity sweep's source), <a href="111-pzsz-results-admitted-by-surname-name-birth-year.html">ADR-111</a> (the PZSz ingest that reads the link)
+<strong>Source:</strong> <code>doc/plans/pzsz-results-url-rca-2026-10-25.html</code>, <code>supabase/migrations/20261025000001_calendar_never_writes_results_link.sql</code></p>
+</div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this record</p><ol><li class="depth-2"><a href="#context">Context</a></li><li class="depth-2"><a href="#decision">Decision</a></li><li class="depth-3"><a href="#1-no-calendar-automation-writes-a-results-slot">1 · No calendar automation writes a results slot</a></li><li class="depth-3"><a href="#2-calendar-automation-writes-only-the-organizer-s-letter">2 · Calendar automation writes only the organizer&#x27;s letter</a></li><li class="depth-3"><a href="#3-results-slots-are-filled-in-admin">3 · Results slots are filled in Admin</a></li><li class="depth-3"><a href="#4-a-one-time-clean-up-ships-with-the-fix">4 · A one-time clean-up ships with the fix</a></li><li class="depth-3"><a href="#5-the-pzsz-send-the-ingest-notice-waits-for-the-administrator-s-link">5 · The PZSz &quot;send the ingest&quot; notice waits for the administrator&#x27;s link</a></li><li class="depth-2"><a href="#alternatives-considered">Alternatives considered</a></li><li class="depth-2"><a href="#consequences">Consequences</a></li></ol></nav>
+  <main><section class="section-card adr-section context"><p class="kicker">context</p><h2 id="context">Context</h2>
+<p><code>tbl_event.url_event</code> … <code>url_event_5</code>, shown in Admin as <strong>URL wyników</strong>, serve three purposes:</p>
+<ul>
+<li>the calendar card's &quot;Wyniki&quot; link;</li>
+<li>the domestic and PZSz ingest's FencingTimeLive schedule (<code>ingest_cli._ingest_event_rounds</code>);</li>
+<li>the EVF and FIE ingest's list of sources, read in slot order; EVF's own results are read only when every slot is empty (<code>international_sources.event_sources</code>).</li>
+</ul>
+<p>The organizer's letter has its own field, <code>url_invitation</code>, shown as <strong>URL komunikatu</strong>.</p>
+<p>Calendar automation wrote calendar pages into URL wyników three times:</p>
+<ol>
+<li><strong>EVF before the event, until 26 July 2026.</strong> The sync stored the EVF event page for every event. ADR-039 rev 4 added a date gate (<code>url_event_if_concluded</code>) and a one-time clean-up.</li>
+<li><strong>EVF again, the same morning.</strong> The clean-up ran on CERT and PROD at 07:37 and 07:44 UTC. The scheduled <code>evf-sync.yml</code> at 08:30 still ran the old code: the fix was committed at 18:36 (<code>260b4c36</code>). It wrote the pages back on CERT, and its reconcile filled PROD's now-empty slots with them: 14 events, &quot;trigger: schedule&quot; (<code>doc/staging/reconcile/SPWS-2026-2027.20260726-083331Z.md</code>). An administrator moved them to URL komunikatu on CERT on 9 August; the mirror never carries a clear, so PROD kept them. Even with the gate deployed, the gate still wrote the page once the event had ended.</li>
+<li><strong>PZSz from creation, since 3 September.</strong> The listing parser built <code>pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=&lt;id&gt;</code> for every row, and <code>pzsz_sync.build_insert_sql</code> put it into <code>url_event</code>. It has done so since the first PZSz commit, <code>034f41fa</code>. No ADR or plan decided it.</li>
+</ol>
+<p>On 25 October 2026 the effect reached a results run: a LOCAL ingest of PPS1f read the pzszerm.pl page as its FTL schedule and finished green with nothing read. On the same morning the user had set the real FTL link in PROD's Admin; CERT and LOCAL still held the page. On PROD, 14 EVF events of 2026/27 carried the EVF page as their results link, 12 of them the same link as URL komunikatu. A calendar page there also replaces EVF's own results as the source of an EVF ingest.</p>
+<p>The user's rule, 25 October 2026: <em>&quot;there are two separate fields for event URLs, URL komunikatu and URL wyników: exclude the second one from the calendar updates. Fix all calendar scrapers and redirect them to write only to URL komunikatu. URL wyników stays empty until the Admin UI populates it.&quot;</em></p>
+</section>
+<section class="section-card adr-section decision"><p class="kicker">decision</p><h2 id="decision">Decision</h2>
+<h3 id="1-no-calendar-automation-writes-a-results-slot">1 · No calendar automation writes a results slot</h3>
+<p>No calendar automation writes <code>url_event</code> … <code>url_event_5</code>, before or after the event. In the Python payloads and in the SQL functions alike, that covers:</p>
+<ul>
+<li>the EVF sync: create, reuse, refresh and the date self-heal;</li>
+<li>the PZSz sync's create;</li>
+<li>the CERT→PROD calendar mirror, in CREATE and UPDATE.</li>
+</ul>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Writer</th>
+<th>Before</th>
+<th>Now</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PZSz create (<code>pzsz_sync.build_insert_sql</code>)</td>
+<td>the pzszerm.pl event page</td>
+<td>no results slot; the parser's key is renamed <code>url_page</code></td>
+</tr>
+<tr>
+<td>EVF create and reuse payloads (<code>evf_sync</code>)</td>
+<td>the EVF page once the event had ended</td>
+<td>no results slot; <code>url_event_if_concluded</code> is removed</td>
+</tr>
+<tr>
+<td><code>fn_refresh_evf_event_urls</code></td>
+<td>filled empty slots 1–5</td>
+<td>writes no results slot</td>
+</tr>
+<tr>
+<td>EVF date self-heal (<code>_heal_future_completed</code>)</td>
+<td>stored the matched calendar link</td>
+<td>uses it for the date only</td>
+</tr>
+<tr>
+<td><code>fn_mirror_events_to_prod</code> and <code>promote.py --mode calendar</code></td>
+<td>CREATE copied slots 1–5; UPDATE filled empty ones</td>
+<td>neither carries a results slot</td>
+</tr>
+<tr>
+<td><code>fn_ingest_evf_calendar(JSONB, INT)</code></td>
+<td>wrote the page</td>
+<td>writes no results slot</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="2-calendar-automation-writes-only-the-organizer-s-letter">2 · Calendar automation writes only the organizer's letter</h3>
+<p>The calendar writes the organizer's letter to <code>url_invitation</code>, under the existing fill rules, and never a calendar page. The calendar page is not a placeholder there either: the PZSz letter passes read <code>url_invitation</code> as the letter to download, and the EVF refresh and the mirror fill it only while it is empty, so a page would block the real letter. The PZSz page can always be rebuilt from <code>id_pzsz_event</code>.</p>
+<h3 id="3-results-slots-are-filled-in-admin">3 · Results slots are filled in Admin</h3>
+<p>A results link reaches the database only from a person:</p>
+<ul>
+<li>Admin (<code>fn_create_event</code>, <code>fn_update_event</code>);</li>
+<li>the <code>url_event</code> input of <code>ingest-event.yml</code>, which saves it before the run;</li>
+<li>promote, which fills an empty PROD slot from the CERT run it replays (ADR-108 §9, ADR-113).</li>
+</ul>
+<p>The last two carry a link an operator supplied. Both are unchanged.</p>
+<h3 id="4-a-one-time-clean-up-ships-with-the-fix">4 · A one-time clean-up ships with the fix</h3>
+<p><code>fn_clear_calendar_results_links()</code> removes a calendar page from the results slots and closes the gaps (<code>fn_compact_urls</code>). It acts on a slot only when all three hold:</p>
+<ul>
+<li>the event's season has not ended;</li>
+<li>the value is a pzszerm.pl or veteransfencing.eu event page;</li>
+<li>no administrator save ever changed that slot to that value. An admin save that repeats an unchanged link while editing another field does not count.</li>
+</ul>
+<p>It ships in the same migration as the function changes, so it cannot run before the fix. <code>seed_post_backfill.sql</code> runs it after a fresh bootstrap, where the seed loads after the migrations. It is <code>SECURITY DEFINER</code> and granted to <code>service_role</code> only.</p>
+<h3 id="5-the-pzsz-send-the-ingest-notice-waits-for-the-administrator-s-link">5 · The PZSz &quot;send the ingest&quot; notice waits for the administrator's link</h3>
+<p>The notice of ADR-116 §8 (R5) names the <code>ingest</code> command for a past PZSz event when an administrator has set <code>url_event</code>, a start list is stored, and no CERT run has finished. Before, it fired when the link &quot;no longer pointed at pzszerm.pl&quot;.</p>
+</section>
+<section class="section-card adr-section alternatives"><p class="kicker">alternatives</p><h2 id="alternatives-considered">Alternatives considered</h2>
+<ol>
+<li><strong>A date gate (ADR-039 rev 4).</strong> Rejected: a calendar page never holds results, and the gate refilled the data its clean-up had just cleared.</li>
+<li><strong>The calendar page as a URL komunikatu placeholder.</strong> Rejected: the letter passes would read it as the letter, and the fill-blank rules would then block the real letter.</li>
+<li><strong>A database <code>CHECK</code> on the page patterns.</strong> Not now: the seed loads after the migrations, and a pattern cannot express &quot;Admin only&quot;. The functions and the tests are the guard.</li>
+</ol>
+</section>
+<section class="section-card adr-section consequences"><p class="kicker">consequences</p><h2 id="consequences">Consequences</h2>
+<ul>
+<li>An EVF event without an Admin link is ingested from EVF's own results (ADR-113).</li>
+<li>The calendar card shows no &quot;Wyniki&quot; link until an administrator fills one.</li>
+<li>A CERT ingest needs the link on CERT: the <code>url_event</code> input of <code>ingest-event.yml</code>, or the administrator's value.</li>
+<li>The release clears 7 calendar pages on CERT (PEW0efs, PEW1f, PPS1e, PPS1f, PPS2e, PPS2f, PPS2s) and 17 on PROD (14 EVF events of 2026/27 and PPS2e, PPS2f, PPS2s). The administrator's FTL links on PROD's PPS1e and PPS1f are not calendar pages and stay. Closed seasons are untouched.</li>
+<li>The ingest refuses a link that is not an FTL schedule, before it is saved or anything is wiped, and a schedule that lists nothing. Both close the run FAILED (issue #3 of the plan, CALURL.16–17). <code>--dry-run</code> with <code>--flow</code> is refused, because the flow writes live (D3 A, CALURL.18), and the <code>--url-event</code> help says the link is saved (CALURL.19).</li>
+<li><strong>New:</strong> migration <code>20261025000001_calendar_never_writes_results_link.sql</code>; <code>python/tests/test_calendar_results_link.py</code> (CALURL.01–07); <code>supabase/tests/114_calendar_never_writes_results_link.sql</code> (CALURL.10–15).</li>
+<li><strong>Changed:</strong> <code>pzsz_calendar.py</code> and <code>pzsz_sources.py</code> (<code>url_page</code>), <code>pzsz_sync.py</code>, <code>evf_sync.py</code>, <code>evf_calendar.py</code> (<code>url_event_if_concluded</code> removed), <code>promote.py</code>, <code>ingest_cli.py</code>. Five earlier assertions now pin the new rule: <code>prom.8</code>, <code>evf.47</code>, pgTAP <code>12.5</code>, <code>15.6</code> and <code>EVF.URL.02</code>; <code>evf.63</code> is removed with its helper.</li>
+<li><strong>Tests:</strong> CALURL.01–08 and CALURL.10–19 (09 is not used; <code>python/tests/test_calendar_results_link.py</code>, <code>test_pzsz_calendar.py</code>, <code>test_ingest_run.py</code>, <code>test_pzsz_routing.py</code>; pgTAP <code>114</code>).</li>
+</ul>
+</section></main>
+</div>
+<nav class="pager" aria-label="ADR navigation"><a class="previous" href="116-pzsz-calendar-browser-read-and-letter-passes.html">← ADR-116: The PZSz calendar reads past the gate with a browser engine, and reads the organizer letter in four abstaining passes</a><a class="registry" href="index.html">ADR registry</a><span class="next"></span></nav>
+<footer class="foot">Generated from <code>117-results-links-admin-only.md</code> · source SHA-256 <code>62a03193e4805f5b0009739a3929a83a73728e71e966e71cb3d6a8722c963079</code></footer>
+</div></body></html>

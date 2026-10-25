@@ -395,3 +395,8 @@ BEGIN
        "international": [{"types": ["PEW", "MEW", "MSW", "PSW", "PPS", "MPS"], "best": 5}]}
     $j$::JSONB));
 END $adm27$;
+
+-- Calendar pages a scraper put into an event's results slots, removed after the
+-- seed loads (migration 20261025000001 ran first, against an empty schema).
+-- Results links are set in Admin only. Idempotent.
+SELECT fn_clear_calendar_results_links();

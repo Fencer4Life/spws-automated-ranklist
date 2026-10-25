@@ -720,16 +720,17 @@ class TestPromoteCalendar:
         assert "calendar" in msg and "event" in msg
 
 
-# prom.8 — Multi-slot event URLs are propagated CERT → PROD (ADR-040)
+# prom.8 — Results links are never carried CERT → PROD (CALURL.07)
 
 
 class TestPromoteCalendarMultiUrl:
-    """Plan test prom.8 — calendar reconcile ships url_event_2..5 from CERT to
-    PROD via the fn_mirror_events_to_prod UPDATE payload (fill-blank-only per
-    slot, enforced server-side)."""
+    """Plan test prom.8 — the calendar reconcile carries no results slot
+    (url_event … url_event_5) from CERT to PROD: PROD's results links are set
+    in Admin only. Revised from the ADR-040 fill-blank carry (CALURL.07)."""
 
-    def test_calendar_mode_propagates_url_event_2_through_5(self):
-        """prom.8: UPDATE payload carries url_event_2..5 keys when CERT row has them."""
+    def test_calendar_mode_carries_no_result_slots(self):
+        """prom.8: the UPDATE payload has no url_event … url_event_5 keys even
+        when the CERT row holds them."""
         from python.pipeline.promote import promote_calendar
 
         prod_query_calls: list[str] = []
@@ -785,9 +786,8 @@ class TestPromoteCalendarMultiUrl:
         rpc_calls = [s for s in prod_query_calls if "fn_mirror_events_to_prod" in s]
         assert len(rpc_calls) == 1
         body = rpc_calls[0]
-        # All five URL slots present in the JSONB payload
-        assert "url_event_2" in body and "https://e/p2" in body
-        assert "url_event_3" in body and "https://e/p3" in body
-        assert "url_event_4" in body  # key present even when value null/empty
-        assert "url_event_5" in body
+        # No results slot, and none of CERT's results links, in the payload
+        assert "url_event" not in body
+        assert "https://e/p1" not in body and "https://e/p2" not in body
+        assert "https://e/p3" not in body
         assert summary["updated"] == 1
