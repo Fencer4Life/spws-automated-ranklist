@@ -230,8 +230,8 @@
     "schema_fingerprint": "aa13d7be0739cf98cab4e49d4d737cd5"
   },
   "prod": {
-    "last_updated": "2026-10-25T13:46:11Z",
-    "last_sha": "86016bdccfbce95db82b5fdfa2f295796d3b1f51",
+    "last_updated": "2026-10-25T14:38:48Z",
+    "last_sha": "655431a24821548531a8e5f99eeeed9977deb133",
     "applied": [
       "20250301000001_enums_tables_indexes.sql",
       "20250301000002_rls_policies.sql",
