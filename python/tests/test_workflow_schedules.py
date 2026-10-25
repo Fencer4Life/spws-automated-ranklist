@@ -59,8 +59,8 @@ def test_WFCRON_02_start_list_first_and_final_flags_name_its_own_crons():
         _crons()["pzsz-start-lists.yml"], key=lambda c: (int(c.split()[1]), int(c.split()[0]))
     )
     workflow = (WORKFLOWS / "pzsz-start-lists.yml").read_text(encoding="utf-8")
-    assert f'"{crons[0]}")  FLAGS="--first-run"' in workflow
-    assert f'"{crons[-1]}") FLAGS="--final-run"' in workflow
+    assert f'"{crons[0]}")  ARGS+=(--first-run)' in workflow
+    assert f'"{crons[-1]}") ARGS+=(--final-run)' in workflow
 
 
 def _cron_times(cron: str) -> set[str]:
