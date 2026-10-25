@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="Project Specification. SPWS Automated Ranklist System.md">
-<meta name="doc-source-sha256" content="c75315e60e99d1def6cc3437c4581422c2caf1bf2a627e61e50a0d8a3655aa3c">
+<meta name="doc-source-sha256" content="befe2a0481258b3e7103a9696ae002236a95dca9c626fcf9d19fdf52421d3d82">
 <title>Project Specification: SPWS Automated Ranklist System · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
@@ -2744,7 +2744,7 @@ Season folder naming: <code>{start_year}_{end_year_short}</code> (e.g. <code>202
 </tr>
 <tr>
 <td><a href="adr/053-evf-parity-gate.html">ADR-053</a></td>
-<td>EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle: two-state <code>txt_source_status</code> enum (ENGINE_COMPUTED / EVF_PUBLISHED); status × organizer invariant enforced via trigger (SPWS / FIE pinned to ENGINE_COMPUTED); auto post-commit parity gate for EVF events with three sub-checks (POL count / placements / score within ±0.5); auto-promote on PASS; annotate-only on FAIL; daily cron sweep + 30-day EVF-empty annotation; amends ADR-028 and ADR-038</td>
+<td>EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle: two-state <code>txt_source_status</code> enum (ENGINE_COMPUTED / EVF_PUBLISHED); status × organizer invariant enforced via trigger (SPWS / FIE pinned to ENGINE_COMPUTED); auto post-commit parity gate for EVF events with three sub-checks (POL count / placements / score within ±0.5); auto-promote on PASS; annotate-only on FAIL; daily cron sweep + 30-day EVF-empty annotation; amends ADR-028 and ADR-038. <strong>Amended 2026-10-25:</strong> the daily sweep is a read-only parity check: it pairs each PROD EVF event with EVF's results API event starting within three days, compares every PROD result's N and points with EVF's (<code>compare_evf_points</code>, EVF.PTS.01), reports on Telegram, and promotes and annotates nothing, since results reach PROD only through promote (ADR-113 §8; W2 sign-off, P5 A); EVFCHK.01–07 replace P4.SW.1–6. The interactive review's post-commit gate is unchanged.</td>
 <td>ADR-028, ADR-038, ADR-050, ADR-052</td>
 </tr>
 <tr>
@@ -3139,5 +3139,5 @@ PPW5 silently dropped 14 of 26 brackets at the FTL splitter (&quot;unparseable b
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>c75315e60e99d1def6cc3437c4581422c2caf1bf2a627e61e50a0d8a3655aa3c</code></footer>
+<footer class="foot">Generated from <code>Project Specification. SPWS Automated Ranklist System.md</code> · source SHA-256 <code>befe2a0481258b3e7103a9696ae002236a95dca9c626fcf9d19fdf52421d3d82</code></footer>
 </div></body></html>

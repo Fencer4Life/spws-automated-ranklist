@@ -1,23 +1,29 @@
 """
-Phase 4 (ADR-053) — daily EVF parity sweep cron.
+The daily EVF parity check (ADR-053, amended 2026-10-25). It reads only.
 
-Walks every event with `txt_organizer_code = 'EVF'` and
-`txt_source_status = 'ENGINE_COMPUTED'`. For each:
+For every EVF event at ENGINE_COMPUTED whose end date is within --max-age-days
+(future events included) and that holds results on PROD:
 
-  1. If the event is older than `--max-age-days` (default 60) → skip.
-  2. Probe the EVF API for per-fencer published values.
-     - On non-empty payload → run check_parity vs local.
-       - PASS  → fn_promote_evf_published; flip to EVF_PUBLISHED; Telegram.
-       - FAIL  → fn_annotate_parity_fail; Telegram.
-     - On empty payload → if event is past +30d window, annotate
-       "EVF API empty after 30 days" and stop probing.
-  3. Emit a single sweep summary on completion (📊 Telegram).
+  1. Pair it with the EVF event of EVF's results API (EvfApiClient, the client
+     evf-sync reads with) that starts within three days of it, as evf-sync's
+     single-event results mode does. None → nothing from EVF yet; two or more →
+     named and not compared.
+  2. Compare every PROD result with EVF's row of the same weapon, gender,
+     category, place and surname (Polish letters folded): the field size N and
+     the points (python/tools/compare_evf_points.py, EVF.PTS.01). An EVF event
+     is scored by EVF's rules (ADR-066 amendment), so both are equal when PROD
+     holds what EVF published.
+  3. Send one Telegram message per event with a difference, naming every
+     difference, and one summary per run.
+
+It promotes nothing and annotates nothing: results reach PROD only through
+promote (ADR-113 §8). A run is red only when a read fails.
 
 CLI::
 
-    python -m pipeline.evf_parity_sweep [--max-age-days 60] [--evf-empty-stop-days 30]
+    python -m python.pipeline.evf_parity_sweep [--max-age-days 60] [--evf-empty-stop-days 30]
 
-Tests: python/tests/test_evf_parity_sweep.py.
+Tests: python/tests/test_evf_parity_sweep.py (EVFCHK.01–06).
 """
 
 from __future__ import annotations
@@ -27,190 +33,163 @@ import os
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
-from python.pipeline.commit_lifecycle import _fold
-from python.pipeline.evf_parity import check_parity
+from python.pipeline.promotion.lifecycle import warsaw_today
+from python.tools.compare_evf_points import compare_with_evf
+
+PAIRING_DAYS = 3  # evf-sync pairs an event with EVF's by start date within three days
 
 
 @dataclass
-class SweepCounters:
+class CheckCounters:
     checked: int = 0
-    promoted: int = 0
-    failed: int = 0
+    matched: int = 0
+    differ: int = 0
     empty: int = 0
-    annotated_30d: int = 0
-    skipped: int = 0
+    no_results: int = 0
+    ambiguous: int = 0
     errors: list[str] = field(default_factory=list)
-
-
-def _today() -> date:
-    return date.today()
+    still_empty: list[str] = field(default_factory=list)
+    ambiguous_lines: list[str] = field(default_factory=list)
 
 
 def _to_date(s: Any) -> date | None:
     """Accept date / datetime / ISO string."""
     if s is None:
         return None
-    if isinstance(s, date) and not isinstance(s, datetime):
-        return s
     if isinstance(s, datetime):
         return s.date()
+    if isinstance(s, date):
+        return s
     try:
         return date.fromisoformat(str(s)[:10])
     except ValueError:
         return None
 
 
-def run_sweep(
+def pair_evf_event(our_start: date, evf_events: list[dict]) -> tuple[int | None, list[int] | None]:
+    """The EVF event with individual results starting within three days of ours:
+    (its id, None); (None, None) when there is none; (None, the ids) when there
+    are two or more. Pure (EVFCHK.04)."""
+    found = [
+        int(e["evf_id"])
+        for e in evf_events
+        if e.get("has_results")
+        and not e.get("is_team")
+        and (starts := _to_date(e.get("date"))) is not None
+        and abs((starts - our_start).days) <= PAIRING_DAYS
+    ]
+    if len(found) == 1:
+        return found[0], None
+    if not found:
+        return None, None
+    return None, sorted(found)
+
+
+def _differences(code: str, ours: list[dict], out: dict) -> str:
+    lines = [f"{code}: {out['matched']} of {len(ours)} PROD results carry EVF's N and points"]
+    for m in out["mismatched"]:
+        lines.append(
+            f"  differs: {m['surname']} {m['v']} {m['g']} {m['w']} {m['p']}/{m['n']} "
+            f"{m['pts']} — EVF {m['p']}/{m['evf_n']} {m['evf_pts']}"
+        )
+    for m in out["missing"]:
+        lines.append(
+            f"  not in EVF's results: {m['surname']} {m['v']} {m['g']} {m['w']} {m['p']}/{m['n']}"
+        )
+    return "\n".join(lines)
+
+
+def _summary(c: CheckCounters, stop_days: int) -> str:
+    lines = [
+        f"📊 EVF parity check (reads only): {c.checked} events; {c.matched} match EVF; "
+        f"{c.differ} differ; {c.empty} with nothing from EVF yet; {c.no_results} without "
+        f"results on PROD; {c.ambiguous} not paired; {len(c.errors)} could not be read."
+    ]
+    if c.still_empty:
+        lines.append(f"Nothing from EVF {stop_days} days after the end: {', '.join(c.still_empty)}")
+    lines.extend(c.ambiguous_lines)
+    lines.extend(f"Read failed: {e}" for e in c.errors)
+    return "\n".join(lines)
+
+
+def run_check(
     *,
     db: Any,
-    fetch_evf_api: Callable[[dict], list[dict]],
+    discover: Callable[[str, str], list[dict]],
+    read_evf: Callable[[int], list[dict]],
     notifier: Any | None = None,
     max_age_days: int = 60,
     evf_empty_stop_days: int = 30,
     today: date | None = None,
-) -> SweepCounters:
-    """Walk pending EVF events and run the parity gate on each.
+) -> CheckCounters:
+    """Compare each selected PROD event with EVF's published results; write nothing.
 
     Args:
-        db: DbConnector exposing evf_events_pending_parity,
-            event_results_for_parity, promote_evf_published,
-            annotate_parity_fail.
-        fetch_evf_api: function(event) -> list of {name, pos, points} dicts.
-            Empty list = EVF API returned no rows yet for this event.
-        notifier: TelegramNotifier or None.
-        max_age_days: ignore events older than today − max_age_days.
-        evf_empty_stop_days: after this many days past dt_end with empty
-            EVF payload, annotate and stop checking.
-
-    Returns:
-        SweepCounters with per-bucket counts + any errors.
+        db: exposes evf_events_pending_parity(max_age_days) and
+            evf_results_for_check(event_code) (rows w, g, v, n, p, surname, pts).
+        discover: function(start, end) -> EVF events of the results API starting
+            in that range (EvfApiClient.discover_season_events).
+        read_evf: function(evf_id) -> EVF's rows w, g, v, n, p, surname, pts.
+        notifier: has info() and warning(), or None.
+        evf_empty_stop_days: an event this many days past its end with nothing
+            from EVF is named in the summary.
     """
-    counters = SweepCounters()
-    today = today or _today()
-    events = db.evf_events_pending_parity(max_age_days)
+    c = CheckCounters()
+    today = today or warsaw_today()
+    held: list[tuple[dict, list[dict]]] = []
+    for event in db.evf_events_pending_parity(max_age_days):
+        c.checked += 1
+        ours = db.evf_results_for_check(event["txt_code"])
+        if ours:
+            held.append((event, ours))
+        else:
+            c.no_results += 1
 
-    for event in events:
-        counters.checked += 1
+    evf_events: list[dict] = []
+    if held:
+        starts = [d for e, _ in held if (d := _to_date(e.get("dt_start"))) is not None]
+        window = timedelta(days=PAIRING_DAYS)
         try:
-            id_event = event.get("id_event")
-            event_code = event.get("txt_code") or "<unknown>"
-            dt_end = _to_date(event.get("dt_end")) or _to_date(event.get("dt_start"))
+            evf_events = discover(str(min(starts) - window), str(max(starts) + window))
+        except Exception as exc:  # noqa: BLE001 -- reported, every event counted as unread
+            c.errors.extend(f"{e['txt_code']}: EVF events not listed ({exc})" for e, _ in held)
+            held = []
 
-            evf_payload = fetch_evf_api(event) or []
-            if not evf_payload:
-                # EVF API empty
-                if dt_end is not None and (today - dt_end).days >= evf_empty_stop_days:
-                    db.annotate_parity_fail(
-                        id_event,
-                        f"EVF API empty after {evf_empty_stop_days} days",
-                    )
-                    counters.annotated_30d += 1
-                    if notifier is not None:
-                        notifier.notify_evf_api_empty(event_code, evf_empty_stop_days)
-                else:
-                    counters.empty += 1
+    for event, ours in held:
+        code = event["txt_code"]
+        try:
+            start = _to_date(event.get("dt_start"))
+            evf_id, ambiguous = pair_evf_event(start, evf_events) if start else (None, None)
+            if ambiguous:
+                c.ambiguous += 1
+                ids = " and ".join(str(i) for i in ambiguous)
+                c.ambiguous_lines.append(
+                    f"{code}: EVF events {ids} both start within {PAIRING_DAYS} days; not compared."
+                )
                 continue
-
-            local = db.event_results_for_parity(id_event)
-            parity = check_parity(local, evf_payload)
-            if parity.overall_pass:
-                # Build promotion payload
-                evf_by_name = {_fold(r.get("name")): r for r in evf_payload}
-                payload = []
-                for lr in local:
-                    e = evf_by_name.get(_fold(lr.get("fencer_name")))
-                    if e is None:
-                        continue
-                    payload.append(
-                        {
-                            "id_fencer": lr.get("id_fencer"),
-                            "int_place": lr.get("int_place"),
-                            "num_final_score": float(e.get("points", 0) or 0),
-                        }
-                    )
-                promoted = db.promote_evf_published(id_event, payload)
-                counters.promoted += 1
+            evf_rows = read_evf(evf_id) if evf_id is not None else []
+            if not evf_rows:
+                c.empty += 1
+                end = _to_date(event.get("dt_end")) or start
+                if end is not None and (today - end).days >= evf_empty_stop_days:
+                    c.still_empty.append(code)
+                continue
+            out = compare_with_evf(ours, evf_rows)
+            if out["mismatched"] or out["missing"]:
+                c.differ += 1
                 if notifier is not None:
-                    notifier.notify_evf_promoted(
-                        event_code,
-                        int(promoted.get("fencers_overwritten", len(payload))),
-                    )
+                    notifier.warning(_differences(code, ours, out))
             else:
-                fail_lines = [f"[{f.sub_check}] {f.fencer_name}" for f in parity.fail_details]
-                notes = "; ".join(fail_lines[:10])
-                if len(fail_lines) > 10:
-                    notes += f"; +{len(fail_lines) - 10} more"
-                db.annotate_parity_fail(id_event, notes)
-                counters.failed += 1
-                if notifier is not None:
-                    notifier.notify_evf_parity_fail(event_code, parity.fail_details, notes)
-
-        except Exception as e:  # pragma: no cover — defensive
-            counters.errors.append(f"{event.get('txt_code', '?')}: {e}")
-            counters.skipped += 1
+                c.matched += 1
+        except Exception as exc:  # noqa: BLE001 -- one event never stops another
+            c.errors.append(f"{code}: {exc}")
 
     if notifier is not None:
-        notifier.notify_parity_sweep_summary(
-            n_checked=counters.checked,
-            n_promoted=counters.promoted,
-            n_failed=counters.failed,
-            n_empty=counters.empty + counters.annotated_30d,
-        )
-    return counters
-
-
-# ---------------------------------------------------------------------------
-# Default fetcher — production EVF API path
-# ---------------------------------------------------------------------------
-
-
-def _default_fetch_evf_api(event: dict) -> list[dict]:
-    """Fetch the event's url_event, read it as EVF results JSON, and shape
-    the rows into [{name, pos, points}] with evf_results.parse_results.
-
-    It builds no EVF API URL: it GETs url_event as stored, which for an EVF
-    event is the organiser's page, not JSON, so the parse fails and it
-    returns [] as it does for any error. The sweep therefore compares
-    nothing today; what it should do is decision W2 #5 of
-    doc/plans/github-actions-workflows-page-2026-10-24.html.
-    """
-    url = (event or {}).get("url_event")
-    if not url:
-        return []
-    try:
-        import json as _json
-
-        import httpx
-
-        from python.scrapers.evf_results import parse_results
-    except ImportError:
-        return []
-    try:
-        resp = httpx.get(url, timeout=30.0, follow_redirects=True)
-        resp.raise_for_status()
-        raw_results = _json.loads(resp.text)
-        parsed = parse_results(raw_results, source_url=url)
-    except Exception:
-        return []
-    # ParsedResult (the parse_results() IR) carries no points/score field —
-    # total_points only exists on the raw API rows. parse_results() preserves
-    # row order 1:1 (enumerate(raw_results, start=1)), so zip by index.
-    out: list[dict] = []
-    for r, raw in zip(getattr(parsed, "results", []) or [], raw_results, strict=False):
-        pts = raw.get("total_points") if isinstance(raw, dict) else None
-        if pts is None:
-            continue
-        out.append(
-            {
-                "name": getattr(r, "fencer_name", ""),
-                "pos": getattr(r, "place", 0),
-                "points": float(pts),
-            }
-        )
-    return out
+        notifier.info(_summary(c, evf_empty_stop_days))
+    return c
 
 
 # ---------------------------------------------------------------------------
@@ -218,34 +197,44 @@ def _default_fetch_evf_api(event: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
+def _discover(start: str, end: str) -> list[dict]:
+    from python.scrapers.evf_results import EvfApiClient
+
+    client = EvfApiClient()
+    client.connect()
+    try:
+        return client.discover_season_events(start, end)
+    finally:
+        client.close()
+
+
 def main() -> int:
     from python.pipeline.db_connector import create_db_connector
     from python.pipeline.notifications import TelegramNotifier
+    from python.tools.compare_evf_points import read_evf
 
-    parser = argparse.ArgumentParser(description="Phase 4 (ADR-053) daily EVF parity sweep")
+    parser = argparse.ArgumentParser(description="Daily EVF parity check (ADR-053); reads only")
     parser.add_argument("--max-age-days", type=int, default=60)
     parser.add_argument("--evf-empty-stop-days", type=int, default=30)
     args = parser.parse_args()
 
-    db = create_db_connector()
     notifier = TelegramNotifier(
         os.environ.get("TELEGRAM_BOT_TOKEN"),
         os.environ.get("TELEGRAM_CHAT_ID"),
     )
-
-    counters = run_sweep(
-        db=db,
-        fetch_evf_api=_default_fetch_evf_api,
+    c = run_check(
+        db=create_db_connector(),
+        discover=_discover,
+        read_evf=read_evf,
         notifier=notifier,
         max_age_days=args.max_age_days,
         evf_empty_stop_days=args.evf_empty_stop_days,
     )
     print(
-        f"checked={counters.checked} promoted={counters.promoted} "
-        f"failed={counters.failed} empty={counters.empty} "
-        f"annotated_30d={counters.annotated_30d} errors={len(counters.errors)}"
+        f"checked={c.checked} matched={c.matched} differ={c.differ} empty={c.empty} "
+        f"no_results={c.no_results} ambiguous={c.ambiguous} errors={len(c.errors)}"
     )
-    return 0 if not counters.errors else 1
+    return 1 if c.errors else 0
 
 
 if __name__ == "__main__":

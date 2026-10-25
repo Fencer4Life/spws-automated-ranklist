@@ -822,6 +822,14 @@ class DbConnector:
         ).execute()
         return resp.data or []
 
+    def evf_results_for_check(self, event_code: str) -> list[dict]:
+        """The event's committed results as the EVF parity check compares them:
+        w, g, v, n, p, surname and pts per result (compare_evf_points.read_committed,
+        EVF.PTS.01). Reads only."""
+        from python.tools.compare_evf_points import read_committed
+
+        return read_committed(self._sb, event_code)
+
     def update_event_parity_notes(self, id_event: int, notes: str) -> None:
         """Direct table update used by the daily sweep when annotating "EVF API
         empty after 30 days" — uses fn_annotate_parity_fail so the audit log

@@ -1,6 +1,6 @@
 # ADR-053: EVF backup-source + parity gate + EVF_PUBLISHED promotion lifecycle
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-10-25 — the daily sweep is a read-only parity check: it reports on Telegram and promotes and annotates nothing; see the amendment)
 **Date:** 2026-05-02
 **Relates to:** ADR-028 (EVF calendar/results import — amended), ADR-038 (EVF intake POL-only — affirmed and clarified), ADR-050 (unified ingestion pipeline — complemented), ADR-052 (URL→data validation — runs at Stage 7, complementary)
 
@@ -168,3 +168,16 @@ Every promotion, FAIL annotation, and EVF-empty annotation produces an audit log
 - **Bulk parity sweep across multiple events in one operation.** Cron is per-event, daily. No "run parity on all events now" RPC; if needed later, can be added.
 - **Re-running parity after the 30-day annotation.** Operator must explicitly trigger via review CLI `[parity]` action; no auto-retry.
 - **Carrying engine-computed values forward after EVF promotion.** Engine output is replaced by EVF values verbatim. Audit log preserves the deltas for forensic recovery.
+
+## Amendment (2026-10-25) — the daily sweep is a read-only parity check
+
+The sweep's fetch read each event's `url_event`, the organiser's page, as EVF results JSON. The parse failed, the fetch returned no rows, and nothing was ever compared: every run sampled from 1 August to 24 October 2026 came back empty and promoted nothing. Making it promote as designed would overwrite PROD scores outside promote, against [ADR-113](113-ingest-and-promote-carry-every-organizer.md) §8 (no other writer of results), and promote would then refuse that event. An EVF event is scored by EVF's rules ([ADR-066](066-min-participants-ingestion-gate.md) amendment of 2026-10-02), so a PROD result carries EVF's N and points when PROD holds what EVF published; a difference is a finding to correct through ingest and promote, not a value to overwrite. The user answered P5 on the W2 sign-off sheet (`doc/plans/github-actions-w2-sign-off-2026-10-25.html`) with A on 25 October 2026.
+
+- **What it reads.** The events are selected as before (`fn_evf_events_pending_parity`: EVF events at `ENGINE_COMPUTED` that ended within `max_age_days` or are still to come). PROD's results come through `compare_evf_points.read_committed`: weapon, gender, category, N, place, surname and points per result. EVF's come through its results API with `EvfApiClient`, the client `evf-sync` reads with: `discover_season_events` lists the EVF events once per run, and each of our events is paired with the EVF event that starts within three days of it, as evf-sync's single-event results mode pairs. The reader is `compare_evf_points.read_evf` and not `scrape_event_results`, because it also carries each competition's field size, which `scrape_event_results` drops.
+- **What it compares.** `compare_with_evf` (EVF.PTS.01): each PROD result against EVF's row of the same weapon, gender, category, place and surname, Polish letters folded; N equal, points within 0.01. A Polish result EVF lists that PROD does not hold is not reported: the identity intake ([ADR-106](106-international-intake-by-identity-nationality-per-season.md)) decides whom PROD holds.
+- **What it reports.** One Telegram message per event with a difference, naming each one; one summary per run: the events looked at, matching, differing, with nothing from EVF yet, without results on PROD, not paired (two EVF events within three days) and unread. An event `evf_empty_stop_days` after its end with nothing from EVF is named in the summary.
+- **What it writes.** Nothing: no promotion to `EVF_PUBLISHED`, no `txt_parity_notes`, no audit row. The database functions for those writes stay; the sweep no longer calls them. An EVF event's `txt_source_status` therefore stays `ENGINE_COMPUTED`.
+- **Lane and colour.** It stays in `prod-write`, so it never reads PROD while a promote or the PROD drain is part-way through. A run is red only when a read fails.
+- **Superseded here:** for the daily sweep, the promotion on PASS, the annotation on FAIL, the 30-day EVF-empty annotation and their audit rows. [ADR-060](060-evf-parity-delta-md.md)'s delta report, proposed for the sweep, was never built; the check reports on Telegram only.
+- **Not changed:** the post-commit gate of the interactive review (`commit_lifecycle.run_post_commit_hooks`), which runs when an operator reads an event from EVF's API in `review_cli`.
+- **Tests.** pytest EVFCHK.01–07 (`python/tests/test_evf_parity_sweep.py`) replace P4.SW.1–6; EVFCHK.07 also covers `read_committed` for an event that has no tournament yet.
