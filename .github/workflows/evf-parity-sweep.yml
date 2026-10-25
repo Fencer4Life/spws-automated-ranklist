@@ -2,9 +2,11 @@ name: EVF Parity Sweep
 
 # The daily EVF parity check (ADR-053, amended 2026-10-25). It reads only: for
 # every EVF event at ENGINE_COMPUTED that holds results on PROD it reads EVF's
-# results API, pairs the event with the EVF event starting within three days,
-# compares every PROD result's N and points with EVF's and reports each
-# difference on Telegram, with one summary per run (EVFCHK.01-07). It promotes
+# results API, pairs the event with the EVF event dated within three days of
+# its start and end (sharing a weapon when two fit), compares every PROD
+# result's N and points with EVF's and reports each difference on Telegram,
+# naming apart a fencer EVF counts without a place, with one summary per run
+# (EVFCHK.01-10). It promotes
 # and annotates nothing: results reach PROD only through promote (ADR-113 §8).
 
 on:

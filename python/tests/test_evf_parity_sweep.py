@@ -63,8 +63,16 @@ class _Notifier:
         self.warnings.append(message)
 
 
-def _evf_event(evf_id: int, starts: str, has_results: bool = True) -> dict:
-    return {"evf_id": evf_id, "date": starts, "has_results": has_results, "name": f"Event {evf_id}"}
+def _evf_event(
+    evf_id: int, starts: str, has_results: bool = True, weapons: list[str] | None = None
+) -> dict:
+    return {
+        "evf_id": evf_id,
+        "date": starts,
+        "has_results": has_results,
+        "name": f"Event {evf_id}",
+        "weapons": weapons or ["FOIL", "EPEE", "SABRE"],
+    }
 
 
 def _run(events, results, evf_events, evf_rows, *, today=date(2026, 11, 5), stop=30):
@@ -150,6 +158,97 @@ def test_EVFCHK_04_the_evf_event_is_the_one_starting_within_three_days():
     )
     assert counters.ambiguous == 1 and reads == []
     assert "101" in notifier.infos[-1] and "102" in notifier.infos[-1]
+
+
+def test_EVFCHK_08_a_championship_evf_dates_by_its_last_day_pairs():
+    """EVF dates the European Championships 2025 (Plovdiv, 28 May–1 Jun) by their
+    last day, four days after our start; every result matched once paired (D1, P7 A)."""
+    plovdiv = [_evf_event(67, "2025-06-01")]
+    assert pair_evf_event(date(2025, 5, 28), plovdiv, our_end=date(2025, 6, 1)) == (67, None)
+    assert pair_evf_event(
+        date(2025, 5, 28), [_evf_event(67, "2025-06-05")], our_end=date(2025, 6, 1)
+    ) == (
+        None,
+        None,
+    )
+    champs = dict(EVENT, txt_code="IMEW-2026-2027", dt_start="2026-10-27", dt_end="2026-10-31")
+    counters, _, reads, discovered = _run(
+        [champs], {"IMEW-2026-2027": OURS}, [_evf_event(101, "2026-10-31")], {101: EVF}
+    )
+    assert (counters.matched, counters.ambiguous) == (1, 0)
+    assert reads == [101]
+    assert discovered == [("2026-10-24", "2026-11-03")]  # through the last day + three
+
+
+def test_EVFCHK_09_two_evf_events_on_one_day_pair_by_weapon():
+    """6 Apr 2024: EVF held an épée event (62) and a sabre event (63); PEW13e and
+    PEW14s each pair with the one in their weapon (D1, P7 A)."""
+    epee, sabre = (
+        _evf_event(62, "2024-04-06", weapons=["EPEE"]),
+        _evf_event(63, "2024-04-06", weapons=["SABRE"]),
+    )
+    assert pair_evf_event(date(2024, 4, 6), [epee, sabre], weapons={"EPEE"}) == (62, None)
+    assert pair_evf_event(date(2024, 4, 6), [epee, sabre], weapons={"SABRE"}) == (63, None)
+    both = _evf_event(64, "2024-04-06", weapons=["EPEE", "SABRE"])
+    assert pair_evf_event(date(2024, 4, 6), [epee, both], weapons={"EPEE"}) == (None, [62, 64])
+    counters, _, reads, _ = _run(
+        [EVENT],
+        {EVENT["txt_code"]: OURS},  # épée and foil results
+        [
+            _evf_event(101, "2026-10-31", weapons=["SABRE"]),
+            _evf_event(102, "2026-10-31", weapons=["EPEE", "FOIL"]),
+        ],
+        {102: EVF},
+    )
+    assert (counters.matched, counters.ambiguous) == (1, 0)
+    assert reads == [102]
+
+
+def test_EVFCHK_10_a_fencer_evf_lists_without_a_place_is_evfs_count_not_ours():
+    """Dublin 2026: EVF lists RUSEV at place 9999, without a place, and counts him
+    in N (12). N counts placed fencers only (11), so the points differ by EVF's count
+    alone: named as such, not as a difference of ours (D1, P7 A)."""
+    ours = [{"w": "EPEE", "g": "M", "v": "V1", "n": 11, "p": 3, "surname": "KORONA", "pts": 54.22}]
+    evf = [
+        {"w": "EPEE", "g": "M", "v": "V1", "n": 12, "p": 3, "surname": "Korona", "pts": 55.2047},
+        {"w": "EPEE", "g": "M", "v": "V1", "n": 12, "p": 9999, "surname": "Rusev", "pts": 1},
+    ] + [
+        {"w": "EPEE", "g": "M", "v": "V1", "n": 12, "p": p, "surname": f"X{p}", "pts": 1}
+        for p in (1, 2, 3, 5, 5, 7, 8, 9, 10, 11)
+    ]
+    counters, notifier, _, _ = _run(
+        [EVENT], {EVENT["txt_code"]: ours}, [_evf_event(101, "2026-10-31")], {101: evf}
+    )
+    assert (counters.matched, counters.differ, counters.evf_unplaced) == (0, 0, 1)
+    assert notifier.warnings == []
+    summary = notifier.infos[-1]
+    assert "1 differ only because EVF counts an unplaced fencer" in summary
+    assert "PEW2efs-2026-2027" in summary and "Rusev" in summary
+
+    # a real difference elsewhere in the event still warns, and names EVF's count too
+    ours_more = ours + [
+        {"w": "FOIL", "g": "F", "v": "V1", "n": 9, "p": 1, "surname": "ŻAK", "pts": 60.0}
+    ]
+    evf_more = evf + [
+        {"w": "FOIL", "g": "F", "v": "V1", "n": 9, "p": 1, "surname": "Zak", "pts": 64.0}
+    ]
+    counters, notifier, _, _ = _run(
+        [EVENT], {EVENT["txt_code"]: ours_more}, [_evf_event(101, "2026-10-31")], {101: evf_more}
+    )
+    assert (counters.differ, counters.evf_unplaced) == (1, 0)
+    [message] = notifier.warnings
+    assert "ŻAK" in message and "EVF counts an unplaced fencer" in message and "Rusev" in message
+    assert "KORONA" not in message.split("EVF counts")[0]  # not listed as ours
+
+    # our N short of EVF's placed fencers is still ours
+    counters, notifier, _, _ = _run(
+        [EVENT],
+        {EVENT["txt_code"]: [dict(ours[0], n=10)]},
+        [_evf_event(101, "2026-10-31")],
+        {101: evf},
+    )
+    assert (counters.differ, counters.evf_unplaced) == (1, 0)
+    assert "KORONA" in notifier.warnings[0]
 
 
 def test_EVFCHK_05_a_failed_read_is_an_error_and_the_summary_still_goes():

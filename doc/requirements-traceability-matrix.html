@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="d761cf1d854f339486dbef6cd3a85edf30abaad5235564e1702e4dae83d79196">
+<meta name="doc-source-sha256" content="0f2e6bf447c840ef631581ba1052308baa137a20a64255a559d46732b33fcaa0">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>558 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>561 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
   <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
@@ -1784,6 +1784,27 @@
 <td><strong>Landed</strong> (2026-10-02)</td>
 </tr>
 <tr>
+<td>EVFCHK.01–07</td>
+<td>The daily EVF parity check reads only: it compares every PROD result of an EVF event with EVF's results API (EVF.PTS.01), names every difference on Telegram with one summary per run, counts events with nothing to compare without reading EVF, reports a failed read as an error and calls no writing function; an event without tournaments has no results to compare (<a href="adr/053-evf-parity-gate.html">ADR-053</a> amendment 2026-10-25, P5 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_evf_parity_sweep.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>EVFCHK.08–10</td>
+<td>The check pairs an event with the EVF event dated from three days before its start to three days after its end (a championship EVF dates by its last day, 08); of two EVF events in reach it keeps the one sharing a weapon with PROD's results (09); a fencer EVF lists without a place (9999) is in EVF's N and not ours, and a result whose points differ by that alone is named as EVF's count, not as a difference of ours (10) (<a href="adr/053-evf-parity-gate.html">ADR-053</a> amendment 2026-10-25, P7 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_evf_parity_sweep.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>REVCHK.01–04</td>
+<td>The interactive review's post-commit EVF parity check reports a pass or a difference on Telegram and in the review and writes nothing: no score overwritten, no <code>EVF_PUBLISHED</code>, no <code>txt_parity_notes</code> (<a href="adr/053-evf-parity-gate.html">ADR-053</a> amendment 2026-10-25, R1 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_commit_lifecycle.py</code>, <code>python/tests/test_notifications.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
 <td>FTL.NAME.01</td>
 <td>An FTL fencer name's category tag is split from the name in every form FTL organisers use: mid-name (“ATANASSOW 2 Aleksander”), numeric suffix (“(1)”) and lettered suffix (“KORONA Przemyslaw (V2)”, the Veteran Irish Open 2026); the tag becomes the age marker and never reaches the matcher or an alias.</td>
 <td>pytest</td>
@@ -3016,5 +3037,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>d761cf1d854f339486dbef6cd3a85edf30abaad5235564e1702e4dae83d79196</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>0f2e6bf447c840ef631581ba1052308baa137a20a64255a559d46732b33fcaa0</code></footer>
 </div></body></html>

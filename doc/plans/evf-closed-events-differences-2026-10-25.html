@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EVF closed-event differences</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  td ul{margin:0;padding-left:18px}
+  td.ev{width:22%;min-width:150px}
+  td.ev .mono{font-size:12px;color:var(--muted)}
+  .grp td{background:var(--surface-2);font-weight:600}
+  pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-2);padding:10px 12px;border-radius:6px;font:13px/1.5 var(--mono)}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">D1 · closed EVF events against EVF · 25 Oct 2026</p>
+  <h1>CERT and PROD agree row for row. Against EVF, 25 events match, and the other 22 differ for reasons you have already decided or have nothing to compare, except one row.</h1>
+  <p class="dek">Every result of every EVF event with results, 47 events and 833 results in 2023/24, 2024/25 and 2025/26, was read on PROD and on CERT and compared with EVF&rsquo;s results API. Where N differed, the organiser&rsquo;s own pages were read as well. Nothing was written anywhere. 25 events match EVF exactly. The rest fall into four groups below, each with a recommendation. One row needs your eye: Stockholm 2024, where we hold KRZEMIŃSKI as the winner and EVF has him third.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>CERT = PROD · 833 of 833 rows</span>
+    <span class="pill good"><span class="dot"></span>25 events match EVF · 461 results</span>
+    <span class="pill good"><span class="dot"></span>Signed off · C1 done on CERT + PROD</span>
+    <span class="pill warn"><span class="dot"></span>2 new questions · H2b, U1</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="since">
+    <p class="kicker">§ 0 · since your sign-off (&ldquo;accept all your recommendations&rdquo;, 25 Oct)</p>
+    <h2>C1 is done, P7 is built, H2 needs two more answers</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>What happened</th></tr></thead>
+      <tbody>
+        <tr><td><b>C1</b></td><td><b>Done and read back on CERT, then PROD.</b> Each event was read first (unchanged since the check), then <code>fn_complete_event</code> for PEW8es-2025-2026 and PEW9efs-2025-2026, and for DMEW-2025-2026 the guarded PLANNED &rarr; IN_PROGRESS update, then <code>fn_complete_event</code>. All three read COMPLETED in <code>tbl_event</code> and in <code>vw_calendar</code>, which the site reads, on both; brackets and results unchanged (2/6, 9/16, 0/0).</td></tr>
+        <tr><td><b>O1, H1, H3</b></td><td>Kept as stored. Nothing written.</td></tr>
+        <tr><td><b>H2</b></td><td><b>The stored FTL page is not Stockholm&rsquo;s.</b> Read through the pipeline&rsquo;s signed-in FTL client, reading only: the address on PEW9ef-2023-2024 is the schedule of an event on <b>6 January 2024</b> (men&rsquo;s épée Cat3: 46 competitors, VAN DEN BERG 1st, KRZEMIŃSKI 3rd). That is Guildford 2024, EVF event 58, which we hold as PEW25e-2023-2024 (dated 6 Jan 2024, no address of its own). Stockholm 2024 is not on Engarde under the names of its 2025 and 2026 editions (<code>sthlm/sivo2025</code> exists: WENDT 1st, KRZEMIŃSKI 3rd, a year later). No organiser page for Stockholm 2024 was found, so the row cannot be corrected from an organiser&rsquo;s source, and EVF is not a repair source (R1 B). Two questions below.</td></tr>
+        <tr><td><b>P7</b></td><td><b>Built test-first</b> (EVFCHK.08&ndash;10 seen failing, then passing). Run over this report&rsquo;s data, the check now pairs all 47 events: 26 match (Plovdiv joins the 25), 2 are named as EVF counting an unplaced fencer (RUSEV at Dublin, FOUILLARD at the Criterium), 13 differ (groups H and W, and the Madrid, Terni and Napoli fencers EVF places and the organiser does not), 6 have nothing from EVF, 0 are left unpaired. ADR-053&rsquo;s amendment, Appendix C, the workflows page and the RTM are updated; the RTM also gains the rows P5 and R1 should have added (EVFCHK.01&ndash;07, REVCHK.01&ndash;04).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>H2b</b></td><td>KRZEMIŃSKI&rsquo;s row at Stockholm 2024 (ours 1st, 126.66; EVF 3rd, 72.36, WENDT 1st), with no organiser page found</td><td><b>A</b> leave it as stored, as R1 A does for every event without an organiser source<br><b>B</b> correct it from EVF as a one-off exception to R1 B: place 3, 72.36, CERT then PROD</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>U1</b></td><td>The address stored on PEW9ef-2023-2024 is Guildford 2024&rsquo;s FTL schedule, so a later repair from it would read another event</td><td><b>A</b> clear it (<code>url_event</code> to NULL) on CERT then PROD, read first and read back<br><b>B</b> leave it</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="how">
+    <p class="kicker">§ 1 · what was read</p>
+    <h2>Three sources, read only</h2>
+    <ul>
+      <li><b>PROD and CERT</b>: one <code>SELECT</code> each through <code>scripts/cloud-sql.sh</code> (event, season, bracket, N, place, fencer, place points, DE bonus, podium bonus, total) for every event of organiser EVF with results. Compared row by row: <b>no row exists on one and not the other</b>, and every N, place and score is equal.</li>
+      <li><b>EVF&rsquo;s results API</b>: every event id from 1 to 140, which gave 61 events dated 7 Jan 2022 to 5 Jul 2026, 57 of them with individual results, and every row of every individual competition of those 57. Paired as the daily parity check pairs them (EVF date within three days of our start), then matched by weapon, gender, category, place and folded surname, with <code>compare_evf_points.compare_with_evf</code> (points to 0.01).</li>
+      <li><b>The organiser&rsquo;s pages</b>, for every bracket where N differed and the event has a stored source: 7 brackets on 4fence (Napoli 2026, Terni 2025), 2 on Engarde (Madrid 2024), with the project&rsquo;s own parsers. FTL pages need a sign-in, so none was read.</li>
+    </ul>
+  </section>
+
+  <section id="table">
+    <p class="kicker">§ 2 · every event that does not match</p>
+    <h2>22 events, four causes</h2>
+    <p>&ldquo;ours — EVF&rsquo;s&rdquo; throughout: place/N, then points.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Event</th><th>Match</th><th>What differs, and why</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td colspan="4">O · repaired from the organiser&rsquo;s page and signed off on 2&ndash;3 Oct; EVF counts differently</td></tr>
+        <tr><td class="ev"><b>PEW2efs-2024-2025</b><br><span class="mono">Madrid · 16–17 Nov 2024 · Engarde</span></td><td>26/31</td><td>Men&rsquo;s foil V1 and V2: Engarde places 14 and 23 fencers; EVF&rsquo;s results leave out the last of each (ALVEAR Juan Pablo, ESP, 14th; MORT Nick, GBR, 23rd). Our N is one higher, so five results score slightly more: GINZERY 1/14 111.69 — 1/13 111.16; PRZYSTAJKO 3/14 56.83 — 56.07; KORONA 10/14 7.25 — 6.01; KOŃCZYŁO 5/23 44.85 — 44.49; BAZAK 19/23 3.99 — 3.32.</td><td>O1 A</td></tr>
+        <tr><td class="ev"><b>PEW6efs-2024-2025</b><br><span class="mono">Terni · 1–2 Feb 2025 · 4fence</span></td><td>8/15</td><td>Men&rsquo;s épée V1, V2, V3: 4fence lists all 50, 64 and 71 fencers but prints five of them without a place (BERTACCINI, SCARFÌ; CERRONI, XELLA; FALCK-YTTER), besides each bracket&rsquo;s second bronze. Under your W A of 2 Oct they are not in N and the places below close up. EVF places them (BERTACCINI 5th, SCARFÌ 11th, CERRONI 35th, XELLA 59th, FALCK-YTTER 10th). So N is 48, 62, 70 against 50, 64, 71; GROMADA 6/48 and GRIPAS 7/48 are EVF&rsquo;s 7th and 8th; KORONA 2/48 113.03 — 2/50 113.42.</td><td>O1 A</td></tr>
+        <tr><td class="ev"><b>PEW4efs-2025-2026</b><br><span class="mono">Napoli · 7 Mar 2026 · 4fence</span></td><td>19/28</td><td>The same rule, in four brackets: KARABULUT ALOE (women&rsquo;s épée V2), LEAL and PEDERZOLLI (men&rsquo;s épée V2), DOUSSE (men&rsquo;s épée V3) and MULLER (men&rsquo;s foil V2) are printed without a place; EVF has them 14th, 25th, 36th, 34th and 21st. N 48, 77, 73, 22 against 49, 79, 74, 23. STAŃCZYK 17/48, GANSZCZYK 27/48 and PARDUS 56/77 are EVF&rsquo;s 18th, 28th and 58th; six more score a little less (KUZMICHOVA 3/48 87.00 — 3/49 87.15).</td><td>O1 A</td></tr>
+        <tr><td class="ev"><b>PEW9efs-2025-2026</b><br><span class="mono">Dublin · 30–31 May 2026 · FTL</span></td><td>14/16</td><td>Men&rsquo;s épée V1: EVF lists RUSEV Rosislav (BUL) at place 9999, that is without a place, and counts him: N 11 — 12. N counts placed fencers only, your rule of 2 Oct. KORONA Radosław 3/11 54.22 — 3/12 55.20; ALCSER 7/11 20.24 — 7/12 21.63.</td><td>O1 A</td></tr>
+        <tr><td class="ev"><b>PEW10efs-2025-2026</b><br><span class="mono">Criterium · Paris · 4–6 Jul 2026 · Engarde</span></td><td>18/19</td><td>Men&rsquo;s foil V2: EVF lists FOUILLARD Thierry (FRA) at 9999 and counts him: N 32 — 33. This is the event your placed-only rule was set on. With 33, EVF&rsquo;s direct elimination is a table of 64, so every loser in the 32 has a won round, worth 10. KORONA Przemysław 29/32 <b>2.39 — 12.81</b>: place points 2.39 — 2.81, DE 0 — 10.</td><td>O1 A</td></tr>
+
+        <tr class="grp"><td colspan="4">H · N is the Polish head-count and places are renumbered among the stored fencers (ADR-105 damage); no organiser results stored</td></tr>
+        <tr><td class="ev"><b>PEW1e-2023-2024</b><br><span class="mono">Guildford · 7–8 Jan 2023 · EVF 44</span></td><td>0/7</td><td>All 4 brackets: N 1–2 against 16–51. KRZEMIŃSKI 1/2 71.34 — 2/42 111.77; KORONA 1/2 71.34 — 8/16 23.25; KAMIŃSKA 1/1 59.00 — 8/19 35.39. The event row holds an FTL schedule address; its brackets hold none.</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW20s-2023-2024</b><br><span class="mono">1 Apr 2023 · EVF 50</span></td><td>0/3</td><td>Both brackets. MAZIK 1/2 71.34 — 6/13 25.77; FUHRMANN 1/1 59.00 — 2/3 37.74; GANSZCZYK Marcin is filed in V2 (2/2); EVF has him in V1, 2/4.</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW19e-2023-2024</b><br><span class="mono">14–15 Apr 2023 · EVF 51</span></td><td>0/43</td><td>All 8 brackets: N 1–12 against 5–21. ZIELIŃSKI keeps 1st, 110.60 — 124.83 (N 12 — 21). KOWALSKI Bartosz is in a V0 bracket EVF does not have; PILARSKA Barbara is not in EVF&rsquo;s results.</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW6efs-2023-2024</b><br><span class="mono">11 Nov 2023 · EVF 55</span></td><td>0/16</td><td>All 9 brackets. KORONA 1/2 71.34 — 1/28 127.33; GANSZCZYK 1/2 71.34 — 1/13 111.16; ZABŁOCKI 1/1 59.00 — 1/13 111.16; KAMIŃSKA 1/2 71.34 — 3/21 70.60.</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW25e-2023-2024</b><br><span class="mono">6 Jan 2024 · EVF 58</span></td><td>0/7</td><td>All 4 brackets. KRZEMIŃSKI 1/1 59.00 — 3/45 86.53; ATANASSOW 1/3 82.98 — 3/48 87.00.</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW13e-2023-2024</b><br><span class="mono">6 Apr 2024 · EVF 62, épée</span></td><td>0/41</td><td>All 6 brackets: N 4–12 against 6–25. KORONA 1/7 97.22 — 2/17 93.44; KRZEMIŃSKI 1/10 109.39 — 1/24 125.96. Paired here by hand: EVF holds two events that day (§ 3).</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW14s-2023-2024</b><br><span class="mono">6 Apr 2024 · EVF 63, sabre</span></td><td>0/1</td><td>FUHRMANN 1/1 59.00 — 1/5. Paired by hand, as above.</td><td>H1 A</td></tr>
+        <tr><td class="ev"><b>PEW1efs-2024-2025</b><br><span class="mono">Budapest · 21–22 Sep 2024 · EVF 65</span></td><td>0/28</td><td>All 12 brackets: N 1–6 against 8–47. BOBUSIA 1/6 96.35 — 2/41 111.54; KRZEMIŃSKI 1/4 84.29 — 1/41 141.03. Its organiser page was &ldquo;to find&rdquo; in the 2 Oct plan and is still not stored.</td><td>H1 A</td></tr>
+
+        <tr class="grp"><td colspan="4">W · same N, a different winner</td></tr>
+        <tr><td class="ev"><b>PEW9ef-2023-2024</b><br><span class="mono">Stockholm · 24 Feb 2024 · EVF 60</span></td><td>9/10</td><td>Men&rsquo;s épée V3, N 26 on both sides. Ours: <b>KRZEMIŃSKI 1st, 126.66</b>. EVF: WENDT Carl-Henrik (SWE) 1st with 126.66, KRZEMIŃSKI 3rd with 72.36. Our row carries the winner&rsquo;s place and points. The event&rsquo;s FTL page is stored but needs a sign-in, so it was not read. The other nine results match exactly.</td><td>H2 A</td></tr>
+
+        <tr class="grp"><td colspan="4">N · nothing in EVF&rsquo;s results to compare with</td></tr>
+        <tr><td class="ev"><b>IMEW-2023-2024</b><br><span class="mono">dated 1 Jan 2023 (placeholder)</span></td><td>—</td><td>52 results. No EVF event that date. Already under your R1 A: no organiser source, stays as stored.</td><td>H3 A</td></tr>
+        <tr><td class="ev"><b>PEW2e-2023-2024</b><br><span class="mono">dated 8 Jan 2022</span></td><td>—</td><td>Dated before the season begins (1 Jan 2023). EVF&rsquo;s event of 7 Jan 2022 has no Pole in men&rsquo;s épée V3, so KRZEMIŃSKI&rsquo;s 2/10 is from another event or another date. The 9 Aug consolidation plan names the two 2022 rows as outside its repair.</td><td>H3 A</td></tr>
+        <tr><td class="ev"><b>PEW16e-2023-2024</b><br><span class="mono">dated 25 Feb 2022</span></td><td>—</td><td>1 result. The other 2022 row; EVF holds no event within 10 days.</td><td>H3 A</td></tr>
+        <tr><td class="ev"><b>PEW17fs-2023-2024</b><br><span class="mono">21 Jan 2023</span></td><td>—</td><td>1 result. No EVF event within 10 days.</td><td>H3 A</td></tr>
+        <tr><td class="ev"><b>PEW12f-2023-2024</b><br><span class="mono">23 Mar 2023</span></td><td>—</td><td>1 result (KOŃCZYŁO 9/24). EVF&rsquo;s foil event of 18 Mar has him 3rd of 17, which is PEW4f-2023-2024, and that matches. Nothing else in EVF fits.</td><td>H3 A</td></tr>
+        <tr><td class="ev"><b>PEW7s-2023-2024</b><br><span class="mono">9 Oct 2023</span></td><td>—</td><td>1 result. No EVF event within 10 days.</td><td>H3 A</td></tr>
+        <tr><td class="ev"><b>PEW15f-2024-2025</b><br><span class="mono">15 May 2025</span></td><td>—</td><td>2 results. No EVF event within 10 days; the 2 Oct plan lists no source either.</td><td>H3 A</td></tr>
+
+        <tr class="grp"><td colspan="4">P · the check could not pair them; paired by hand, they match</td></tr>
+        <tr><td class="ev"><b>IMEW-2024-2025</b><br><span class="mono">Plovdiv · 28 May–1 Jun 2025 · EVF 67</span></td><td>48/48</td><td>Every result matches. EVF dates the Championships by their last day (1 Jun), four days after our start, so the three-day pairing missed it (§ 3).</td><td>P7 A</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The 25 that match exactly:</b> PEW3s, PEW18e, PEW4f, PEW5efs, PEW22e, PEW23f, PEW8efs, PEW15e (2023/24); PEW3fs, PEW4ef, PEW5fs, PEW13ef, PEW7es, PEW8f, PEW10efs (2024/25); PEW1efs, PEW2efs, PEW3fs, PEW62efs, PEW31fs, PEW5ef, PEW6efs, PEW61s, PEW7ef, PEW8es (2025/26).</p>
+    <p><b>Effect on what the site shows today:</b> nothing here touches the live 2026/27 ranking. It counts the ranked season and the one before (2026/27 and 2025/26), and every 2025/26 difference is in group O, which stays as stored. Groups H, W and N appear only on the past-season pages of 2023/24 and 2024/25.</p>
+  </section>
+
+  <section id="check">
+    <p class="kicker">§ 3 · a gap in the daily check (P5)</p>
+    <h2>It would report two kinds of false difference</h2>
+    <p>The parity check released on 25 Oct (<code>python/pipeline/evf_parity_sweep.py</code>, <code>pair_evf_event</code>) pairs an event only by its start date, within three days of EVF&rsquo;s date. This run shows where that fails:</p>
+    <ul>
+      <li><b>A championship longer than three days.</b> EVF dated Plovdiv by its last day, so the check would have reported &ldquo;no EVF event&rdquo; every day for a result set that matches exactly. The next one is the next European Championships.</li>
+      <li><b>Two EVF events on one day</b> (an épée and a sabre event, 6 Apr 2024). The check reports &ldquo;ambiguous&rdquo; when the weapons alone would pair them.</li>
+      <li><b>A fencer EVF lists without a place.</b> EVF gives him place 9999 and counts him in N (Dublin, Criterium 2026). The check reports a difference of ours, when it is EVF counting an unplaced fencer, which your rule tells us not to copy.</li>
+    </ul>
+    <p>The check writes nothing, so none of this harms data. It is noise in the daily Telegram line, and the noise would teach the reader to ignore it.</p>
+  </section>
+
+  <section id="corrections">
+    <p class="kicker">§ 4 · corrections to the 25 Oct follow-up sheet</p>
+    <h2>Two statements in its § 3 were wrong</h2>
+    <ul>
+      <li>&ldquo;One placed fencer is missing from our count&rdquo; (Napoli). Wrong: 4fence lists the fencer without a place, and W A leaves him out of N. EVF places him. Our count follows your rule.</li>
+      <li>KORONA at the Criterium 2026: &ldquo;a gap one fencer of N does not explain&rdquo;. Wrong: that one fencer is FOUILLARD, unplaced, and counting him makes EVF&rsquo;s table 64, which gives every loser in the 32 a 10-point round.</li>
+    </ul>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 5 · decide this</p>
+    <h2>Six questions</h2>
+    <p><b>Answered 25 Oct: all A, C1 accept all.</b> What followed is in § 0.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Events</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>O1</b></td><td>PEW2efs-2024-2025, PEW6efs-2024-2025, PEW4efs-2025-2026, PEW9efs-2025-2026, PEW10efs-2025-2026</td><td><b>A</b> keep as stored: the organiser&rsquo;s pages and your rules (placed fencers only; W A) give our values<br><b>B</b> take EVF&rsquo;s N and places (reverses <a href="../adr/105-international-results-keep-source-bracket.html">ADR-105</a> and both rules)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>H1</b></td><td>PEW1e, PEW20s, PEW19e, PEW6efs, PEW25e, PEW13e, PEW14s (2023/24); PEW1efs-2024-2025</td><td><b>A</b> as your R1 A of 2 Oct: they stay as stored until an organiser&rsquo;s results are found. EVF is not a repair source (R1 B was rejected), and closed seasons are not re-ingested<br><b>B</b> look for each organiser&rsquo;s results now (read-only) and bring a repair plan per event</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>H2</b></td><td>PEW9ef-2023-2024, KRZEMIŃSKI men&rsquo;s épée V3</td><td><b>A</b> read the stored FTL page through the pipeline&rsquo;s own signed-in FTL reader, reading only; if it shows him 3rd, bring a one-row correction (place 3, 72.36) for your sign-off, CERT then PROD<br><b>B</b> leave the row as stored</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>H3</b></td><td>IMEW-2023-2024, PEW2e, PEW16e, PEW17fs, PEW12f, PEW7s (2023/24); PEW15f-2024-2025</td><td><b>A</b> nothing to do: EVF holds nothing to compare them with<br><b>B</b> look for their organisers&rsquo; results (read-only)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>P7</b></td><td>The daily parity check (§ 3)</td><td><b>A</b> test-first, its own release: pair on the event&rsquo;s whole date range ±3 days; when several EVF events remain, keep the ones sharing a weapon; count EVF&rsquo;s place-9999 rows out of its N and name them as &ldquo;EVF counts an unplaced fencer&rdquo;, apart from real differences<br><b>B</b> leave the check as it is</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>C1</b></td><td>Your C1 A: close by hand, each on your word by name. D1 found Chania equal to EVF and Dublin differing only by RUSEV (O1).</td><td>
+          <ul>
+            <li><b>PEW8es-2025-2026</b> (Chania, IN_PROGRESS, 2 brackets SCORED, 6 results): <code>SELECT fn_complete_event('PEW8es-2025-2026')</code></li>
+            <li><b>PEW9efs-2025-2026</b> (Dublin, IN_PROGRESS, 9 brackets SCORED, 16 results): <code>SELECT fn_complete_event('PEW9efs-2025-2026')</code></li>
+            <li><b>DMEW-2025-2026</b> (team championship, PLANNED, no brackets): PLANNED cannot go straight to COMPLETED, so <code>UPDATE tbl_event SET enum_status='IN_PROGRESS', ts_updated=NOW() WHERE txt_code='DMEW-2025-2026' AND enum_status='PLANNED' RETURNING txt_code, enum_status</code>, then <code>SELECT fn_complete_event('DMEW-2025-2026')</code></li>
+          </ul>
+          CERT first, read back, then PROD, read back. Rankings unchanged: the carry rule reads only the current edition&rsquo;s status.</td><td><span class="chip never">accept all</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="state">
+    <p class="kicker">§ 6 · releases</p>
+    <h2>N1 and N2 are on main; P6 is on PROD; one release waits for approval</h2>
+    <ul>
+      <li><b>N1 + N2</b>: PR <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/20">#20</a> passed all 4 checks, then went to main as <code>b70cbe8a</code>; preflight green (17 of 17); main CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40174807689">40174807689</a> success, pgTAP booted with <code>setup-cli@v3</code>.</li>
+      <li><b>Release lane</b>: <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40146148809">40146148809</a> (P6) went to PROD on your approval: <code>24779589</code>, fingerprint <code>f778e575&hellip;</code>, deploy record pushed on attempt 1. <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40174944458">40174944458</a> (P5, T2, R1, N1, N2) is green through CERT, the first release on <code>setup-cli@v3</code>, and waits for your PROD approval. P7 and this sheet follow as one more release after it.</li>
+    </ul>
+  </section>
+
+  <section id="you">
+    <p class="kicker">§ 7 · your steps</p>
+    <h2>Waiting on you</h2>
+    <ul>
+      <li>H2b and U1 in § 0.</li>
+      <li>The PROD approvals in § 6.</li>
+      <li>Paste <code>scripts/gas_telegram_bot.js</code> into the Apps Script project; ask GitHub Support to purge the old commits and the 19 <code>refs/pull/*</code>.</li>
+    </ul>
+  </section>
+
+  <p class="foot">evf-closed-events-differences-2026-10-25 · 25 Oct 2026 · branch claude/ftl-seed-email-removal · PROD and CERT read with scripts/cloud-sql.sh, SELECT only · EVF read through python/scrapers/evf_results.py · organiser pages read with python/scrapers/fourfence.py and engarde.py · nothing written</p>
+</div>
+</body></html>
