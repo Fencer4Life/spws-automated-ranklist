@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Frontend toolchain plan</title>
+<style>
+  :root{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+    --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+      --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+      --line:#2c333f; --line-strong:#3c4552;
+      --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+      --danger:#f59a90; --danger-soft:#331d1a;
+      --good:#6cdc98; --good-soft:#15271b;
+      --warn:#e6bd6f; --warn-soft:#282011;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151b; --surface:#1b2029; --surface-2:#232935;
+    --ink:#f1f4f8; --muted:#aeb8c6; --faint:#7c8797;
+    --line:#2c333f; --line-strong:#3c4552;
+    --accent:#8cbdec; --accent-ink:#a9d0f5; --accent-soft:#1a2a3c;
+    --danger:#f59a90; --danger-soft:#331d1a;
+    --good:#6cdc98; --good-soft:#15271b;
+    --warn:#e6bd6f; --warn-soft:#282011;
+  }
+  :root[data-theme="light"]{
+    --bg:#e8ecf3; --surface:#ffffff; --surface-2:#dce2ec;
+    --ink:#0f1319; --muted:#414b59; --faint:#6b7482;
+    --line:#c9d1dc; --line-strong:#b3bdcc;
+    --accent:#12467e; --accent-ink:#0d3763; --accent-soft:#dbe7f5;
+    --danger:#9e2418; --danger-soft:#f7ddd9;
+    --good:#0f5f37; --good-soft:#d8eede;
+    --warn:#7a4d02; --warn-soft:#f4e6c8;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:20px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:56rem;margin:0 auto;padding:60px 30px 110px}
+  code,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  code{background:var(--surface-2);color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.82em;font-weight:600;border:1px solid var(--line)}
+  a{color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 16px;font-weight:700}
+  h1{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,56px);line-height:1.06;letter-spacing:-.015em;margin:0 0 20px;text-wrap:balance;max-width:19ch;color:var(--ink)}
+  .dek{font-size:23px;line-height:1.5;color:var(--muted);margin:0 0 28px;max-width:56ch}
+  .dek b{color:var(--ink);font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;letter-spacing:.02em;font-weight:600;padding:7px 13px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .pill.warn .dot{background:var(--warn)}
+  .pill.danger .dot{background:var(--danger)}
+  .pill.good .dot{background:var(--good)}
+
+  .rule{height:2px;background:var(--line);border:0;margin:48px 0}
+  section{margin-top:52px}
+  .kicker{font-family:var(--mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 10px}
+  h2{font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.14;letter-spacing:-.012em;margin:0 0 18px;text-wrap:balance;color:var(--ink)}
+  h3{font-size:20px;font-weight:800;margin:26px 0 10px;letter-spacing:.005em;color:var(--ink)}
+  p{margin:0 0 16px;max-width:64ch}
+  ul,ol{margin:0 0 16px;padding-left:1.4em;max-width:64ch}
+  li{margin:9px 0}
+  li::marker{color:var(--accent)}
+  strong{font-weight:700;color:var(--ink)}
+  em{font-style:italic;color:var(--ink)}
+
+  .note{border:1px solid var(--line);border-left-width:5px;border-radius:10px;background:var(--surface);padding:18px 22px;margin:20px 0;max-width:none}
+  .note>:last-child{margin-bottom:0}
+  .note .lede{font-weight:800;font-size:19px;margin:0 0 8px;display:flex;align-items:center;gap:11px}
+  .note p{max-width:62ch}
+  .note.danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .note.danger .lede{color:var(--danger)}
+  .note.good{border-left-color:var(--good);background:var(--good-soft)}
+  .note.good .lede{color:var(--good)}
+  .note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .note.warn .lede{color:var(--warn)}
+  .note.accent{border-left-color:var(--accent);background:var(--accent-soft)}
+  .note.accent .lede{color:var(--accent-ink)}
+  .tick{font-family:var(--mono);font-weight:800;font-size:17px}
+
+  .op{margin:22px 0}
+  .op-tag{display:inline-block;font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.09em;padding:5px 12px;border-radius:6px;margin-bottom:2px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+  .op-tag.c{color:var(--good);background:var(--good-soft);border-color:transparent}
+  .op-tag.u{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+  .op-tag.d{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+  .op .set{font-family:var(--mono);font-size:16px;color:var(--faint);margin-left:10px}
+
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:17px;min-width:560px}
+  th,td{text-align:left;vertical-align:top;padding:13px 16px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:0}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--surface-2)}
+  td code{background:transparent;border:0;padding:0;font-size:.9em;color:var(--muted)}
+  .chip{font-family:var(--mono);font-size:13px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .chip.over{color:var(--danger);background:var(--danger-soft)}
+  .chip.fill{color:var(--accent);background:var(--accent-soft)}
+  .chip.never{color:var(--good);background:var(--good-soft)}
+  .chip.warn{color:var(--warn);background:var(--warn-soft)}
+  .chip.plain{color:var(--muted);background:var(--surface-2);border:1px solid var(--line)}
+  .strike{text-decoration:line-through;color:var(--faint)}
+
+  pre.trace{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:10px;padding:16px 20px;margin:18px 0;font-family:var(--mono);font-size:15px;line-height:1.7;color:var(--ink)}
+  pre.trace b{color:var(--danger)}
+
+  ol.steps{counter-reset:step;list-style:none;padding-left:0;max-width:64ch}
+  ol.steps>li{position:relative;padding-left:48px;margin:15px 0;min-height:32px}
+  ol.steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;background:var(--accent);color:#fff;border:0}
+  .foot{margin-top:60px;padding-top:24px;border-top:2px solid var(--line);font-size:15px;color:var(--faint);font-family:var(--mono)}
+</style><style>
+  code{overflow-wrap:anywhere}
+  td ul{margin:0;padding-left:18px}
+  .grp td{background:var(--surface-2);font-weight:600}
+</style>
+</head><body>
+<div class="wrap">
+  <p class="eyebrow">After the Node 24 release · 25 Oct 2026</p>
+  <h1>CI prints three deprecation warnings and npm finds 15 vulnerabilities in the frontend&rsquo;s packages; clearing them means upgrading the toolchain that builds the site.</h1>
+  <p class="dek">G1 and Node 24 are released and verified. The warnings left in the CI log, and the 15 findings <code>npm audit</code> reports, all come from the frontend&rsquo;s packages, most of them from the test and build tools. Four steps clear them. Two of those steps change what the site ships, so they come with a before-and-after sheet for your approval before anything is pushed.</p>
+  <div class="meta">
+    <span class="pill good"><span class="dot"></span>G1 + Node 24 released · bundle byte-identical</span>
+    <span class="pill warn"><span class="dot"></span>15 audit findings · 2 critical, 8 high, 5 moderate</span>
+    <span class="pill warn"><span class="dot"></span>4 questions</span>
+  </div>
+
+  <hr class="rule">
+
+  <section id="done">
+    <p class="kicker">§ 1 · released</p>
+    <h2>G1 and Node 24 are on main and PROD</h2>
+    <ul>
+      <li><b>G1</b> (<code>ffa6152f</code>): <code>frontend/node_modules</code> is no longer tracked (4,577 files; REPO.01). New worktrees link the shared folder, as the handbook says they do.</li>
+      <li><b>Node 24</b> (<code>98c1f29f</code>): CI and the Release set up Node 24; the Pages actions are <code>configure-pages@v6</code>, <code>upload-pages-artifact@v5</code> and <code>deploy-pages@v5</code> (WFNODE.01). The RTM now lists every workflow check (<code>9e8ba9a5</code>).</li>
+      <li>Pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/21">#21</a> passed CI on Node 24.21.0; main <code>aacac718</code>: CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40184837355">40184837355</a> green, Release <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40184961442">40184961442</a> green on every job, CERT and PROD on <code>aacac71</code>, fingerprint <code>f778e575&hellip;</code>, deploy records on attempt 1. <b>No job carries an annotation: the Node 20 warning is gone.</b></li>
+      <li>The site is unchanged: after the deploy, Pages serves <code>index-CIw6KV5d.js</code> and the WordPress embed <code>main.ce.js</code> byte for byte as before.</li>
+      <li><b>One step for you:</b> the primary checkout (<code>/Users/aleks/coding/SPWSranklist</code>) holds the <code>node_modules</code> every worktree links to. When it is next updated to main, git deletes the 4,577 formerly tracked files from that folder; run <code>npm ci</code> in its <code>frontend/</code> right after, as I did in the integration checkout.</li>
+    </ul>
+  </section>
+
+  <section id="warnings">
+    <p class="kicker">§ 2 · what the CI log still prints</p>
+    <h2>Three warnings from the frontend&rsquo;s tools, one from GitHub&rsquo;s checkout</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Line in the Vitest job</th><th>Where it comes from</th><th>Cleared by</th></tr></thead>
+      <tbody>
+        <tr><td><code>[DEP0040] The punycode module is deprecated</code> (twice)</td><td>Not from a package&rsquo;s own code: every package loads the npm <code>punycode/</code> by that name. Also printed under Node 20. Node 25 here does not print it, so it is traced on the pull request with <code>--trace-deprecation</code>.</td><td>T2/T3, confirmed on the pull request</td></tr>
+        <tr><td><code>[DEP0169] url.parse() behavior is not standardized</code></td><td><code>vite</code> 5.4 (<code>dist/node/chunks/dep-BK3b2jBa.js</code>) and <code>svelte-check</code> 4.7.1. Also printed under Node 20.</td><td>T3 (vite 8, svelte-check 4.7.7)</td></tr>
+        <tr><td><code>npm warn deprecated whatwg-encoding@3.1.1</code></td><td><code>jsdom</code> 24 and <code>html-encoding-sniffer</code>; tests only. The npm that comes with Node 24 prints it.</td><td>T2 (jsdom 30)</td></tr>
+        <tr><td><code>hint: Using 'master' as the name for the initial branch</code></td><td><code>actions/checkout</code>&rsquo;s own <code>git init</code> on the runner, in every job of every workflow. Not our code and not a deprecation.</td><td>left as it is</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="audit">
+    <p class="kicker">§ 3 · npm audit, frontend/package-lock.json</p>
+    <h2>15 findings: 2 critical, 8 high, 5 moderate</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Package</th><th>Locked</th><th>Severity</th><th>Reaches the site?</th><th>Cleared by</th></tr></thead>
+      <tbody>
+        <tr><td><code>vitest</code></td><td>1.6.1</td><td>critical</td><td>no (tests)</td><td>T2: vitest 4 or later</td></tr>
+        <tr><td><code>tinypool</code></td><td>0.8.4</td><td>critical</td><td>no (tests)</td><td>T2, with vitest</td></tr>
+        <tr><td><code>vite-node</code></td><td>1.6.1</td><td>moderate</td><td>no (tests)</td><td>T2, with vitest</td></tr>
+        <tr><td><code>form-data</code></td><td>4.0.5</td><td>high</td><td>no (jsdom, tests)</td><td>T1</td></tr>
+        <tr><td><code>ws</code></td><td>8.19.0</td><td>high</td><td>no: supabase-js uses it under Node only; the browser has its own WebSocket</td><td>T1</td></tr>
+        <tr><td><code>vite</code></td><td>5.4.21</td><td>high</td><td>builds the site</td><td>T3: vite 8</td></tr>
+        <tr><td><code>esbuild</code></td><td>0.21.5</td><td>moderate</td><td>builds the site</td><td>T3, with vite</td></tr>
+        <tr><td><code>@sveltejs/vite-plugin-svelte (+ inspector)</code></td><td>4.0.4</td><td>moderate</td><td>builds the site</td><td>T3: version 7</td></tr>
+        <tr><td><code>postcss</code></td><td>8.5.6</td><td>high</td><td>builds the site</td><td>T1</td></tr>
+        <tr><td><code>nanoid</code></td><td>3.3.11</td><td>high</td><td>builds the site (postcss)</td><td>T1</td></tr>
+        <tr><td><code>source-map-js</code></td><td>1.2.1</td><td>high</td><td>builds the site</td><td>T1</td></tr>
+        <tr><td><code>svelte</code></td><td>5.53.6</td><td>moderate</td><td><b>yes</b>: its runtime is compiled into the bundle</td><td>T1: 5.57 (same major)</td></tr>
+        <tr><td><code>devalue</code></td><td>5.6.3</td><td>high</td><td>no: not in the built bundle (0 occurrences)</td><td>T1</td></tr>
+        <tr><td><code>xlsx</code></td><td>0.18.5</td><td>high</td><td><b>yes</b>: <code>src/lib/export.ts</code>, the spreadsheet export</td><td>X1: npm has no fixed version</td></tr>
+      </tbody>
+    </table></div>
+    <p>&ldquo;Reaches the site&rdquo; is what changes the bundle Pages and WordPress serve. The two critical findings are in the test runner only.</p>
+  </section>
+
+  <section id="decide">
+    <p class="kicker">§ 4 · decide this</p>
+    <h2>Four steps, the first without any change to the site</h2>
+    <p>Answer like <b>T2 A, T1 A, T3 A, X1 A</b>. Each goes test-first through a pull request; the order below is the order I recommend.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Step</th><th>Options</th><th>Rec.</th></tr></thead>
+      <tbody>
+        <tr><td><b>T2</b></td><td><b>The test tools</b>: vitest 1.6 &rarr; 4 or later, jsdom 24 &rarr; 30, with what they pull in. Clears the two critical findings, <code>vite-node</code> and the <code>whatwg-encoding</code> warning. The 72 test files may need adjusting to the new runner; the built bundle must stay byte-identical, and I prove it as for Node 24.</td><td><b>A</b> do it now, on a pull request<br><b>B</b> not now</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>T1</b></td><td><b>Fixes within the same major</b> (<code>npm audit fix</code> without <code>--force</code>): <code>svelte</code> 5.53 &rarr; 5.57, <code>postcss</code>, <code>nanoid</code>, <code>source-map-js</code>, <code>devalue</code>, <code>form-data</code>, <code>ws</code>. The lockfile changes; Svelte&rsquo;s runtime is in the bundle, so the bundle changes.</td><td><b>A</b> do it with T3, under one before-and-after sheet<br><b>B</b> do it alone first, with its own sheet<br><b>C</b> not now</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>T3</b></td><td><b>The build tools</b>: vite 5 &rarr; 8, vite-plugin-svelte 4 &rarr; 7, svelte-check 4.7.7. Clears the vite, esbuild and plugin findings and the <code>url.parse()</code> warning. The bundle changes: a before-and-after sheet of every page and the WordPress embed, at desktop and phone width, approved before the push.</td><td><b>A</b> do it with T1 after T2<br><b>B</b> not now</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>X1</b></td><td><b><code>xlsx</code></b> 0.18.5, the spreadsheet export (<code>src/lib/export.ts</code>), high. The last version on npm; SheetJS publishes fixed versions (0.20.x) only on its own site, <code>cdn.sheetjs.com</code>.</td><td><b>A</b> install SheetJS&rsquo;s fixed 0.20.3 from its own site, pinned by its integrity hash in the lockfile; the export&rsquo;s tests and one real export, compared cell by cell<br><b>B</b> replace it with another spreadsheet library<br><b>C</b> keep 0.18.5 and accept the finding</td><td><span class="chip never">A</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">frontend-toolchain-warnings-and-audit-2026-10-25 · 25 Oct 2026 · read with npm audit and npm view in the integration checkout after npm ci, the CI and Release logs above, and the lockfile · nothing installed or changed yet</p>
+</div>
+</body></html>
