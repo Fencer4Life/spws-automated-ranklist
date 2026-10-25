@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="doc-source" content="requirements-traceability-matrix.md">
-<meta name="doc-source-sha256" content="0f2e6bf447c840ef631581ba1052308baa137a20a64255a559d46732b33fcaa0">
+<meta name="doc-source-sha256" content="3e8bac0c7f99effb4f755a74ca7953c50bd083de94dde2f2f7f3d9285158f13d">
 <title>Requirements Traceability Matrix (RTM) · SPWS</title>
 <link rel="stylesheet" href="adr/assets/adr.css">
 </head>
 <body><div class="page">
 <header class="mast">
   <div><p class="eyebrow">SPWS · Project Documentation</p><h1>Requirements Traceability Matrix (RTM)</h1><p class="dek">Project documentation for the SPWS Automated Ranklist System — generated from the retained Markdown source.</p></div>
-  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>561 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
+  <aside class="facts" aria-label="Document metadata"><dl><div><dt>Source</dt><dd><code>requirements-traceability-matrix.md</code></dd></div><div><dt>Length</dt><dd>583 lines</dd></div><div><dt>Kind</dt><dd>Project documentation</dd></div></dl></aside>
 </header>
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="kicker">On this page</p><ol><li class="depth-2"><a href="#functional-requirements">Functional Requirements</a></li><li class="depth-2"><a href="#non-functional-requirements">Non-Functional Requirements</a></li><li class="depth-2"><a href="#coverage-summary">Coverage Summary</a></li><li class="depth-2"><a href="#rebuild-infrastructure-phase-2b-adr-050-adr-055">Rebuild Infrastructure (Phase 2b — ADR-050 / ADR-055)</a></li><li class="depth-2"><a href="#versioned-season-scoring-and-pzsz-ranking-ss26">Versioned season scoring and PZSz ranking (SS26.*)</a></li><li class="depth-3"><a href="#migration-preflight-over-existing-constants-and-data">Migration preflight over existing constants and data</a></li><li class="depth-2"><a href="#2026-2027-scoring-engine-se27">2026/2027 scoring engine (SE27.*)</a></li><li class="depth-2"><a href="#admin-ranking-buckets-and-the-season-edit-card-adm27">Admin ranking buckets and the season edit card (ADM27.*)</a></li><li class="depth-2"><a href="#international-field-size-and-recompute-provenance-intl-recomp-prov">International field size and recompute provenance (INTL.*, RECOMP.PROV.*)</a></li><li class="depth-2"><a href="#international-admission-and-nationality-per-season-adm-id-nat">International admission and nationality per season (ADM.ID.*, NAT.*)</a></li><li class="depth-2"><a href="#wordpress-site-navigation-and-the-environment-split-wp">WordPress site navigation and the environment split (WP.*)</a></li><li class="depth-2"><a href="#calendar-drum-step-buttons-and-translation-completeness-cm-cb-tr-title">Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)</a></li><li class="depth-2"><a href="#active-season-computed-on-read-as">Active season computed on read (AS.*)</a></li><li class="depth-2"><a href="#pzsz-results-by-surname-first-name-and-birth-year-pzsz-adm-pzsz-sl-pzsz-route-pzsz-js-pzsz-cal-pzsz-date-pzsz-cap-pzsz-store-pzsz-let-pzsz-prov-pzsz-mirror">PZSz results by surname, first name and birth year (PZSZ.ADM.*, PZSZ.SL.*, PZSZ.ROUTE.*, PZSZ.JS.*, PZSZ.CAL.*, PZSZ.DATE.*, PZSZ.CAP.*, PZSZ.STORE.*, PZSZ.LET.*, PZSZ.PROV.*, PZSZ.MIRROR.*)</a></li><li class="depth-2"><a href="#ingest-and-promote-for-every-organizer-route">Ingest and promote for every organizer (ROUTE.*)</a></li><li class="depth-2"><a href="#ranklist-points-display-rt-round">Ranklist points display (RT.ROUND.*)</a></li><li class="depth-2"><a href="#equal-totals-share-a-place-rank-tie">Equal totals share a place (RANK.TIE.*)</a></li><li class="depth-2"><a href="#github-actions-workflows-and-the-repository-wf-repo">GitHub Actions workflows and the repository (WF*, REPO.*)</a></li><li class="depth-2"><a href="#cross-references">Cross-references</a></li></ol></nav>
   <main><section class="section-card detail"><p><em>Externalized from Project Specification Appendix C in Phase 0.5 (2026-05-01). The spec retains Appendix C as the Architecture Decision registry only.</em></p>
 <p>Every functional and non-functional requirement is listed below with its source section and verifying test(s). Test IDs reference the development plan test numbering; test files are in <code>supabase/tests/</code>, <code>python/tests/</code>, and <code>frontend/tests/</code>.</p>
 <p>For ADR-to-FR cross-references, see Project Specification Appendix C — Architecture Decisions.</p>
@@ -3027,6 +3027,127 @@
 </tbody>
 </table></div>
 </section>
+<section class="section-card detail"><h2 id="github-actions-workflows-and-the-repository-wf-repo">GitHub Actions workflows and the repository (WF*, REPO.*)</h2>
+<p>Checks over the workflow files and the tracked tree, run in CI with pytest. The workflow page <a href="handbook/reference/workflow-catalog.html">doc/handbook/reference/workflow-catalog.html</a> describes each workflow; the decisions are in <a href="plans/github-actions-w2-sign-off-2026-10-25.html">doc/plans/github-actions-w2-sign-off-2026-10-25.html</a>, <a href="plans/w2-follow-up-2026-10-25.html">doc/plans/w2-follow-up-2026-10-25.html</a> and <a href="plans/evf-closed-events-differences-2026-10-25.html">doc/plans/evf-closed-events-differences-2026-10-25.html</a>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Acceptance IDs</th>
+<th>Contract</th>
+<th>Layer</th>
+<th>File</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WFALERT.01</td>
+<td>Every job that writes ends in a failure alert to Telegram, as its last step or a later job that needs it, so a red run is never silent.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_alerts.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFALERT.02</td>
+<td>The security-posture alert fires for the posture check only, not for an earlier failure such as a migration that failed to apply.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_alerts.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFALERT.03</td>
+<td>An HTML alert escapes the log lines it quotes, so Telegram accepts a message that holds a tag-like word from a traceback.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_alerts.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFPUSH.01</td>
+<td>Every workflow that pushes to <code>main</code> retries when another commit lands there first.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_alerts.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFCRON.01–03</td>
+<td>No cron fires at minute 0, where GitHub delays and drops scheduled runs most (01); the start-list capture's first and final flags name its own earliest and latest crons (02); a time a workflow names is one of its crons (03).</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_schedules.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFDEPS.01</td>
+<td>Every job installs each third-party package its Python imports, directly or through the in-repo modules it loads.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_python_deps.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFLANE.01</td>
+<td>Every member of a lane two workflows share keeps its place in the queue (<code>queue: max</code>), so a waiting job is never cancelled by a newer one.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_lanes.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFPIPE.01</td>
+<td>A step that pipes a command into <code>tee</code> runs with <code>shell: bash</code> (pipefail), so a failed command fails the step.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_shell_safety.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFINJ.01</td>
+<td>A workflow input reaches a script only through <code>env:</code>, never as an expression inside the script text.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_shell_safety.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFEXPR.01</td>
+<td>No value holds an empty <code>${{ }}</code>, which GitHub refuses even in a <code>#</code> line of a script, so the workflow would not start.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_shell_safety.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFPERM.01</td>
+<td><code>contents: write</code> stands at the top of a workflow only when a job that inherits it pushes.</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_shell_safety.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFSETUP.01</td>
+<td>The Supabase CLI comes from <code>supabase/setup-cli@v3</code> at one pinned version (2.116.0) in all four uses (N1 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_runners.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFRUN.01</td>
+<td>Every job names <code>runs-on: ubuntu-24.04</code>; a move to a newer image is made on a pull request (N2 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_runners.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>WFNODE.01</td>
+<td>Every <code>setup-node</code> step runs Node 24, and every action is at a release that runs on the Node 24 runtime (the Pages actions: <code>configure-pages@v6</code>, <code>upload-pages-artifact@v5</code>, <code>deploy-pages@v5</code>); an action not yet checked fails until its runtime is read (the user, 25 Oct 2026).</td>
+<td>pytest</td>
+<td><code>python/tests/test_workflow_runners.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+<tr>
+<td>REPO.01</td>
+<td>No dependency folder is tracked: no path under <code>node_modules/</code> or <code>.venv/</code> is in git, so a new worktree links the shared folder (G1 A).</td>
+<td>pytest</td>
+<td><code>python/tests/test_repo_hygiene.py</code></td>
+<td><strong>Landed</strong> (2026-10-25)</td>
+</tr>
+</tbody>
+</table></div>
+</section>
 <section class="section-card detail"><h2 id="cross-references">Cross-references</h2>
 <ul>
 <li>ADR registry: Project Specification Appendix C — Architecture Decisions</li>
@@ -3037,5 +3158,5 @@
 </section></main>
 </div>
 <nav class="pager" aria-label="Documentation navigation"><a class="registry" href="handbook/index.html">← Current handbook</a><a class="next" href="adr/index.html">ADR registry →</a></nav>
-<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>0f2e6bf447c840ef631581ba1052308baa137a20a64255a559d46732b33fcaa0</code></footer>
+<footer class="foot">Generated from <code>requirements-traceability-matrix.md</code> · source SHA-256 <code>3e8bac0c7f99effb4f755a74ca7953c50bd083de94dde2f2f7f3d9285158f13d</code></footer>
 </div></body></html>
