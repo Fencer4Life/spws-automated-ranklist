@@ -126,28 +126,28 @@
 </head><body>
 <div class="wrap">
   <p class="eyebrow">F10 · LOCAL on CI&rsquo;s Supabase stack · 25 Oct 2026</p>
-  <h1>LOCAL now runs the Supabase stack CI tests on, and preflight keeps it that way; <code>[inbucket]</code> is <code>[local_smtp]</code>. Two sign-offs, then one push for both.</h1>
-  <p class="dek">F10 A, as signed off on the <a href="frontend-toolchain-before-after-2026-10-25.html#decide">toolchain sheet</a>. Built on branch <code>claude/supabase-local-smtp</code> (commit <code>4c54e78c</code>), test first. It is <b>not pushed</b>: F10 A asks for your sign-off before the push. F7, built earlier in this session, waits on its own sheet; its pull request now passes CI.</p>
+  <h1>LOCAL now runs the Supabase stack CI tests on, and preflight keeps it that way; <code>[inbucket]</code> is <code>[local_smtp]</code>. Signed off and released with F7 on 25 Oct.</h1>
+  <p class="dek">F10 A, as signed off on the <a href="frontend-toolchain-before-after-2026-10-25.html#decide">toolchain sheet</a>. Built on branch <code>claude/supabase-local-smtp</code> (commit <code>4c54e78c</code>), test first. <b>Released</b> on 25 Oct together with F7, after your &ldquo;S3 A, S4 A&rdquo; (main <code>32dcc94e</code>; § 0).</p>
   <div class="meta">
     <span class="pill good"><span class="dot"></span>preflight 18 of 18 (one new gate)</span>
     <span class="pill good"><span class="dot"></span>pgTAP 117 files, 1,519 tests</span>
     <span class="pill good"><span class="dot"></span>LOCAL data identical, 33 of 33 lines</span>
-    <span class="pill warn"><span class="dot"></span>2 questions</span>
+    <span class="pill good"><span class="dot"></span>released: main 32dcc94e, CERT and PROD verified</span>
   </div>
 
   <hr class="rule">
 
   <section id="decide">
-    <p class="kicker">§ 0 · decide these</p>
-    <h2>Two sign-offs; with both A, one push to main and one Release</h2>
+    <p class="kicker">§ 0 · decided and released</p>
+    <h2>S3 A and S4 A: released in one push, verified on Pages, CERT and PROD</h2>
     <div class="tablewrap"><table>
       <thead><tr><th>#</th><th>Question</th><th>Options</th><th>Rec.</th></tr></thead>
       <tbody>
-        <tr><td><b>S3</b></td><td>F7 as shown on <a href="ce-demo-attribute-before-after-2026-10-25.html">its before/after sheet</a>: <code>&lt;spws-registration&gt;</code>, <code>&lt;spws-entry-list&gt;</code> and <code>&lt;spws-ftl-export&gt;</code> read a bare <code>demo</code> as on. 100 screens: 88 identical, 4 noise, 8 changed, all of them the states that set the attribute, which no page does. Pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/24">#24</a>: CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40207585857">40207585857</a> green on all four jobs, after main was merged in (F19).</td><td><b>A</b> push it<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
-        <tr><td><b>S4</b></td><td>F10, F12, F16 and F17 as in § 1 and § 2. Nothing a fencer or an admin sees changes: one section of <code>supabase/config.toml</code> renamed, a preflight gate added, one gate message corrected, tests and documentation. CI&rsquo;s stack starts from an empty database and does not change.</td><td><b>A</b> push it: pull request, its CI read for the missing <code>[inbucket]</code> warning<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span></td></tr>
+        <tr><td><b>S3</b></td><td>F7 as shown on <a href="ce-demo-attribute-before-after-2026-10-25.html">its before/after sheet</a>: <code>&lt;spws-registration&gt;</code>, <code>&lt;spws-entry-list&gt;</code> and <code>&lt;spws-ftl-export&gt;</code> read a bare <code>demo</code> as on. 100 screens: 88 identical, 4 noise, 8 changed, all of them the states that set the attribute, which no page does. Pull request <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/24">#24</a>: CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40207585857">40207585857</a> green on all four jobs, after main was merged in (F19).</td><td><b>A</b> push it<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span> <b>released</b></td></tr>
+        <tr><td><b>S4</b></td><td>F10, F12, F16 and F17 as in § 1 and § 2. Nothing a fencer or an admin sees changes: one section of <code>supabase/config.toml</code> renamed, a preflight gate added, one gate message corrected, tests and documentation. CI&rsquo;s stack starts from an empty database and does not change.</td><td><b>A</b> push it: pull request, its CI read for the missing <code>[inbucket]</code> warning<br><b>B</b> changes first (say which)</td><td><span class="chip never">A</span> <b>released</b></td></tr>
       </tbody>
     </table></div>
-    <p><b>With both A:</b> both branches are integrated in the integration checkout, preflight runs there, main is pushed once, and CI and the Release are watched to the end. I check that Pages serves the new <code>main.ce.js</code> and that the pgTAP, build and deploy logs no longer print <code>[inbucket] is deprecated</code>. With one A, that one goes alone.</p>
+    <p><b>Released.</b> F7 was merged into this branch, since the integration script takes one branch per push; the branch was integrated, preflight passed 18 of 18 in the integration checkout, and main was pushed once as <code>32dcc94e</code>. Pull request #25&rsquo;s CI (<a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40211301444">40211301444</a>) printed no warning line at all, while #24&rsquo;s pgTAP job, on the old config, still printed <code>[inbucket] is deprecated</code>. On main: CI <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40211971421">40211971421</a> green; Release <a href="https://github.com/Fencer4Life/spws-automated-ranklist/actions/runs/40212140824">40212140824</a> green on every job, PROD approved by you. No CI or Release job prints <code>inbucket</code>. Pages serves <code>main.ce.js</code> byte for byte as built locally from this commit; the app bundle <code>index-BD0qUYpz.js</code> is unchanged; the five pages that carry credentials match the local build once those values are set aside. CERT and PROD: fingerprint <code>8f1420e4&hellip;</code> verified, <code>dispatch-workflow</code> deployed, security posture OK, deploy records on attempt 1. Pull requests <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/24">#24</a> and <a href="https://github.com/Fencer4Life/spws-automated-ranklist/pull/25">#25</a> show as merged.</p>
   </section>
 
   <section id="what">
@@ -210,6 +210,6 @@
     </ul>
   </section>
 
-  <p class="foot">supabase-local-parity-2026-10-25 · 25 Oct 2026 · branch claude/supabase-local-smtp (4c54e78c) · LOCAL Supabase on CLI 2.116.0 · from: frontend-toolchain-before-after-2026-10-25.html F10, F12</p>
+  <p class="foot">supabase-local-parity-2026-10-25 · 25 Oct 2026 · branch claude/supabase-local-smtp (4c54e78c) · released main 32dcc94e · LOCAL Supabase on CLI 2.116.0 · from: frontend-toolchain-before-after-2026-10-25.html F10, F12</p>
 </div>
 </body></html>
