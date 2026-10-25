@@ -176,7 +176,7 @@
         <thead><tr><th>Field group</th><th>Policy</th><th></th></tr></thead>
         <tbody>
           <tr><td>Identity — <code>txt_name, dt_start/end, txt_location, txt_country, id_organizer, arr_weapons, id_evf_event, txt_evf_slug</code></td><td>Overwrite from CERT. Reuse <code>fn_sync_evf_event_fields</code>. <b>This is what re-tags the surviving Samorin row to EVF.</b></td><td><span class="chip over">overwrite</span></td></tr>
-          <tr><td>Admin URLs — <code>url_event*, url_invitation, url_registration, deadline, fee</code></td><td>Fill-blank-only — never clobber a hand entry (<code>feedback_urls_admin_managed</code>). Reuse <code>fn_refresh_evf_event_urls</code> <b>as-is</b> (its locked fill-blank contract, pgTAP 15.6, is exactly right — reused, not modified).</td><td><span class="chip fill">fill-blank</span></td></tr>
+          <tr><td>Admin URLs — <code>url_invitation, url_registration, deadline, fee</code> (the results links <code>url_event*</code> are not carried at all, ADR-117)</td><td>Fill-blank-only — never clobber a hand entry (<code>feedback_urls_admin_managed</code>). Reuse <code>fn_refresh_evf_event_urls</code> <b>as-is</b> (its locked fill-blank contract, pgTAP 15.6, is exactly right — reused, not modified).</td><td><span class="chip fill">fill-blank</span></td></tr>
           <tr><td><code>enum_status</code>, tournaments, results</td><td>Owned by the results lifecycle.</td><td><span class="chip never">never touch</span></td></tr>
         </tbody>
       </table></div>
@@ -262,7 +262,7 @@
         <tr><td><code>48_season_skeleton_promotion</code> · 48.2, 48.4</td><td>skeleton copies events + target-resolves <code>id_prior_event</code></td><td><span class="chip over">retire</span> + <span class="chip plain">migrate</span> — skeleton stops promoting events; prior-event resolution moves to the reconciler CREATE cases</td></tr>
         <tr><td><code>48_season_skeleton_promotion</code> · 48.1, 48.3, 48.5–48.9</td><td>season row, scoring_config re-key, guards, delete</td><td><span class="chip never">keep</span> — 48.9 childless-guard rationale re-noted only</td></tr>
         <tr><td><code>test_promote.py</code> · prom.5</td><td>calendar mode calls <code>fn_import_evf_events</code></td><td><span class="chip fill">port / rewrite</span> → C/U/D via <code>fn_mirror_events_to_prod</code></td></tr>
-        <tr><td><code>test_promote.py</code> · prom.6, prom.8</td><td>refresh existing + <code>url_event_2..5</code> fill-blank propagation</td><td><span class="chip warn">rename</span>/adjust — now the UPDATE branch (refresh reused)</td></tr>
+        <tr><td><code>test_promote.py</code> · prom.6, prom.8</td><td>refresh existing; calendar mode carries no results slot (ADR-117)</td><td><span class="chip warn">rename</span>/adjust — now the UPDATE branch (refresh reused)</td></tr>
         <tr><td><code>test_promote.py</code> · prom.7 + PromoteEvent suite</td><td>CLI guard + results path</td><td><span class="chip never">keep</span> — untouched</td></tr>
         <tr><td><code>test_promote_season.py</code> · S77.1</td><td>promote_season reads + promotes 2 events</td><td><span class="chip fill">port / rewrite</span> → season+config only, asserts events NOT read/promoted</td></tr>
         <tr><td><code>test_promote_season.py</code> · S77.2</td><td>event <code>id_prior_event</code> resolved to PROD id by code</td><td><span class="chip plain">migrate</span> → reconciler CREATE test</td></tr>

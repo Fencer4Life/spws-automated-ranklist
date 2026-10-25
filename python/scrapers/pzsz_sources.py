@@ -51,7 +51,7 @@ class ListingRow:
 
     id_pzsz_event: int
     name: str
-    url_event: str
+    url_page: str
     weapons: list[str]
     dt_start: str
     dt_end: str
@@ -134,7 +134,7 @@ def parse_listing(html: str) -> list[ListingRow]:
             ListingRow(
                 id_pzsz_event=eid,
                 name=str(base.get("name") or ""),
-                url_event=str(base.get("url_event") or ""),
+                url_page=str(base.get("url_page") or ""),
                 weapons=list(base.get("weapons") or []),
                 dt_start=str(base.get("dt_start") or ""),
                 dt_end=str(base.get("dt_end") or ""),

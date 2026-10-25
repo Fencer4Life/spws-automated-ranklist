@@ -158,6 +158,45 @@ def _plan(db: MemoryDb, pzsz_event=None, lists=_GIVEN) -> pl.Plan:
     return plan
 
 
+class TestTheSourceIsAnFtlSchedule:
+    """CALURL.16–17 on the PZSz path: the pzszerm.pl page that LOCAL run 403
+    read as its event URL is refused before it is saved, and so is an FTL
+    schedule that lists nothing."""
+
+    def test_a_pzszerm_page_as_the_event_url_is_refused(self):
+        """CALURL.16"""
+        db = _pzsz_db()
+        page = "https://www.pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4588"
+        with pytest.raises(ValueError, match="not an FTL event schedule"):
+            _with_pages(
+                _pages(),
+                ingest_cli.ingest_event_from_url,
+                event_code=CODE,
+                season_end_year=2027,
+                db=db,
+                url_event_override=page,
+            )
+        assert db.events[9]["url_event"] == SCHEDULE
+        assert db.tournaments == {}
+
+    def test_a_schedule_that_lists_nothing_is_refused(self):
+        """CALURL.17"""
+        db = _pzsz_db()
+        with (
+            patch.object(ingest_cli, "_pzsz_fetch", _pages()),
+            pytest.raises(ValueError, match="lists no events"),
+        ):
+            _drive(
+                _Ftl({}),
+                ingest_cli.ingest_event_from_url,
+                event_code=CODE,
+                season_end_year=2027,
+                db=db,
+            )
+        assert db.tournaments == {}
+        assert db.status_writes == []
+
+
 class TestIngestRoutesPzsz:
     def test_a_pzsz_event_runs_the_pzsz_flow(self):
         """PZSZ.ROUTE.01: one SENIOR tournament for the men's sabre, the whole

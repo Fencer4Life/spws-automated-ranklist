@@ -5,6 +5,7 @@
 **Amends:** [ADR-084](084-calendar-quarter-barrel-event-card.md) §F and §11 (`registryOf()` widens from three registries to four; a fourth hue enters the organizer channel; `PanelType` gains a fifth member)
 **Relates to:** [ADR-046](046-pew-weapon-suffix.md) (the event-code shape this extends with a gender letter), [ADR-081](081-cert-prod-event-reconciler.md) (childless CREATE, field ownership, code-keyed reconcile), [ADR-028](028-evf-calendar-results-import.md) (the calendar-source precedent this deliberately does not generalise), [ADR-086](086-evf-weapon-evidence-ladder-strict-skip.md) (the partially-published-season lesson applied before it bit), [ADR-083](083-server-enforced-authorization.md) (grants are table-level, so the new column needs none)
 **Source:** `doc/plans/pzsz-kalendarz-seniorski-2026-09-03.html`, `supabase/migrations/20260903000001_pzsz_organizer_and_event_id.sql`, `python/scrapers/pzsz_calendar.py`, `python/scrapers/pzsz_sync.py`
+**Amended by:** [ADR-117](117-results-links-admin-only.md) (§7: the create writes no results slot; the event page is not stored, and can be rebuilt from `id_pzsz_event`).
 **Amended by:** [ADR-088](088-calendar-location-contract.md) (PZSz adopts the shared location contract and gains venue-title extraction from the komunikat's `Miejsce Zawodów` line, which §7 here read past and discarded; the city path is unchanged in output), [ADR-116](116-pzsz-calendar-browser-read-and-letter-passes.md) (§4: a headless browser engine reads past the JavaScript check, superseding the 2026-10-06 amendment's "the check fails the run"; §7: the letter is read for the venue address, fee and dates by four abstaining passes, not the single `Miejsce Zawodów` line; §9: the run processes each event and field independently and never stops part-way).
 
 ## Context
@@ -533,3 +534,7 @@ to PROD.
 - **§9 — the run is per-event and never aborts.** The run works from our CERT list (future events only), decides each of six fields independently, writes with compare-and-set (`fn_pzsz_apply_event`), reports once in a single Telegram digest and sets its exit status last — red only for a genuine fatal.
 
 Nothing else here changes: the organizer migration, `id_pzsz_event` identity, the season-window membership, the event-code shape and the childless-create rule all stand.
+
+## Amendment (2026-10-25, ADR-117) — the create writes no results link
+
+From the first commit (`034f41fa`, 3 September 2026) the create wrote the pzszerm.pl event page, `…/zawody/?id=<id>`, into `url_event`. No section of this ADR decided it. [ADR-117](117-results-links-admin-only.md) ends it: the create writes no results slot. The listing parser's key for the page is renamed `url_page`; the page is not stored, and can be rebuilt from `id_pzsz_event`. The letter keeps going to `url_invitation` under §7's fill rule. Results links are set in Admin.

@@ -376,7 +376,7 @@ class TestEventScopedFire:
         db.find_event_by_code.return_value = {
             "id_event": 1,
             "txt_code": "PPW3-2025-2026",
-            "url_event": "https://x/eventSchedule/ABC",
+            "url_event": "https://www.fencingtimelive.com/tournaments/eventSchedule/ABC",
             "dt_start": "2025-12-13",
         }
 

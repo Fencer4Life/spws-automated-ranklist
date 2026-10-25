@@ -117,8 +117,8 @@ $t125$;
 
 SELECT is(
   (SELECT url_event FROM tbl_event WHERE txt_code = 'PEW-URLTEST-2030-2031'),
-  'https://www.veteransfencing.eu/event/url-test/',
-  '12.5: fn_mirror_events_to_prod CREATE writes url_event'
+  NULL,
+  '12.5: fn_mirror_events_to_prod CREATE leaves url_event empty (Admin sets it, CALURL.12)'
 );
 
 SELECT is(

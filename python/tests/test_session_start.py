@@ -240,6 +240,18 @@ def test_new_worktree_has_shared_venv_and_stays_clean(setup: Setup):
     assert seeded == [".graphify_labels.json", "GRAPH_REPORT.md", "graph.json", "manifest.json"]
 
 
+def test_new_worktree_links_the_primarys_env(setup: Setup):
+    """SS.18 — the primary's .env is linked, not copied, so scripts that read
+    it (cloud-sql.sh) use the one current credential; the link stays out of
+    git status (25 Oct 2026, a worktree without .env got a 401)."""
+    (setup.primary / ".env").write_text("PLACEHOLDER=1\n")
+    run(setup, setup.primary)
+    new = next(Path(p) for p in worktree_paths(setup) if "session-" in p)
+    assert (new / ".env").is_symlink()
+    assert (new / ".env").resolve() == (setup.primary / ".env").resolve()
+    assert git("status", "--porcelain", cwd=new) == ""
+
+
 # --- cleanup ----------------------------------------------------------------
 
 

@@ -2,7 +2,7 @@
 
 Plan test IDs:
   evf.47  _heal_future_completed heals a future-COMPLETED row from its event
-          URL — UPDATEs dt_start/dt_end + populates url_event; no status flip.
+          URL — UPDATEs dt_start/dt_end only (url_event is Admin's); no status flip.
   evf.48  When no date is recoverable, _heal_future_completed issues NO date
           UPDATE and instead demotes the row's status.
   evf.49  The status demotion bypasses the lifecycle trigger
@@ -68,16 +68,18 @@ def _run_heal(existing, cal_events, fetch_meta_return):
 class TestSelfHealOrchestration:
     def test_heals_date_from_event_url(self):
         """evf.47: a row carrying url_event is healed from the FTL eventSchedule
-        page — dt UPDATE includes the date and populates url_event; no flip."""
+        page — dt UPDATE includes the date and leaves url_event to Admin
+        (CALURL.03); no flip."""
         url = (
             "https://www.fencingtimelive.com/tournaments/eventSchedule/"
             "E2A7B077F2824DD8A7F2E413B4211296"
         )
         sql = _run_heal([_violator(url_event=url)], [], fetch_meta_return={"date": "2026-01-10"})
         updates = [s for s in sql if s.strip().startswith("UPDATE tbl_event")]
-        assert any(
-            "2026-01-10" in s and "url_event" in s and "id_event = 82" in s for s in updates
-        ), "dt + url_event populated on the event row"
+        assert any("2026-01-10" in s and "id_event = 82" in s for s in updates), (
+            "dt healed on the event row"
+        )
+        assert all("url_event" not in s for s in updates), "url_event is not written"
         assert not any("DISABLE TRIGGER" in s for s in sql), "no status flip when healed"
 
     def test_status_flip_when_no_date(self):

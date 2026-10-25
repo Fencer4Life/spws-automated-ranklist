@@ -81,9 +81,12 @@ class TestParsing:
         assert poznan["txt_country"] == "PL"
         # The PZSz season label is captured as provenance only -- section 4.
         assert poznan["pzsz_season"] == "2026/2027"
-        assert poznan["url_event"] == (
+        # CALURL.08: the event's pzszerm.pl page is the calendar page, never a
+        # results link, so it is not named like tbl_event.url_event.
+        assert poznan["url_page"] == (
             "https://pzszerm.pl/zawody/kalendarium-zawodow/zawody/?id=4588"
         )
+        assert "url_event" not in poznan
 
 
 class TestTheSeventyRowCap:

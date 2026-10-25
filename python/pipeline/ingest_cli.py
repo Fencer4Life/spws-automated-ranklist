@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -474,6 +475,28 @@ def _fire_staging_report(
     )
 
 
+_FTL_SCHEDULE = re.compile(
+    r"^https?://(?:www\.)?fencingtimelive\.com/tournaments/eventSchedule/[^/?#]+(?:[/?#].*)?$",
+    re.IGNORECASE,
+)
+
+
+def is_ftl_schedule(url: str | None) -> bool:
+    """True for a FencingTimeLive event schedule (`/tournaments/eventSchedule/<id>`),
+    the only page a domestic or PZSz URL ingestion reads its listings from."""
+    return bool(url) and _FTL_SCHEDULE.match(url or "") is not None
+
+
+def _require_listings(kept: list, skipped: list, url_event: str) -> None:
+    """A schedule that lists nothing at all is the wrong page, not an empty
+    event: refuse it before anything is wiped or written."""
+    if not kept and not skipped:
+        raise ValueError(
+            f"The FTL schedule {url_event!r} lists no events: nothing was read, wiped or written. "
+            "Check the event's results link (URL wyników)."
+        )
+
+
 def _wipe_event_live(db, id_event: int) -> tuple[int, int]:
     """Delete an event's committed results + tournaments (for a clean re-ingest).
     Returns (results_deleted, tournaments_deleted). Keeps the event row."""
@@ -736,6 +759,15 @@ def _ingest_event_rounds(
             post_run=post_run,
             sources=sources,
         )
+    # The 25 Oct 2026 results-link RCA (issue #3): a calendar page in the
+    # results link finished a run green with nothing read. Refused here,
+    # before the link is saved or anything is wiped.
+    if not is_ftl_schedule(url_event):
+        raise ValueError(
+            f"Event {event_code!r}: {url_event!r} is not an FTL event schedule "
+            "(https://www.fencingtimelive.com/tournaments/eventSchedule/<id>); "
+            "nothing was read, saved or written."
+        )
     if _organizer_for_event(event) == "PZSz":
         return _ingest_pzsz_event_rounds(
             event,
@@ -783,6 +815,7 @@ def _ingest_event_rounds(
         sched = client.get(normalize_ftl_url(url_event))
         sched.raise_for_status()
         kept, skipped = parse_event_schedule(sched.text, with_skips=True)
+        _require_listings(kept, skipped, url_event)
         # ADR-108 §7: a listing whose schedule row does not say Finished is
         # skipped and listed; it keeps the event IN_PROGRESS.
         from python.pipeline.promotion.lifecycle import split_final
@@ -1155,6 +1188,7 @@ def _ingest_pzsz_event_rounds(
         sched = client.get(normalize_ftl_url(url_event))
         sched.raise_for_status()
         kept, skipped = parse_event_schedule(sched.text, with_skips=True)
+        _require_listings(kept, skipped, url_event)
         kept, not_final = split_final(kept)
         skipped = [*skipped, *not_final]
         print(f"discovered {len(kept)} round(s), {len(skipped)} schedule-skipped")
@@ -1407,7 +1441,12 @@ def main() -> None:
         "draft batch (one run_id).",
     )
     parser.add_argument("--season-end-year", type=int)
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Parse without writing (the XML paths without --flow). Refused with "
+        "--flow, which writes live.",
+    )
     parser.add_argument("--tournament-type", default="PPW")
     parser.add_argument(
         "--from-storage",
@@ -1425,7 +1464,9 @@ def main() -> None:
     parser.add_argument(
         "--url-event",
         default=None,
-        help="Override tbl_event.url_event for this run (used only with --event-code / --flow).",
+        help="With --flow --from-url: the event's FTL schedule; the ingest saves it as "
+        "the event's results link (URL wyników, tbl_event.url_event) before reading it. "
+        "With XML paths: the base of each file's source URL, not saved.",
     )
     parser.add_argument(
         "--flow",
@@ -1492,6 +1533,8 @@ def main() -> None:
         parser.error(
             "--season-end-year is required unless using a --*-draft / --list-drafts / --resume-run-id flag"
         )
+    if args.dry_run and args.flow:
+        parser.error("--dry-run is not supported with --flow: the flow writes live")
     if args.record_run and not (args.flow and args.from_url):
         parser.error(
             "--record-run records a URL ingestion: it needs --flow ingest_domestic --from-url"
