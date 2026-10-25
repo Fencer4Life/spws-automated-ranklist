@@ -1,11 +1,12 @@
 # ADR-112: PZSz Start Lists Are Stored Inputs, Captured While pzszerm.pl Serves Them
 
-**Status:** Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of `doc/plans/pzsz-start-lists-stored-2026-10-07.html`, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07, and released to CERT and PROD the same day (main `9c6e05d2`, Release 37562304356); the table, its grants and both functions were verified on both environments, with no rows yet.
+**Status:** Accepted (decided by the user in chat on 2026-10-07: Q7–Q10 of `doc/plans/pzsz-start-lists-stored-2026-10-07.html`, all A). Implemented test-first and rehearsed on LOCAL on 2026-10-07, and released to CERT and PROD the same day (main `f2564f47`, Release 37562304356); the table, its grants and both functions were verified on both environments, with no rows yet.
 **Date:** 2026-10-07
 **Amends:** [ADR-111](111-pzsz-results-admitted-by-surname-name-birth-year.md) (§6: the replay no longer reads pzszerm.pl; D1's "send it again later" becomes a stored list), [ADR-108](108-promote-replays-verified-cert-ingestion.md) (promote replays one more recorded input, the start list), [ADR-087](087-pzsz-senior-calendar-source.md) (§4: the JavaScript check no longer blocks an ingest once a list is stored), [ADR-078](078-gdpr-data-handling.md) (§1: a new personal-data store, with its purpose and retention)
 **Relates to:** [ADR-083](083-server-enforced-authorization.md) (the store is `service_role` only), [ADR-100](100-pzsz-senior-result-ingestion.md) (FencingTimeLive carries no birth year)
 **Amended by:** [ADR-116](116-pzsz-calendar-browser-read-and-letter-passes.md) (§2: the daily ±14-day capture becomes a D−4..D−1 window of five runs a day in its own CERT-only workflow `pzsz-start-lists.yml`, removed from `pzsz-sync.yml`; §5: the "send the ingest" notice moves into the rewritten calendar run).
 **Source:** `doc/plans/pzsz-start-lists-stored-2026-10-07.html`
+**Amended by:** this ADR's amendment of 2026-10-25 (K2 A: the capture window runs from D−4 to the morning of the event's last day; the alarm moves to the window's last attempt).
 
 ## Context
 
@@ -150,3 +151,15 @@ The store is never part of the PROD seed export, and no real start list enters t
 - **§5 — the ingest notice.** The "📋 send the `ingest`" Telegram message moves into the rewritten calendar run's single digest (ADR-116 §8, R5), announced once through `tbl_pzsz_check`.
 
 Unchanged: `tbl_pzsz_start_list`, its insert-only versioning and hash, the `service_role` grant, the year-only form (ADR-078 §1), the saved-page path, and the PROD promote that replays the stored lists by hash and never contacts pzszerm.pl.
+
+## Amendment (2026-10-25) — the window runs to the morning of the event's last day (K2 A)
+
+The user asked on 22 October 2026 for the capture to run to the morning of the event's last day, and signed it off as K2 A on 25 October (`doc/plans/pzsz-results-url-rca-2026-10-25.html` §08). The premise that a list is "taken down when the event starts" (ADR-116 §7) does not hold: pzszerm.pl served the PPS1e start lists, unchanged since 23 October, on the event's last day, 25 October.
+
+- **The window.** A run captures an event's start lists when it was due between D−4 and **noon (Warsaw) on the event's last day** (`dt_end`; a one-day event closes at noon of its only day). Day D and any middle day are inside. Both independent checks apply it (`select_window_events` and the reader's own guard).
+- **The due moment decides.** A scheduled run works on the moment its cron was due, read in Warsaw (`scheduled_moment`), not when GitHub started it, so a run due at 10:11 that starts at 13:41 still counts as the last day's morning (PZSZ.SL.10).
+- **The alarm.** The window's last attempt is the run due before noon on the last day, cron `11 9 * * *` (10:11 in winter, 11:11 in summer); `pzsz-start-lists.yml` passes `--last-attempt` for it and no longer passes `--final-run`. A known tournament with nothing stored is fatal on that run only; from D−1 until then it is a warning.
+
+What it does not do: a fencer who entered at the venue is on no start list at any time. PPS1e's POPOVIĆ and SOBCZAK were on none of the stored versions and are not on the page on the last day either, so this change does not admit them; that question is K3 in the plan.
+
+Tests: pytest PZSZ.SL.05, .07, .09–.11 rewritten, PZSZ.SL.13 added (`python/tests/test_pzsz_start_list_window.py`, `test_pzsz_start_list_capture.py`), WFCRON.02 rewritten (`test_workflow_schedules.py`).

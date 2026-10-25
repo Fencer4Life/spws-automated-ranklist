@@ -72,6 +72,13 @@ corpus or the new one and never a gap. The run reports what it removed; a
 rebuild that announces dropping documents nobody touched is reporting a root
 that went out of scope, not a tidy-up.
 
+The index is shared by every worktree of the repository. A page this checkout
+lacks but another worktree still holds as a file is a parallel session's work,
+not a deletion: the prune keeps it and the run lists it under "Kept N
+document(s) another worktree still holds" (`paths_in_other_worktrees`,
+`python/tests/test_docs_search_prune.py`). Before 25 October 2026 a rebuild in
+one worktree deleted another session's new plan pages from search.
+
 Pair it with the graph refresh — the two go together at the same checkpoint:
 
 ```bash

@@ -10,8 +10,9 @@ and PROD, and nothing is guessed. `python.pipeline.promotion.refresh`:
     anything else stops the refresh before it writes, listed for a decision that
     is recorded in doc/overrides/fencer-alignment.yaml;
   - reads PROD only inside read-only transactions;
-  - writes only LOCAL or CERT, through fn_align_fencers_to and
-    fn_replace_event_registrations, with a database dry run first;
+  - writes only LOCAL or CERT, through fn_align_fencers_to,
+    fn_replace_event_registrations and fn_copy_event_result_links (CALURL.20,
+    the event's results links from PROD), with a database dry run first;
   - drains the target's recompute queue to empty, then re-reads the roster and
     requires it to equal PROD's.
 """
@@ -349,6 +350,13 @@ def _world(target_rows, prod_rows, *, refs=None, after=None):
         {
             "FROM tbl_fencer f": prod_rows,
             "tbl_fencer_id_fencer_seq": 367,
+            "FROM tbl_event e WHERE e.txt_code": {
+                "url_event": "https://www.fencingtimelive.com/tournaments/eventSchedule/B5472ECF655843AA8065B6DF3FFAEFD8#today",
+                "url_event_2": None,
+                "url_event_3": None,
+                "url_event_4": None,
+                "url_event_5": None,
+            },
             "FROM tbl_registration": [
                 {
                     "txt_surname": "CHUDY",
@@ -378,6 +386,7 @@ def _world(target_rows, prod_rows, *, refs=None, after=None):
             "pg_constraint": [{"tbl": "tbl_result", "col": "id_fencer"}],
             "AS n FROM": refs or {},
             "fn_replace_event_registrations": {"deleted": 8, "inserted": 1},
+            "fn_copy_event_result_links": {"changed": True},
             "fn_align_fencers_to(": {
                 "renumbered": 1,
                 "created": 0,
@@ -504,6 +513,54 @@ class TestRun:
             ]
         )
         assert code == 3 and seen["refuse_renumbering"] is True
+
+
+class TestResultLinks:
+    """CALURL.20 (D2 A, ADR-117 amendment): the refresh `ingest` runs first
+    also copies the event's results links (URL wyników) from PROD, so a plain
+    `ingest <code>` reads the link an administrator set in PROD's Admin."""
+
+    def test_apply_copies_the_events_results_links_after_the_registrations(self):
+        """CALURL.20"""
+        prod, target, t = _world(
+            [_f(38, "CHUDY", "Tomasz", 1980)], [_f(38, "CHUDY", "Tomasz", 1977)]
+        )
+        out = rf.run_refresh(
+            prod, target, mode="apply", event_code="PPS1f-2026-2027", drain=lambda: []
+        )
+        assert out.status == "applied"
+        calls = [s for s in t.sql if "fn_" in s]
+        assert "fn_replace_event_registrations('PPS1f-2026-2027'" in calls[2]
+        assert "fn_copy_event_result_links('PPS1f-2026-2027'" in calls[3]
+        assert (
+            "https://www.fencingtimelive.com/tournaments/eventSchedule/B5472ECF655843AA8065B6DF3FFAEFD8#today"
+            in calls[3]
+        )
+        assert out.result_links == {"changed": True}
+
+    def test_without_an_event_or_a_write_nothing_is_copied(self):
+        """CALURL.20: plan, dry run, a stopped refresh and an apply without
+        an event copy no link."""
+        for mode, event in (
+            ("plan", "PPS1f-2026-2027"),
+            ("dry-run", "PPS1f-2026-2027"),
+            ("apply", None),
+        ):
+            prod, target, t = _world(
+                [_f(38, "CHUDY", "Tomasz", 1980)], [_f(38, "CHUDY", "Tomasz", 1977)]
+            )
+            out = rf.run_refresh(prod, target, mode=mode, event_code=event, drain=lambda: [])
+            assert not any("fn_copy_event_result_links" in s for s in t.sql), mode
+            assert out.result_links is None
+        prod, target, t = _world([_f(400, "TESTOWY", "Test", 1970)], [], refs={"400": 2})
+        rf.run_refresh(prod, target, mode="apply", event_code="PPS1f-2026-2027")
+        assert not any("fn_copy_event_result_links" in s for s in t.sql)
+
+    def test_the_prod_read_takes_an_exact_code_only(self):
+        """CALURL.20"""
+        with pytest.raises(rf.RefreshError):
+            rf.result_links_sql("PPS1f-2026-2027'; DROP TABLE tbl_event; --")
+        assert "WHERE e.txt_code = 'PPS1f-2026-2027'" in rf.result_links_sql("PPS1f-2026-2027")
 
 
 class TestRestore:

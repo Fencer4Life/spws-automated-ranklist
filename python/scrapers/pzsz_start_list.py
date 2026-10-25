@@ -20,9 +20,11 @@ import re
 import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from bs4 import BeautifulSoup, Tag
+
+from python.pipeline.promotion.lifecycle import WARSAW
 
 PZSZ_BASE = "https://pzszerm.pl"
 PZSZ_EVENT_PAGE = f"{PZSZ_BASE}/zawody/kalendarium-zawodow/zawody/"
@@ -44,30 +46,33 @@ class PzszGateError(PzszPageError):
 
 
 class PzszWindowError(PzszPageError):
-    """An event's start list was asked for outside its D-4..D-1 window. The
-    list does not exist before D-4 and is closed from day D, so the reader
-    refuses the request before any page is fetched (ADR-112 §2, check 2)."""
+    """An event's start list was asked for outside its capture window, D-4 to
+    the morning of the event's last day, so the reader refuses the request
+    before any page is fetched (ADR-112 §2, check 2)."""
 
 
-# A PZSz start list exists from four days before the event's first day to one
-# day before it, and is closed from day D (ADR-111, ADR-112 §3).
+# The capture window: from four days before the event's first day, when the
+# list appears, to noon (Warsaw) on the event's last day. pzszerm.pl still
+# serves the list during the event (PPS1e, 25 Oct 2026), so a run due on the
+# last day's morning catches an entry added late (K2 A; ADR-112 §2 amended).
 WINDOW_OPEN_DAYS_BEFORE = 4
-WINDOW_CLOSE_DAYS_BEFORE = 1
+WINDOW_CLOSE_HOUR = 12
 
 
-def start_list_window(first_day: date) -> tuple[date, date]:
-    """The inclusive D-4..D-1 window in which a PZSz start list exists."""
-    return (
-        first_day - timedelta(days=WINDOW_OPEN_DAYS_BEFORE),
-        first_day - timedelta(days=WINDOW_CLOSE_DAYS_BEFORE),
-    )
+def start_list_window(first_day: date, last_day: date) -> tuple[date, date]:
+    """The first and the last day of the capture window: D-4 and the event's
+    last day, whose morning only counts (``in_start_list_window``)."""
+    return first_day - timedelta(days=WINDOW_OPEN_DAYS_BEFORE), max(first_day, last_day)
 
 
-def in_start_list_window(first_day: date, today: date) -> bool:
-    """True only on D-4, D-3, D-2, D-1 (``today`` is the Warsaw date at run
-    time). Never before the list exists, never on or after day D."""
-    opens, closes = start_list_window(first_day)
-    return opens <= today <= closes
+def in_start_list_window(first_day: date, last_day: date, due: datetime) -> bool:
+    """True for a run due from D-4 to noon of the event's last day. ``due`` is
+    the moment the run was due, read in Warsaw: never before the list
+    appears, never from the last day's noon."""
+    opens, closes = start_list_window(first_day, last_day)
+    local = due.astimezone(WARSAW)
+    day = local.date()
+    return opens <= day < closes or (day == closes and local.hour < WINDOW_CLOSE_HOUR)
 
 
 @dataclass(frozen=True)
@@ -238,12 +243,13 @@ def read_event_start_lists_for_capture(
     fetch: Callable[[str, dict], str],
     *,
     first_day: date,
-    today: date,
+    last_day: date,
+    due: datetime,
 ) -> EventStartLists:
     """The capture's best-effort read of a PZSz event's start lists, inside
     its window only.
 
-    Check 2 of the window rule (ADR-112 §2): the event's first day is re-read
+    Check 2 of the window rule (ADR-112 §2): the event's first and last day are re-read
     from CERT each run, and this reader refuses — before fetching any page —
     an event whose window is closed, whoever asked. A bug in the run's
     selection (check 1) therefore cannot cause a request outside the window.
@@ -253,11 +259,12 @@ def read_event_start_lists_for_capture(
     list is named in ``missing`` and the rest are captured. The event page
     itself not rendering serves nothing (there are no ids to read), so that
     raises, and the whole event is 'not served' for this attempt."""
-    if not in_start_list_window(first_day, today):
-        opens, closes = start_list_window(first_day)
+    if not in_start_list_window(first_day, last_day, due):
+        opens, closes = start_list_window(first_day, last_day)
         raise PzszWindowError(
             f"PZSz event {id_pzsz_event} is outside its start-list window "
-            f"({opens}..{closes}); today is {today}. Nothing was requested."
+            f"({opens} to noon of {closes}); the run was due "
+            f"{due.astimezone(WARSAW):%Y-%m-%d %H:%M}. Nothing was requested."
         )
     tournaments = parse_event_tournaments(fetch(PZSZ_EVENT_PAGE, {"id": id_pzsz_event}))
     captured: dict[tuple[str, str], tuple[PzszTournament, list[Starter]]] = {}

@@ -6,8 +6,9 @@ of the ingest fails whenever the gate is on. Here a start list is captured on
 a day pzszerm.pl serves it and stored in tbl_pzsz_start_list on CERT, as
 printed name and birth year in page order, one insert-only row per version.
 
-- The daily capture (`pzsz_sync --capture-start-lists`) and the CERT ingest
-  call `capture_event_start_lists`.
+- The scheduled capture (`pzsz-start-lists.yml`, the `capture` command here)
+  reads every event in its window, D-4 to the morning of the event's last day
+  (`capture_window`); the CERT ingest calls `capture_event_start_lists`.
 - The CERT ingest reads the newest stored version (`newest_by_series`).
 - Promote reads the version the CERT run used, by its hash (`from_row`
   checks each row against its hash).
@@ -31,7 +32,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from python.pipeline.promotion.lifecycle import WARSAW, warsaw_today
+from python.pipeline.promotion.lifecycle import WARSAW
 from python.pipeline.promotion.run_record import start_list_sha256
 from python.scrapers.pzsz_start_list import (
     PZSZ_EVENT_PAGE,
@@ -164,17 +165,24 @@ class CaptureOutcome:
     missing: list[tuple[str, str, str]]
     not_served: bool
     error: str | None
+    # The event's last day: the window closes at its noon (K2 A). None is a
+    # one-day event.
+    last_day: date | None = None
+
+    @property
+    def window(self) -> tuple[date, date]:
+        return start_list_window(self.first_day, self.last_day or self.first_day)
 
 
 _DAILY_CRON = re.compile(r"(\d{1,2}) (\d{1,2}) \* \* \*")
 
 
-def scheduled_day(cron: str, now: datetime) -> date:
-    """The Warsaw date a scheduled run was due on (PZSZ.SL.10): the latest moment
-    at or before ``now`` matching the cron's minute and hour in UTC, read in
-    Warsaw. GitHub starts scheduled runs hours late (0.2-3.5 hours measured), so
-    the final run can start after midnight in Warsaw; it still belongs to the day
-    it was due, for both the window and its alarms. Pure."""
+def scheduled_moment(cron: str, now: datetime) -> datetime:
+    """The moment a scheduled run was due (PZSZ.SL.10): the latest moment at or
+    before ``now`` matching the cron's minute and hour in UTC, read in Warsaw.
+    GitHub starts scheduled runs hours late (0.2-3.5 hours measured), so a run
+    can start after midnight, or after noon, in Warsaw; it still works on the
+    moment it was due, for both the window and its alarms. Pure."""
     match = _DAILY_CRON.fullmatch(cron.strip())
     if match is None:
         raise ValueError(f"not one daily UTC time: {cron!r}")
@@ -182,37 +190,62 @@ def scheduled_day(cron: str, now: datetime) -> date:
     due = now.astimezone(UTC).replace(hour=hour, minute=minute, second=0, microsecond=0)
     if due > now:
         due -= timedelta(days=1)
-    return due.astimezone(WARSAW).date()
+    return due.astimezone(WARSAW)
+
+
+def scheduled_day(cron: str, now: datetime) -> date:
+    """The Warsaw date a scheduled run was due on (PZSZ.SL.10). Pure."""
+    return scheduled_moment(cron, now).date()
 
 
 def _now_utc() -> datetime:
     return datetime.now(UTC)
 
 
-def select_window_events(rows: Iterable[Mapping[str, Any]], today: date) -> list[dict]:
+def _days(row: Mapping[str, Any]) -> tuple[date, date]:
+    """An event row's first and last day; no end date is a one-day event."""
+    first = date.fromisoformat(str(row["dt_start"])[:10])
+    end = row.get("dt_end")
+    return first, date.fromisoformat(str(end)[:10]) if end not in (None, "") else first
+
+
+def select_window_events(rows: Iterable[Mapping[str, Any]], due: datetime) -> list[dict]:
     """Check 1 of the window rule (ADR-112 §2): the PZSz events whose start
-    lists this run reads — a PZSz id, not COMPLETED/CANCELLED, and today in
-    their D-4..D-1 window. Pure."""
+    lists this run reads — a PZSz id, not COMPLETED/CANCELLED, and the run due
+    between D-4 and the morning of the event's last day (K2 A). Pure."""
     chosen: list[dict] = []
     for row in rows:
         if row.get("id_pzsz_event") is None or row.get("enum_status") in _NOT_CAPTURED:
             continue
-        start = row.get("dt_start")
-        if start in (None, ""):
+        if row.get("dt_start") in (None, ""):
             continue
-        if in_start_list_window(date.fromisoformat(str(start)[:10]), today):
+        if in_start_list_window(*_days(row), due):
             chosen.append(dict(row))
     return chosen
 
 
-def _capture_one(row: Mapping[str, Any], today: date, fetch: Fetch, store: Store) -> CaptureOutcome:
+def _capture_one(
+    row: Mapping[str, Any], due: datetime, fetch: Fetch, store: Store
+) -> CaptureOutcome:
     code = str(row["txt_code"])
     eid = int(row["id_pzsz_event"])
-    first_day = date.fromisoformat(str(row["dt_start"])[:10])
+    first_day, last_day = _days(row)
     try:
-        result = read_event_start_lists_for_capture(eid, fetch, first_day=first_day, today=today)
+        result = read_event_start_lists_for_capture(
+            eid, fetch, first_day=first_day, last_day=last_day, due=due
+        )
     except Exception as exc:  # noqa: BLE001 -- one event never stops another (ADR-116 §11)
-        return CaptureOutcome(code, eid, first_day, [], [], [], not_served=True, error=str(exc))
+        return CaptureOutcome(
+            code,
+            eid,
+            first_day,
+            [],
+            [],
+            [],
+            not_served=True,
+            error=str(exc),
+            last_day=last_day,
+        )
     stored: list[tuple[str, str, int]] = []
     unchanged: list[tuple[str, str, int]] = []
     for (weapon, gender), (tournament, starters) in sorted(result.captured.items()):
@@ -223,17 +256,25 @@ def _capture_one(row: Mapping[str, Any], today: date, fetch: Fetch, store: Store
         (stored if is_new else unchanged).append((weapon, gender, len(starters)))
     missing = [(t.weapon, t.gender, reason) for t, reason in result.missing]
     return CaptureOutcome(
-        code, eid, first_day, stored, unchanged, missing, not_served=False, error=None
+        code,
+        eid,
+        first_day,
+        stored,
+        unchanged,
+        missing,
+        not_served=False,
+        error=None,
+        last_day=last_day,
     )
 
 
 def capture_window(
-    rows: Iterable[Mapping[str, Any]], today: date, fetch: Fetch, store: Store
+    rows: Iterable[Mapping[str, Any]], due: datetime, fetch: Fetch, store: Store
 ) -> list[CaptureOutcome]:
     """Read and store the start lists of every in-window event, one event at a
     time; one event never stops another (ADR-116 §11). Returns an outcome per
     selected event."""
-    return [_capture_one(row, today, fetch, store) for row in select_window_events(rows, today)]
+    return [_capture_one(row, due, fetch, store) for row in select_window_events(rows, due)]
 
 
 @dataclass(frozen=True)
@@ -248,9 +289,9 @@ class WindowReport:
 def window_report(
     outcomes: Iterable[CaptureOutcome],
     *,
-    today: date,
+    due: datetime,
     first_run: bool,
-    final_run: bool,
+    last_attempt: bool,
     stored_keys: Mapping[int, set[tuple[str, str]]],
 ) -> WindowReport:
     """Shape one capture run into Telegram lines and the fatal list (§10, §11).
@@ -258,17 +299,19 @@ def window_report(
     ``stored_keys`` is the (weapon, gender) pairs already stored for each event
     across the whole window — the ground truth for whether the ingest can run.
     A tournament the event is known to have but with nothing stored is fatal,
-    but only on the window's last attempt (D-1 final run); until then a missing
-    list is a warning, because a later attempt may still catch it."""
+    but only on the window's last attempt: the run due before noon on the
+    event's last day (K2 A). From D-1 until then a missing list is a warning,
+    because a later attempt may still catch it."""
     lines: list[str] = []
     fatal: list[str] = []
+    today = due.astimezone(WARSAW).date()
     for out in outcomes:
-        opens, closes = start_list_window(out.first_day)
+        opens, closes = out.window
         have = stored_keys.get(out.id_pzsz_event, set())
         if first_run and today == opens:
             lines.append(
                 f"📋 Start-list window open for {out.code} ({out.first_day:%d %b}), "
-                f"capturing to {closes:%d %b}."
+                f"capturing to the morning of {closes:%d %b}."
             )
         if out.stored:
             counts = ", ".join(f"{_wg(w, g)} {n}" for w, g, n in out.stored)
@@ -282,7 +325,7 @@ def window_report(
             | set(have)
         )
         short = known - set(have)
-        if final_run and today == closes:
+        if last_attempt and today == closes:
             if short or not known:
                 fatal.append(out.code)
                 miss = ", ".join(sorted(_wg(w, g) for w, g in short)) or "every tournament"
@@ -290,7 +333,7 @@ def window_report(
                     f"❌ No start list for {out.code} after the window ({miss}): "
                     "the result ingest will stop (ADR-111)."
                 )
-        elif short and today in (closes, closes - timedelta(days=1)):
+        elif short and today >= out.first_day - timedelta(days=1):
             miss = ", ".join(sorted(_wg(w, g) for w, g in short))
             lines.append(f"⚠️ {out.code}: still missing {miss}.")
     return WindowReport(lines, fatal)
@@ -325,9 +368,9 @@ def run_capture(
     bot_token: str,
     chat_id: str,
     *,
-    today: date,
+    due: datetime,
     first_run: bool = False,
-    final_run: bool = False,
+    last_attempt: bool = False,
     query: Callable[..., list[dict]] | None = None,
     telegram: Callable[[str, str, str], None] | None = None,
     store: Store | None = None,
@@ -364,23 +407,23 @@ def run_capture(
         ref,
         token,
         "SELECT e.txt_code, e.id_pzsz_event, e.dt_start::TEXT AS dt_start, "
-        "e.enum_status::TEXT AS enum_status FROM tbl_event e "
+        "e.dt_end::TEXT AS dt_end, e.enum_status::TEXT AS enum_status FROM tbl_event e "
         "JOIN tbl_organizer o ON o.id_organizer = e.id_organizer "
         f"WHERE e.id_season = {int(season['id_season'])} AND o.txt_code = '{ORGANIZER_CODE}' "
         "AND e.id_pzsz_event IS NOT NULL ORDER BY e.dt_start, e.txt_code",
     )
 
     if fetch is not None:
-        outcomes = capture_window(rows, today, fetch, store_fn)
+        outcomes = capture_window(rows, due, fetch, store_fn)
     else:
         from python.scrapers.pzsz_browser import browser_fetch
 
         with browser_fetch() as browser:
-            outcomes = capture_window(rows, today, browser, store_fn)
+            outcomes = capture_window(rows, due, browser, store_fn)
 
     stored_keys = _stored_keys(query, ref, token, [o.id_pzsz_event for o in outcomes])
     report = window_report(
-        outcomes, today=today, first_run=first_run, final_run=final_run, stored_keys=stored_keys
+        outcomes, due=due, first_run=first_run, last_attempt=last_attempt, stored_keys=stored_keys
     )
     for o in outcomes:
         note = " [not served]" if o.not_served else ""
@@ -498,17 +541,20 @@ def _capture_command(args: argparse.Namespace) -> int:
         return 2
     try:
         now = _now_utc()
-        # A scheduled run works on the day it was due, a manual run on today (PZSZ.SL.11).
-        today = scheduled_day(args.cron, now) if args.cron else warsaw_today(now)
-        print(f"capture for {today} (cron {args.cron or 'none: manual run'})", file=sys.stderr)
+        # A scheduled run works on the moment it was due, a manual run on now (PZSZ.SL.11).
+        due = scheduled_moment(args.cron, now) if args.cron else now.astimezone(WARSAW)
+        print(
+            f"capture for {due:%Y-%m-%d %H:%M} Warsaw (cron {args.cron or 'none: manual run'})",
+            file=sys.stderr,
+        )
         return run_capture(
             ref,
             token,
             bot,
             chat,
-            today=today,
+            due=due,
             first_run=args.first_run,
-            final_run=args.final_run,
+            last_attempt=args.last_attempt,
         )
     except Exception as exc:  # noqa: BLE001 -- start-fatal: report red, do not crash
         from python.scrapers._supabase import _telegram
@@ -536,12 +582,15 @@ def main(argv: list[str] | None = None) -> int:
         "--first-run", action="store_true", help="the day's first run (cron 11 5 * * *)"
     )
     cap.add_argument(
-        "--final-run", action="store_true", help="the day's last run (cron 11 19 * * *)"
+        "--last-attempt",
+        action="store_true",
+        help="the window's last attempt: the run due before noon Warsaw (cron 11 9 * * *); "
+        "on an event's last day a list still missing is fatal",
     )
     cap.add_argument(
         "--cron",
         default="",
-        help="the cron that fired; the run works on the Warsaw date it was due (PZSZ.SL.10)",
+        help="the cron that fired; the run works on the moment it was due (PZSZ.SL.10)",
     )
     args = parser.parse_args(argv)
     if args.command == "capture":

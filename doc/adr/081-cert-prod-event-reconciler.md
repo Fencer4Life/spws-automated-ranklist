@@ -149,3 +149,7 @@ Scope unchanged — the calendar only (`fn_mirror_events_to_prod`). Start lists 
 ## Amendment (2026-10-25, ADR-117) — the mirror carries no results link
 
 [ADR-117](117-results-links-admin-only.md): `fn_mirror_events_to_prod` and `promote.py --mode calendar` carry none of `url_event` … `url_event_5`. A CREATE lands with empty results slots, and an UPDATE leaves PROD's as they are. Results links are set in each environment's Admin, or reach PROD through promote's fill of an empty slot from the CERT run (ADR-108 §9, ADR-113). In §3 the admin-owned fill-blank tier keeps `url_invitation`, `url_registration`, the fee and the deadline. The calendar promotion still reads CERT's slots, for its divergence report only.
+
+## Amendment (2026-10-25, [ADR-117](117-results-links-admin-only.md) D7 A) — a calendar page in PROD's letter gives way to CERT's
+
+§3's fill-blank tier keeps one exception for `url_invitation`: when PROD holds a calendar page (a pzszerm.pl or veteransfencing.eu event page) and CERT holds a letter, the UPDATE replaces PROD's value. Any other PROD value stays and an empty one is filled, as before (migration `20261025000003`, pgTAP CALURL.23).
