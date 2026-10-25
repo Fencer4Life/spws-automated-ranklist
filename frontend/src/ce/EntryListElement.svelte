@@ -1,4 +1,6 @@
-<svelte:options customElement="spws-entry-list" />
+<!-- `demo` is a Boolean attribute, as on <spws-ranklist>: a bare `demo` reads
+     as on (CE.DEMO.01). Undeclared, it arrived as "" and read as off. -->
+<svelte:options customElement={{ tag: 'spws-entry-list', props: { demo: { type: 'Boolean' } } }} />
 
 {#if resolvedEventId != null}
   <EntryList eventId={resolvedEventId} onclose={backToRegistration} />

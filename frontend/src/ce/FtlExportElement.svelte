@@ -1,4 +1,6 @@
-<svelte:options customElement="spws-ftl-export" />
+<!-- `demo` is a Boolean attribute, as on <spws-ranklist>: a bare `demo` reads
+     as on (CE.DEMO.01). Undeclared, it arrived as "" and read as off. -->
+<svelte:options customElement={{ tag: 'spws-ftl-export', props: { demo: { type: 'Boolean' } } }} />
 
 <FtlExport
   {events}

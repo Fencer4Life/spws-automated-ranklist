@@ -394,7 +394,7 @@ Acceptance IDs for [ADR-106](adr/106-international-intake-by-identity-nationalit
 | NAT.EVID.02–03 | `fn_commit_event_draft` copies `txt_entered_for` from the draft (02); `fn_ingest_tournament_results` stores it from the payload (03). | pgTAP | `supabase/tests/96_season_nationality.sql` | **Landed** (2026-10-02, LOCAL) |
 | NAT.EVID.04 | ~~The CERT → PROD event promotion selects `txt_entered_for`, so PROD's payload keeps it.~~ **Retired 2026-10-03** with the per-result copy (ADR-108 §6): promote replays the ingestion on PROD, and the apply refuses unless PROD's result fingerprint, which holds every result column including `txt_entered_for`, equals the CERT run's. | pytest, pgTAP | `python/tests/test_promotion_replay.py` (PROMO.REPLAY.15–16), `supabase/tests/103_promote_apply.sql` | Superseded |
 
-## WordPress site navigation and the environment split (WP.*)
+## WordPress site navigation and the environment split (WP.*, CE.DEMO.*)
 
 Acceptance IDs for the [ADR-090](adr/090-prod-surface-as-wordpress-menu-item.md) amendment of 2026-10-03, [ADR-109](adr/109-environments-split-by-host.md) and [doc/plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html](plans/wordpress-ranking-points-table-brainstorm-2026-10-02.html) §05. FR-148–FR-151. Registered before any code (plan step 1); each is observed RED for its stated reason before its implementation lands. Three are guards that pass before the change by design — WP.NAV.03, WP.ENV.02 and WP.COMP.01 — and were proven by mutation instead (2026-10-04): each turns red when the rule it keeps is broken on purpose.
 
@@ -424,6 +424,7 @@ Acceptance IDs for the [ADR-090](adr/090-prod-surface-as-wordpress-menu-item.md)
 | WP.PAGE.01 | Every reference copy in `doc/wordpress/` loads `assets/main.ce.js`, holds the theme style block, and carries the key placeholder, never a key. | pytest | `python/tests/test_wp_pages.py` | **Landed** (2026-10-04, LOCAL) |
 | WP.PAGE.02 | `wp_publish_page.py` fills the placeholder from the environment, refuses a body that still holds it, and never prints the key. It posts a reference copy without its opening note and final newline, which the live page does not carry, so republishing an unchanged copy posts the live body. | pytest | `python/tests/test_wp_pages.py` | **Landed** (2026-10-04, LOCAL) |
 | WP.COMP.01 | `chrome="none"` renders exactly as today, so the live `/znajdz-zawody/` survives the release before its body changes. | Vitest | `frontend/tests/CalendarEmbed.test.ts` | **Landed** (2026-10-04, LOCAL) |
+| CE.DEMO.01 | A bare `demo` attribute reads as on for every SPWS element: `<spws-ranklist>`, `<spws-calendar>`, `<spws-registration>`, `<spws-entry-list>` and `<spws-ftl-export>` declare it Boolean. On the last three it arrived as the empty string and read as off (F7 A on doc/plans/frontend-toolchain-before-after-2026-10-25.html). | Vitest | `frontend/tests/CeDemoAttribute.test.ts` | **Landed** (2026-10-25) |
 
 ## Calendar drum, step buttons and translation completeness (CM.*, CB.*, TR.*, TITLE.*)
 
