@@ -32,12 +32,13 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 import time
 import unicodedata
 import urllib.error
 import urllib.request
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -359,19 +360,66 @@ def chunk_id(rel: str, order: int) -> str:
     return hashlib.sha1(f"{rel}:{order}".encode()).hexdigest()[:20]
 
 
-def stale_ids(indexed: Iterable[tuple[str, int]], live: set[tuple[str, int]]) -> list[str]:
+def _stale(
+    indexed: Iterable[tuple[str, int]], live: set[tuple[str, int]], held_elsewhere: Collection[str]
+) -> list[tuple[str, int]]:
+    live_paths = {path for path, _ in live}
+    return sorted(
+        (path, order)
+        for path, order in set(indexed) - live
+        if path in live_paths or path not in held_elsewhere
+    )
+
+
+def stale_ids(
+    indexed: Iterable[tuple[str, int]],
+    live: set[tuple[str, int]],
+    held_elsewhere: Collection[str] = (),
+) -> list[str]:
     """Ids held by the index that this run's corpus did not produce.
 
     Posting is an upsert, so it can only ever add or overwrite. Everything that
     has to disappear — the tail of a shortened page, every chunk of a deleted or
     renamed one — is exactly what the index holds and the corpus does not.
+
+    The index is shared by every worktree of the repository, so a page this
+    checkout lacks but another worktree still holds (``held_elsewhere``) is a
+    parallel session's work, not a deletion, and is kept. A page this run
+    produced is decided by this run alone, tail included.
     """
-    return [chunk_id(path, order) for path, order in sorted(set(indexed) - live)]
+    return [chunk_id(path, order) for path, order in _stale(indexed, live, held_elsewhere)]
 
 
-def stale_paths(indexed: Iterable[tuple[str, int]], live: set[tuple[str, int]]) -> list[str]:
+def stale_paths(
+    indexed: Iterable[tuple[str, int]],
+    live: set[tuple[str, int]],
+    held_elsewhere: Collection[str] = (),
+) -> list[str]:
     """The documents those stale chunks belong to, for the run's report."""
-    return sorted({path for path, order in set(indexed) - live})
+    return sorted({path for path, _ in _stale(indexed, live, held_elsewhere)})
+
+
+def worktree_roots() -> list[Path]:
+    """Every worktree of this repository, this checkout included."""
+    out = subprocess.run(
+        ["git", "-C", str(REPO), "worktree", "list", "--porcelain"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return [
+        Path(line.removeprefix("worktree "))
+        for line in out.splitlines()
+        if line.startswith("worktree ")
+    ]
+
+
+def paths_in_other_worktrees(
+    paths: Iterable[str], roots: Iterable[Path], *, here: Path = REPO
+) -> set[str]:
+    """The paths that exist as a file in a worktree other than ``here``."""
+    others = [root for root in roots if root.resolve() != here.resolve()]
+    return {path for path in paths if any((root / path).is_file() for root in others)}
 
 
 def in_scope(path: Path) -> bool:
@@ -487,12 +535,18 @@ def prune(live: set[tuple[str, int]], key: str) -> None:
     would open exactly that gap.
     """
     indexed = indexed_pairs(key)
-    ids = stale_ids(indexed, live)
+    absent = {path for path, _ in indexed} - {path for path, _ in live}
+    held = paths_in_other_worktrees(absent, worktree_roots())
+    if held:
+        print(f"Kept {len(held)} document(s) another worktree still holds:")
+        for path in sorted(held)[:20]:
+            print(f"    {path}")
+    ids = stale_ids(indexed, live, held)
     if not ids:
         print("Nothing stale.")
         return
 
-    paths = stale_paths(indexed, live)
+    paths = stale_paths(indexed, live, held)
     for start in range(0, len(ids), BATCH):
         task = request(
             "POST",

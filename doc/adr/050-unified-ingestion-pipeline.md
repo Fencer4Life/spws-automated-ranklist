@@ -147,7 +147,7 @@ Considered including ADR-054 cap enforcement + FK default flip in Phase 0–6. R
 
 ## Status — Phase 1 deliverables (committed 2026-05-01)
 
-Phase 1 ships the **traceability schema** (ADR-055) and the **intermediate representation + 8 parsers + parser registry**. 7 commits land between `4409f95` and `6ae21c0` on `main`.
+Phase 1 ships the **traceability schema** (ADR-055) and the **intermediate representation + 8 parsers + parser registry**. 7 commits land between `38f423e` and `f7eee82` on `main`.
 
 - ✅ Migration `supabase/migrations/20260501000003_phase1_ingest_traceability.sql` (ADR-055):
   - `enum_parser_kind` Postgres enum (8 values, mirrors Python `SourceKind`)

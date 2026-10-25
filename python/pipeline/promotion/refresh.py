@@ -499,6 +499,26 @@ def registrations_part_sql(event_code: str) -> str:
     return f"SELECT fn_event_input_fingerprint('{event_code}')->'parts'->>'registrations' AS j"
 
 
+RESULT_LINK_COLUMNS: tuple[str, ...] = (
+    "url_event",
+    "url_event_2",
+    "url_event_3",
+    "url_event_4",
+    "url_event_5",
+)
+
+
+def result_links_sql(event_code: str) -> str:
+    """The event's five results links (URL wyników) as PROD's Admin holds them
+    (D2 A, ADR-117): the refresh carries them to CERT for the ingest."""
+    if not _EVENT_CODE.match(event_code or ""):
+        raise RefreshError(f"not an exact event code: {event_code!r}")
+    cols = ", ".join(f"'{c}', e.{c}" for c in RESULT_LINK_COLUMNS)
+    return (
+        f"SELECT jsonb_build_object({cols}) AS j FROM tbl_event e WHERE e.txt_code = '{event_code}'"
+    )
+
+
 class ProdReader:
     """Reads PROD. It cannot be built on a transport that could write."""
 
@@ -521,6 +541,9 @@ class ProdReader:
 
     def registrations_part(self, event_code: str) -> str | None:
         return self.transport.fetch_json(registrations_part_sql(event_code))
+
+    def result_links(self, event_code: str) -> dict[str, Any]:
+        return dict(self.transport.fetch_json(result_links_sql(event_code)) or {})
 
 
 class TargetDb:
@@ -593,6 +616,18 @@ class TargetDb:
         except SqlError as e:
             raise RefreshError(str(e)) from e
 
+    def copy_result_links(self, event_code: str, links: Mapping[str, Any]) -> dict[str, Any]:
+        """PROD's results links into the target's five slots, compacted; the
+        target keeps its own when PROD holds none (fn_copy_event_result_links)."""
+        if not _EVENT_CODE.match(event_code or ""):
+            raise RefreshError(f"not an exact event code: {event_code!r}")
+        clean = {c: links.get(c) for c in RESULT_LINK_COLUMNS}
+        sql = f"SELECT fn_copy_event_result_links('{event_code}', {_literal(clean)}) AS j"
+        try:
+            return dict(self.transport.fetch_json(sql) or {})
+        except SqlError as e:
+            raise RefreshError(str(e)) from e
+
 
 def check_drain_target(target: str, supabase_url: str) -> None:
     """The queue drained is the target's: refuse any other database's URL."""
@@ -617,6 +652,7 @@ class RefreshOutcome:
     report: Report
     align_summary: dict[str, Any] | None = None
     registrations: dict[str, Any] | None = None
+    result_links: dict[str, Any] | None = None
 
 
 def run_refresh(
@@ -638,6 +674,9 @@ def run_refresh(
     `refuse_renumbering` is the automatic refresh `ingest` runs first
     (ADR-113): a plan that moves any id stops before the first write, so a
     renumbering still waits for the administrator's reading of the report.
+
+    With an `event_code`, an apply also copies the event's results links from
+    PROD, so the ingest reads the link set in PROD's Admin (D2 A, ADR-117).
     """
     if mode not in ("plan", "dry-run", "apply"):
         raise RefreshError(f"unknown mode {mode!r}")
@@ -674,6 +713,9 @@ def run_refresh(
         if event_code
         else None
     )
+    result_links = (
+        target.copy_result_links(event_code, prod.result_links(event_code)) if event_code else None
+    )
     if drain is not None:
         for _ in range(MAX_DRAIN_ROUNDS):
             if not drain():
@@ -688,7 +730,12 @@ def run_refresh(
             + "\n".join(after.lines("target", "PROD"))
         )
     return RefreshOutcome(
-        "applied", plan, report, align_summary=summary, registrations=registrations
+        "applied",
+        plan,
+        report,
+        align_summary=summary,
+        registrations=registrations,
+        result_links=result_links,
     )
 
 
@@ -908,6 +955,7 @@ def main(argv: list[str] | None = None) -> int:
             f"counts: {json.dumps(out.report.counts)}",
             f"database: {json.dumps(out.align_summary) if out.align_summary else '-'}",
             f"registrations: {json.dumps(out.registrations) if out.registrations else '-'}",
+            f"results links: {json.dumps(out.result_links) if out.result_links else '-'}",
             "",
         ]
         + out.report.lines

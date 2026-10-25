@@ -143,4 +143,4 @@ Retired: R.21 (vitest, the banner, 2026-10-01); R.23–R.25 (vitest, the calenda
 | 2026-10-02 | Branch 3: an event whose next edition has no row carries for the window | ADR-042 |
 | 2026-10-03 | Results-based stop for the FK engine decided (P6 A), for every linked event (decision A); this ADR rewritten | ADR-108 §8 |
 
-The text before this rewrite is in git at commit `8271dd65`.
+The text before this rewrite is in git at commit `a4b443f8`.

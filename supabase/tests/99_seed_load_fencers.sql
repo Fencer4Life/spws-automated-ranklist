@@ -13,7 +13,10 @@
 --   * applies the pairing through fn_align_fencers_to: the present fencers
 --     move to PROD's ids and take PROD's values, every other roster row is
 --     created at its PROD id, the sequence is set, and the roster must then
---     equal the one given.
+--     equal the one given;
+--   * takes the roster's first names through the writer's rule first
+--     (fn_first_name_initial_capitals, D5 A), so a seed exported while a first
+--     name was stored in capitals still loads, and equals the roster (SEED.09).
 --
 -- The seeded roster stands in for PROD's here, each fencer at its own id.
 -- Fixture fencers live at ids 97001–97005 and move to 97101–97105.
@@ -22,7 +25,7 @@
 
 BEGIN;
 
-SELECT plan(8);
+SELECT plan(9);
 
 CREATE TEMP TABLE sd_seq AS SELECT last_value, is_called FROM tbl_fencer_id_fencer_seq;
 
@@ -35,7 +38,8 @@ VALUES (97001, 'SEEDA',  'Adam',  1970, false, 'M'),
        (97004, 'SEEDN',  'Jan',   1980, false, 'M');
 
 -- PROD's roster: every seeded fencer as it is, the fixtures at PROD's ids (the
--- namesakes swapped, B with a club PROD has), and E, who exists only on PROD.
+-- namesakes swapped, B with a club PROD has, A's first name exported in
+-- capitals), and E, who exists only on PROD, also in capitals.
 CREATE TEMP TABLE sd_roster AS
 SELECT to_jsonb(f) || jsonb_build_object('id_fencer',
          CASE f.id_fencer WHEN 97001 THEN 97101 WHEN 97002 THEN 97102
@@ -43,8 +47,9 @@ SELECT to_jsonb(f) || jsonb_build_object('id_fencer',
   FROM tbl_fencer f;
 -- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 UPDATE sd_roster SET j = j || '{"txt_club": "KS Seed"}' WHERE (j->>'id_fencer')::INT = 97102;
+UPDATE sd_roster SET j = j || '{"txt_first_name": "ADAM"}' WHERE (j->>'id_fencer')::INT = 97101;
 INSERT INTO sd_roster
-SELECT jsonb_build_object('id_fencer', 97105, 'txt_surname', 'SEEDE', 'txt_first_name', 'Ewa',
+SELECT jsonb_build_object('id_fencer', 97105, 'txt_surname', 'SEEDE', 'txt_first_name', 'EWA',
                           'int_birth_year', 1965, 'txt_nationality', 'PL', 'bool_birth_year_estimated', false,
                           'enum_gender', 'F', 'json_name_aliases', '[]'::jsonb,
                           'json_revoked_aliases', '[]'::jsonb, 'json_user_confirmed_aliases', '[]'::jsonb,
@@ -99,6 +104,14 @@ SELECT ok((SELECT last_value >= 97200 FROM tbl_fencer_id_fencer_seq),
 -- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 SELECT is((SELECT (j->>'renumbered')::INT || '/' || (j->>'created')::INT FROM sd_out), '4/1',
   'SEED.08 the summary counts the four present fencers moved and the one created');
+-- pgt-ignore-end typecheck
+
+SELECT results_eq(
+  $$SELECT id_fencer, txt_first_name FROM tbl_fencer WHERE id_fencer IN (97101, 97105) ORDER BY id_fencer$$,
+  $$VALUES (97101, 'Adam'::TEXT), (97105, 'Ewa'::TEXT)$$,
+  'SEED.09 a roster first name in capitals loads with initial capitals, moved or created, and the roster check passes');
+
+-- pgt-ignore-start typecheck: temp tables/views this file creates (the checker sees only the live schema)
 
 -- Put the sequence back: sequences do not roll back.
 SELECT setval('tbl_fencer_id_fencer_seq', last_value, is_called) FROM sd_seq;

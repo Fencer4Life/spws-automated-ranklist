@@ -121,14 +121,14 @@
 
 <div class="wrap">
 
-  <p class="eyebrow">PZSz · EVF · SPWS · Results link · RCA, signed off, built on LOCAL · 25 Oct 2026 · revision 3</p>
+  <p class="eyebrow">PZSz · EVF · SPWS · Results link · RCA, signed off, release 1 live · 25 Oct 2026 · revision 4</p>
   <h1>URL wyników stays empty until Admin fills it</h1>
-  <p class="dek">Two calendar scrapers put a <b>calendar page</b> into URL wyników: <b>PZSz</b> since 3 September, and <b>EVF</b> again on PROD since 26 July. Your rule is now built and tested on LOCAL. No scraper and no CERT→PROD mirror writes URL wyników, and they write only the organizer's letter to URL komunikatu. The release clears the stale pages on CERT (7) and PROD (17). <b>You signed it off</b> on 25 October: S1, R1, O1, K1, K2 and D2–D7, all A.</p>
+  <p class="dek">Two calendar scrapers put a <b>calendar page</b> into URL wyników: <b>PZSz</b> since 3 September, and <b>EVF</b> again on PROD since 26 July. Your rule is now built and tested on LOCAL. No scraper and no CERT→PROD mirror writes URL wyników, and they write only the organizer's letter to URL komunikatu. The release clears the stale pages on CERT (7) and PROD (17). <b>You signed it off</b> on 25 October: S1, R1, O1, K1, K2 and D2–D7, all A. <b>Release 1 is live</b> on CERT and PROD and checked. <b>PPS1f is on CERT</b> and waits for your <code>promote</code>. The second batch is built and tested; two new decisions, R2 and K3, are in §08.</p>
   <div class="meta">
-    <span class="pill"><span class="dot"></span>signed off · all A</span>
-    <span class="pill"><span class="dot"></span>ADR-117 written · K1 built (+1 row)</span>
-    <span class="pill"><span class="dot"></span>issues #3–#6 built</span>
-    <span class="pill warn"><span class="dot"></span>next: release 1</span>
+    <span class="pill"><span class="dot"></span>release 1 live · CERT + PROD</span>
+    <span class="pill"><span class="dot"></span>PPS1f on CERT · 2 results</span>
+    <span class="pill"><span class="dot"></span>batch 2 built · K2 D2 D4 D5 D7</span>
+    <span class="pill warn"><span class="dot"></span>yours: promote PPS1f · R2 · K3</span>
   </div>
 
   <hr class="rule">
@@ -139,19 +139,19 @@
     <div class="tablewrap"><table>
       <thead><tr><th>Item</th><th>State</th><th>Evidence</th></tr></thead>
       <tbody>
-        <tr><td>S1 · ADR-117</td><td><span class="chip never">written</span></td><td><code>doc/adr/117-results-links-admin-only.md</code> and its HTML twin. Amendments in ADR-028, 039 (rev 4 and rev 2 step 2 superseded), 040, 043, 081, 087 and 116; specification Appendix C; RTM FR-160 and CALURL.01–08, 10–19; handbook: events invariant, lifecycle tiers, runbooks, workflow catalog, ingestion.</td></tr>
-        <tr><td>K1 · confirmed aliases</td><td><span class="chip never">built</span></td><td>ADR-111 amended. PZSZ.ADM.09–11 seen red, now green; PZSZ.ADM.05 rewritten. LOCAL PPS1e re-ingested: KOLER 32, <b>KORONA 37 (#139, 1976)</b>, SPŁAWA-NEYMAN 65, DZIUBIŃSKI 98. PPS1f re-ingested: unchanged, 2 rows.</td></tr>
-        <tr><td>#3 · non-schedule link</td><td><span class="chip never">built</span></td><td>A link that is not an FTL event schedule, and a schedule that lists nothing, are refused before anything is saved or wiped; the run closes FAILED (CALURL.16–17, domestic and PZSz paths).</td></tr>
-        <tr><td>#4 · D3 · <code>--dry-run</code></td><td><span class="chip never">built</span></td><td>Refused with <code>--flow</code>, the URL and the XML path alike: both write live (CALURL.18). The <code>ftl-scrape</code> skill says so.</td></tr>
-        <tr><td>#5 · help text</td><td><span class="chip never">built</span></td><td><code>--url-event</code> and the <code>ingest-event.yml</code> input say the link is saved as URL wyników (CALURL.19).</td></tr>
-        <tr><td>#6 · <code>.env</code> in worktrees</td><td><span class="chip never">built</span></td><td>A new worktree links the primary's <code>.env</code>, kept out of git status (SS.18).</td></tr>
-        <tr><td>R1 · release 1</td><td><span class="chip warn">next</span></td><td><code>scripts/preflight.sh</code> to exit 0, commit, push to main, CI and the Release watched in the foreground; then CERT and PROD checked through what the site reads.</td></tr>
-        <tr><td>O1 · PPS1f, then PPS1e</td><td><span class="chip plain">after R1</span></td><td><code>ingest-event.yml</code> with PROD's FTL link; you send <code>promote</code>.</td></tr>
-        <tr><td>K2, D2, D7, D5, D4</td><td><span class="chip plain">after R1</span></td><td>Built test-first as the second batch, then release 2.</td></tr>
-        <tr><td>D6</td><td><span class="chip plain">yours</span></td><td>Update <code>~/.supabase_secrets</code>; remove the two plaintext tokens from <code>~/.claude/settings.json</code>.</td></tr>
+        <tr><td>R1 · release 1</td><td><span class="chip never">live</span></td><td>main <code>3bd13c4e</code>; Release run 40191318836 green, PROD approved by you. ADR-117, K1 and issues #3–#6. Checked through what the site reads: no calendar page left in any open-season results slot on CERT or PROD; the migration cleared <b>7 on CERT and 17 on PROD</b>, and the audit log shows your 2 Admin edits on PROD this morning kept; PPS1e's and PPS1f's FTL links intact in <code>tbl_event</code> and <code>vw_calendar</code>.</td></tr>
+        <tr><td>O1 · PPS1f on CERT</td><td><span class="chip never">done</span></td><td><code>ingest-event.yml</code> run 40198638926 with PROD's FTL link: CERT run 6 FINISHED at the released commit, 2 listings read (6 not ours), 1 tournament, <b>2 results</b> (men's foil, N 92), no fencer created or changed, event COMPLETED, result fingerprint <code>9878a2d20544…</code>. Start lists read from CERT's store (men 80, women 55 starters).</td></tr>
+        <tr><td>O1 · PPS1f on PROD</td><td><span class="chip warn">yours</span></td><td>Send <code>promote PPS1f-2026-2027</code> in Telegram, before release 2 (R2).</td></tr>
+        <tr><td>K2 · window to the last-day morning</td><td><span class="chip never">built</span></td><td>From D−4 to noon (Warsaw) on the event's last day, by the moment a run was due; the last attempt is cron <code>11 9</code> (<code>--last-attempt</code>). PZSZ.SL.05, .07, .09–.11 rewritten, SL.13 added, WFCRON.02. ADR-112 and ADR-116 amended. <b>Finding:</b> pzszerm.pl served PPS1e's lists on its last day, unchanged since 23 October, and POPOVIĆ and SOBCZAK are not on them: they entered at the venue (K3).</td></tr>
+        <tr><td>D2 · PROD's link reaches CERT</td><td><span class="chip never">built</span></td><td>The refresh before every CERT ingest copies the event's results links from PROD (<code>fn_copy_event_result_links</code>); the PZSz notice reads PROD's link. CALURL.20–22. ADR-117 and ADR-113 amended.</td></tr>
+        <tr><td>D7 · PROD's letter</td><td><span class="chip never">built</span></td><td>The mirror replaces a calendar page in PROD's URL komunikatu with CERT's letter; any other value stays. CALURL.23. ADR-117 and ADR-081 amended.</td></tr>
+        <tr><td>D5 · first names</td><td><span class="chip never">built</span></td><td>The writer gives a first name in capitals initial capitals; #117, #276 and #348 corrected on release. The seed load applies the same rule (issue #17). NAMECASE.01–04, SEED.09.</td></tr>
+        <tr><td>D4 · LOCAL start lists</td><td><span class="chip never">built</span></td><td><code>mirror-prod-local.sh</code> step 6 replays CERT's lists in id order and checks the newest. LOCALSL.01–04. ADR-036 amended.</td></tr>
+        <tr><td>R2 · release 2</td><td><span class="chip plain">after your promote</span></td><td>Committed on the branch once <code>scripts/preflight.sh</code> exits 0; pushed after you promote PPS1f (§08 R2).</td></tr>
+        <tr><td>D6</td><td><span class="chip warn">yours</span></td><td>Update <code>~/.supabase_secrets</code>; remove the two plaintext tokens from <code>~/.claude/settings.json</code>. Until then a worktree without the <code>.env</code> link reads the outdated token (issue #18).</td></tr>
       </tbody>
     </table></div>
-    <p>Full pytest after these changes: 2,189 passed, 14 skipped. Two old fixtures used a made-up host or an empty schedule; they now carry a real FTL schedule shape, with each test's intent kept.</p>
+    <p><code>scripts/preflight.sh</code> exits 0 with every gate passing: pytest 2,211 passed, 14 skipped; pgTAP 1,519. A fresh bootstrap of LOCAL from migrations and <code>seed_prod_2026-10-17.sql</code> passes and stores the three first names with initial capitals.</p>
   </section>
 
   <section>
@@ -301,6 +301,22 @@
   <section>
     <p class="kicker">08 · Decide this first</p>
     <h2>Your decisions, each with a recommendation</h2>
+    <p>Two new decisions, R2 and K3. Below them, the record of what you signed off on 25 October (all A).</p>
+
+    <h3>R2 · Release 2 and the PPS1f promote — new</h3>
+    <p>Release 2 changes function definitions and three first names. Promote accepts a CERT run only while PROD's schema and roster equal what the run recorded, and PPS1f's run recorded today's.</p>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>You send <code>promote PPS1f-2026-2027</code> first. Then I push release 2, watch CI and the Release in the foreground, check CERT, and you approve its PROD deploy straight away: between its CERT and PROD deploys no ingest or promote runs, because CERT then holds “Emilia” while PROD still holds “EMILIA”. PPS1e follows once women's épée shows Finished: a plain <code>ingest PPS1e-2026-2027</code> then reads your PROD link (D2), and you promote.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>I push release 2 now; you promote PPS1f before you approve release 2's PROD deploy. If PROD gets release 2 first, PPS1f is ingested on CERT again (50 seconds) and promoted.</td></tr>
+    </tbody></table></div>
+
+    <h3>K3 · Our fencers who entered at the venue — new</h3>
+    <p>POPOVIĆ (#232) and SOBCZAK (#270) fenced PPS1e but are on no start list, at any time: pzszerm.pl still served the lists on the event's last day, unchanged since 23 October, without them. K2 catches a late online entry; nothing catches a venue entry, so ADR-111 skips them.</p>
+    <div class="tablewrap"><table><tbody>
+      <tr><td><span class="chip never">A · recommended</span></td><td>An administrator confirms them per event: an identity entry in <code>doc/overrides/&lt;code&gt;.yaml</code> (<code>fencer: {surname, first_name, birth_year}</code>), the form the international path already reads. The PZSz admission reads it only for an FTL row whose name is exactly one fencer of ours and that no start list prints; the row is stored with our birth year and the report marks it “confirmed by an administrator”. Promote replays it from the same commit. The file is public; the birth year is the one our fencer table already holds. ADR-111 amendment, test-first. Effect on PPS1e: up to 2 more rows.</td></tr>
+      <tr><td><span class="chip plain">B</span></td><td>As A, but confirmed in Admin rather than in a file: a new screen and a stored confirmation, more work.</td></tr>
+      <tr><td><span class="chip plain">C</span></td><td>Leave them skipped; ADR-111 stays as it is.</td></tr>
+    </tbody></table></div>
 
     <h3>S1 · ADR-117 (draft in §09)</h3>
     <div class="tablewrap"><table><tbody>
@@ -406,19 +422,25 @@
       <tbody>
         <tr><td>1</td><td>The PZSz sync wrote the pzszerm.pl page into URL wyników.</td><td><span class="chip never">built</span> R1</td></tr>
         <tr><td>1b</td><td>EVF pages back in PROD's URL wyników since 26 Jul (14 events).</td><td><span class="chip never">built</span> R1 clears them</td></tr>
-        <tr><td>2</td><td>Results links set in PROD's Admin never reach CERT.</td><td><span class="chip fill">D2</span></td></tr>
+        <tr><td>2</td><td>Results links set in PROD's Admin never reach CERT.</td><td><span class="chip never">built</span> D2 A, CALURL.20–22</td></tr>
         <tr><td>3</td><td>An ingest whose <code>url_event</code> is not an FTL schedule finishes green with 0 listings (LOCAL run 403).</td><td><span class="chip never">built</span> CALURL.16–17</td></tr>
         <tr><td>4</td><td><code>--dry-run</code> is ignored by <code>--flow --from-url</code>.</td><td><span class="chip never">built</span> D3 A, CALURL.18</td></tr>
         <tr><td>5</td><td>The <code>--url-event</code> help text says “for this run”, but the value is saved.</td><td><span class="chip never">built</span> CALURL.19</td></tr>
         <tr><td>6</td><td>Worktrees get no <code>.env</code>, so <code>cloud-sql.sh</code> returned 401.</td><td><span class="chip never">built</span> SS.18</td></tr>
         <tr><td>7 · 8</td><td>An outdated token in <code>~/.supabase_secrets</code>; old plaintext tokens in <code>~/.claude/settings.json</code>.</td><td><span class="chip fill">D6</span> yours</td></tr>
-        <tr><td>9</td><td>LOCAL has no PZSz start lists.</td><td><span class="chip fill">D4</span></td></tr>
-        <tr><td>10</td><td>Three first names stored in capitals.</td><td><span class="chip fill">D5</span></td></tr>
+        <tr><td>9</td><td>LOCAL has no PZSz start lists.</td><td><span class="chip never">built</span> D4 A, LOCALSL.01–04</td></tr>
+        <tr><td>10</td><td>Three first names stored in capitals.</td><td><span class="chip never">built</span> D5 A, NAMECASE.01–04</td></tr>
         <tr><td>11 · 12</td><td>The “Wyniki” card link to a calendar page (latent); the seed carrying the pages.</td><td><span class="chip never">built</span> rule + <code>seed_post_backfill</code></td></tr>
-        <tr><td>13</td><td>PROD's URL komunikatu lags behind CERT's letters.</td><td><span class="chip fill">D7</span></td></tr>
+        <tr><td>13</td><td>PROD's URL komunikatu lags behind CERT's letters.</td><td><span class="chip never">built</span> D7 A, CALURL.23</td></tr>
         <tr><td>14</td><td>LOCAL PZSz ingest reports, which list non-members' start-list birth years, were committable.</td><td><span class="chip never">built</span> <code>.gitignore</code>; today's 8 moved out of the repo</td></tr>
         <tr><td>15</td><td>KORONA-TRZEBSKI skipped despite a confirmed alias.</td><td><span class="chip never">built</span> K1 A, PZSZ.ADM.09–11</td></tr>
-        <tr><td>16</td><td>Our fencers who are not on the start list are skipped (POPOVIĆ, SOBCZAK).</td><td><span class="chip fill">K2</span></td></tr>
+        <tr><td>16</td><td>Our fencers who are not on the start list are skipped (POPOVIĆ, SOBCZAK).</td><td><span class="chip never">built</span> K2 A for late online entries; <span class="chip fill">K3</span> for venue entries</td></tr>
+        <tr><td>17</td><td>D5's rule would have failed every CI bootstrap: the PROD seed holds EMILIA, MACIEJ and KAROL, the trigger stored “Emilia”, and the seed load's roster check refused it (<code>ALIGN_ROSTER_MISMATCH</code>, reproduced). Preflight cannot see it: it tests the running database, not a fresh bootstrap.</td><td><span class="chip never">built</span> the seed load applies the same rule; SEED.09; a fresh bootstrap passes</td></tr>
+        <tr><td>18</td><td>This worktree predates the <code>.env</code> link (SS.18), so <code>cloud-sql.sh</code> read the outdated shell token (401).</td><td><span class="chip never">fixed</span> linked here; new worktrees get it from SS.18; the token itself is D6</td></tr>
+        <tr><td>19</td><td>57 RTM rows of released work still read “LOCAL” or “release pending” (ADR-111, 112, 087, 116 and 117).</td><td><span class="chip never">fixed</span> from each ADR's release record</td></tr>
+        <tr><td>20</td><td>The operator runbook still described a daily capture, a fortnight's window and a Telegram line that moved in October.</td><td><span class="chip never">fixed</span> rewritten in present tense</td></tr>
+        <tr><td>21</td><td>17 commit SHAs cited in 11 ADRs and the specification were no longer on <code>main</code> after the history rewrite.</td><td><span class="chip never">fixed</span> remapped by tree and subject, each unambiguous</td></tr>
+        <tr><td>22</td><td>The docs index is shared by every worktree, and this worktree's rebuild pruned another session's two new plan pages (frontend toolchain) because this checkout lacks them.</td><td><span class="chip never">fixed</span> pages restored; the prune keeps a page another worktree holds (3 tests); <code>doc/claude/docs-search.md</code> and the <code>docs-rag-add</code> skill updated</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -427,18 +449,12 @@
     <p class="kicker">11 · State right now</p>
     <h2>What changed, and where</h2>
     <ul>
-      <li><strong>CERT and PROD:</strong> read only, nothing written yet; release 1 is next.</li>
-      <li><strong>LOCAL:</strong>
-        <ul>
-          <li>migration <code>20261025000001</code> applied, with 17 calendar pages cleared;</li>
-          <li>PPS1f and PPS1e re-ingested from PROD's FTL links with K1 in place (PPS1e men's épée: 4 rows);</li>
-          <li>CERT's start lists for both events copied into the database only;</li>
-          <li>frontend dev server on <code>http://localhost:5199/</code>.</li>
-        </ul>
-      </li>
-      <li><strong>Repository:</strong> branch <code>claude/pzsz-url-event-rca</code>, uncommitted until preflight passes: the fix, K1, the ingest guards, ADR-117 and the amendments, the specification, the RTM and the handbook.</li>
+      <li><strong>PROD:</strong> release 1 live and checked. PPS1f waits for your <code>promote</code>.</li>
+      <li><strong>CERT:</strong> release 1 live and checked. PPS1f ingested (run 6, 2 results, COMPLETED); its results link is now PROD's FTL link. PPS1e untouched: no results link on CERT yet, women's épée still running.</li>
+      <li><strong>LOCAL:</strong> rebuilt from migrations and the PROD seed by <code>./scripts/reset-dev.sh</code>, the bootstrap CI runs, to prove issue #17's fix; the earlier PPS1e and PPS1f rehearsal rows went with it.</li>
+      <li><strong>Repository:</strong> branch <code>claude/pzsz-url-event-rca</code>: batch 2, the seed fix, the documentation (ADR amendments 036, 081, 112, 113, 116, 117; specification; RTM; handbook) and issues #19–#22, to be committed once <code>scripts/preflight.sh</code> exits 0, and pushed per R2.</li>
     </ul>
   </section>
 
-  <p class="foot">pzsz-results-url-rca-2026-10-25 · revision 3 (signed off; built) · CERT/PROD read through scripts/cloud-sql.sh · no start-list personal data on this page</p>
+  <p class="foot">pzsz-results-url-rca-2026-10-25 · revision 4 (release 1 live; batch 2 built; R2 and K3 open) · CERT/PROD read through scripts/cloud-sql.sh · no start-list personal data on this page</p>
 </div>

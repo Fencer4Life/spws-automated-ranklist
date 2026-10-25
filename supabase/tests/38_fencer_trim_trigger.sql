@@ -8,11 +8,14 @@
 --   * INSERT with 'BURLIKOWSKI ' → row stored as 'BURLIKOWSKI'
 --   * UPDATE that introduces whitespace also gets trimmed
 --   * Defence-in-depth complement to phase5_runner's seed-export .strip().
+--   * NAMECASE.01–04 (D5 A, 25 Oct 2026): a first name written in capitals
+--     is stored with initial capitals, Polish letters included; a mixed-case
+--     name, a one-letter initial and the surname are never changed.
 -- =============================================================================
 
 BEGIN;
 
-SELECT plan(5);
+SELECT plan(9);
 
 -- 5.14.1 — trigger function exists
 SELECT has_function(
@@ -59,6 +62,44 @@ SELECT is(
   (SELECT txt_first_name FROM tbl_fencer WHERE txt_surname = 'PGTAP38_UPD'),
   'OK Updated',
   '5.14.5 — whitespace on UPDATE also stripped'
+);
+
+-- NAMECASE.01 — a first name in capitals gets initial capitals on INSERT
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, enum_gender)
+VALUES ('PGTAP38_CAPS', 'EMILIA', 1981, 'F');
+
+SELECT is(
+  (SELECT txt_first_name FROM tbl_fencer WHERE txt_surname = 'PGTAP38_CAPS'),
+  'Emilia',
+  'NAMECASE.01 — a first name in capitals is stored as Emilia'
+);
+
+-- NAMECASE.02 — Polish letters, two given names and a hyphen, on UPDATE too
+UPDATE tbl_fencer SET txt_first_name = 'ŁUCJA ŻANETA-MARIA' WHERE txt_surname = 'PGTAP38_CAPS';
+
+SELECT is(
+  (SELECT txt_first_name FROM tbl_fencer WHERE txt_surname = 'PGTAP38_CAPS'),
+  'Łucja Żaneta-Maria',
+  'NAMECASE.02 — Polish letters, two names and a hyphen, on UPDATE'
+);
+
+-- NAMECASE.03 — a mixed-case name and a one-letter initial are kept
+INSERT INTO tbl_fencer (txt_surname, txt_first_name, int_birth_year, enum_gender)
+VALUES ('PGTAP38_MIXED', 'DeShawn', 1975, 'M'),
+       ('PGTAP38_INITIAL', 'J', 1976, 'M');
+
+SELECT is(
+  (SELECT string_agg(txt_first_name, ',' ORDER BY txt_surname) FROM tbl_fencer
+    WHERE txt_surname IN ('PGTAP38_MIXED', 'PGTAP38_INITIAL')),
+  'J,DeShawn',
+  'NAMECASE.03 — a mixed-case name and a one-letter initial are kept'
+);
+
+-- NAMECASE.04 — the surname keeps its capitals
+SELECT is(
+  (SELECT txt_surname FROM tbl_fencer WHERE txt_first_name = 'Łucja Żaneta-Maria'),
+  'PGTAP38_CAPS',
+  'NAMECASE.04 — the surname is never changed'
 );
 
 SELECT * FROM finish();

@@ -3,6 +3,7 @@
 **Status:** Implemented (amended 2026-07-14, 2026-09-12 and 2026-10-03 — the seed carries PROD's fencer ids, ADR-108; 2026-10-04 — the mirror loads registrations by the refresh's copy, §3 of the 2026-10-03 amendment; 2026-10-25 — a CERT export is `seed_cert_<date>.sql` and never moves `seed_prod_latest.sql`; see the amendments)
 **Date:** 2026-04-12  
 **Source:** ADR-027 (Full-Season Seed Export), ADR-026 (CERT→PROD Promotion)
+**Amended by:** this ADR's amendment of 2026-10-25 (D4 A: the mirror also loads CERT's stored PZSz start lists; D5 A: the seed load takes the roster's first names through the writer's rule).
 
 ## Context
 
@@ -175,7 +176,7 @@ seeded data) must **guard the lookup and skip with a `NOTICE`** when the row is 
 than call a fail-loud RPC (e.g. `fn_update_fencer_birth_year`, which `RAISE EXCEPTION`s on a
 NULL id) directly. On the seeded tiers the guard is a harmless no-op; on the fresh-bootstrap
 build it lets the migration sequence complete. (Applied 2026-07-14: the 10 birth-year
-corrections were wrapped in a guarded `DO` block — commit `57655a4`.)
+corrections were wrapped in a guarded `DO` block — commit `66faf5e`.)
 
 ## Amendment (2026-09-12) — the seed must be idempotent against the migrations that precede it
 
@@ -299,3 +300,9 @@ It reads PROD over a read-only connection and never writes it. Results still flo
   amendment's disambiguation rule keeps satisfiable on a fresh reset
 - **ADR-056** (correction-migration pattern) — the guarded no-op rule extends its
   skip-true-no-ops precedent to fresh-bootstrap absence
+
+## Amendment (2026-10-25) — the mirror loads CERT's PZSz start lists (D4 A)
+
+The PZSz start lists are CERT's stored inputs ([ADR-112](112-pzsz-start-lists-are-stored-inputs.md)), in no seed, so after `scripts/mirror-prod-local.sh` LOCAL held none and a LOCAL PZSz ingest could not run; a copy by hand, out of order, then fed an ingest an older list (25 October 2026). The mirror's step 6 runs `python -m python.tools.mirror_start_lists`: CERT's rows are read inside a read-only transaction, in CERT's id order, and replayed through LOCAL's own `fn_pzsz_start_list_store`, so the newest version of every list is CERT's newest; the step fails otherwise. It writes only LOCAL. Signed off as D4 A (`doc/plans/pzsz-results-url-rca-2026-10-25.html`). Tests: LOCALSL.01–04 (`python/tests/test_mirror_start_lists.py`).
+
+**The seed load and first names in capitals (D5 A).** `trg_trim_fencer_names` now gives a first name written wholly in capitals initial capitals (`fn_first_name_initial_capitals`, migration `20261025000004`). A fresh bootstrap runs that migration before the seed, and every seed exported before it holds three such names (`EMILIA`, `MACIEJ`, `KAROL`), so the trigger stored `Emilia` and `fn_align_fencers_to` refused the roster as not equal to the one given (`ALIGN_ROSTER_MISMATCH`): CI's bootstrap would have failed on every run. Found on LOCAL before the release. `fn_seed_load_fencers` therefore takes the roster's first names through the same rule before it pairs and aligns, so the roster it checks is the one the trigger stores. A bootstrap from `seed_prod_2026-10-17.sql` then stores the three names with initial capitals and passes. Test: pgTAP SEED.09 (`supabase/tests/99_seed_load_fencers.sql`).

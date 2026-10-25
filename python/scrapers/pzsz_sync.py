@@ -25,6 +25,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -423,6 +424,7 @@ def run_calendar(
     letter_fetch: LetterFetch,
     read_letter_fn: ReadLetter,
     dry_run: bool = False,
+    prod_ref: str = "",
 ) -> int:
     """One PZSz calendar run against CERT (R1-R7). Returns 0 (green, perhaps
     with warnings) or 1 if any event ended fatal. Raises only the one fatal that
@@ -528,7 +530,7 @@ def run_calendar(
             digest.fatal.append(f"{event['txt_code']}: the write to CERT was rejected ({exc})")
 
     # R5 — the "send ingest" notice.
-    _ingest_notice(ref, token, query, season, today, digest)
+    _ingest_notice(ref, token, query, season, today, digest, prod_ref=prod_ref)
 
     # R6 — one digest.
     if digest.plain or digest.warn or digest.fatal:
@@ -580,13 +582,22 @@ def _load_source_reports(
 
 
 def _ingest_notice(
-    ref: str, token: str, query: Query, season: dict, today: dt.date, digest: _Digest
+    ref: str,
+    token: str,
+    query: Query,
+    season: dict,
+    today: dt.date,
+    digest: _Digest,
+    *,
+    prod_ref: str = "",
 ) -> None:
-    """R5 (ADR-112 §5, corrected): a CERT-only check — a past PZSz event whose
-    url_event an administrator has set (no calendar run writes it), that has a
-    stored start list and no FINISHED CERT run, is ready to ingest.
-    Told once (tbl_pzsz_check keyed on the event). With no stored list it says
-    the ingest will stop instead. pzszerm.pl is never touched here."""
+    """R5 (ADR-112 §5, corrected): a past PZSz event whose url_event an
+    administrator has set (no calendar run writes it, ADR-117), that has a
+    stored start list and no FINISHED CERT run, is ready to ingest. The link
+    is read on CERT and, with ``prod_ref``, on PROD, whose Admin the ingest's
+    refresh copies it from (D2 A). Told once (tbl_pzsz_check keyed on the
+    event). With no stored list it says the ingest will stop instead.
+    pzszerm.pl is never touched here."""
     rows = query(
         ref,
         token,
@@ -601,11 +612,12 @@ def _ingest_notice(
         f"WHERE e.id_season = {int(season['id_season'])} AND o.txt_code = '{ORGANIZER_CODE}' "
         "AND e.id_pzsz_event IS NOT NULL",
     )
+    prod_links = _prod_result_links(prod_ref, token, query, rows or [], today)
     for r in rows or []:
         end = r.get("dt_end") or r.get("dt_start")
         if _blank(end) or dt.date.fromisoformat(str(end)[:10]) >= today:
             continue  # not past yet
-        url = str(r.get("url_event") or "")
+        url = str(r.get("url_event") or prod_links.get(str(r["txt_code"])) or "")
         if not url:
             continue  # no results link yet — an administrator sets it in Admin
         if r.get("has_cert_run"):
@@ -635,6 +647,32 @@ def _ingest_notice(
                 }
             ],
         )
+
+
+def _prod_result_links(
+    prod_ref: str, token: str, query: Query, rows: list[dict], today: dt.date
+) -> dict[str, str]:
+    """PROD's url_event for the past events CERT holds none for (D2 A): the
+    link an administrator set in PROD's Admin. Read only; empty without a
+    PROD reference."""
+    codes = [
+        str(r["txt_code"])
+        for r in rows
+        if not r.get("url_event")
+        and not _blank(r.get("dt_end") or r.get("dt_start"))
+        and dt.date.fromisoformat(str(r.get("dt_end") or r.get("dt_start"))[:10]) < today
+        and re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", str(r["txt_code"]))
+    ]
+    if not prod_ref or not codes:
+        return {}
+    in_list = ", ".join(f"'{c}'" for c in codes)
+    found = query(
+        prod_ref,
+        token,
+        f"SELECT txt_code, url_event FROM tbl_event WHERE txt_code IN ({in_list}) "
+        "AND url_event IS NOT NULL AND url_event <> ''",
+    )
+    return {str(r["txt_code"]): str(r["url_event"]) for r in found or []}
 
 
 def _letter_fetch(url: str) -> bytes | None:
@@ -674,6 +712,8 @@ def main() -> None:
     args = parser.parse_args()
 
     ref = os.environ.get("SUPABASE_CERT_REF", "")
+    # Read only, for the ingest notice: the results link set in PROD's Admin (D2 A).
+    prod_ref = os.environ.get("SUPABASE_PROD_REF", "")
     token = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -698,6 +738,7 @@ def main() -> None:
                 letter_fetch=_letter_fetch,
                 read_letter_fn=read_letter,
                 dry_run=args.dry_run,
+                prod_ref=prod_ref,
             )
     except Exception as exc:
         print(f"ERROR: PZSz calendar run failed: {exc}", file=sys.stderr)

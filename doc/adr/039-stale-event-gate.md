@@ -8,7 +8,7 @@
 
 ## Context
 
-The first version of the EVF dedup logic ([commit `e440299`](https://github.com/Fencer4Life/spws-automated-ranklist/commit/e440299)) used `(dt_start exact, canonical country)` as the primary key with a `±N day window + fuzzy-name ≥ 80%` fallback. EVF actively renames events mid-season — the canonical incident was "EVF Circuit Napoli" → "EVF Circuit – Naples (ITA)", which scored ~73% on `token_set_ratio` and slipped below the 80% threshold. Three duplicate event rows were inserted into CERT and propagated to PROD via the calendar-promote cron:
+The first version of the EVF dedup logic ([commit `dcc50e8`](https://github.com/Fencer4Life/spws-automated-ranklist/commit/e440299)) used `(dt_start exact, canonical country)` as the primary key with a `±N day window + fuzzy-name ≥ 80%` fallback. EVF actively renames events mid-season — the canonical incident was "EVF Circuit Napoli" → "EVF Circuit – Naples (ITA)", which scored ~73% on `token_set_ratio` and slipped below the 80% threshold. Three duplicate event rows were inserted into CERT and propagated to PROD via the calendar-promote cron:
 
 - `PEW-PALAVESUVI-2025-2026` (vs seed-numbered `PEW4-2025-2026` Naples)
 - `PEW-OSRODEKSPO-2025-2026` (vs `PEW6-2025-2026` Jabłonna)
